@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState, useCallback, useRef, Suspense } from 'react'
-import { AlertTriangle, Layers3, ListChecks, Lock, RefreshCw, Save } from 'lucide-react'
+import { AlertTriangle, Lock, RefreshCw, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -356,20 +356,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     handleSave,
   )
 
-  const visibleSettingCount = state.items.filter((setting) => {
-    if (HIDDEN_KEYS.has(setting.key)) return false
-    const group = (setting.settingGroup || 'GENERAL').toUpperCase()
-    if (group === 'CONTACT') return false
-    if (setting.superAdminOnly && !isSuperAdmin) return false
-    return true
-  }).length
-  const embeddedDirtyCount = Object.values(embeddedStates)
-    .reduce((total, editorState) => total + (editorState.dirtyCount || 0), 0)
-  const totalDirtyCount = genericDirtyItems.length + embeddedDirtyCount
-  const attentionLabels = [
-    groups.has('PAYMENT') ? tabLabel('PAYMENT', t) : null,
-    isSuperAdmin ? tabLabel('PRODUCT_ASSIGN', t) : null,
-  ].filter(Boolean)
   const anySaving = saving || Object.values(embeddedStates).some((editorState) => editorState.saving)
 
   const getTabInfo = (tab) => {
@@ -460,15 +446,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     return (
       <div>
         {header}
-        <div className="bb-kpi-grid bb-kpi-grid-4" aria-label={t('settings.summaryAria')}>
-          {[...Array(4)].map((_, index) => (
-            <div key={index} className="bb-kpi animate-pulse">
-              <div className="h-4 w-24 rounded-sm bg-surface-muted" />
-              <div className="mt-3 h-8 w-16 rounded-sm bg-surface-muted" />
-              <div className="mt-2 h-3 w-32 rounded-sm bg-surface-muted" />
-            </div>
-          ))}
-        </div>
         <ScreenSkeleton />
       </div>
     )
@@ -492,53 +469,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   return (
     <div>
       {header}
-
-      <div className="bb-kpi-grid bb-kpi-grid-4" aria-label={t('settings.summaryAria')}>
-        <div className="bb-kpi">
-          <div className="bb-kpi-head">
-            <span className="bb-kpi-icon info"><Layers3 size={15} /></span>
-            <span>{t('settings.kpi.groups')}</span>
-          </div>
-          <div className="bb-kpi-value">{state.items.length > 0 ? navTabs.length : 0}</div>
-          <div className="bb-kpi-foot">
-            <span className="bb-kpi-foot-label">{t('settings.kpi.groupsHint')}</span>
-          </div>
-        </div>
-        <div className="bb-kpi">
-          <div className="bb-kpi-head">
-            <span className="bb-kpi-icon brand"><ListChecks size={15} /></span>
-            <span>{t('settings.kpi.items')}</span>
-          </div>
-          <div className="bb-kpi-value">{visibleSettingCount}</div>
-          <div className="bb-kpi-foot">
-            <span className="bb-kpi-foot-label">{t('settings.kpi.itemsHint')}</span>
-          </div>
-        </div>
-        <div className={cn('bb-kpi', totalDirtyCount > 0 && 'active')}>
-          <div className="bb-kpi-head">
-            <span className="bb-kpi-icon warning"><Save size={15} /></span>
-            <span>{t('settings.kpi.unsaved')}</span>
-          </div>
-          <div className="bb-kpi-value">{totalDirtyCount}</div>
-          <div className="bb-kpi-foot">
-            <span className="bb-kpi-foot-label">
-              {totalDirtyCount > 0 ? t('settings.kpi.unsavedHint') : t('settings.kpi.unsavedEmpty')}
-            </span>
-          </div>
-        </div>
-        <div className="bb-kpi">
-          <div className="bb-kpi-head">
-            <span className="bb-kpi-icon danger"><AlertTriangle size={15} /></span>
-            <span>{t('settings.kpi.attention')}</span>
-          </div>
-          <div className="bb-kpi-value">{attentionLabels.length}</div>
-          <div className="bb-kpi-foot">
-            <span className="bb-kpi-foot-label">
-              {attentionLabels.length > 0 ? attentionLabels.join(' · ') : t('settings.kpi.attentionEmpty')}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {state.refreshError ? (
         <div className="bb-alert danger" role="alert">

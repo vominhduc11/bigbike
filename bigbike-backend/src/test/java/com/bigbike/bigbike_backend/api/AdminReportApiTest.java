@@ -306,26 +306,6 @@ class AdminReportApiTest {
         assertThat(csv).doesNotContain(wrongVerification.getEmail());
     }
 
-    @Test
-    void exportProducts_writesAuditLog() throws Exception {
-        long before = countExportAuditLogs("PRODUCTS");
-
-        mockMvc.perform(get("/api/v1/admin/reports/products/export?publishStatus=PUBLISHED")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        List<AuditLogEntity> logs = exportAuditLogs("PRODUCTS");
-        assertThat(logs).hasSizeGreaterThan((int) before);
-        AuditLogEntity log = logs.get(logs.size() - 1);
-        assertThat(log.getResourceType()).isEqualTo("REPORT");
-        assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
-        assertThat(log.getAfterData()).contains("\"exportType\":\"PRODUCTS\"");
-        assertThat(log.getAfterData()).contains("\"publishStatus\":\"PUBLISHED\"");
-        assertThat(log.getAfterData()).doesNotContain("email");
-        assertThat(log.getAfterData()).doesNotContain("phone");
-        assertThat(log.getAfterData()).doesNotContain("name");
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private List<AuditLogEntity> exportAuditLogs(String exportType) {

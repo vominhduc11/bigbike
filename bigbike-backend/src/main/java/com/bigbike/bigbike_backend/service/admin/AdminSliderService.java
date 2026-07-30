@@ -246,7 +246,7 @@ public class AdminSliderService {
 
     private static ImageAsset toImageAsset(ImageAssetRequest request) {
         if (request == null) {
-            return new ImageAsset(null, null, null, null, null, null);
+            return null;
         }
         return new ImageAsset(null, request.getUrl(), request.getAlt(), request.getWidth(), request.getHeight(), request.getMimeType());
     }

@@ -8,7 +8,8 @@ function baseForm(overrides = {}) {
     location: 'home',
     sortOrder: '2',
     desktopImageUrl: '',
-    legacyMobileImage: null,
+    mobileImageUrl: '',
+    mobileImageAlt: '',
     externalLink: '',
     productId: '',
     isActive: true,
@@ -30,13 +31,42 @@ describe('buildSliderPayload', () => {
     expect(payload.desktopImage).toEqual({ url: '/media/sliders/hero.jpg' })
   })
 
-  it('chuyển nguyên ảnh mobile legacy để không mất khi sửa toàn phần', () => {
-    const legacy = { url: '/media/sliders/hero-mobile.jpg', alt: 'cũ' }
-    expect(buildSliderPayload(baseForm({ legacyMobileImage: legacy })).mobileImage).toEqual(legacy)
+  it('gửi rõ URL và alt của ảnh mobile', () => {
+    expect(buildSliderPayload(baseForm({
+      mobileImageUrl: '  /media/sliders/hero-mobile.jpg ',
+      mobileImageAlt: '  Banner mobile mùa hè ',
+    })).mobileImage).toEqual({
+      url: '/media/sliders/hero-mobile.jpg',
+      alt: 'Banner mobile mùa hè',
+    })
   })
 
-  it('không gửi mobileImage khi không có dữ liệu legacy', () => {
-    expect(buildSliderPayload(baseForm())).not.toHaveProperty('mobileImage')
+  it('giữ ảnh mobile cũ khi form sửa được lưu mà không thay đổi', () => {
+    const form = baseForm({
+      mobileImageUrl: '/media/sliders/hero-mobile-cu.jpg',
+      mobileImageAlt: 'Ảnh mobile cũ',
+    })
+    expect(buildSliderPayload(form).mobileImage).toEqual({
+      url: '/media/sliders/hero-mobile-cu.jpg',
+      alt: 'Ảnh mobile cũ',
+    })
+  })
+
+  it('gửi mobileImage null khi ảnh mobile bị xóa hoặc banner mới không có ảnh mobile', () => {
+    expect(buildSliderPayload(baseForm()).mobileImage).toBeNull()
+    expect(buildSliderPayload(baseForm({
+      mobileImageUrl: '   ',
+      mobileImageAlt: 'Alt không được giữ khi thiếu URL',
+    })).mobileImage).toBeNull()
+  })
+
+  it('gửi alt null khi ảnh mobile không có alt', () => {
+    expect(buildSliderPayload(baseForm({
+      mobileImageUrl: '/media/sliders/hero-mobile.jpg',
+    })).mobileImage).toEqual({
+      url: '/media/sliders/hero-mobile.jpg',
+      alt: null,
+    })
   })
 })
 

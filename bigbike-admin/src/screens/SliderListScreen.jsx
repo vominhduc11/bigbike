@@ -29,7 +29,8 @@ const EMPTY_FORM = {
   location: HOME_LOCATION,
   sortOrder: '0',
   desktopImageUrl: '',
-  legacyMobileImage: null,
+  mobileImageUrl: '',
+  mobileImageAlt: '',
   externalLink: '',
   productId: '',
   productName: '',
@@ -39,7 +40,6 @@ const EMPTY_FORM = {
 function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable, toggling, deleting }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const isHomeHero = slider.location === 'home'
   const productLabel = contentLang === 'en'
     ? (slider.productNameEn || slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
     : (slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
@@ -71,7 +71,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               className="bb-slider-thumb bb-slider-thumb--desktop"
             />
           )}
-          {!isHomeHero && slider.mobileImage?.url && (
+          {slider.mobileImage?.url && (
             <img
               src={slider.mobileImage.url}
               alt={slider.mobileImage.alt || ''}
@@ -311,7 +311,8 @@ export function SliderListScreen({ canUpdate }) {
       location: slider.location,
       sortOrder: String(slider.sortOrder),
       desktopImageUrl: slider.desktopImage?.url || '',
-      legacyMobileImage: slider.mobileImage ?? null,
+      mobileImageUrl: slider.mobileImage?.url || '',
+      mobileImageAlt: slider.mobileImage?.alt || '',
       externalLink: slider.externalLink || '',
       productId: slider.productId || '',
       productName: slider.productName || slider.productNameEn || '',
@@ -489,6 +490,22 @@ export function SliderListScreen({ canUpdate }) {
                   recommend={IMAGE_RECO.sliderDesktop}
                 />
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
+              </div>
+
+              <div className="bb-form-section-label with-divider">
+                {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh mobile' })}
+              </div>
+              <div className="form-field form-field-wide">
+                <span>{t('sliders.formMobileUrl', { defaultValue: 'Ảnh mobile' })}</span>
+                <ImageUrlInput
+                  value={form.mobileImageUrl}
+                  onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
+                  alt={form.mobileImageAlt}
+                  onAltChange={(alt) => setForm((p) => ({ ...p, mobileImageAlt: alt }))}
+                  previewAlt={form.mobileImageAlt || t('sliders.formMobileUrl', { defaultValue: 'Ảnh mobile' })}
+                  recommend={IMAGE_RECO.sliderMobile}
+                />
+                <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
 
               <div className="bb-form-section-label with-divider">

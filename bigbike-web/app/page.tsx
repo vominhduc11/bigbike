@@ -8,7 +8,8 @@ import { Tr } from "@/components/i18n/Tr";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
-import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
+import { HeroSlider } from "@/components/home/HeroSlider";
+import { toHeroSlide } from "@/components/home/heroSliderModel";
 import { Container } from "@/components/layout/Container";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
@@ -20,7 +21,6 @@ import {
   HomeContentBottom,
   HomeExperienceHeading,
 } from "@/components/home/HomeLocalizedSettings";
-import type { HomeSlider } from "@/lib/contracts/public";
 import {
   listArticles,
   listBrands,
@@ -42,7 +42,6 @@ import {
   isSafeHomeVideoUrl,
   resolveMediaUrl,
   toLegacyWpMediaUrl,
-  toSafePublicHref,
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
@@ -112,25 +111,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function toHeroSlide(slider: HomeSlider): HeroSlide | null {
-  const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
-  if (!desktopSrc) return null;
-
-  // The homepage Hero always reuses its desktop image at every breakpoint.
-  const productName = slider.productName?.trim() ?? "";
-  const categoryName = slider.categoryName?.trim() ?? "";
-
-  return {
-    id: slider.id,
-    desktopSrc,
-    alt: productName || categoryName || "BigBike",
-    href: toSafePublicHref(slider.link || slider.productLink || slider.externalLink, "") || null,
-    productName,
-    categoryName,
-    productCode: slider.sku?.trim() || "BIGBIKE",
-  };
-}
-
 function isRenderableHomeVideo(video: HomeVideo): boolean {
   // Backend already whitelists YouTube/TikTok/Facebook and only populates embedUrl for those
   // (null for self-hosted MinIO videos, which VideoModal renders straight from videoUrl).
@@ -194,7 +174,20 @@ export default async function HomePage() {
   // the page that DIDN'T get preloaded while everything below the fold did.
   // Explicit high-priority preload compensates.
   if (slides[0]) {
-    preload(slides[0].desktopSrc, { as: "image", fetchPriority: "high" });
+    if (slides[0].mobileSrc) {
+      preload(slides[0].mobileSrc, {
+        as: "image",
+        fetchPriority: "high",
+        media: "(max-width: 767px)",
+      });
+      preload(slides[0].desktopSrc, {
+        as: "image",
+        fetchPriority: "high",
+        media: "(min-width: 768px)",
+      });
+    } else {
+      preload(slides[0].desktopSrc, { as: "image", fetchPriority: "high" });
+    }
   }
 
   const categories = categoriesResult.data ?? [];

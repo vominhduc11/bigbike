@@ -6,8 +6,8 @@ import { validateSafePublicLink } from '../../lib/urlPolicies'
 export const HOME_LOCATION = 'home'
 
 // Dựng payload gửi lên khi tạo/sửa slider. Ảnh desktop chỉ gửi khi có URL (backend
-// whitelist qua SafeMediaAssetUrlPolicy); mobileImage legacy được chuyển nguyên vẹn
-// để lần sửa toàn phần không xoá mất dữ liệu cũ.
+// whitelist qua SafeMediaAssetUrlPolicy). Ảnh mobile được quản lý rõ trong form:
+// có URL thì gửi URL + alt, không có URL thì gửi null để backend xóa thật.
 export function buildSliderPayload(form) {
   const payload = {
     location: form.location,
@@ -19,9 +19,12 @@ export function buildSliderPayload(form) {
   if (form.desktopImageUrl.trim()) {
     payload.desktopImage = { url: form.desktopImageUrl.trim() }
   }
-  if (form.legacyMobileImage?.url) {
-    payload.mobileImage = form.legacyMobileImage
-  }
+  payload.mobileImage = form.mobileImageUrl.trim()
+    ? {
+        url: form.mobileImageUrl.trim(),
+        alt: form.mobileImageAlt.trim() || null,
+      }
+    : null
   return payload
 }
 

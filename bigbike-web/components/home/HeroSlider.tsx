@@ -26,6 +26,7 @@ const ARROW_ICON =
 export type HeroSlide = {
   id: string;
   desktopSrc: string;
+  mobileSrc: string | null;
   alt: string;
   /** Link admin đặt riêng cho slide (sản phẩm/danh mục/ngoài); null → dùng mặc định (trang sản phẩm). */
   href: string | null;
@@ -65,15 +66,19 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       .filter(Boolean)
       .join(" - ");
 
-  // One desktop image is reused at every breakpoint; responsive layout handles the crop.
   const picture = (
-    <img
-      src={slide.desktopSrc}
-      alt={slide.alt}
-      className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
-      loading="eager"
-      draggable={false}
-    />
+    <picture className="block w-full h-full">
+      {slide.mobileSrc ? (
+        <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />
+      ) : null}
+      <img
+        src={slide.desktopSrc}
+        alt={slide.alt}
+        className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
+        loading="eager"
+        draggable={false}
+      />
+    </picture>
   );
 
   const copy = (

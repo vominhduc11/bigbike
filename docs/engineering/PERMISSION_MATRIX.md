@@ -177,7 +177,6 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 | `GET /api/v1/admin/reports/analytics` | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 | `GET /api/v1/admin/reports/orders/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 | `GET /api/v1/admin/reports/customers/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
-| `GET /api/v1/admin/reports/products/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 | `GET /api/v1/admin/products/export.csv` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 
 | Permission string | Roles | Purpose |

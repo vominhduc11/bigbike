@@ -77,6 +77,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
 | `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
 | `GET` | `/api/v1/content-categories` | List content (news) categories with published-article counts, for the Tin tức category filter | `ApiListResponse<ContentCategoryWithCount>` | `CONFIRMED_FROM_CODE` | `ContentController.java` |
+| `GET` | `/api/v1/sliders?location=home` | Trả các homepage slider đang active theo `sortOrder`. Mỗi item có `desktopImage` và `mobileImage`; `mobileImage` là tùy chọn (`ImageAsset` hoặc `null`). Storefront dùng `mobileImage.url` dưới 768px khi có, nếu không dùng `desktopImage.url`. | `ApiDataResponse<List<PublicSliderResponse>>` | `OWNER_CONFIRMED_2026-07-30` | `PublicSliderController.java`, `PublicSliderResponse.java`, `HeroSlider.tsx` |
 | `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
 | `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
 | `POST` | `/api/v1/customer/auth/verify-email` | Verify email token from request param | `ApiDataResponse<{verified:true}>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
@@ -463,6 +464,18 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Chặn lại bằng lỗi `409 Conflict` nếu ảnh đang được dùng.
   - Thực hiện xóa cứng khỏi DB và xóa tệp khỏi MinIO.
 
+## Homepage Slider Contract
+
+| Endpoint | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|
+| `GET /api/v1/admin/sliders?location=home` | `sliders.read` | Trả danh sách banner trang chủ gồm `desktopImage` và `mobileImage` tùy chọn. | `OWNER_CONFIRMED_2026-07-30` | `AdminSliderController.java`, `SliderReadService.java` |
+| `POST /api/v1/admin/sliders` | `sliders.write` | Tạo slider mới. `location` chỉ nhận `home`; `desktopImage` và `mobileImage` dùng `ImageAssetRequest`, trong đó ảnh mobile là tùy chọn. | `OWNER_CONFIRMED_2026-07-30` | `AdminSliderController.java`, `AdminSliderService.java` |
+| `PATCH /api/v1/admin/sliders/{id}` | `sliders.write` | Bản sửa toàn phần (có `location`) thay thế dữ liệu ảnh. `mobileImage: { "url": "...", "alt": "..." }` lưu ảnh mobile; `mobileImage: null` xóa ảnh mobile và response trả `mobileImage: null`. Patch chỉ đổi trạng thái/thứ tự không đụng dữ liệu ảnh. | `OWNER_CONFIRMED_2026-07-30` | `PatchSliderRequest.java`, `AdminSliderService.java` |
+| `POST /api/v1/admin/sliders/reorder` | `sliders.write` | Sắp xếp lại slider trong location `home`. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
+| `DELETE /api/v1/admin/sliders/{id}` | `sliders.write` | Xóa slider. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
+
+Ảnh slider tiếp tục đi qua `SafeMediaAssetUrlPolicy`; link ngoài đi qua `SafePublicLinkPolicy`; một slider phải có link ngoài hoặc sản phẩm liên kết. Mọi create/update/delete/reorder tiếp tục phát revalidation tag `sliders`. Quyết định 2026-07-30 chỉ khôi phục ảnh mobile cho `home`, không khôi phục `category`, `category_sidebar` hoặc `promotion`.
+
 ## Commerce Mutation Contracts
 
 | Endpoint | Current contract | Status | Evidence |
@@ -508,7 +521,6 @@ Status: `CONFIRMED_FROM_CODE`
 | `GET /api/v1/admin/reports/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` | `reports.read` | Returns PeriodSummary, daily revenue series, top products, and top customers. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 | `GET /api/v1/admin/reports/orders/export?q=...&status=...&from=...&to=...` | `reports.export` | Exports every order matching the current Orders-screen search/status/date filters to a UTF-8 BOM CSV file. `from`/`to` are inclusive Vietnam calendar dates and the export is not capped at 10,000 rows. | `CONFIRMED_FROM_CODE` | `ORDER_RULE_011`, `ORDER_RULE_012`, `AdminOrderCsvExportService.java` |
 | `GET /api/v1/admin/reports/customers/export?q=...&status=...&synthetic=...&emailVerified=...` | `reports.export` | Exports every customer matching the current Customers-screen search/status/synthetic/email-verification filters to a UTF-8 BOM CSV file. The export is streamed across all pages and has no 10,000-row cap. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_009`, `AdminReportController.java`, `AdminCustomerCsvExportService.java` |
-| `GET /api/v1/admin/reports/products/export?publishStatus=...` | `reports.export` | Exports the limited product report (13 reporting columns), optionally filtered by publish status, to a UTF-8 BOM CSV file. It is not the catalog backup/export endpoint. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 
 **Custom range limit (frontend-only, `REPORT_RULE_011`):** The admin UI restricts the custom `from`/`to` range picker on the Reports screen to a maximum 90-day span. This is not enforced by `/analytics` itself, which only validates `from <= to`.
 
@@ -538,12 +550,6 @@ The export applies `q` to the same case-insensitive literal-substring fields as 
 (`email`, `phone`, `displayName`), applies `status`, `synthetic`, and `emailVerified`, and exports
 every matching row across all pages without silent truncation. The response declares
 `X-Export-Uncapped: true`.
-
-### Product Export Format
-The CSV file generated by `/api/v1/admin/reports/products/export` contains the following headers in order:
-- `id`, `sku`, `slug`, `name`, `category`, `brand`, `retail_price`, `sale_price`, `currency`, `stock_state`, `publish_status`, `homepage_block`, `created_at`
-
-This is a reporting-only export. The Product module's **"Xuất CSV"** action must use the full catalog endpoint below, not this endpoint.
 
 ## Admin Catalog Contract
 

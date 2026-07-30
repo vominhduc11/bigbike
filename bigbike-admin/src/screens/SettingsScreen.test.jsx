@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SettingsScreen } from './SettingsScreen'
 
@@ -95,7 +95,7 @@ describe('SettingsScreen', () => {
     renderScreen()
 
     expect(screen.getByRole('button', { name: 'settings.refresh' })).toBeDisabled()
-    expect(screen.getByLabelText('settings.summaryAria')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
   it('shows the initial error state and allows retrying', async () => {
@@ -151,24 +151,6 @@ describe('SettingsScreen', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Không thể cập nhật')
     expect(siteName).toHaveValue('BigBike nháp')
-  })
-
-  it('derives KPI counts from visible settings and the current role', async () => {
-    const { unmount } = render(
-      <SettingsScreen canUpdate isSuperAdmin={false} navigate={vi.fn()} />,
-    )
-    const regularSummary = await screen.findByLabelText('settings.summaryAria')
-    expect(
-      Array.from(regularSummary.querySelectorAll('.bb-kpi-value')).map((node) => node.textContent),
-    ).toEqual(['3', '3', '0', '1'])
-
-    unmount()
-    renderScreen({ isSuperAdmin: true })
-    await screen.findByRole('button', { name: 'GENERAL' })
-    const superSummary = screen.getByLabelText('settings.summaryAria')
-    expect(
-      Array.from(superSummary.querySelectorAll('.bb-kpi-value')).map((node) => node.textContent),
-    ).toEqual(['4', '4', '0', '2'])
   })
 
   it('shows the bank-transfer settings tab required by the current checkout rules', async () => {
@@ -241,8 +223,6 @@ describe('SettingsScreen', () => {
     await user.clear(siteName)
     await user.type(siteName, 'BigBike')
     expect(screen.queryByRole('button', { name: 'settings.saveCount' })).not.toBeInTheDocument()
-    const summary = screen.getByLabelText('settings.summaryAria')
-    expect(within(summary).getByText('settings.kpi.unsaved').closest('.bb-kpi')).toHaveTextContent('0')
   })
 
   it('supports keyboard navigation in the mobile tab strip', async () => {

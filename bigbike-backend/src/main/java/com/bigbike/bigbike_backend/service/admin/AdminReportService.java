@@ -5,8 +5,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.D
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.PeriodSummary;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopCustomerItem;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopProductItem;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
@@ -28,11 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +56,6 @@ public class AdminReportService {
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
-    private final ProductJpaRepository productRepo;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
 
@@ -145,59 +138,6 @@ public class AdminReportService {
                 .toList();
 
         return new AdminAnalyticsResponse(summary, dailyRevenue, topProducts, topCustomers);
-    }
-
-    public ExportResult exportProductsCsv(String publishStatus) {
-        Specification<ProductEntity> spec = (root, query, cb) -> {
-            if (publishStatus == null || publishStatus.isBlank()) return cb.conjunction();
-            return cb.equal(
-                    cb.upper(root.get("publishStatus").as(String.class)),
-                    publishStatus.toUpperCase(Locale.ROOT)
-            );
-        };
-
-        List<ProductEntity> products = productRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("createdAt").descending())
-        ).getContent();
-
-        StringWriter sw = new StringWriter();
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("id", "sku", "slug", "name",
-                        "category", "brand",
-                        "retail_price", "sale_price", "currency",
-                        "stock_state", "publish_status",
-                        "homepage_block", "created_at")
-                .build();
-
-        try (CSVPrinter printer = new CSVPrinter(sw, format)) {
-            int count = 0;
-            for (ProductEntity p : products) {
-                if (count >= EXPORT_MAX_ROWS) break;
-                printer.printRecord(
-                        p.getId(),
-                        CsvExportUtil.escape(nvl(p.getSku())),
-                        CsvExportUtil.escape(p.getSlug()),
-                        CsvExportUtil.escape(p.getName()),
-                        CsvExportUtil.escape(p.getCategories() == null ? "" : p.getCategories().stream()
-                                .map(category -> category.getName() == null ? "" : category.getName())
-                                .collect(java.util.stream.Collectors.joining(" | "))),
-                        CsvExportUtil.escape(p.getBrand() != null ? p.getBrand().getName() : ""),
-                        formatDecimal(p.getRetailPrice()),
-                        formatDecimal(p.getSalePrice()),
-                        p.getCurrency(),
-                        p.getStockState() != null ? p.getStockState().name() : "",
-                        p.getPublishStatus() != null ? p.getPublishStatus().name() : "",
-                        p.getHomepageBlock() != null ? p.getHomepageBlock().name() : "NONE",
-                        formatInstant(p.getCreatedAt())
-                );
-                count++;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to generate product CSV export.", e);
-        }
-
-        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, products.size() > EXPORT_MAX_ROWS);
     }
 
     public void recordExportAudit(

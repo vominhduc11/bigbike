@@ -5694,37 +5694,6 @@
         }
       }
     },
-    "/api/v1/admin/reports/products/export": {
-      "get": {
-        "tags": [
-          "Admin Reports"
-        ],
-        "summary": "Export products report CSV (admin)",
-        "operationId": "adminReportsProductsExport",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "publishStatus",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "CSV export"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
     "/api/v1/admin/roles": {
       "get": {
         "tags": [

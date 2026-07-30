@@ -9,7 +9,6 @@ import enLocale from '../locales/en.json'
 const mocks = vi.hoisted(() => ({
   fetchAnalytics: vi.fn(),
   exportOrdersCsv: vi.fn(),
-  exportProductsCsv: vi.fn(),
   exportCustomersCsv: vi.fn(),
   hasPermission: vi.fn(),
   toastSuccess: vi.fn(),
@@ -27,7 +26,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('../lib/adminApi', () => ({
   fetchAnalytics: mocks.fetchAnalytics,
   exportOrdersCsv: mocks.exportOrdersCsv,
-  exportProductsCsv: mocks.exportProductsCsv,
   exportCustomersCsv: mocks.exportCustomersCsv,
 }))
 vi.mock('../lib/auth', () => ({
@@ -104,7 +102,6 @@ beforeEach(() => {
   mocks.hasPermission.mockImplementation((permission) => permission === 'reports.export')
   mocks.fetchAnalytics.mockResolvedValue({ data: ANALYTICS })
   mocks.exportOrdersCsv.mockResolvedValue({})
-  mocks.exportProductsCsv.mockResolvedValue({})
   mocks.exportCustomersCsv.mockResolvedValue({})
 })
 
@@ -144,17 +141,15 @@ describe('ReportsScreen', () => {
 
     await screen.findByText('reports.kpiGmv')
     expect(screen.getByRole('button', { name: 'reports.exportOrders' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'reports.exportProducts' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'reports.exportCustomers' })).toBeDisabled()
   })
 
-  it('allows full product/customer exports while a custom analytics range is incomplete', async () => {
+  it('allows full customer export while a custom analytics range is incomplete', async () => {
     window.history.replaceState({}, '', '/admin/reports?preset=custom&from=2026-07-01')
     renderScreen()
 
     expect(await screen.findByText('reports.customPendingTitle')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'reports.exportOrders' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'reports.exportProducts' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'reports.exportCustomers' })).toBeEnabled()
   })
 
@@ -174,10 +169,10 @@ describe('ReportsScreen', () => {
 
   it('reports an export failure without showing a false success message', async () => {
     const user = userEvent.setup()
-    mocks.exportProductsCsv.mockRejectedValue(new Error('offline'))
+    mocks.exportCustomersCsv.mockRejectedValue(new Error('offline'))
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'reports.exportProducts' }))
+    await user.click(await screen.findByRole('button', { name: 'reports.exportCustomers' }))
 
     await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith('export.error'))
     expect(mocks.toastSuccess).not.toHaveBeenCalled()

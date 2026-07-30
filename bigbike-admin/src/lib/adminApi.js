@@ -1706,10 +1706,6 @@ export async function exportCustomersCsv(filters = {}) {
   }, 'customers.csv')
 }
 
-export async function exportProductsCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus }, 'products.csv')
-}
-
 /** Full operational catalog export used only by the Product module; deliberately has no screen filters. */
 export async function exportFullProductCatalogCsv() {
   return fetchCsvBlob('/admin/products/export.csv', {}, 'products-full.csv')

@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
-import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerCsvExportService;
 import com.bigbike.bigbike_backend.service.admin.AdminOrderCsvExportService;
@@ -43,8 +42,6 @@ public class AdminReportController {
 
     private static final Set<String> VALID_ORDER_STATUSES =
             Arrays.stream(OrderStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
-    private static final Set<String> VALID_PUBLISH_STATUSES =
-            Arrays.stream(PublishStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
     private static final Set<String> VALID_CUSTOMER_STATUSES =
             Arrays.stream(CustomerStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
 
@@ -136,28 +133,6 @@ public class AdminReportController {
                 ),
                 "customers_" + LocalDate.now().format(FILE_DATE) + ".csv"
         );
-    }
-
-    @GetMapping("/products/export")
-    public ResponseEntity<byte[]> exportProducts(
-            @RequestParam(required = false) String publishStatus,
-            HttpServletRequest request
-    ) {
-        AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
-        if (publishStatus != null && !publishStatus.isBlank()
-                && !VALID_PUBLISH_STATUSES.contains(publishStatus.toUpperCase(Locale.ROOT))) {
-            throw ValidationException.fromField("publishStatus", "INVALID_PUBLISH_STATUS",
-                    "Unknown publish status: " + publishStatus);
-        }
-        AdminReportService.ExportResult productsResult = adminReportService.exportProductsCsv(publishStatus);
-        adminReportService.recordExportAudit(
-                actor.id(),
-                "PRODUCTS",
-                filters("publishStatus", blankToNull(publishStatus)),
-                clientIpResolver.resolve(request),
-                request.getHeader("User-Agent")
-        );
-        return csvResponse(productsResult, "products_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
     private void validateDateRange(String from, String to) {

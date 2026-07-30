@@ -1,9 +1,11 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -160,6 +162,81 @@ class SliderApiTest {
                         .content("{\"isActive\": false}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isActive").value(false));
+    }
+
+    @Test
+    void patchSlider_fullEdit_roundTripsMobileImageUrlAndAlt() throws Exception {
+        String id = "slider_mobile_roundtrip_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        int sortOrder = 20_000 + Math.floorMod(id.hashCode(), 10_000);
+        SliderEntity entity = slider("home", sortOrder, true, "/mobile-roundtrip");
+        entity.setId(id);
+        sliderJpaRepository.save(entity);
+
+        mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
+                        .header("X-Admin-Permissions", "sliders.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "location": "home",
+                                  "sortOrder": %d,
+                                  "desktopImage": {
+                                    "url": "/media/sliders/desktop-roundtrip.jpg",
+                                    "alt": "Ảnh desktop"
+                                  },
+                                  "mobileImage": {
+                                    "url": "/media/sliders/mobile-roundtrip.jpg",
+                                    "alt": "Ảnh mobile"
+                                  },
+                                  "externalLink": "/mobile-roundtrip",
+                                  "isActive": true
+                                }
+                                """.formatted(sortOrder)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.mobileImage.url").value("/media/sliders/mobile-roundtrip.jpg"))
+                .andExpect(jsonPath("$.data.mobileImage.alt").value("Ảnh mobile"));
+
+        ImageAsset mobileImage = sliderJpaRepository.findById(id).orElseThrow().getMobileImage();
+        assertThat(mobileImage.url()).isEqualTo("/media/sliders/mobile-roundtrip.jpg");
+        assertThat(mobileImage.alt()).isEqualTo("Ảnh mobile");
+    }
+
+    @Test
+    void patchSlider_fullEditWithNullMobileImage_clearsStoredImage() throws Exception {
+        String id = "slider_mobile_clear_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        int sortOrder = 30_000 + Math.floorMod(id.hashCode(), 10_000);
+        SliderEntity entity = slider("home", sortOrder, true, "/mobile-clear");
+        entity.setId(id);
+        entity.setMobileImage(new ImageAsset(
+                null,
+                "/media/sliders/mobile-before-clear.jpg",
+                "Ảnh mobile cũ",
+                780,
+                1040,
+                "image/jpeg"
+        ));
+        sliderJpaRepository.save(entity);
+
+        mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
+                        .header("X-Admin-Permissions", "sliders.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "location": "home",
+                                  "sortOrder": %d,
+                                  "desktopImage": {
+                                    "url": "/media/sliders/desktop-after-clear.jpg",
+                                    "alt": "Ảnh desktop"
+                                  },
+                                  "mobileImage": null,
+                                  "externalLink": "/mobile-clear",
+                                  "isActive": true
+                                }
+                """.formatted(sortOrder)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.mobileImage").doesNotExist())
+                .andExpect(content().string(containsString("\"mobileImage\":null")));
+
+        assertThat(sliderJpaRepository.findById(id).orElseThrow().getMobileImage()).isNull();
     }
 
     @Test

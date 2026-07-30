@@ -19,7 +19,7 @@ import { AdminTable } from '../components/AdminTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExportButton } from '../components/ExportButton'
-import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
+import { fetchAnalytics, exportOrdersCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd, fmtIsoDateShort } from '../lib/formatters'
 import {
   REPORT_PRESETS,
@@ -352,13 +352,6 @@ export function ReportsScreen() {
               onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
             >
               {t('reports.exportOrders')}
-            </ExportButton>
-            <ExportButton
-              disabled={!canExport}
-              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : t('reports.exportAllHint')}
-              onExport={() => runExport(() => exportProductsCsv())}
-            >
-              {t('reports.exportProducts')}
             </ExportButton>
             <ExportButton
               disabled={!canExport}
