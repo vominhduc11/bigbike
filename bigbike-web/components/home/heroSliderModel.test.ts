@@ -10,7 +10,7 @@ function slider(overrides: Partial<HomeSlider> = {}): HomeSlider {
       url: "/media/sliders/desktop.jpg",
       alt: "Ảnh desktop",
     },
-    externalLink: "/sp/",
+    productLink: "/sp/product.html",
     ...overrides,
   };
 }
@@ -40,5 +40,10 @@ describe("toHeroSlide", () => {
       desktopImage: null,
       mobileImage: { url: "/media/sliders/mobile-only.jpg" },
     }))).toBeNull();
+  });
+
+  it("does not use a historical external link when no product link exists", () => {
+    expect(toHeroSlide(slider({ productLink: null, link: "/legacy", externalLink: "/legacy-external" })))
+      .toEqual(expect.objectContaining({ href: null }));
   });
 });

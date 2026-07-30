@@ -19,7 +19,7 @@ export function toHeroSlide(slider: HomeSlider): HeroSlide | null {
     desktopSrc,
     mobileSrc,
     alt: productName || categoryName || "BigBike",
-    href: toSafePublicHref(slider.link || slider.productLink || slider.externalLink, "") || null,
+    href: toSafePublicHref(slider.productLink, "") || null,
     productName,
     categoryName,
     productCode: slider.sku?.trim() || "BIGBIKE",

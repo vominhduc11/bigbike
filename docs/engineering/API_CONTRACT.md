@@ -474,7 +474,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 | `POST /api/v1/admin/sliders/reorder` | `sliders.write` | Sắp xếp lại slider trong location `home`. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
 | `DELETE /api/v1/admin/sliders/{id}` | `sliders.write` | Xóa slider. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
 
-Ảnh slider tiếp tục đi qua `SafeMediaAssetUrlPolicy`; link ngoài đi qua `SafePublicLinkPolicy`; một slider phải có link ngoài hoặc sản phẩm liên kết. Mọi create/update/delete/reorder tiếp tục phát revalidation tag `sliders`. Quyết định 2026-07-30 chỉ khôi phục ảnh mobile cho `home`, không khôi phục `category`, `category_sidebar` hoặc `promotion`.
+Ảnh slider tiếp tục đi qua `SafeMediaAssetUrlPolicy`. `POST` và bản `PATCH` toàn phần (payload có `location`) bắt buộc có `productId` hợp lệ; không còn nhận hoặc validate `externalLink` trong luồng ghi mới. Cột và field response `externalLink` vẫn được giữ để bảo toàn dữ liệu lịch sử, nhưng chỉ mang tính tương thích và không được dùng làm `link` hiệu lực trên storefront; `link` hiệu lực chỉ là `productLink`. Patch một phần chỉ đổi trạng thái/thứ tự không yêu cầu `productId`. Mọi create/update/delete/reorder tiếp tục phát revalidation tag `sliders`. Quyết định 2026-07-30 chỉ khôi phục ảnh mobile cho `home`, không khôi phục `category`, `category_sidebar` hoặc `promotion`.
 
 ## Commerce Mutation Contracts
 

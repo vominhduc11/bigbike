@@ -56,9 +56,7 @@ public class SliderReadService {
             }
         }
 
-        String link = productLink != null && !productLink.isBlank()
-                ? productLink
-                : entity.getExternalLink();
+        String link = productLink;
 
         return new Slider(
                 entity.getId(),

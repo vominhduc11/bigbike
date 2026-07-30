@@ -315,6 +315,16 @@ Evidence:
 - `V138__add_article_page_bilingual_content.sql`, `V216__add_article_slug_en.sql`, `V222__add_article_featured_and_seo_no_index.sql`
 - `DATA_CONTRACT.md` — "Article bilingual content", "Article featured + seo_no_index (V222)"
 
+## Homepage Slider Rules
+
+- `SLIDER_RULE_001` (owner decision 2026-07-30): Banner/slider tạo mới hoặc sửa toàn phần phải có `productId` hợp lệ và chỉ điều hướng tới trang chi tiết sản phẩm. Không còn luồng nhập hoặc validate `externalLink`. Giá trị `externalLink` lịch sử vẫn được giữ trong dữ liệu/response để tương thích, nhưng không hiển thị trong Admin và không được dùng làm đích đến trên storefront. Patch một phần chỉ đổi trạng thái/thứ tự không yêu cầu gửi lại sản phẩm. `OWNER_CONFIRMED_FROM_USER_REQUEST`
+
+Evidence:
+
+- `SliderListScreen.jsx`, `sliderPayload.js`
+- `AdminSliderService.java`, `UpsertSliderRequest.java`, `PatchSliderRequest.java`
+- `SliderReadService.java`, `HeroSlider.tsx`
+
 ## Site Settings Rules
 
 - `SETTINGS_RULE_001` (cập nhật 2026-07-03 — bỏ tự động dịch): **Cài đặt (site settings) nhập song ngữ bằng nút VI/EN, không còn 2 ô xếp chồng, không còn tự động dịch.** Mỗi setting dịch được (`isTranslatableSetting()` — nhóm `general`/`public_hero`/`seo`, kiểu chữ) hiện **1 ô tại 1 thời điểm**, đổi qua nút VI/EN ở header admin (`useContentLang()`); setting **không** dịch được (ảnh/số/điện thoại/boolean/ngân hàng…) luôn hiện đúng 1 giá trị tiếng Việt, không đổi theo nút ngôn ngữ. Không còn tự động dịch VI→EN khi lưu, không còn endpoint `/admin/translate`, không còn cơ chế khoá `en_locked` (đã xoá khỏi DB cùng Gemini — `TRANSLATION_RULE_001`) — admin **tự gõ** tiếng Anh cho từng setting dịch-được. Setting nào **vừa dịch-được vừa bắt buộc ở VI** (hiện chỉ `site_name`, cờ `.required()` trong `SettingDefinitionRegistry`) thì bản tiếng Anh (`valueEn`) cũng bắt buộc — để trống chặn lưu (`TRANSLATION_RULE_002`). Setting dịch-được khác (không bắt buộc VI) vẫn tùy chọn ở EN, web fallback về tiếng Việt khi trống. `CONFIRMED_FROM_CODE`

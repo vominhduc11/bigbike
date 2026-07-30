@@ -18,7 +18,7 @@ import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-import { HOME_LOCATION, buildSliderPayload, validateSliderLinkGroup } from './slider-list/sliderPayload'
+import { HOME_LOCATION, buildSliderPayload, validateSliderProduct } from './slider-list/sliderPayload'
 // Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2). Mã lạ → trả nguyên mã.
 function locationLabel(t, code) {
   return code === HOME_LOCATION
@@ -31,7 +31,6 @@ const EMPTY_FORM = {
   desktopImageUrl: '',
   mobileImageUrl: '',
   mobileImageAlt: '',
-  externalLink: '',
   productId: '',
   productName: '',
   isActive: true,
@@ -89,11 +88,6 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
             </span>
           </div>
-          {slider.externalLink && (
-            <p className="bb-slider-meta">
-              {t('sliders.linkLabel')} {slider.externalLink}
-            </p>
-          )}
           {slider.productId && (
             <p className="bb-slider-meta">
               {t('sliders.productLabel')} {productLabel}
@@ -154,10 +148,10 @@ export function SliderListScreen({ canUpdate }) {
   // Bản chụp form lúc mở (để biết có thay đổi chưa lưu — F6). null khi form đóng.
   const [baseline, setBaseline] = useState(null)
   const [formError, setFormError] = useState('')
-  // Lỗi inline cạnh nhóm link ngoài / product ID (tiêu chí 7.1/7.2).
-  const [linkFieldError, setLinkFieldError] = useState('')
-  // Đánh dấu ô link ngoài đã rời focus → chỉ hiện lỗi validate khi đã touched (F3).
-  const [linkTouched, setLinkTouched] = useState(false)
+  // Lỗi inline cạnh trường sản phẩm liên kết.
+  const [productFieldError, setProductFieldError] = useState('')
+  // Chỉ hiện lỗi chọn sản phẩm sau khi admin đã thử lưu hoặc bỏ chọn.
+  const [productTouched, setProductTouched] = useState(false)
   // ID banner đang gọi API bật/tắt hoặc xoá → disable đúng nút trên thẻ đó.
   const [togglingId, setTogglingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
@@ -298,8 +292,8 @@ export function SliderListScreen({ canUpdate }) {
     setForm(next)
     setBaseline(next)
     setFormError('')
-    setLinkFieldError('')
-    setLinkTouched(false)
+    setProductFieldError('')
+    setProductTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
     setShowForm(true)
@@ -313,7 +307,6 @@ export function SliderListScreen({ canUpdate }) {
       desktopImageUrl: slider.desktopImage?.url || '',
       mobileImageUrl: slider.mobileImage?.url || '',
       mobileImageAlt: slider.mobileImage?.alt || '',
-      externalLink: slider.externalLink || '',
       productId: slider.productId || '',
       productName: slider.productName || slider.productNameEn || '',
       isActive: slider.isActive !== false,
@@ -321,8 +314,8 @@ export function SliderListScreen({ canUpdate }) {
     setForm(next)
     setBaseline(next)
     setFormError('')
-    setLinkFieldError('')
-    setLinkTouched(false)
+    setProductFieldError('')
+    setProductTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
     setShowForm(true)
@@ -333,8 +326,8 @@ export function SliderListScreen({ canUpdate }) {
     setEditingId(null)
     setBaseline(null)
     setFormError('')
-    setLinkFieldError('')
-    setLinkTouched(false)
+    setProductFieldError('')
+    setProductTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
   }
@@ -343,15 +336,15 @@ export function SliderListScreen({ canUpdate }) {
     setForm((p) => ({ ...p, productId: product.id, productName: product.name || product.id }))
     setProductSearch('')
     setProductPickerOpen(false)
-    setLinkFieldError('')
+    setProductFieldError('')
     setFormError('')
   }, [setProductSearch])
 
   function clearSelectedProduct() {
     const next = { ...form, productId: '', productName: '' }
     setForm(next)
-    // Bỏ sản phẩm khi đã tương tác cụm liên kết → kiểm tra lại cặp link/sản phẩm (F3).
-    if (linkTouched) setLinkFieldError(validateLinkGroup(next))
+    // Bỏ sản phẩm sau khi đã tương tác → hiển thị ngay lỗi bắt buộc.
+    if (productTouched) setProductFieldError(validateSliderProduct(next, t))
   }
 
   async function handleDelete(sliderId) {
@@ -373,29 +366,17 @@ export function SliderListScreen({ canUpdate }) {
 
   const buildPayload = () => buildSliderPayload(form)
 
-  // Kiểm tra cặp link ngoài / sản phẩm (chọn 1 trong 2); dùng chung on-blur (F3) lẫn on-submit.
-  const validateLinkGroup = (values) => validateSliderLinkGroup(values, t)
-
-  // Validate ngay khi rời ô link ngoài / cụm liên kết (F3) — không đợi bấm Lưu.
-  function handleLinkBlur() {
-    setLinkTouched(true)
-    const msg = validateLinkGroup(form)
-    setLinkFieldError(msg)
-    if (msg) setFormError('')
-  }
-
   function handleSubmit(e) {
     e.preventDefault()
-    setLinkTouched(true)
-    // Lỗi đích sát nhóm link ngoài / sản phẩm (tiêu chí 7.1/7.2) thay vì chỉ banner đầu form.
-    const linkError = validateLinkGroup(form)
-    if (linkError) {
-      setLinkFieldError(linkError)
+    setProductTouched(true)
+    const productError = validateSliderProduct(form, t)
+    if (productError) {
+      setProductFieldError(productError)
       setFormError('')
       return
     }
     setFormError('')
-    setLinkFieldError('')
+    setProductFieldError('')
     const payload = buildPayload()
     if (editingId) {
       editMutation.mutate({ id: editingId, payload })
@@ -512,21 +493,13 @@ export function SliderListScreen({ canUpdate }) {
                 {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
               </div>
               <p className="form-field-wide -mt-1 text-xs text-muted-foreground">
-                {t('sliders.linkGroupHint', { defaultValue: 'Bắt buộc: nhập link ngoài hoặc chọn sản phẩm (chọn 1 trong 2).' })}
+                {t('sliders.productRequiredHint', { defaultValue: 'Bắt buộc: chọn sản phẩm mà banner sẽ mở tới.' })}
               </p>
-              <label className="form-field form-field-wide">
-                <span>{t('sliders.formExternalLink')}</span>
-                <Input
-                  placeholder="https://..."
-                  value={form.externalLink}
-                  aria-invalid={linkFieldError ? true : undefined}
-                  onChange={(e) => { setForm((p) => ({ ...p, externalLink: e.target.value })); if (linkFieldError) setLinkFieldError('') }}
-                  onBlur={handleLinkBlur}
-                />
-                <span className="hint">{t('sliders.formExternalLinkHint')}</span>
-              </label>
               <div className="form-field form-field-wide">
-                <span>{t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}</span>
+                <span>
+                  {t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}
+                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                </span>
                 {form.productId ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="bb-badge bb-badge-neutral">
@@ -539,7 +512,7 @@ export function SliderListScreen({ canUpdate }) {
                 ) : (
                   <ProductPickerCombobox
                     search={productSearch}
-                    onSearchChange={(v) => { setProductSearch(v); setProductPickerOpen(true) }}
+                    onSearchChange={(v) => { setProductSearch(v); setProductPickerOpen(true); if (productFieldError) setProductFieldError('') }}
                     onFocus={() => setProductPickerOpen(true)}
                     open={productPickerOpen && productSearch.trim().length > 0}
                     onOpenChange={(next) => { if (!next) setProductPickerOpen(false) }}
@@ -551,11 +524,11 @@ export function SliderListScreen({ canUpdate }) {
                     emptyText={t('sliders.formProductNoResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
                   />
                 )}
-                <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner trỏ tới trang sản phẩm đó. Có thể để trống nếu đã nhập link ngoài.' })}</span>
+                <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner mở tới trang chi tiết sản phẩm.' })}</span>
+                {productTouched && productFieldError && (
+                  <small className="field-error" role="alert">{productFieldError}</small>
+                )}
               </div>
-              {linkTouched && linkFieldError && (
-                <small className="field-error form-field-wide" role="alert">{linkFieldError}</small>
-              )}
             </div>
             <div className="mt-4 flex gap-2">
               <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>

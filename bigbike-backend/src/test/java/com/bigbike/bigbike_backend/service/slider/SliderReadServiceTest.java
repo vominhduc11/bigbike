@@ -93,7 +93,7 @@ class SliderReadServiceTest {
     }
 
     @Test
-    void toDomain_fallsBackToExternalLinkWhenProductMissing() {
+    void toDomain_doesNotUseExternalLinkWhenProductMissing() {
         SliderReadService service = new SliderReadService(mock(SliderJpaRepository.class), mock(CatalogReadRepository.class));
 
         SliderEntity entity = new SliderEntity();
@@ -107,6 +107,7 @@ class SliderReadServiceTest {
 
         Slider slider = service.toDomain(entity);
         assertThat(slider.productLink()).isNull();
-        assertThat(slider.link()).isEqualTo("/tai-nghe-bluetooth.html");
+        assertThat(slider.externalLink()).isEqualTo("/tai-nghe-bluetooth.html");
+        assertThat(slider.link()).isNull();
     }
 }

@@ -8492,14 +8492,19 @@
           },
           "externalLink": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "deprecated": true,
+            "readOnly": true,
+            "description": "Historical compatibility field. It is retained in responses but is not accepted or used for new banner navigation."
           },
           "productLink": {
             "type": "string",
             "nullable": true
           },
           "link": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Effective banner link. When available, this is the linked product detail path; historical external links are not used."
           },
           "product": {
             "type": "object",

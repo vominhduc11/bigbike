@@ -16,7 +16,6 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
-import com.bigbike.bigbike_backend.service.security.SafePublicLinkPolicy;
 import com.bigbike.bigbike_backend.service.slider.SliderReadService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -79,12 +78,11 @@ public class AdminSliderService {
         }
 
         String productId = blankToNull(request.getProductId());
-        String externalLink = blankToNull(request.getExternalLink());
-        if (productId == null && externalLink == null) {
+        if (productId == null) {
             throw ValidationException.fromField(
-                    "link",
+                    "productId",
                     "REQUIRED",
-                    "Either productId or externalLink is required."
+                    "productId is required."
             );
         }
 
@@ -98,15 +96,8 @@ public class AdminSliderService {
         validateImageAssets(request.getDesktopImage(), "desktopImage");
         validateImageAssets(request.getMobileImage(), "mobileImage");
 
-        if (externalLink != null) {
-            externalLink = SafePublicLinkPolicy.validateOrThrow(externalLink, "externalLink");
-        }
-
-        ProductEntity product = null;
-        if (productId != null) {
-            product = productJpaRepository.findById(productId)
-                    .orElseThrow(() -> new NotFoundException("Product not found."));
-        }
+        ProductEntity product = productJpaRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
 
         Instant now = Instant.now();
         SliderEntity entity = new SliderEntity();
@@ -117,7 +108,6 @@ public class AdminSliderService {
         entity.setDesktopImage(toImageAsset(request.getDesktopImage()));
         entity.setMobileImage(toImageAsset(request.getMobileImage()));
         entity.setProduct(product);
-        entity.setExternalLink(externalLink);
         entity.setActive(request.getIsActive() == null || request.getIsActive());
         entity.setUpdatedAt(now);
 
@@ -213,29 +203,19 @@ public class AdminSliderService {
 
         if (request.isFullEdit()) {
             String productId = blankToNull(request.getProductId());
-            String externalLink = blankToNull(request.getExternalLink());
-            if (productId == null && externalLink == null) {
-                throw ValidationException.fromField("link", "REQUIRED",
-                        "Either productId or externalLink is required.");
+            if (productId == null) {
+                throw ValidationException.fromField("productId", "REQUIRED",
+                        "productId is required.");
             }
             validateImageAssets(request.getDesktopImage(), "desktopImage");
             validateImageAssets(request.getMobileImage(), "mobileImage");
-            if (externalLink != null) {
-                externalLink = SafePublicLinkPolicy.validateOrThrow(externalLink, "externalLink");
-            }
 
             entity.setLocation(request.getLocation());
             entity.setDesktopImage(toImageAsset(request.getDesktopImage()));
             entity.setMobileImage(toImageAsset(request.getMobileImage()));
-            entity.setExternalLink(externalLink);
-
-            if (productId != null) {
-                ProductEntity product = productJpaRepository.findById(productId)
-                        .orElseThrow(() -> new NotFoundException("Product not found."));
-                entity.setProduct(product);
-            } else {
-                entity.setProduct(null);
-            }
+            ProductEntity product = productJpaRepository.findById(productId)
+                    .orElseThrow(() -> new NotFoundException("Product not found."));
+            entity.setProduct(product);
         }
 
         entity.setUpdatedAt(now);

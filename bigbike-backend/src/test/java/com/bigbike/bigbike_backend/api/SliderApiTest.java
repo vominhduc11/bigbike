@@ -59,7 +59,7 @@ class SliderApiTest {
     }
 
     @Test
-    void createSlider_requiresProductIdOrExternalLink() throws Exception {
+    void createSlider_requiresProductId() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
                         .header("X-Admin-Permissions", "sliders.write")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +72,7 @@ class SliderApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details[0].field").value("link"));
+                .andExpect(jsonPath("$.error.details[0].field").value("productId"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class SliderApiTest {
                                 {
                                   "location": "category",
                                   "sortOrder": 9991,
-                                  "externalLink": "/sp/",
+                                  "productId": "prod_ls2_ff800",
                                   "isActive": true
                                 }
                                 """))
@@ -94,7 +94,7 @@ class SliderApiTest {
     }
 
     @Test
-    void createSlider_rejectsUnsafeExternalLink() throws Exception {
+    void createSlider_acceptsLinkedProduct() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
                         .header("X-Admin-Permissions", "sliders.write")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -102,12 +102,13 @@ class SliderApiTest {
                                 {
                                   "location": "home",
                                   "sortOrder": 9992,
-                                  "externalLink": "javascript:alert(1)",
+                                  "productId": "prod_ls2_ff800",
                                   "isActive": true
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("externalLink"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.productId").value("prod_ls2_ff800"))
+                .andExpect(jsonPath("$.data.externalLink").doesNotExist());
     }
 
     @Test
@@ -119,7 +120,7 @@ class SliderApiTest {
                                 {
                                   "location": "home",
                                   "sortOrder": 0,
-                                  "externalLink": "/tai-nghe-bluetooth-gan-mu-bao-hiem.html",
+                                  "productId": "prod_ls2_ff800",
                                   "isActive": true
                                 }
                                 """))
@@ -187,7 +188,7 @@ class SliderApiTest {
                                     "url": "/media/sliders/mobile-roundtrip.jpg",
                                     "alt": "Ảnh mobile"
                                   },
-                                  "externalLink": "/mobile-roundtrip",
+                                  "productId": "prod_ls2_ff800",
                                   "isActive": true
                                 }
                                 """.formatted(sortOrder)))
@@ -198,6 +199,29 @@ class SliderApiTest {
         ImageAsset mobileImage = sliderJpaRepository.findById(id).orElseThrow().getMobileImage();
         assertThat(mobileImage.url()).isEqualTo("/media/sliders/mobile-roundtrip.jpg");
         assertThat(mobileImage.alt()).isEqualTo("Ảnh mobile");
+        assertThat(sliderJpaRepository.findById(id).orElseThrow().getExternalLink()).isEqualTo("/mobile-roundtrip");
+    }
+
+    @Test
+    void patchSlider_fullEdit_requiresProductId() throws Exception {
+        String id = "slider_product_required_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        int sortOrder = 25_000 + Math.floorMod(id.hashCode(), 10_000);
+        SliderEntity entity = slider("home", sortOrder, true, "/legacy");
+        entity.setId(id);
+        sliderJpaRepository.save(entity);
+
+        mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
+                        .header("X-Admin-Permissions", "sliders.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "location": "home",
+                                  "sortOrder": %d,
+                                  "isActive": true
+                                }
+                                """.formatted(sortOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("productId"));
     }
 
     @Test
@@ -228,7 +252,7 @@ class SliderApiTest {
                                     "alt": "Ảnh desktop"
                                   },
                                   "mobileImage": null,
-                                  "externalLink": "/mobile-clear",
+                                  "productId": "prod_ls2_ff800",
                                   "isActive": true
                                 }
                 """.formatted(sortOrder)))
@@ -248,7 +272,8 @@ class SliderApiTest {
         mockMvc.perform(get("/api/v1/sliders").param("location", location))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].externalLink").value("/visible"));
+                .andExpect(jsonPath("$.data[0].externalLink").value("/visible"))
+                .andExpect(jsonPath("$.data[0].link").doesNotExist());
     }
 
     @Test

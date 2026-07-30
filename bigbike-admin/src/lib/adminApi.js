@@ -1191,7 +1191,6 @@ function normalizeSlider(input) {
     isActive: s.isActive !== false,
     desktopImage: normalizeImageAsset(s.desktopImage) ?? null,
     mobileImage: normalizeImageAsset(s.mobileImage) ?? null,
-    externalLink: s.externalLink || null,
     productId: s.productId || null,
     productName: (s.product && typeof s.product === 'object' ? s.product.name : null) || null,
     // Tên tiếng Anh của SP liên kết (admin VI/EN switch). Lấy từ translations.en.name

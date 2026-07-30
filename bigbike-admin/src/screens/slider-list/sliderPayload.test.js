@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSliderPayload, validateSliderLinkGroup } from './sliderPayload'
+import { buildSliderPayload, validateSliderProduct } from './sliderPayload'
 
 const t = (key) => key
 
@@ -10,7 +10,6 @@ function baseForm(overrides = {}) {
     desktopImageUrl: '',
     mobileImageUrl: '',
     mobileImageAlt: '',
-    externalLink: '',
     productId: '',
     isActive: true,
     ...overrides,
@@ -18,11 +17,11 @@ function baseForm(overrides = {}) {
 }
 
 describe('buildSliderPayload', () => {
-  it('ép sortOrder về số và bỏ link/sản phẩm rỗng', () => {
+  it('ép sortOrder về số và bỏ sản phẩm rỗng', () => {
     const payload = buildSliderPayload(baseForm({ sortOrder: '3' }))
     expect(payload.sortOrder).toBe(3)
-    expect(payload.externalLink).toBeUndefined()
     expect(payload.productId).toBeUndefined()
+    expect(payload).not.toHaveProperty('externalLink')
     expect(payload).not.toHaveProperty('desktopImage')
   })
 
@@ -70,21 +69,12 @@ describe('buildSliderPayload', () => {
   })
 })
 
-describe('validateSliderLinkGroup', () => {
-  it('bắt buộc có link ngoài hoặc sản phẩm', () => {
-    expect(validateSliderLinkGroup(baseForm(), t)).toBe('sliders.formRequired')
+describe('validateSliderProduct', () => {
+  it('bắt buộc có sản phẩm liên kết', () => {
+    expect(validateSliderProduct(baseForm(), t)).toBe('sliders.formProductRequired')
   })
 
   it('chấp nhận khi chỉ có sản phẩm', () => {
-    expect(validateSliderLinkGroup(baseForm({ productId: 'prod_1' }), t)).toBe('')
-  })
-
-  it('chấp nhận link ngoài an toàn (https)', () => {
-    expect(validateSliderLinkGroup(baseForm({ externalLink: 'https://bigbike.vn/khuyen-mai' }), t)).toBe('')
-  })
-
-  it('chặn link ngoài không an toàn (javascript:)', () => {
-    expect(validateSliderLinkGroup(baseForm({ externalLink: 'javascript:alert(1)' }), t))
-      .toBe('sliders.formExternalLinkInvalid')
+    expect(validateSliderProduct(baseForm({ productId: 'prod_1' }), t)).toBe('')
   })
 })

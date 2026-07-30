@@ -36,8 +36,5 @@ public class UpsertSliderRequest {
     @Size(max = 64, message = "productId is too long.")
     private String productId;
 
-    @Size(max = 2048, message = "externalLink is too long.")
-    private String externalLink;
-
     private Boolean isActive;
 }

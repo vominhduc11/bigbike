@@ -45,7 +45,13 @@ vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
 vi.mock('@/lib/useSaveShortcut', () => ({ useSaveShortcut: () => {} }))
 vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('../lib/confirm', () => ({ showConfirm: vi.fn().mockResolvedValue(true) }))
-vi.mock('../components/ProductPickerCombobox', () => ({ ProductPickerCombobox: () => null }))
+vi.mock('../components/ProductPickerCombobox', () => ({
+  ProductPickerCombobox: ({ onPick }) => (
+    <button type="button" onClick={() => onPick({ id: 'prod_1', name: 'Sản phẩm thử' })}>
+      Chọn sản phẩm thử
+    </button>
+  ),
+}))
 vi.mock('../components/ReadOnlyBanner', () => ({ ReadOnlyBanner: () => null }))
 vi.mock('../components/StatePanel', () => ({ StatePanel: () => null }))
 vi.mock('../components/Sortable', () => ({
@@ -115,7 +121,8 @@ const legacySlider = {
     alt: 'Ảnh mobile cũ',
   },
   externalLink: '/sp/',
-  productId: null,
+  productId: 'prod_1',
+  productName: 'Sản phẩm thử',
   isActive: true,
 }
 
@@ -133,6 +140,7 @@ function renderScreen() {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.fetchSliders.mockResolvedValue({ items: [legacySlider] })
+  mocks.createSlider.mockResolvedValue({ item: { ...legacySlider, productId: 'prod_1' } })
   mocks.updateSlider.mockResolvedValue({ item: legacySlider })
 })
 
@@ -181,5 +189,41 @@ describe('SliderListScreen mobile image', () => {
       legacySlider.id,
       expect.objectContaining({ mobileImage: null }),
     ))
+  })
+
+  it('không hiển thị link ngoài của banner cũ', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    expect(screen.queryByText('/sp/')).not.toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Sửa' }))
+
+    expect(screen.queryByPlaceholderText('https://...')).not.toBeInTheDocument()
+    expect(screen.queryByText('Link ngoài')).not.toBeInTheDocument()
+  })
+
+  it('không cho lưu khi chưa chọn sản phẩm liên kết', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(screen.getByRole('button', { name: 'sliders.addBtn' }))
+    await user.click(screen.getByRole('button', { name: 'sliders.saveBtn' }))
+
+    expect(await screen.findByText('sliders.formProductRequired')).toBeInTheDocument()
+    expect(mocks.createSlider).not.toHaveBeenCalled()
+  })
+
+  it('lưu banner mới bằng productId và không gửi externalLink', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(screen.getByRole('button', { name: 'sliders.addBtn' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn sản phẩm thử' }))
+    await user.click(screen.getByRole('button', { name: 'sliders.saveBtn' }))
+
+    await waitFor(() => expect(mocks.createSlider).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: 'prod_1' }),
+    ))
+    expect(mocks.createSlider.mock.calls[0][0]).not.toHaveProperty('externalLink')
   })
 })

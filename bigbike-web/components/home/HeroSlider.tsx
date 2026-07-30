@@ -28,7 +28,7 @@ export type HeroSlide = {
   desktopSrc: string;
   mobileSrc: string | null;
   alt: string;
-  /** Link admin đặt riêng cho slide (sản phẩm/danh mục/ngoài); null → dùng mặc định (trang sản phẩm). */
+  /** Link tới trang chi tiết sản phẩm liên kết; null nếu dữ liệu lịch sử chưa có sản phẩm. */
   href: string | null;
   productName: string;
   categoryName: string;

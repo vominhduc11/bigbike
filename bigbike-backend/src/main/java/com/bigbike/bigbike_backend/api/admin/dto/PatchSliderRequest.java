@@ -34,9 +34,6 @@ public class PatchSliderRequest {
     @Size(max = 64, message = "productId is too long.")
     private String productId;
 
-    @Size(max = 2048, message = "externalLink is too long.")
-    private String externalLink;
-
     /** True when the payload is a full edit (location is present). */
     public boolean isFullEdit() {
         return location != null;

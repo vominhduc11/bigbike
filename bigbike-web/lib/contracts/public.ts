@@ -77,19 +77,17 @@ export type HomeSlider = {
   desktopImage?: SliderImage | null;
   mobileImage?: SliderImage | null;
   productId?: string | null;
+  /** Historical compatibility field; retained by the API but never used for banner navigation. */
   externalLink?: string | null;
   /**
    * Computed by the backend from the linked product's legacy-compatible slug: `/sp/<slug>.html`.
    * Populated only when `productId` is set and the product exists.
-   * Consumers (e.g. `app/page.tsx#toHeroSlide`) prefer `link` first, then fall back
-   * to `productLink`, then `externalLink`.
+   * This is the only supported banner navigation target.
    */
   productLink?: string | null;
   /**
-   * Legacy/imported field: a pre-computed absolute or relative URL that overrides
-   * both `productLink` and `externalLink`. Set during WordPress data extraction
-   * (`scripts/extract-wp-data/extract.ts`) and may be absent on sliders created
-   * via the admin API. Consumers should check this field first.
+   * Legacy/imported field retained for response compatibility. It is not used
+   * for banner navigation.
    */
   link?: string | null;
   /** Linked product's display name — lets the caption render without a separate product-detail fetch. */
