@@ -45,9 +45,17 @@ function normalizeApiErrorMessage(error, status) {
 // onAuthError is set by the AuthProvider so the UI can react (e.g. show login
 // screen) when refresh ultimately fails.
 let authErrorListener = null
+let authorizationErrorListener = null
 
 export function setAuthErrorListener(listener) {
   authErrorListener = typeof listener === 'function' ? listener : null
+}
+
+// A 403 means the bearer token still identifies an admin, but their current server-side
+// permission snapshot may have changed. The AuthProvider performs one coalesced /auth/me refresh
+// so old screens repair themselves without treating the browser cache as authority.
+export function setAuthorizationErrorListener(listener) {
+  authorizationErrorListener = typeof listener === 'function' ? listener : null
 }
 
 let refreshInFlight = null
@@ -150,6 +158,9 @@ async function requestJson(endpoint, options = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 403 && !skipAuth && authorizationErrorListener) {
+      authorizationErrorListener()
+    }
     const error = payload?.error || {}
     throw new ApiClientError(
       normalizeApiErrorMessage(error, response.status),
@@ -1237,19 +1248,27 @@ export async function deleteSlider(sliderId) {
 export async function fetchHomeHighlights() {
   try {
     const payload = await requestJson('/admin/home/category-highlights', { query: { lang: getContentLang() } })
-    return withLiveData({ items: Array.isArray(payload?.data) ? payload.data : [] })
+    const data = payload?.data
+    return withLiveData({
+      items: Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []),
+      version: Array.isArray(data) ? 0 : (Number.isInteger(data?.version) ? data.version : 0),
+    })
   } catch (error) {
     const e = normalizeError(error)
     throw e
   }
 }
 
-export async function saveHomeHighlights(slots) {
+export async function saveHomeHighlights(slots, expectedVersion) {
   const payload = await requestJson('/admin/home/category-highlights', {
     method: 'PUT',
-    body: { slots },
+    body: { slots, expectedVersion },
   })
-  return { items: Array.isArray(payload?.data) ? payload.data : [] }
+  const data = payload?.data
+  return {
+    items: Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []),
+    version: Array.isArray(data) ? expectedVersion : (Number.isInteger(data?.version) ? data.version : expectedVersion),
+  }
 }
 
 // Home Videos

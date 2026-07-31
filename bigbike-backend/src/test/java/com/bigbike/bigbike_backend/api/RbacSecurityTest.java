@@ -56,9 +56,10 @@ class RbacSecurityTest {
     void customerSessionCannotReachAdminEndpoint() throws Exception {
         Cookie[] cookies = registerAndLogin("rbac-cust-" + UUID.randomUUID() + "@bigbike.vn");
 
-        // A logged-in customer (ROLE_CUSTOMER) is rejected at the URL-layer role guard.
+        // Customer sessions are ignored on the admin namespace so a customer cookie cannot create
+        // an authenticated context that interferes with an admin-token refresh flow.
         mockMvc.perform(get("/api/v1/admin/products").cookie(cookies))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── IDOR: a customer cannot touch another customer's address ─────────────

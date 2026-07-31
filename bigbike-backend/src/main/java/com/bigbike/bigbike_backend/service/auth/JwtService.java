@@ -49,17 +49,26 @@ public class JwtService {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(String userId, String email, String role) {
+    public String generateAccessToken(String userId, String email, String role, long accessVersion) {
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(jwtProperties.getAccessTokenTtlSeconds());
         return Jwts.builder()
                 .subject(userId)
                 .claim("email", email)
                 .claim("role", role)
+                .claim("accessVersion", accessVersion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(signingKey)
                 .compact();
+    }
+
+    /**
+     * Test/backward-compatible convenience overload. Persisted admin accounts start at version 0,
+     * so callers that do not model a forced-session revocation keep the same valid token shape.
+     */
+    public String generateAccessToken(String userId, String email, String role) {
+        return generateAccessToken(userId, email, role, 0L);
     }
 
     /**

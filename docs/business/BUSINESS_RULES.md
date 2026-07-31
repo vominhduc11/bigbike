@@ -11,6 +11,24 @@ Evidence:
 - `V361__retain_two_system_roles.sql`
 - `AdminRoleService.java`
 
+## Admin RBAC rules
+
+- **`RBAC_RULE_001` — quyền đọc là quyền vào module.** Menu, trang danh sách, trang chi tiết và API đọc của một module dùng permission `*.read` tương ứng. Quyền ghi không thay thế quyền đọc và không được dùng theo dạng `read OR write` để mở module. `OWNER_CONFIRMED_2026-07-31`
+- **`RBAC_RULE_002` — permission set phải dependency-closed.** Mọi quyền ghi/cập nhật/xuất dữ liệu phải đi cùng toàn bộ quyền đọc được khai báo trong permission catalog. Roles UI được tự thêm dependency để hỗ trợ người vận hành; Roles API phải từ chối payload thiếu dependency thay vì tự sửa âm thầm. Wildcard `*` thỏa mọi dependency nhưng không phải permission có thể cấp cho custom role. `OWNER_CONFIRMED_2026-07-31`
+- **`RBAC_RULE_003` — workspace composite dùng phép AND rõ ràng.** Route hoặc action cần nhiều capability phải khai báo `allOf`; ví dụ Featured Products cần `products.read` và `products.update`, Product create cần thêm `catalog.read`, còn Slider full-edit cần thêm `products.read` và `media.read`. `OWNER_CONFIRMED_2026-07-31`
+- **`RBAC_RULE_004` — UI hiding không phải authorization.** Ẩn menu/nút và chặn query giúp giao diện rõ ràng nhưng backend vẫn là lớp bảo mật cuối, tiếp tục kiểm tra permission trên mọi API đọc/ghi. `OWNER_CONFIRMED_2026-07-31`
+- **`RBAC_RULE_005` — supporting permission chỉ gate phần phụ thuộc.** Thiếu `inventory.read`, `media.read`, `products.read`, `catalog.read` hoặc `roles.read` chỉ làm widget, picker, filter hoặc action liên quan không khả dụng; không làm hỏng toàn bộ screen nếu quyền vào module chính vẫn hợp lệ. UI phải giải thích capability còn thiếu và không gọi API chắc chắn bị từ chối. `OWNER_CONFIRMED_2026-07-31`
+- **`RBAC_RULE_006` — xuất báo cáo là quyền dữ liệu nhạy cảm.** `reports.export` phụ thuộc `reports.read`, được đánh dấu sensitive và cho phép xuất dữ liệu báo cáo đa miền (đơn hàng, khách hàng, sản phẩm). Đây không phải export-only role; người có quyền xuất phải có lối vào workspace Báo cáo. `OWNER_CONFIRMED_2026-07-31`
+
+Media Library không được tự động cấp cho mọi role có quyền cập nhật Product/Content/Catalog/Settings. Người thiếu `media.read` vẫn sửa được field không liên quan media; picker bị khóa và không gọi API. Có `media.read` nhưng thiếu `media.write` thì được chọn file hiện có nhưng không upload file mới.
+
+Evidence:
+
+- `docs/engineering/PERMISSION_MATRIX.md`
+- `PermissionCatalog.java`
+- `AdminRoleService.java`
+- `bigbike-admin/src/lib/adminAccessPolicy.js`
+
 ## Catalog Availability
 
 - Public catalog/cart/checkout only accept products with publish status `PUBLISHED`. `CONFIRMED_FROM_CODE`
@@ -127,14 +145,14 @@ Evidence:
 - `STOCK_RULE_005`: For products **with variants**, availability is gated **per variant** by `product_variants.is_available`. The variant's `stockState` mirrors it (`IN_STOCK` if available, else `OUT_OF_STOCK`). The web variant selector (`VariantSelector.tsx`) dims unavailable options (still clickable for image preview); buying a variant requires `is_available = true`.
 - `STOCK_RULE_006`: For products **without variants**, `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is derived **directly from the admin toggle**, persisted as `products.available` (renamed from `force_out_of_stock` in V342; positive sense — `true` = còn hàng).
 - `STOCK_RULE_007`: Sản phẩm đang **"Hết hàng"** → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải bật **"Còn hàng"** thì khách mới đặt được. **Lưu ý:** bán không tự chuyển sang "Hết hàng" — khi bán hết, admin phải tự tắt, nếu không web vẫn cho đặt (không tự chặn bán quá).
-- `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants: `IN_STOCK` if **any** variant is `is_available`, else `OUT_OF_STOCK` (only when **all** variants are unavailable). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin inventory grouped view shows. `CONFIRMED_FROM_CODE`
+- `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants: `IN_STOCK` if **any** variant is `is_available`, else `OUT_OF_STOCK` (only when **all** variants are unavailable). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin stock list/Products filter reads. The former admin inventory grouped view was removed with the standalone screen. `CONFIRMED_FROM_CODE`
 - `STOCK_RULE_009`: **Hiển thị badge tồn kho ở buy-box trang chi tiết sản phẩm (web — chỉ phần nhìn).** Cài đặt trong `WpPurchaseSection.tsx`. Badge chỉ còn **hai trạng thái**: **"Còn hàng" / "Hết hàng"** theo `stockState` (per-variant `is_available` khi đã chọn biến thể; product-level aggregate `STOCK_RULE_008` khi chưa chọn). Thông báo cũ **"Chỉ còn N sản phẩm" / "Sắp hết" đã bị gỡ** cùng với mô hình số lượng (V262). `CONFIRMED_FROM_CODE`
 - `STOCK_RULE_010` (owner decision 2026-07-28): **Dữ liệu WordPress không có bằng chứng tồn kho thì nhập ở trạng thái an toàn "Hết hàng".** Importer không được suy availability từ cột số lượng đã dormant. Sản phẩm không biến thể và biến thể không có nguồn `_stock_status` tin cậy phải ghi đồng nhất `available/isAvailable = false` và `stockState = OUT_OF_STOCK`; admin rà soát rồi bật "Còn hàng" thủ công. Tuyệt đối không ghi `available=true` đồng thời `OUT_OF_STOCK`, vì admin và storefront sẽ hiểu trái nhau. `CONFIRMED_FROM_OWNER_DECISION`
 
 Evidence:
 
 - `AdminInventoryService.java`
-- `AdminInventoryController.java` (availability PATCH endpoints)
+- `AdminInventoryController.java` (read-only stock list/summary endpoints)
 - `CheckoutService.java` (per-variant `isAvailable` gate)
 - `AdminCatalogMutationService.java`
 - `V120__drop_stock_receipt_tables.sql`
@@ -142,6 +160,7 @@ Evidence:
 - `V259__remove_serial_management.sql` (serial tracking removed — 2026-06-23)
 - `V262__inventory_availability_toggle.sql` (boolean availability; backfilled `is_available` + `stock_state` from prior quantities; quantity columns kept dormant — 2026-06-23. Note: `V261` was taken by the return/refund removal, so the inventory migration is `V262`.)
 - `V354__clean_legacy_product_import_artifacts.sql` (owner-approved legacy cleanup: align no-variant `available=false` with `OUT_OF_STOCK`, backfill missing variant covers from the first valid image gallery row, and remove only blank option associations — 2026-07-28)
+- `V364__remove_orphan_inventory_write_permission.sql` (remove the unused standalone inventory mutation grant — 2026-07-31)
 - `bigbike-web/components/wp/WpPurchaseSection.tsx` (`STOCK_RULE_009` — PDP buy-box badge display)
 
 ## Customer Administration Rules

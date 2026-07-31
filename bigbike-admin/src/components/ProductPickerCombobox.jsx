@@ -26,11 +26,13 @@ export function ProductPickerCombobox({
   onOpenChange,
   onFocus,
   loading,
+  error,
   items = [],
   addedIds = [],
   onPick,
   placeholder,
   loadingText,
+  errorText,
   emptyText,
   addedText,
   disabled,
@@ -80,7 +82,9 @@ export function ProductPickerCombobox({
         />
       }
     >
-      {loading ? (
+      {error ? (
+        <p className="text-sm text-danger px-3 py-2" role="alert">{errorText}</p>
+      ) : loading ? (
         <p className="text-sm text-muted-foreground px-3 py-2" role="status">{loadingText}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground px-3 py-2">{emptyText}</p>

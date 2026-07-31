@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   fetchInventorySummary: vi.fn(),
   subscribeAdminWs: vi.fn(),
   navigate: vi.fn(),
+  permissions: ['inventory.read', 'products.read', 'reports.read'],
 }))
 
 vi.mock('react-i18next', () => ({
@@ -29,7 +30,7 @@ vi.mock('../lib/adminApi', () => ({
   fetchInventorySummary: mocks.fetchInventorySummary,
 }))
 vi.mock('../lib/auth', () => ({
-  useAuth: () => ({ user: { fullName: 'Nguyễn Minh' } }),
+  useAuth: () => ({ user: { fullName: 'Nguyễn Minh', permissions: mocks.permissions } }),
 }))
 vi.mock('../lib/useRecentItems', () => ({
   useRecentItems: () => [],
@@ -76,10 +77,9 @@ const BASE_DASHBOARD = {
   topProducts: [],
 }
 
-function renderScreen() {
-  const client = new QueryClient({
+function renderScreen(client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  })
+  })) {
   const result = render(
     <QueryClientProvider client={client}>
       <DashboardScreen navigate={mocks.navigate} />
@@ -90,6 +90,7 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.permissions = ['inventory.read', 'products.read', 'reports.read']
   mocks.fetchDashboardSummary.mockResolvedValue({ data: BASE_DASHBOARD })
   mocks.fetchInventorySummary.mockResolvedValue({
     totalItems: 10,
@@ -97,6 +98,16 @@ beforeEach(() => {
     outOfStockCount: 0,
   })
   mocks.subscribeAdminWs.mockReturnValue(() => {})
+})
+
+it('does not fetch or subscribe to inventory without inventory.read', async () => {
+  mocks.permissions = ['orders.read']
+  renderScreen()
+
+  expect(await screen.findByText('dashboard.kpi.todayRevenue')).toBeInTheDocument()
+  expect(mocks.fetchInventorySummary).not.toHaveBeenCalled()
+  expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith('/topic/admin/inventory', expect.any(Function))
+  expect(screen.queryByRole('button', { name: 'dashboard.kpi.activeProductsAria' })).not.toBeInTheDocument()
 })
 
 describe('DashboardScreen', () => {
@@ -138,6 +149,59 @@ describe('DashboardScreen', () => {
 
     expect(await screen.findByText('dashboard.attention.inventoryWarn')).toBeInTheDocument()
     expect(screen.queryByText('dashboard.attention.empty')).not.toBeInTheDocument()
+  })
+
+  it('does not retry a forbidden inventory request until permission is restored', async () => {
+    const forbidden = Object.assign(new Error('Forbidden'), { status: 403 })
+    mocks.fetchInventorySummary.mockRejectedValue(forbidden)
+
+    renderScreen()
+
+    expect(await screen.findByText('dashboard.attention.inventoryWarn')).toBeInTheDocument()
+    await waitFor(() => expect(mocks.fetchInventorySummary).toHaveBeenCalledTimes(1))
+  })
+
+  it('keeps cached inventory visible without showing a warning when a background refetch fails', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 60_000 } },
+    })
+    client.setQueryData(
+      ['inventory-summary'],
+      { totalItems: 10, inStockCount: 6, outOfStockCount: 4 },
+      { updatedAt: 0 },
+    )
+    mocks.fetchInventorySummary.mockRejectedValue(new Error('offline'))
+
+    renderScreen(client)
+
+    expect(await screen.findByText('dashboard.attention.outOfStock.label')).toBeInTheDocument()
+    await waitFor(() => expect(mocks.fetchInventorySummary).toHaveBeenCalled())
+    expect(screen.getByText('dashboard.attention.outOfStock.label')).toBeInTheDocument()
+    expect(screen.queryByText('dashboard.attention.inventoryWarn')).not.toBeInTheDocument()
+  })
+
+  it('does not flash the inventory warning when returning with cached dashboard data', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 60_000 } },
+    })
+    mocks.fetchDashboardSummary.mockResolvedValue({
+      data: { ...BASE_DASHBOARD, kpi: { ...BASE_DASHBOARD.kpi, pendingOrders: 0 } },
+    })
+    const firstRender = renderScreen(client)
+    expect(await screen.findByText('dashboard.attention.empty')).toBeInTheDocument()
+    firstRender.unmount()
+
+    client.setQueryData(
+      ['inventory-summary'],
+      { totalItems: 10, inStockCount: 10, outOfStockCount: 0 },
+      { updatedAt: 0 },
+    )
+    mocks.fetchInventorySummary.mockRejectedValue(new Error('offline'))
+    renderScreen(client)
+
+    expect(screen.queryByText('dashboard.attention.inventoryWarn')).not.toBeInTheDocument()
+    await waitFor(() => expect(mocks.fetchInventorySummary).toHaveBeenCalled())
+    expect(await screen.findByText('dashboard.attention.empty')).toBeInTheDocument()
   })
 
   it('handles malformed optional list sections as empty states instead of crashing', async () => {

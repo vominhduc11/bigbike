@@ -1,15 +1,14 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.home.AdminHomeHighlightsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.home.AdminSaveHighlightsRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
-import com.bigbike.bigbike_backend.api.public_.dto.HomeHighlightItemDto;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.home.HomeHighlightsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,22 +29,23 @@ public class AdminHomeHighlightsController extends AdminControllerSupport {
     private final ApiResponseFactory apiResponseFactory;
 
     @GetMapping
-    public ApiDataResponse<List<HomeHighlightItemDto>> getHighlights(
+    public ApiDataResponse<AdminHomeHighlightsResponse> getHighlights(
             @RequestParam(defaultValue = "vi")
             @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "home_highlights.read");
         return apiResponseFactory.data(
-                homeHighlightsService.listHighlights(lang, false), request);
+                homeHighlightsService.listAdminHighlights(lang), request);
     }
 
     @PutMapping
-    public ApiDataResponse<List<HomeHighlightItemDto>> saveHighlights(
+    public ApiDataResponse<AdminHomeHighlightsResponse> saveHighlights(
             @Valid @RequestBody AdminSaveHighlightsRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "home_highlights.write");
+        devAdminAuthService.requirePermission(request, "products.read");
         return apiResponseFactory.data(homeHighlightsService.saveHighlights(body, resolveAdminId()), request);
     }
 }

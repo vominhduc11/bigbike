@@ -84,7 +84,8 @@ public class AdminAuthService {
 
         auditLogin(user.getId(), "ADMIN_LOGIN_SUCCESS", user.getEmail(), null, clientIp, userAgent);
 
-        String accessToken = jwtService.generateAccessToken(user.getId().toString(), user.getEmail(), user.getRole());
+        String accessToken = jwtService.generateAccessToken(
+                user.getId().toString(), user.getEmail(), user.getRole(), user.getAccessVersion());
         String rawRefreshToken = saveNewRefreshToken(user.getId(), request);
 
         return buildTokenResponse(accessToken, rawRefreshToken, user);
@@ -118,7 +119,8 @@ public class AdminAuthService {
         stored.setRevokedAt(Instant.now());
         refreshTokenRepo.save(stored);
 
-        String accessToken = jwtService.generateAccessToken(user.getId().toString(), user.getEmail(), user.getRole());
+        String accessToken = jwtService.generateAccessToken(
+                user.getId().toString(), user.getEmail(), user.getRole(), user.getAccessVersion());
         String newRawRefreshToken = saveNewRefreshToken(user.getId(), request);
 
         return buildTokenResponse(accessToken, newRawRefreshToken, user);

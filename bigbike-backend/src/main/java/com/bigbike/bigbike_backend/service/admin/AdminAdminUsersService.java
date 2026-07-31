@@ -7,8 +7,9 @@ import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRefreshTokenJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
-import com.bigbike.bigbike_backend.service.auth.AdminAccountStatusService;
+import com.bigbike.bigbike_backend.service.auth.AdminAccessChangeEvent;
 import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -22,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +56,8 @@ public class AdminAdminUsersService {
     private final PaginationService paginationService;
     private final PasswordService passwordService;
     private final AdminInviteService adminInviteService;
-    private final AdminAccountStatusService adminAccountStatusService;
+    private final AdminRefreshTokenJpaRepository refreshTokenRepo;
+    private final ApplicationEventPublisher eventPublisher;
     private final AuditLogFactory auditLogFactory;
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
@@ -236,9 +239,20 @@ public class AdminAdminUsersService {
             entity.setRole(role.trim().toUpperCase(Locale.ROOT));
         }
 
+        boolean statusWillForceReauthentication = !Objects.equals(beforeStatus, entity.getStatus())
+                && ("DISABLED".equals(entity.getStatus()) || "SUSPENDED".equals(entity.getStatus()));
+        boolean forceReauthentication = passwordChanged || statusWillForceReauthentication;
+
         Instant now = Instant.now();
         entity.setUpdatedAt(now);
         AdminUserEntity saved = adminUserRepo.save(entity);
+
+        if (forceReauthentication) {
+            // This runs in the same transaction as the mutation: there is no interval where an
+            // old refresh token can rotate into a new access token after the security change.
+            refreshTokenRepo.deleteAllByAdminUserId(id);
+            adminUserRepo.incrementAccessVersion(id);
+        }
 
         // --- Audit: one entry per distinct kind of change, so "vô hiệu hoá / tạm khoá /
         // đổi vai trò" show up as their own action instead of a generic ADMIN_USER_UPDATED
@@ -247,12 +261,6 @@ public class AdminAdminUsersService {
         boolean statusChanged = !Objects.equals(beforeStatus, saved.getStatus());
         boolean displayNameChanged = !Objects.equals(beforeDisplayName, saved.getDisplayName());
         boolean anyAuditWritten = false;
-
-        // Invalidate the cached role/status snapshot so a lock/suspend/demote takes effect on this
-        // admin's very next request instead of surviving until their access token expires.
-        if (roleChanged || statusChanged) {
-            adminAccountStatusService.evict(id);
-        }
 
         if (roleChanged) {
             auditLogWriter.save(auditLogFactory.build("ADMIN", actorId, "ADMIN_USER_ROLE_CHANGED", "ADMIN_USER", id,
@@ -294,6 +302,20 @@ public class AdminAdminUsersService {
             // No-op patch (nothing actually changed) — still record the attempt.
             auditLogWriter.save(auditLogFactory.build(
                     "ADMIN", actorId, "ADMIN_USER_UPDATED", "ADMIN_USER", id, "{}", "{}", clientIp, userAgent));
+        }
+
+        if (forceReauthentication) {
+            String reason = passwordChanged ? "PASSWORD_RESET" : saved.getStatus();
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN", actorId, "ADMIN_USER_SESSIONS_REVOKED", "ADMIN_USER", id,
+                    null, "{\"reason\":\"" + reason + "\"}", clientIp, userAgent));
+        }
+
+        if (roleChanged || statusChanged || passwordChanged) {
+            String reason = forceReauthentication
+                    ? (passwordChanged ? "PASSWORD_RESET" : saved.getStatus())
+                    : (roleChanged ? "ROLE_CHANGED" : "STATUS_CHANGED");
+            eventPublisher.publishEvent(new AdminAccessChangeEvent(id, reason, forceReauthentication));
         }
 
         return toMap(saved);

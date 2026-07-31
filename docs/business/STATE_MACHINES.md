@@ -365,7 +365,7 @@ From `ProductStockState.java`:
 ### Initial State
 
 - A new variant defaults to `is_available = true` (Còn hàng) in the product form; a new no-variant product defaults to `IN_STOCK` unless the admin flips its product-level switch to Hết. `stockState` is re-derived to match on save.
-- The **product form** is the writer (`ProductMutationService` → `InventoryPolicyService.recomputeProductState`): per-variant switch for products with variants, per-product switch for no-variant products. The form never sends a `stockState` picker — the badge is always derived. (The standalone `AdminInventoryController` availability endpoints still exist in the backend but are no longer wired to any admin screen.)
+- The **product form** is the writer (`ProductMutationService` → `InventoryPolicyService.recomputeProductState`): per-variant switch for products with variants, per-product switch for no-variant products. The form never sends a `stockState` picker — the badge is always derived. The standalone availability endpoints were removed; no separate inventory write permission remains.
 
 ### Allowed Transitions
 
@@ -396,11 +396,11 @@ From `ProductStockState.java`:
 ### Test Coverage
 
 - Per-variant `isAvailable` checkout gate covered by checkout API tests.
-- Availability-toggle transitions: `MISSING_TEST_COVERAGE` (targeted search).
+- Availability-toggle transitions through the product form: `MISSING_TEST_COVERAGE` (targeted search). The former standalone inventory availability endpoints were removed and have no endpoint tests.
 
 ### Needs Verification
 
-- Admin availability-toggle endpoint tests.
+- Targeted end-to-end coverage for saving `available` / `variants[].isAvailable` through `products.update`.
 
 ## 10. Return / Refund State Machine
 
@@ -417,6 +417,7 @@ Admin user state machine kiểm soát internal account lifecycle và role safety
 
 - `AdminUserEntity.status`
 - `AdminUserEntity.role`
+- `AdminUserEntity.accessVersion` (security session epoch; not a business-facing role)
 
 ### States
 
@@ -448,11 +449,21 @@ Custom role support exists through role repository/controller. Historical `EDITO
 |---|---|---|---|---|---|---|
 | N/A | `INVITED` | Admin / `admin-users.write` | Valid email, displayName, role. No password supplied. | Admin user created without password; invite token generated; invite email sent. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java` |
 | `INVITED` | `ACTIVE` | Invitee (public, token-gated) | Valid non-expired, unused invite token; password >= 8. | Password set; status → `ACTIVE`; invite token consumed. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInviteService.acceptInvite` |
-| `ACTIVE` | `DISABLED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
-| `ACTIVE` | `SUSPENDED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
+| `ACTIVE` | `DISABLED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log; after commit revoke that account's refresh sessions, increment `accessVersion`, and notify active tabs/devices to sign in again. | `OWNER_CONFIRMED_2026-07-31` | `AdminAdminUsersService.java`, `AdminAccessChangeService.java` |
+| `ACTIVE` | `SUSPENDED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log; after commit revoke that account's refresh sessions, increment `accessVersion`, and notify active tabs/devices to sign in again. | `OWNER_CONFIRMED_2026-07-31` | `AdminAdminUsersService.java`, `AdminAccessChangeService.java` |
 | `DISABLED` | `ACTIVE` | Admin / `admin-users.write` | Valid target user. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
 | `SUSPENDED` | `ACTIVE` | Admin / `admin-users.write` | Valid target user. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
-| any valid role | another valid role | Admin / `admin-users.write` | New role built-in or custom; Super Admin guardrails pass. | Role updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
+| any valid role | another valid role | Admin / `admin-users.write` | New role built-in or custom; Super Admin guardrails pass. | Role updated; audit log; after commit notify every active session to reload its current profile/permissions without logging out. | `OWNER_CONFIRMED_2026-07-31` | `AdminAdminUsersService.java`, `AdminAccessChangeService.java` |
+
+### Access synchronization side effects
+
+Changing permissions of a role has the same after-commit profile-refresh effect for every admin
+assigned to that role. A browser must refresh its profile after receiving the signal and immediately
+remove unavailable navigation/actions; if it no longer has read access to the current module it moves
+to an allowed module (or a no-access state). If write access is removed while a form is open, controls
+become unavailable before the next submission. The backend independently checks every later request,
+so an old tab, cache or token never grants an action by itself. Password reset is the same forced
+sign-in security transition as disabling/suspending, even when account status remains `ACTIVE`.
 
 ### Forbidden Transitions
 

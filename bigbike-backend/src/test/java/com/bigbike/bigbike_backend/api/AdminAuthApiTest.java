@@ -7,11 +7,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRefreshTokenEntity;
+import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRoleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRefreshTokenJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.AdminAdminUsersService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +37,8 @@ class AdminAuthApiTest {
     @Autowired private WebApplicationContext webApplicationContext;
     @Autowired private AdminUserJpaRepository adminUserRepo;
     @Autowired private AdminRefreshTokenJpaRepository refreshTokenRepo;
+    @Autowired private AdminRoleJpaRepository roleRepo;
+    @Autowired private AdminAdminUsersService adminUsersService;
     @Autowired private PasswordService passwordService;
 
     private static final String TEST_EMAIL = "auth-test-admin@bigbike.test";
@@ -46,6 +52,7 @@ class AdminAuthApiTest {
 
         refreshTokenRepo.deleteAll();
         adminUserRepo.deleteAll();
+        roleRepo.deleteById("AUTH_TEST_LIMITED");
 
         AdminUserEntity admin = new AdminUserEntity();
         admin.setEmail(TEST_EMAIL);
@@ -182,6 +189,72 @@ class AdminAuthApiTest {
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void disableRevokesTargetRefreshSessionsAndRejectsTheirOldBearerTokenImmediately() throws Exception {
+        String loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asString();
+        String refreshToken = extractRefreshToken(loginResponse);
+        AdminUserEntity target = adminUserRepo.findByEmail(TEST_EMAIL).orElseThrow();
+
+        adminUsersService.updateAdminUser(
+                null, null, null, null, target.getId(), null, "DISABLED", null, null);
+
+        mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andExpect(status().isUnauthorized());
+        assertThat(adminUserRepo.findById(target.getId()).orElseThrow().getAccessVersion()).isEqualTo(1L);
+    }
+
+    @Test
+    void passwordResetRevokesTargetRefreshSessionsAndRejectsTheirOldBearerTokenImmediately() throws Exception {
+        String loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asString();
+        String refreshToken = extractRefreshToken(loginResponse);
+        AdminUserEntity target = adminUserRepo.findByEmail(TEST_EMAIL).orElseThrow();
+
+        adminUsersService.updateAdminUser(
+                null, null, null, null, target.getId(), null, null, "Changed@123456", null);
+
+        mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void roleChangeKeepsTargetSessionButReloadsCurrentRoleOnTheirNextRequest() throws Exception {
+        AdminRoleEntity limitedRole = new AdminRoleEntity();
+        limitedRole.setId("AUTH_TEST_LIMITED");
+        limitedRole.setName("Auth Test Limited");
+        limitedRole.setDescription("Test-only limited role");
+        limitedRole.setSystem(false);
+        limitedRole.setPermissions(new LinkedHashSet<>());
+        limitedRole.setCreatedAt(Instant.now());
+        limitedRole.setUpdatedAt(Instant.now());
+        roleRepo.save(limitedRole);
+
+        String loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String accessToken = objectMapper.readTree(loginResponse).path("data").path("accessToken").asString();
+        String refreshToken = extractRefreshToken(loginResponse);
+        AdminUserEntity target = adminUserRepo.findByEmail(TEST_EMAIL).orElseThrow();
+
+        adminUsersService.updateAdminUser(
+                null, null, null, null, target.getId(), null, null, null, "AUTH_TEST_LIMITED");
+
+        mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.roles[0]").value("AUTH_TEST_LIMITED"));
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andExpect(status().isOk());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

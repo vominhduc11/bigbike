@@ -182,16 +182,33 @@ class AdminRolesApiTest {
     }
 
     @Test
-    void listPermissions_excludesRemovedPosAndIncludesInventoryKeys() throws Exception {
+    void listPermissions_excludesRemovedPosAndInventoryWrite() throws Exception {
         MvcResult result = mockMvc.perform(get(PERMS_URL)
                         .header("Authorization", "Bearer " + superToken))
                 .andExpect(status().isOk())
                 .andReturn();
         String json = result.getResponse().getContentAsString();
-        // POS permissions were removed with the POS module; inventory remains grantable.
+        // POS permissions and the orphan inventory.write permission are removed modules/keys.
         assertThat(json).doesNotContain("pos.refund");
         assertThat(json).contains("inventory.read");
-        assertThat(json).contains("inventory.write");
+        assertThat(json).doesNotContain("inventory.write");
+    }
+
+    @Test
+    void listPermissions_exposesDependencyMetadataAndSensitiveExport() throws Exception {
+        mockMvc.perform(get(PERMS_URL)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].permissions[?(@.key == 'products.update')].moduleKey")
+                        .value(org.hamcrest.Matchers.hasItem("products")))
+                .andExpect(jsonPath("$.data[*].permissions[?(@.key == 'products.update')].kind")
+                        .value(org.hamcrest.Matchers.hasItem("WRITE")))
+                .andExpect(jsonPath("$.data[*].permissions[?(@.key == 'products.update')].requires[0]")
+                        .value(org.hamcrest.Matchers.hasItem("products.read")))
+                .andExpect(jsonPath("$.data[*].permissions[?(@.key == 'reports.export')].sensitive")
+                        .value(org.hamcrest.Matchers.hasItem(true)))
+                .andExpect(jsonPath("$.data[*].permissions[?(@.key == 'inventory.read')].kind")
+                        .value(org.hamcrest.Matchers.hasItem("SUPPORTING")));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -231,6 +248,64 @@ class AdminRolesApiTest {
                 .andExpect(jsonPath("$.data.isSystem").value(false))
                 .andExpect(jsonPath("$.data.permissions").isArray())
                 .andExpect(jsonPath("$.data.assignedUserCount").value(0));
+    }
+
+    @Test
+    void createRole_missingPermissionDependencies_returnsDetailed400() throws Exception {
+        String id = "MISSING_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Malformed Role","permissions":["products.update"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[*].field")
+                        .value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("permissions"))))
+                .andExpect(jsonPath("$.error.details[*].code")
+                        .value(org.hamcrest.Matchers.everyItem(
+                                org.hamcrest.Matchers.is("MISSING_PERMISSION_DEPENDENCY"))))
+                .andExpect(jsonPath("$.error.details[*].message")
+                        .value(org.hamcrest.Matchers.hasItems(
+                                "Permission 'products.update' requires 'products.read'.",
+                                "Permission 'products.update' requires 'catalog.read'.")));
+
+        assertThat(roleRepo.existsById(id)).isFalse();
+    }
+
+    @Test
+    void createRole_dependencyClosedPayload_isAccepted() throws Exception {
+        String id = "CLOSED_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Closed Role","permissions":["products.update","products.read","catalog.read"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.permissions",
+                        org.hamcrest.Matchers.containsInAnyOrder(
+                                "products.update", "products.read", "catalog.read")));
+    }
+
+    @Test
+    void createRole_wildcardCannotBeGrantedToCustomRole() throws Exception {
+        String id = "WILDCARD_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Wildcard Role","permissions":["*"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("UNKNOWN_PERMISSION"));
     }
 
     @Test
@@ -302,16 +377,12 @@ class AdminRolesApiTest {
     }
 
     @Test
-    void createRole_withInventoryPermissions_returns201() throws Exception {
-        // FULL-01 (cập nhật 2026-07-29): custom role phải gán được inventory.read /
-        // inventory.write — vẫn là permission thật trong PermissionCatalog. Permission
-        // `pos.refund` đã bị GỠ cùng module POS (ORDER_RULE_008 / project pos_removal),
-        // nên không còn assignable — dùng nó ở đây sẽ bị chặn UNKNOWN_PERMISSION (xem
-        // createRole_withRemovedPosPermission_returns400 bên dưới).
+    void createRole_withInventoryReadPermission_returns201() throws Exception {
+        // Inventory visibility remains a real Dashboard/API read boundary.
         String id = "INV_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
         String body = """
                 {"id":"%s","name":"Warehouse Role","description":"Inventory",
-                 "permissions":["inventory.read","inventory.write"]}
+                 "permissions":["inventory.read"]}
                 """.formatted(id);
 
         mockMvc.perform(post(ROLES_URL)
@@ -321,6 +392,23 @@ class AdminRolesApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(id))
                 .andExpect(jsonPath("$.data.permissions").isArray());
+    }
+
+    @Test
+    void createRole_withRemovedInventoryWritePermission_returns400() throws Exception {
+        String id = "INVW_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Legacy Inventory Writer","description":"stale",
+                 "permissions":["inventory.write"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("UNKNOWN_PERMISSION"));
     }
 
     @Test

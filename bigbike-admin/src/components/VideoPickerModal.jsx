@@ -31,7 +31,8 @@ function IconVideo() {
 export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.video }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
-  const canWrite = hasPermission('media.write')
+  const canRead = hasPermission('media.read')
+  const canWrite = canRead && hasPermission('media.write')
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -64,6 +65,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
   useEffect(() => {
+    if (!canRead) return undefined
     let active = true
     Promise.allSettled([fetchMediaFolders(), fetchMediaTags()]).then(([fRes, tRes]) => {
       if (!active) return
@@ -72,9 +74,10 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
     return () => { active = false }
-  }, [])
+  }, [canRead])
 
   useEffect(() => {
+    if (!canRead) return undefined
     let active = true
     fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
       .then((result) => {
@@ -99,7 +102,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         })
       })
     return () => { active = false }
-  }, [debouncedSearch, page, reloadKey, t, folderFilter, tag])
+  }, [canRead, debouncedSearch, page, reloadKey, t, folderFilter, tag])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
   useModalFocusTrap({ modalRef, onClose: attemptClose })
@@ -165,6 +168,24 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   const canConfirm = Boolean(selectedUrl) && !validation.blocked && validation.status !== 'loading'
 
   const isLoading = state.status === 'loading'
+
+  if (!canRead) {
+    return createPortal(
+      <>
+        <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
+        <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label="Thiếu quyền Media">
+          <div className="mpicker-header">
+            <h3 className="mpicker-title">Không thể mở Thư viện Media</h3>
+            <Button variant="secondary" size="sm" type="button" onClick={onClose}>Đóng</Button>
+          </div>
+          <div className="p-4 text-sm text-muted-foreground">
+            Tài khoản cần quyền media.read để xem và chọn video. Không có yêu cầu Media nào được gửi.
+          </div>
+        </div>
+      </>,
+      document.body,
+    )
+  }
 
   // Portal to <body> so the fixed-position backdrop/modal cover the whole
   // viewport. Rendered inline, an ancestor with a transform (e.g. a dnd-kit

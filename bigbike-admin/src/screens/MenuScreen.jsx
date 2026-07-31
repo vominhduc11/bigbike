@@ -55,7 +55,7 @@ import { SortableMenuItem } from './menu/SortableMenuItem'
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-export function MenuScreen({ canUpdate }) {
+export function MenuScreen({ canUpdate, canReadCatalog }) {
   const { t } = useTranslation()
   // Ngôn ngữ NỘI DUNG (nút VI/EN ở header). Chỉ đổi nhãn hiển thị của mục menu;
   // giao diện admin vẫn cố định tiếng Việt.
@@ -128,6 +128,7 @@ export function MenuScreen({ canUpdate }) {
   const { data: categoriesResult, isError: categoriesIsError } = useQuery({
     queryKey: queryKeys.categoriesTree('vi'),
     queryFn: () => fetchCategoryTree('vi'),
+    enabled: canReadCatalog,
     staleTime: 5 * 60 * 1000,
   })
   const categoryTreeOptions = useMemo(
@@ -530,6 +531,11 @@ export function MenuScreen({ canUpdate }) {
       </div>
 
       {warning && <ReadOnlyBanner warning={warning} />}
+      {!canReadCatalog ? (
+        <Alert tone="warning">
+          Cần quyền catalog.read để tải và chọn liên kết danh mục. Các loại liên kết menu khác vẫn dùng được.
+        </Alert>
+      ) : null}
 
       {/* ── Panel: items for the selected slot ── */}
       <main
@@ -723,7 +729,7 @@ export function MenuScreen({ canUpdate }) {
               onChange={(patch) => setNewItem((p) => ({ ...p, ...patch }))}
               parentOptions={parentOptions}
               categoryOptions={categoryTreeOptions}
-              categoryError={categoriesIsError}
+              categoryError={canReadCatalog && categoriesIsError}
               isNew
             />
           </form>
@@ -758,7 +764,7 @@ export function MenuScreen({ canUpdate }) {
               onChange={(patch) => setEditItemForm((p) => ({ ...p, ...patch }))}
               parentOptions={editParentOptions}
               categoryOptions={categoryTreeOptions}
-              categoryError={categoriesIsError}
+              categoryError={canReadCatalog && categoriesIsError}
               isNew={false}
             />
           </form>

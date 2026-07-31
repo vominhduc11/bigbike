@@ -259,6 +259,13 @@ Account lockout (`V283__admin_login_lockout.sql`): two columns added to `admin_u
 - `failed_login_attempts` (integer, `NOT NULL DEFAULT 0`) — running count of consecutive failed password attempts.
 - `locked_until` (timestamptz, nullable) — when set and in the future, `AdminAuthService.login` refuses the attempt before checking the password.
 
+Access/session invalidation (`V367__add_admin_access_version.sql`) adds `access_version`
+(`bigint`, `NOT NULL DEFAULT 0`) to `admin_users`. The access JWT contains this exact value. The
+value increases when a status becomes `DISABLED` or `SUSPENDED`, and when an administrator resets
+the password; every bearer token issued with the old value is invalid. A role or permission edit does
+not change this field because it keeps sessions and instead causes the server to re-resolve current
+permissions. `OWNER_CONFIRMED_2026-07-31`.
+
 After 5 consecutive failures the account is locked for 15 minutes (`AdminLoginAttemptService`, `REQUIRES_NEW` so the counter survives the rejected login). A successful login clears both columns. See `PERMISSION_MATRIX.md` → "Admin Login Security".
 
 Status: `CONFIRMED_FROM_CODE`
@@ -334,7 +341,7 @@ Evidence:
 
 **Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` đã gỡ (V279).
 
-**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.available` (chỉ áp dụng SP không biến thể) và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` (đường phụ dùng `inventory.write`) đã gỡ 2026-07-15 (AUD-056) — product upsert là đường mutation availability duy nhất.
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.available` (chỉ áp dụng SP không biến thể) và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` (đường phụ dùng `inventory.write`) đã gỡ 2026-07-15 (AUD-056) — product upsert là đường mutation availability duy nhất; `inventory.write` bị xóa khỏi catalog và role grants tại `V364`.
 
 **API response contract:** `stockState` vẫn có trong response (read-only). `stockQuantity` / `quantityOnHand` không còn nằm trong response product/variant; các cột số lượng dormant chỉ phục vụ tương thích dữ liệu cũ và migration, không được đưa trở lại contract. Storefront chỉ hiển thị "Còn hàng / Hết hàng".
 
@@ -1688,6 +1695,23 @@ The CSV contains the following columns:
 13. `cancelled_at`
 
 *(Note: the "discount" column was removed on 2026-07-04 since discounts are no longer supported)*
+
+## Homepage Highlights Configuration (V362)
+
+`home_category_highlights` stores the current `{slot, product_id}` assignments for
+the three fixed homepage slots. The rows are replaced as one logical configuration.
+`home_highlights_config` is a singleton metadata row (`id = 1`) containing:
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `id` | `smallint PRIMARY KEY`, constrained to `1` | Singleton configuration identity. |
+| `version` | `bigint NOT NULL DEFAULT 0` with JPA `@Version` | Configuration-wide optimistic concurrency token echoed as admin `version` and submitted as `expectedVersion`. |
+| `updated_at` | `timestamptz NOT NULL` | Last successful configuration replacement. |
+
+Admin reads return `{ items, version }`; admin saves must send the version read from
+the same configuration. A stale version is rejected with `409 CONCURRENT_MODIFICATION`.
+The public homepage read remains a list of highlight items and does not expose this
+admin concurrency metadata.
 
 ## Site Settings — `setting_group` enum (V132)
 

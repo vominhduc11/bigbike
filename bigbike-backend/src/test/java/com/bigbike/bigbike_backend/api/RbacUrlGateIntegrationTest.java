@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepos
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import com.bigbike.bigbike_backend.service.admin.AdminRoleService;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -54,6 +55,7 @@ class RbacUrlGateIntegrationTest {
     @Autowired PasswordService passwordService;
     @Autowired JwtService jwtService;
     @Autowired AdminPermissionService adminPermissionService;
+    @Autowired AdminRoleService adminRoleService;
 
     private MockMvc mockMvc;
 
@@ -92,6 +94,19 @@ class RbacUrlGateIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void rolePermissionRevocationBlocksTheSameAlreadyIssuedTokenOnItsNextRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/dashboard")
+                        .header("Authorization", "Bearer " + orderReaderToken))
+                .andExpect(status().isOk());
+
+        adminRoleService.updateRolePermissions(ROLE_ORDER_READER, Set.of(), null, null, null);
+
+        mockMvc.perform(get("/api/v1/admin/dashboard")
+                        .header("Authorization", "Bearer " + orderReaderToken))
+                .andExpect(status().isForbidden());
+    }
+
     // ── 5a. EDITOR (products.read) → product list no longer blocked ──────────
 
     @Test
@@ -107,7 +122,7 @@ class RbacUrlGateIntegrationTest {
 
     @Test
     void editor_contentReadEndpointAccessible() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content/reference/authors")
+        mockMvc.perform(get("/api/v1/admin/content").param("type", "ARTICLE")
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isOk());
     }
@@ -135,7 +150,11 @@ class RbacUrlGateIntegrationTest {
 
     private void ensureRole(String id, String name, Set<String> permissions) {
         if (roleRepo.existsById(id)) {
-            // Evict stale cache entry so DB state is authoritative for this test run
+            AdminRoleEntity existing = roleRepo.findById(id).orElseThrow();
+            existing.setPermissions(new LinkedHashSet<>(permissions));
+            existing.setUpdatedAt(Instant.now());
+            roleRepo.save(existing);
+            // Evict stale cache entry so DB state is authoritative for this test run.
             adminPermissionService.evict(id);
             return;
         }

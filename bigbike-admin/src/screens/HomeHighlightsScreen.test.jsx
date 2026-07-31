@@ -7,6 +7,7 @@ import { HomeHighlightsScreen } from './HomeHighlightsScreen'
 const mocks = vi.hoisted(() => ({
   fetchHomeHighlights: vi.fn(),
   saveHomeHighlights: vi.fn(),
+  productPicker: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
@@ -25,12 +26,17 @@ vi.mock('@/lib/useSaveShortcut', () => ({ useSaveShortcut: () => {} }))
 vi.mock('../lib/confirm', () => ({ showConfirm: vi.fn().mockResolvedValue(true) }))
 // Bộ chọn sản phẩm cần API con trỏ của trình duyệt thật — không cần cho các ca này
 // (slot đã nạp sẵn từ dữ liệu fetch), thay bằng ô trống.
-vi.mock('../components/ProductPickerCombobox', () => ({ ProductPickerCombobox: () => <div data-testid="picker" /> }))
+vi.mock('../components/ProductPickerCombobox', () => ({
+  ProductPickerCombobox: ({ error, errorText }) => (
+    <div data-testid="picker">{error ? errorText : null}</div>
+  ),
+}))
 vi.mock('../lib/useProductPicker', () => ({
-  useProductPicker: () => ({ search: '', setSearch: vi.fn(), items: [], isFetching: false, reset: vi.fn() }),
+  useProductPicker: (...args) => mocks.productPicker(...args),
 }))
 
 const loaded = {
+  version: 0,
   items: [
     { slot: 1, productId: 'prod_1', productName: 'Mũ 1', productSlug: 'mu-1', productImageUrl: '/media/p1.jpg' },
     { slot: 2, productId: 'prod_2', productName: 'Mũ 2', productSlug: 'mu-2', productImageUrl: '/media/p2.jpg' },
@@ -49,7 +55,16 @@ function renderScreen({ canUpdate = true, data = loaded } = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.saveHomeHighlights.mockResolvedValue({})
+  mocks.productPicker.mockReturnValue({
+    search: '',
+    setSearch: vi.fn(),
+    items: [],
+    isFetching: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+  })
+  mocks.saveHomeHighlights.mockResolvedValue({ items: loaded.items, version: 1 })
 })
 
 describe('HomeHighlightsScreen', () => {
@@ -65,7 +80,7 @@ describe('HomeHighlightsScreen', () => {
     await waitFor(() => expect(mocks.saveHomeHighlights).toHaveBeenCalledWith([
       { slot: 1, productId: 'prod_1' },
       { slot: 2, productId: 'prod_2' },
-    ]))
+    ], 0))
   })
 
   it('chỉ có quyền đọc thì hiện dải chỉ-xem và khoá nút Lưu', async () => {
@@ -96,5 +111,50 @@ describe('HomeHighlightsScreen', () => {
     )
     expect(await screen.findByText('Mất kết nối.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.retry' })).toBeInTheDocument()
+  })
+
+  it('hiển thị lỗi quyền đọc sản phẩm thay vì báo không tìm thấy sản phẩm', async () => {
+    mocks.productPicker.mockReturnValue({
+      search: 'Mũ',
+      setSearch: vi.fn(),
+      items: [],
+      isFetching: false,
+      isError: true,
+      error: { code: 'FORBIDDEN' },
+      reset: vi.fn(),
+    })
+    renderScreen()
+
+    expect(await screen.findAllByText('homeHighlights.searchPermissionError')).not.toHaveLength(0)
+  })
+
+  it('shows a reload action when the server rejects a stale version', async () => {
+    const user = userEvent.setup()
+    mocks.saveHomeHighlights.mockRejectedValue({
+      code: 'CONCURRENT_MODIFICATION',
+      message: 'The configuration changed elsewhere.',
+    })
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'homeHighlights.saveButton' })
+    await user.click(screen.getByRole('button', { name: 'homeHighlights.saveButton' }))
+
+    expect(await screen.findByText('homeHighlights.conflictTitle')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'homeHighlights.reloadData' })).toBeInTheDocument()
+  })
+
+  it('does not send a second save while the first request is pending', async () => {
+    const user = userEvent.setup()
+    let resolveSave
+    mocks.saveHomeHighlights.mockImplementation(() => new Promise((resolve) => { resolveSave = resolve }))
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'homeHighlights.saveButton' })
+    const saveButton = screen.getByRole('button', { name: 'homeHighlights.saveButton' })
+    await user.click(saveButton)
+    await user.click(saveButton)
+
+    expect(mocks.saveHomeHighlights).toHaveBeenCalledTimes(1)
+    resolveSave({ items: loaded.items, version: 1 })
   })
 })

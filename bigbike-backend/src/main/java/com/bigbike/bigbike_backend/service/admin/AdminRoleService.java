@@ -9,7 +9,7 @@ import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
-import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
+import com.bigbike.bigbike_backend.service.auth.AdminRolePermissionsChangedEvent;
 import com.bigbike.bigbike_backend.service.auth.PermissionCatalog;
 import java.time.Instant;
 import java.util.HashMap;
@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +38,8 @@ public class AdminRoleService {
     private final AdminRoleJpaRepository roleRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogWriter auditLogWriter;
-    private final AdminPermissionService adminPermissionService;
     private final AuditLogFactory auditLogFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<Map<String, Object>> getAllRoles() {
         Map<String, Long> assignedUserCounts = assignedUserCountsByRole();
@@ -71,6 +72,7 @@ public class AdminRoleService {
         }
 
         validatePermissionKeys(permissions);
+        validatePermissionDependencies(permissions);
         if (actorId != null) {
             adminUserRepo.findById(actorId)
                     .filter(actor -> role.getId().equals(actor.getRole()))
@@ -87,8 +89,6 @@ public class AdminRoleService {
         role.setUpdatedAt(Instant.now());
         AdminRoleEntity saved = roleRepo.save(role);
 
-        adminPermissionService.evict(saved.getId());
-
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
                 actorId,
@@ -99,6 +99,8 @@ public class AdminRoleService {
                 permissionsJson(role.getId(), saved.getPermissions()),
                 clientIp,
                 userAgent));
+
+        eventPublisher.publishEvent(new AdminRolePermissionsChangedEvent(saved.getId()));
 
         return toMap(saved, assignedUserCountsByRole().getOrDefault(saved.getId(), 0L));
     }
@@ -128,6 +130,7 @@ public class AdminRoleService {
         }
 
         validatePermissionKeys(permissions);
+        validatePermissionDependencies(permissions);
 
         Instant now = Instant.now();
         AdminRoleEntity role = new AdminRoleEntity();
@@ -140,8 +143,6 @@ public class AdminRoleService {
         role.setUpdatedAt(now);
         AdminRoleEntity saved = roleRepo.save(role);
 
-        adminPermissionService.evict(saved.getId());
-
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
                 actorId,
@@ -152,6 +153,8 @@ public class AdminRoleService {
                 permissionsJson(saved.getId(), saved.getPermissions()),
                 clientIp,
                 userAgent));
+
+        eventPublisher.publishEvent(new AdminRolePermissionsChangedEvent(saved.getId()));
 
         return toMap(saved, assignedUserCountsByRole().getOrDefault(saved.getId(), 0L));
     }
@@ -174,8 +177,6 @@ public class AdminRoleService {
         Set<String> before = new LinkedHashSet<>(role.getPermissions());
         roleRepo.delete(role);
 
-        adminPermissionService.evict(role.getId());
-
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
                 actorId,
@@ -186,6 +187,7 @@ public class AdminRoleService {
                 null,
                 clientIp,
                 userAgent));
+        eventPublisher.publishEvent(new AdminRolePermissionsChangedEvent(role.getId()));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -200,6 +202,21 @@ public class AdminRoleService {
                     .map(p -> new ApiErrorDetail("permissions", "UNKNOWN_PERMISSION", "Unknown permission: " + p))
                     .toList();
             throw new ValidationException("One or more permission keys are not recognised.", details);
+        }
+    }
+
+    private void validatePermissionDependencies(Set<String> permissions) {
+        List<ApiErrorDetail> details = PermissionCatalog.missingDependencies(permissions).stream()
+                .map(violation -> new ApiErrorDetail(
+                        "permissions",
+                        "MISSING_PERMISSION_DEPENDENCY",
+                        "Permission '" + violation.permission() + "' requires '"
+                                + violation.requiredPermission() + "'."))
+                .toList();
+        if (!details.isEmpty()) {
+            throw new ValidationException(
+                    "One or more selected permissions are missing required dependencies.",
+                    details);
         }
     }
 

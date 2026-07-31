@@ -41,7 +41,7 @@ import { PublishChecklistModal } from './product-detail/Modals'
 
 const CATEGORY_FILTER_INDENT_CLASSES = ['ps-0', 'ps-4', 'ps-8', 'ps-12', 'ps-16', 'ps-20', 'ps-24', 'ps-28']
 
-export function ProductListScreen({ navigate, canUpdate }) {
+export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
   const canExport = hasPermission('reports.export')
@@ -93,8 +93,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
   // Key riêng brandsFilter() (khác brandsAll() của ProductDetailScreen) vì params
   // khác nhau (sort:'name:asc' vs không sort) — dùng chung key trước đây khiến 2
   // màn hình đọc nhầm cache của nhau khi cùng contentLang.
-  const { data: brandsData } = useQuery({ queryKey: queryKeys.brandsFilter(contentLang), queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
-  const { data: categoriesData } = useQuery({ queryKey: queryKeys.categoriesTree(contentLang), queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
+  const { data: brandsData } = useQuery({ queryKey: queryKeys.brandsFilter(contentLang), queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), enabled: canReadCatalog, staleTime: 5 * 60_000 })
+  const { data: categoriesData } = useQuery({ queryKey: queryKeys.categoriesTree(contentLang), queryFn: () => fetchCategoryTree(), enabled: canReadCatalog, staleTime: 5 * 60_000 })
   const brands = useMemo(() => brandsData?.items ?? [], [brandsData])
   const categories = useMemo(() => categoriesData?.items ?? [], [categoriesData])
   // Depth-annotated (parent-first, child indented) order for the category filter dropdown —

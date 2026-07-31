@@ -4,19 +4,65 @@
 
 **Runtime source of truth** is the database table `role_permissions`, seeded and mutated by Flyway migrations and the Admin Roles API. Runtime permission resolution is performed by `AdminPermissionService`, which reads from that table.
 
-- `PermissionCatalog.java` is the canonical catalog of **valid permission keys + groupings + sensitive flags**. It is served by `GET /api/v1/admin/permissions` and used by `AdminRoleService` to validate which keys may be assigned to a custom role. New permissions must be added here first, then seeded into `role_permissions` by a migration.
+- `PermissionCatalog.java` is the canonical catalog of **valid permission keys + module/kind/sensitive/dependency metadata**. It is served by `GET /api/v1/admin/permissions` and used by `AdminRoleService` to validate both keys and dependency closure. New permissions must be added here first, then seeded into `role_permissions` by a migration.
 - `AdminRolePermissions.java` is a **human-readable reference snapshot only** — it is explicitly NOT called at runtime. Do not treat it as authoritative.
+
+## Permission dependency contract
+
+`read` is the default module-access permission. A non-wildcard role may be stored only when every selected permission's transitive `requires` set is present. Roles UI may add dependencies for the operator; Roles API never auto-adds and returns `400 VALIDATION_ERROR` with `MISSING_PERMISSION_DEPENDENCY` details for a malformed payload. Flyway `V366__backfill_permission_dependencies.sql` closes existing role data without deleting grants.
+
+| Permission | Direct requirements |
+|---|---|
+| `orders.write` | `orders.read` |
+| `customers.write` | `customers.read` |
+| `reviews.write` | `reviews.read` |
+| `products.update` | `products.read`, `catalog.read` |
+| `catalog.update` | `catalog.read` |
+| `content.update` | `content.read` |
+| `media.write` | `media.read` |
+| `menus.write` | `menus.read` |
+| `sliders.write` | `sliders.read` |
+| `home_videos.write` | `home_videos.read` |
+| `home_highlights.write` | `home_highlights.read`, `products.read` |
+| `redirects.write` | `redirects.read` |
+| `settings.write` | `settings.read` |
+| `admin-users.write` | `admin-users.read`, `roles.read` |
+| `roles.write` | `roles.read` |
+| `reports.export` | `reports.read` |
+
+Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed in the assignable catalog and cannot be granted to a custom role.
+
+## Admin surface access matrix
+
+| Surface | Menu/list/detail | Create/full-edit | Mutation | Supporting/composite |
+|---|---|---|---|---|
+| Dashboard | `orders.read` | — | — | inventory widget/topic: `inventory.read`; Product/Reports links: corresponding `.read` |
+| Products | `products.read` | `products.read` + `products.update` + `catalog.read` | `products.update` | media picker: `media.read`; upload: `media.write` |
+| Categories / Brands | `catalog.read` | `catalog.read` + `catalog.update` | `catalog.update` | product references: `products.read`; media picker rules apply |
+| Featured Products | `products.read` + `products.update` | same workspace requirement | save: `products.update` | owner-confirmed composite route |
+| Content | `content.read` | `content.read` + `content.update` | `content.update` | media picker rules apply |
+| Orders / Customers / Reviews | corresponding `.read` | — | corresponding `.write` | Review hard delete additionally exact built-in role `SUPER_ADMIN` |
+| Media | `media.read` | — | `media.write` | hard delete: wildcard `*` |
+| Menu | `menus.read` | — | `menus.write` | category target picker: `catalog.read` |
+| Slider | `sliders.read` | `sliders.write` + `products.read` + `media.read` | toggle/reorder/delete: `sliders.write` | upload: `media.write` |
+| Home Videos | `home_videos.read` | — | URL/provider: `home_videos.write` | internal picker: `media.read`; upload: `media.write` |
+| Home Highlights | `home_highlights.read` | — | save: `home_highlights.write` + `products.read` | Product picker must not query without `products.read` |
+| Redirects / Settings | corresponding `.read` | — | corresponding `.write` | Settings “Phân công”: wildcard `*`; media picker rules apply |
+| Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
+| Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
+| Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
+
+Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
 ### Inventory permissions
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory` (stock list), `GET /api/v1/admin/inventory/summary` | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
-| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | **Không còn endpoint nào dùng** — hai endpoint availability PATCH (đường API phụ, chưa từng có admin UI caller) đã gỡ 2026-07-15 (AUD-056, owner decision #8). Quyền vẫn tồn tại trong seed/`PermissionCatalog` (không revoke bằng migration trong đợt này); mọi thay đổi Còn/Hết đi qua product upsert với `products.update`. | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory` (stock list), `GET /api/v1/admin/inventory/summary`, và subscribe `/topic/admin/inventory` cho Dashboard | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java`, `WebSocketConfig.java` |
 
-`inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
+`inventory.read` is listed in `PermissionCatalog` (`roles.groupProducts`), so it remains grantable to custom roles via the Roles UI. `inventory.write` was removed on 2026-07-31 because no current endpoint or admin action uses it; migration `V364__remove_orphan_inventory_write_permission.sql` revokes any persisted grants.
 
-**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `available` (chỉ áp dụng SP không biến thể; đổi tên từ `forceOutOfStock`, gỡ hard-override cho SP có biến thể — V342, 2026-07-19) và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. Từ 2026-07-15 đây là đường mutation availability DUY NHẤT (các endpoint `inventory.write` đã gỡ) — contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
+**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `available` (chỉ áp dụng SP không biến thể; đổi tên từ `forceOutOfStock`, gỡ hard-override cho SP có biến thể — V342, 2026-07-19) và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. Từ 2026-07-15 đây là đường mutation availability DUY NHẤT (các endpoint `inventory.write` đã gỡ), nên không còn quyền ghi tồn kho độc lập — contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
 
 ### Media Library permissions
 
@@ -44,8 +90,8 @@
 |---|---|---|---|
 | `catalog.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/brands`, `GET /api/v1/admin/brands/{id}` and other catalog taxonomy reads | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
 | `catalog.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/brands`, `DELETE /api/v1/admin/brands/{id}`, `POST /api/v1/admin/brands/{id}/restore`, `DELETE /api/v1/admin/brands/{id}/permanent` and other catalog taxonomy mutations | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
-| `products.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/products`, `GET /api/v1/admin/products/{id}`, product presence topic; also one accepted read permission for `GET /api/v1/admin/product-assignment` | `V49__create_roles_permissions_tables.sql`, `V121__realign_inventory_warranty_permissions.sql`, `AdminCatalogController.java`, `WebSocketConfig.java` |
-| `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/homepage-blocks`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}`; also gates the dedicated `/admin/featured-products` workspace because opening that screen exposes the full ordered homepage placement for editing | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java`, `App.jsx`, `FeaturedProductsScreen.jsx` |
+| `products.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/products`, `GET /api/v1/admin/products/{id}`, product presence topic; also one accepted read permission for `GET /api/v1/admin/product-assignment` | `V49__create_roles_permissions_tables.sql`, `V121__realign_inventory_warranty_permissions.sql`, `V363__restore_admin_product_read_permission.sql`, `AdminCatalogController.java`, `WebSocketConfig.java` |
+| `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/homepage-blocks`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}`; also required for editing/saving the dedicated `/admin/featured-products` workspace, which additionally requires `products.read` to load and search products | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java`, `App.jsx`, `FeaturedProductsScreen.jsx` |
 
 `EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."
 
@@ -53,7 +99,7 @@ The bulk product import endpoints are gated by the same `products.update` permis
 
 > **POS permissions removed (2026-06-23, online-only).** The four POS permissions — `pos.read`, `pos.write`, `pos.price_override`, `pos.sell_below_cost` — were **deleted** together with the POS module (admin POS screen, `POST /admin/pos/orders`, `GET /admin/pos/products/search`, `AdminPosController` / `PosOrderService`). They were dropped from `PermissionCatalog` and revoked from every role. BigBike is now online-only.
 >
-> **AL-03 realignment (V121).** Before V121, `inventory.*` gated the (now-removed) **Warranty** module while the **Inventory** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced the dedicated permissions and re-gated each controller + the admin UI. The migration was a **non-breaking backfill**: every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.
+> **AL-03 realignment (V121).** Before V121, `inventory.*` gated the (now-removed) **Warranty** module while the **Inventory** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced the dedicated permissions and re-gated each controller + the admin UI. The migration was a **non-breaking backfill**: every role holding `products.*` also received `inventory.*`; `V364` later removed only the obsolete `inventory.write` grant. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A later RBAC cleanup may remove `inventory.read` from `EDITOR` only if the business confirms EDITOR is content-only and no longer needs Dashboard stock alerts.
 >
 > **Serial feature removed (2026-06-23, V259).** `inventory.*` now gates **stock reads / manual boolean availability toggles only** — the admin inventory serial endpoints (`/inventory/serials*`, `/variants/{id}/serials`, `/products/{id}/serials`, `/serials/{id}/status`, `/serials/import`) were deleted along with serial tracking.
 >
@@ -83,6 +129,23 @@ Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 - **Custom roles** are created with `is_system = FALSE`; they can be edited and deleted when no admin user is assigned. Historical `SHOP_MANAGER` and `EDITOR` roles follow this same custom-role governance after V361.
 - **An admin cannot remove `roles.read` or `roles.write` from their own currently assigned role.** The existing UI and service guard continue to prevent self-lockout.
 - `CUSTOMER` (`ROLE_CUSTOMER`) is a separate storefront auth realm and is never managed through the admin Roles screen.
+
+### Admin access-change lifecycle
+
+An access change becomes effective only after its database transaction commits. The backend remains
+the final authority for every REST request and WebSocket delivery; a browser permission snapshot is
+only a UX aid and can never authorize a mutation.
+
+| Change | Session treatment | Required propagation |
+|---|---|---|
+| Admin role assignment changes, or permissions of an assigned role change | Keep that admin's sessions. Re-resolve current permissions for later requests and notify every open session. | Evict the affected account/role permission cache **after commit** and send the minimal access-change signal to every session of each affected admin. |
+| `ACTIVE` to `DISABLED` or `SUSPENDED` | Revoke all refresh sessions for that account and force sign-in again. | Increment the account access version after the transaction commits; a prior bearer token is rejected by REST and STOMP. Send the access-change signal when the connected session can still receive it. |
+| Admin password reset through `PATCH /admin-users/{id}` | Revoke all refresh sessions for that account and force sign-in again. | Increment the account access version and use the same invalidation path as a disabled/suspended account. |
+
+Role/permission edits do **not** revoke unrelated accounts or log out the whole admin system. A
+single-admin `PATCH` remains the write contract; the server emits one access-change signal for each
+affected account. Audit logging records the access change and, when sign-in is forced, the session
+revocation reason. This lifecycle is `OWNER_CONFIRMED_2026-07-31`.
 
 ## Super-admin-only settings (`product_assign`)
 
@@ -120,9 +183,9 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 
 | Endpoint / surface | Required role/permission | Status | Evidence |
 |---|---|---|---|
-| `/api/v1/admin/**` | Spring Security URL gate requires `isAuthenticated() and !hasRole('CUSTOMER')` — any admin role (built-in or custom) passes, a logged-in customer is rejected (403). Fine-grained permission is then enforced at controller level by `requirePermission()`. See `PERMISSION_RBAC_AUDIT.md` findings F1/F2. | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `DevAdminAuthService.requirePermission`, admin controllers |
+| `/api/v1/admin/**` | Spring Security URL gate requires an authenticated non-customer admin principal. Customer session cookies are intentionally ignored on this namespace, so a customer-only request receives `401` rather than creating an authenticated customer context that could interfere with an admin refresh; fine-grained permission is then enforced at controller level by `requirePermission()`. | `OWNER_CONFIRMED_2026-07-31` | `SecurityConfig.java`, `CustomerSessionFilter.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
-| `/api/v1/admin/dashboard` GET | `orders.read`; `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`, or `ROLE_SHOP_MANAGER` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminDashboardController.java` |
+| `/api/v1/admin/dashboard` GET | `orders.read` only; no exact-role restriction | `OWNER_CONFIRMED_2026-07-31` | `AdminDashboardController.java`, `SecurityConfig.java` |
 | `/api/v1/admin/orders` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listOrders` |
 | `/api/v1/admin/orders/{orderId}` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail` |
 | `/api/v1/admin/orders/{orderId}/allowed-transitions` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions` |
@@ -142,9 +205,10 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 
 | Channel | Access rule | Status | Evidence |
 |---|---|---|---|
-| `/ws` STOMP CONNECT | native `Authorization` bearer token required; admin account must be `ACTIVE` (DB-driven, cached, evicted on write — see `AdminAccountStatusService`) | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
-| Admin order topic | Requires the `orders.read` permission (DB-driven via `AdminPermissionService.getPermissionsForRole`), not a hardcoded role — any built-in or custom role granted `orders.read` (e.g. `SHOP_MANAGER`) can subscribe. CONNECT validates the JWT and `ACTIVE` account; current account status and permission are then rechecked on **every SUBSCRIBE**, so a mid-session permission/status change cuts the admin off on its next subscribe. Client subscribes to `/topic/admin/orders`. | `CONFIRMED_FROM_CODE` (fixed 2026-07-06 — previously hardcoded to `ADMIN`/`SUPER_ADMIN`) | `WebSocketConfig.java`, `adminWebSocket.js` |
-| Admin presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read`. The same active-account check applies on SUBSCRIBE; join/leave commands are accepted only from the authenticated admin session and are not persisted. | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminPresenceController.java`, `AdminPresenceService.java` |
+| `/ws` STOMP CONNECT | Native `Authorization` bearer token required; the JWT access version must equal the current `admin_users.access_version`, and the admin account must be `ACTIVE`. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `JwtService.java`, `AdminAccountStatusService.java` |
+| Admin data topics | Each `/topic/admin/**` subscription requires its destination permission. The account, access version and current permission are checked on CONNECT and SUBSCRIBE **and again for every outbound message to an existing subscription**. A stale subscription therefore cannot continue receiving events after access is withdrawn. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminPermissionService.java` |
+| `/user/queue/admin/access` | Authenticated admin's own user queue only. The server sends the minimal access-change signal (`reason`, `forceReauthentication`) after the access transaction commits; the client calls `GET /api/v1/auth/me` rather than trusting a permission payload from the message. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `adminWebSocket.js` |
+| Admin presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read`. The same current-access checks apply on SUBSCRIBE and outbound delivery; join/leave commands are accepted only from the authenticated admin session and are not persisted. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminPresenceController.java`, `AdminPresenceService.java` |
 
 ## Internal Redirect Caveat
 

@@ -7,7 +7,7 @@ import { FormField } from '@/components/layout/FormField'
 import { Modal } from '@/components/layout/Modal'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { showConfirm } from '../../lib/confirm'
-import { getRoleDisplayName } from './constants'
+import { closePermissionDependencies, getRoleDisplayName } from './constants'
 
 // F11 — sentinel cho lựa chọn "không nhân bản" trong Select (Radix không cho value rỗng).
 const CLONE_NONE = '__none__'
@@ -25,7 +25,7 @@ function stripDiacritics(v) {
     .replace(/Đ/g, 'D')
 }
 
-export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sensitiveKeys = new Set() }) {
+export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sensitiveKeys = new Set(), catalog = [] }) {
   const { t } = useTranslation()
   const cloneableRoles = roles.filter((role) => role.id !== 'SUPER_ADMIN')
   const [name, setName] = useState('')
@@ -77,7 +77,9 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
       return
     }
     const sourceRole = cloneFromId !== CLONE_NONE ? roles.find((r) => r.id === cloneFromId) : null
-    const permissions = sourceRole ? [...sourceRole.permissions] : []
+    const permissions = sourceRole
+      ? [...closePermissionDependencies(sourceRole.permissions.filter(permission => permission !== '*'), catalog).permissions]
+      : []
     const sensitiveCount = permissions.filter((permission) => sensitiveKeys.has(permission)).length
     if (sensitiveCount > 0) {
       const ok = await showConfirm(

@@ -117,13 +117,23 @@ describe('MediaPickerModal', () => {
   })
 
   it('ẩn nút tải lên khi tài khoản không có quyền media.write', async () => {
-    mocks.hasPermission.mockReturnValue(false)
+    mocks.hasPermission.mockImplementation(permission => permission === 'media.read')
     renderPicker()
 
     await screen.findByTitle('helmet-one.jpg')
     expect(screen.queryByRole('button', { name: /media\.picker\.upload/ })).not.toBeInTheDocument()
     // vẫn duyệt và chọn được ảnh có sẵn
     expect(screen.getByRole('button', { name: 'media.picker.confirmSingle' })).toBeInTheDocument()
+  })
+
+  it('không gọi Media API khi thiếu media.read', async () => {
+    mocks.hasPermission.mockReturnValue(false)
+    renderPicker()
+
+    expect(await screen.findByText('Không thể mở Thư viện Media')).toBeInTheDocument()
+    expect(mocks.fetchMedia).not.toHaveBeenCalled()
+    expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
+    expect(mocks.fetchMediaTags).not.toHaveBeenCalled()
   })
 
   it('hiện nút tải lên khi có quyền media.write', async () => {

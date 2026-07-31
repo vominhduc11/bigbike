@@ -5,7 +5,7 @@ import { AdminTable } from '../../components/AdminTable'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '@/components/ui/button'
 
-export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false, isError = false, onRetry }) {
+export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false, isError = false, onRetry, permissionDenied = false }) {
   const { t } = useTranslation()
 
   const openProduct = (p) => navigate(`/admin/products/${p.id}`)
@@ -73,7 +73,15 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
         )}
       </div>
       <div className="bb-card-body bb-card-body--flush">
-        {isLoading ? (
+        {permissionDenied ? (
+          <div className="p-4">
+            <StatePanel
+              tone="neutral"
+              title="Chưa được cấp quyền xem sản phẩm"
+              description="Cần quyền products.read để tải danh sách và mở sản phẩm thuộc danh mục này."
+            />
+          </div>
+        ) : isLoading ? (
           // T1: khung xương thay vì rơi vào nhánh rỗng trong lúc tải — tránh chớp
           // nhầm "Chưa có sản phẩm" rồi mới hiện danh sách thật.
           <div className="animate-pulse flex flex-col gap-2 p-4" aria-hidden="true">

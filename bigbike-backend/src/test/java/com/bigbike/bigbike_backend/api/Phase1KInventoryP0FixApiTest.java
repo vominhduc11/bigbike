@@ -19,8 +19,8 @@ import org.springframework.web.context.WebApplicationContext;
  *
  * The standalone availability-toggle and CSV-export endpoints this class used to cover
  * were removed 2026-07-15 (AUD-056, owner decision #8 — no internal caller, no external
- * clients). The kept endpoints (GET /admin/inventory + /summary) are covered by
- * Phase1IAdminManagementApiTest / dashboard flows.
+ * clients). The kept read endpoints are covered by AdminReadApiTest; the Dashboard UI
+ * separately covers the summary loading/error states.
  */
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)

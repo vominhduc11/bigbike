@@ -215,6 +215,9 @@ test.describe("Effects — mobile @390", () => {
 
     const drawer = page.locator("[data-header-mobile-menu]").first();
     await expect(drawer).toBeVisible();
+    const desktopIconCount = await page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").count();
+    const mobileIconCount = await drawer.locator("[data-header-submenu-icon]").count();
+    expect(mobileIconCount, "mobile menu should render category icons").toBeGreaterThanOrEqual(desktopIconCount);
     const openingMotion = await drawer.evaluate((el) => {
       const rect = el.getBoundingClientRect();
       const styles = getComputedStyle(el);

@@ -263,7 +263,6 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.refund' 
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.export'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.write');
 
 -- SHOP_MANAGER
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'products.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='products.read');
@@ -279,7 +278,6 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'revie
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reports.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reports.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reports.export'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.read'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.write'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.write');
 
 -- EDITOR
 INSERT INTO role_permissions (role_id, permission) SELECT 'EDITOR', 'products.read'   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='EDITOR' AND permission='products.read');

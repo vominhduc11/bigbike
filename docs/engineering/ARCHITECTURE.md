@@ -23,7 +23,7 @@
 | Controllers | `api/admin`, `api/customer`, `api/order`, `api/public_`, `api/cart`, `api/checkout` | `CONFIRMED_FROM_CODE` | `src/main/java/com/bigbike/bigbike_backend/api` |
 | Services | Business logic in `service/*` | `CONFIRMED_FROM_CODE` | `src/main/java/com/bigbike/bigbike_backend/service` |
 | Persistence | JPA entities and repositories | `CONFIRMED_FROM_CODE` | `persistence/entity`, `persistence/repository` |
-| Schema | Flyway versioned migrations (current repository through `V340`) plus dev seeds | `CONFIRMED_FROM_CODE` | `src/main/resources/db/migration`, `db/migration-dev` |
+| Schema | Flyway versioned migrations (current repository through `V367`) plus dev seeds | `OWNER_CONFIRMED_2026-07-31` | `src/main/resources/db/migration`, `db/migration-dev` |
 | Auth | Admin JWT + customer cookie/session auth | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, auth services/filters |
 | Real-time | STOMP over WebSocket with simple broker | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
 
@@ -33,6 +33,9 @@
 - POS (point-of-sale / walk-in) was **removed** platform-wide (owner decision 2026-06-23) — BigBike is online-only. The POS endpoints, `AdminPosController` / `PosOrderService`, and the `pos.*` permissions no longer exist; all sales go through the storefront checkout. `REMOVED`
 - Serial-number tracking was removed platform-wide (2026-06-23, V259). Inventory is a **boolean availability toggle** (2026-06-23, V261): per-variant `is_available` / per-no-variant-product `stock_state`, set by hand; no tracked quantity, no auto-decrement on sale (admin marks "Hết hàng" manually, oversell not auto-prevented). The quantity columns are kept but dormant. The warranty feature was removed entirely (2026-06-23, V266) — no warranty records, services, lookup, or `/bao-hanh` page. `CONFIRMED_FROM_CODE`
 - Receipt tables exist in the schema, but a receiving service/controller was not confirmed in the current Java layer. `NOT_FOUND_IN_REPO`
+- Admin access synchronization uses Spring's in-process STOMP simple broker. It is correct for the
+  current single `bigbike-backend` deployment, but cross-node access events and subscription checks
+  require a shared broker/event bus before running multiple backend replicas. `OWNER_CONFIRMED_2026-07-31`
 
 ## Infrastructure And Integrations
 
@@ -42,7 +45,7 @@
 | Object storage | MinIO S3-compatible storage | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `AdminMediaService.java` |
 | Email | SMTP-backed transactional email when configured | `CONFIRMED_FROM_CODE` | `pom.xml`, `docker-compose.yaml`, mail services |
 | Revalidation | Backend calls web revalidate endpoint through shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, web env vars |
-| WebSocket | `/ws` STOMP endpoint and `/topic/admin/orders` topic | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
+| WebSocket | `/ws` STOMP endpoint, admin data topics and `/user/queue/admin/access` per-admin access signal | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java` |
 | External payment gateway | No confirmed live provider/webhook integration | `NOT_FOUND_IN_REPO` | repo search, checkout/payment code |
 | External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration | `NOT_FOUND_IN_REPO` | repo search |
 

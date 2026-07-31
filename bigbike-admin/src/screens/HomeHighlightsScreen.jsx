@@ -32,7 +32,7 @@ function ProductPicker({ value, onChange, disabled }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const [open, setOpen] = useState(false)
-  const { search, setSearch, items, isFetching, reset } = useProductPicker({
+  const { search, setSearch, items, isFetching, isError, error, reset } = useProductPicker({
     queryKey: 'home-highlights-product-search',
     contentLang,
     params: { page: 1, pageSize: 8, publishStatus: 'PUBLISHED' },
@@ -56,10 +56,14 @@ function ProductPicker({ value, onChange, disabled }) {
       open={open && search.trim().length > 0}
       onOpenChange={(next) => { if (!next) setOpen(false) }}
       loading={isFetching}
+      error={isError}
       items={items}
       onPick={handleSelect}
       placeholder={t('homeHighlights.searchPlaceholder')}
       loadingText={`${t('common.loading')}…`}
+      errorText={error?.code === 'FORBIDDEN'
+        ? t('homeHighlights.searchPermissionError')
+        : t('homeHighlights.searchError')}
       emptyText={t('homeHighlights.noResults')}
       disabled={disabled}
     />
@@ -129,6 +133,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
     { slot: 3, product: null },
   ])
   const [initialized, setInitialized] = useState(false)
+  const [hasConflict, setHasConflict] = useState(false)
 
   const { isLoading, isError, error, data: highlightsData, refetch } = useQuery({
     queryKey: ['home-highlights', contentLang],
@@ -156,12 +161,19 @@ export function HomeHighlightsScreen({ canUpdate }) {
   }, [highlightsData, initialized])
 
   const saveMutation = useMutation({
-    mutationFn: (slotsToSave) => saveHomeHighlights(slotsToSave),
-    onSuccess() {
+    mutationFn: ({ slotsToSave, expectedVersion }) => saveHomeHighlights(slotsToSave, expectedVersion),
+    onSuccess(savedData) {
+      setHasConflict(false)
+      queryClient.setQueryData(['home-highlights', contentLang], savedData)
       queryClient.invalidateQueries({ queryKey: ['home-highlights'] })
       toast.success(t('homeHighlights.savedSuccess'))
     },
     onError(err) {
+      if (err?.code === 'CONCURRENT_MODIFICATION') {
+        setHasConflict(true)
+        toast.error(t('homeHighlights.conflictToast'))
+        return
+      }
       toast.error(err?.message || t('common.errorOccurred', { defaultValue: 'Đã xảy ra lỗi.' }))
     },
   })
@@ -214,12 +226,19 @@ export function HomeHighlightsScreen({ canUpdate }) {
   const hasFilledSlot = filledSlots.length > 0
 
   function handleSave() {
+    if (saveMutation.isPending || hasConflict) return
     if (!hasFilledSlot) {
       toast.error(t('homeHighlights.noSlotsError'))
       return
     }
     const body = filledSlots.map((s) => ({ slot: s.slot, productId: s.product.id }))
-    saveMutation.mutate(body)
+    saveMutation.mutate({ slotsToSave: body, expectedVersion: highlightsData?.version ?? 0 })
+  }
+
+  async function handleReloadAfterConflict() {
+    setHasConflict(false)
+    setInitialized(false)
+    await refetch()
   }
 
   if (isLoading) {
@@ -260,12 +279,23 @@ export function HomeHighlightsScreen({ canUpdate }) {
           <Button
             onClick={handleSave}
             loading={saveMutation.isPending}
-            disabled={!canUpdate || !hasFilledSlot}
+            disabled={!canUpdate || !hasFilledSlot || hasConflict}
           >
             {t('homeHighlights.saveButton')}
           </Button>
         }
       />
+
+      {hasConflict && (
+        <StatePanel
+          tone="warning"
+          title={t('homeHighlights.conflictTitle')}
+          description={t('homeHighlights.conflictDescription')}
+          actionLabel={t('homeHighlights.reloadData')}
+          onAction={handleReloadAfterConflict}
+          className="mb-4"
+        />
+      )}
 
       {canUpdate && !hasFilledSlot && (
         <p

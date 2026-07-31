@@ -6,6 +6,7 @@ import { MediaRequirementHint } from './MediaRequirementHint'
 import { Button } from '@/components/ui/button'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { useMediaAltSync } from '@/lib/useMediaAltSync'
+import { useHasPermission } from '@/lib/auth'
 
 function IconLibrary() {
   return (
@@ -44,6 +45,8 @@ function ImagePreview({ url, alt }) {
 export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, disabled, error, recommend }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const hasPermission = useHasPermission()
+  const canReadMedia = hasPermission('media.read')
   const hasImage = Boolean(value?.trim())
   const { pickAlt } = useMediaAltSync()
   const errorId = useId()
@@ -53,8 +56,9 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
       <div className="image-url-input-row">
         <Button variant="secondary" size="sm" className="image-url-pick-btn"
           type="button"
-          onClick={() => setPickerOpen(true)}
-          disabled={disabled}
+          onClick={() => { if (canReadMedia) setPickerOpen(true) }}
+          disabled={disabled || !canReadMedia}
+          title={!canReadMedia ? 'Cần quyền media.read để mở Thư viện Media.' : undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
         >
@@ -72,11 +76,16 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           </Button>
         )}
       </div>
+      {!canReadMedia ? (
+        <small className="text-xs text-muted-foreground">
+          Cần quyền media.read để chọn hoặc thay file trong Thư viện Media.
+        </small>
+      ) : null}
       {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} alt={previewAlt || alt} />
 
-      {pickerOpen && (
+      {pickerOpen && canReadMedia && (
         <MediaPickerModal
           recommend={recommend}
           kind="image"

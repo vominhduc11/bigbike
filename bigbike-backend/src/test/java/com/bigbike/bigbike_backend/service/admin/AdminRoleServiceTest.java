@@ -13,7 +13,6 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
-import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class AdminRoleServiceTest {
@@ -29,8 +29,8 @@ class AdminRoleServiceTest {
     @Mock AdminRoleJpaRepository roleRepo;
     @Mock AdminUserJpaRepository adminUserRepo;
     @Mock AuditLogWriter auditLogWriter;
-    @Mock AdminPermissionService adminPermissionService;
     @Mock AuditLogFactory auditLogFactory;
+    @Mock ApplicationEventPublisher eventPublisher;
 
     @Test
     void getAllRoles_usesSingleGroupedCountQueryAndDefaultsMissingRolesToZero() {
@@ -39,7 +39,7 @@ class AdminRoleServiceTest {
                 .thenReturn(Collections.singletonList(new Object[] {"ADMIN", 3L}));
 
         AdminRoleService service = new AdminRoleService(
-                roleRepo, adminUserRepo, auditLogWriter, adminPermissionService, auditLogFactory);
+                roleRepo, adminUserRepo, auditLogWriter, auditLogFactory, eventPublisher);
 
         List<java.util.Map<String, Object>> result = service.getAllRoles();
 

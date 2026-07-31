@@ -2513,6 +2513,7 @@
     "tabsAria": "Settings groups",
     "tabChangeCount": "{{count}} changes",
     "saveSuccess": "Saved successfully",
+    "accessApplied": "The new access or status is applied; open sessions for this account will synchronize.",
     "valEmail": "Enter a valid email, e.g. name@bigbike.vn",
     "valUrl": "Enter a full web URL, e.g. https://bigbike.vn/promo",
     "valPhone": "Phone number may only contain digits, + or -",
@@ -2934,6 +2935,7 @@
     "cancelBtn": "Cancel",
     "saving": "Saving...",
     "saveSuccess": "Role permissions saved successfully.",
+    "accessApplied": "Role permissions are applied; {{count}} assigned account(s) will synchronize.",
     "saveError": "Failed to save permissions. Please try again.",
     "discardChanges": "You have unsaved changes. Discard and switch roles?",
     "superAdminBanner": "The Owner role has full access — all permissions are granted automatically and cannot be changed through the UI.",
@@ -3009,7 +3011,6 @@
     "permCatalogRead": "View categories & brands",
     "permCatalogUpdate": "Edit categories & brands",
     "permInventoryRead": "View stock",
-    "permInventoryWrite": "Adjust stock",
     "permContentRead": "View News articles",
     "permContentUpdate": "Create & edit content",
     "permMediaRead": "View media library",
@@ -3268,7 +3269,13 @@
     "slotLabel": "Slot {{number}}",
     "noSlotsHint": "Select at least 1 product to save.",
     "langSwitchConfirm": "You have unsaved Home Highlights changes. Switching language will reload the data and lose these changes. Continue?",
-    "unsavedTitle": "Unsaved changes"
+    "unsavedTitle": "Unsaved changes",
+    "conflictTitle": "The configuration was updated in another window",
+    "conflictDescription": "This screen is out of date. Reload the data before saving so the latest changes are not overwritten.",
+    "conflictToast": "The configuration changed elsewhere. Reload the data before saving again.",
+    "reloadData": "Reload data",
+    "searchPermissionError": "You do not have permission to read products.",
+    "searchError": "Could not load products. Please try again."
   },
   "redirects": {
     "title": "Redirects",

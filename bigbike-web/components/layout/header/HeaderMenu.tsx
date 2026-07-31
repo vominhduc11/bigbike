@@ -152,6 +152,7 @@ function DesktopSubmenu({
             >
               {node.iconUrl ? (
                 <span
+                  data-header-submenu-icon
                   className={`${submenuIcon} mr-2 align-middle`}
                   style={{ maskImage: `url(${node.iconUrl})`, WebkitMaskImage: `url(${node.iconUrl})` }}
                   aria-hidden
@@ -203,6 +204,14 @@ function MobileMenuList({
                 depth === 0 ? "py-[15px] font-cta text-b4-action font-semibold uppercase" : "py-3 font-body text-a5-meta",
               )}
             >
+              {node.iconUrl ? (
+                <span
+                  data-header-submenu-icon
+                  className={`${submenuIcon} mr-2 align-middle`}
+                  style={{ maskImage: `url(${node.iconUrl})`, WebkitMaskImage: `url(${node.iconUrl})` }}
+                  aria-hidden
+                />
+              ) : null}
               {node.label}
             </Link>
             {hasChildren ? (

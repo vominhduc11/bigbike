@@ -78,6 +78,16 @@ beforeEach(() => {
 })
 
 describe('VideoPickerModal', () => {
+  it('không gọi Media API khi thiếu media.read', async () => {
+    mocks.hasPermission.mockReturnValue(false)
+    render(<VideoPickerModal onSelect={vi.fn()} onClose={vi.fn()} />)
+
+    expect(await screen.findByText('Không thể mở Thư viện Media')).toBeInTheDocument()
+    expect(mocks.fetchMedia).not.toHaveBeenCalled()
+    expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
+    expect(mocks.fetchMediaTags).not.toHaveBeenCalled()
+  })
+
   it('filters the media library to videos and selects an existing item', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()

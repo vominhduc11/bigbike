@@ -25,7 +25,7 @@ request. `CONFIRMED_FROM_CODE`
 
 | Model | Used by | Current contract | Status | Evidence |
 |---|---|---|---|---|
-| Admin JWT | Admin REST APIs | `Authorization: Bearer <token>` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, admin controllers |
+| Admin JWT | Admin REST APIs | `Authorization: Bearer <token>`; includes the admin id and `accessVersion`, which must equal the current account version | `OWNER_CONFIRMED_2026-07-31` | `JwtService.java`, `JwtAuthFilter.java` |
 | Customer session cookie | Customer account/order/address APIs | `bb_session` cookie | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `CustomerSessionFilter.java` |
 | CSRF header | Customer/guest cart and checkout mutations | `X-CSRF-Token` must match `bb_csrf` cookie | `CONFIRMED_FROM_CODE` | `CustomerCsrfFilter.java`, tests |
 | Admin WebSocket JWT | STOMP CONNECT to `/ws` | native header `Authorization: Bearer <token>` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `adminWebSocket.js` |
@@ -44,6 +44,12 @@ request. `CONFIRMED_FROM_CODE`
 **Admin user creation is invite-based.** `POST /api/v1/admin/admin-users` (`admin-users.write`) now takes `{email, displayName, role}` only — **no `password`**. It creates the user `status = INVITED` (no password), generates an invite token and sends an email with a set-password link (`{ADMIN_BASE}/accept-invite?token=…`). The response includes `inviteEmailSent` (boolean) and, when SMTP is not configured, the `inviteUrl` so a Super Admin can deliver it manually. Resend: `POST /api/v1/admin/admin-users/{id}/resend-invite` (`admin-users.write`).
 
 `PATCH /api/v1/admin/admin-users/{id}` (`admin-users.write`) accepts partial `{displayName, status, newPassword, role}`. `newPassword`, when present, must contain 8–128 characters. The manually settable statuses are `ACTIVE`, `DISABLED`, and `SUSPENDED`; callers cannot set `INVITED`, and an account currently in `INVITED` cannot be moved manually to another status because `INVITED → ACTIVE` belongs exclusively to the token-gated invite-acceptance flow. Super-admin privilege, self-lockout, and last-active-super-admin guards follow `PERMISSION_MATRIX.md` §Role Governance.
+
+After a successful commit, a role assignment or role-permission change keeps the affected admin's
+sessions but sends an access-change signal so the browser reloads `GET /api/v1/auth/me`. A change to
+`DISABLED`/`SUSPENDED`, or `newPassword`, increments the target account's access version, revokes all
+of its refresh tokens and forces that account to sign in again on every tab/device. This adds no REST
+endpoint and does not change the PATCH request or response shape. `OWNER_CONFIRMED_2026-07-31`.
 
 Status: `CONFIRMED_FROM_CODE` — `AdminAdminUsersController.java`, `AdminAdminUsersService.java`, `AdminInviteService.java`.
 
@@ -469,8 +475,8 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/sliders?location=home` | `sliders.read` | Trả danh sách banner trang chủ gồm `desktopImage` và `mobileImage` tùy chọn. | `OWNER_CONFIRMED_2026-07-30` | `AdminSliderController.java`, `SliderReadService.java` |
-| `POST /api/v1/admin/sliders` | `sliders.write` | Tạo slider mới. `location` chỉ nhận `home`; `desktopImage` và `mobileImage` dùng `ImageAssetRequest`, trong đó ảnh mobile là tùy chọn. | `OWNER_CONFIRMED_2026-07-30` | `AdminSliderController.java`, `AdminSliderService.java` |
-| `PATCH /api/v1/admin/sliders/{id}` | `sliders.write` | Bản sửa toàn phần (có `location`) thay thế dữ liệu ảnh. `mobileImage: { "url": "...", "alt": "..." }` lưu ảnh mobile; `mobileImage: null` xóa ảnh mobile và response trả `mobileImage: null`. Patch chỉ đổi trạng thái/thứ tự không đụng dữ liệu ảnh. | `OWNER_CONFIRMED_2026-07-30` | `PatchSliderRequest.java`, `AdminSliderService.java` |
+| `POST /api/v1/admin/sliders` | `sliders.write` + `products.read` + `media.read` | Tạo slider mới. `location` chỉ nhận `home`; `desktopImage` và `mobileImage` dùng `ImageAssetRequest`, trong đó ảnh mobile là tùy chọn. | `OWNER_CONFIRMED_2026-07-31` | `AdminSliderController.java`, `AdminSliderService.java` |
+| `PATCH /api/v1/admin/sliders/{id}` | Full edit: `sliders.write` + `products.read` + `media.read`; partial toggle/order: `sliders.write` | Bản sửa toàn phần (có `location`) thay thế dữ liệu ảnh. `mobileImage: { "url": "...", "alt": "..." }` lưu ảnh mobile; `mobileImage: null` xóa ảnh mobile và response trả `mobileImage: null`. Patch chỉ đổi trạng thái/thứ tự không đụng dữ liệu ảnh. | `OWNER_CONFIRMED_2026-07-31` | `PatchSliderRequest.java`, `AdminSliderController.java`, `AdminSliderService.java` |
 | `POST /api/v1/admin/sliders/reorder` | `sliders.write` | Sắp xếp lại slider trong location `home`. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
 | `DELETE /api/v1/admin/sliders/{id}` | `sliders.write` | Xóa slider. | `CONFIRMED_FROM_CODE` | `AdminSliderController.java`, `AdminSliderService.java` |
 
@@ -503,7 +509,7 @@ Status: `REMOVED` | Evidence: commit gỡ `CheckoutController.getOptions` + `Che
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED` orders (`FAILED` removed 2026-07-21). Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
+| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read` only; no exact-role restriction | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED` orders (`FAILED` removed 2026-07-21). Default period: `30d`. | `OWNER_CONFIRMED_2026-07-31` | `AdminDashboardController.java`, `AdminDashboardService.java` |
 
 Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 - `kpi`: `{ todayRevenue, todayPaidRevenue, todayRevenuePct, todayOrders, todayOrdersDelta, pendingOrders, activeProducts }`
@@ -772,7 +778,7 @@ Evidence: `UpsertProductRequest.java` (`available`, no `stockState` setter), `Va
 
 Inventory availability is a **boolean** set by the admin **inside the product form** (see the
 `stockState` derivation section above — `products.update`). The backend keeps only two read
-endpoints, both gated by `inventory.read`:
+endpoints and one realtime notification topic, all gated by `inventory.read`:
 
 | Endpoint | Current behavior |
 |---|---|
@@ -784,7 +790,7 @@ endpoints, both gated by `inventory.read`:
 `GET /variants/{id}/movements`, `GET /products/{id}/movements`, `GET /export.csv`,
 `PATCH /variants/{id}/availability`, `PATCH /products/{id}/availability` — không có caller từ khi
 màn "Kho hàng" độc lập bị gỡ (2026-06-23), không có mobile/client ngoài. `inventory.write` không còn
-endpoint nào sử dụng (xem PERMISSION_MATRIX).
+endpoint nào sử dụng và bị xóa khỏi catalog/role grants từ 2026-07-31 (`V364__remove_orphan_inventory_write_permission.sql`).
 
 There is **no auto-decrement on sale and no restore on cancel** — selling does not change availability, so the admin must manually toggle an item to "Hết hàng" when it sells out (overselling is not auto-prevented).
 
@@ -1552,11 +1558,32 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 | Review payload | `ReviewWsEvent` with `type`, `reviewId`, `productId`, `status`, `timestamp`; `REVIEW_SUBMITTED` is sent after the public review transaction commits and subscription requires `reviews.read` | `CONFIRMED_FROM_CODE` | `ReviewWsEvent.java`, `PublicReviewService.java`, `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/customers` | `CONFIRMED_FROM_CODE` | `AdminCustomerWsService.java`, `adminWebSocket.js` |
 | Customer payload | `CustomerWsEvent` with `type`, `customerId`, `status`, `timestamp`; `CUSTOMER_REGISTERED` is sent after the customer registration transaction commits and subscription requires `customers.read` | `CONFIRMED_FROM_CODE` | `CustomerWsEvent.java`, `CustomerAuthService.java`, `WebSocketConfig.java` |
+| Admin access queue | `/user/queue/admin/access`; server-to-own-admin only. Payload is `{reason, forceReauthentication}` and intentionally contains no token or permission list. On receipt the client clears stale data and calls `GET /api/v1/auth/me`; `forceReauthentication=true` requires removing local access state and returning to sign-in. | `OWNER_CONFIRMED_2026-07-31` | `AdminAccessChangeService.java`, `WebSocketConfig.java`, `auth.jsx` |
 | Presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminPresenceService.java` |
 | Presence command | STOMP `SEND` to `/app/admin/presence` with `{ action: JOIN|LEAVE, entityType: ORDER|PRODUCT, entityId }`; presence is in-memory per WebSocket session, removed on `LEAVE` or disconnect, and never replaces `@Version` conflict protection | `CONFIRMED_FROM_CODE` | `AdminPresenceController.java`, `AdminPresenceService.java`, `OrderEntity.java`, `ProductEntity.java` |
 
 
 ## Admin Reviews Contract
+
+## Admin Home Highlights Contract
+
+The homepage highlight module manages the fixed `{slot, productId}` assignments and
+requires `home_highlights.read` for reads. Save is a composite action requiring both
+`home_highlights.write` and `products.read`.
+The admin response is versioned at the configuration level because one save replaces
+the complete set of up to three slots.
+
+| Method | Path | Permission | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/home/category-highlights?lang=vi|en` | `home_highlights.read` | Returns `{ items: HomeHighlightItem[], version: number }`. |
+| `PUT` | `/api/v1/admin/home/category-highlights` | `home_highlights.write` + `products.read` | Body `{ slots: [{ slot: 1..3, productId: string }], expectedVersion: number }`; replaces the configured slots and returns the updated items plus version. |
+
+The backend validates that every selected product exists and is `PUBLISHED`. A stale
+`expectedVersion` returns `409 CONCURRENT_MODIFICATION`; the client must reload the
+configuration before submitting again. The public
+`GET /api/v1/home/category-highlights` contract remains an unversioned slot array.
+Evidence: `AdminHomeHighlightsController.java`, `HomeHighlightsService.java`,
+`HomeHighlightsConfigEntity.java`, migration `V362__add_home_highlights_config_version.sql`.
 
 Admin review endpoints require an Admin JWT and the permission shown below. Evidence:
 `AdminReviewController.java`, `AdminReviewService.java`, `ReviewJpaRepository.java`.
@@ -1658,9 +1685,27 @@ remain unchanged.
 | `DELETE` | `/api/v1/admin/roles/{id}` | `roles.write` | None | `204 No Content` |
 | `GET` | `/api/v1/admin/permissions` | `roles.read` | None | `200 ApiDataResponse<PermissionGroup[]>` |
 
-`PermissionGroup` is `{groupKey, permissions}`, and each permission entry is
-`{key, sensitive}`. Missing/invalid authentication returns `401`; insufficient permission returns
-`403`. Existing validation, not-found, conflict and unknown-permission responses remain unchanged.
+`PermissionGroup` is `{groupKey, permissions}`. Each permission entry is:
+
+```json
+{
+  "key": "products.update",
+  "moduleKey": "products",
+  "kind": "WRITE",
+  "sensitive": false,
+  "requires": ["products.read", "catalog.read"]
+}
+```
+
+`kind` is one of `READ`, `WRITE`, `EXPORT`, `DANGEROUS`, `SUPPORTING`.
+`reports.export` is `EXPORT`, sensitive, and requires `reports.read`; `inventory.read`
+is `SUPPORTING`. Wildcard `*` satisfies dependencies but is not an assignable catalog entry.
+
+Create/update role payloads must contain the complete transitive dependency closure. The backend
+does not auto-add permissions. A missing edge returns `400 VALIDATION_ERROR`; each detail is:
+`{field:"permissions", code:"MISSING_PERMISSION_DEPENDENCY", message:"Permission '<selected>' requires '<missing>'."}`.
+Missing/invalid authentication returns `401`; insufficient permission returns `403`; unknown keys
+continue to return `UNKNOWN_PERMISSION`.
 Updating the role currently assigned to the acting admin cannot remove either `roles.read` or
 `roles.write`; the API returns `409` so direct calls cannot bypass the UI self-lockout guard.
 

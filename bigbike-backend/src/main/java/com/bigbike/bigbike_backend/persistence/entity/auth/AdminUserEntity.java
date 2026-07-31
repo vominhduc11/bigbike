@@ -65,6 +65,13 @@ public class AdminUserEntity {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    /**
+     * Security epoch included in every admin access token. Incrementing it invalidates all
+     * outstanding bearer tokens for this one account without affecting other administrators.
+     */
+    @Column(name = "access_version", nullable = false)
+    private long accessVersion;
+
     @Column(nullable = false, name = "created_at")
     private Instant createdAt;
 

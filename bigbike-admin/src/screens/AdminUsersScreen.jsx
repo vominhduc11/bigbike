@@ -159,7 +159,13 @@ function PasswordField({ value, onChange, onBlur, placeholder, label, hint, erro
   )
 }
 
-export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
+export function AdminUsersScreen({
+  canUpdate,
+  canReadRoles = true,
+  canAssignRoles = true,
+  currentUserId,
+  isSuperAdmin,
+}) {
   const { t } = useTranslation()
 
   // ── List state ──────────────────────────────────────────────────────────
@@ -177,12 +183,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   const [dynamicRoles, setDynamicRoles] = useState([])
   const [rolesError, setRolesError] = useState(false)
   useEffect(() => {
+    if (!canReadRoles) {
+      return undefined
+    }
     // Lỗi tải danh sách vai trò tuỳ chỉnh không còn bị nuốt: hiện cảnh báo để admin
     // biết danh sách vai trò có thể chưa đầy đủ (thay vì lặng lẽ thiếu lựa chọn).
     fetchRoles()
       .then((r) => { setDynamicRoles(r.items || []); setRolesError(false) })
       .catch(() => setRolesError(true))
-  }, [])
+  }, [canReadRoles])
 
   const roleOptions = useMemo(() => {
     const builtins = Object.keys(ROLE_META)
@@ -374,7 +383,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     if (!validateEditForm()) return
 
     const statusChanged = editForm.status !== editUser.status
-    const roleChanged = editForm.role !== editUser.role
+    const roleChanged = canAssignRoles && editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
     const passwordChanged = editForm.newPassword.trim() !== ''
 
@@ -425,7 +434,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
       const payload = {
         displayName: editForm.displayName.trim() || undefined,
         status: editingSelf ? undefined : (editForm.status || undefined),
-        role: editingSelf ? undefined : (editForm.role || undefined),
+        role: editingSelf || !canAssignRoles ? undefined : (editForm.role || undefined),
         newPassword: editForm.newPassword.trim() || undefined,
       }
       const r = await updateAdminUser(editUser.id, payload)
@@ -435,6 +444,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
       // (tránh hỏi "bỏ thay đổi?" nhầm khi đóng sau khi đã lưu thành công).
       setEditForm({ displayName: r.item.displayName || '', status: r.item.status || 'ACTIVE', role: r.item.role || '', newPassword: '' })
       setEditSuccess(true)
+      if (payload.role || payload.status || payload.newPassword) {
+        toast.success(t('adminUsers.accessApplied'))
+      }
       if (r.item.role !== editForm.role && editForm.role) {
         // Vai trò bị bỏ qua (do quyền) → gắn cạnh ô vai trò, không để ở banner.
         setEditFieldErrors({ role: t('adminUsers.roleIgnored') })
@@ -450,7 +462,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     } finally {
       setEditSaving(false)
     }
-  }, [editUser, editForm, currentUserId, t])
+  }, [editUser, editForm, currentUserId, canAssignRoles, t])
 
   // Kiểm tra hợp lệ phía client cho form tạo mới — trả về true nếu hợp lệ.
   function validateCreateForm() {
@@ -747,7 +759,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
-            <Button type="button" onClick={openCreate}>
+            <Button
+              type="button"
+              onClick={openCreate}
+              disabled={!canAssignRoles}
+              title={!canAssignRoles ? 'Cần quyền roles.read để chọn vai trò cho tài khoản mới.' : undefined}
+            >
               <UserPlus size={14} />{t('adminUsers.createBtn')}
             </Button>
           </div>
@@ -757,6 +774,11 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
       {!canUpdate && !listState.warning ? (
         <ReadOnlyBanner warning={t('adminUsers.readOnlyHint')} />
+      ) : null}
+      {canUpdate && !canReadRoles ? (
+        <Alert tone="warning" icon={Lock}>
+          Cần quyền roles.read để lọc theo vai trò, mời tài khoản mới hoặc thay đổi vai trò. Các thao tác tên, mật khẩu và trạng thái vẫn khả dụng.
+        </Alert>
       ) : null}
 
       {rolesError && (
@@ -792,6 +814,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
           value={roleFilter}
           onValueChange={(v) => handleFilterChange('role', v)}
           ariaLabel={t('adminUsers.filterRole')}
+          disabled={!canReadRoles}
           options={[
             { value: '', label: t('adminUsers.filterRole') },
             ...roleOptions.map((r) => ({ value: r, label: resolveRoleLabel(r) })),
@@ -931,7 +954,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
                 <FormField label={t('adminUsers.formRole')} error={editFieldErrors.role}>
                   <Select
                     value={editForm.role}
-                    disabled={isSelf || isSuperAdminAccountLocked}
+                    disabled={isSelf || isSuperAdminAccountLocked || !canAssignRoles}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>

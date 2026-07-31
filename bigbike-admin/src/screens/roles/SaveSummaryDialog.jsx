@@ -11,6 +11,8 @@ export function SaveSummaryDialog({
   const { t } = useTranslation()
   const added   = pending?.added   || []
   const removed = pending?.removed || []
+  const userAdded = pending?.userAdded || added
+  const autoAdded = pending?.autoAdded || []
   const userCount = Number.isFinite(Number(assignedUserCount))
     ? Math.max(0, Math.trunc(Number(assignedUserCount)))
     : 0
@@ -46,18 +48,33 @@ export function SaveSummaryDialog({
         </Alert>
       )}
 
-      {added.length > 0 && (
+      {userAdded.length > 0 && (
         <div className="mb-3">
           <div className="text-xs font-bold text-success mb-1.5 uppercase tracking-wider">
             + {t('roles.saveSummaryAdding')}
           </div>
-          {added.map(k => (
+          {userAdded.map(k => (
             <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
               <Check size={12} className="text-success shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               {sensitiveKeys.has(k) && (
                 <AlertTriangle size={12} className="text-warning shrink-0" aria-label={t('roles.sensitivePermNote')} />
               )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {autoAdded.length > 0 && (
+        <div className="mb-3">
+          <div className="text-xs font-bold text-info mb-1.5 uppercase tracking-wider">
+            + Tự thêm do phụ thuộc
+          </div>
+          {autoAdded.map(k => (
+            <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+              <Check size={12} className="text-info shrink-0" aria-hidden />
+              <span className="text-foreground">{permLabels[k] || k}</span>
+              <span className="text-xs text-muted-foreground">Bắt buộc để tổ hợp quyền sử dụng được</span>
             </div>
           ))}
         </div>

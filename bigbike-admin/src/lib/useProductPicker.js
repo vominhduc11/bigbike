@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchProducts } from './adminApi'
 import { useDebounce } from './useDebounce'
+import { useHasPermission } from './auth'
 
 /**
  * Logic tìm sản phẩm dùng chung cho các ô ProductPickerCombobox (fetch/debounce/query key).
@@ -18,13 +19,15 @@ export function useProductPicker({
   minQueryLength = 1,
   enabled = true,
 }) {
+  const hasPermission = useHasPermission()
+  const canReadProducts = hasPermission('products.read')
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, debounceMs)
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError, error } = useQuery({
     queryKey: [queryKey, debouncedSearch, contentLang],
     queryFn: () => fetchProducts({ q: debouncedSearch.trim(), ...params }),
-    enabled: enabled && debouncedSearch.trim().length >= minQueryLength,
+    enabled: enabled && canReadProducts && debouncedSearch.trim().length >= minQueryLength,
     staleTime,
   })
 
@@ -36,6 +39,9 @@ export function useProductPicker({
     debouncedSearch,
     items: data?.items ?? [],
     isFetching,
+    isError,
+    error,
+    permissionDenied: !canReadProducts,
     reset,
   }
 }

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * DB-backed, in-memory-cached lookup of an admin's CURRENT role + status, so locking/suspending/
+ * DB-backed, in-memory-cached lookup of an admin's CURRENT role + status/access version, so locking/suspending/
  * demoting an admin takes effect on their very next request instead of waiting for the access-token
  * TTL to expire. Mirrors {@link AdminPermissionService}'s cache/evict pattern.
  *
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AdminAccountStatusService {
 
-    public record Snapshot(String role, String status) {}
+    public record Snapshot(String role, String status, long accessVersion) {}
 
     private final AdminUserJpaRepository adminUserRepo;
     private final ConcurrentHashMap<UUID, Snapshot> cache = new ConcurrentHashMap<>();
@@ -30,7 +30,7 @@ public class AdminAccountStatusService {
         }
         return adminUserRepo.findById(userId)
                 .map(u -> {
-                    Snapshot snapshot = new Snapshot(u.getRole(), u.getStatus());
+                    Snapshot snapshot = new Snapshot(u.getRole(), u.getStatus(), u.getAccessVersion());
                     cache.put(userId, snapshot);
                     return snapshot;
                 })

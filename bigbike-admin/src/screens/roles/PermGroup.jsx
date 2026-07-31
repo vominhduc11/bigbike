@@ -4,12 +4,12 @@ import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
-import { PERM_LABEL_KEY_MAP } from './constants'
+import { MODULE_LABELS, PERM_LABEL_KEY_MAP, requiredBy } from './constants'
 
 // Một nhóm quyền = một section thu gọn (chống ngợp khi có nhiều nhóm cùng mở).
 // Tiêu đề kèm tóm tắt "đã cấp/tổng" để quét nhanh mà không cần bung nhóm.
 // `open`/`onToggleOpen` do RoleDetail điều khiển.
-export function PermGroup({ group, activePerms, editMode, onToggle, onBulk, isSuperAdmin, showCodes = false, open, onToggleOpen }) {
+export function PermGroup({ group, catalog, activePerms, editMode, onToggle, onBulk, isSuperAdmin, showCodes = false, open, onToggleOpen }) {
   const { t } = useTranslation()
   const canBulk = editMode && !isSuperAdmin && typeof onBulk === 'function'
   const total = group.permissions.length
@@ -17,7 +17,7 @@ export function PermGroup({ group, activePerms, editMode, onToggle, onBulk, isSu
 
   return (
     <CollapsibleSection
-      title={t(group.groupKey)}
+      title={t(group.groupKey, { defaultValue: MODULE_LABELS[group.moduleKey] || group.moduleKey || group.groupKey })}
       open={open}
       onToggle={onToggleOpen}
       badge={
@@ -46,6 +46,7 @@ export function PermGroup({ group, activePerms, editMode, onToggle, onBulk, isSu
           const label = labelKey ? t(labelKey, { defaultValue: perm.key }) : perm.key
           const permId = `perm-${perm.key.replace(/[^a-z0-9]/gi, '-')}`
           const canEdit = editMode && !isSuperAdmin
+          const requiredByKeys = requiredBy(perm.key, activePerms, catalog)
 
           return (
             <div key={perm.key} className="roles-perm-row">
@@ -86,6 +87,28 @@ export function PermGroup({ group, activePerms, editMode, onToggle, onBulk, isSu
                     <AlertTriangle size={12} aria-hidden />
                   </span>
                 )}
+                {perm.kind === 'SUPPORTING' ? (
+                  <span className="bb-badge bb-badge-neutral text-xs">Hỗ trợ</span>
+                ) : null}
+                {perm.kind === 'EXPORT' ? (
+                  <span className="bb-badge bb-badge-warning text-xs">Xuất dữ liệu</span>
+                ) : null}
+                {requiredByKeys.length > 0 ? (
+                  <span className="text-xs text-muted-foreground">
+                    Bắt buộc bởi {requiredByKeys.map(key => {
+                      const keyLabel = PERM_LABEL_KEY_MAP[key]
+                      return keyLabel ? t(keyLabel, { defaultValue: key }) : key
+                    }).join(', ')}
+                  </span>
+                ) : null}
+                {perm.requires?.length > 0 ? (
+                  <span className="basis-full text-xs text-muted-foreground">
+                    Cần: {perm.requires.map(key => {
+                      const keyLabel = PERM_LABEL_KEY_MAP[key]
+                      return keyLabel ? t(keyLabel, { defaultValue: key }) : key
+                    }).join(', ')}
+                  </span>
+                ) : null}
               </label>
 
               {/* Mã kỹ thuật — ẩn mặc định (bật qua "Hiện mã kỹ thuật"); nhãn nghiệp vụ là chính */}

@@ -12,10 +12,21 @@ import { ScreenSkeleton } from './components/ScreenSkeleton'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
 import { readTokens } from './lib/authStorage'
-import { connectAdminWs, disconnectAdminWs, setWsReconnectCallback } from './lib/adminWebSocket'
+import {
+  connectAdminWs,
+  disconnectAdminWs,
+  setWsAuthRejectedCallback,
+  setWsReconnectCallback,
+  subscribeAdminWs,
+} from './lib/adminWebSocket'
 import { queryClient } from './lib/queryClient'
 import { confirmNavigation } from './lib/navigationGuard'
 import { lazyScreen } from './lib/lazyScreen'
+import {
+  canAccessPolicy,
+  missingPolicyPermissions,
+  policyForRoute,
+} from './lib/adminAccessPolicy'
 import { LoginScreen } from './screens/LoginScreen'
 
 const AcceptInviteScreen = lazyScreen(() => import('./screens/AcceptInviteScreen'), 'AcceptInviteScreen')
@@ -50,58 +61,56 @@ const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedPr
 // Dashboard: backend giới hạn theo VAI TRÒ (ADMIN/SUPER_ADMIN/SHOP_MANAGER) ngoài
 // quyền orders.read — mirror ở frontend để người có orders.read nhưng khác vai trò
 // không thấy mục rồi bị 403 (đồng bộ PERMISSION_MATRIX). Người có quyền '*' vẫn thấy.
-const DASHBOARD_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SHOP_MANAGER']
-
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
   {
     groupKey: 'sales',
     labelKey: 'nav.group.sales',
     items: [
-      { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard, roles: DASHBOARD_ROLES },
-      { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
-      { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
-      { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
+      { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  policyKey: 'dashboard', icon: LayoutDashboard },
+      { path: '/admin/orders',     labelKey: 'nav.orders',     policyKey: 'ordersRead', icon: ShoppingCart },
+      { path: '/admin/customers',  labelKey: 'nav.customers',  policyKey: 'customersRead', icon: Users },
+      { path: '/admin/reviews',    labelKey: 'nav.reviews',    policyKey: 'reviewsRead', icon: Star },
     ],
   },
   {
     groupKey: 'products',
     labelKey: 'nav.group.products',
     items: [
-      { path: '/admin/products',          labelKey: 'nav.products',          permission: 'products.read',  icon: Package },
-      { path: '/admin/featured-products', labelKey: 'nav.featuredProducts',  permission: 'products.update', icon: Star },
-      { path: '/admin/categories',        labelKey: 'nav.categories',        permission: 'catalog.read',   icon: Tag },
-      { path: '/admin/brands',            labelKey: 'nav.brands',            permission: 'catalog.read',   icon: Award },
+      { path: '/admin/products',          labelKey: 'nav.products',          policyKey: 'productsRead', icon: Package },
+      { path: '/admin/featured-products', labelKey: 'nav.featuredProducts',  policyKey: 'featuredProducts', icon: Star },
+      { path: '/admin/categories',        labelKey: 'nav.categories',        policyKey: 'catalogRead', icon: Tag },
+      { path: '/admin/brands',            labelKey: 'nav.brands',            policyKey: 'catalogRead', icon: Award },
     ],
   },
   {
     groupKey: 'content',
     labelKey: 'nav.group.content',
     items: [
-      { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
-      { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
-      { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       permission: 'home_videos.read',    icon: BarChart2 },
-      { path: '/admin/home-highlights', labelKey: 'nav.homeHighlights',   permission: 'home_highlights.read', icon: LayoutDashboard },
-      { path: '/admin/redirects',       labelKey: 'nav.redirects',        permission: 'redirects.read',       icon: ArrowRightLeft },
-      { path: '/admin/menus',      labelKey: 'nav.menus',      permission: 'menus.read',     icon: AlignLeft },
-      { path: '/admin/media',      labelKey: 'nav.media',      permission: 'media.read',     icon: Image },
+      { path: '/admin/content',    labelKey: 'nav.content',    policyKey: 'contentRead', icon: FileText },
+      { path: '/admin/sliders',      labelKey: 'nav.sliders',      policyKey: 'slidersRead', icon: BarChart2 },
+      { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       policyKey: 'homeVideosRead', icon: BarChart2 },
+      { path: '/admin/home-highlights', labelKey: 'nav.homeHighlights',   policyKey: 'homeHighlightsRead', icon: LayoutDashboard },
+      { path: '/admin/redirects',       labelKey: 'nav.redirects',        policyKey: 'redirectsRead', icon: ArrowRightLeft },
+      { path: '/admin/menus',      labelKey: 'nav.menus',      policyKey: 'menusRead', icon: AlignLeft },
+      { path: '/admin/media',      labelKey: 'nav.media',      policyKey: 'mediaRead', icon: Image },
     ],
   },
   {
     groupKey: 'reports',
     labelKey: 'nav.group.reports',
     items: [
-      { path: '/admin/reports',    labelKey: 'nav.reports',    permission: 'reports.read',   icon: BarChart2 },
+      { path: '/admin/reports',    labelKey: 'nav.reports',    policyKey: 'reportsRead', icon: BarChart2 },
     ],
   },
   {
     groupKey: 'system',
     labelKey: 'nav.group.system',
     items: [
-      { path: '/admin/settings',     labelKey: 'nav.settings',    permission: 'settings.read',     icon: Settings },
-      { path: '/admin/admin-users',  labelKey: 'nav.adminUsers',  permission: 'admin-users.read',  icon: Shield },
-      { path: '/admin/roles',        labelKey: 'nav.roles',       permission: 'roles.read',        icon: KeyRound },
-      { path: '/admin/audit-logs',   labelKey: 'nav.auditLogs',   permission: 'audit-logs.read',   icon: Activity },
+      { path: '/admin/settings',     labelKey: 'nav.settings',    policyKey: 'settingsRead', icon: Settings },
+      { path: '/admin/admin-users',  labelKey: 'nav.adminUsers',  policyKey: 'adminUsersRead', icon: Shield },
+      { path: '/admin/roles',        labelKey: 'nav.roles',       policyKey: 'rolesRead', icon: KeyRound },
+      { path: '/admin/audit-logs',   labelKey: 'nav.auditLogs',   policyKey: 'auditLogsRead', icon: Activity },
     ],
   },
 ]
@@ -117,9 +126,8 @@ function normalizePath(pathname) {
 
 function parseRoute(pathname) {
   const normalized = normalizePath(pathname)
-  const effectivePath =
-    normalized === '/' || normalized === '/admin' ? '/admin/dashboard' : normalized
-  const segments = effectivePath.split('/').filter(Boolean)
+  if (normalized === '/' || normalized === '/admin') return { kind: 'root' }
+  const segments = normalized.split('/').filter(Boolean)
 
   if (segments[0] !== 'admin') return { kind: 'not-found' }
 
@@ -169,58 +177,23 @@ function parseRoute(pathname) {
 }
 
 // Vai trò bắt buộc cho từng route (ngoài permission). Chỉ Dashboard cần, để khớp backend.
-function routeRoles(routeName) {
-  if (routeName === 'dashboard') return DASHBOARD_ROLES
-  return null
-}
-
-function routePermission(routeName) {
-  switch (routeName) {
-    case 'dashboard':                    return 'orders.read'
-    case 'products-list':
-    case 'product-detail':               return 'products.read'
-    case 'product-create':               return 'products.update'
-    case 'category-create':
-    case 'brand-create':                 return 'catalog.update'
-    case 'categories-list':
-    case 'category-detail':
-    case 'brands-list':
-    case 'brand-detail':                 return 'catalog.read'
-    case 'featured-products':           return 'products.update'
-    case 'content-create':               return 'content.update'
-    case 'content-list':
-    case 'content-detail':               return 'content.read'
-    case 'orders-list':
-    case 'order-detail':                 return 'orders.read'
-    case 'customers-list':
-    case 'customer-detail':              return 'customers.read'
-    case 'media-library':                return 'media.read'
-    case 'menus':                        return 'menus.read'
-    case 'sliders':                      return 'sliders.read'
-    case 'home-videos':                  return 'home_videos.read'
-    case 'home-highlights':              return 'home_highlights.read'
-    case 'redirects':                    return 'redirects.read'
-    case 'reviews':                      return 'reviews.read'
-    case 'review-detail':                return 'reviews.read'
-    case 'admin-users':                  return 'admin-users.read'
-    case 'settings':                     return 'settings.read'
-    case 'audit-logs':                   return 'audit-logs.read'
-    case 'reports':                      return 'reports.read'
-    case 'roles':                        return 'roles.read'
-    default:                             return ''
-  }
-}
-
 function AdminApp() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname))
   const authState = useAuth()
+  const {
+    status: authStatus,
+    reconcileAccess,
+    invalidateSession,
+  } = authState
   const { t } = useTranslation()
+  const canReadInventory = authState.user?.permissions?.includes('*')
+    || authState.user?.permissions?.includes('inventory.read')
 
   const SCREEN_SUSPENSE_FALLBACK = <ScreenSkeleton />
 
   const navigate = useCallback((nextPath, options = {}) => {
     // F6: chặn rời trang khi đang có thay đổi chưa lưu (hỏi xác nhận).
-    if (!confirmNavigation()) return
+    if (!options.force && !confirmNavigation()) return
     const qIdx = nextPath.indexOf('?')
     const pathPart = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx)
     const queryPart = qIdx === -1 ? '' : nextPath.slice(qIdx)
@@ -242,26 +215,43 @@ function AdminApp() {
   }, [])
 
   useEffect(() => {
-    if (authState.status !== 'authenticated') return
+    if (authStatus !== 'authenticated') return
+    const unsubscribeAccess = subscribeAdminWs('/user/queue/admin/access', (event) => {
+      queryClient.clear()
+      if (event?.forceReauthentication) {
+        invalidateSession({ broadcast: true })
+      } else {
+        reconcileAccess()
+      }
+    })
     connectAdminWs(() => readTokens().accessToken)
     // Sau mỗi lần (re)connect ta có thể đã bỏ lỡ event khi offline → chỉ làm mới
     // các cache do những luồng có topic WS chi phối (đơn, khách hàng, đánh giá),
     // thay vì invalidate TẤT CẢ. Tránh việc mạng chập chờn (reconnect 4s/lần) làm
     // refetch toàn bộ màn hình.
-    setWsReconnectCallback(() => {
+    setWsReconnectCallback(async () => {
+      await reconcileAccess({ broadcast: false })
       for (const queryKey of [
         ['orders'], ['order'], ['nav-badge'], ['dashboard'],
         ['inventory-summary'], ['customers'], ['customer-summary'],
         ['reviews'], ['review-summary'],
       ]) {
+        if (queryKey[0] === 'inventory-summary' && !canReadInventory) continue
         queryClient.invalidateQueries({ queryKey })
       }
     })
-    return () => disconnectAdminWs()
-  }, [authState.status])
+    setWsAuthRejectedCallback(async () => {
+      const restored = await reconcileAccess()
+      if (restored) connectAdminWs(() => readTokens().accessToken)
+    })
+    return () => {
+      unsubscribeAccess()
+      disconnectAdminWs()
+    }
+  }, [authStatus, reconcileAccess, invalidateSession, canReadInventory])
 
   const route = parseRoute(pathname)
-  const activePath = pathname === '/' || pathname === '/admin' ? '/admin/dashboard' : pathname
+  const activePath = pathname
 
   const permissions = useMemo(
     () => new Set(authState.user?.permissions || []),
@@ -271,14 +261,13 @@ function AdminApp() {
     (permission) => permissions.has('*') || permissions.has(permission),
     [permissions],
   )
+  const canAccess = useCallback(
+    (policyKey) => canAccessPolicy(policyKey, hasPermission),
+    [hasPermission],
+  )
   const canViewOrders = hasPermission('orders.read')
   const userRoles = useMemo(() => authState.user?.roles || [], [authState.user])
   // Route/nav không khai báo `roles` thì mọi vai trò đều qua; '*' luôn qua.
-  const hasAnyRole = useCallback(
-    (roles) => !roles || roles.length === 0 || permissions.has('*') || roles.some((r) => userRoles.includes(r)),
-    [permissions, userRoles],
-  )
-
   // Build grouped nav — only groups with at least one visible item
   const visibleNavGroups = useMemo(
     () => NAV_GROUP_DEFS
@@ -286,11 +275,11 @@ function AdminApp() {
         groupKey: group.groupKey,
         label: t(group.labelKey),
         items: group.items
-          .filter((item) => authState.status === 'authenticated' && hasPermission(item.permission) && hasAnyRole(item.roles))
+          .filter((item) => authState.status === 'authenticated' && canAccess(item.policyKey))
           .map((item) => ({ path: item.path, label: t(item.labelKey), icon: item.icon })),
       }))
       .filter((group) => group.items.length > 0),
-    [authState.status, hasPermission, hasAnyRole, t],
+    [authState.status, canAccess, t],
   )
 
   // Active page label for topbar
@@ -302,9 +291,40 @@ function AdminApp() {
   }, [activePath, t])
 
   const fallbackPath = useMemo(() => {
-    const first = NAV_FLAT.find((item) => hasPermission(item.permission) && hasAnyRole(item.roles))
-    return first ? first.path : '/admin/dashboard'
-  }, [hasPermission, hasAnyRole])
+    const first = NAV_FLAT.find((item) => canAccess(item.policyKey))
+    return first?.path || null
+  }, [canAccess])
+
+  const routePolicyKey = useMemo(
+    () => (route.kind === 'screen' ? policyForRoute(route.name) : null),
+    [route.kind, route.name],
+  )
+  const missingPermissions = useMemo(
+    () => (routePolicyKey ? missingPolicyPermissions(routePolicyKey, hasPermission) : []),
+    [routePolicyKey, hasPermission],
+  )
+
+  useEffect(() => {
+    if (authState.status !== 'authenticated' || route.kind !== 'root' || !fallbackPath) return
+    // Root is a real redirect target: replace the URL once the authenticated
+    // permission set has selected its first accessible module.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    navigate(fallbackPath, { replace: true })
+  }, [authState.status, route.kind, fallbackPath, navigate])
+
+  useEffect(() => {
+    if (authState.status !== 'authenticated'
+      || route.kind !== 'screen'
+      || missingPermissions.length === 0
+      || !fallbackPath) return
+    // Access was withdrawn while this tab was open. Do not leave an editable stale form in
+    // place or ask about unsaved changes: the server has already changed the authorization.
+    const timer = window.setTimeout(
+      () => navigate(fallbackPath, { replace: true, force: true }),
+      0,
+    )
+    return () => window.clearTimeout(timer)
+  }, [authState.status, route.kind, missingPermissions, fallbackPath, navigate])
 
   // Public, token-gated invite acceptance — rendered regardless of auth state.
   if (pathname === '/accept-invite') {
@@ -335,34 +355,53 @@ function AdminApp() {
     )
   }
 
+  if (route.kind === 'root') {
+    return (
+      <AdminShell
+        navGroups={visibleNavGroups}
+        activePath={activePath}
+        navigate={navigate}
+        user={authState.user}
+        pageTitle={activePageLabel}
+        homePath={fallbackPath}
+      >
+        <StatePanel
+          tone={fallbackPath ? 'info' : 'neutral'}
+          title={fallbackPath
+            ? t('app.loadingSession')
+            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng module nào' })}
+          description={fallbackPath
+            ? t('app.loadingSessionDesc')
+            : t('app.noAllowedModulesDesc', { defaultValue: 'Liên hệ quản trị viên để được cấp quyền phù hợp với công việc.' })}
+        />
+      </AdminShell>
+    )
+  }
+
   if (route.kind === 'not-found') {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
-        <StatePanel tone="neutral" title={t('app.routeNotFound')} description={t('app.routeNotFoundDesc')}
-          actionLabel={t('app.goToModule')} onAction={() => navigate(fallbackPath)} />
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+        <StatePanel
+          tone="neutral"
+          title={t('app.routeNotFound')}
+          description={fallbackPath
+            ? t('app.routeNotFoundDesc')
+            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng module nào' })}
+          actionLabel={fallbackPath ? t('app.goToModule') : undefined}
+          onAction={fallbackPath ? () => navigate(fallbackPath) : undefined}
+        />
       </AdminShell>
     )
   }
 
   if (route.kind !== 'screen') return null
 
-  const requiredPermission = routePermission(route.name)
-  if (requiredPermission && !hasPermission(requiredPermission)) {
+  if (missingPermissions.length > 0) {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
-        <StatePanel tone="warning" title={t('app.permissionDenied')} description={`${t('app.missingPermission')} ${requiredPermission}`}
-          actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
-      </AdminShell>
-    )
-  }
-
-  const requiredRoles = routeRoles(route.name)
-  if (requiredRoles && !hasAnyRole(requiredRoles)) {
-    return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
-        <StatePanel tone="warning" title={t('app.permissionDenied')}
-          description={t('app.missingRole', { defaultValue: 'Trang này chỉ dành cho một số vai trò quản trị (Quản trị viên, Quản lý cửa hàng).' })}
-          actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+        <StatePanel tone="warning" title={t('app.permissionDenied')} description={`${t('app.missingPermission')} ${missingPermissions.join(', ')}`}
+          actionLabel={fallbackPath ? t('app.goToAllowedModule') : undefined}
+          onAction={fallbackPath ? () => navigate(fallbackPath) : undefined} />
       </AdminShell>
     )
   }
@@ -372,29 +411,29 @@ function AdminApp() {
     case 'dashboard':
       screen = <DashboardScreen navigate={navigate} />; break
     case 'products-list':
-      screen = <ProductListScreen navigate={navigate} canUpdate={hasPermission('products.update')} />; break
+      screen = <ProductListScreen navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'product-create':
-      screen = <ProductDetailScreen key="product-create" productId={null} isCreate navigate={navigate} canUpdate={hasPermission('products.update')} />; break
+      screen = <ProductDetailScreen key="product-create" productId={null} isCreate navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'product-detail':
-      screen = <ProductDetailScreen key={route.productId} productId={route.productId} navigate={navigate} canUpdate={hasPermission('products.update')} />; break
+      screen = <ProductDetailScreen key={route.productId} productId={route.productId} navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'categories-list':
-      screen = <CategoryListScreen navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <CategoryListScreen navigate={navigate} canUpdate={canAccess('catalogWrite')} />; break
     case 'category-create':
-      screen = <CategoryDetailScreen key="category-create" categoryId={null} isCreate navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <CategoryDetailScreen key="category-create" categoryId={null} isCreate navigate={navigate} canUpdate={canAccess('catalogWrite')} canReadProducts={hasPermission('products.read')} />; break
     case 'category-detail':
-      screen = <CategoryDetailScreen key={route.categoryId} categoryId={route.categoryId} navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <CategoryDetailScreen key={route.categoryId} categoryId={route.categoryId} navigate={navigate} canUpdate={canAccess('catalogWrite')} canReadProducts={hasPermission('products.read')} />; break
     case 'brands-list':
-      screen = <BrandListScreen navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <BrandListScreen navigate={navigate} canUpdate={canAccess('catalogWrite')} />; break
     case 'brand-create':
-      screen = <BrandDetailScreen key="brand-create" brandId={null} isCreate navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <BrandDetailScreen key="brand-create" brandId={null} isCreate navigate={navigate} canUpdate={canAccess('catalogWrite')} />; break
     case 'brand-detail':
-      screen = <BrandDetailScreen key={route.brandId} brandId={route.brandId} navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
+      screen = <BrandDetailScreen key={route.brandId} brandId={route.brandId} navigate={navigate} canUpdate={canAccess('catalogWrite')} />; break
     case 'content-list':
-      screen = <ContentListScreen navigate={navigate} canUpdate={hasPermission('content.update')} />; break
+      screen = <ContentListScreen navigate={navigate} canUpdate={canAccess('contentWrite')} />; break
     case 'content-create':
-      screen = <ContentDetailScreen key={`content-create:${route.contentType}`} contentType={route.contentType} contentId={null} isCreate navigate={navigate} canUpdate={hasPermission('content.update')} />; break
+      screen = <ContentDetailScreen key={`content-create:${route.contentType}`} contentType={route.contentType} contentId={null} isCreate navigate={navigate} canUpdate={canAccess('contentWrite')} />; break
     case 'content-detail':
-      screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={hasPermission('content.update')} />; break
+      screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={canAccess('contentWrite')} />; break
     case 'orders-list':
       screen = <OrderListScreen navigate={navigate} canUpdate={hasPermission('orders.write')} />; break
     case 'order-detail':
@@ -406,13 +445,13 @@ function AdminApp() {
     case 'media-library':
       screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} canHardDelete={hasPermission('*')} />; break
     case 'menus':
-      screen = <MenuScreen canUpdate={hasPermission('menus.write')} />; break
+      screen = <MenuScreen canUpdate={canAccess('menusWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'sliders':
-      screen = <SliderListScreen canUpdate={hasPermission('sliders.write')} />; break
+      screen = <SliderListScreen canUpdate={canAccess('slidersWrite')} canFullEdit={canAccess('slidersFullEdit')} />; break
     case 'home-videos':
       screen = <HomeVideoListScreen canUpdate={hasPermission('home_videos.write')} />; break
     case 'home-highlights':
-      screen = <HomeHighlightsScreen canUpdate={hasPermission('home_highlights.write')} />; break
+      screen = <HomeHighlightsScreen canUpdate={canAccess('homeHighlightsWrite')} />; break
     case 'redirects':
       screen = <RedirectListScreen canUpdate={hasPermission('redirects.write')} />; break
     case 'reviews':
@@ -420,7 +459,7 @@ function AdminApp() {
     case 'review-detail':
       screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} isSuperAdmin={userRoles.includes('SUPER_ADMIN')} />; break
     case 'admin-users':
-      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} isSuperAdmin={hasPermission('*')} currentUserId={authState.user?.id} />; break
+      screen = <AdminUsersScreen canUpdate={canAccess('adminUsersWrite')} canReadRoles={hasPermission('roles.read')} canAssignRoles={canAccess('adminUsersAssignRole')} isSuperAdmin={hasPermission('*')} currentUserId={authState.user?.id} />; break
     case 'settings':
       screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} navigate={navigate} />; break
     case 'audit-logs':
@@ -430,13 +469,13 @@ function AdminApp() {
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} currentUserRoles={authState.user?.roles} />; break
     case 'featured-products':
-      screen = <FeaturedProductsScreen canUpdate={hasPermission('products.update')} />; break
+      screen = <FeaturedProductsScreen canUpdate={canAccess('featuredProducts')} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }
 
   return (
-    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
+    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
       <Suspense fallback={SCREEN_SUSPENSE_FALLBACK}>
         {screen}
       </Suspense>

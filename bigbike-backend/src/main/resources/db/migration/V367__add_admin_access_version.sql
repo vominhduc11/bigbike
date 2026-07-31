@@ -1,0 +1,2 @@
+ALTER TABLE admin_users
+    ADD COLUMN IF NOT EXISTS access_version BIGINT NOT NULL DEFAULT 0;

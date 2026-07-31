@@ -2518,6 +2518,7 @@
     "tabsAria": "Nhóm cài đặt",
     "tabChangeCount": "{{count}} thay đổi",
     "saveSuccess": "Đã lưu thành công",
+    "accessApplied": "Đã áp dụng quyền hoặc trạng thái mới; các phiên đang mở của tài khoản này sẽ được đồng bộ.",
     "valEmail": "Nhập đúng định dạng email, vd: ten@bigbike.vn",
     "valUrl": "Nhập đường dẫn web đầy đủ, vd: https://bigbike.vn/khuyen-mai",
     "valPhone": "Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch",
@@ -2939,6 +2940,7 @@
     "cancelBtn": "Huỷ",
     "saving": "Đang lưu...",
     "saveSuccess": "Đã lưu quyền vai trò thành công.",
+    "accessApplied": "Đã áp dụng quyền cho vai trò; {{count}} tài khoản được đồng bộ.",
     "saveError": "Không thể lưu quyền. Vui lòng thử lại.",
     "discardChanges": "Bạn có thay đổi chưa lưu. Bỏ qua và chuyển vai trò?",
     "superAdminBanner": "Chủ hệ thống có toàn quyền — mọi quyền hạn được cấp tự động và không thể thay đổi qua giao diện.",
@@ -3014,7 +3016,6 @@
     "permCatalogRead": "Xem danh mục & thương hiệu",
     "permCatalogUpdate": "Chỉnh sửa danh mục & thương hiệu",
     "permInventoryRead": "Xem tồn kho",
-    "permInventoryWrite": "Điều chỉnh tồn kho",
     "permContentRead": "Xem bài viết Tin tức",
     "permContentUpdate": "Tạo & chỉnh sửa nội dung",
     "permMediaRead": "Xem thư viện ảnh",
@@ -3273,7 +3274,13 @@
     "slotLabel": "Vị trí {{number}}",
     "noSlotsHint": "Chọn ít nhất 1 sản phẩm để lưu.",
     "langSwitchConfirm": "Bạn có thay đổi Highlights chưa lưu. Đổi ngôn ngữ sẽ tải lại dữ liệu và mất các thay đổi này. Tiếp tục?",
-    "unsavedTitle": "Có thay đổi chưa lưu"
+    "unsavedTitle": "Có thay đổi chưa lưu",
+    "conflictTitle": "Cấu hình đã được cập nhật ở cửa sổ khác",
+    "conflictDescription": "Dữ liệu trên màn hình đã cũ. Hãy tải lại dữ liệu trước khi lưu lại để không ghi đè thay đổi mới nhất.",
+    "conflictToast": "Cấu hình đã thay đổi ở nơi khác. Hãy tải lại dữ liệu trước khi lưu lại.",
+    "reloadData": "Tải lại dữ liệu",
+    "searchPermissionError": "Bạn không có quyền đọc danh sách sản phẩm.",
+    "searchError": "Không thể tải danh sách sản phẩm. Vui lòng thử lại."
   },
   "redirects": {
     "title": "Chuyển hướng",

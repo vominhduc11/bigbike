@@ -83,7 +83,7 @@ function SidebarInfoRow({ label, children, icon: Icon }) {
   )
 }
 
-export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
+export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate, canReadProducts }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const isEnLang = contentLang === 'en'
@@ -143,7 +143,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   } = useQuery({
     queryKey: ['products', 'by-category', categoryId, 'top5', 'ALL_INCLUDING_TRASH', contentLang],
     queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc', publishStatus: 'ALL_INCLUDING_TRASH' }),
-    enabled: !isCreate && Boolean(categoryId),
+    enabled: canReadProducts && !isCreate && Boolean(categoryId),
     staleTime: 30 * 1000,
   })
   const productsList = productsInCat?.items ?? []
@@ -1014,6 +1014,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 isLoading={isProductsInCatLoading}
                 isError={isProductsInCatError}
                 onRetry={refetchProductsInCat}
+                permissionDenied={!canReadProducts}
               />
             )}
           </div>

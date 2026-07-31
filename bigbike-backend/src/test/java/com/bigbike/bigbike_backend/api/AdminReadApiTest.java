@@ -81,6 +81,26 @@ class AdminReadApiTest {
     }
 
     @Test
+    void shouldKeepInventoryReadBoundaryForListAndDashboardSummary() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/inventory")
+                        .header("X-Admin-Permissions", "inventory.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.page").value(1));
+
+        mockMvc.perform(get("/api/v1/admin/inventory/summary")
+                        .header("X-Admin-Permissions", "inventory.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").exists())
+                .andExpect(jsonPath("$.inStockCount").exists())
+                .andExpect(jsonPath("$.outOfStockCount").exists());
+
+        mockMvc.perform(get("/api/v1/admin/inventory/summary")
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void shouldFilterAdminProductsByGenderCaseInsensitively() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
 

@@ -1,7 +1,12 @@
 package com.bigbike.bigbike_backend.service.auth;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -9,7 +14,8 @@ import java.util.stream.Collectors;
  *
  * Single source of truth for:
  *   - Valid permission key strings (used for validation in AdminRoleService)
- *   - Groupings and sensitive flags (served by GET /api/v1/admin/permissions)
+ *   - Module, kind, sensitive and dependency metadata
+ *     (served by GET /api/v1/admin/permissions)
  *
  * Add new permissions here first, then add the Flyway migration that seeds them
  * into role_permissions for the appropriate built-in roles.
@@ -18,62 +24,146 @@ public final class PermissionCatalog {
 
     private PermissionCatalog() {}
 
-    public record Entry(String key, boolean sensitive) {}
+    public enum Kind {
+        READ,
+        WRITE,
+        EXPORT,
+        DANGEROUS,
+        SUPPORTING
+    }
+
+    public record Entry(
+            String key,
+            String moduleKey,
+            Kind kind,
+            boolean sensitive,
+            List<String> requires
+    ) {
+        public Entry {
+            requires = List.copyOf(requires);
+        }
+    }
+
     public record Group(String groupKey, List<Entry> permissions) {}
+    public record DependencyViolation(String permission, String requiredPermission) {}
 
     public static final List<Group> GROUPS = List.of(
 
         new Group("roles.groupSales", List.of(
-            new Entry("orders.read",                  false),
-            new Entry("orders.write",                 false),
-            new Entry("customers.read",               false),
-            new Entry("customers.write",              false),
-            new Entry("reviews.read",                 false),
-            new Entry("reviews.write",                false),
-            new Entry("reports.read",                 false),
-            new Entry("reports.export",               false)
+            read("orders.read"),
+            write("orders.write", false, "orders.read"),
+            read("customers.read"),
+            write("customers.write", false, "customers.read"),
+            read("reviews.read"),
+            write("reviews.write", false, "reviews.read"),
+            read("reports.read"),
+            entry("reports.export", "reports", Kind.EXPORT, true, "reports.read")
         )),
 
         new Group("roles.groupProducts", List.of(
-            new Entry("products.read",    false),
-            new Entry("products.update",  false),
-            new Entry("catalog.read",     false),
-            new Entry("catalog.update",   false),
-            new Entry("inventory.read",   false),
-            new Entry("inventory.write",  false)
+            read("products.read"),
+            write("products.update", false, "products.read", "catalog.read"),
+            read("catalog.read"),
+            write("catalog.update", false, "catalog.read"),
+            entry("inventory.read", "inventory", Kind.SUPPORTING, false)
         )),
 
         new Group("roles.groupContent", List.of(
-            new Entry("content.read",       false),
-            new Entry("content.update",     false),
-            new Entry("media.read",         false),
-            new Entry("media.write",        false),
-            new Entry("menus.read",         false),
-            new Entry("menus.write",        false),
-            new Entry("sliders.read",       false),
-            new Entry("sliders.write",      false),
-            new Entry("home_videos.read",       false),
-            new Entry("home_videos.write",      false),
-            new Entry("home_highlights.read",   false),
-            new Entry("home_highlights.write",  false),
-            new Entry("redirects.read",     false),
-            new Entry("redirects.write",    false)
+            read("content.read"),
+            write("content.update", false, "content.read"),
+            read("media.read"),
+            write("media.write", false, "media.read"),
+            read("menus.read"),
+            write("menus.write", false, "menus.read"),
+            read("sliders.read"),
+            write("sliders.write", false, "sliders.read"),
+            read("home_videos.read"),
+            write("home_videos.write", false, "home_videos.read"),
+            read("home_highlights.read"),
+            write("home_highlights.write", false, "home_highlights.read", "products.read"),
+            read("redirects.read"),
+            write("redirects.write", false, "redirects.read")
         )),
 
         new Group("roles.groupSystem", List.of(
-            new Entry("settings.read",      false),
-            new Entry("settings.write",     true),
-            new Entry("admin-users.read",   false),
-            new Entry("admin-users.write",  true),
-            new Entry("roles.read",         false),
-            new Entry("roles.write",        true),
-            new Entry("audit-logs.read",    true)
+            read("settings.read"),
+            write("settings.write", true, "settings.read"),
+            read("admin-users.read"),
+            write("admin-users.write", true, "admin-users.read", "roles.read"),
+            read("roles.read"),
+            write("roles.write", true, "roles.read"),
+            entry("audit-logs.read", "audit-logs", Kind.READ, true)
         ))
     );
 
+    public static final Map<String, Entry> ENTRIES_BY_KEY = GROUPS.stream()
+            .flatMap(group -> group.permissions().stream())
+            .collect(Collectors.toUnmodifiableMap(Entry::key, Function.identity()));
+
     /** Flat set of all valid permission keys. Used for validation. */
-    public static final Set<String> ALL_KEYS = GROUPS.stream()
-            .flatMap(g -> g.permissions().stream())
-            .map(Entry::key)
-            .collect(Collectors.toUnmodifiableSet());
+    public static final Set<String> ALL_KEYS = ENTRIES_BY_KEY.keySet();
+
+    /**
+     * Returns every missing direct or transitive dependency, attributed to the
+     * selected permission that introduced it. Wildcard satisfies the graph.
+     */
+    public static List<DependencyViolation> missingDependencies(Set<String> permissions) {
+        if (permissions.contains("*")) {
+            return List.of();
+        }
+
+        List<DependencyViolation> violations = new ArrayList<>();
+        for (String selected : permissions) {
+            for (String required : requiredClosure(selected)) {
+                if (!permissions.contains(required)) {
+                    violations.add(new DependencyViolation(selected, required));
+                }
+            }
+        }
+        return List.copyOf(violations);
+    }
+
+    public static Set<String> requiredClosure(String permission) {
+        LinkedHashSet<String> closure = new LinkedHashSet<>();
+        ArrayDeque<String> pending = new ArrayDeque<>();
+        Entry root = ENTRIES_BY_KEY.get(permission);
+        if (root != null) {
+            pending.addAll(root.requires());
+        }
+
+        while (!pending.isEmpty()) {
+            String required = pending.removeFirst();
+            if (!closure.add(required)) {
+                continue;
+            }
+            Entry dependency = ENTRIES_BY_KEY.get(required);
+            if (dependency != null) {
+                pending.addAll(dependency.requires());
+            }
+        }
+        return Set.copyOf(closure);
+    }
+
+    private static Entry read(String key) {
+        return entry(key, moduleKey(key), Kind.READ, false);
+    }
+
+    private static Entry write(String key, boolean sensitive, String... requires) {
+        return entry(key, moduleKey(key), Kind.WRITE, sensitive, requires);
+    }
+
+    private static Entry entry(
+            String key,
+            String moduleKey,
+            Kind kind,
+            boolean sensitive,
+            String... requires
+    ) {
+        return new Entry(key, moduleKey, kind, sensitive, List.of(requires));
+    }
+
+    private static String moduleKey(String permission) {
+        int separator = permission.indexOf('.');
+        return separator > 0 ? permission.substring(0, separator) : permission;
+    }
 }

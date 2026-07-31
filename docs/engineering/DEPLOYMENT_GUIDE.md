@@ -55,6 +55,10 @@ When migrating from IP:port to a domain, swap the public values in `.env.vps` fo
 - `SPRING_PROFILES_ACTIVE` for staging/production must not include `mock`; placeholder auth is explicitly limited to dev/mock behavior in `AuthController` and `DevAdminAuthService`. `CONFIRMED_FROM_CODE`
 - `bigbike-web` must call the real backend public APIs (`/api/v1/products`, `/api/v1/menus/**`, `/api/v1/settings/public`, etc.). The legacy `scripts/mock-api-server.mjs` storefront shim is not part of the deployment contract and must not be restored in runtime/dev/prod paths. `CONFIRMED_FROM_CODE`
 - `bigbike-admin` must call the real backend admin APIs at runtime. The former admin mock build flag and runtime mock fallback layer have been removed; admin production builds must not include mock data fallbacks. `CONFIRMED_FROM_CODE`
+- Admin access synchronization uses the backend's in-process STOMP simple broker. The current
+  Compose topology runs one backend instance, so an access change reaches every connected session
+  on that node. Do not scale backend replicas for this feature without adding a shared broker/event
+  bus for the access-change event and WebSocket routing. `OWNER_CONFIRMED_2026-07-31`
 
 ## Security Hardening Config
 

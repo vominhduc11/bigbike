@@ -179,6 +179,14 @@ beforeEach(() => {
 })
 
 describe('AdminUsersScreen', () => {
+  it('does not call Roles API when roles.read is missing', async () => {
+    renderScreen({ canReadRoles: false, canAssignRoles: false })
+
+    await screen.findByText('adminUsers.title')
+    expect(mocks.fetchRoles).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'adminUsers.createBtn' })).toBeDisabled()
+  })
+
   it('loads the accounts and fully locks mutations in view-only mode', async () => {
     renderScreen({ canUpdate: false })
 

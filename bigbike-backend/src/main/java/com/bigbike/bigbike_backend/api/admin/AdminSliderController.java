@@ -54,6 +54,8 @@ public class AdminSliderController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "sliders.write");
+        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "media.read");
         String createdId = adminSliderService.create(payload);
         return apiResponseFactory.data(adminSliderService.findById(createdId), request);
     }
@@ -75,6 +77,10 @@ public class AdminSliderController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "sliders.write");
+        if (payload.isFullEdit()) {
+            devAdminAuthService.requirePermission(request, "products.read");
+            devAdminAuthService.requirePermission(request, "media.read");
+        }
         adminSliderService.patch(id, payload);
         return apiResponseFactory.data(adminSliderService.findById(id), request);
     }

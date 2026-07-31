@@ -145,8 +145,15 @@ Admin default role has broad business access to read/update many admin modules. 
 
 #### Needs Verification
 
-- UI-level route guards and disabled actions by permission.
 - Login brute-force / lockout behaviour and refresh-token revocation/rotation depth.
+
+#### Confirmed RBAC behavior
+
+- Menu và route dùng cùng access policy; quyền `.read` là quyền vào module.
+- Create/workspace composite dùng `allOf`, còn nút mutation dùng quyền ghi tương ứng.
+- Tài khoản không có module hợp lệ nhận empty-permission state thay vì bị điều hướng vòng lặp về Dashboard.
+- Permission set của role được backend kiểm tra dependency closure; UI tự thêm dependency và giải thích trước khi lưu.
+- Media/Product picker và supporting widget không gọi API khi tài khoản thiếu permission tương ứng.
 
 ### Role: Super Admin
 
@@ -173,7 +180,8 @@ Admin default role has broad business access to read/update many admin modules. 
 #### Needs Verification
 
 - Whether UI visibly protects Super Admin destructive actions.
-- Whether custom roles can accidentally receive dangerous permissions without business approval.
+
+Custom roles không thể lưu permission set thiếu dependency. Quyền sensitive vẫn cần xác nhận riêng trong Roles UI; wildcard `*` không nằm trong catalog cấp cho custom role.
 
 ### Custom role example: Shop Manager
 

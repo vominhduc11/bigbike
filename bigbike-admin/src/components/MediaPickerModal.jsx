@@ -49,8 +49,9 @@ function IconImage() {
 export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
+  const canRead = hasPermission('media.read')
   // media.write gates uploading new files from inside the picker.
-  const canWrite = hasPermission('media.write')
+  const canWrite = canRead && hasPermission('media.write')
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -85,6 +86,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
   useEffect(() => {
+    if (!canRead) return undefined
     let active = true
     Promise.allSettled([fetchMediaFolders(), fetchMediaTags()]).then(([fRes, tRes]) => {
       if (!active) return
@@ -93,9 +95,10 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
     return () => { active = false }
-  }, [])
+  }, [canRead])
 
   useEffect(() => {
+    if (!canRead) return undefined
     let active = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((p) => ({ ...p, status: 'loading' }))
@@ -115,7 +118,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         setState({ status: 'error', items: [], totalPages: 1, error: e.message })
       })
     return () => { active = false }
-  }, [debouncedSearch, page, refreshKey, kind, folderFilter, tag])
+  }, [canRead, debouncedSearch, page, refreshKey, kind, folderFilter, tag])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
   useModalFocusTrap({ modalRef, onClose: attemptClose })
@@ -227,6 +230,24 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       if (!ok) return
     }
     onClose()
+  }
+
+  if (!canRead) {
+    return createPortal(
+      <>
+        <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
+        <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label="Thiếu quyền Media">
+          <div className="mpicker-header">
+            <h3 className="mpicker-title">Không thể mở Thư viện Media</h3>
+            <Button variant="secondary" size="sm" type="button" onClick={onClose}>Đóng</Button>
+          </div>
+          <div className="p-4 text-sm text-muted-foreground">
+            Tài khoản cần quyền media.read để xem và chọn file. Không có yêu cầu Media nào được gửi.
+          </div>
+        </div>
+      </>,
+      document.body,
+    )
   }
 
   // Portal to <body> so the fixed-position backdrop/modal cover the whole

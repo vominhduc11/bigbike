@@ -35,7 +35,7 @@ function isRouteActive(activePath, candidatePath) {
   )
 }
 
-function Breadcrumb({ activePath, navGroups, navigate, t }) {
+function Breadcrumb({ activePath, navGroups, navigate, homePath, t }) {
   let match = null
   for (const group of navGroups) {
     for (const item of group.items) {
@@ -51,24 +51,34 @@ function Breadcrumb({ activePath, navGroups, navigate, t }) {
 
   const isDetail = activePath !== match.path
   const isCreate = activePath.endsWith('/new') || activePath.includes('/new/')
-  const isDashboardRoot = !isDetail && match.path === '/admin/dashboard'
+  const homeItem = navGroups
+    .flatMap((group) => group.items)
+    .find((item) => item.path === homePath)
+  const isHomeRoot = !isDetail && match.path === homePath
+  const homeLabel = homePath === '/admin/dashboard'
+    ? t('app.overview')
+    : homeItem?.label
 
   return (
     <nav className="bb-breadcrumb" aria-label="Breadcrumb">
       <ol className="bb-breadcrumb-inner">
-        {isDashboardRoot ? (
-          <li><span className="current" aria-current="page">{t('app.overview')}</span></li>
+        {isHomeRoot ? (
+          <li><span className="current" aria-current="page">{homeLabel || match.label}</span></li>
         ) : (
           <>
-            <li>
-              <a
-                href="/admin/dashboard"
-                onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}
-              >
-                {t('app.overview')}
-              </a>
-            </li>
-            <li className="sep" aria-hidden="true">/</li>
+            {homePath && homeLabel ? (
+              <>
+                <li>
+                  <a
+                    href={homePath}
+                    onClick={(e) => { e.preventDefault(); navigate(homePath) }}
+                  >
+                    {homeLabel}
+                  </a>
+                </li>
+                <li className="sep" aria-hidden="true">/</li>
+              </>
+            ) : null}
             {isDetail ? (
               <li>
                 <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
@@ -97,6 +107,7 @@ export function AdminShell({
   navigate,
   user,
   pageTitle,
+  homePath,
   children,
 }) {
   const { logout } = useAuth()
@@ -361,7 +372,7 @@ export function AdminShell({
             </div>
           </header>
 
-          <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} t={t} />
+          <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} homePath={homePath} t={t} />
 
           <main id="bb-main-content" tabIndex={-1} className="bb-page-content">{children}</main>
         </div>

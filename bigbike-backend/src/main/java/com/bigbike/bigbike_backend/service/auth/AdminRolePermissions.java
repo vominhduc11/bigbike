@@ -23,7 +23,7 @@ public final class AdminRolePermissions {
             "SUPER_ADMIN", List.of("*"),
             "ADMIN", List.of(
                     "products.read", "products.update",
-                    "inventory.read", "inventory.write",
+                    "inventory.read",
                     "catalog.read", "catalog.update",
                     "content.read", "content.update",
                     "orders.read", "orders.write",

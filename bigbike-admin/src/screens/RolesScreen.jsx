@@ -11,7 +11,10 @@ import {
   PERM_LABEL_KEY_MAP,
   SELF_PROTECTED_PERMS,
   buildCatalogHelpers,
+  closePermissionDependencies,
+  dependentClosure,
   getRoleDisplayName,
+  groupCatalogByModule,
   setsEqual,
 } from './roles/constants'
 import { Toast } from './roles/Toast'
@@ -28,7 +31,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const { t } = useTranslation()
 
   const [roles, setRoles]                 = useState([])
-  const [catalog, setCatalog]             = useState(BUILTIN_CATALOG)
+  const [catalog, setCatalog]             = useState(() => groupCatalogByModule(BUILTIN_CATALOG))
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)
   // Lỗi tải RIÊNG danh mục quyền — không chặn cả trang (vẫn dùng danh mục mặc định).
@@ -37,6 +40,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [editMode, setEditMode]           = useState(false)
   const [draft, setDraft]                 = useState(null)
+  const [autoAdded, setAutoAdded]         = useState(() => new Set())
   const [saving, setSaving]               = useState(false)
   const [toast, setToast]                 = useState(null)
   const [pendingToggle, setPendingToggle] = useState(null)
@@ -64,10 +68,10 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         setRoles(rolesResult.items)
         if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
         if (catalogRes.status === 'fulfilled' && catalogRes.value) {
-          setCatalog(catalogRes.value)
+          setCatalog(groupCatalogByModule(catalogRes.value))
           setCatalogError(false)
         } else {
-          setCatalog(BUILTIN_CATALOG)
+          setCatalog(groupCatalogByModule(BUILTIN_CATALOG))
           setCatalogError(true)
         }
       })
@@ -114,6 +118,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setSelectedId(id)
     setEditMode(false)
     setDraft(null)
+    setAutoAdded(new Set())
     setMobileShowDetail(true)
   }
 
@@ -124,11 +129,14 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setMobileShowDetail(false)
     setEditMode(false)
     setDraft(null)
+    setAutoAdded(new Set())
   }
 
   function handleStartEdit() {
     if (!selected) return
-    setDraft(new Set(selected.permissions))
+    const closed = closePermissionDependencies(selected.permissions, catalog)
+    setDraft(closed.permissions)
+    setAutoAdded(new Set(closed.autoAdded.keys()))
     setEditMode(true)
   }
 
@@ -138,6 +146,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
     }
     setDraft(null)
+    setAutoAdded(new Set())
     setEditMode(false)
   }
 
@@ -158,14 +167,60 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       setPendingToggle({ key: permKey, label: permLabel, willAdd })
       return
     }
-    applyToggle(permKey)
+    void applyToggle(permKey)
   }
 
-  function applyToggle(permKey) {
+  async function applyToggle(permKey) {
+    if (!draft) return
+    if (!draft.has(permKey)) {
+      const requested = new Set(draft)
+      requested.add(permKey)
+      const closed = closePermissionDependencies(requested, catalog)
+      const dependenciesAdded = [...closed.permissions]
+        .filter(key => !requested.has(key) && !draft.has(key))
+      setDraft(closed.permissions)
+      setAutoAdded(prev => {
+        const next = new Set(prev)
+        next.delete(permKey)
+        dependenciesAdded.forEach(key => next.add(key))
+        return next
+      })
+      if (dependenciesAdded.length > 0) {
+        setToast({
+          kind: 'info',
+          msg: `Đã tự thêm ${dependenciesAdded.map(key => permLabels[key] || key).join(', ')} vì là quyền bắt buộc.`,
+        })
+      }
+      return
+    }
+
+    const removals = dependentClosure(permKey, draft, catalog)
+    if (isOwnRole && [...removals].some(key => SELF_PROTECTED_PERMS.has(key))) {
+      setToast({
+        kind: 'error',
+        msg: t('roles.selfLockoutBlocked', {
+          defaultValue: 'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
+        }),
+      })
+      return
+    }
+    const dependents = [...removals].filter(key => key !== permKey)
+    if (dependents.length > 0) {
+      const confirmed = await showConfirm(
+        `Quyền này đang được dùng bởi: ${dependents.map(key => permLabels[key] || key).join(', ')}. Tiếp tục sẽ gỡ tất cả các quyền trên.`,
+        'Gỡ quyền bắt buộc?',
+        { variant: 'danger', confirmLabel: 'Gỡ tất cả' },
+      )
+      if (!confirmed) return
+    }
     setDraft(prev => {
       const next = new Set(prev)
-      if (next.has(permKey)) next.delete(permKey)
-      else next.add(permKey)
+      removals.forEach(key => next.delete(key))
+      return next
+    })
+    setAutoAdded(prev => {
+      const next = new Set(prev)
+      removals.forEach(key => next.delete(key))
       return next
     })
   }
@@ -173,15 +228,21 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   // P2-8: cấp / bỏ cả nhóm quyền trong 1 chạm. Cấp: bật hết quyền THƯỜNG ngay; quyền
   // NHẠY CẢM chưa bật thì để admin bật riêng (giữ xác nhận từng cái — an toàn). Bỏ: gỡ
   // hết, nhưng KHÔNG gỡ quyền tự-bảo-vệ khỏi role của chính mình (tránh tự khoá).
-  function handleGroupBulk(group, grant) {
+  async function handleGroupBulk(group, grant) {
     if (!editMode || !draft) return
     const keys = group.permissions.map(p => p.key)
     if (grant) {
       const nonSensitive = keys.filter(k => !SENSITIVE_PERMS.has(k))
       const sensitiveLeft = keys.filter(k => SENSITIVE_PERMS.has(k) && !draft.has(k))
-      setDraft(prev => {
+      const requested = new Set(draft)
+      nonSensitive.forEach(k => requested.add(k))
+      const closed = closePermissionDependencies(requested, catalog)
+      const dependenciesAdded = [...closed.permissions].filter(key => !requested.has(key) && !draft.has(key))
+      setDraft(closed.permissions)
+      setAutoAdded(prev => {
         const next = new Set(prev)
-        nonSensitive.forEach(k => next.add(k))
+        nonSensitive.forEach(key => next.delete(key))
+        dependenciesAdded.forEach(key => next.add(key))
         return next
       })
       if (sensitiveLeft.length > 0) {
@@ -194,10 +255,29 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         })
       }
     } else {
-      const keptSelf = isOwnRole && keys.some(k => SELF_PROTECTED_PERMS.has(k) && draft.has(k))
+      const removals = new Set()
+      keys.filter(key => draft.has(key)).forEach(key => {
+        dependentClosure(key, draft, catalog).forEach(dependent => removals.add(dependent))
+      })
+      const keptSelf = isOwnRole && [...removals].some(k => SELF_PROTECTED_PERMS.has(k))
+      if (isOwnRole) SELF_PROTECTED_PERMS.forEach(key => removals.delete(key))
+      const crossGroup = [...removals].filter(key => !keys.includes(key))
+      if (crossGroup.length > 0) {
+        const confirmed = await showConfirm(
+          `Bỏ nhóm này cũng sẽ gỡ các quyền phụ thuộc: ${crossGroup.map(key => permLabels[key] || key).join(', ')}.`,
+          'Bỏ nhóm quyền?',
+          { variant: 'danger', confirmLabel: 'Gỡ các quyền' },
+        )
+        if (!confirmed) return
+      }
       setDraft(prev => {
         const next = new Set(prev)
-        keys.forEach(k => { if (!(isOwnRole && SELF_PROTECTED_PERMS.has(k))) next.delete(k) })
+        removals.forEach(key => next.delete(key))
+        return next
+      })
+      setAutoAdded(prev => {
+        const next = new Set(prev)
+        removals.forEach(key => next.delete(key))
         return next
       })
       if (keptSelf) {
@@ -212,7 +292,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   }
 
   function handleConfirmSensitive() {
-    if (pendingToggle) applyToggle(pendingToggle.key)
+    if (pendingToggle) void applyToggle(pendingToggle.key)
     setPendingToggle(null)
   }
 
@@ -220,7 +300,12 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     if (!selected || !draft) return
     const added   = [...draft].filter(k => !originalPerms.has(k))
     const removed = [...originalPerms].filter(k => !draft.has(k))
-    setSavePending({ added, removed })
+    setSavePending({
+      added,
+      removed,
+      autoAdded: added.filter(key => autoAdded.has(key)),
+      userAdded: added.filter(key => !autoAdded.has(key)),
+    })
   }
 
   function handleRequestDelete(role) {
@@ -236,8 +321,12 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       setRoles(prev => prev.map(r => r.id === selected.id ? result.item : r))
       setEditMode(false)
       setDraft(null)
+      setAutoAdded(new Set())
       setSavePending(null)
-      setToast({ kind: 'success', msg: t('roles.saveSuccess') })
+      setToast({
+        kind: 'success',
+        msg: t('roles.accessApplied', { count: result.item.assignedUserCount }),
+      })
     } catch (e) {
       setToast({ kind: 'error', msg: e.message || t('roles.saveError') })
     } finally {
@@ -323,6 +412,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           saving={createSaving}
           roles={roles}
           sensitiveKeys={SENSITIVE_PERMS}
+          catalog={catalog}
         />
       )}
 

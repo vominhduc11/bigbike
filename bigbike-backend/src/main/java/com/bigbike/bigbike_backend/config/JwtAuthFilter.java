@@ -42,9 +42,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtService.parseAccessToken(token);
                 String userId = claims.getSubject();
                 String email = claims.get("email", String.class);
-                String role = claims.get("role", String.class);
+                Number accessVersion = claims.get("accessVersion", Number.class);
 
-                if (userId != null && role != null && !role.isBlank()
+                if (userId != null && accessVersion != null
                         && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Re-check the admin's CURRENT status/role against the DB (cached) on every
                     // request, instead of trusting the JWT claims blindly — so locking, suspending,
@@ -54,7 +54,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     AdminAccountStatusService.Snapshot snapshot = tryParseUUID(userId)
                             .map(adminAccountStatusService::getSnapshot)
                             .orElse(null);
-                    if (snapshot != null && STATUS_ACTIVE.equals(snapshot.status())) {
+                    if (snapshot != null
+                            && STATUS_ACTIVE.equals(snapshot.status())
+                            && snapshot.accessVersion() == accessVersion.longValue()) {
                         String currentRole = snapshot.role();
                         AdminPrincipal principal = new AdminPrincipal(userId, email, currentRole);
                         List<SimpleGrantedAuthority> authorities = "SUPER_ADMIN".equals(currentRole)

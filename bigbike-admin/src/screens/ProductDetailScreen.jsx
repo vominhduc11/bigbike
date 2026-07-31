@@ -137,7 +137,7 @@ const CATEGORY_TREE_INDENT_CLASSES = ['pl-2', 'pl-6', 'pl-10', 'pl-14', 'pl-16',
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
-export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate }) {
+export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate, canReadCatalog }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -224,23 +224,25 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const { data: categoriesResultVi, isError: categoriesLoadError } = useQuery({
     queryKey: queryKeys.categoriesTree('vi'),
     queryFn: () => fetchCategoryTree('vi'),
+    enabled: canReadCatalog,
     staleTime: 5 * 60 * 1000,
   })
   const { data: categoriesResultEn } = useQuery({
     queryKey: queryKeys.categoriesTree('en'),
     queryFn: () => fetchCategoryTree('en'),
-    enabled: isEn,
+    enabled: canReadCatalog && isEn,
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResultVi } = useQuery({
     queryKey: queryKeys.brandsAll('vi'),
     queryFn: () => fetchBrands({ pageSize: 100, lang: 'vi' }),
+    enabled: canReadCatalog,
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResultEn } = useQuery({
     queryKey: queryKeys.brandsAll('en'),
     queryFn: () => fetchBrands({ pageSize: 100, lang: 'en' }),
-    enabled: isEn,
+    enabled: canReadCatalog && isEn,
     staleTime: 5 * 60 * 1000,
   })
   const categoriesResult = useMemo(

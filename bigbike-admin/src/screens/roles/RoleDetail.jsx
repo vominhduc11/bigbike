@@ -146,6 +146,7 @@ export function RoleDetail({
           <PermGroup
             key={group.groupKey}
             group={group}
+            catalog={catalog}
             activePerms={activePerms}
             editMode={editMode}
             onToggle={onToggle}

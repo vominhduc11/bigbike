@@ -61,7 +61,7 @@ class SliderApiTest {
     @Test
     void createSlider_requiresProductId() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -79,7 +79,7 @@ class SliderApiTest {
     void createSlider_rejectsNonHomeLocation() throws Exception {
         // Chỉ còn vị trí 'home' cho bản ghi mới (owner decision 2026-07-15, AUD-063).
         mockMvc.perform(post("/api/v1/admin/sliders")
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -96,7 +96,7 @@ class SliderApiTest {
     @Test
     void createSlider_acceptsLinkedProduct() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -112,9 +112,25 @@ class SliderApiTest {
     }
 
     @Test
-    void createSlider_rejectsDuplicateLocationSortOrder() throws Exception {
+    void createSlider_requiresProductAndMediaReadPermissions() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
                         .header("X-Admin-Permissions", "sliders.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "location": "home",
+                                  "sortOrder": 29992,
+                                  "productId": "prod_ls2_ff800",
+                                  "isActive": true
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createSlider_rejectsDuplicateLocationSortOrder() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/sliders")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -130,7 +146,7 @@ class SliderApiTest {
     @Test
     void createSlider_rejectsUnknownProductId() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -174,7 +190,7 @@ class SliderApiTest {
         sliderJpaRepository.save(entity);
 
         mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -211,7 +227,7 @@ class SliderApiTest {
         sliderJpaRepository.save(entity);
 
         mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -241,7 +257,7 @@ class SliderApiTest {
         sliderJpaRepository.save(entity);
 
         mockMvc.perform(patch("/api/v1/admin/sliders/" + id)
-                        .header("X-Admin-Permissions", "sliders.write")
+                        .header("X-Admin-Permissions", "sliders.write,products.read,media.read")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

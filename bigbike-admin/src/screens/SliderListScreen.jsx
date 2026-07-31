@@ -36,7 +36,7 @@ const EMPTY_FORM = {
   isActive: true,
 }
 
-function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable, toggling, deleting }) {
+function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggleActive, sortable, toggling, deleting }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const productLabel = contentLang === 'en'
@@ -109,15 +109,17 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               {/* V5: nhãn "Ẩn/Hiện" đồng nhất với HomeVideoListScreen (homeVideos.hideAction/showAction) thay vì common.enable/disable chung chung. */}
               {slider.isActive !== false ? t('sliders.hideAction', { defaultValue: 'Ẩn' }) : t('sliders.showAction', { defaultValue: 'Hiện' })}
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={deleting}
-              onClick={() => onEdit(slider)}
-            >
-              {t('common.edit')}
-            </Button>
+            {canFullEdit ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={deleting}
+                onClick={() => onEdit(slider)}
+              >
+                {t('common.edit')}
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="secondary"
@@ -136,7 +138,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
   )
 }
 
-export function SliderListScreen({ canUpdate }) {
+export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -266,7 +268,7 @@ export function SliderListScreen({ canUpdate }) {
   }))
 
   // O3: Ctrl/Cmd+S lưu form banner khi đang mở.
-  useSaveShortcut(showForm && canUpdate, handleSubmit)
+  useSaveShortcut(showForm && canFullEdit, handleSubmit)
 
   // Hỏi xác nhận trước khi bỏ form nếu đang có thay đổi chưa lưu, rồi đóng form.
   async function confirmCloseForm() {
@@ -413,7 +415,7 @@ export function SliderListScreen({ canUpdate }) {
           <h1>{t('sliders.title')}</h1>
           <p className="bb-muted">{t('sliders.description')}</p>
         </div>
-        {canUpdate && (
+        {canFullEdit && (
           <div className="bb-screen-actions">
             <Button
               type="button"
@@ -426,6 +428,9 @@ export function SliderListScreen({ canUpdate }) {
       </div>
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
+      {canUpdate && !canFullEdit ? (
+        <ReadOnlyBanner warning="Bạn có thể ẩn/hiện, sắp xếp và xoá banner. Cần thêm products.read và media.read để tạo hoặc sửa đầy đủ." />
+      ) : null}
 
       {showForm && (
         <div className="bb-card mb-4">
@@ -559,8 +564,8 @@ export function SliderListScreen({ canUpdate }) {
             tone="neutral"
             title={t('sliders.empty')}
             description={t('sliders.emptyDesc', { location: locationLabel(t, location) })}
-            actionLabel={canUpdate ? t('sliders.addBtn') : undefined}
-            onAction={canUpdate ? openAddForm : undefined}
+            actionLabel={canFullEdit ? t('sliders.addBtn') : undefined}
+            onAction={canFullEdit ? openAddForm : undefined}
           />
         )
       )}
@@ -575,6 +580,7 @@ export function SliderListScreen({ canUpdate }) {
             <SliderCard
               slider={slider}
               canUpdate={canUpdate}
+              canFullEdit={canFullEdit}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleActive={handleToggleActive}
@@ -584,7 +590,7 @@ export function SliderListScreen({ canUpdate }) {
             />
           )}
           renderOverlay={(slider) => (
-            <SliderCard slider={slider} canUpdate={false} onEdit={() => {}} onDelete={() => {}} onToggleActive={() => {}} />
+            <SliderCard slider={slider} canUpdate={false} canFullEdit={false} onEdit={() => {}} onDelete={() => {}} onToggleActive={() => {}} />
           )}
         />
       )}

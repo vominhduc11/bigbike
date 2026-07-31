@@ -1,10 +1,12 @@
 package com.bigbike.bigbike_backend.service.home;
 
+import com.bigbike.bigbike_backend.api.admin.dto.home.AdminHomeHighlightsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.home.AdminSaveHighlightsRequest;
+import com.bigbike.bigbike_backend.api.error.ApiException;
 import com.bigbike.bigbike_backend.api.public_.dto.HomeHighlightItemDto;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.home.HomeHighlightEntity;
+import com.bigbike.bigbike_backend.persistence.repository.home.HomeHighlightsConfigJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.home.HomeHighlightJpaRepository;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
@@ -13,6 +15,7 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,8 +26,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class HomeHighlightsService {
 
+    private static final Short CONFIG_ID = 1;
+
     private final HomeHighlightJpaRepository highlightRepo;
+    private final HomeHighlightsConfigJpaRepository configRepo;
     private final ProductJpaRepository productRepo;
+    private final EntityManager entityManager;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
@@ -32,6 +39,13 @@ public class HomeHighlightsService {
     @Transactional(readOnly = true)
     public List<HomeHighlightItemDto> listHighlights(String lang) {
         return listHighlights(lang, false);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminHomeHighlightsResponse listAdminHighlights(String lang) {
+        var config = configRepo.findById(CONFIG_ID)
+                .orElseThrow(() -> new IllegalStateException("Home highlights config row is missing."));
+        return new AdminHomeHighlightsResponse(listHighlights(lang, false), config.getVersion());
     }
 
     /**
@@ -50,7 +64,17 @@ public class HomeHighlightsService {
     }
 
     @Transactional
-    public List<HomeHighlightItemDto> saveHighlights(AdminSaveHighlightsRequest body, UUID adminId) {
+    public AdminHomeHighlightsResponse saveHighlights(AdminSaveHighlightsRequest body, UUID adminId) {
+        var config = configRepo.findByIdForUpdate(CONFIG_ID)
+                .orElseThrow(() -> new IllegalStateException("Home highlights config row is missing."));
+        if (!body.expectedVersion().equals(config.getVersion())) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "CONCURRENT_MODIFICATION",
+                    "Cấu hình highlights đã được cập nhật ở cửa sổ khác. Vui lòng tải lại dữ liệu trước khi lưu lại.",
+                    List.of());
+        }
+
         for (var input : body.slots()) {
             var product = productRepo.findById(input.productId())
                     .orElseThrow(() -> new ResponseStatusException(
@@ -64,8 +88,17 @@ public class HomeHighlightsService {
         }
 
         String before = highlightsSnapshot(highlightRepo.findAllWithProductAndCategoryOrderBySlot());
+        long nextVersion = config.getVersion() + 1;
 
+        // Touch the singleton first so @Version advances once for the whole replacement.
+        // The row lock above serializes saves even when the slot table is temporarily empty.
+        config.touch(Instant.now());
+        entityManager.flush();
+
+        // Bulk delete bypasses the persistence context. Clear it before inserting rows that
+        // reuse the assigned slot primary keys; otherwise saveAll() merges stale entities.
         highlightRepo.deleteAllInBatch();
+        entityManager.clear();
 
         var entities = body.slots().stream()
                 .map(input -> {
@@ -77,7 +110,8 @@ public class HomeHighlightsService {
                 })
                 .toList();
 
-        highlightRepo.saveAllAndFlush(entities);
+        entities.forEach(entityManager::persist);
+        entityManager.flush();
         auditLog(adminId, before, highlightsSnapshot(entities));
 
         // ISR on-demand: khối "sản phẩm nổi bật" đầu trang chủ (web đọc tag "home-highlights",
@@ -86,7 +120,7 @@ public class HomeHighlightsService {
         // transaction (@Transactional ở method này).
         webRevalidationService.revalidate("home-highlights");
 
-        return listHighlights("vi");
+        return new AdminHomeHighlightsResponse(listHighlights("vi"), nextVersion);
     }
 
     private void auditLog(UUID adminId, String before, String after) {

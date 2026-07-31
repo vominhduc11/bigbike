@@ -49,6 +49,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useHasPermission } from '@/lib/auth'
 
 const EMPTY_FORM = {
   title: '',
@@ -205,6 +206,8 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 }
 
 export function HomeVideoListScreen({ canUpdate }) {
+  const hasPermission = useHasPermission()
+  const canReadMedia = hasPermission('media.read')
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
@@ -825,7 +828,8 @@ export function HomeVideoListScreen({ canUpdate }) {
                 <Button variant="secondary" size="sm"
                   type="button"
                   onClick={() => setVideoPickerOpen(true)}
-                  disabled={!canUpdate}
+                  disabled={!canUpdate || !canReadMedia}
+                  title={!canReadMedia ? 'Cần quyền media.read để chọn video nội bộ.' : undefined}
                 >
                   {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
                 </Button>
@@ -840,6 +844,11 @@ export function HomeVideoListScreen({ canUpdate }) {
                   </Button>
                 )}
               </div>
+              {!canReadMedia ? (
+                <span className="text-xs font-normal text-muted-foreground">
+                  Cần quyền media.read để chọn video nội bộ. Bạn vẫn có thể sửa URL/provider.
+                </span>
+              ) : null}
               <MediaRequirementHint recommend={IMAGE_RECO.video} className="font-normal" />
               {form.videoUrl ? (
                 <span className="text-xs text-success font-normal">
@@ -912,7 +921,7 @@ export function HomeVideoListScreen({ canUpdate }) {
         </DndContext>
       ) : listContent}
 
-      {videoPickerOpen && canUpdate && (
+      {videoPickerOpen && canUpdate && canReadMedia && (
         <VideoPickerModal
           recommend={IMAGE_RECO.video}
           onSelect={(url, media) => {

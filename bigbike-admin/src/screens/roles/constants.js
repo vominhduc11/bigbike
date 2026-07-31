@@ -7,56 +7,55 @@ export const BUILTIN_CATALOG = [
   {
     groupKey: 'roles.groupSales',
     permissions: [
-      { key: 'orders.read',                  sensitive: false },
-      { key: 'orders.write',                 sensitive: false },
-      { key: 'customers.read',               sensitive: false },
-      { key: 'customers.write',              sensitive: false },
-      { key: 'reviews.read',                 sensitive: false },
-      { key: 'reviews.write',                sensitive: false },
-      { key: 'reports.read',                 sensitive: false },
-      { key: 'reports.export',               sensitive: false },
+      perm('orders.read', 'orders', 'READ'),
+      perm('orders.write', 'orders', 'WRITE', false, ['orders.read']),
+      perm('customers.read', 'customers', 'READ'),
+      perm('customers.write', 'customers', 'WRITE', false, ['customers.read']),
+      perm('reviews.read', 'reviews', 'READ'),
+      perm('reviews.write', 'reviews', 'WRITE', false, ['reviews.read']),
+      perm('reports.read', 'reports', 'READ'),
+      perm('reports.export', 'reports', 'EXPORT', true, ['reports.read']),
     ],
   },
   {
     groupKey: 'roles.groupProducts',
     permissions: [
-      { key: 'products.read',    sensitive: false },
-      { key: 'products.update',  sensitive: false },
-      { key: 'catalog.read',     sensitive: false },
-      { key: 'catalog.update',   sensitive: false },
-      { key: 'inventory.read',   sensitive: false },
-      { key: 'inventory.write',  sensitive: false },
+      perm('products.read', 'products', 'READ'),
+      perm('products.update', 'products', 'WRITE', false, ['products.read', 'catalog.read']),
+      perm('catalog.read', 'catalog', 'READ'),
+      perm('catalog.update', 'catalog', 'WRITE', false, ['catalog.read']),
+      perm('inventory.read', 'inventory', 'SUPPORTING'),
     ],
   },
   {
     groupKey: 'roles.groupContent',
     permissions: [
-      { key: 'content.read',      sensitive: false },
-      { key: 'content.update',    sensitive: false },
-      { key: 'media.read',        sensitive: false },
-      { key: 'media.write',       sensitive: false },
-      { key: 'menus.read',        sensitive: false },
-      { key: 'menus.write',       sensitive: false },
-      { key: 'sliders.read',      sensitive: false },
-      { key: 'sliders.write',     sensitive: false },
-      { key: 'home_videos.read',  sensitive: false },
-      { key: 'home_videos.write', sensitive: false },
-      { key: 'home_highlights.read',  sensitive: false },
-      { key: 'home_highlights.write', sensitive: false },
-      { key: 'redirects.read',    sensitive: false },
-      { key: 'redirects.write',   sensitive: false },
+      perm('content.read', 'content', 'READ'),
+      perm('content.update', 'content', 'WRITE', false, ['content.read']),
+      perm('media.read', 'media', 'READ'),
+      perm('media.write', 'media', 'WRITE', false, ['media.read']),
+      perm('menus.read', 'menus', 'READ'),
+      perm('menus.write', 'menus', 'WRITE', false, ['menus.read']),
+      perm('sliders.read', 'sliders', 'READ'),
+      perm('sliders.write', 'sliders', 'WRITE', false, ['sliders.read']),
+      perm('home_videos.read', 'home_videos', 'READ'),
+      perm('home_videos.write', 'home_videos', 'WRITE', false, ['home_videos.read']),
+      perm('home_highlights.read', 'home_highlights', 'READ'),
+      perm('home_highlights.write', 'home_highlights', 'WRITE', false, ['home_highlights.read', 'products.read']),
+      perm('redirects.read', 'redirects', 'READ'),
+      perm('redirects.write', 'redirects', 'WRITE', false, ['redirects.read']),
     ],
   },
   {
     groupKey: 'roles.groupSystem',
     permissions: [
-      { key: 'settings.read',     sensitive: false },
-      { key: 'settings.write',    sensitive: true  },
-      { key: 'admin-users.read',  sensitive: false },
-      { key: 'admin-users.write', sensitive: true  },
-      { key: 'roles.read',        sensitive: false },
-      { key: 'roles.write',       sensitive: true  },
-      { key: 'audit-logs.read',   sensitive: true  },
+      perm('settings.read', 'settings', 'READ'),
+      perm('settings.write', 'settings', 'WRITE', true, ['settings.read']),
+      perm('admin-users.read', 'admin-users', 'READ'),
+      perm('admin-users.write', 'admin-users', 'WRITE', true, ['admin-users.read', 'roles.read']),
+      perm('roles.read', 'roles', 'READ'),
+      perm('roles.write', 'roles', 'WRITE', true, ['roles.read']),
+      perm('audit-logs.read', 'audit-logs', 'READ', true),
     ],
   },
 ]
@@ -76,7 +75,6 @@ export const PERM_LABEL_KEY_MAP = {
   'catalog.read':               'roles.permCatalogRead',
   'catalog.update':             'roles.permCatalogUpdate',
   'inventory.read':             'roles.permInventoryRead',
-  'inventory.write':            'roles.permInventoryWrite',
   'content.read':               'roles.permContentRead',
   'content.update':             'roles.permContentUpdate',
   'media.read':                 'roles.permMediaRead',
@@ -110,7 +108,101 @@ export function buildCatalogHelpers(catalog) {
   const sensitiveKeys = new Set(
     catalog.flatMap(g => g.permissions.filter(p => p.sensitive).map(p => p.key))
   )
-  return { knownKeys, sensitiveKeys }
+  const entriesByKey = new Map(catalog.flatMap(g => g.permissions).map(p => [p.key, p]))
+  return { knownKeys, sensitiveKeys, entriesByKey }
+}
+
+export const MODULE_LABELS = {
+  orders: 'Đơn hàng',
+  customers: 'Khách hàng',
+  reviews: 'Đánh giá',
+  reports: 'Báo cáo',
+  products: 'Sản phẩm',
+  catalog: 'Danh mục & thương hiệu',
+  inventory: 'Tồn kho hỗ trợ Dashboard',
+  content: 'Nội dung',
+  media: 'Thư viện Media',
+  menus: 'Menu',
+  sliders: 'Slider',
+  home_videos: 'Video trang chủ',
+  home_highlights: 'Điểm nhấn trang chủ',
+  redirects: 'Chuyển hướng',
+  settings: 'Cài đặt',
+  'admin-users': 'Tài khoản quản trị',
+  roles: 'Vai trò & phân quyền',
+  'audit-logs': 'Nhật ký hoạt động',
+}
+
+export function closePermissionDependencies(inputPermissions, catalog) {
+  const { entriesByKey } = buildCatalogHelpers(catalog)
+  const permissions = new Set(inputPermissions)
+  const autoAdded = new Map()
+  const queue = [...permissions].map((key) => ({ key, requiredBy: key }))
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+    const entry = entriesByKey.get(current.key)
+    for (const required of entry?.requires || []) {
+      if (!permissions.has(required)) {
+        permissions.add(required)
+        autoAdded.set(required, new Set([current.requiredBy]))
+        queue.push({ key: required, requiredBy: current.requiredBy })
+      } else if (autoAdded.has(required)) {
+        autoAdded.get(required).add(current.requiredBy)
+      }
+    }
+  }
+  return { permissions, autoAdded }
+}
+
+export function dependentClosure(permission, activePermissions, catalog) {
+  const { entriesByKey } = buildCatalogHelpers(catalog)
+  const removed = new Set([permission])
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const active of activePermissions) {
+      if (removed.has(active)) continue
+      const requires = entriesByKey.get(active)?.requires || []
+      if (requires.some(required => removed.has(required))) {
+        removed.add(active)
+        changed = true
+      }
+    }
+  }
+  return removed
+}
+
+export function requiredBy(permission, activePermissions, catalog) {
+  const { entriesByKey } = buildCatalogHelpers(catalog)
+  return [...activePermissions].filter(active =>
+    (entriesByKey.get(active)?.requires || []).includes(permission)
+  )
+}
+
+export function groupCatalogByModule(catalog) {
+  const modules = new Map()
+  for (const entry of catalog.flatMap(group => group.permissions || [])) {
+    const moduleKey = entry.moduleKey || entry.key.split('.')[0]
+    if (!modules.has(moduleKey)) {
+      modules.set(moduleKey, {
+        groupKey: `roles.module.${moduleKey}`,
+        moduleKey,
+        permissions: [],
+      })
+    }
+    modules.get(moduleKey).permissions.push({
+      ...entry,
+      moduleKey,
+      kind: entry.kind || (entry.key.endsWith('.read') ? 'READ' : 'WRITE'),
+      requires: Array.isArray(entry.requires) ? entry.requires : [],
+    })
+  }
+  return [...modules.values()]
+}
+
+function perm(key, moduleKey, kind, sensitive = false, requires = []) {
+  return { key, moduleKey, kind, sensitive, requires }
 }
 
 export function formatRoleName(id) {

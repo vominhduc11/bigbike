@@ -89,6 +89,9 @@ export function DashboardScreen({ navigate }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [period, setPeriod] = useState('30d')
+  const canReadInventory = user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
+  const canReadProducts = user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
+  const canReadReports = user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
   // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
   const numberLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   // O9 — đơn hàng admin vừa xem gần đây, cho phép quay lại nhanh.
@@ -110,9 +113,12 @@ export function DashboardScreen({ navigate }) {
   // không show loading lại (refetchInterval mặc định không bật loading state).
   const DASHBOARD_REFRESH_MS = 90_000
 
-  useEffect(() => subscribeAdminWs('/topic/admin/inventory', () => {
-    queryClient.invalidateQueries({ queryKey: ['inventory-summary'] })
-  }), [queryClient])
+  useEffect(() => {
+    if (!canReadInventory) return undefined
+    return subscribeAdminWs('/topic/admin/inventory', () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-summary'] })
+    })
+  }, [canReadInventory, queryClient])
 
   const { data: dashResult, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', period],
@@ -128,6 +134,10 @@ export function DashboardScreen({ navigate }) {
     staleTime: 60_000,
     refetchInterval: DASHBOARD_REFRESH_MS,
     refetchOnWindowFocus: true,
+    enabled: canReadInventory,
+    // Permission failures are stable until the session/role changes; retrying
+    // them only creates another request and makes the warning appear to flash.
+    retry: false,
   })
 
   const state = {
@@ -186,6 +196,10 @@ export function DashboardScreen({ navigate }) {
 
   const pendingOrdersCount = data?.kpi?.pendingOrders ?? 0
   const outOfStockCount = invSummary?.outOfStockCount ?? 0
+  const hasInventoryData = invSummary != null
+  // Refetch nền có thể lỗi nhưng vẫn giữ số liệu tồn kho lấy được lần trước;
+  // chỉ cảnh báo khi chưa có dữ liệu tồn kho hợp lệ để dùng làm dự phòng.
+  const showInventoryWarning = invIsError && !hasInventoryData
 
   const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
   const SEVERITY_TONE = { high: 'danger', medium: 'warning', low: 'info' }
@@ -204,7 +218,7 @@ export function DashboardScreen({ navigate }) {
       count: outOfStockCount,
       hint: t('dashboard.attention.outOfStock.hint'),
       cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/products?stockState=OUT_OF_STOCK'),
+      onClick: canReadProducts ? () => navigate('/admin/products?stockState=OUT_OF_STOCK') : null,
     },
     pendingOrdersCount > 0 && {
       key: 'pendingOrders',
@@ -283,11 +297,11 @@ export function DashboardScreen({ navigate }) {
           {/* KPI cards */}
           <div className="bb-kpi-grid bb-kpi-grid-4">
             <div
-              className="bb-kpi clickable"
-              {...clickableProps(
+              className={`bb-kpi${canReadReports ? ' clickable' : ''}`}
+              {...(canReadReports ? clickableProps(
                 () => navigate('/admin/reports'),
                 t('dashboard.kpi.todayRevenueAria'),
-              )}
+              ) : {})}
             >
               <div className="bb-kpi-head">
                 <span>
@@ -349,11 +363,11 @@ export function DashboardScreen({ navigate }) {
             </div>
 
             <div
-              className="bb-kpi clickable"
-              {...clickableProps(
+              className={`bb-kpi${canReadProducts ? ' clickable' : ''}`}
+              {...(canReadProducts ? clickableProps(
                 () => navigate('/admin/products?publishStatus=PUBLISHED'),
                 t('dashboard.kpi.activeProductsAria'),
-              )}
+              ) : {})}
             >
               <div className="bb-kpi-head">
                 <span>
@@ -496,19 +510,19 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
             <div className="bb-card-body">
-              {invIsError && (
+              {showInventoryWarning && (
                 <StatePanel
                   tone="warning"
                   description={t('dashboard.attention.inventoryWarn')}
                 />
               )}
-              {invIsLoading && (
+              {invIsLoading && !hasInventoryData && (
                 <SkeletonBlock height={72} />
               )}
               {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
                   ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
                   không khẳng định rỗng. */}
-              {attentionItems.length === 0 && !invIsLoading && !invIsError && (
+              {attentionItems.length === 0 && !invIsLoading && !showInventoryWarning && (
                 <SectionEmpty
                   title={t('dashboard.attention.empty')}
                   description={t('dashboard.attention.emptyDesc')}
@@ -520,10 +534,10 @@ export function DashboardScreen({ navigate }) {
                     <div
                       key={item.key}
                       className="bb-attention-item"
-                      {...clickableProps(
+                      {...(item.onClick ? clickableProps(
                         item.onClick,
                         `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
-                      )}
+                      ) : {})}
                     >
                       <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />
                       <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
@@ -532,9 +546,11 @@ export function DashboardScreen({ navigate }) {
                         <div className="bb-attention-desc">{item.hint}</div>
                       </div>
                       <span className="bb-attention-count">{item.count}</span>
-                      <span className="bb-btn bb-btn-ghost bb-btn-sm" aria-hidden="true">
-                        {item.cta}<ArrowRight size={14} aria-hidden="true" />
-                      </span>
+                      {item.onClick ? (
+                        <span className="bb-btn bb-btn-ghost bb-btn-sm" aria-hidden="true">
+                          {item.cta}<ArrowRight size={14} aria-hidden="true" />
+                        </span>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -636,7 +652,7 @@ export function DashboardScreen({ navigate }) {
             <div className="bb-card">
               <div className="bb-card-header">
                 <h3>{t('dashboard.topProducts.title')}</h3>
-                {topProducts.length > 0 && (
+                {topProducts.length > 0 && canReadProducts && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -674,6 +690,7 @@ export function DashboardScreen({ navigate }) {
                                 type="button"
                                 className="bb-product-cell bg-transparent border-0 p-0 text-left cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
                                 onClick={() => navigate(`/admin/products/${product.productId}`)}
+                                disabled={!canReadProducts}
                               >
                                 <span className="bb-product-thumb"><Package size={18} /></span>
                                 <span title={product.name}>{product.name || t('common.unknown')}</span>
@@ -698,7 +715,7 @@ export function DashboardScreen({ navigate }) {
                           { label: t('dashboard.topProducts.units'), value: (product.units ?? 0).toLocaleString(numberLocale) },
                           { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },
                         ]}
-                        onClick={() => navigate(`/admin/products/${product.productId}`)}
+                        onClick={canReadProducts ? () => navigate(`/admin/products/${product.productId}`) : undefined}
                       />
                     ))}
                   </MobileCardList>
@@ -709,8 +726,8 @@ export function DashboardScreen({ navigate }) {
                       tone="neutral"
                       title={t('dashboard.topProducts.empty')}
                       description={t('dashboard.topProducts.emptyDesc')}
-                      actionLabel={t('dashboard.topProducts.emptyCta')}
-                      onAction={() => navigate('/admin/products/new')}
+                      actionLabel={canReadProducts ? t('dashboard.topProducts.emptyCta') : undefined}
+                      onAction={canReadProducts ? () => navigate('/admin/products') : undefined}
                     />
                   </div>
                 )}
