@@ -79,6 +79,16 @@ const firstMedia = {
   usageCount: 0,
 }
 
+const uploadedMedia = {
+  id: 'media-uploaded',
+  filename: 'catalog/anh-moi.jpg',
+  publicUrl: '/media/catalog/anh-moi.jpg',
+  mimeType: 'image/jpeg',
+  altText: '',
+  title: 'Ảnh mới',
+  usageCount: 0,
+}
+
 function mediaResponse(items) {
   return {
     items,
@@ -102,6 +112,10 @@ beforeEach(() => {
   mocks.fetchMediaFolders.mockResolvedValue([])
   mocks.fetchMediaTags.mockResolvedValue([])
   mocks.fetchMedia.mockResolvedValue(mediaResponse([firstMedia]))
+  mocks.uploadMedia.mockImplementation(async (_file, _altText, onProgress) => {
+    onProgress?.(100)
+    return { item: uploadedMedia }
+  })
   mocks.showConfirm.mockResolvedValue(true)
 })
 
@@ -141,6 +155,36 @@ describe('MediaPickerModal', () => {
 
     await screen.findByTitle('helmet-one.jpg')
     expect(screen.getByRole('button', { name: /media\.picker\.upload/ })).toBeInTheDocument()
+  })
+
+  it('tải ảnh lên ổn định, giữ modal mở và cho chọn ngay ảnh vừa tải', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+    renderPicker({ onSelect, onClose })
+
+    await screen.findByTitle('helmet-one.jpg')
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+    ))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'media.picker.dialogLabel' })).toBeInTheDocument()
+
+    const confirm = screen.getByRole('button', { name: 'media.picker.confirmSingle' })
+    await waitFor(() => expect(confirm).toBeEnabled())
+    await user.click(confirm)
+
+    expect(onSelect).toHaveBeenCalledWith(
+      uploadedMedia.publicUrl,
+      expect.objectContaining({ id: uploadedMedia.id, isNewUpload: true }),
+    )
   })
 
   it('giữ nguyên chữ ký callback chọn ảnh', async () => {

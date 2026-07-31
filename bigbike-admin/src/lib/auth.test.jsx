@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthProvider, useAuth } from './auth'
 
@@ -91,5 +91,37 @@ describe('AuthProvider access reconciliation', () => {
     await waitFor(() => expect(mocks.fetchCurrentAdminUser).toHaveBeenCalledTimes(2))
     expect(mocks.queryClientClear).not.toHaveBeenCalled()
     expect(screen.getByTestId('auth-user')).toHaveTextContent('Admin User')
+  })
+
+  it('keeps the query cache intact during the scheduled 30-second access refresh', async () => {
+    let scheduledRefresh
+    const realSetInterval = window.setInterval.bind(window)
+    const setIntervalSpy = vi.spyOn(window, 'setInterval').mockImplementation((callback, delay, ...args) => {
+      if (delay === 30_000) {
+        scheduledRefresh = callback
+        return 123
+      }
+      return realSetInterval(callback, delay, ...args)
+    })
+
+    const view = render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated'))
+    await waitFor(() => expect(scheduledRefresh).toBeTypeOf('function'))
+
+    await act(async () => {
+      scheduledRefresh()
+    })
+
+    await waitFor(() => expect(mocks.fetchCurrentAdminUser).toHaveBeenCalledTimes(2))
+    expect(mocks.queryClientClear).not.toHaveBeenCalled()
+    expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated')
+
+    view.unmount()
+    setIntervalSpy.mockRestore()
   })
 })

@@ -36,12 +36,14 @@ test('effect · global search palette opens on Ctrl+K and closes on Escape', asy
 test('effect · notification bell panel opens and closes', async ({ adminPage, collect }) => {
   const bell = adminPage.getByRole('button', { name: 'Thông báo' })
   await bell.click()
-  // Panel anchored to the bell; assert something panel-like appears and fits.
-  const panel = adminPage.locator('.bb-topbar .relative >> div').filter({ hasText: /Thông báo|thông báo|Notification/i }).last()
-  await expect(panel.first()).toBeVisible()
+  // The panel is rendered through a portal, so locate it by its accessible role.
+  const panel = adminPage.getByRole('menu', { name: 'Thông báo' })
+  await expect(panel).toBeVisible()
+  await expectWithinViewport(adminPage, panel, 'notification panel')
   await expectNoHorizontalOverflow(adminPage, 'notification panel open')
-  // Close via outside click.
-  await adminPage.locator('.bb-page-content').click({ position: { x: 5, y: 5 } })
+  // Escape closes the modal menu and releases its interaction layer.
+  await adminPage.keyboard.press('Escape')
+  await expect(panel).toBeHidden()
   expectRuntimeClean(collect)
 })
 
@@ -75,15 +77,17 @@ test('effect · mobile sidebar drawer overlay closes the drawer (no scroll lock 
   expectRuntimeClean(collect)
 })
 
-test('effect · order status segmented tabs switch without breaking layout', async ({ adminPage, collect }) => {
+test('effect · order status filter switches without breaking layout', async ({ adminPage, collect }) => {
   await navigateSpa(adminPage, '/admin/orders')
-  const seg = adminPage.locator('.bb-seg button')
-  const count = await seg.count()
-  expect(count, 'order status tabs present').toBeGreaterThan(1)
-  await seg.nth(1).click()
-  await expect(seg.nth(1)).toHaveClass(/active/)
+  const statusFilter = adminPage.getByRole('combobox', { name: 'Trạng thái' })
+  await statusFilter.click()
+  const nextStatus = adminPage.getByRole('option').nth(1)
+  const nextStatusLabel = (await nextStatus.textContent())?.trim()
+  expect(nextStatusLabel, 'order status option present').toBeTruthy()
+  await nextStatus.click()
+  await expect(statusFilter).toContainText(nextStatusLabel!)
   await adminPage.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
-  await expectNoHorizontalOverflow(adminPage, 'orders after tab switch')
+  await expectNoHorizontalOverflow(adminPage, 'orders after status filter switch')
   expectRuntimeClean(collect)
 })
 

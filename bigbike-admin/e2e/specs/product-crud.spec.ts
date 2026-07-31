@@ -109,6 +109,17 @@ async function uploadMainImage(page: Page) {
   const card = sectionCard(page, 'Ảnh đại diện')
   await card.getByRole('button', { name: 'Chọn từ thư viện' }).click()
   const dialog = page.getByRole('dialog', { name: 'Chọn ảnh từ thư viện' })
+
+  // Regression video10/video11: AuthProvider kiểm tra lại quyền khi cửa sổ lấy focus
+  // và theo chu kỳ 30 giây. Trước fix, lần kiểm tra này gọi queryClient.clear(), làm
+  // Product Detail trở về skeleton và unmount MediaPicker giữa lúc admin đang tải ảnh.
+  const profileRefresh = page.waitForResponse((response) =>
+    response.request().method() === 'GET'
+      && new URL(response.url()).pathname.endsWith('/api/v1/auth/me'))
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await profileRefresh
+  await expect(dialog, 'Làm mới quyền không được đóng Media picker hoặc tải lại màn Product').toBeVisible()
+
   await dialog.locator('input[type="file"]').setInputFiles(TEST_IMAGE_PATH)
   const confirmBtn = dialog.getByRole('button', { name: 'Chọn ảnh này' })
   await expect(confirmBtn, 'Upload chưa xong hoặc ảnh sai tỉ lệ 1:1').toBeEnabled({ timeout: 30_000 })

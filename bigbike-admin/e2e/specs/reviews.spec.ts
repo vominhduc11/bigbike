@@ -623,7 +623,8 @@ test.describe('Reviews admin audit', () => {
     await expect(adminPage.getByText('Chưa có đánh giá nào', { exact: true })).toBeVisible()
 
     state.summaryError = true
-    await adminPage.getByRole('button', { name: 'Làm mới', exact: true }).click()
+    await adminPage.reload({ waitUntil: 'domcontentloaded' })
+    await waitForScreenReady(adminPage)
     await expect(adminPage.getByText('Không thể tải số liệu tổng quan.').last()).toBeVisible()
     await expect(adminPage.getByRole('button', { name: /đánh giá chờ duyệt/i })).toHaveCount(0)
     state.summaryError = false
@@ -631,7 +632,8 @@ test.describe('Reviews admin audit', () => {
     await expect(adminPage.getByRole('button', { name: /đánh giá chờ duyệt/i })).toBeVisible()
 
     state.listError = true
-    await adminPage.getByRole('button', { name: 'Làm mới', exact: true }).click()
+    await adminPage.reload({ waitUntil: 'domcontentloaded' })
+    await waitForScreenReady(adminPage)
     await expect(adminPage.getByText('E2E review list unavailable', { exact: true })).toBeVisible()
     state.listError = false
     await adminPage.getByRole('button', { name: 'Thử lại', exact: true }).click()
