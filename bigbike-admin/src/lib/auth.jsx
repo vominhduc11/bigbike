@@ -58,7 +58,9 @@ export function AuthProvider({ children }) {
       try {
         const response = await fetchCurrentAdminUser()
         if (!aliveRef.current) return false
-        queryClient.clear()
+        // Keep the React Query cache warm here.
+        // This path runs on focus and on a 30s interval, so clearing the entire
+        // cache would turn a harmless access refresh into visible full-screen flicker.
         setState({
           status: 'authenticated',
           user: response.user,
