@@ -1,11 +1,10 @@
 import { Barlow_Condensed } from "next/font/google";
 
-// Barlow Condensed (--font-cta / --bb-font-cta) backs 18+ CSS rules across globals.css/
-// brand-tokens.css (nav, CTA, badges, kickers...) — left at all 4 weights; auditing every
-// rule's actual font-weight to safely narrow this set is a separate, larger pass.
+// Canonical B groups use Barlow Condensed through --font-cta / --bb-font-cta.
+// Only weights used by the current codebase are loaded.
 export const fontBarlowCondensed = Barlow_Condensed({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "600", "700", "900"],
+  weight: ["400", "600", "700"],
   variable: "--font-barlow-condensed",
   display: "swap",
 });

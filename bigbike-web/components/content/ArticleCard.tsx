@@ -63,10 +63,10 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           </span>
           <div className="flex flex-col gap-2 flex-1">
             <p className={categoryBadge}>{category}</p>
-            <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-[1.2] m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
+            <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
               {title}
             </h3>
-            <p className="text-a4-content text-muted-foreground leading-[1.55] m-0 min-h-26 line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
+            <p className="text-a4-content text-muted-foreground leading-body m-0 min-h-26 line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
               {excerpt}
             </p>
           </div>
@@ -96,7 +96,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       <div
         className="relative pt-[41px] px-8.5 pb-7.5 flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-10.5 min-w-42 pl-5.5 pr-7 bg-brand text-white font-body text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-10.5 min-w-42 pl-5.5 pr-7 bg-brand text-white font-cta text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
@@ -104,7 +104,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             {category}
           </p>
           <h3
-            className="font-body text-a4-content font-semibold text-foreground normal-case leading-[1.2] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
+            className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
           >
             {title}
           </h3>
@@ -113,7 +113,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-1.5 text-muted-foreground text-b4-action font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
+          <span className="mt-auto pt-1.5 font-cta text-b4-action font-bold uppercase tracking-display text-muted-foreground transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>
         </div>

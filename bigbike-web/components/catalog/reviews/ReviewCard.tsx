@@ -45,7 +45,7 @@ function ReviewComment({ text }: { text: string }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-1 text-b4-action font-semibold text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+          className="mt-1 font-cta text-b4-action font-semibold uppercase text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         >
           {expanded ? t("showLess") : t("showMore")}
         </button>
@@ -106,7 +106,7 @@ export function ReviewCard({ review }: { review: Review }) {
           <strong className="min-w-0 text-a3-section font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
             {review.authorName}
           </strong>
-          <time dateTime={review.createdAt} className="shrink-0 text-b5-label text-muted-foreground">
+          <time dateTime={review.createdAt} className="shrink-0 font-cta text-b5-label uppercase text-muted-foreground">
             <LocalDate value={review.createdAt} dateStyle="slashPad" />
           </time>
         </div>

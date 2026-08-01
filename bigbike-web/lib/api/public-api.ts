@@ -78,7 +78,17 @@ async function decodeJson(response: Response): Promise<unknown> {
   }
 }
 
-function parseError(status: number, payload: unknown): ClientError {
+function isEnglishQuery(query?: RequestQuery): boolean {
+  return query?.lang === "en";
+}
+
+function englishErrorMessage(status: number): string {
+  if (status === 404) return "The requested data could not be found.";
+  if (status >= 500) return "The service is busy. Please try again.";
+  return "Unable to load data from the service.";
+}
+
+function parseError(status: number, payload: unknown, query?: RequestQuery): ClientError {
   if (
     payload &&
     typeof payload === "object" &&
@@ -90,7 +100,9 @@ function parseError(status: number, payload: unknown): ClientError {
     return {
       status,
       code: apiError.code ?? DEFAULT_META_ERROR.code,
-      message: apiError.message ?? DEFAULT_META_ERROR.message,
+      message: isEnglishQuery(query)
+        ? englishErrorMessage(status)
+        : apiError.message ?? DEFAULT_META_ERROR.message,
       details: apiError.details ?? [],
     };
   }
@@ -100,10 +112,10 @@ function parseError(status: number, payload: unknown): ClientError {
     status,
     message:
       status === 404
-        ? "Không tìm thấy dữ liệu yêu cầu."
+        ? isEnglishQuery(query) ? englishErrorMessage(status) : "Không tìm thấy dữ liệu yêu cầu."
         : status >= 500
-          ? "Hệ thống đang bận, vui lòng thử lại."
-          : DEFAULT_META_ERROR.message,
+          ? isEnglishQuery(query) ? englishErrorMessage(status) : "Hệ thống đang bận, vui lòng thử lại."
+          : isEnglishQuery(query) ? englishErrorMessage(status) : DEFAULT_META_ERROR.message,
   };
 }
 
@@ -165,20 +177,20 @@ async function requestJson<T>(
 
   const payload = await decodeJson(response);
   if (!response.ok) {
-    throw new ApiRequestError(parseError(response.status, payload));
+    throw new ApiRequestError(parseError(response.status, payload, query));
   }
 
   return payload as T;
 }
 
-function toClientError(error: unknown): ClientError {
+function toClientError(error: unknown, query?: RequestQuery): ClientError {
   if (error instanceof ApiRequestError) {
     return error.clientError;
   }
   if (error instanceof Error) {
     return {
       ...DEFAULT_META_ERROR,
-      message: error.message || DEFAULT_META_ERROR.message,
+      message: error.message || (isEnglishQuery(query) ? "Unable to load data from the service." : DEFAULT_META_ERROR.message),
     };
   }
   return DEFAULT_META_ERROR;
@@ -201,7 +213,7 @@ async function loadList<T>(
     return {
       data: [],
       pagination: null,
-      error: toClientError(error),
+      error: toClientError(error, query),
     };
   }
 }
@@ -221,7 +233,7 @@ async function loadArrayDataWithQuery<T>(
   } catch (error) {
     return {
       data: [],
-      error: toClientError(error),
+      error: toClientError(error, query),
     };
   }
 }
@@ -241,7 +253,7 @@ async function loadDataWithQuery<T>(
   } catch (error) {
     return {
       data: null,
-      error: toClientError(error),
+      error: toClientError(error, query),
     };
   }
 }
@@ -452,14 +464,14 @@ export function listHomeHighlights(lang?: string): Promise<DataResult<HomeHighli
   return loadArrayDataWithQuery<HomeHighlightItem>("/api/v1/home/category-highlights", { lang }, 300, ["home-highlights", `lang:${lang ?? "vi"}`]);
 }
 
-export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {
+export function getOrderLookup(orderNumber: string, orderKey: string, lang?: string): Promise<DataResult<OrderDetail>> {
   if (!orderNumber || !orderKey) {
     return Promise.resolve({
       data: null,
       error: {
         status: 400,
         code: "VALIDATION_ERROR",
-        message: "Tham số đơn hàng không hợp lệ.",
+        message: lang === "en" ? "The order details are invalid." : "Tham số đơn hàng không hợp lệ.",
         details: [],
       },
     });
@@ -470,6 +482,7 @@ export function getOrderLookup(orderNumber: string, orderKey: string): Promise<D
     {
       orderNumber,
       orderKey,
+      lang,
     },
     0,
   );

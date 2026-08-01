@@ -869,7 +869,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                       onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
                       onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.slug' : 'slug')}
                       disabled={isReadOnly}
-                      placeholder={isEnLang ? t('categories.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : t('categories.slugPlaceholder')}
+                      placeholder={isEnLang ? t('categories.slugPlaceholderEn', { defaultValue: 'duong-dan-tieng-anh' }) : t('categories.slugPlaceholder')}
                       className="font-mono"
                     />
                   </FormField>
@@ -916,7 +916,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
             <DetailSection
               title={t('categories.detail.imagesSection', { defaultValue: 'Hình ảnh trên website' })}
-              description={t('categories.detail.imagesSectionDesc', { defaultValue: 'Quản lý ảnh thẻ danh mục, banner desktop, banner mobile, ảnh minh họa và icon menu.' })}
+              description={t('categories.detail.imagesSectionDesc', { defaultValue: 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại, ảnh minh hoạ và biểu tượng menu.' })}
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="form-field" data-field="imageUrl">
@@ -926,7 +926,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     onChange={(url) => updateField('imageUrl', url)}
                     alt={form.imageAlt}
                     onAltChange={(alt) => updateField('imageAlt', alt)}
-                    previewAlt={form.imageAlt || t('categories.detail.imageAlt', { defaultValue: 'Ảnh thumbnail danh mục' })}
+                    previewAlt={form.imageAlt || t('categories.detail.imageAlt', { defaultValue: 'Ảnh đại diện danh mục' })}
                     disabled={isReadOnly}
                     error={validationErrors.imageUrl}
                     recommend={IMAGE_RECO.categoryImage}
@@ -948,13 +948,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
                 </div>
                 <div className="form-field" data-field="mobileBannerImageUrl">
-                  <span>{t('categories.detail.mobileBannerImageUrl', { defaultValue: 'Ảnh banner mobile' })}</span>
+                  <span>{t('categories.detail.mobileBannerImageUrl', { defaultValue: 'Ảnh banner điện thoại' })}</span>
                   <ImageUrlInput
                     value={form.mobileBannerImageUrl}
                     onChange={(url) => updateField('mobileBannerImageUrl', url)}
                     alt={form.mobileBannerImageAlt}
                     onAltChange={(alt) => updateField('mobileBannerImageAlt', alt)}
-                    previewAlt={form.mobileBannerImageAlt || t('categories.detail.mobileBannerAlt', { defaultValue: 'Ảnh nền hero mobile danh mục' })}
+                    previewAlt={form.mobileBannerImageAlt || t('categories.detail.mobileBannerAlt', { defaultValue: 'Ảnh nền đầu trang trên điện thoại' })}
                     disabled={isReadOnly}
                     error={validationErrors.mobileBannerImageUrl}
                     recommend={IMAGE_RECO.bannerWide}

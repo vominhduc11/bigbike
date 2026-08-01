@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +12,7 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 // Nút "cuộn lên đầu trang" là thao tác phụ, đặt cao hơn nút chat và vòng halo.
 // Vị trí tách khỏi chat để không cạnh tranh với nút hỗ trợ chính ở góc phải.
 export function ScrollToTopFab() {
+  const t = useTranslations("Common");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export function ScrollToTopFab() {
 
   return (
     <div
-      className="bb-scroll-top-anchor fixed z-[665] transition-opacity duration-200 ease-out motion-reduce:transition-none [[data-scroll-locked]_&]:hidden"
+      className="bb-scroll-top-anchor fixed z-[var(--bb-z-scroll-top)] transition-opacity duration-200 ease-out motion-reduce:transition-none [[data-scroll-locked]_&]:hidden"
       style={{
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? "auto" : "none",
@@ -39,7 +41,7 @@ export function ScrollToTopFab() {
         type="button"
         variant="primary"
         size="icon"
-        aria-label="Cuộn lên đầu trang"
+        aria-label={t("scrollToTop")}
         aria-hidden={!visible}
         tabIndex={visible ? 0 : -1}
         onClick={scrollToTop}

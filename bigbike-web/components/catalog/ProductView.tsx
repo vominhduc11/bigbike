@@ -1,13 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
+import { toHomePath } from "@/lib/utils/routes";
 
-import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { PurchaseSection } from "@/components/catalog/PurchaseSection";
 import { LText, LocalizedContentProvider, useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
@@ -129,6 +129,7 @@ function MobileTrustLine({ product }: { product: Product }) {
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
   const locale = useLocale();
   const tProduct = useTranslations("Product");
+  const tA11y = useTranslations("A11y");
 
   // Fetch site settings client-side using the active locale to ensure we get English translations of
   // static fields (hours, address, zalo) when locale = "en". `initialData` chỉ gán cho key `vi`
@@ -138,12 +139,12 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const { data: freshSettingsResult } = useQuery({
     queryKey: queryKeys.publicSettingsResult(locale),
     queryFn: () => listPublicSettings(locale),
-    initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
+    initialData: { data: settings, error: null },
     staleTime: 5 * 60 * 1000,
   });
   const activeSettings = freshSettingsResult?.data ?? settings;
 
-  const name = safeText(product.name, tProduct("fallbackShortName") || "Sản phẩm");
+  const name = safeText(product.name, tProduct("fallbackShortName"));
 
   // Nhãn cho thanh nhảy-mục MOBILE (anchor nav tổng ở đầu nội dung).
   const tTab = useTranslations("Product.tabs");
@@ -180,10 +181,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const ratingCount = product.ratingCount ?? null;
 
   const descriptionHtml = product.description
-    ? sanitizeRichHtml(product.description, { rewriteMediaUrls: true })
+    ? sanitizeRichHtml(product.description, { rewriteMediaUrls: true, locale: locale as "vi" | "en" })
     : "";
   const contentBottomHtml = product.contentBottom
-    ? sanitizeRichHtml(product.contentBottom, { rewriteMediaUrls: true })
+    ? sanitizeRichHtml(product.contentBottom, { rewriteMediaUrls: true, locale: locale as "vi" | "en" })
     : "";
   // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO, blockquote #3 ngay sau Specs Dashboard.
   const quickAnswer = safeText(product.quickAnswerSummary, "");
@@ -410,10 +411,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
       <div className="mx-auto w-full max-w-300 px-4">
-        <nav className="hidden py-8 text-a5-meta text-muted-foreground md:block" aria-label="Breadcrumb">
+        <nav className="hidden py-8 text-a5-meta text-muted-foreground md:block" aria-label={tA11y("breadcrumbNav")}>
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
-              <Link href="/" className="font-semibold hover:text-brand">
+              <Link href={toHomePath(locale as "vi" | "en")} className="font-semibold hover:text-brand">
                 <span property="name">Bigbike.vn</span>
               </Link>
             </li>

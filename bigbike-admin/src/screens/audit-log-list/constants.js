@@ -85,7 +85,8 @@ export function getActionLabel(t, action) {
   const key = `auditLog.action.${action}`
   const translated = t(key, { defaultValue: '' })
   if (translated && translated !== key) return translated
-  return t('auditLog.actionOther', { code: action, defaultValue: `(${action})` })
+  const fallback = t('auditLog.actionOther', { code: action, defaultValue: 'Hoạt động khác' })
+  return fallback && !/^\(.+\)$/.test(fallback) ? fallback : 'Hoạt động khác'
 }
 
 export function getAuditCardData(log, t) {

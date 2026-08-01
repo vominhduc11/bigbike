@@ -18,7 +18,7 @@ import {
 
 /**
  * Hiển thị phần mô tả sản phẩm TỪ các khối có cấu trúc (admin dựng bằng BlockEditor) theo phong cách
- * mockup PDP — nhưng dùng màu/font của design system web (token brand, font-heading), KHÔNG hardcode.
+ * mockup PDP — nhưng dùng màu/phông của design system web (token brand + nhóm A/B), KHÔNG hardcode.
  *
  * Bố cục cố định, dễ đoán cho admin:
  *  • Khối `feature` (ảnh + tiêu đề + đoạn + danh sách trong MỘT khối) → một "hàng tính năng" 2 cột

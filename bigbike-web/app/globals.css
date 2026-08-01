@@ -114,7 +114,6 @@
   --text-a3-section: var(--bb-text-a3-section);
   --text-a4-content: var(--bb-text-a4-content);
   --text-a5-meta: var(--bb-text-a5-meta);
-  --text-category-label: var(--bb-text-category-label);
 
   /* Letter-spacing tối thiểu (TYPOGRAPHY §7.6): normal mặc định, wide cho uppercase
      nav/button/kicker, display cho eyebrow nổi bật. Override Tailwind built-in tracking-wide
@@ -125,7 +124,7 @@
 
   /* Line-height tokens (TYPOGRAPHY §7.4) expose qua @theme → leading-display/heading/
      title/body. Đặt tên theo vai trò để KHÔNG đè built-in leading-tight/snug/normal.
-     Dùng thay cho leading-[…] arbitrary. */
+     Dùng thay cho các giá trị line-height tùy ý. */
   --leading-display: var(--bb-line-tight);    /* 1.1  — display / h1 */
   --leading-heading: var(--bb-line-heading);  /* 1.15 — heading chặt */
   --leading-title: var(--bb-line-snug);       /* 1.2  — h2–h4, news/product/card title, kicker */
@@ -437,10 +436,10 @@ body {
 .bb-page h1 {
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a1-title);
-  letter-spacing: 0.01em;
-  line-height: 1.08;
+  letter-spacing: var(--bb-tracking-normal);
+  line-height: var(--bb-line-tight);
   margin: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 
@@ -530,29 +529,26 @@ body {
 
 .bb-richtext h1,
 .bb-richtext h2,
-.bb-richtext h3 {
+.bb-richtext h3,
+.bb-richtext h4,
+.bb-richtext h5,
+.bb-richtext h6 {
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-cta);
+  font-family: var(--bb-font-body);
   font-weight: 600;
-  line-height: 1.3;
-  text-transform: uppercase;
-  letter-spacing: 0;
+  line-height: var(--bb-line-snug);
+  text-transform: none;
+  letter-spacing: var(--bb-tracking-normal);
   overflow-wrap: break-word;
 }
 
-.bb-richtext h1 { font-size: var(--bb-text-a1-title); }
+.bb-richtext h1 { font-size: var(--bb-text-a1-title); line-height: var(--bb-line-tight); }
 .bb-richtext h2 { font-size: var(--bb-text-a2-page); }
 .bb-richtext h3 { font-size: var(--bb-text-a3-section); }
 .bb-richtext h4,
 .bb-richtext h5,
 .bb-richtext h6 {
-  font-family: var(--bb-font-cta);
-  color: var(--bb-text-primary);
   font-size: var(--bb-text-a4-content);
-  font-weight: 600;
-  line-height: 1.25;
-  text-transform: uppercase;
-  letter-spacing: 0;
 }
 
 .bb-richtext a {
@@ -560,8 +556,7 @@ body {
   font-weight: 700;
 }
 
-/* globals.css overrides the h1-h3 style from brand-tokens.css to use display font.
-   Remaining elements (ul/ol/li/p/blockquote/table/strong) are fully covered by brand-tokens.css. */
+/* Rich-text headings remain in canonical A groups and therefore use the body font. */
 
 /* Suppress   spacer paragraphs common in WP-imported descriptions */
 .bb-richtext p:empty { display: none; }
@@ -569,6 +564,52 @@ body {
 
 /* Marker accent color */
 .bb-richtext li::marker { color: var(--bb-text-brand); }
+
+/* Frozen guide/policy HTML retains its layout classes after sanitization. Keep
+   their readable text inside the canonical A/B groups instead of allowing the
+   old inline stylesheet to establish a parallel scale. */
+.bb-richtext .bb-policy .bb-lead,
+.bb-richtext .bb-policy .bb-step-content,
+.bb-richtext .bb-policy .bb-highlight {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-a4-content);
+  line-height: var(--bb-line-body);
+  letter-spacing: var(--bb-tracking-normal);
+  text-transform: none;
+}
+
+.bb-richtext .bb-policy .bb-h2 {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-a2-page);
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
+  text-transform: none;
+}
+
+.bb-richtext .bb-policy .bb-h3 {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-a3-section);
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
+  text-transform: none;
+}
+
+.bb-richtext .bb-policy .bb-step-num,
+.bb-richtext .bb-policy .bb-badge {
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-b5-label);
+  line-height: var(--bb-line-tight);
+  letter-spacing: var(--bb-tracking-display);
+  text-transform: uppercase;
+}
+
+.bb-richtext .bb-policy .bb-contact-bar span {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-a5-meta);
+  line-height: var(--bb-line-body);
+  letter-spacing: var(--bb-tracking-normal);
+  text-transform: none;
+}
 
 @keyframes skeleton-shimmer {
   from {
@@ -652,9 +693,9 @@ body:has([data-page-hero]) .bb-main {
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a2-page);
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
+  text-transform: none;
 }
 
 /* Override .bb-page h1 specificity for auth card — responsive, title-case */
@@ -881,7 +922,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   /* Cấp 1 — li `.navigation--item` padding-top 26px, link 1.143rem */
   header .navigation .header-nav > .navigation--item > a {
     display: block;
-    line-height: 1.4;
+    line-height: var(--bb-line-body);
   }
   /* Vùng bấm chevron: nới rộng thành ~44px cao × ~42px rộng (chuẩn tap-target di
      động) để dễ chạm, NHƯNG giữ glyph đúng vị trí cũ — bù `right`/`padding` ngược
@@ -1353,8 +1394,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-color-black);
   font-family: var(--bb-font-body) !important;
   font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.5;
+  letter-spacing: var(--bb-tracking-normal);
+  line-height: var(--bb-line-snug);
   margin: 0 0 7px;
   text-align: justify;
   text-transform: none;
@@ -1363,12 +1404,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content h1,
 .bb-seo-content .bb-seo-content-body > h2:first-child {
   font-size: var(--bb-text-a2-page);
-  line-height: 48px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-seo-content h2 {
   font-size: var(--bb-text-a4-content); /* 18px — WP .seo-block-content h2 span */
-  line-height: 36px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-seo-content h3,
@@ -1376,7 +1417,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content h5,
 .bb-seo-content h6 {
   font-size: var(--bb-text-a4-content); /* 16px — WP .seo-block-content h3 */
-  line-height: 27px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-seo-content h1 strong, .bb-seo-content h1 b,
@@ -1392,7 +1433,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content p {
   color: var(--bb-color-black);
   font-size: var(--bb-text-a4-content); /* 16px — WP .content-bottom.wyswyg p = 16px */
-  line-height: 24px;
+  line-height: var(--bb-line-body);
   margin: 0 0 14px;
   text-align: justify;
 }
@@ -1406,7 +1447,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content ul {
   color: var(--bb-text-primary);
   font-size: var(--bb-text-a5-meta); /* 14px — WP .seo-block-content li */
-  line-height: 24px;
+  line-height: var(--bb-line-body);
   list-style: disc;
   margin: 0 0 14px;
   padding-left: 40px;
@@ -1474,15 +1515,15 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 
 /* -- Breadcrumb -------------------------------------------- */
-.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-a5-meta); letter-spacing: 0; text-transform: none; color: var(--bb-text-muted); display: flex; flex-wrap: wrap; align-items: center; }
+.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-family: var(--bb-font-body); font-size: var(--bb-text-a5-meta); letter-spacing: var(--bb-tracking-normal); text-transform: none; color: var(--bb-text-muted); display: flex; flex-wrap: wrap; align-items: center; }
 .bb-breadcrumb a { color: var(--bb-text-muted); font-weight: 600; text-decoration: none; cursor: pointer; }
 .bb-breadcrumb a:hover { color: var(--bb-text-brand); }
 .bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
 
 /* -- Page head -------------------------------------------- */
 .bb-page-head { max-width: var(--bb-container-wide); margin: 32px auto 28px; padding: 0 24px; border-bottom: 1px solid var(--bb-border-subtle); padding-bottom: 22px; }
-.bb-page-head .kicker { font-size: var(--bb-text-b5-label); letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
-.bb-page-head h1 { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--bb-text-a1-title); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
+.bb-page-head .kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-b5-label); letter-spacing: var(--bb-tracking-display); text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
+.bb-page-head h1 { font-family: var(--bb-font-body); text-transform: none; font-size: var(--bb-text-a1-title); letter-spacing: var(--bb-tracking-normal); line-height: var(--bb-line-tight); margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
 .bb-page-head .sub { color: var(--bb-text-muted); font-size: var(--bb-text-a5-meta); margin-top: 8px; }
 /* No horizontal emblem-clearance: .bb-page-head is only rendered by loading
    skeletons (no real page uses it — the real catalog/category/brand pages use
@@ -1510,10 +1551,11 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border-radius: 8px 8px 0 0;
 }
 .bb-ci-eyebrow {
+  font-family: var(--bb-font-cta);
   font-size: var(--bb-text-b5-label);
   color: var(--bb-text-muted);
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: var(--bb-tracking-display);
   margin-bottom: 6px;
   display: block;
 }
@@ -1521,14 +1563,14 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-size: var(--bb-text-a3-section);
   font-weight: bold;
   color: var(--bb-text-primary) !important;
-  line-height: 1.3;
+  line-height: var(--bb-line-snug);
   margin-bottom: 8px;
   font-family: var(--bb-font-body);
 }
 .bb-ci-body {
   font-size: var(--bb-text-a4-content);
   color: var(--bb-text-secondary);
-  line-height: 1.6;
+  line-height: var(--bb-line-body);
   margin-bottom: 0;
 }
 .bb-ci-pills {
@@ -1538,7 +1580,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin-top: 10px;
 }
 .bb-ci-pill {
+  font-family: var(--bb-font-cta);
   font-size: var(--bb-text-b5-label);
+  text-transform: uppercase;
   padding: 4px 12px;
   border-radius: 4px;
   background: var(--bb-bg-surface);
@@ -1554,11 +1598,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border-top: none;
 }
 .bb-ci-b-head {
+  font-family: var(--bb-font-cta);
   padding: 10px 16px;
   font-size: var(--bb-text-b5-label);
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: var(--bb-tracking-display);
   color: var(--bb-text-muted);
   border-bottom: 1px solid var(--bb-border-subtle);
   display: block;
@@ -1583,6 +1628,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   background: var(--bb-bg-surface-raised);
   border: 1px solid var(--bb-border-subtle);
   font-size: var(--bb-text-b5-label);
+  font-family: var(--bb-font-cta);
+  text-transform: uppercase;
   font-weight: bold;
   display: inline-flex;
   align-items: center;
@@ -1595,12 +1642,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-size: var(--bb-text-a4-content);
   font-weight: bold;
   color: var(--bb-text-primary) !important;
-  line-height: 1.35;
+  line-height: var(--bb-line-snug);
 }
 .bb-ci-at {
   font-size: var(--bb-text-a4-content);
   color: var(--bb-text-secondary);
-  line-height: 1.55;
+  line-height: var(--bb-line-body);
   padding-left: 26px;
   /* Đáp án là <p>, mặc định dính margin-bottom của theme → cộng dồn vào padding
      đáy của item làm hở dưới to hơn trên. Ép về 0 cho trên–dưới đều nhau. */
@@ -1636,7 +1683,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-weight: bold;
   width: 100%;
   text-decoration: none;
-  font-family: var(--bb-font-body);
+  font-family: var(--bb-font-cta);
+  text-transform: uppercase;
   cursor: pointer;
   transition: background-color var(--bb-duration-fast) var(--bb-ease-standard);
 }
@@ -1753,9 +1801,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a1-title); /* WP page banner = 24px */
-  line-height: 1.2;
+  line-height: var(--bb-line-tight);
   font-weight: 600;
-  text-transform: uppercase; /* match loaded H1 + TYPOGRAPHY §5 (h1 = UPPER); was none-on-desktop, causing loaded≠loading */
+  text-transform: none;
 }
 
 .bb-cart-breadcrumb {
@@ -1828,7 +1876,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 
 .cart-table .return-to-shop .button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 52px;
   padding: 0 24px;
   border: 0;
@@ -1837,7 +1887,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-b4-action);
   font-weight: 600;
-  line-height: 52px;
+  line-height: 1;
+  text-transform: uppercase;
   text-decoration: none;
 }
 
@@ -1861,20 +1912,20 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); margin-bottom: 14px; overflow: hidden; }
 .bb-order-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--bb-bg-surface-raised); border-bottom: 1px solid var(--bb-border-subtle); gap: 14px; flex-wrap: wrap; }
 .bb-order-head .meta { display: flex; gap: 22px; }
-.bb-order-head .meta div { font-size: var(--bb-text-b5-label); color: var(--bb-text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
-.bb-order-head .meta b { display: block; font-size: var(--bb-text-a5-meta); color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.04em; text-transform: none; font-family: monospace; }
+.bb-order-head .meta div { font-family: var(--bb-font-cta); font-size: var(--bb-text-b5-label); color: var(--bb-text-muted); letter-spacing: var(--bb-tracking-display); text-transform: uppercase; }
+.bb-order-head .meta b { display: block; font-size: var(--bb-text-a5-meta); color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: var(--bb-tracking-normal); text-transform: none; font-family: var(--bb-font-body); }
 .bb-order-body { display: flex; padding: 16px 20px; gap: 18px; align-items: center; }
 /* Clickable return cards */
 /* Return detail overlay */
 
 /* -- Order success page ------------------------------------ */
 .bb-success { max-width: 720px; margin: 60px auto; padding: 0 24px; text-align: center; }
-.bb-success .kicker { font-size: var(--bb-text-b5-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
-.bb-success h1 { font-family: var(--bb-font-body); font-size: var(--bb-text-a2-page); letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
+.bb-success .kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-b5-label); letter-spacing: var(--bb-tracking-display); text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
+.bb-success h1 { font-family: var(--bb-font-body); font-size: var(--bb-text-a2-page); letter-spacing: var(--bb-tracking-normal); text-transform: none; margin: 0 0 10px 0; }
 .bb-success p { color: var(--bb-text-muted); margin: 0 0 28px 0; }
 .bb-success .order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; text-align: left; margin-bottom: 22px; }
-.bb-success .order-card .label { font-size: var(--bb-text-b5-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
-.bb-success .order-card b { display: block; font-family: var(--bb-font-body); font-size: var(--bb-text-a4-content); color: var(--bb-text-primary); letter-spacing: 0.02em; }
+.bb-success .order-card .label { font-family: var(--bb-font-cta); font-size: var(--bb-text-b5-label); letter-spacing: var(--bb-tracking-display); text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
+.bb-success .order-card b { display: block; font-family: var(--bb-font-body); font-size: var(--bb-text-a4-content); color: var(--bb-text-primary); letter-spacing: var(--bb-tracking-normal); }
 .bb-success .order-card b.red { color: var(--bb-text-brand); }
 /* WP `.woocommerce-order-overview` parity - flexbox list, separator vertical bars */
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
@@ -1957,7 +2008,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Checkout ---------------------------------------------- */
 
 /* -- Product / cart thumbnail text ------------------------ */
-.bb-thumb-initials { font-family: var(--bb-font-body); font-size: var(--bb-text-a5-meta); color: var(--bb-text-muted); text-transform: uppercase; }
+.bb-thumb-initials { font-family: var(--bb-font-body); font-size: var(--bb-text-a5-meta); color: var(--bb-text-muted); text-transform: none; }
 
 /* -- Order confirmation ------------------------------------ */
 
@@ -2282,7 +2333,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
    đủ đặc hiệu để thắng rule theme. */
 .account-dashboard .account-title h3 {
   font-size: var(--bb-text-a2-page);
-  line-height: 1.2;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-blog-listing-parity .no-results .page-title {
@@ -2291,13 +2342,13 @@ img, picture, video, svg, canvas { max-width: 100%; }
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a2-page);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-blog-listing-parity .no-results p {
   margin: 0 0 1rem;
   font-size: var(--bb-text-a4-content);
-  line-height: 1.6;
+  line-height: var(--bb-line-body);
 }
 
 .bb-blog-listing-parity .no-results .search-form {
@@ -2532,9 +2583,9 @@ a:not(.font-cta):hover {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.5;
-  text-transform: uppercase;
+  letter-spacing: var(--bb-tracking-normal);
+  line-height: var(--bb-line-tight);
+  text-transform: none;
 }
 
 .bb-breadcrumb a {
@@ -2773,7 +2824,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   color: var(--bb-color-black);
   font-size: var(--bb-text-a5-meta);
   font-weight: 600;
-  line-height: 1.5625rem;
+  line-height: var(--bb-line-body);
 }
 
 .bb-article-detail-parity #table-of-content .btn-toggle {
@@ -2816,13 +2867,13 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a5-meta);
-  line-height: 1.5625rem;
+  line-height: var(--bb-line-body);
 }
 
 .bb-article-detail-parity .bb-article-detail-page .bb-article-wyswyg p {
   margin-top: 0;
   margin-bottom: 1rem;
-  line-height: 1.5625rem;
+  line-height: var(--bb-line-body);
 }
 
 .bb-article-detail-parity .bb-article-detail-page .bb-article-wyswyg ul,
@@ -2899,7 +2950,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a4-content);
-  line-height: 1.5;
+  line-height: var(--bb-line-body);
   overflow-wrap: anywhere;
   word-break: normal;
 }
@@ -2924,15 +2975,9 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0;
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
   text-transform: none;
-}
-
-.bb-article-detail-page .bb-article-wyswyg h4,
-.bb-article-detail-page .bb-article-wyswyg h5,
-.bb-article-detail-page .bb-article-wyswyg h6 {
-  font-family: var(--bb-font-cta);
 }
 
 .bb-article-detail-page .bb-article-wyswyg h1 { font-size: var(--bb-text-a1-title); }
@@ -3208,12 +3253,10 @@ body:has(.bb-home) {
 
 
 
-/* PDP Videos tab (bb-video-* / video-slide--*) migrated to inline Tailwind in
-   ProductVideosTab.tsx: iframe/video styled directly (no wrapper-descendant
-   selector), grid/list/thumbnail-button/title inline. The title keeps !leading-[1.35]
-   because it lives inside `.bb-tabs .tab-panel *{line-height:inherit}`. The home
-   `.bb-home .videos-slide` section is also migrated to inline Tailwind (only the
-   `.swiper-slide{height:auto}` mechanism rule is kept). */
+/* PDP Videos tab (bb-video-* / video-slide--*) đã chuyển sang Tailwind trực tiếp:
+   iframe/video không còn phụ thuộc wrapper-descendant; grid, danh sách, nút thumbnail
+   và tiêu đề dùng utility cùng token line-height chuẩn. Phần video trang chủ cũng đã
+   chuyển sang Tailwind; chỉ giữ lại rule cơ chế `.swiper-slide{height:auto}`. */
 
 /* Collapse PDP to 1-column up to 1023px (tablet inclusive). Previously this
    block fired only at <=767, leaving 768-1023 in 2-column with the WP gallery
@@ -3336,7 +3379,7 @@ html.overlay {
   margin: 0;
   color: var(--bb-color-gray-500);
   font-size: var(--bb-text-a4-content);
-  line-height: 1.6;
+  line-height: var(--bb-line-body);
 }
 
 .bb-home .product-list {
@@ -3382,7 +3425,7 @@ body .banner-ads > .container > .row {
 .bb-home .content-bottom.wyswyg p,
 .bb-home .content-bottom.wyswyg li {
   font-size: var(--bb-text-a4-content);
-  line-height: 24px;
+  line-height: var(--bb-line-body);
 }
 
 .bb-home .content-bottom.wyswyg h1,
@@ -3395,19 +3438,19 @@ body .banner-ads > .container > .row {
   color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: 0;
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
   text-transform: none;
 }
 
 .bb-home .content-bottom.wyswyg h1 {
   font-size: var(--bb-text-a2-page);
-  line-height: 48px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-home .content-bottom.wyswyg h2 {
   font-size: var(--bb-text-a3-section);
-  line-height: 36px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-home .content-bottom.wyswyg h3,
@@ -3415,7 +3458,7 @@ body .banner-ads > .container > .row {
 .bb-home .content-bottom.wyswyg h5,
 .bb-home .content-bottom.wyswyg h6 {
   font-size: var(--bb-text-a4-content);
-  line-height: 27px;
+  line-height: var(--bb-line-snug);
 }
 
 .bb-home .content-bottom.wyswyg p,
@@ -3727,13 +3770,13 @@ body .banner-ads > .container > .row {
 
   .bb-page h1,
   .bb-page-head h1 {
-    line-height: 1.08;
+    line-height: var(--bb-line-tight);
   }
 
   
 
   .bb-page-head .sub {
-    line-height: 1.5;
+    line-height: var(--bb-line-body);
   }
 
   .bb-category-card,
@@ -3789,7 +3832,7 @@ body .banner-ads > .container > .row {
   }
 
   .bb-blog-listing-parity .page-title h1 { /* WP page banner = 24px mọi màn hình */
-    line-height: 1.2;
+    line-height: var(--bb-line-snug);
   }
 
   .bb-blog-listing-parity #main-content {
@@ -3798,7 +3841,7 @@ body .banner-ads > .container > .row {
 
   .bb-article-detail-parity .blog-content,
   .bb-article-detail-parity .bb-article-wyswyg {
-    line-height: 1.7;
+    line-height: var(--bb-line-body);
   }
 
   .bb-cart-page {
@@ -3810,8 +3853,8 @@ body .banner-ads > .container > .row {
   }
 
   .bb-cart-heading-row h1 { /* WP page banner = 24px mọi màn hình */
-    line-height: 1.2;
-    text-transform: uppercase;
+    line-height: var(--bb-line-tight);
+    text-transform: none;
   }
 
   .bb-cart-breadcrumb {
@@ -3837,13 +3880,13 @@ body .banner-ads > .container > .row {
     margin: 0;
     font-family: var(--bb-font-body); /* WP page banner = 24px mọi màn hình */
     font-weight: 600;
-    line-height: 1.2;
-    text-transform: uppercase;
+    line-height: var(--bb-line-tight);
+    text-transform: none;
   }
 
   .bb-checkout-page label,
   .bb-checkout-label { /* WP .form-group label = 14px (was 13) */
-    line-height: 1.35;
+    line-height: var(--bb-line-body);
   }
 
   .bb-checkout-page .form-control,
@@ -3882,8 +3925,8 @@ body .banner-ads > .container > .row {
 
   .bb-page--auth .bb-auth-wrap h1,
   .bb-auth-wrap h1 {
-    line-height: 1.12;
-    text-transform: uppercase;
+    line-height: var(--bb-line-tight);
+    text-transform: none;
   }
 
   .bb-auth-wrap form {
@@ -4081,7 +4124,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   .bb-home .content-bottom.wyswyg h1,
   .bb-home .content-bottom.wyswyg h2 {
     max-width: 100%;
-    line-height: 1.08;
+    line-height: var(--bb-line-tight);
     overflow-wrap: normal;
     text-wrap: balance;
   }
@@ -4111,7 +4154,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   .bb-auth-wrap label,
   .bb-auth-wrap a,
   .bb-auth-wrap p {
-    line-height: 1.4;
+    line-height: var(--bb-line-body);
   }
 
   body:has(.bb-page--auth) > footer .bg-footer-top,
@@ -4122,7 +4165,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   body:has(.bb-page--auth) > footer .bg-footer-top h2,
   body:has(.bb-account-layout) > footer .bg-footer-top h2 {
     margin-bottom: 24px;
-    line-height: 1.12;
+    line-height: var(--bb-line-tight);
   }
 
   body:has(.bb-page--auth) > footer .bg-black,
@@ -4153,23 +4196,23 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
 
   .bb-home .content-bottom.bb-seo-content h1,
   .bb-home .content-bottom.bb-seo-content .bb-seo-content-body > h2:first-child { /* 24px — đồng bộ base, WP-parity */
-    line-height: 1.2;
+    line-height: var(--bb-line-snug);
   }
 
   .bb-home .content-bottom.bb-seo-content h2 { /* 18px — WP seo h2 */
-    line-height: 1.25;
+    line-height: var(--bb-line-snug);
   }
 
   .bb-home .content-bottom.bb-seo-content h3,
   .bb-home .content-bottom.bb-seo-content h4,
   .bb-home .content-bottom.bb-seo-content h5,
   .bb-home .content-bottom.bb-seo-content h6 { /* 16px — WP seo h3 */
-    line-height: 1.3;
+    line-height: var(--bb-line-snug);
   }
 
   .bb-home .content-bottom.bb-seo-content p,
   .bb-home .content-bottom.bb-seo-content li { /* 14px — WP seo p/li */
-    line-height: 1.7;
+    line-height: var(--bb-line-body);
   }
 
   .bb-home .content-bottom.bb-seo-content ul,
@@ -4499,7 +4542,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
 .bb-co-confirm-row label {
   font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-primary);
-  line-height: 1.5;
+  line-height: var(--bb-line-body);
   cursor: pointer;
 }
 
@@ -4513,7 +4556,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   font-size: var(--bb-text-b4-action);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: var(--bb-tracking-wide);
   cursor: pointer;
   display: block;
   text-align: center;
@@ -4533,7 +4576,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   color: var(--bb-text-muted);
   text-align: center;
   margin-top: 8px;
-  line-height: 1.5;
+  line-height: var(--bb-line-body);
 }
 
 .bb-co-trust-mini {
@@ -4574,7 +4617,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--bb-tracking-wide);
   border-radius: 0;
   transition: opacity var(--bb-duration-fast) var(--bb-ease-standard);
 }
@@ -4587,7 +4630,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   /* Banner title & breadcrumb */
   .page-title h1 {
     font-size: var(--bb-text-a1-title) !important;
-    line-height: 1.2;
+    line-height: var(--bb-line-tight);
     font-weight: 600;
   }
   .page-title .breadcrumb {
@@ -4603,7 +4646,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   }
   .desc p, .desc li {
     font-size: var(--bb-text-a4-content) !important; /* §nội dung - PDP scale */
-    line-height: 1.65;
+    line-height: var(--bb-line-body);
     color: var(--bb-text-secondary);
   }
   .desc h2 {
@@ -4624,7 +4667,7 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   /* Product Grid Item */
   .product--item-title {
     font-size: var(--bb-text-a4-content) !important; /* matches PDP body text */
-    line-height: 1.35;
+    line-height: var(--bb-line-body);
   }
   .product--item-title a {
     font-size: var(--bb-text-a4-content) !important;
@@ -4644,7 +4687,9 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
     margin-left: 8px;
   }
   .product--item-cart a {
+    font-family: var(--bb-font-cta);
     font-size: var(--bb-text-b4-action) !important;
+    text-transform: uppercase;
   }
 
   /* Sidebar widgets */
@@ -4690,7 +4735,9 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
       font-size: var(--bb-text-a5-meta) !important;
     }
     .orderby {
+      font-family: var(--bb-font-cta);
       font-size: var(--bb-text-b4-action) !important;
+      text-transform: uppercase;
     }
   }
   

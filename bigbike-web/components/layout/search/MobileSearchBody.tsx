@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/i18n/StorefrontLink";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, Search, X, Zap } from "lucide-react";
-import { toCategoryPath } from "@/lib/utils/routes";
+import { toCategoryPath, toSearchPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import type { PopularCategory } from "./types";
 import {
-  SEARCH_PATH,
   mBody,
   mChip,
   mGridCard,
@@ -39,6 +39,7 @@ export function MobileSearchBody({
   handleClose: () => void;
 }) {
   const t = useTranslations("Search");
+  const locale = useLocale() as Locale;
   return (
     <div className={mBody}>
       {recentSearches.length > 0 ? (
@@ -47,7 +48,7 @@ export function MobileSearchBody({
             <p className="m-0">{t("recentLabel")}</p>
             <button
               type="button"
-              className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-b4-action text-brand-on-dark"
+              className="cursor-pointer border-0 bg-transparent px-0 py-1 font-cta text-b4-action uppercase text-brand-on-dark"
               onClick={clearAll}
             >
               {t("recentClear")}
@@ -109,12 +110,12 @@ export function MobileSearchBody({
           {resolvedCategories.map((cat) => (
             <Link
               key={cat.slug || cat.name}
-              href={cat.slug ? toCategoryPath(cat.slug) : `${SEARCH_PATH}?s=${encodeURIComponent(cat.name)}`}
+              href={cat.slug ? toCategoryPath(cat.slug, locale) : `${toSearchPath(locale)}?s=${encodeURIComponent(cat.name)}`}
               className={mGridCard}
               onClick={handleClose}
             >
-              <span className="font-cta text-a5-meta font-semibold uppercase">{cat.name}</span>
-              <small className="font-cta text-b5-label tracking-normal text-muted-foreground">BIGBIKE</small>
+              <span className="font-cta text-b5-label font-semibold uppercase">{cat.name}</span>
+              <small className="font-cta text-b5-label uppercase tracking-normal text-muted-foreground">BIGBIKE</small>
             </Link>
           ))}
         </div>

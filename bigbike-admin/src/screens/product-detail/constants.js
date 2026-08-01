@@ -144,7 +144,7 @@ export function getPublishReadiness(form, t) {
     // Tên tiếng Anh bắt buộc (TRANSLATION_RULE_002, schema chặn khi thiếu) — tính vào checklist đăng
     // song song với tên tiếng Việt để lỗi "thiếu tên EN" không còn bị ẩn trong tab EN.
     { id: 'nameEn',    label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }), ok: Boolean(form.translations?.en?.name?.trim()), required: true },
-    { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }), ok: Boolean(form.slug?.trim()),                required: true  },
+    { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn website' }), ok: Boolean(form.slug?.trim()),                required: true  },
     {
       id: 'category',
       label: t('products.detail.checklist.category'),
@@ -162,7 +162,7 @@ export function getPublishReadiness(form, t) {
     { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     // SKU cấp sản phẩm: luôn luôn bắt buộc.
-    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }), ok: Boolean(form.sku?.trim()),          required: true },
+    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã sản phẩm' }), ok: Boolean(form.sku?.trim()),          required: true },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0), required: true },
     // Ảnh đại diện màu: chỉ bắt buộc cho biến thể CÓ màu (sửa 2026-07-11); biến thể không màu
     // (vd chỉ có Size) không có ô ảnh trên form nên không tính vào gate đăng bán.

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale } from "next-intl";
 import { getStaticPage, getGuideLayout } from "@/lib/content/static-pages";
 import { translatePath } from "@/lib/utils/routes";

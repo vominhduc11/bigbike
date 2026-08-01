@@ -22,14 +22,14 @@ function expandForSwiperLoop(articles: Article[]): Article[] {
   return expanded;
 }
 
-function resolveArticleMedia(article: Article): {
+function resolveArticleMedia(article: Article, fallbackTitle: string): {
   title: string;
   bgSrc: string | null;
   bgAlt: string;
   productSrc: string | null;
   productAlt: string;
 } {
-  const title = safeText(article.title, "Bài viết");
+  const title = safeText(article.title, fallbackTitle);
 
   return {
     title,
@@ -48,7 +48,8 @@ function ExperienceSlide({
   isActive: boolean;
 }) {
   const tCommon = useTranslations("Common");
-  const media = resolveArticleMedia(article);
+  const tBlog = useTranslations("Blog");
+  const media = resolveArticleMedia(article, tBlog("articleTitleFallback"));
 
   return (
     <div className="select-none">
@@ -85,7 +86,7 @@ function ExperienceSlide({
         ) : null}
 
         <div className="text-center max-[767px]:mt-3">
-          <h3 className="m-0 font-body text-a2-page font-semibold uppercase leading-[30px] max-md:leading-[1.3] text-black">
+          <h3 className="m-0 font-body text-a2-page font-semibold leading-title text-black">
             {media.title}
           </h3>
           <div className="pt-10 text-center max-[767px]:pt-6">
@@ -93,7 +94,7 @@ function ExperienceSlide({
               kind="article"
               viSlug={article.slug}
               enSlug={article.slugEn}
-              className="bb-exp-slide-link inline-block w-42.5 max-md:w-37.5 p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-b4-action font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
+              className="bb-exp-slide-link inline-flex min-h-13 w-42.5 items-center justify-center border border-[var(--bb-border-default)] p-0 font-cta text-b4-action font-semibold leading-none uppercase text-black no-underline [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4 max-md:min-h-11 max-md:w-37.5"
               tabIndex={isActive ? 0 : -1}
             >
               {tCommon("viewDetails")}

@@ -8,10 +8,11 @@ import { Badge } from './Badge'
 import { PermGroup } from './PermGroup'
 import { RoleSummaryCard } from './RoleSummaryCard'
 import { buildCatalogHelpers, getRoleDisplayName } from './constants'
+import { StickyActionBar } from '@/components/layout'
 
 export function RoleDetail({
   role, canUpdate, editMode, draft, isDirty, saving, catalog,
-  onStartEdit, onCancelEdit, onRequestSave, onToggle, onToggleGroup, onDeleteRole,
+  onStartEdit, onCancelEdit, onRequestSave, onToggle, onDeleteRole,
 }) {
   const { t } = useTranslation()
   const [showCodes, setShowCodes] = useState(false)
@@ -55,55 +56,21 @@ export function RoleDetail({
           )}
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 shrink-0 flex-wrap">
-          {!editMode && canUpdate && !isSuperAdmin && (
-            <>
-              <Button variant="secondary" size="sm" onClick={onStartEdit}
-                className="flex items-center gap-1.5">
-                <Pencil size={14} aria-hidden />
-                {t('roles.editBtn')}
-              </Button>
-              {!role.isSystem && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDeleteRole}
-                  disabled={assignedUserCount > 0}
-                  aria-describedby={assignedUserCount > 0 ? `delete-role-help-${role.id}` : undefined}
-                  className="flex items-center gap-1.5 text-danger">
-                  <Trash2 size={14} aria-hidden />
-                  {t('roles.deleteRoleBtn')}
-                </Button>
-              )}
-              {!role.isSystem && assignedUserCount > 0 && (
-                <Alert
-                  id={`delete-role-help-${role.id}`}
-                  tone="warning"
-                  size="sm"
-                  className="basis-full"
-                >
-                  {t('roles.deleteRoleBlocked', {
-                    name: displayName,
-                    count: assignedUserCount,
-                  })}
-                </Alert>
-              )}
-            </>
-          )}
-          {editMode && (
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={onCancelEdit} disabled={saving}>
-                {t('roles.cancelBtn')}
-              </Button>
-              <Button size="sm" onClick={onRequestSave} loading={saving} disabled={!isDirty}
-                className="flex items-center gap-1.5">
-                {t('roles.saveBtn')}
-              </Button>
-            </div>
-          )}
-        </div>
       </div>
+
+      {!editMode && canUpdate && !isSuperAdmin && !role.isSystem && assignedUserCount > 0 && (
+        <Alert
+          id={`delete-role-help-${role.id}`}
+          tone="warning"
+          size="sm"
+          className="mb-3.5"
+        >
+          {t('roles.deleteRoleBlocked', {
+            name: displayName,
+            count: assignedUserCount,
+          })}
+        </Alert>
+      )}
 
       {/* Summary bar */}
       <RoleSummaryCard activePerms={activePerms} isSuperAdmin={isSuperAdmin} sensitiveKeys={SENSITIVE_PERMS} />
@@ -150,7 +117,6 @@ export function RoleDetail({
             activePerms={activePerms}
             editMode={editMode}
             onToggle={onToggle}
-            onBulk={onToggleGroup}
             showCodes={showCodes}
             isSuperAdmin={isSuperAdmin}
             open={openGroups.has(group.groupKey)}
@@ -197,6 +163,57 @@ export function RoleDetail({
           })}
         </div>
       )}
+
+      {(!editMode && canUpdate && !isSuperAdmin) || editMode ? (
+        <StickyActionBar
+          ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
+          info={editMode && isDirty ? t('common.dirty') : undefined}
+        >
+          {editMode ? (
+            <>
+              <Button
+                variant="ghost"
+                className="min-h-11"
+                onClick={onCancelEdit}
+                disabled={saving}
+              >
+                {t('roles.cancelBtn')}
+              </Button>
+              <Button
+                className="min-h-11 flex items-center gap-1.5"
+                onClick={onRequestSave}
+                loading={saving}
+                disabled={!isDirty}
+              >
+                {t('roles.saveBtn')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                className="min-h-11 flex items-center gap-1.5"
+                onClick={onStartEdit}
+              >
+                <Pencil size={14} aria-hidden />
+                {t('roles.editBtn')}
+              </Button>
+              {!role.isSystem && (
+                <Button
+                  variant="ghost"
+                  onClick={onDeleteRole}
+                  disabled={assignedUserCount > 0}
+                  aria-describedby={assignedUserCount > 0 ? `delete-role-help-${role.id}` : undefined}
+                  className="min-h-11 flex items-center gap-1.5 text-danger"
+                >
+                  <Trash2 size={14} aria-hidden />
+                  {t('roles.deleteRoleBtn')}
+                </Button>
+              )}
+            </>
+          )}
+        </StickyActionBar>
+      ) : null}
     </div>
   )
 }

@@ -104,7 +104,7 @@ describe("ReviewsSection", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      "/api/products/prod-test/reviews/?page=1&size=10&sort=newest",
+      "/api/products/prod-test/reviews/?page=1&size=10&sort=newest&lang=vi",
     );
   });
 

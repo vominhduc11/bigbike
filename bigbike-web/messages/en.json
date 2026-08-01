@@ -22,7 +22,15 @@
     "to": "To",
     "sale": "Sale",
     "new": "New",
-    "currency": "VND"
+    "currency": "VND",
+    "siteTitle": "BigBike - Motorcycle Protective Gear",
+    "siteDescription": "BigBike specializes in genuine motorcycle helmets, protective gear, touring equipment, gloves and rider accessories.",
+    "previewWaiting": "Waiting for preview data…",
+    "quantity": "Quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "ratingStars": "{rating} stars",
+    "scrollToTop": "Scroll to top"
   },
   "Language": {
     "label": "Language",
@@ -69,7 +77,7 @@
     "wpHoursHoliday": "Holidays: closed",
     "closeDrawer": "Close",
     "shopInfoStoreLabel": "{siteName} store",
-    "shopInfoDefaultDescription": "BigBike carries genuine motorcycle protective gear, helmets, jackets, gloves, boots and touring accessories.",
+    "shopInfoDefaultDescription": "BigBike specializes in genuine motorcycle and touring gear, including full-face, flip-up, three-quarter and motocross helmets, motorcycle jackets, protective trousers, gloves, backpacks, motorcycle bags and fashion accessories.",
     "shopInfoDefaultHoursLine1": "Mon - Fri: 09:00 - 21:00",
     "shopInfoDefaultHoursLine2": "Sat / Sun: 09:00 - 18:00",
     "shopInfoDefaultHoursLine3": "Public holidays: closed",
@@ -97,12 +105,13 @@
     "contactUpdating": "Contact details coming soon.",
     "socialUpdating": "Social channels coming soon.",
     "copyright": "Copyright © {year}. All Rights Reserved.",
+    "commerceCertificationAlt": "Registered with the Ministry of Industry and Trade",
     "followUs": "Follow us",
     "defaultHeading": "BigBike would love to listen and understand you better",
     "defaultDescription": "Subscribe to receive special offers, new product updates and BigBike events. Do not miss useful information and exclusive promotions that improve your riding experience.",
     "linkFallback": "Link",
     "taglineLong": "BIGBIKE WANTS TO LISTEN AND UNDERSTAND YOU BETTER",
-    "address": "79/30/52 Au Co, Ward 14, District 11, Ho Chi Minh City",
+    "address": "79/30/52 Âu Cơ, Hòa Bình Ward, Ho Chi Minh City",
     "businessRegistration": "Business Registration Certificate No.: 41K8017383 | Issued on March 8, 2016 | Issued by: People's Committee of District 11",
     "description": "Bigbike.vn Protective Gear Shop has been operating since 2014 at 79/30/52 Âu Cơ, Hòa Bình Ward, Ho Chi Minh City. Authorized retailer of helmets, jackets, gloves, boots and motorcycle accessories from AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — serving the Ho Chi Minh City biker community with nationwide delivery.",
     "fallbackInfo": {
@@ -323,6 +332,7 @@
     "buyBoxOutOfStockNote": "This product is temporarily out of stock — please check back later."
   },
   "Breadcrumb": {
+    "ariaLabel": "Breadcrumb",
     "home": "Home",
     "products": "Product catalog"
   },
@@ -393,6 +403,12 @@
     "productCountLabel": "{count} Products",
     "updating": "Updating results…",
     "brandsTitle": "Brands",
+    "brandsMetaDescription": "Explore genuine motorcycle helmet, armor, glove and rider accessory brands at BigBike.",
+    "brandInvalidTitle": "Invalid brand",
+    "brandInvalidDescription": "The brand URL is invalid.",
+    "brandNotFoundTitle": "Brand not found",
+    "brandNotFoundDescription": "The requested brand information could not be found.",
+    "brandDefaultDescription": "Brand details at BigBike.",
     "brandListLoadFailed": "Could not load the brand list.",
     "brandDetailLoadFailed": "Could not load the brand details.",
     "brandListEmpty": "The brand list is currently empty.",
@@ -431,6 +447,11 @@
     "here": "here",
     "haveAccountPrompt": "If you already have an account, sign in",
     "fillInfoPrompt": "Please fill in accurate information to create a BigBike account.",
+    "loginMetaDescription": "Sign in to your BigBike account to view orders, track warranties and manage your details.",
+    "registerMetaDescription": "Create a BigBike account to order faster, track orders and review product warranties.",
+    "forgotMetaDescription": "Request a password reset for your BigBike account.",
+    "verifyMetaTitle": "Verify email",
+    "verifyMetaDescription": "Verify the email address for your BigBike account.",
     "login": {
       "intro": "If you already have an account, please sign in.",
       "emailLabel": "Username",
@@ -441,7 +462,8 @@
       "forgotPassword": "Forgot password?",
       "submit": "Sign in",
       "submitting": "Signing in…",
-      "invalidCredentials": "Email or password is incorrect."
+      "invalidCredentials": "Email or password is incorrect.",
+      "errorGeneric": "Unable to sign in right now. Please try again."
     },
     "social": {
       "prefix": "SIGN IN WITH",
@@ -468,17 +490,19 @@
       "submitting": "Creating account…",
       "successHeading": "Account created!",
       "successDescription": "We've sent a confirmation email to <strong>{email}</strong>. Please check your inbox (and the spam folder) to confirm your account.",
-      "successCta": "Go to my account"
+      "successCta": "Go to my account",
+      "errorGeneric": "Unable to create your account right now. Please try again."
     },
     "forgot": {
       "title": "FORGOT PASSWORD",
-      "subtitle": "Enter your email and we'll send a reset link.",
-      "emailLabel": "Email",
-      "emailPlaceholder": "Login email…",
+      "subtitle": "Enter your username or email and we'll send a reset link.",
+      "emailLabel": "Username or email",
+      "emailPlaceholder": "Username or email…",
       "submit": "Reset password",
       "submitting": "Sending…",
       "sentImageAlt": "Reset email sent",
-      "sentDescription": "We just sent a password reset email to the inbox you provided. Please check your email and reset your password."
+      "sentDescription": "We just sent a password reset email to the inbox you provided. Please check your email and reset your password.",
+      "errorGeneric": "Unable to send the reset email right now. Please try again."
     },
     "reset": {
       "subtitle": "Please enter a new password for your BigBike account.",
@@ -491,7 +515,8 @@
       "successImageAlt": "Password reset successful",
       "successHeading": "Password reset successful",
       "successDescription": "Sign in to your BigBike account with your new password.",
-      "loginNow": "Sign in now"
+      "loginNow": "Sign in now",
+      "errorGeneric": "Unable to reset your password right now. Please try again."
     },
     "validation": {
       "loginRequired": "Please enter your email or phone number",
@@ -525,6 +550,7 @@
   },
   "Checkout": {
     "title": "Place Order",
+    "metaDescription": "Complete your order for genuine motorcycle protective gear at BigBike.",
     "loading": "Loading order page...",
     "step1Title": "Shipping information",
     "shipToDifferent": "Ship to a different address",
@@ -570,6 +596,7 @@
     "priceChanged": "Some product prices dropped at checkout — the new prices are applied to your order:",
     "viewOrderConfirmation": "View order confirmation",
     "loadCartFailed": "Couldn't load your cart.",
+    "submitFailed": "Unable to place your order right now. Please try again.",
     "backToCart": "Back to cart",
     "viewCart": "View cart",
     "continueShopping": "Continue shopping",
@@ -598,7 +625,7 @@
     },
     "qtyAbbrev": "Qty",
     "paymentMethodTitle": "Payment method",
-    "addressExampleHint": "Example: 79/30/52 Au Co, Hoa Binh Ward",
+    "addressExampleHint": "Example: 79/30/52 Âu Cơ, Hòa Bình Ward",
     "codSubtitle": "Pay cash on delivery — inspect the item before paying",
     "bankTransferSubtitle": "BigBike will call to confirm your order and send the transfer details afterward.",
     "confirmNotice": "BigBike will call to confirm your order before shipping. Orders are only processed after phone confirmation. <strong>No charge before confirmation.</strong>",
@@ -881,6 +908,7 @@
   },
   "Cart": {
     "title": "Cart",
+    "metaDescription": "View and manage your BigBike shopping cart.",
     "toastAddedTitle": "Added to cart",
     "toastAddedBody": "Keep shopping or head to your cart to place order.",
     "toastViewCart": "View cart",
@@ -1068,7 +1096,7 @@
     "aboutConnectBody2": "Contact us for detailed product advice and the best available offers.",
     "weekdayHours": "Mon - Fri: 09:00 - 21:00",
     "weekendHours": "Sat, Sun: 09:00 - 18:00",
-    "advisorThu": "0784.640.679 - Ms. Thu / ZALO",
+    "advisorThu": "0764.640.679 - Mrs. Thư / ZALO",
     "advisorTri": "090.690.2404 - Mr. Tri",
     "serviceTiles": {
       "warrantyTitle": "Warranty and return support",
@@ -1153,6 +1181,8 @@
     "shippingPending": "Free shipping nationwide",
     "total": "Total",
     "loadFailed": "Could not load the cart.",
+    "updateFailed": "Could not update the cart. Please try again.",
+    "removeFailed": "Could not remove the product. Please try again.",
     "removeItem": "Remove product",
     "backorderNotice": "Product temporarily out of stock",
     "decreaseQtyAria": "Decrease quantity {name}",
@@ -1186,9 +1216,22 @@
     "buyNow": "Buy now",
     "relatedKicker": "RELATED PRODUCTS",
     "relatedTitle": "Similar products",
-    "experienceAria": "BigBike experience corner"
+    "experienceAria": "BigBike experience corner",
+    "aboutSubtitle": "BIGBIKE",
+    "aboutTitle": "TRUSTED MOTORCYCLE GEAR SHOP",
+    "aboutHtml": "<p><span style=\"font-weight: 400;\">Bigbike is proud to be one of the most trusted shops for touring and motorcycle protective gear in Ho Chi Minh City, chosen by countless riders. We specialize in a wide range of motorcycle touring gear, riding accessories and genuine protective equipment from leading brands around the world.</span></p>",
+    "featuredKicker": "FEATURED PRODUCTS",
+    "featuredTitle": "FEATURED PRODUCTS AT BIGBIKE",
+    "experienceSubtitle": "EXPERIENCE CORNER WITH BIGBIKE",
+    "experienceTitle": "PREMIUM MOTORCYCLE TOURING GEAR",
+    "experienceDescription": "At Bigbike, our motorcycle protective gear and touring accessories come in a wide variety of styles and designs at remarkably affordable prices. Our staff know the products inside out and are always ready to advise and take care of customers whenever needed.",
+    "newsKicker": "LATEST NEWS",
+    "newsTitle": "STAY UPDATED WITH BIGBIKE",
+    "videosTitle": "EXPERIENCE OUR PRODUCTS WITH BIGBIKE.VN",
+    "metaDescription": "BigBike specializes in genuine motorcycle helmets, protective gear, touring accessories and rider equipment."
   },
   "HeaderUser": {
+    "greeting": "HELLO!",
     "account": "ACCOUNT",
     "register": "REGISTER",
     "login": "SIGN IN",

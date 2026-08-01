@@ -2,11 +2,12 @@ import { proxyBackendJson, type ProductRouteParams } from "@/lib/api/backend-pro
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: ProductRouteParams) {
+export async function GET(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
+  const isEnglish = new URL(req.url).searchParams.get("lang") === "en";
 
   return proxyBackendJson(`/api/v1/products/${id}`, {
-    errorMessage: "Không thể tải biến thể sản phẩm.",
+    errorMessage: isEnglish ? "Couldn't load product variants." : "Không thể tải biến thể sản phẩm.",
     transform: (json) => {
       const product =
         (json as { data?: Record<string, unknown> }).data ??

@@ -162,8 +162,8 @@ export function PurchaseSection({
     setAdding(true);
     try {
       await addToCart(product.id, quantity, selectedVariant?.id || undefined);
-    } catch (e) {
-      setAddError(e instanceof Error ? e.message : tb("addToCartFailed"));
+    } catch {
+      setAddError(tb("addToCartFailed"));
     } finally {
       setAdding(false);
     }
@@ -190,7 +190,7 @@ export function PurchaseSection({
     : "";
 
   // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
-  // system web (text-brand + font-heading uppercase), KHÔNG dùng đỏ/Barlow của mockup.
+  // system web (text-brand + B5 canonical), KHÔNG dùng cỡ/phông ngoài design system.
   // category.name/brand.name/originBrandCountry resolve theo locale ở backend
   // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/
   // trustBadges ở trên (V319: originBrandCountry có cột *_en riêng).
@@ -254,12 +254,12 @@ export function PurchaseSection({
             />
           ) : null}
           {eyebrow ? (
-            <p className="mb-0 font-heading text-a5-meta leading-none font-medium uppercase tracking-wider text-brand">
+            <p className="mb-0 font-cta text-b5-label font-semibold uppercase leading-none tracking-display text-brand">
               {eyebrow}
             </p>
           ) : null}
           <div itemProp="name">
-            <h1 className="mb-5 font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{name}</h1>
+            <h1 className="mb-5 font-body text-a1-title font-semibold leading-title text-foreground">{name}</h1>
           </div>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -276,7 +276,7 @@ export function PurchaseSection({
                   isOutOfStock ? "out-of-stock after:bg-brand" : "in-stock after:bg-foreground",
                 ].join(" ")}
               >
-                <span className="relative z-[2] block leading-[42px]">
+                <span className="relative z-[2] inline-flex min-h-10.5 items-center justify-center leading-none">
                   {isOutOfStock ? tb("stockOut") : tb("stockIn")}
                 </span>
               </p>

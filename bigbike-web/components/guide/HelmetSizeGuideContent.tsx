@@ -123,7 +123,7 @@ const FIT_BAD: Bi[] = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand">
+    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">
       {children}
     </h2>
   );
@@ -144,7 +144,7 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-8 space-y-3">
         {STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -188,7 +188,7 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
       </div>
       <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-body text-a4-content font-bold text-foreground">
             <Check className="size-5 shrink-0 text-pros-accent" aria-hidden /> {t(lang, COPY.fitGood)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
@@ -198,7 +198,7 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
           </ul>
         </div>
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-body text-a4-content font-bold text-foreground">
             <X className="size-5 shrink-0 text-cons-accent" aria-hidden /> {t(lang, COPY.fitBad)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">

@@ -140,7 +140,7 @@ export function ProductTrustCard({
                   {cell.value}
                 </span>
                 {cell.label ? (
-                  <span className="text-a5-meta uppercase tracking-wide text-muted-foreground">{cell.label}</span>
+                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">{cell.label}</span>
                 ) : null}
               </div>
             );

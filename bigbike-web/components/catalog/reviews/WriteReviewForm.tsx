@@ -143,9 +143,9 @@ export function WriteReviewForm({
         if (submitError.status === 429) {
           setError(t("errorRateLimit"));
         } else if (submitError.status === 409) {
-          setError(submitError.message || t("errorDuplicate"));
+          setError(t("errorDuplicate"));
         } else {
-          setError(submitError.message || t("errorSubmit"));
+          setError(t("errorSubmit"));
         }
       } else {
         setError(t("errorNetwork"));
@@ -158,7 +158,7 @@ export function WriteReviewForm({
   return (
     <div className={cn(isDialog ? "px-5 pb-5 pt-4" : "border border-border p-6")}>
       {!isDialog && (
-        <h3 className="m-0 mb-5 font-body text-a3-section font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <h3 className="m-0 mb-5 font-body text-a3-section font-semibold text-[var(--bb-text-primary)]">
           {t("formTitle")}
         </h3>
       )}
@@ -288,7 +288,7 @@ export function WriteReviewForm({
                       type="button"
                       onClick={() => removePhoto(photo.id)}
                       aria-label={t("removePhoto")}
-                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-[var(--bb-text-primary)] text-b5-label leading-none text-white outline-none focus-visible:outline-2 focus-visible:outline-ring"
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-[var(--bb-text-primary)] font-cta text-b5-label uppercase leading-none text-white outline-none focus-visible:outline-2 focus-visible:outline-ring"
                     >
                       ×
                     </button>

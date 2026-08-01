@@ -27,7 +27,7 @@ export function PdpSectionHeading({
       id={id}
       className="pdp-section-head mb-4 flex flex-wrap items-center justify-between gap-3 scroll-mt-[var(--bb-header-height)]"
     >
-      <h2 className="flex items-stretch gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
+      <h2 className="flex items-stretch gap-3 font-body text-a3-section font-bold leading-title text-foreground">
         <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
         <span>{title}</span>
       </h2>

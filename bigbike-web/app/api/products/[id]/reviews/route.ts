@@ -43,6 +43,8 @@ const EMPTY = {
 export async function GET(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
   const { searchParams } = new URL(req.url);
+  const isEnglish = searchParams.get("lang") === "en";
+  const reviewLoadError = isEnglish ? "Couldn't load reviews." : "Không thể tải đánh giá.";
   const upstreamParams = new URLSearchParams();
   const page = searchParams.get("page");
   const size = searchParams.get("size");
@@ -70,14 +72,14 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
     if (res.status >= 400 && res.status < 500) {
       const error = await readBackendError(res);
       return NextResponse.json(
-        { error: error ?? "Không thể tải đánh giá." },
+        { error: isEnglish ? reviewLoadError : error ?? reviewLoadError },
         { status: res.status },
       );
     }
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: "Không thể tải đánh giá." },
+        { error: reviewLoadError },
         { status: res.status || 503 },
       );
     }
@@ -112,7 +114,7 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
     );
   } catch {
     return NextResponse.json(
-      { error: "Không thể tải đánh giá." },
+      { error: reviewLoadError },
       { status: 503 },
     );
   }

@@ -76,8 +76,8 @@ beforeEach(() => {
 
 async function openCreateFormAndFill(user) {
   await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
-  await user.type(screen.getByPlaceholderText('/old-url'), '/old-page')
-  await user.type(screen.getByPlaceholderText('/new-url'), '/new-page')
+  await user.type(screen.getByPlaceholderText('/dia-chi-cu'), '/old-page')
+  await user.type(screen.getByPlaceholderText('/dia-chi-moi'), '/new-page')
   await user.click(screen.getByRole('button', { name: 'common.save' }))
 }
 
@@ -111,7 +111,7 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     await openCreateFormAndFill(user)
 
     const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('URL đích không được trùng với mẫu nguồn.')
+    expect(alert).toHaveTextContent('Địa chỉ mới không được trùng với địa chỉ cũ.')
     expect(screen.queryByText(/Redirect target must differ/)).not.toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(1)
   })
@@ -128,8 +128,8 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
-    await user.type(screen.getByPlaceholderText('/old-url'), '  /old-page  ')
-    await user.type(screen.getByPlaceholderText('/new-url'), '  /new-page  ')
+    await user.type(screen.getByPlaceholderText('/dia-chi-cu'), '  /old-page  ')
+    await user.type(screen.getByPlaceholderText('/dia-chi-moi'), '  /new-page  ')
     await user.click(screen.getByRole('button', { name: 'common.save' }))
 
     await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalledWith(

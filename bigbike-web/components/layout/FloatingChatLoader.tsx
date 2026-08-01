@@ -1,9 +1,10 @@
 import { listPublicSettings } from "@/lib/api/public-api";
 import { FloatingChat } from "@/components/home/FloatingChat";
 import { pickSetting } from "@/lib/utils/settings";
+import type { Locale } from "@/i18n/locale";
 
-export async function FloatingChatLoader() {
-  const settingsResult = await listPublicSettings();
+export async function FloatingChatLoader({ locale }: { locale: Locale }) {
+  const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
 
   const hotline = pickSetting(settings, ["hotline", "phone", "contact_phone"]);

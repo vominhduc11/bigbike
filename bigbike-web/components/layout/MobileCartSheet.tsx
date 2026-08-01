@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -25,11 +25,11 @@ const microLabel =
   "m-0 font-cta text-b5-label font-semibold uppercase tracking-normal text-[var(--bb-text-inverse-muted)]";
 // Shared CTA button chrome (empty link / primary / secondary)
 const ctaBtn =
-  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-a5-meta font-semibold uppercase tracking-normal no-underline";
+  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-b4-action font-semibold uppercase tracking-normal no-underline";
 const ctaBtnFilled = "border border-[var(--bb-brand-primary)] bg-brand text-[var(--bb-text-inverse)]";
 const qtyBtn =
   "inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-45";
-const lineMeta = "mt-1 text-b5-label leading-[1.25]";
+const lineMeta = "mt-1 font-cta text-b5-label uppercase leading-title";
 
 function CartSheetThumb({ item }: { item: CartItem }) {
   return (
@@ -72,8 +72,8 @@ export function MobileCartSheet() {
     try {
       await updateItem.mutateAsync({ itemId: item.id, quantity });
       refreshCount();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t("updateFailed"));
+    } catch {
+      setErrorMessage(t("updateFailed"));
     }
   }
 
@@ -84,8 +84,8 @@ export function MobileCartSheet() {
     try {
       await removeItem.mutateAsync(item.id);
       refreshCount();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t("removeFailed"));
+    } catch {
+      setErrorMessage(t("removeFailed"));
     }
   }
 
@@ -176,14 +176,14 @@ export function MobileCartSheet() {
                     <CartSheetThumb item={item} />
                     <div className="min-w-0 flex-1">
                       <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
-                      <h3 className="mt-0.5 mr-7 line-clamp-2 font-cta text-a4-content font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
+                      <h3 className="mt-0.5 mr-7 line-clamp-2 font-body text-a4-content font-semibold leading-title text-[var(--bb-text-inverse)]">
                         {item.productName}
                       </h3>
                       {item.variantName ? (
                         <p className={cn(lineMeta, "font-cta font-semibold uppercase text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
                       ) : null}
                       {!item.available ? (
-                        <p className={cn(lineMeta, "text-brand-on-dark")}>{t("unavailableLine")}</p>
+                        <p className="mt-1 font-body text-a5-meta leading-body text-brand-on-dark">{t("unavailableLine")}</p>
                       ) : null}
                       <div className="flex items-center justify-between gap-2.5 mt-2">
                         <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={t("quantityAria", { name: item.productName })}>
@@ -238,7 +238,7 @@ export function MobileCartSheet() {
             </div>
             {unavailable ? (
               <p
-                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-2.5 text-[var(--bb-state-warning-text)] text-a5-meta leading-[1.35]"
+                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-2.5 text-[var(--bb-state-warning-text)] text-a5-meta leading-body"
                 role="alert"
               >
                 {t("unavailableAlert")}

@@ -352,7 +352,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
                 }
               }}
             >
-              {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+              {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
             </ExportButton>
           </div>
         )}

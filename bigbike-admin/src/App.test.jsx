@@ -134,7 +134,7 @@ describe('featured-products permission boundary', () => {
 
     expect(screen.queryByTestId('nav-/admin/featured-products')).not.toBeInTheDocument()
     expect(await screen.findByTestId('state-panel')).toBeInTheDocument()
-    expect(screen.getByTestId('state-description')).toHaveTextContent('products.read')
+    expect(screen.getByTestId('state-description')).toHaveTextContent('Tài khoản chưa được cấp quyền cần thiết để xem khu vực này')
     expect(mocks.featuredScreenRenderCount).toBe(0)
   })
 
@@ -204,7 +204,7 @@ describe('central route and fallback policy', () => {
 
     render(<App />)
 
-    expect(await screen.findByText('Tài khoản chưa được cấp quyền sử dụng module nào')).toBeInTheDocument()
+    expect(await screen.findByText('Tài khoản chưa được cấp quyền sử dụng khu vực nào')).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(window.location.pathname).toBe('/admin')
   })
@@ -218,7 +218,7 @@ describe('central route and fallback policy', () => {
 
     render(<App />)
 
-    expect(await screen.findByTestId('state-description')).toHaveTextContent('catalog.read')
+    expect(await screen.findByTestId('state-description')).toHaveTextContent('Tài khoản chưa được cấp quyền cần thiết để xem khu vực này')
     expect(screen.queryByTestId('product-detail-screen')).not.toBeInTheDocument()
   })
 })

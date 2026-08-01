@@ -93,9 +93,9 @@ async function auditStyles(page: Page, label: string) {
       if (desc === "footer top bg" && !val.includes("58, 58, 58")) return "✗"; // #3a3a3a
       if (desc === "footer bottom bg" && !val.includes("0, 0, 0")) return "✗";
       if (desc === "product card border-width" && val !== "0px") return "✗";
-      if (desc === "product name font-size" && val !== "16px") return "✗";
+      if (desc === "product name font-size" && val !== "20px") return "✗";
       if (desc === "price font-weight" && val !== "600") return "✗";
-      if (desc === "price font-size" && val !== "14px") return "✗";
+      if (desc === "price font-size" && val !== "16px") return "✗";
       if (desc === "scroll-btn bg" && !val.includes("255, 12, 9")) return "✗"; // #ff0c09
       if (desc === "scroll-btn width" && val !== "52px") return "✗";
       if (desc === "scroll-btn height" && val !== "52px") return "✗";
@@ -199,8 +199,8 @@ async function main() {
         const priceWt = await getStyle(page, ".bb-product-price b", "font-weight");
         const borderW  = await getStyle(page, ".bb-product-card", "border-width");
         console.log(`  card border-width: ${borderW} (expect 0px)`);
-        console.log(`  product-name font-size: ${nameSz} (expect 16px)`);
-        console.log(`  price b font-size: ${priceSz} (expect 14px)`);
+        console.log(`  product-name font-size: ${nameSz} (expect 20px)`);
+        console.log(`  price b font-size: ${priceSz} (expect 16px)`);
         console.log(`  price b font-weight: ${priceWt} (expect 600)`);
       }
     }

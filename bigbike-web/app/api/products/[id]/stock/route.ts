@@ -2,16 +2,15 @@ import { proxyBackendJson, type ProductRouteParams } from "@/lib/api/backend-pro
 
 export const dynamic = "force-dynamic";
 
-const STOCK_LABELS: Record<string, string> = {
-  IN_STOCK: "Còn hàng",
-  OUT_OF_STOCK: "Hết hàng",
-};
-
-export async function GET(_req: Request, { params }: ProductRouteParams) {
+export async function GET(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
+  const isEnglish = new URL(req.url).searchParams.get("lang") === "en";
+  const stockLabels: Record<string, string> = isEnglish
+    ? { IN_STOCK: "In stock", OUT_OF_STOCK: "Out of stock" }
+    : { IN_STOCK: "Còn hàng", OUT_OF_STOCK: "Hết hàng" };
 
   return proxyBackendJson(`/api/v1/products/${id}`, {
-    errorMessage: "Không thể tải trạng thái kho.",
+    errorMessage: isEnglish ? "Couldn't load stock status." : "Không thể tải trạng thái kho.",
     transform: (json) => {
       const product =
         (json as { data?: Record<string, unknown> }).data ??
@@ -20,7 +19,7 @@ export async function GET(_req: Request, { params }: ProductRouteParams) {
 
       return {
         stockState,
-        label: STOCK_LABELS[stockState] ?? stockState,
+        label: stockLabels[stockState] ?? stockState,
       };
     },
   });

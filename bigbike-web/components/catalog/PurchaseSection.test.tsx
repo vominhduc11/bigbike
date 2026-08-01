@@ -7,7 +7,8 @@ import { PurchaseSection } from "./PurchaseSection";
 const { localeState } = vi.hoisted(() => ({ localeState: { value: "vi" } }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: { rating?: string }) =>
+    key === "ratingStars" ? `${values?.rating} sao` : key,
   useLocale: () => localeState.value,
 }));
 

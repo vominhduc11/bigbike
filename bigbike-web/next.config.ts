@@ -287,12 +287,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/categories/",
-        destination: "/products/",
+        destination: "/en/products/",
         statusCode: 301,
       },
       {
         source: "/categories",
-        destination: "/products/",
+        destination: "/en/products/",
         statusCode: 301,
       },
       // Redirect legacy/existing checkout paths to new order path

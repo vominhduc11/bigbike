@@ -123,7 +123,7 @@ export function VideoModal({
       ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center animate-in fade-in-0 duration-200"
       style={{
-        zIndex: 2147483647,
+        zIndex: "var(--bb-z-modal)",
         isolation: "isolate",
         background: "rgba(0,0,0,0.88)",
         backdropFilter: "blur(3px)",

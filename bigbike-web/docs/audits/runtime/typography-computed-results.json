@@ -1,0 +1,850 @@
+{
+  "runAt": "2026-08-01T05:17:08.647Z",
+  "sourceOfTruth": "docs/TYPOGRAPHY.md",
+  "baseUrl": "http://localhost:3001",
+  "summary": {
+    "total": 93,
+    "pass": 93,
+    "fail": 0
+  },
+  "failures": [],
+  "results": [
+    {
+      "viewport": "375px",
+      "group": "B1",
+      "property": "font-size",
+      "expected": "32px",
+      "actual": "32px",
+      "status": "PASS",
+      "note": "text-b1-display; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "B1",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "375px",
+      "group": "B1",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "B2",
+      "property": "font-size",
+      "expected": "24px",
+      "actual": "24px",
+      "status": "PASS",
+      "note": "text-b2-contact; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "B2",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "375px",
+      "group": "B2",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "B3",
+      "property": "font-size",
+      "expected": "18px",
+      "actual": "18px",
+      "status": "PASS",
+      "note": "text-b3-promo; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "B3",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "375px",
+      "group": "B3",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "B4",
+      "property": "font-size",
+      "expected": "18px",
+      "actual": "18px",
+      "status": "PASS",
+      "note": "text-b4-action; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "B4",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "375px",
+      "group": "B4",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "B5",
+      "property": "font-size",
+      "expected": "12px",
+      "actual": "12px",
+      "status": "PASS",
+      "note": "text-b5-label; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "B5",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "375px",
+      "group": "B5",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "A1",
+      "property": "font-size",
+      "expected": "28px",
+      "actual": "28px",
+      "status": "PASS",
+      "note": "text-a1-title; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "A1",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "375px",
+      "group": "A1",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "A2",
+      "property": "font-size",
+      "expected": "22px",
+      "actual": "22px",
+      "status": "PASS",
+      "note": "text-a2-page; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "A2",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "375px",
+      "group": "A2",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "A3",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-a3-section; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "A3",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "375px",
+      "group": "A3",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "A4",
+      "property": "font-size",
+      "expected": "18px",
+      "actual": "18px",
+      "status": "PASS",
+      "note": "text-a4-content; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "A4",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "375px",
+      "group": "A4",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "A5",
+      "property": "font-size",
+      "expected": "14px",
+      "actual": "14px",
+      "status": "PASS",
+      "note": "text-a5-meta; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "375px",
+      "group": "A5",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "375px",
+      "group": "A5",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "375px",
+      "group": "D",
+      "property": "font-size",
+      "expected": "clamp(112px, 22vw, 224px) ≈ 112px",
+      "actual": "112px",
+      "status": "PASS",
+      "note": "Decorative 404 only."
+    },
+    {
+      "viewport": "768px",
+      "group": "B1",
+      "property": "font-size",
+      "expected": "40px",
+      "actual": "40px",
+      "status": "PASS",
+      "note": "text-b1-display; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "B1",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "768px",
+      "group": "B1",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "B2",
+      "property": "font-size",
+      "expected": "32px",
+      "actual": "32px",
+      "status": "PASS",
+      "note": "text-b2-contact; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "B2",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "768px",
+      "group": "B2",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "B3",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-b3-promo; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "B3",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "768px",
+      "group": "B3",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "B4",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-b4-action; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "B4",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "768px",
+      "group": "B4",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "B5",
+      "property": "font-size",
+      "expected": "14px",
+      "actual": "14px",
+      "status": "PASS",
+      "note": "text-b5-label; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "B5",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "768px",
+      "group": "B5",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "A1",
+      "property": "font-size",
+      "expected": "32px",
+      "actual": "32px",
+      "status": "PASS",
+      "note": "text-a1-title; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "A1",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "768px",
+      "group": "A1",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "A2",
+      "property": "font-size",
+      "expected": "26px",
+      "actual": "26px",
+      "status": "PASS",
+      "note": "text-a2-page; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "A2",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "768px",
+      "group": "A2",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "A3",
+      "property": "font-size",
+      "expected": "22px",
+      "actual": "22px",
+      "status": "PASS",
+      "note": "text-a3-section; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "A3",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "768px",
+      "group": "A3",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "A4",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-a4-content; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "A4",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "768px",
+      "group": "A4",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "A5",
+      "property": "font-size",
+      "expected": "16px",
+      "actual": "16px",
+      "status": "PASS",
+      "note": "text-a5-meta; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "768px",
+      "group": "A5",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "768px",
+      "group": "A5",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "768px",
+      "group": "D",
+      "property": "font-size",
+      "expected": "clamp(112px, 22vw, 224px) ≈ 168.96px",
+      "actual": "168.96px",
+      "status": "PASS",
+      "note": "Decorative 404 only."
+    },
+    {
+      "viewport": "1440px",
+      "group": "B1",
+      "property": "font-size",
+      "expected": "40px",
+      "actual": "40px",
+      "status": "PASS",
+      "note": "text-b1-display; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B1",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B1",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "B2",
+      "property": "font-size",
+      "expected": "32px",
+      "actual": "32px",
+      "status": "PASS",
+      "note": "text-b2-contact; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B2",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B2",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "B3",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-b3-promo; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B3",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B3",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "B4",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-b4-action; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B4",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B4",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "B5",
+      "property": "font-size",
+      "expected": "14px",
+      "actual": "14px",
+      "status": "PASS",
+      "note": "text-b5-label; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B5",
+      "property": "font-family",
+      "expected": "Barlow Condensed",
+      "actual": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-cta"
+    },
+    {
+      "viewport": "1440px",
+      "group": "B5",
+      "property": "text-transform",
+      "expected": "uppercase",
+      "actual": "uppercase",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "A1",
+      "property": "font-size",
+      "expected": "32px",
+      "actual": "32px",
+      "status": "PASS",
+      "note": "text-a1-title; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A1",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A1",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "A2",
+      "property": "font-size",
+      "expected": "26px",
+      "actual": "26px",
+      "status": "PASS",
+      "note": "text-a2-page; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A2",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A2",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "A3",
+      "property": "font-size",
+      "expected": "22px",
+      "actual": "22px",
+      "status": "PASS",
+      "note": "text-a3-section; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A3",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A3",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "A4",
+      "property": "font-size",
+      "expected": "20px",
+      "actual": "20px",
+      "status": "PASS",
+      "note": "text-a4-content; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A4",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A4",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "A5",
+      "property": "font-size",
+      "expected": "16px",
+      "actual": "16px",
+      "status": "PASS",
+      "note": "text-a5-meta; Tablet = nấc thứ hai (>=768px)"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A5",
+      "property": "font-family",
+      "expected": "Arial",
+      "actual": "Arial, Helvetica, \"Helvetica Neue\", sans-serif",
+      "status": "PASS",
+      "note": "font-body"
+    },
+    {
+      "viewport": "1440px",
+      "group": "A5",
+      "property": "text-transform",
+      "expected": "none",
+      "actual": "none",
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "viewport": "1440px",
+      "group": "D",
+      "property": "font-size",
+      "expected": "clamp(112px, 22vw, 224px) ≈ 224px",
+      "actual": "224px",
+      "status": "PASS",
+      "note": "Decorative 404 only."
+    }
+  ]
+}

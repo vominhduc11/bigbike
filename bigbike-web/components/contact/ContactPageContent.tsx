@@ -4,6 +4,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useLocale } from "next-intl";
 import { Store, Clock, Phone, MapPin, MessageSquare, ChevronRight, ExternalLink } from "lucide-react";
 import { telHref } from "@/lib/utils/format";
+import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
 
 /**
  * Nội dung trang Liên hệ (/lien-he) — TRANG TĨNH HOÀN TOÀN, dựng lại theo mockup owner
@@ -79,24 +80,6 @@ function getAddressParts(address: string) {
   return { main, sub };
 }
 
-function getSocialHandle(
-  url: string,
-  type: "facebook" | "youtube" | "tiktok" | "shopee"
-): string {
-  if (!url) return "";
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/^\/+|\/+$/g, "");
-    if (type === "facebook") return path ? `facebook.com/${path}` : u.host;
-    if (type === "youtube") return path ? `@${path.replace(/^@/, "")}` : u.host;
-    if (type === "tiktok") return path ? `@${path.replace(/^@/, "")}` : u.host;
-    if (type === "shopee") return path ? path : u.host;
-    return path ? `@${path}` : u.host;
-  } catch {
-    return url.replace(/^https?:\/\/(www\.)?/, "");
-  }
-}
-
 function getZaloDisplayPhone(zaloUrl: string): string {
   if (!zaloUrl) return "";
   const match = zaloUrl.match(/zalo\.me\/(\d+)/);
@@ -126,14 +109,11 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
     >
       {icon}
       <h2
-        className="text-a3-section"
+        className="font-body text-a3-section leading-title"
         style={{
           margin: 0,
           fontWeight: 700,
           color: COLORS.text,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          fontFamily: "var(--bb-font-cta), sans-serif",
         }}
       >
         {children}
@@ -169,12 +149,10 @@ function InfoRow({
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
-          className="text-b5-label"
+          className="font-cta text-b5-label uppercase tracking-wide"
           style={{
             marginBottom: 4,
             color: COLORS.faint,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
             fontWeight: 600,
           }}
         >
@@ -216,6 +194,7 @@ function SocialLink({
       }}
     >
       <span
+        className="font-body text-a5-meta"
         style={{
           width: 32,
           height: 32,
@@ -226,7 +205,6 @@ function SocialLink({
           background: bg,
           color: COLORS.inverse,
           fontWeight: 700,
-          fontSize: "var(--bb-text-a5-meta)",
         }}
       >
         {icon}
@@ -308,8 +286,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
   const stats = [
     { value: "11+", label: vi ? "Năm hoạt động" : "Years active" },
-    { value: "36K+", label: vi ? "Followers Facebook" : "Facebook followers" },
-    { value: "98%", label: vi ? "Khách recommend" : "Customers recommend" },
+    { value: "36K+", label: vi ? "Người theo dõi Facebook" : "Facebook followers" },
+    { value: "98%", label: vi ? "Khách hàng giới thiệu" : "Customers recommend" },
   ];
 
   return (
@@ -344,16 +322,17 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             <div
               style={{
                 position: "absolute",
-                bottom: 16,
-                left: 20,
+                top: 72,
+                right: 16,
                 background: COLORS.surface,
                 border: `1px solid ${COLORS.border}`,
                 padding: "8px 12px",
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                maxWidth: 270,
+                maxWidth: "min(270px, calc(100% - 32px))",
                 boxShadow: "0 2px 8px rgba(0,0,0,.12)",
+                zIndex: "var(--bb-z-overlay)",
               }}
             >
               <span
@@ -372,14 +351,14 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               </span>
               <span>
                 <span
-                  className="text-b5-label"
+                  className="font-cta text-b5-label uppercase tracking-wide"
                   style={{ color: COLORS.faint, display: "block", fontWeight: 600 }}
                 >
                   {vi ? "Cửa hàng chính" : "Main store"}
                 </span>
                 <strong
-                  className="text-a5-meta"
-                  style={{ color: COLORS.text, display: "block", lineHeight: 1.4, fontWeight: 700 }}
+                  className="font-body text-a5-meta leading-body"
+                  style={{ color: COLORS.text, display: "block", fontWeight: 700 }}
                 >
                   {mainAddr}
                 </strong>
@@ -465,7 +444,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 {/* Badge mở/đóng cửa — chỉ render sau mount (tránh hydration mismatch) */}
                 {mounted && (
                   <div
-                    className="text-b5-label"
+                    className="font-cta text-b5-label uppercase tracking-wide"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -505,8 +484,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Địa chỉ" : "Address"}
               >
                 <div
-                  className="text-a4-content"
-                  style={{ color: COLORS.text, fontWeight: 700, lineHeight: 1.4 }}
+                  className="font-body text-a4-content leading-body"
+                  style={{ color: COLORS.text, fontWeight: 700 }}
                 >
                   {mainAddr}
                 </div>
@@ -588,7 +567,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 bg={SOCIAL_BRAND_COLORS.facebook}
                 icon={FbIcon}
                 name="Facebook"
-                sub={getSocialHandle(contact.facebookUrl, "facebook")}
+                sub={SOCIAL_LINK_LABELS.facebook.displayName}
               />
             )}
             {contact.tiktokUrl && (
@@ -597,7 +576,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 bg={SOCIAL_BRAND_COLORS.tiktok}
                 icon={TiktokIcon}
                 name="TikTok"
-                sub={getSocialHandle(contact.tiktokUrl, "tiktok")}
+                sub={SOCIAL_LINK_LABELS.tiktok.displayName}
               />
             )}
             {contact.shopeeUrl && (
@@ -606,7 +585,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 bg={SOCIAL_BRAND_COLORS.shopee}
                 icon={ShopeeIcon}
                 name="Shopee"
-                sub={getSocialHandle(contact.shopeeUrl, "shopee")}
+                sub={SOCIAL_LINK_LABELS.shopee.displayName}
               />
             )}
             {contact.youtubeUrl && (
@@ -615,7 +594,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 bg={SOCIAL_BRAND_COLORS.youtube}
                 icon={YoutubeIcon}
                 name="YouTube"
-                sub={getSocialHandle(contact.youtubeUrl, "youtube")}
+                sub={SOCIAL_LINK_LABELS.youtube.displayName}
               />
             )}
           </div>
@@ -635,24 +614,20 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         {stats.map((stat) => (
           <div key={stat.label} style={{ background: COLORS.surface, padding: "16px 8px", textAlign: "center" }}>
             <div
-              className="text-a2-page"
+              className="font-body text-a2-page leading-title"
               style={{
                 fontWeight: 700,
                 color: COLORS.red,
-                lineHeight: 1.2,
-                fontFamily: "var(--bb-font-cta), sans-serif",
               }}
             >
               {stat.value}
             </div>
             <div
-              className="text-b5-label"
+              className="font-cta text-b5-label uppercase tracking-wide"
               style={{
                 marginTop: 3,
                 color: COLORS.faint,
-                textTransform: "uppercase",
                 fontWeight: 600,
-                letterSpacing: "0.04em",
               }}
             >
               {stat.label}

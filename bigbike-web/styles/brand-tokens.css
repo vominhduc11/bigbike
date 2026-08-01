@@ -133,17 +133,16 @@
   /* Canonical 11-group typography — mobile values. Every readable/functional
      text size maps to exactly one A/B token. The ten tokens switch once at 768px;
      only the decorative 404 (group D) may use clamp(). See docs/TYPOGRAPHY.md. */
-  --bb-text-b1-display: 1.875rem;  /* 30px mobile → 40px desktop */
-  --bb-text-b2-contact: 1.5rem;    /* 24px mobile → 30px desktop */
-  --bb-text-b3-promo: 1rem;        /* 16px mobile → 18px desktop */
-  --bb-text-b4-action: 1rem;       /* 16px mobile = desktop */
-  --bb-text-b5-label: 0.6875rem;   /* 11px mobile → 12px desktop */
-  --bb-text-a1-title: 1.625rem;     /* 26px mobile → 32px desktop */
-  --bb-text-a2-page: 1.25rem;       /* 20px mobile → 24px desktop */
-  --bb-text-a3-section: 1.125rem;   /* 18px mobile → 20px desktop */
-  --bb-text-a4-content: 1rem;       /* 16px mobile → 18px desktop */
-  --bb-text-a5-meta: 0.8125rem;     /* 13px mobile → 14px desktop */
-  --bb-text-category-label: 1rem;    /* WP homepage category label = 16px at every breakpoint */
+  --bb-text-b1-display: 2rem;       /* 32px mobile → 40px tablet */
+  --bb-text-b2-contact: 1.5rem;     /* 24px mobile → 32px tablet */
+  --bb-text-b3-promo: 1.125rem;     /* 18px mobile → 20px tablet */
+  --bb-text-b4-action: 1.125rem;    /* 18px mobile → 20px tablet */
+  --bb-text-b5-label: 0.75rem;      /* 12px mobile → 14px tablet */
+  --bb-text-a1-title: 1.75rem;      /* 28px mobile → 32px tablet */
+  --bb-text-a2-page: 1.375rem;      /* 22px mobile → 26px tablet */
+  --bb-text-a3-section: 1.25rem;    /* 20px mobile → 22px tablet */
+  --bb-text-a4-content: 1.125rem;   /* 18px mobile → 20px tablet */
+  --bb-text-a5-meta: 0.875rem;      /* 14px mobile → 16px tablet */
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;
@@ -218,6 +217,10 @@
   --bb-z-header: 200;
   --bb-z-dropdown: 600;
   --bb-z-toast: 600; /* toast giỏ hàng — cùng lớp dropdown, dưới overlay/modal */
+  --bb-z-bottom-nav: 650;
+  --bb-z-sticky-action: 651;
+  --bb-z-floating: 663;
+  --bb-z-scroll-top: 665;
   --bb-z-overlay: 700;
   --bb-z-modal: 800;
   --bb-z-modal-dropdown: 900;
@@ -262,35 +265,34 @@
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a4-content);
-  line-height: 24.003px;
+  line-height: var(--bb-line-body);
 }
 
 .bb-richtext h1,
-.bb-richtext h2 {
-  font-family: var(--bb-font-cta);
+.bb-richtext h2,
+.bb-richtext h3,
+.bb-richtext h4,
+.bb-richtext h5,
+.bb-richtext h6 {
+  font-family: var(--bb-font-body);
   font-weight: 600;
-  line-height: var(--bb-line-heading);
-  letter-spacing: 0;
+  line-height: var(--bb-line-snug);
+  letter-spacing: var(--bb-tracking-normal);
   margin-top: var(--bb-space-8);
   margin-bottom: var(--bb-space-4);
   color: inherit;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bb-richtext h3,
 .bb-richtext h4,
 .bb-richtext h5,
 .bb-richtext h6 {
-  font-family: var(--bb-font-cta);
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: 0;
   margin-top: var(--bb-space-6);
   margin-bottom: var(--bb-space-3);
-  color: inherit;
-  text-transform: uppercase;
 }
 
+.bb-richtext h1 { font-size: var(--bb-text-a1-title); line-height: var(--bb-line-tight); }
 .bb-richtext h2 { font-size: var(--bb-text-a2-page); }
 .bb-richtext h3 { font-size: var(--bb-text-a3-section); }
 .bb-richtext h4 { font-size: var(--bb-text-a4-content); }
@@ -358,15 +360,15 @@
 @media (min-width: 768px) {
   :root {
     --bb-text-b1-display: 2.5rem;    /* 40px */
-    --bb-text-b2-contact: 1.875rem;  /* 30px */
-    --bb-text-b3-promo: 1.125rem;    /* 18px */
-    --bb-text-b4-action: 1rem;       /* 16px */
-    --bb-text-b5-label: 0.75rem;     /* 12px */
+    --bb-text-b2-contact: 2rem;      /* 32px */
+    --bb-text-b3-promo: 1.25rem;     /* 20px */
+    --bb-text-b4-action: 1.25rem;    /* 20px */
+    --bb-text-b5-label: 0.875rem;    /* 14px */
     --bb-text-a1-title: 2rem;         /* 32px */
-    --bb-text-a2-page: 1.5rem;        /* 24px */
-    --bb-text-a3-section: 1.25rem;    /* 20px */
-    --bb-text-a4-content: 1.125rem;   /* 18px */
-    --bb-text-a5-meta: 0.875rem;      /* 14px */
+    --bb-text-a2-page: 1.625rem;      /* 26px */
+    --bb-text-a3-section: 1.375rem;   /* 22px */
+    --bb-text-a4-content: 1.25rem;    /* 20px */
+    --bb-text-a5-meta: 1rem;          /* 16px */
   }
 }
 

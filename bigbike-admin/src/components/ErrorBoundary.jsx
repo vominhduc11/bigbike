@@ -25,7 +25,6 @@ export class ErrorBoundary extends Component {
     if (this.state.hasError) {
       // ErrorBoundary là class component nên KHÔNG dùng được hook useTranslation —
       // gọi thẳng instance i18next (mọi text vẫn i18n hoá, kèm defaultValue tiếng Việt).
-      const isDev = import.meta.env?.DEV
       return (
         <div role="alert" className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4">
           <h1 className="text-2xl font-bold">
@@ -33,14 +32,9 @@ export class ErrorBoundary extends Component {
           </h1>
           <p className="text-muted-foreground max-w-[480px]">
             {i18n.t('errorBoundary.description', {
-              defaultValue: 'Vui lòng tải lại trang. Nếu lỗi tiếp diễn, hãy liên hệ kỹ thuật viên.',
+              defaultValue: 'Vui lòng tải lại trang. Nếu lỗi vẫn tiếp diễn, hãy liên hệ người quản trị.',
             })}
           </p>
-          {isDev && this.state.error?.message ? (
-            <pre className="text-xs text-danger max-w-[480px] overflow-auto whitespace-pre-wrap text-left">
-              {this.state.error.message}
-            </pre>
-          ) : null}
           <div className="flex flex-wrap justify-center gap-3">
             <Button type="button" onClick={() => window.location.reload()}>
               {i18n.t('errorBoundary.reload', { defaultValue: 'Tải lại trang' })}

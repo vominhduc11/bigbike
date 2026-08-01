@@ -54,7 +54,7 @@ export function ProductProsCons({
     <div className="grid gap-6 md:grid-cols-2">
       {positive.length > 0 && (
         <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
-          <h3 className="mb-3 font-heading text-a3-section font-bold uppercase tracking-wide text-pros-accent">
+          <h3 className="mb-3 font-body text-a3-section font-bold text-pros-accent">
             {t("prosTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
@@ -69,7 +69,7 @@ export function ProductProsCons({
       )}
       {negative.length > 0 && (
         <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
-          <h3 className="mb-3 font-heading text-a3-section font-bold uppercase tracking-wide text-cons-accent">
+          <h3 className="mb-3 font-body text-a3-section font-bold text-cons-accent">
             {t("consTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
@@ -134,7 +134,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
           <AccordionTrigger className="group gap-3 text-left normal-case hover:text-brand data-[state=open]:text-brand">
             <span className="flex min-w-0 flex-1 items-center gap-3">
               <span
-                className="shrink-0 font-cta text-a4-content font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
+                className="shrink-0 font-body text-a4-content font-bold leading-title tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
                 aria-hidden
               >
                 {String(i + 1).padStart(2, "0")}

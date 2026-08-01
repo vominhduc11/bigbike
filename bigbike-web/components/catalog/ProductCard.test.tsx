@@ -5,7 +5,8 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import type { Product } from "@/lib/contracts/public";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: { rating?: string }) =>
+    key === "ratingStars" ? `${values?.rating} sao` : key,
   useLocale: () => "vi",
 }));
 

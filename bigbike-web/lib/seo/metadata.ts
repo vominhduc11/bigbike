@@ -47,6 +47,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
       ...(input.siteName ? { siteName: input.siteName } : {}),
       images: [{ url: ogImageUrl }],
       locale: input.locale === "en" ? "en_US" : "vi_VN",
+      alternateLocale: input.locale === "en" ? ["vi_VN"] : ["en_US"],
       type: input.ogType ?? "website",
     },
     twitter: {

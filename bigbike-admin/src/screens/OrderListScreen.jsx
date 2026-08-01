@@ -415,10 +415,10 @@ export function OrderListScreen({ navigate, canUpdate }) {
                   from: query.from || undefined,
                   to: query.to || undefined,
                 })
-                toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải file CSV' }))
+                toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải tệp dữ liệu' }))
               }}
             >
-              {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+              {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
             </ExportButton>
           )}
         </div>

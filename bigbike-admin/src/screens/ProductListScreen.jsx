@@ -573,7 +573,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
                     <Download size={13} className="mr-2" />
                     {exportingJsonId === product.id
                       ? t('export.exporting', { defaultValue: 'Đang xuất...' })
-                      : t('products.exportJson', { defaultValue: 'Xuất JSON' })}
+                      : t('products.exportJson', { defaultValue: 'Xuất dữ liệu sản phẩm' })}
                   </DropdownMenuItem>
                 )}
                 {canUpdate && isTrashed && (
@@ -786,7 +786,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
               toast.success(t('export.success'))
             }}
           >
-            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+            {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
           </ExportButton>
           <Input
             ref={importFileInputRef}

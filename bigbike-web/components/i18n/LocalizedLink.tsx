@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale } from "next-intl";
-import { useSyncExternalStore, type ComponentProps } from "react";
-import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
+import { type ComponentProps } from "react";
+import { type Locale } from "@/i18n/locale";
 import {
   toArticlePath,
   toBrandPath,
@@ -42,17 +42,6 @@ const PATH_FOR_KIND = {
 
 export type LocalizedLinkKind = keyof typeof PATH_FOR_KIND;
 
-const noopSubscribe = () => () => {};
-
-/** False on the server + first client render, true once hydrated (no setState-in-effect). */
-function useHydrated(): boolean {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
-}
-
 export function LocalizedLink({
   kind,
   viSlug,
@@ -64,18 +53,16 @@ export function LocalizedLink({
   enSlug?: string | null;
 }) {
   const locale = useLocale();
-  const hydrated = useHydrated();
-
-  const useEn = hydrated && locale !== DEFAULT_LOCALE;
+  const useEn = locale === "en";
   let href = "/";
   if (kind === "category") {
     href = toCategoryPath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
   } else if (kind === "article") {
     href = toArticlePath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
   } else if (kind === "brand") {
-    href = toBrandPath(viSlug);
+    href = toBrandPath(viSlug, locale as Locale);
   } else {
-    href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug);
+    href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug, locale as Locale);
   }
 
   return <Link href={href} {...rest} />;

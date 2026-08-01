@@ -1,4 +1,7 @@
 import DOMPurify from "isomorphic-dompurify";
+import { generate, parse, walk } from "css-tree";
+import type { Locale } from "@/i18n/locale";
+import { localizeStorefrontHref } from "@/lib/utils/routes";
 
 /**
  * Sanitize rich-text / CMS HTML before rendering via dangerouslySetInnerHTML.
@@ -11,6 +14,7 @@ type SanitizeRichHtmlOptions = Readonly<{
   allowInlineStyles?: boolean;
   rewriteMediaUrls?: boolean;
   allowStyleTags?: boolean;
+  locale?: Locale;
 }>;
 
 export function sanitizeRichHtml(
@@ -18,7 +22,7 @@ export function sanitizeRichHtml(
   options: SanitizeRichHtmlOptions = {},
 ): string {
   if (!rawHtml) {
-    return "<p>Nội dung đang cập nhật.</p>";
+    return "";
   }
 
   registerHooks();
@@ -32,7 +36,7 @@ export function sanitizeRichHtml(
     ? [...ALLOWED_TAGS, "style"]
     : ALLOWED_TAGS;
 
-  const sanitized = DOMPurify.sanitize(withoutShortcodes, {
+  let sanitized = DOMPurify.sanitize(withoutShortcodes, {
     ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: allowedAttr,
     // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
@@ -41,6 +45,14 @@ export function sanitizeRichHtml(
   })
     .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
     .replace(/<\/h1>/gi, "</h2>");
+
+  if (options.locale) {
+    sanitized = sanitized.replace(
+      /(<a\b[^>]*\bhref=)(["'])([^"']*)\2/gi,
+      (_match, prefix: string, quote: string, href: string) =>
+        `${prefix}${quote}${localizeStorefrontHref(href, options.locale as Locale)}${quote}`,
+    );
+  }
 
   return wrapTablesForScroll(sanitized);
 }
@@ -149,6 +161,37 @@ const ALLOWED_ATTR = [
   "poster", "preload", "type",
 ];
 
+// Rich HTML may keep visual layout (grids, colors, borders), but it must not
+// introduce a separate typography system. Include the `font` shorthand because
+// it can override both the canonical family and size in one declaration.
+const TYPOGRAPHY_CSS_PROPERTIES = new Set([
+  "font",
+  "font-family",
+  "font-size",
+  "line-height",
+  "letter-spacing",
+  "text-transform",
+]);
+
+function stripTypographyDeclarations(css: string, context: "declarationList" | "stylesheet"): string {
+  try {
+    const ast = parse(css, { context });
+    walk(ast, {
+      visit: "Declaration",
+      enter(node, item, list) {
+        if (TYPOGRAPHY_CSS_PROPERTIES.has(node.property.toLowerCase())) {
+          list?.remove(item);
+        }
+      },
+    });
+    return generate(ast).trim();
+  } catch {
+    // Invalid CSS must not bypass canonical typography. Dropping this isolated
+    // style payload keeps the sanitized HTML safe and leaves layout elsewhere intact.
+    return "";
+  }
+}
+
 const ALLOWED_IFRAME_HOSTS = new Set([
   "www.youtube.com",
   "youtube.com",
@@ -164,7 +207,8 @@ let hooksRegistered = false;
 /**
  * One-time DOMPurify hook registration:
  *  - drop <iframe> whose src host is not in the embed allowlist;
- *  - force rel="noopener noreferrer" on target="_blank" links.
+ *  - force rel="noopener noreferrer" on target="_blank" links;
+ *  - preserve permitted visual styles while removing typography overrides.
  */
 function registerHooks(): void {
   if (hooksRegistered) {
@@ -173,6 +217,16 @@ function registerHooks(): void {
   hooksRegistered = true;
 
   DOMPurify.addHook("uponSanitizeElement", (node, data) => {
+    if (data.tagName === "style") {
+      const filtered = stripTypographyDeclarations(node.textContent ?? "", "stylesheet");
+      if (filtered) {
+        node.textContent = filtered;
+      } else {
+        node.parentNode?.removeChild(node);
+      }
+      return;
+    }
+
     if (data.tagName !== "iframe") {
       return;
     }
@@ -191,6 +245,16 @@ function registerHooks(): void {
 
   DOMPurify.addHook("afterSanitizeAttributes", (node) => {
     const el = node as Element;
+    const style = el.getAttribute("style");
+    if (style != null) {
+      const filtered = stripTypographyDeclarations(style, "declarationList");
+      if (filtered) {
+        el.setAttribute("style", filtered);
+      } else {
+        el.removeAttribute("style");
+      }
+    }
+
     if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
       el.setAttribute("rel", "noopener noreferrer");
     }

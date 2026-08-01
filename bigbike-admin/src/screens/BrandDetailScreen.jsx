@@ -420,9 +420,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // Xóa toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
   async function handleClearSeo() {
     const ok = await showConfirm(
-      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin SEO đã nhập (tiêu đề, mô tả, canonical, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
-      t('brands.detail.clearSeoTitle', { defaultValue: 'Xóa thông tin SEO?' }),
-      { variant: 'danger', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin SEO' }), cancelLabel: t('common.cancel', { defaultValue: 'Hủy' }) },
+      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, địa chỉ chuẩn, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
+      t('brands.detail.clearSeoTitle', { defaultValue: 'Xóa thông tin hiển thị trên Google?' }),
+      { variant: 'danger', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin hiển thị trên Google' }), cancelLabel: t('common.cancel', { defaultValue: 'Hủy' }) },
     )
     if (!ok) return
     setForm((prev) => ({
@@ -430,7 +430,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       seoTitle: '', seoDescription: '', seoCanonicalUrl: '', seoOgImageUrl: '', seoOgImageAlt: '',
       translations: { ...prev.translations, en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' } },
     }))
-    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xóa thông tin SEO.' }))
+    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xóa thông tin hiển thị trên Google.' }))
   }
 
   return (
@@ -624,7 +624,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <FormField
                 label={t('brands.detail.slug')}
                 required
-                helper={isEnLang ? t('brands.detail.slugHelperEn', { defaultValue: 'Slug thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
+                  helper={isEnLang ? t('brands.detail.slugHelperEn', { defaultValue: 'Đường dẫn thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
                 error={validationErrors.slug}
               >
                 <Input
@@ -632,7 +632,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onChange={(e) => handleSlugChange(e.target.value)}
                   onBlur={() => handleFieldBlur('slug')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'slug-dung-chung' }) : undefined}
+                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'duong-dan-dung-chung' }) : undefined}
                   className="font-mono" />
               </FormField>
               <label className="col-span-full flex w-fit cursor-pointer items-center gap-2 border border-border p-2 text-sm hover:bg-muted">
@@ -722,7 +722,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <div className="mb-4 flex justify-end">
             <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleClearSeo}>
               <Trash2 size={14} aria-hidden="true" />
-              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin SEO' })}
+              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin hiển thị trên Google' })}
             </Button>
           </div>
         )}

@@ -1176,11 +1176,12 @@ ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`ARTICLE_RULE_002`)
 **Response — thêm trường `slugEn`:** public detail (và list) của category/product/article trả thêm
 `slugEn: string | null` cạnh `slug`. `slug` luôn là canonical tiếng Việt (không đổi
 theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Từ 2026-07-24,
-`slugEn` khi có giá trị trỏ tới **1 trang tiếng Anh thật, server-render riêng** (`/products/`,
-`/categories/`, `/news/` — xem `PRODUCT_RULE_003`/`CATEGORY_RULE_003`/`ARTICLE_RULE_003`), không
-phải chỉ để dựng hreflang. `slugEn` rỗng → không có trang EN cho bản ghi đó (không phải "URL EN
-lùi về slug VI" như trước). Brand response **không có field `slugEn`**; URL VI/EN của thương hiệu
-dùng cùng `slug`.
+`slugEn` khi có giá trị chọn slug ưu tiên cho trang tiếng Anh tại `/en/products/`,
+`/en/categories/`, `/en/news/` (xem `PRODUCT_RULE_003`/`CATEGORY_RULE_003`/`ARTICLE_RULE_003`).
+`slugEn` rỗng **không làm mất trang EN**: web dùng `slug` VI dưới prefix `/en` và dữ liệu `lang=en`
+vẫn fallback từng trường về VI theo contract hiện hành. `slugEn` không đổi data shape và không quyết
+định khả năng đọc record từ API. Brand response **không có field `slugEn`**; URL VI/EN của thương hiệu
+dùng cùng `slug`, khác nhau ở prefix locale của web.
 
 **Embedded summary:** object `category` nhúng trong response sản phẩm (`CategorySummary` —
 dùng cho breadcrumb PDP) trả thêm `slugEn: string | null` cạnh `slug`, lấy thô từ

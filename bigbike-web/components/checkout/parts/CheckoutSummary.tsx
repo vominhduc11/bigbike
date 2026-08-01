@@ -21,7 +21,7 @@ export function CheckoutSummary({
 
   return (
     <section className="border border-border bg-background p-6">
-      <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("summaryTitle")}</h2>
+      <h2 className="mb-6 font-body text-a2-page font-semibold">{t("summaryTitle")}</h2>
 
       <div>
         {cart.items.map((item) => (
@@ -66,8 +66,8 @@ export function CheckoutSummary({
         </div>
 
         <div className="flex items-baseline justify-between gap-4 py-5">
-          <strong className="font-cta text-a3-section uppercase">{t("summaryTotal")}</strong>
-          <strong className="font-cta text-a1-title text-brand">{formatVnd(grandTotal)}</strong>
+          <strong className="font-body text-a3-section">{t("summaryTotal")}</strong>
+          <strong className="font-body text-a1-title text-brand">{formatVnd(grandTotal)}</strong>
         </div>
       </div>
 

@@ -1,60 +1,7 @@
-"use client";
-
-import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicSettings } from "@/lib/api/client-api";
-import { queryKeys } from "@/lib/query/keys";
-import { sanitizeRichHtml } from "@/lib/utils/html";
 import { RichContent } from "@/components/layout/RichContent";
 import { Container } from "@/components/layout/Container";
 
-/**
- * Khối SEO cuối trang chủ (`home_content_bottom_html`) lấy chữ từ `site_settings` — admin
- * còn sửa được (nhóm `seo`). Server luôn render tĩnh `vi` (ISR/SEO, xem `i18n/request.ts`)
- * nên khối này cũng là `vi`; việc đổi sang EN chỉ xảy ra ở CLIENT (ClientIntlProvider đọc
- * cookie NEXT_LOCALE, không round-trip server). Vì thế `HomeContentBottom` refetch settings
- * theo `lang` rồi swap sang bản EN — cùng pattern với `HomeFeaturedProducts` / `LocalizedContent`.
- *
- * Backend trả EN-với-fallback-`vi` field-by-field (BUSINESS_RULES PRODUCT_RULE_002), nên key
- * nào admin chưa nhập bản EN sẽ tự hiển thị `vi`. Render đầu (locale `vi`) dùng prop server
- * → khớp HTML server, không hydration mismatch; chỉ swap sau khi khách chọn EN.
- *
- * `HomeBlockHeading`/`HomeAboutSection`/`HomeExperienceHeading` KHÔNG còn dùng cơ chế này —
- * nội dung của chúng đã hardcode (nhóm setting `public_home`, gỡ khỏi Cài đặt admin 2026-07-03,
- * xem DATA_CONTRACT.md "public_home keys — removed"); bản EN truyền thẳng qua prop `*En` và
- * chọn theo `useLocale()`, không gọi API.
- *
- * `HomeContentBottom` dùng `queryKeys.publicSettings(locale)` để tất cả client consumer cần
- * settings theo locale dùng chung một React Query cache key. (3 ô SEO Title/Description/Ảnh
- * chia sẻ trang chủ đã gỡ V337 2026-07-12 — xem DATA_CONTRACT.md; ô nội dung cuối trang này giữ lại.)
- */
-export function useEnSettingLookup(): (key: string) => string | undefined {
-  const locale = useLocale();
-  const isAlt = locale !== DEFAULT_LOCALE;
-
-  const { data } = useQuery({
-    queryKey: queryKeys.publicSettings(locale),
-    queryFn: () => fetchPublicSettings(locale),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  return (key: string) => {
-    if (!isAlt || !data) return undefined;
-    const value = data.find((s) => s.settingKey === key)?.settingValue?.trim();
-    return value || undefined;
-  };
-}
-
-const RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
-
-/** Chọn bản EN khi locale khác `vi`; giữ nguyên bản `vi` (khớp HTML server) khi không. */
-function useLocalizedText(vi: string, en: string): string {
-  const locale = useLocale();
-  return locale !== DEFAULT_LOCALE && en ? en : vi;
-}
-
+/** Presentational home sections. All copy is resolved for the URL locale on the server. */
 /**
  * Tiêu đề khối trang chủ ("Sản phẩm nổi bật", "Tin tức", "Videos"…) — kicker + title đã
  * hardcode (nhóm setting `public_home`, gỡ khỏi Cài đặt admin 2026-07-03). VI render ở server
@@ -64,23 +11,16 @@ function useLocalizedText(vi: string, en: string): string {
 export function HomeBlockHeading({
   className,
   kicker,
-  kickerEn,
   title,
-  titleEn,
 }: {
   className: string;
   kicker?: string;
-  kickerEn?: string;
   title: string;
-  titleEn: string;
 }) {
-  const sub = useLocalizedText(kicker ?? "", kickerEn ?? "");
-  const heading = useLocalizedText(title, titleEn);
-
   return (
     <div className={className}>
-      {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
-      {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
+      {kicker ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{kicker}</p> : null}
+      {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
     </div>
   );
 }
@@ -88,30 +28,19 @@ export function HomeBlockHeading({
 /** Khối "Giới thiệu BigBike" — tiêu đề phụ + tiêu đề + nội dung HTML (hardcode, xem HomePage). */
 export function HomeAboutSection({
   subtitle,
-  subtitleEn,
   title,
-  titleEn,
-  viHtml,
-  enHtml,
+  html,
 }: {
   subtitle: string;
-  subtitleEn: string;
   title: string;
-  titleEn: string;
-  /** HTML ĐÃ sanitize ở server (server render `vi` đầu tiên — khớp HTML, không hydration mismatch). */
-  viHtml: string;
-  enHtml: string;
+  html: string;
 }) {
-  const sub = useLocalizedText(subtitle, subtitleEn);
-  const heading = useLocalizedText(title, titleEn);
-  const html = useLocalizedText(viHtml, enHtml);
-
   return (
     <section className="py-10">
       <Container>
         <div className="mb-10 text-center">
-          {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
-          {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
+          {subtitle ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{subtitle}</p> : null}
+          {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
         </div>
         {html ? (
           <RichContent html={html} className="mx-auto max-w-4xl text-center text-muted-foreground" />
@@ -124,30 +53,20 @@ export function HomeAboutSection({
 /** Tiêu đề khối "Góc trải nghiệm" — tiêu đề phụ + tiêu đề + mô tả (hardcode, xem HomePage). */
 export function HomeExperienceHeading({
   subtitle,
-  subtitleEn,
   title,
-  titleEn,
   desc,
-  descEn,
 }: {
   subtitle: string;
-  subtitleEn: string;
   title: string;
-  titleEn: string;
   desc: string;
-  descEn: string;
 }) {
-  const sub = useLocalizedText(subtitle, subtitleEn);
-  const heading = useLocalizedText(title, titleEn);
-  const body = useLocalizedText(desc, descEn);
-
   return (
     <Container>
       <div className="pb-10 text-center">
-        {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
-        {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
-        {body ? (
-          <p className="mx-auto mt-8 max-w-4xl text-a4-content leading-relaxed text-foreground">{body}</p>
+        {subtitle ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{subtitle}</p> : null}
+        {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
+        {desc ? (
+          <p className="mx-auto mt-8 max-w-4xl text-a4-content leading-relaxed text-foreground">{desc}</p>
         ) : null}
       </div>
     </Container>
@@ -155,12 +74,8 @@ export function HomeExperienceHeading({
 }
 
 /** Khối nội dung SEO cuối trang chủ (rich HTML hiển thị). */
-export function HomeContentBottom({ viHtml }: { viHtml: string }) {
-  const pick = useEnSettingLookup();
-  if (!viHtml) return null;
-
-  const enHtml = pick("home_content_bottom_html");
-  const html = enHtml ? sanitizeRichHtml(enHtml, RICH_HTML_OPTS) : viHtml;
+export function HomeContentBottom({ html }: { html: string }) {
+  if (!html) return null;
 
   return (
     <section className="bg-secondary py-8">

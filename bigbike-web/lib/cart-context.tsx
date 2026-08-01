@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
@@ -82,7 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           aria-live="polite"
         >
           <div>
-            <b className="mb-0.5 block text-a5-meta font-bold tracking-display uppercase text-brand">{toast.title}</b>
+            <b className="mb-0.5 block font-body text-a5-meta font-bold text-brand">{toast.title}</b>
             <span className="text-a5-meta text-muted-foreground">{toast.message}</span>
           </div>
           <Link href={toCartPath(locale)} className="text-a5-meta font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">

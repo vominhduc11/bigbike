@@ -123,7 +123,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     }))
     results.products.forEach((p) => rows.push({
       group: 'products', key: `p-${p.id}`, to: `/admin/products/${p.id}`,
-      primary: formatText(p.name), secondary: formatText(p.sku, t('search.skuTbd', { defaultValue: 'Chưa có SKU' })),
+      primary: formatText(p.name), secondary: formatText(p.sku, t('search.skuTbd', { defaultValue: 'Chưa có mã sản phẩm' })),
     }))
     results.customers.forEach((c) => rows.push({
       group: 'customers', key: `c-${c.id}`, to: `/admin/customers/${c.id}`,

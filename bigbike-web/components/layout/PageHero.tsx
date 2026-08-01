@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useLocale } from "next-intl";
+import Link from "@/i18n/StorefrontLink";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { Container } from "@/components/layout/Container";
 
 /* eslint-disable @next/next/no-img-element */
@@ -36,7 +35,7 @@ export function PageHero({
   illustrationAlt?: string | null;
   focusId?: string;
 }) {
-  const locale = useLocale();
+  const tBreadcrumb = useTranslations("Breadcrumb");
   const background = bgUrl?.trim() || DEFAULT_BG;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
 
@@ -49,13 +48,13 @@ export function PageHero({
     >
       <Container className="relative z-10 flex min-h-62.5 items-center md:min-h-112.5">
         <div className="w-full md:w-1/2">
-          <h1 className="m-0 font-cta text-a2-page font-semibold leading-normal text-white!">
+          <h1 className="m-0 font-body text-a2-page font-semibold leading-title text-white!">
             {titleNode ?? title}
           </h1>
-          <nav className="mt-2" aria-label="Breadcrumb">
+          <nav className="mt-2" aria-label={tBreadcrumb("ariaLabel")}>
             <ol className="m-0 flex list-none flex-wrap p-0">
               {breadcrumb.map((crumb, index) => {
-                const href = locale !== DEFAULT_LOCALE && crumb.altHref ? crumb.altHref : crumb.href;
+                const href = crumb.href;
                 return (
                   <li
                     key={`${crumb.label}-${index}`}

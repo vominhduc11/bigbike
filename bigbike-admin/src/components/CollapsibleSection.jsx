@@ -12,16 +12,16 @@ import { Button } from '@/components/ui/button'
 // `keepMounted`: khi true, children luôn render nhưng ẩn qua thuộc tính `hidden` lúc
 // đóng — dùng cho section chứa editor có state cục bộ hoặc field có validation, để
 // KHÔNG mất state/không giấu lỗi khi đóng. Mặc định false (unmount khi đóng cho nhẹ).
-export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMounted = false, children }) {
+export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMounted = false, className, bodyClassName, children }) {
   const panelId = useId()
   let body = null
   if (keepMounted) {
-    body = <div id={panelId} className="bb-section-group-body" hidden={!open}>{children}</div>
+    body = <div id={panelId} className={cn('bb-section-group-body', bodyClassName)} hidden={!open}>{children}</div>
   } else if (open) {
-    body = <div id={panelId} className="bb-section-group-body">{children}</div>
+    body = <div id={panelId} className={cn('bb-section-group-body', bodyClassName)}>{children}</div>
   }
   return (
-    <section className="bb-section-group">
+    <section className={cn('bb-section-group', className)}>
       <Button
         variant="unstyled"
         onClick={onToggle}

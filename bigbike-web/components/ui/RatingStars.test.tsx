@@ -1,6 +1,10 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RatingStars } from "./RatingStars";
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (_key: string, values: { rating: string }) => `${values.rating} sao`,
+}));
 
 function fillWidth(container: HTMLElement): string | null {
   const overlay = container.querySelector<HTMLElement>("span.absolute");

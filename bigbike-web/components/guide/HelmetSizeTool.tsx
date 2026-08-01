@@ -139,7 +139,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
   return (
     <div className="mb-8 border border-border bg-white p-6 max-w-xl">
-      <h3 className="m-0 mb-2 font-cta text-a3-section font-bold uppercase tracking-wide text-brand">
+      <h3 className="m-0 mb-2 font-body text-a3-section font-bold text-brand">
         {isEn ? "Helmet Size Calculator" : "Công cụ tính size mũ bảo hiểm"}
       </h3>
       <p className="m-0 mb-6 text-a5-meta text-muted-foreground leading-relaxed">
@@ -150,7 +150,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end mb-6">
         <div className="flex-1 min-w-0">
-          <label htmlFor="head-input" className="block text-a5-meta text-muted-foreground mb-2 font-cta uppercase tracking-wide">
+          <label htmlFor="head-input" className="mb-2 block font-body text-a5-meta text-muted-foreground">
             {isEn ? "Your head size (cm)" : "Vòng đầu của bạn (cm)"}
           </label>
           <div className="relative flex items-center">
@@ -160,7 +160,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
               value={headVal}
               onChange={(e) => setHeadVal(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCalc()}
-              placeholder="e.g. 57"
+              placeholder={isEn ? "e.g. 57" : "VD: 57"}
               min="48"
               max="70"
               inputMode="numeric"
@@ -187,14 +187,14 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
       {result && (
         <div className="border border-border p-5 bg-muted">
-          <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
+          <div className="mb-1 font-cta text-b1-display font-bold uppercase leading-none text-brand">
             {result.size}
           </div>
           <div className="text-a5-meta text-muted-foreground mb-4 font-body">
             {result.rangeText}
           </div>
 
-          <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+          <div className="mb-2 font-body text-a5-meta font-bold text-foreground">
             {isEn ? "Suitable Brands" : "Phù hợp với thương hiệu"}
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -221,7 +221,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
       {(result || errorMsg) && (
         <button
           onClick={handleReset}
-          className="mt-4 text-b4-action text-muted-foreground hover:text-foreground underline font-body bg-transparent border-none p-0 cursor-pointer"
+          className="mt-4 text-b4-action text-muted-foreground hover:text-foreground underline font-cta uppercase bg-transparent border-none p-0 cursor-pointer"
         >
           {isEn ? "← Enter again" : "← Nhập lại"}
         </button>

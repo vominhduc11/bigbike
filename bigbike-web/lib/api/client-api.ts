@@ -16,6 +16,24 @@ import { env } from "@/env";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
+function invalidPayloadMessage(): string {
+  if (typeof window !== "undefined" && /^\/en(?:\/|$)/.test(window.location.pathname)) {
+    return "The server did not return valid data.";
+  }
+  return "Máy chủ không trả về dữ liệu hợp lệ.";
+}
+
+export class ApiClientError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code?: string,
+    public readonly fieldErrors?: Record<string, string>,
+  ) {
+    super(`API request failed with status ${status}`);
+    this.name = "ApiClientError";
+  }
+}
+
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(/(?:^|;\s*)bb_csrf=([^;]*)/);
@@ -45,10 +63,12 @@ async function clientRequest<T>(
   if (res.status === 204) return undefined as T;
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
-    throw new Error(msg);
+    const apiError = (payload as {
+      error?: { code?: string; fieldErrors?: Record<string, string> };
+    } | null)?.error;
+    throw new ApiClientError(res.status, apiError?.code, apiError?.fieldErrors);
   }
-  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
+  if (payload === null) throw new Error(invalidPayloadMessage());
   return (payload as { data: T }).data ?? (payload as T);
 }
 
@@ -411,7 +431,7 @@ async function unwrapAvatarResponse(res: Response): Promise<CustomerProfile> {
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
+  if (payload === null) throw new Error(invalidPayloadMessage());
   return (payload as { data: CustomerProfile }).data;
 }
 
@@ -492,7 +512,7 @@ export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
+  if (payload === null) throw new Error(invalidPayloadMessage());
   return (payload as { data: OrderDetail }).data ?? (payload as OrderDetail);
 }
 

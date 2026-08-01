@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import type { Product, VideoAsset } from "@/lib/contracts/public";
+import type { Article, Product, VideoAsset } from "@/lib/contracts/public";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
   buildProductJsonLd,
+  buildArticleBreadcrumbJsonLd,
   buildVideoObjectsJsonLd,
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
@@ -150,6 +151,24 @@ describe("buildBreadcrumbJsonLd", () => {
       makeProduct({ brand: undefined, category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
     ));
     expect(arr(ld.itemListElement).map((i) => i.name)).toEqual(["Trang chủ", "Áo giáp mô tô ABC"]);
+  });
+});
+
+describe("English JSON-LD locale", () => {
+  it("uses English home/news labels when the canonical route is English", () => {
+    const article = {
+      id: "article-1",
+      slug: "bai-viet-1",
+      title: "English article",
+      body: "Article body",
+      publishStatus: "PUBLISHED",
+      createdAt: "2026-06-01T00:00:00Z",
+      updatedAt: "2026-06-01T00:00:00Z",
+    } as Article;
+    const ld = obj(buildArticleBreadcrumbJsonLd(article, "/en/news/english-article/"));
+    const names = arr(ld.itemListElement).map((item) => item.name);
+
+    expect(names).toEqual(["Home", "News", "English article"]);
   });
 });
 

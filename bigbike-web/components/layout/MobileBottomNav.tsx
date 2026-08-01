@@ -1,17 +1,17 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import { isAuthRoute, toAccountPath, toHomePath } from "@/lib/utils/routes";
+import { isAuthRoute, toAccountPath, toHomePath, translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
 function isHomePath(pathname: string) {
-  return pathname === "/" || pathname === "";
+  return pathname === "/" || pathname === "" || pathname === "/en" || pathname === "/en/";
 }
 
 // Mobile-only bottom tab nav (≤767). .bb-bottom-nav is KEPT as a bare marker so the
@@ -20,7 +20,7 @@ function isHomePath(pathname: string) {
 // else is inlined. Colors resolve the dark→light reskin to the last-effective layer:
 // bg-surface-dark, mobile-shell-border, text-inverse-muted, brand-on-dark (active).
 const labelCls =
-  "text-b5-label leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap";
+  "max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-cta text-b5-label uppercase leading-none";
 
 function tabClass(active: boolean) {
   return cn(
@@ -41,28 +41,29 @@ export function MobileBottomNav() {
   const t = useTranslations("Header");
   const locale = useLocale() as Locale;
   const pathname = usePathname();
+  const viPathname = translatePath(pathname, "vi");
   const { cartCount } = useCart();
   const { openPanel, isPanelOpen } = useHeaderUi();
 
   // Transaction pages reserve this area for their primary action instead of
   // showing a second fixed bar underneath it.
-  if (pathname.startsWith("/gio-hang") || pathname.startsWith("/dat-hang") || pathname.startsWith("/don-hang")) return null;
+  if (viPathname.startsWith("/gio-hang") || viPathname.startsWith("/dat-hang") || viPathname.startsWith("/don-hang")) return null;
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   // Tab Giỏ hàng mở khung xem nhanh (MobileCartSheet) thay vì sang thẳng trang —
   // sáng đèn khi khung đang mở HOẶC khách đã ở thẳng trang Giỏ hàng (vd bấm "Xem
   // giỏ hàng" trong khung, hoặc vào thẳng URL /gio-hang).
   const cartActive = isPanelOpen("cart");
-  const cartRouteActive = pathname.startsWith("/gio-hang");
+  const cartRouteActive = viPathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
   // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (AccountNav). Từ thanh
   // dưới, chỉ nút Tài khoản dẫn tới các trang auth → giữ tab này sáng để không "mất active".
-  const accountActive = pathname.startsWith("/tai-khoan") || isAuthRoute(pathname);
+  const accountActive = viPathname.startsWith("/tai-khoan") || isAuthRoute(pathname);
 
   return (
     <nav
       className={cn(
-        "bb-bottom-nav fixed bottom-0 left-0 right-0 z-[650] md:hidden",
+        "bb-bottom-nav fixed bottom-0 left-0 right-0 z-[var(--bb-z-bottom-nav)] md:hidden",
         "border-t border-[color:var(--bb-mobile-shell-border)] bg-surface-dark text-[color:var(--bb-text-inverse-muted)] backdrop-blur-md",
         "[box-shadow:0_-10px_24px_rgba(0,0,0,0.24)]",
         "[transition:opacity_var(--bb-duration-normal)_var(--bb-ease-standard),transform_var(--bb-duration-normal)_var(--bb-ease-standard),visibility_var(--bb-duration-normal)_var(--bb-ease-standard)]",
@@ -72,7 +73,7 @@ export function MobileBottomNav() {
     >
       <div className="flex justify-between gap-0.5 px-2 py-1">
         <Link
-          href={toHomePath()}
+          href={toHomePath(locale)}
           className={tabClass(homeActive)}
           aria-current={homeActive ? "page" : undefined}
         >
@@ -93,7 +94,7 @@ export function MobileBottomNav() {
           <div className="relative">
             <ShoppingCart size={20} aria-hidden />
             {badge != null && (
-              <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-0.5 text-b5-label font-bold leading-none text-white">
+              <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-0.5 font-cta text-b5-label font-bold uppercase leading-none text-white">
                 {badge > 99 ? "99+" : badge}
               </span>
             )}

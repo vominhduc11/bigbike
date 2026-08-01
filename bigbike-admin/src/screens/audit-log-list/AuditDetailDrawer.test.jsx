@@ -79,7 +79,7 @@ describe('thông tin chung', () => {
 
   it('hành động lạ hiện nguyên mã trong ngoặc, không phải chuỗi rỗng', () => {
     renderDrawer({ action: 'MOT_MA_LA' })
-    expect(screen.getByText('(MOT_MA_LA)')).toBeInTheDocument()
+    expect(screen.getByText('Hoạt động khác')).toBeInTheDocument()
   })
 
   it('nhóm quản lý của dữ liệu cũ vẫn đọc được', () => {

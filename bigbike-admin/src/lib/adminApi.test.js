@@ -8,7 +8,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      slug: 'Slug này đã được dùng. Hãy mở bản ghi đang có hoặc đổi slug khác.',
+      slug: 'Đường dẫn này đã được dùng. Hãy mở bản ghi đang có hoặc đổi đường dẫn khác.',
     })
   })
 
@@ -18,7 +18,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      'translations.en.slug': 'Slug tiếng Anh này đã được dùng. Hãy đổi slug tiếng Anh hoặc để trống.',
+      'translations.en.slug': 'Đường dẫn tiếng Anh này đã được dùng. Hãy đổi đường dẫn tiếng Anh hoặc để trống.',
     })
   })
 
@@ -28,7 +28,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      targetUrl: 'URL đích không được trùng với mẫu nguồn.',
+      targetUrl: 'Địa chỉ mới không được trùng với địa chỉ cũ.',
     })
   })
 
@@ -38,7 +38,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      targetUrl: 'URL đích tạo vòng lặp chuyển hướng (trỏ vòng lại chính nó). Hãy chọn URL đích khác.',
+      targetUrl: 'Địa chỉ mới đang tạo vòng lặp chuyển hướng. Hãy chọn địa chỉ khác.',
     })
   })
 
@@ -48,7 +48,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      targetUrl: 'URL đích phải là đường dẫn nội bộ hoặc cùng tên miền với website — không được trỏ ra trang ngoài.',
+      targetUrl: 'Địa chỉ mới phải thuộc website này — không được trỏ sang trang bên ngoài.',
     })
   })
 
@@ -58,7 +58,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      targetUrl: 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /sp/).',
+      targetUrl: 'Địa chỉ mới chưa đúng. Hãy nhập đường dẫn trong website, bắt đầu bằng dấu "/" (ví dụ /sp/).',
     })
   })
 })

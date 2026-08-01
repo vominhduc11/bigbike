@@ -23,20 +23,13 @@ import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '../components/PasswordInput'
+import { getRoleDisplayName } from './roles/constants'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
 // Đủ để bắt lỗi nhập sai phổ biến phía client; backend vẫn là nguồn xác thực cuối.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_MIN_LENGTH = 8
-
-// Static metadata for built-in roles (label i18n key).
-const ROLE_META = {
-  SUPER_ADMIN:  { labelKey: 'adminUsers.roleSuperAdmin'  },
-  ADMIN:        { labelKey: 'adminUsers.roleAdmin'        },
-  SHOP_MANAGER: { labelKey: 'adminUsers.roleShopManager'  },
-  EDITOR:       { labelKey: 'adminUsers.roleEditor'       },
-}
 
 const STATUS_META = {
   INVITED:   { labelKey: 'adminUsers.statusInvited'   },
@@ -179,25 +172,30 @@ export function AdminUsersScreen({
   // Sắp xếp phía client (endpoint admin users không hỗ trợ sort server-side).
   const [sort, setSort] = useState({ key: null, dir: 'asc' })
 
-  // ── Dynamic roles ───────────────────────────────────────────────────────
-  const [dynamicRoles, setDynamicRoles] = useState([])
+  // ── Canonical role catalog ──────────────────────────────────────────────
+  const [roles, setRoles] = useState([])
   const [rolesError, setRolesError] = useState(false)
   useEffect(() => {
     if (!canReadRoles) {
       return undefined
     }
-    // Lỗi tải danh sách vai trò tuỳ chỉnh không còn bị nuốt: hiện cảnh báo để admin
+    // Lỗi tải danh sách vai trò không còn bị nuốt: hiện cảnh báo để admin
     // biết danh sách vai trò có thể chưa đầy đủ (thay vì lặng lẽ thiếu lựa chọn).
     fetchRoles()
-      .then((r) => { setDynamicRoles(r.items || []); setRolesError(false) })
+      .then((r) => { setRoles(r.items || []); setRolesError(false) })
       .catch(() => setRolesError(true))
   }, [canReadRoles])
 
   const roleOptions = useMemo(() => {
-    const builtins = Object.keys(ROLE_META)
-    const extras = dynamicRoles.filter((r) => !builtins.includes(r.id)).map((r) => r.id)
-    return [...builtins, ...extras]
-  }, [dynamicRoles])
+    return roles.map((role) => role.id).filter(Boolean)
+  }, [roles])
+
+  const rolesById = useMemo(() => new Map(roles.map((role) => [role.id, role])), [roles])
+  const defaultRole = useMemo(
+    () => roleOptions.includes('ADMIN') ? 'ADMIN' : (roleOptions[0] || ''),
+    [roleOptions],
+  )
+  const canChangeRoles = canAssignRoles && roleOptions.length > 0
 
   const createRoleOptions = useMemo(
     () => (isSuperAdmin ? roleOptions : roleOptions.filter((role) => role !== 'SUPER_ADMIN')),
@@ -208,15 +206,12 @@ export function AdminUsersScreen({
     [isSuperAdmin, roleOptions],
   )
 
-  // Đổi mã vai trò thô (vd vai trò tuỳ chỉnh) sang nhãn dễ đọc: ưu tiên nhãn i18n của
-  // vai trò dựng sẵn, rồi tên hiển thị của vai trò tuỳ chỉnh, cuối cùng mới là mã.
+  // Đổi mã vai trò sang nhãn bằng đúng helper mà màn Phân quyền sử dụng.
   const resolveRoleLabel = useCallback((roleId) => {
     if (!roleId) return '—'
-    const meta = ROLE_META[roleId]
-    if (meta) return t(meta.labelKey)
-    const dyn = dynamicRoles.find((r) => r.id === roleId)
-    return dyn?.name || roleId
-  }, [dynamicRoles, t])
+    const role = rolesById.get(roleId)
+    return role ? getRoleDisplayName(role, t) : roleId
+  }, [rolesById, t])
 
   // Chặn double-submit của nút kích hoạt/khoá ngay trên dòng: khoá nút đang xử lý.
   const [togglingId, setTogglingId] = useState(null)
@@ -297,7 +292,7 @@ export function AdminUsersScreen({
   }
 
   function openCreate() {
-    setCreateForm({ email: '', displayName: '', role: 'ADMIN' })
+    setCreateForm({ email: '', displayName: '', role: defaultRole })
     setCreateError('')
     setCreateOpen(true)
   }
@@ -309,7 +304,7 @@ export function AdminUsersScreen({
   }
 
   function isCreateFormDirty() {
-    return createForm.email.trim() !== '' || createForm.displayName.trim() !== '' || createForm.role !== 'ADMIN'
+    return createForm.email.trim() !== '' || createForm.displayName.trim() !== '' || createForm.role !== defaultRole
   }
 
   // Đóng modal tạo mới có cảnh báo khi đã nhập dở (nút Huỷ / nút X / nền mờ).
@@ -383,7 +378,7 @@ export function AdminUsersScreen({
     if (!validateEditForm()) return
 
     const statusChanged = editForm.status !== editUser.status
-    const roleChanged = canAssignRoles && editForm.role !== editUser.role
+    const roleChanged = canChangeRoles && editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
     const passwordChanged = editForm.newPassword.trim() !== ''
 
@@ -434,7 +429,7 @@ export function AdminUsersScreen({
       const payload = {
         displayName: editForm.displayName.trim() || undefined,
         status: editingSelf ? undefined : (editForm.status || undefined),
-        role: editingSelf || !canAssignRoles ? undefined : (editForm.role || undefined),
+        role: editingSelf || !canChangeRoles ? undefined : (editForm.role || undefined),
         newPassword: editForm.newPassword.trim() || undefined,
       }
       const r = await updateAdminUser(editUser.id, payload)
@@ -462,7 +457,7 @@ export function AdminUsersScreen({
     } finally {
       setEditSaving(false)
     }
-  }, [editUser, editForm, currentUserId, canAssignRoles, t])
+  }, [editUser, editForm, currentUserId, canChangeRoles, t])
 
   // Kiểm tra hợp lệ phía client cho form tạo mới — trả về true nếu hợp lệ.
   function validateCreateForm() {
@@ -713,7 +708,7 @@ export function AdminUsersScreen({
       : []),
   ]
 
-  // T7: cho phép ẩn/hiện cột trên bảng quản trị viên, lưu lựa chọn theo trình duyệt.
+  // T7: cho phép ẩn/hiện cột trên bảng tài khoản quản trị, lưu lựa chọn theo trình duyệt.
   const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:admin-users')
 
   const mobileCard = (u) => {
@@ -762,8 +757,8 @@ export function AdminUsersScreen({
             <Button
               type="button"
               onClick={openCreate}
-              disabled={!canAssignRoles}
-              title={!canAssignRoles ? 'Cần quyền roles.read để chọn vai trò cho tài khoản mới.' : undefined}
+              disabled={!canChangeRoles}
+              title={!canChangeRoles ? 'Cần quyền roles.read và danh sách vai trò để chọn vai trò cho tài khoản mới.' : undefined}
             >
               <UserPlus size={14} />{t('adminUsers.createBtn')}
             </Button>
@@ -783,7 +778,7 @@ export function AdminUsersScreen({
 
       {rolesError && (
         <Alert tone="warning" icon={AlertCircle} dismissible onDismiss={() => setRolesError(false)}>
-          {t('adminUsers.rolesLoadError', { defaultValue: 'Không tải được danh sách vai trò tuỳ chỉnh. Danh sách vai trò có thể chưa đầy đủ; thử tải lại trang.' })}
+          {t('adminUsers.rolesLoadError', { defaultValue: 'Không tải được danh sách vai trò. Không thể bảo đảm lựa chọn vai trò đầy đủ; thử tải lại trang.' })}
         </Alert>
       )}
 
@@ -884,10 +879,12 @@ export function AdminUsersScreen({
             />
           </div>
           {listState.status === 'success' && listState.pagination && (
-            <PaginationControls
-              pagination={listState.pagination}
-              onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
-            />
+            <div className="px-4">
+              <PaginationControls
+                pagination={listState.pagination}
+                onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
+              />
+            </div>
           )}
         </div>
       )}
@@ -954,7 +951,7 @@ export function AdminUsersScreen({
                 <FormField label={t('adminUsers.formRole')} error={editFieldErrors.role}>
                   <Select
                     value={editForm.role}
-                    disabled={isSelf || isSuperAdminAccountLocked || !canAssignRoles}
+                    disabled={isSelf || isSuperAdminAccountLocked || !canChangeRoles}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>

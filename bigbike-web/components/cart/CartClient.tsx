@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { ChevronLeft, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -77,13 +77,13 @@ export function CartClient() {
         if (serverQty != null && serverQty !== nextQty) {
           setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
         }
-      } catch (e: unknown) {
-        setError((e as Error).message);
+      } catch {
+        setError(t("updateFailed"));
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, updateItem],
+    [quantityDrafts, setItemMutating, t, updateItem],
   );
 
   const handleQuantityBlur = useCallback(
@@ -98,13 +98,13 @@ export function CartClient() {
         if (serverQty != null && serverQty !== nextQty) {
           setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
         }
-      } catch (e: unknown) {
-        setError((e as Error).message);
+      } catch {
+        setError(t("updateFailed"));
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, updateItem],
+    [quantityDrafts, setItemMutating, t, updateItem],
   );
 
   const handleRemove = useCallback(
@@ -113,13 +113,13 @@ export function CartClient() {
       setError("");
       try {
         await removeItem.mutateAsync(itemId);
-      } catch (e: unknown) {
-        setError((e as Error).message);
+      } catch {
+        setError(t("removeFailed"));
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [setItemMutating, removeItem],
+    [setItemMutating, removeItem, t],
   );
 
   const continueHref = toProductListPath(locale);
@@ -132,7 +132,7 @@ export function CartClient() {
     return (
       <>
         <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
-          {error || (cartQuery.error instanceof Error ? cartQuery.error.message : t("loadFailed"))}
+          {error || t("loadFailed")}
         </div>
         <Button asChild variant="primary" className="mt-6 rounded-none">
           <Link href={continueHref}>{t("returnToShop")}</Link>
@@ -159,7 +159,7 @@ export function CartClient() {
           >
             <ShoppingCart size={30} strokeWidth={1.5} />
           </span>
-          <p className="m-0 font-cta text-a2-page font-semibold uppercase">{t("emptyMessage")}</p>
+          <p className="m-0 font-body text-a2-page font-semibold">{t("emptyMessage")}</p>
           <Button asChild variant="primary" className="mt-6 rounded-none">
             <Link href={continueHref}>{t("returnToShop")}</Link>
           </Button>

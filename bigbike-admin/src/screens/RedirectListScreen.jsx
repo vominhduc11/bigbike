@@ -148,8 +148,8 @@ export function RedirectListScreen({ canUpdate }) {
       closeForm()
       toast.success(
         editingRedirect
-          ? t('redirects.updateSuccess', { defaultValue: 'Redirect updated.' })
-          : t('redirects.createSuccess', { defaultValue: 'Redirect created.' }),
+          ? t('redirects.updateSuccess', { defaultValue: 'Đã cập nhật chuyển hướng.' })
+          : t('redirects.createSuccess', { defaultValue: 'Đã tạo chuyển hướng.' }),
       )
     },
     onError: (err) => {
@@ -252,10 +252,10 @@ export function RedirectListScreen({ canUpdate }) {
   const warning = ''
 
   const sourceError = !form.sourcePattern.trim()
-    ? t('redirects.errorSourceRequired', { defaultValue: 'Source pattern is required.' })
+    ? t('redirects.errorSourceRequired', { defaultValue: 'Địa chỉ cũ là bắt buộc.' })
     : ''
   const targetError = !form.targetUrl.trim()
-    ? t('redirects.errorTargetRequired', { defaultValue: 'Target URL is required.' })
+    ? t('redirects.errorTargetRequired', { defaultValue: 'Địa chỉ mới là bắt buộc.' })
     : ''
 
   function markTouched(field) {
@@ -521,7 +521,7 @@ export function RedirectListScreen({ canUpdate }) {
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">{t('nav.redirects', { defaultValue: 'Chuyển hướng' })}</p>
           <h1>{t('redirects.title', { defaultValue: 'Chuyển hướng' })}</h1>
-          <p className="bb-muted">{t('redirects.description', { defaultValue: 'Quản lý chuyển hướng SEO và ánh xạ URL cũ.' })}</p>
+          <p className="bb-muted">{t('redirects.description', { defaultValue: 'Quản lý việc đưa khách từ địa chỉ cũ đến địa chỉ mới trên website.' })}</p>
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
@@ -548,7 +548,7 @@ export function RedirectListScreen({ canUpdate }) {
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
             <div className="bb-grid-2">
               <FormField
-                label={t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}
+                label={t('redirects.formSource', { defaultValue: 'Địa chỉ cũ' })}
                 required
                 error={validationErrors.sourcePattern || (touched.sourcePattern ? sourceError : '')}
               >
@@ -556,11 +556,11 @@ export function RedirectListScreen({ canUpdate }) {
                   value={form.sourcePattern}
                   onChange={(e) => setForm((p) => ({ ...p, sourcePattern: e.target.value }))}
                   onBlur={() => markTouched('sourcePattern')}
-                  placeholder="/old-url"
+                  placeholder="/dia-chi-cu"
                 />
               </FormField>
               <FormField
-                label={t('redirects.formTarget', { defaultValue: 'URL đích' })}
+                label={t('redirects.formTarget', { defaultValue: 'Địa chỉ mới' })}
                 required
                 error={validationErrors.targetUrl || (touched.targetUrl ? targetError : '')}
               >
@@ -568,7 +568,7 @@ export function RedirectListScreen({ canUpdate }) {
                   value={form.targetUrl}
                   onChange={(e) => setForm((p) => ({ ...p, targetUrl: e.target.value }))}
                   onBlur={() => markTouched('targetUrl')}
-                  placeholder="/new-url"
+                  placeholder="/dia-chi-moi"
                 />
               </FormField>
               <label className="form-field">
@@ -620,14 +620,14 @@ export function RedirectListScreen({ canUpdate }) {
               <div className="col-span-full">
                 <CollapsibleSection
                   title={t('redirects.advancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
-                  hint={t('redirects.advancedHint', { defaultValue: 'Legacy ID, ghi chú' })}
+                  hint={t('redirects.advancedHint', { defaultValue: 'Mã tham chiếu địa chỉ cũ và ghi chú' })}
                   open={advancedOpen}
                   onToggle={() => setAdvancedOpen((v) => !v)}
                   keepMounted
                 >
                   <div className="bb-grid-2">
                     <label className="form-field">
-                      <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
+                      <span>{t('redirects.formLegacyId', { defaultValue: 'Mã tham chiếu địa chỉ cũ' })}</span>
                       <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />
                     </label>
                     <label className="form-field col-span-full">
@@ -655,8 +655,8 @@ export function RedirectListScreen({ canUpdate }) {
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
-          placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
-          ariaLabel={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
+          placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới, ghi chú' })}
+          ariaLabel={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới, ghi chú' })}
         />
         <FilterSelect
           value={query.enabled}

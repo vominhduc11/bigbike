@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, MapPin, Phone, X } from "lucide-react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { iconBtn } from "@/lib/ui-classes";
+import { toHomePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 export type HeaderContact = {
   address: string;
@@ -110,6 +112,7 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
 
 export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClientProps) {
   const t = useTranslations("Header");
+  const tCommon = useTranslations("Common");
   const locale = useLocale();
   // menuNodesEn rỗng (chưa admin nhập nhãn EN cho mục nào) → fallback về VI thay vì
   // hiện menu trống — cùng nguyên tắc field-level fallback áp dụng cho name/label khác.
@@ -137,7 +140,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
       >
         <div className="mx-auto flex h-full w-full max-w-437.5 items-center px-4 md:px-6">
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
-            <Link href="/" data-header-logo className="relative flex h-full items-start">
+            <Link href={toHomePath(locale as Locale)} data-header-logo className="relative flex h-full items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}
@@ -166,7 +169,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
               <LanguageSwitch />
               <HeaderSearchButton />
               <div className="hidden h-full md:block!">
-                <HeaderCartLink ariaLabel="Giỏ hàng" />
+                <HeaderCartLink ariaLabel={t("cart")} />
               </div>
               <div className="hidden h-full min-[1261px]:block!">
                 <HeaderUser variant="desktop" />
@@ -176,7 +179,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                 variant="ghost"
                 size="icon"
                 data-header-mobile-trigger
-                aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
+                aria-label={mobileMenuOpen ? t("mobileMenuCollapseAriaLabel", { label: t("menu") }) : t("mobileMenuOpenAriaLabel")}
                 aria-expanded={mobileMenuOpen}
                 onClick={() => togglePanel("mobile-menu")}
                 className={cn(iconBtn, "h-15! min-h-15! px-2.5! hover:not-disabled:scale-100 md:h-20! md:min-h-20! min-[1261px]:hidden!")}
@@ -188,7 +191,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                 variant="ghost"
                 size="icon"
                 data-header-info-trigger
-                aria-label="Thông tin cửa hàng"
+                aria-label={t("shopInfoAriaLabel", { siteName: "BigBike" })}
                 aria-expanded={desktopInfoOpen}
                 onClick={() => togglePanel("desktop-info")}
                 className={cn(iconBtn, "ml-2.5 hidden h-20! min-h-20! px-2.5! hover:not-disabled:scale-100 min-[1261px]:inline-flex!")}
@@ -222,8 +225,8 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
           data-header-mobile-menu
           className="bottom-0! top-15! h-[calc(100dvh-60px)]! w-full! max-w-125! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-20! md:h-[calc(100dvh-80px)]!"
         >
-          <SheetTitle className="sr-only">Menu chính</SheetTitle>
-          <SheetDescription className="sr-only">Điều hướng và thông tin cửa hàng BigBike</SheetDescription>
+          <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
+          <SheetDescription className="sr-only">{t("shopInfoDescription", { siteName: "BigBike" })}</SheetDescription>
           <HeaderUser variant="mobile" />
           <HeaderMenu initialNodes={menuNodes} variant="mobile" onNavigate={closePanel} />
           <div className="px-[25px]">
@@ -241,13 +244,13 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
           showClose={false}
           className="w-full! max-w-[645px]! overflow-y-auto border-none! bg-white! px-17.5! py-12.5!"
         >
-          <SheetTitle className="sr-only">Thông tin cửa hàng</SheetTitle>
-          <SheetDescription className="sr-only">Giờ mở cửa, địa chỉ và số điện thoại BigBike</SheetDescription>
+          <SheetTitle className="sr-only">{t("shopInfoTitle", { siteName: "BigBike" })}</SheetTitle>
+          <SheetDescription className="sr-only">{t("shopInfoDescription", { siteName: "BigBike" })}</SheetDescription>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            aria-label="Đóng"
+            aria-label={tCommon("close")}
             onClick={closePanel}
             className="absolute right-17.5 top-12.5 hover:not-disabled:scale-100"
           >

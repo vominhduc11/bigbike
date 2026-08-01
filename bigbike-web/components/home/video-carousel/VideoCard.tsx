@@ -58,7 +58,7 @@ export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand" aria-hidden="true">
-            <span className="font-body text-a3-section font-bold uppercase tracking-display text-white/80">
+            <span className="font-body text-a3-section font-bold text-white/80">
               BIGBIKE
             </span>
           </div>

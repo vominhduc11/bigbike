@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,7 +10,7 @@ import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
-import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
+import { type Locale } from "@/i18n/locale";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
@@ -36,7 +36,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
   const { data: freshSettingsResult } = useQuery({
     queryKey: queryKeys.publicSettingsResult(locale),
     queryFn: () => listPublicSettings(locale),
-    initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
+    initialData: { data: settings, error: null },
     staleTime: 5 * 60 * 1000,
   });
   const activeSettings = freshSettingsResult?.data ?? settings;
@@ -90,7 +90,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
   if (!cart || cart.items.length === 0) {
     return (
       <div className="py-10 text-center" role="status">
-        <p className="font-cta text-a2-page font-semibold uppercase">{tCart("emptyHeading")}</p>
+        <p className="font-body text-a2-page font-semibold">{tCart("emptyHeading")}</p>
         <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Button asChild className="rounded-none"><Link href={toProductListPath(locale)}>{t("continueShopping")}</Link></Button>
@@ -136,7 +136,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           
           {/* Card 1: Thông tin nhận hàng */}
           <section className="border border-border bg-background p-6">
-            <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("step1Title")}</h2>
+            <h2 className="mb-6 font-body text-a2-page font-semibold">{t("step1Title")}</h2>
 
             <div className="space-y-4">
               <CheckoutAddressFields
@@ -180,7 +180,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
             {shipToDifferent && (
               <div className="mt-6">
-                <h3 className="mb-4 font-cta text-a4-content font-semibold uppercase">{t("shippingAddressTitle")}</h3>
+                <h3 className="mb-4 font-body text-a4-content font-semibold">{t("shippingAddressTitle")}</h3>
                 <div className="space-y-4">
                   <CheckoutAddressFields
                     idPrefix="shipping"
@@ -198,7 +198,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
           {/* Card 2: Phương thức thanh toán */}
           <section className="border border-border bg-background p-6">
-            <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("paymentMethodTitle")}</h2>
+            <h2 className="mb-6 font-body text-a2-page font-semibold">{t("paymentMethodTitle")}</h2>
             
             <PaymentMethodSelector value={paymentMethod} onValueChange={setPaymentMethod} />
 

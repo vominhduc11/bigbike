@@ -204,7 +204,7 @@ function steps(lang: Lang, contact: WarrantyContact): { title: Bi; body: ReactNo
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand">
+    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">
       {children}
     </h2>
   );
@@ -212,7 +212,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 
 function SubLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
+    <p className="mb-2 font-body text-a4-content font-bold text-foreground">
       {children}
     </p>
   );
@@ -260,7 +260,7 @@ export function WarrantyPolicyContent({
       <SectionTitle>{t(lang, COPY.s1Title)}</SectionTitle>
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-body text-a4-content font-bold text-foreground">
             <Check className="size-5 shrink-0 text-pros-accent" aria-hidden /> {t(lang, COPY.covered)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
@@ -270,7 +270,7 @@ export function WarrantyPolicyContent({
           </ul>
         </div>
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-body text-a4-content font-bold text-foreground">
             <X className="size-5 shrink-0 text-cons-accent" aria-hidden /> {t(lang, COPY.notCovered)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
@@ -369,7 +369,7 @@ export function WarrantyPolicyContent({
       <ol className="mb-6 space-y-3">
         {steps(lang, contact).map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />

@@ -3,9 +3,9 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { Minus, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { CATALOG_FILTER_OPEN_EVENT } from "@/components/catalog/catalog-events";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
@@ -22,6 +22,7 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
 import { submenuIcon } from "@/lib/ui-classes";
+import type { Locale } from "@/i18n/locale";
 
 const COLOR_FALLBACK_KEYS = [
   "bac", "cam", "hong", "trang", "xam", "xanh-da-troi", "xanh-la-cay", "vang", "den", "do",
@@ -59,7 +60,7 @@ type CatalogSidebarProps = {
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="m-0 pb-4 font-cta text-a2-page font-semibold uppercase text-foreground">
+      <h2 className="m-0 pb-4 font-body text-a2-page font-semibold text-foreground">
         {title}
       </h2>
       {children}
@@ -161,6 +162,7 @@ export function CatalogSidebar({
   hiddenParams = {},
 }: CatalogSidebarProps) {
   const t = useTranslations("Catalog");
+  const locale = useLocale() as Locale;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -185,7 +187,7 @@ export function CatalogSidebar({
 
   const visibleCategories = categories.filter((category) => category.isVisible);
   const activeCategory = visibleCategories.find(
-    (category) => toCategoryPath(category.slug) === resetHref || current.category === category.slug,
+    (category) => toCategoryPath(category.slug, locale) === resetHref || current.category === category.slug,
   );
   const activeParentId = activeCategory?.parentId ?? activeCategory?.id ?? null;
   const rootCategories = visibleCategories.filter((category) => !category.parentId);
@@ -213,7 +215,7 @@ export function CatalogSidebar({
           <FilterSection title={t("filterCategory")}>
             <ul className={filterListClass}>
               {rootCategories.map((category) => {
-                const href = toCategoryPath(category.slug);
+                const href = toCategoryPath(category.slug, locale);
                 const active = href === resetHref || current.category === category.slug;
                 const children = activeParentId === category.id
                   ? visibleCategories.filter((child) => child.parentId === category.id)
@@ -238,7 +240,7 @@ export function CatalogSidebar({
                     {children.length ? (
                       <ul className="ml-2 mt-2 list-none border-l border-dashed border-muted-foreground/60 pl-8">
                         {children.map((child) => {
-                          const childActive = toCategoryPath(child.slug) === resetHref || current.category === child.slug;
+                          const childActive = toCategoryPath(child.slug, locale) === resetHref || current.category === child.slug;
                           return (
                             <li key={child.id} className="py-2.5">
                               <LocalizedLink
@@ -354,7 +356,7 @@ export function CatalogSidebar({
       </aside>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="right" className="w-full! max-w-77.5! overflow-y-auto p-6!">
-          <SheetTitle className="mb-6 border-b border-border pb-5 font-cta text-a2-page font-semibold uppercase">
+          <SheetTitle className="mb-6 border-b border-border pb-5 font-body text-a2-page font-semibold">
             {t("filterMobileHeading")}
           </SheetTitle>
           <SheetDescription className="sr-only">{t("filterMobileHeading")}</SheetDescription>

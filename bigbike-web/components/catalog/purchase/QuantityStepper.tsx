@@ -20,7 +20,7 @@ export function QuantityStepper({
   return (
     <div>
       <div className="flex items-center gap-4">
-        <label htmlFor="bb-qty" className="min-w-24 font-cta text-a4-content font-semibold uppercase text-foreground">
+        <label htmlFor="bb-qty" className="min-w-24 font-cta text-b4-action font-semibold uppercase text-foreground">
           {tb("quantity")}
         </label>
         <div className="flex flex-1 items-stretch border border-border-control">

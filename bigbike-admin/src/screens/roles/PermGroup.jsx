@@ -2,24 +2,24 @@ import { Check, X, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { MODULE_LABELS, PERM_LABEL_KEY_MAP, requiredBy } from './constants'
 
 // Một nhóm quyền = một section thu gọn (chống ngợp khi có nhiều nhóm cùng mở).
 // Tiêu đề kèm tóm tắt "đã cấp/tổng" để quét nhanh mà không cần bung nhóm.
 // `open`/`onToggleOpen` do RoleDetail điều khiển.
-export function PermGroup({ group, catalog, activePerms, editMode, onToggle, onBulk, isSuperAdmin, showCodes = false, open, onToggleOpen }) {
+export function PermGroup({ group, catalog, activePerms, editMode, onToggle, isSuperAdmin, showCodes = false, open, onToggleOpen }) {
   const { t } = useTranslation()
-  const canBulk = editMode && !isSuperAdmin && typeof onBulk === 'function'
   const total = group.permissions.length
   const grantedCount = isSuperAdmin ? total : group.permissions.filter(p => activePerms.has(p.key)).length
 
   return (
     <CollapsibleSection
-      title={t(group.groupKey, { defaultValue: MODULE_LABELS[group.moduleKey] || group.moduleKey || group.groupKey })}
+      title={t(group.groupKey, { defaultValue: MODULE_LABELS[group.moduleKey] || 'Nhóm quyền khác' })}
       open={open}
       onToggle={onToggleOpen}
+      className="gap-2"
+      bodyClassName="pl-6 pr-3.5 sm:pl-10"
       badge={
         <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
           {t('roles.groupGrantedCount', { granted: grantedCount, total, defaultValue: '{{granted}}/{{total}} quyền' })}
@@ -27,23 +27,11 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, onB
       }
     >
       <div>
-        {/* Cấp / bỏ cả nhóm trong 1 chạm (quyền nhạy cảm vẫn bật riêng để xác nhận) */}
-        {canBulk && (
-          <div className="flex items-center justify-end gap-1 mb-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onBulk(group, true)}>
-              {t('roles.selectAllGroup', { defaultValue: 'Chọn tất cả' })}
-            </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => onBulk(group, false)}>
-              {t('roles.clearGroup', { defaultValue: 'Bỏ chọn' })}
-            </Button>
-          </div>
-        )}
-
         {group.permissions.map(perm => {
           const granted = isSuperAdmin || activePerms.has(perm.key)
           const isSensitive = perm.sensitive
           const labelKey = PERM_LABEL_KEY_MAP[perm.key]
-          const label = labelKey ? t(labelKey, { defaultValue: perm.key }) : perm.key
+          const label = labelKey ? t(labelKey, { defaultValue: 'Quyền khác' }) : 'Quyền khác'
           const permId = `perm-${perm.key.replace(/[^a-z0-9]/gi, '-')}`
           const canEdit = editMode && !isSuperAdmin
           const requiredByKeys = requiredBy(perm.key, activePerms, catalog)
@@ -97,7 +85,7 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, onB
                   <span className="text-xs text-muted-foreground">
                     Bắt buộc bởi {requiredByKeys.map(key => {
                       const keyLabel = PERM_LABEL_KEY_MAP[key]
-                      return keyLabel ? t(keyLabel, { defaultValue: key }) : key
+                      return keyLabel ? t(keyLabel, { defaultValue: 'quyền liên quan' }) : 'quyền liên quan'
                     }).join(', ')}
                   </span>
                 ) : null}
@@ -105,7 +93,7 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, onB
                   <span className="basis-full text-xs text-muted-foreground">
                     Cần: {perm.requires.map(key => {
                       const keyLabel = PERM_LABEL_KEY_MAP[key]
-                      return keyLabel ? t(keyLabel, { defaultValue: key }) : key
+                      return keyLabel ? t(keyLabel, { defaultValue: 'quyền liên quan' }) : 'quyền liên quan'
                     }).join(', ')}
                   </span>
                 ) : null}

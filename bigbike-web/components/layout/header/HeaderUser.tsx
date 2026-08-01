@@ -1,7 +1,7 @@
 "use client";
 
 import { LogOut, UserCircle } from "lucide-react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import type { Locale } from "@/i18n/locale";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import { cn } from "@/lib/utils";
-import { toAccountPath, toLoginPath, toRegisterPath } from "@/lib/utils/routes";
+import { toAccountPath, toHomePath, toLoginPath, toRegisterPath } from "@/lib/utils/routes";
 import { iconBtn } from "@/lib/ui-classes";
 
 export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
@@ -63,7 +63,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
     closeMenu();
     await performLogout();
     setLoggingOut(false);
-    router.push("/");
+    router.push(toHomePath(locale));
     router.refresh();
   }
 
@@ -75,7 +75,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
             <div className="flex items-center gap-3">
               <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />
               <div>
-                <p className="m-0! font-cta text-a4-content font-semibold uppercase text-white">HEY YO! <span>{displayName}</span></p>
+                <p className="m-0! font-cta text-b4-action font-semibold uppercase text-white">{t("greeting")} <span>{displayName}</span></p>
                 <Link href={toAccountPath(locale)} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
               </div>
             </div>

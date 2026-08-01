@@ -4,8 +4,11 @@
 // backend and a small in-process cache.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveLocale } from "./i18n/locale";
-import { getLocalizedRoute } from "./lib/utils/routes";
+import createMiddleware from "next-intl/middleware";
+import { routing } from "./i18n/routing";
+import { translatePath } from "./lib/utils/routes";
+
+const handleI18nRouting = createMiddleware(routing);
 
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
@@ -155,7 +158,6 @@ function isLoop(currentPath: string, target: string): boolean {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
-  const search = request.nextUrl.search;
 
   if (pathname === REDIRECT_CACHE_CLEAR_PATH || pathname === `${REDIRECT_CACHE_CLEAR_PATH}/`) {
     if (request.method !== "POST") {
@@ -169,66 +171,61 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ cleared: true, entries });
   }
 
-  // 1. Get locale from cookie NEXT_LOCALE
-  const localeCookie = request.cookies.get("NEXT_LOCALE")?.value;
-  const locale = resolveLocale(localeCookie);
-
-  // 2. Check the localized route mapping
-  const result = getLocalizedRoute(pathname + search, locale);
-
-  if (result.action === "redirect") {
-    const url = request.nextUrl.clone();
-    url.pathname = result.url.split("?")[0];
-    const searchPart = result.url.includes("?") ? result.url.slice(result.url.indexOf("?")) : "";
-    url.search = searchPart;
-    return NextResponse.redirect(url, 307);
+  const locale = pathname === "/en" || pathname.startsWith("/en/") ? "en" : "vi";
+  const firstSegment = pathname.split("/").filter(Boolean)[0]?.toLowerCase();
+  if (firstSegment && /^[a-z]{2}$/.test(firstSegment) && !["vi", "en", "sp"].includes(firstSegment)) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    });
   }
 
-  let currentPathname = pathname;
-  let isRewritten = false;
-  let rewriteUrl: URL | null = null;
-
-  if (result.action === "rewrite") {
-    isRewritten = true;
-    rewriteUrl = request.nextUrl.clone();
-    rewriteUrl.pathname = result.url.split("?")[0];
-    const searchPart = result.url.includes("?") ? result.url.slice(result.url.indexOf("?")) : "";
-    rewriteUrl.search = searchPart;
-    currentPathname = rewriteUrl.pathname;
+  // Vietnamese is canonical without a prefix. Normalize /vi in one permanent
+  // hop while retaining query parameters and hashes from the requested URL.
+  if (pathname === "/vi" || pathname.startsWith("/vi/")) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = translatePath(pathname, "vi").split(/[?#]/)[0];
+    return NextResponse.redirect(destination, 308);
   }
 
-  const forward = () => {
-    if (isRewritten && rewriteUrl) {
-      return NextResponse.rewrite(rewriteUrl);
-    }
-    return NextResponse.next();
-  };
+  // Migrate the former unprefixed English URLs to the canonical /en namespace.
+  const oldEnglishRoots = new Set([
+    "products", "categories", "news", "cart", "order", "orders", "account",
+    "login", "register", "forgot-password", "verify-email", "search", "contact",
+    "about", "policy", "guide",
+  ]);
+  if (firstSegment && oldEnglishRoots.has(firstSegment) && locale === "vi") {
+    const destination = request.nextUrl.clone();
+    destination.pathname = translatePath(pathname, "en").split(/[?#]/)[0];
+    return NextResponse.redirect(destination, 301);
+  }
 
   if (
-    currentPathname !== "/" &&
-    !currentPathname.endsWith("/") &&
-    !currentPathname.includes(".")
+    pathname !== "/" &&
+    !pathname.endsWith("/") &&
+    !pathname.includes(".")
   ) {
     const destination = new URL(request.url);
-    destination.pathname = `${currentPathname}/`;
+    destination.pathname = `${pathname}/`;
     return NextResponse.redirect(destination.toString(), 308);
   }
 
-  // Auth protection: /tai-khoan/* requires bb_session cookie
-  if (currentPathname.startsWith("/tai-khoan")) {
+  const viPathname = translatePath(pathname, "vi").split(/[?#]/)[0];
+
+  // Auth protection preserves the requested locale and complete return URL.
+  if (viPathname.startsWith("/tai-khoan/")) {
     const sessionCookie = request.cookies.get("bb_session");
     if (!sessionCookie?.value) {
-      const loginUrl = new URL("/dang-nhap", request.url);
-      loginUrl.searchParams.set("tiep", currentPathname);
+      const loginUrl = new URL(translatePath("/dang-nhap/", locale), request.url);
+      loginUrl.searchParams.set("tiep", `${pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
     }
   }
 
-
-  if (currentPathname === "/" && request.nextUrl.searchParams.has("s")) {
+  if ((pathname === "/" || pathname === "/en/") && request.nextUrl.searchParams.has("s")) {
     const query = request.nextUrl.searchParams.get("s")?.trim() ?? "";
     if (query.length > 0) {
-      const destination = new URL("/tim-kiem/", request.url);
+      const destination = new URL(translatePath("/tim-kiem/", locale), request.url);
       destination.searchParams.set("q", query);
 
       const postType = request.nextUrl.searchParams.get("post_type")?.trim().toLowerCase();
@@ -240,16 +237,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const rule = await lookupRedirect(currentPathname);
-  if (!rule) return forward();
+  const rule = await lookupRedirect(viPathname);
+  if (!rule) return handleI18nRouting(request);
 
-  if (isLoop(currentPathname, rule.target)) {
-    return forward();
+  if (isLoop(viPathname, rule.target)) {
+    return handleI18nRouting(request);
   }
 
-  const destination = rule.target.startsWith("/")
-    ? new URL(rule.target, request.url)
+  const localizedTarget = rule.target.startsWith("/")
+    ? translatePath(rule.target, locale)
+    : rule.target;
+  const destination = localizedTarget.startsWith("/")
+    ? new URL(localizedTarget, request.url)
     : new URL(rule.target);
+  if (!destination.search && request.nextUrl.search) {
+    destination.search = request.nextUrl.search;
+  }
 
   // Fire-and-forget: increment hit counter; response is already prepared.
   void recordHit(rule.redirectId);
@@ -259,6 +262,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|sitemap_index.xml|robots.txt|wp-content).*)",
+    // Locale routing only applies to document URLs. Public assets, media and
+    // metadata files must retain their original paths instead of being rewritten
+    // beneath /vi or /en.
+    "/((?!api|_next|_vercel|.*\\..*).*)",
   ],
 };

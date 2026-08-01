@@ -225,72 +225,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     })
   }
 
-  // P2-8: cấp / bỏ cả nhóm quyền trong 1 chạm. Cấp: bật hết quyền THƯỜNG ngay; quyền
-  // NHẠY CẢM chưa bật thì để admin bật riêng (giữ xác nhận từng cái — an toàn). Bỏ: gỡ
-  // hết, nhưng KHÔNG gỡ quyền tự-bảo-vệ khỏi role của chính mình (tránh tự khoá).
-  async function handleGroupBulk(group, grant) {
-    if (!editMode || !draft) return
-    const keys = group.permissions.map(p => p.key)
-    if (grant) {
-      const nonSensitive = keys.filter(k => !SENSITIVE_PERMS.has(k))
-      const sensitiveLeft = keys.filter(k => SENSITIVE_PERMS.has(k) && !draft.has(k))
-      const requested = new Set(draft)
-      nonSensitive.forEach(k => requested.add(k))
-      const closed = closePermissionDependencies(requested, catalog)
-      const dependenciesAdded = [...closed.permissions].filter(key => !requested.has(key) && !draft.has(key))
-      setDraft(closed.permissions)
-      setAutoAdded(prev => {
-        const next = new Set(prev)
-        nonSensitive.forEach(key => next.delete(key))
-        dependenciesAdded.forEach(key => next.add(key))
-        return next
-      })
-      if (sensitiveLeft.length > 0) {
-        setToast({
-          kind: 'info',
-          msg: t('roles.groupSensitiveSkipped', {
-            count: sensitiveLeft.length,
-            defaultValue: 'Đã cấp các quyền thường. {{count}} quyền nhạy cảm cần bật riêng để xác nhận.',
-          }),
-        })
-      }
-    } else {
-      const removals = new Set()
-      keys.filter(key => draft.has(key)).forEach(key => {
-        dependentClosure(key, draft, catalog).forEach(dependent => removals.add(dependent))
-      })
-      const keptSelf = isOwnRole && [...removals].some(k => SELF_PROTECTED_PERMS.has(k))
-      if (isOwnRole) SELF_PROTECTED_PERMS.forEach(key => removals.delete(key))
-      const crossGroup = [...removals].filter(key => !keys.includes(key))
-      if (crossGroup.length > 0) {
-        const confirmed = await showConfirm(
-          `Bỏ nhóm này cũng sẽ gỡ các quyền phụ thuộc: ${crossGroup.map(key => permLabels[key] || key).join(', ')}.`,
-          'Bỏ nhóm quyền?',
-          { variant: 'danger', confirmLabel: 'Gỡ các quyền' },
-        )
-        if (!confirmed) return
-      }
-      setDraft(prev => {
-        const next = new Set(prev)
-        removals.forEach(key => next.delete(key))
-        return next
-      })
-      setAutoAdded(prev => {
-        const next = new Set(prev)
-        removals.forEach(key => next.delete(key))
-        return next
-      })
-      if (keptSelf) {
-        setToast({
-          kind: 'info',
-          msg: t('roles.selfLockoutKept', {
-            defaultValue: 'Đã giữ lại quyền quản lý phân quyền của chính bạn để tránh tự khoá.',
-          }),
-        })
-      }
-    }
-  }
-
   function handleConfirmSensitive() {
     if (pendingToggle) void applyToggle(pendingToggle.key)
     setPendingToggle(null)
@@ -508,7 +442,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
                 onCancelEdit={handleCancelEdit}
                 onRequestSave={handleRequestSave}
                 onToggle={handleToggle}
-                onToggleGroup={handleGroupBulk}
                 onDeleteRole={() => handleRequestDelete(selected)}
               />
             ) : (

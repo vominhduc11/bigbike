@@ -339,7 +339,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
   return (
     <div className="mb-8 border border-border bg-white p-6 max-w-xl">
-      <h3 className="m-0 mb-2 font-cta text-a3-section font-bold uppercase tracking-wide text-brand">
+      <h3 className="m-0 mb-2 font-body text-a3-section font-bold text-brand">
         {isEn ? "Apparel Size Calculator" : "Công cụ tính size trang phục bảo hộ"}
       </h3>
       <p className="m-0 mb-6 text-a5-meta text-muted-foreground leading-relaxed">
@@ -383,7 +383,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label htmlFor="ao-nguc" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="ao-nguc" className="mb-1 block font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Chest circumference (cm)" : "Vòng ngực (cm)"}
               </label>
               <Input
@@ -391,15 +391,15 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 type="number"
                 value={aoNguc}
                 onChange={(e) => setAoNguc(e.target.value)}
-                placeholder="e.g. 92"
+                placeholder={isEn ? "e.g. 92" : "VD: 92"}
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+              <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Widest part, breathe normally" : "Qua phần rộng nhất, thở bình thường"}
               </p>
             </div>
             <div>
-              <label htmlFor="ao-eo" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="ao-eo" className="mb-1 block font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Waist circumference (cm)" : "Vòng eo (cm)"}
               </label>
               <Input
@@ -407,10 +407,10 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 type="number"
                 value={aoEo}
                 onChange={(e) => setAoEo(e.target.value)}
-                placeholder="e.g. 78"
+                placeholder={isEn ? "e.g. 78" : "VD: 78"}
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+              <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Narrowest part, 2-3cm above navel" : "Phần nhỏ nhất, trên rốn 2–3cm"}
               </p>
             </div>
@@ -433,13 +433,13 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {aoResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
+              <div className="mb-1 font-cta text-b1-display font-bold uppercase leading-none text-brand">
                 {aoResult.size}
               </div>
               <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {aoResult.basis}
               </div>
-              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="mb-2 font-body text-a5-meta font-bold text-foreground">
                 {aoResult.note}
               </div>
               <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
@@ -466,7 +466,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label htmlFor="quan-hong" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="quan-hong" className="mb-1 block font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Hip circumference (cm)" : "Vòng hông (cm)"}
               </label>
               <Input
@@ -474,15 +474,15 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 type="number"
                 value={quanHong}
                 onChange={(e) => setQuanHong(e.target.value)}
-                placeholder="e.g. 92"
+                placeholder={isEn ? "e.g. 92" : "VD: 92"}
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+              <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Widest part of hips + buttocks" : "Qua phần rộng nhất của hông + mông"}
               </p>
             </div>
             <div>
-              <label htmlFor="quan-dui" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="quan-dui" className="mb-1 block font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Thigh circumference (cm)" : "Vòng đùi (cm)"}
               </label>
               <Input
@@ -490,10 +490,10 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 type="number"
                 value={quanDui}
                 onChange={(e) => setQuanDui(e.target.value)}
-                placeholder="e.g. 58"
+                placeholder={isEn ? "e.g. 58" : "VD: 58"}
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+              <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
                 {isEn ? "Thickest part of thigh, below groin" : "Phần to nhất của đùi, ngay dưới bẹn"}
               </p>
             </div>
@@ -516,13 +516,13 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {quanResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
+              <div className="mb-1 font-cta text-b1-display font-bold uppercase leading-none text-brand">
                 {quanResult.size}
               </div>
               <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {quanResult.basis}
               </div>
-              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="mb-2 font-body text-a5-meta font-bold text-foreground">
                 {isEn ? "RIDING PANTS" : "QUẦN GIÁP BẢO HỘ"}
               </div>
               <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
@@ -548,7 +548,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
       {activeTab === "gang" && (
         <div>
           <div className="mb-6">
-            <label htmlFor="gang-tay" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+            <label htmlFor="gang-tay" className="mb-1 block font-body text-a5-meta text-muted-foreground">
               {isEn ? "Hand circumference (cm)" : "Vòng bàn tay (cm)"}
             </label>
             <Input
@@ -556,10 +556,10 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
               type="number"
               value={gangTay}
               onChange={(e) => setGangTay(e.target.value)}
-              placeholder="e.g. 20"
+              placeholder={isEn ? "e.g. 20" : "VD: 20"}
               inputMode="numeric"
             />
-            <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+            <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
               {isEn
                 ? "Across knuckles of 4 fingers, excluding thumb, fingers naturally relaxed"
                 : "Qua gốc 4 ngón, không tính ngón cái, bàn tay xòe tự nhiên"}
@@ -583,13 +583,13 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {gangResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
+              <div className="mb-1 font-cta text-b1-display font-bold uppercase leading-none text-brand">
                 {gangResult.size}
               </div>
               <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {gangResult.basis}
               </div>
-              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="mb-2 font-body text-a5-meta font-bold text-foreground">
                 {gangResult.note}
               </div>
               <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
@@ -615,7 +615,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
       {activeTab === "giay" && (
         <div>
           <div className="mb-6">
-            <label htmlFor="giay-mm" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+            <label htmlFor="giay-mm" className="mb-1 block font-body text-a5-meta text-muted-foreground">
               {isEn ? "Foot length (mm)" : "Chiều dài bàn chân (mm)"}
             </label>
             <Input
@@ -623,10 +623,10 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
               type="number"
               value={giayMm}
               onChange={(e) => setGiayMm(e.target.value)}
-              placeholder="e.g. 260"
+              placeholder={isEn ? "e.g. 260" : "VD: 260"}
               inputMode="numeric"
             />
-            <p className="m-0 mt-1 text-b5-label text-muted-foreground">
+            <p className="m-0 mt-1 font-body text-a5-meta text-muted-foreground">
               {isEn
                 ? "From heel to longest toe. Measure both feet, use the larger value."
                 : "Từ gót đến đầu ngón dài nhất. Đo cả 2 chân, lấy số lớn hơn."}
@@ -650,13 +650,13 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {giayResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
+              <div className="mb-1 font-cta text-b1-display font-bold uppercase leading-none text-brand">
                 EU {giayResult.eu}
               </div>
               <div className="text-a5-meta text-muted-foreground mb-3 font-body">
                 {giayResult.basis}
               </div>
-              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-1 font-cta">
+              <div className="mb-1 font-body text-a5-meta font-bold text-foreground">
                 {isEn ? "Suggested riding boot size" : "Gợi ý giày bảo hộ"}
               </div>
               <div className="text-a4-content font-bold text-brand mb-4 font-body">

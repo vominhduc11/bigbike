@@ -115,7 +115,7 @@ const PROTECT: Bi[] = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand">
+    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">
       {children}
     </h2>
   );

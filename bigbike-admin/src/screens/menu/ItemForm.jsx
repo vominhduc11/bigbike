@@ -132,7 +132,7 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         />
       ) : categoryError ? (
         <p className="form-field-wide menu-form-hint menu-form-hint--warn" role="status">
-          {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập URL thủ công bên dưới.' })}
+          {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.' })}
         </p>
       ) : null}
 
@@ -158,7 +158,7 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         ) : value.url.trim() ? (
           urlInvalid && (
             <small id="menu-item-url-hint" className="menu-form-hint menu-form-hint--danger">
-              {t('menus.urlInvalid', { defaultValue: 'Lỗi: URL không hợp lệ. Ví dụ: /danh-muc/xe-may hoặc https://example.com' })}
+              {t('menus.urlInvalid', { defaultValue: 'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.' })}
             </small>
           )
         ) : (

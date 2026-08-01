@@ -584,11 +584,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const seoTitleVal = langValue('seoTitle')
   const seoDescVal = langValue('seoDescription')
   const seoChecks = [
-    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
-    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
-    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
+    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
+    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–160 ký tự' }) },
+    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
     { ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt') },
-    { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
+    { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
@@ -801,7 +801,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         onChange={(e) => handleEnSlugChange(e.target.value)}
                         onBlur={() => validateFieldOnBlur('translations.en.slug')}
                         disabled={isReadOnly}
-                        placeholder={t('content.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' })}
+                        placeholder={t('content.detail.slugPlaceholderEn', { defaultValue: 'duong-dan-tieng-anh' })}
                         className="font-mono"
                       />
                     </Field>
@@ -891,7 +891,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
                   {form.homeExperience && (
-                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
+                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm minh hoạ' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh sản phẩm hiển thị chồng lên ảnh bìa trong mục Góc trải nghiệm trên trang chủ.' })}>
                       <ImageUrlInput
                         value={form.productImageUrl}
                         onChange={(url) => updateField('productImageUrl', url)}
@@ -982,7 +982,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field
                     full
-                    label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
+                    label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
                     count={`${langValue('seoTitle').length} / 60`}
                     countWarn={langValue('seoTitle').length > 60}
                     error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
@@ -992,14 +992,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
                       onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
                       disabled={isReadOnly}
-                      placeholder={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
+                      placeholder={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
                       maxLength={255}
                     />
                   </Field>
 
                   <Field
                     full
-                    label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
+                    label={t('content.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
                     count={`${langValue('seoDescription').length} / 155`}
                     countWarn={langValue('seoDescription').length > 155}
                     error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
@@ -1011,14 +1011,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       disabled={isReadOnly}
                       rows={3}
                       maxLength={5000}
-                      placeholder={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
+                      placeholder={t('content.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
                     />
                   </Field>
 
                   <Field
                     full
-                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
-                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
+                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'Ảnh khi chia sẻ trên mạng xã hội' })}
+                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh dùng khi chia sẻ bài viết lên mạng xã hội, kích thước khuyến nghị 1200×630 điểm ảnh.' })}
                     error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
                   >
                     <ImageUrlInput
@@ -1038,7 +1038,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <div className="flex items-center justify-between mb-2">
                     <span className="flex items-center gap-1.5 text-sm font-semibold">
                       <Check size={14} aria-hidden="true" />
-                      {t('content.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
+                      {t('content.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
                     </span>
                     <span className="font-mono text-sm font-bold text-success">
                       {seoPassed} / {seoChecks.length}

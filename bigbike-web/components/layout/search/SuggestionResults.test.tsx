@@ -30,8 +30,8 @@ describe("SuggestionResults", () => {
     );
 
     expect(screen.getByRole("option", { name: /Motorcycle Helmet/i }))
-      .toHaveAttribute("href", "/product/motorcycle-helmet");
+      .toHaveAttribute("href", "/en/products/motorcycle-helmet");
     expect(screen.getByRole("option", { name: /How to choose a helmet/i }))
-      .toHaveAttribute("href", "/news/how-to-choose-a-helmet");
+      .toHaveAttribute("href", "/en/news/how-to-choose-a-helmet");
   });
 });

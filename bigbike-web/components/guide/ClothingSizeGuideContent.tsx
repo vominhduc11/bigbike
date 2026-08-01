@@ -193,7 +193,7 @@ const PANTS_ROWS = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 mt-8 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand first:mt-0">
+    <h2 className="mb-4 mt-8 font-body text-a2-page font-bold leading-title text-brand first:mt-0">
       {children}
     </h2>
   );
@@ -214,7 +214,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {GLOVE_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -252,7 +252,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {BOOT_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -295,7 +295,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {JACKET_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -336,7 +336,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {PANTS_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />

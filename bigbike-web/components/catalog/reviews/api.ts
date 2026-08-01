@@ -36,6 +36,7 @@ export async function fetchReviewsPage(
   rating: number | null,
   sort: SortKey,
   errorFallback: string,
+  lang?: string,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -43,6 +44,7 @@ export async function fetchReviewsPage(
     sort,
   });
   if (rating) params.set("rating", String(rating));
+  if (lang) params.set("lang", lang);
   const res = await fetch(`/api/products/${productId}/reviews/?${params.toString()}`);
   const payload = (await res.json().catch(() => null)) as ReviewsData | { error?: string } | null;
 

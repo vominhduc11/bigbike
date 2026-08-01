@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,16 +31,17 @@ type ReviewsSectionProps = {
 };
 
 export function ReviewsSection({ productId }: ReviewsSectionProps) {
+  const locale = useLocale();
   const t = useTranslations("Product.reviews");
   const sectionRef = useRef<HTMLElement>(null);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>("newest");
   const [page, setPage] = useState(1);
-  const queryKey = ["product-reviews", productId, ratingFilter, sort, page] as const;
+  const queryKey = ["product-reviews", productId, locale, ratingFilter, sort, page] as const;
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey,
-    queryFn: () => fetchReviewsPage(productId, page, ratingFilter, sort, t("errorLoad")),
+    queryFn: () => fetchReviewsPage(productId, page, ratingFilter, sort, t("errorLoad"), locale),
     // Keep the previous page visible while the next one loads so the list and
     // summary don't flash back to the skeleton on every page/filter/sort switch.
     placeholderData: keepPreviousData,

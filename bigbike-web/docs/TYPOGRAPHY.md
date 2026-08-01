@@ -16,16 +16,16 @@ Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbik
 
 | Nhóm | Vai trò | Phông cố định | Mobile `<768px` | Desktop `≥768px` | Dùng cho |
 |---|---|---|---:|---:|---|
-| B1 | Trang trí / Display | Barlow Condensed, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
-| B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 30px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
-| B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 16px | 18px | Nhãn “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 16px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
-| B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
-| A1 | Tiêu đề lớn H1 | Arial / Helvetica | 26px | 32px | Tiêu đề khối lớn; tên và giá lớn trên trang sản phẩm |
-| A2 | Tiêu đề trang H2 | Arial / Helvetica | 20px | 24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
-| A3 | Tiêu đề khối H3 | Arial / Helvetica | 18px | 20px | Tiêu đề khối trong trang, hộp thoại, sidebar |
-| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 16px | 18px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
-| A5 | Chú thích / Meta | Arial / Helvetica | 13px | 14px | Breadcrumb, phụ đề, nhãn form, giá phụ/giá gạch, bộ đếm |
+| B1 | Trang trí / Display | Barlow Condensed, IN HOA | 32px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
+| B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 32px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
+| B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 18px | 20px | Nhãn “-20%”, nhãn giảm giá nổi bật |
+| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 18px | 20px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
+| B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 12px | 14px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
+| A1 | Tiêu đề lớn H1 | Arial / Helvetica | 28px | 32px | Tiêu đề khối lớn; tên và giá lớn trên trang sản phẩm |
+| A2 | Tiêu đề trang H2 | Arial / Helvetica | 22px | 26px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
+| A3 | Tiêu đề khối H3 | Arial / Helvetica | 20px | 22px | Tiêu đề khối trong trang, hộp thoại, sidebar |
+| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 18px | 20px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
+| A5 | Chú thích / Meta | Arial / Helvetica | 14px | 16px | Breadcrumb, phụ đề, nhãn form, giá phụ/giá gạch, bộ đếm |
 | D | Trang trí nền | Phông tại thành phần | `clamp()` | `clamp()` | Chỉ số “404” mờ trong `app/not-found.tsx` |
 
 Giá được phân nhóm theo cấp độ nơi hiển thị: giá lớn trên trang sản phẩm = A1; tổng tiền giỏ hàng = A2 hoặc A3; giá trong một dòng = A4; giá trên card = A5.
@@ -35,19 +35,19 @@ Giá được phân nhóm theo cấp độ nơi hiển thị: giá lớn trên t
 Mười token dưới đây là nguồn cỡ chữ duy nhất. Giá trị mobile khai báo tại `:root`; mỗi token đổi đúng một lần trong `@media (min-width: 768px)`.
 
 ```css
---bb-text-b1-display: 1.875rem;  /* 30px → 40px */
---bb-text-b2-contact: 1.5rem;    /* 24px → 30px */
---bb-text-b3-promo: 1rem;        /* 16px → 18px */
---bb-text-b4-action: 1rem;       /* 16px → 16px */
---bb-text-b5-label: 0.6875rem;   /* 11px → 12px */
---bb-text-a1-title: 1.625rem;     /* 26px → 32px */
---bb-text-a2-page: 1.25rem;       /* 20px → 24px */
---bb-text-a3-section: 1.125rem;   /* 18px → 20px */
---bb-text-a4-content: 1rem;       /* 16px → 18px */
---bb-text-a5-meta: 0.8125rem;     /* 13px → 14px */
+--bb-text-b1-display: 2rem;       /* 32px → 40px */
+--bb-text-b2-contact: 1.5rem;     /* 24px → 32px */
+--bb-text-b3-promo: 1.125rem;     /* 18px → 20px */
+--bb-text-b4-action: 1.125rem;    /* 18px → 20px */
+--bb-text-b5-label: 0.75rem;      /* 12px → 14px */
+--bb-text-a1-title: 1.75rem;      /* 28px → 32px */
+--bb-text-a2-page: 1.375rem;      /* 22px → 26px */
+--bb-text-a3-section: 1.25rem;    /* 20px → 22px */
+--bb-text-a4-content: 1.125rem;   /* 18px → 20px */
+--bb-text-a5-meta: 0.875rem;      /* 14px → 16px */
 ```
 
-`body` và mọi ô nhập dùng A4. Cỡ mobile 16px bảo đảm trình duyệt iOS không tự phóng to khi người dùng nhập liệu.
+`body` và mọi ô nhập dùng A4. Cỡ mobile 18px bảo đảm trình duyệt iOS không tự phóng to khi người dùng nhập liệu.
 
 ## 4. Tailwind v4 utilities — `app/globals.css`
 
@@ -79,15 +79,11 @@ Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành
 Barlow Condensed được self-host bằng `next/font` trong `app/fonts.ts`. Arial/Helvetica dùng font hệ thống. Cả hai hỗ trợ tiếng Việt.
 
 ```css
---bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
---bb-font-heading: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
 --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
---bb-font-link: Arial, Helvetica, "Helvetica Neue", sans-serif;
---bb-font-cta: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
---bb-font-nav: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
+--bb-font-cta: var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
 ```
 
-Việc chuẩn hoá này chỉ đổi cỡ chữ. Không tự ý đổi phông đang dùng tại từng thành phần ngoài phạm vi nhiệm vụ.
+`font-body` là alias bắt buộc cho nhóm A; `font-cta` là alias bắt buộc cho nhóm B. Khi chuẩn hoá một thành phần, phải sửa cả cỡ chữ và phông để khớp nhóm ngữ nghĩa; không giữ alias phông cũ nếu alias đó làm sai bảng canonical.
 
 ## 7. Kiểm tra trước khi hoàn thành
 

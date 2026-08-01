@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { cn } from "@/lib/utils";
 
 export type PolicySidebarItem = {

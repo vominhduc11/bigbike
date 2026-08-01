@@ -17,7 +17,7 @@ function useRoleLabel(role, t) {
   const match = cfg?.roles?.find((r) => r.id === role)
   if (match) return match.name
   if (role === 'content') return t('products.detail.assign.roleContent', { defaultValue: 'Content' })
-  if (role === 'seo') return t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
+  if (role === 'seo') return t('products.detail.assign.roleSeo', { defaultValue: 'Tìm kiếm' })
   if (role === 'manager') return t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
   return ''
 }

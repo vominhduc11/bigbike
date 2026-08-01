@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/utils/format";
 
 const SIZE_CLASSES = {
-  sm: "h-8 w-8 text-b5-label",
-  md: "h-10 w-10 text-a4-content",
-  lg: "h-14 w-14 text-a3-section",
+  sm: "h-8 w-8 font-cta text-b5-label uppercase",
+  md: "h-10 w-10 font-body text-a4-content",
+  lg: "h-14 w-14 font-body text-a3-section",
 } as const;
 
 const SIZE_PX = { sm: 32, md: 40, lg: 56 } as const;
@@ -48,7 +48,7 @@ export function Avatar({ url, name, size = "md", variant = "neutral", className 
     <span
       aria-hidden="true"
       className={cn(
-        "flex shrink-0 items-center justify-center font-body font-semibold",
+        "flex shrink-0 items-center justify-center font-semibold",
         SIZE_CLASSES[size],
         variant === "brand"
           ? "rounded-full bb-account-avatar bg-brand text-white"

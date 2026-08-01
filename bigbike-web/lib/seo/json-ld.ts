@@ -14,6 +14,7 @@ import {
 import { stripHtmlToText } from "@/lib/utils/text";
 
 type JsonLdObject = Record<string, unknown>;
+type SeoLocale = "vi" | "en";
 
 const DEFAULT_ORG_LOGO_PATH = "/wp/logo.png";
 
@@ -40,7 +41,8 @@ export function serializeJsonLd(data: JsonLdObject): string {
 }
 
 export function buildProductJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
-  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug));
+  const locale = localeFromPath(canonicalPathOverride);
+  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug, locale));
   const images = collectProductImages(product);
   const priceCurrency = product.price?.currency ?? "VND";
   const offers = buildProductOffers(product, canonicalUrl, priceCurrency);
@@ -61,6 +63,7 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
       : undefined,
     category: isPublicProductCategory(primaryCategory) ? primaryCategory.name : undefined,
     url: canonicalUrl,
+    inLanguage: locale,
     offers,
     // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
     // bao giờ khai khống — vi phạm guideline Google (checklist #23).
@@ -112,7 +115,8 @@ export function buildArticleJsonLd(
   publisherLogoPath = DEFAULT_ORG_LOGO_PATH,
   canonicalPathOverride?: string,
 ): JsonLdObject {
-  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug));
+  const locale = localeFromPath(canonicalPathOverride);
+  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug, locale));
   const images = article.coverImage?.url ? [article.coverImage.url] : [];
 
   return {
@@ -126,17 +130,19 @@ export function buildArticleJsonLd(
     dateModified: article.updatedAt,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
+    inLanguage: locale,
     publisher: buildPublisher(publisherName, publisherLogoPath),
   };
 }
 
 export function buildBreadcrumbJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
+  const locale = localeFromPath(canonicalPathOverride);
   const primaryCategory = product.category ?? product.categories?.[0];
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
-      name: "Trang chủ",
-      item: toCanonicalUrl(toHomePath()),
+      name: locale === "en" ? "Home" : "Trang chủ",
+      item: toCanonicalUrl(toHomePath(locale)),
     },
   ];
 
@@ -146,20 +152,20 @@ export function buildBreadcrumbJsonLd(product: Product, canonicalPathOverride?: 
     items.push({
       position: items.length + 1,
       name: product.brand.name,
-      item: toCanonicalUrl(toBrandPath(product.brand.slug)),
+      item: toCanonicalUrl(toBrandPath(product.brand.slug, locale)),
     });
   } else if (isPublicProductCategory(primaryCategory)) {
     items.push({
       position: items.length + 1,
       name: primaryCategory.name,
-      item: toCanonicalUrl(toCategoryPath(primaryCategory.slug)),
+      item: toCanonicalUrl(toCategoryPath(locale === "en" ? primaryCategory.slugEn?.trim() || primaryCategory.slug : primaryCategory.slug, locale)),
     });
   }
 
   items.push({
     position: items.length + 1,
     name: product.name,
-    item: toCanonicalUrl(canonicalPathOverride ?? toProductPath(product.slug)),
+    item: toCanonicalUrl(canonicalPathOverride ?? toProductPath(product.slug, locale)),
   });
 
   return {
@@ -186,23 +192,24 @@ function isPublicProductCategory(
 }
 
 export function buildArticleBreadcrumbJsonLd(article: Article, canonicalPathOverride?: string): JsonLdObject {
+  const locale = localeFromPath(canonicalPathOverride);
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
-      name: "Trang chủ",
-      item: toCanonicalUrl(toHomePath()),
+      name: locale === "en" ? "Home" : "Trang chủ",
+      item: toCanonicalUrl(toHomePath(locale)),
     },
     {
       position: 2,
-      name: "Tin tức",
-      item: toCanonicalUrl(toArticleListPath()),
+      name: locale === "en" ? "News" : "Tin tức",
+      item: toCanonicalUrl(toArticleListPath(locale)),
     },
   ];
 
   items.push({
     position: items.length + 1,
     name: article.title,
-    item: toCanonicalUrl(canonicalPathOverride ?? toArticlePath(article.slug)),
+    item: toCanonicalUrl(canonicalPathOverride ?? toArticlePath(article.slug, locale)),
   });
 
   return {
@@ -220,18 +227,19 @@ export function buildCategoryBreadcrumbJsonLd(
   parent?: Category | null,
   canonicalPathOverride?: string,
 ): JsonLdObject {
+  const locale = localeFromPath(canonicalPathOverride);
   const items: Array<{ "@type": "ListItem"; position: number; name: string; item: string }> = [
     {
       "@type": "ListItem",
       position: 1,
-      name: "Trang chủ",
-      item: toCanonicalUrl(toHomePath()),
+      name: locale === "en" ? "Home" : "Trang chủ",
+      item: toCanonicalUrl(toHomePath(locale)),
     },
     {
       "@type": "ListItem",
       position: 2,
-      name: "Sản phẩm",
-      item: toCanonicalUrl(toProductListPath()),
+      name: locale === "en" ? "Products" : "Sản phẩm",
+      item: toCanonicalUrl(toProductListPath(locale)),
     },
   ];
 
@@ -241,7 +249,7 @@ export function buildCategoryBreadcrumbJsonLd(
       position: 3,
       name: parent.name,
       item: toCanonicalUrl(
-        normalizeStorefrontUrl(parent.seo?.canonicalUrl ?? toCategoryPath(parent.slug)),
+        toCategoryPath(locale === "en" ? parent.slugEn?.trim() || parent.slug : parent.slug, locale),
       ),
     });
   }
@@ -252,7 +260,7 @@ export function buildCategoryBreadcrumbJsonLd(
     name: category.name,
     item: toCanonicalUrl(
       normalizeStorefrontUrl(
-        canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug),
+        canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug, locale),
       ),
     ),
   });
@@ -264,7 +272,8 @@ export function buildCategoryBreadcrumbJsonLd(
   };
 }
 
-export function buildBrandBreadcrumbJsonLd(brand: Brand): JsonLdObject {
+export function buildBrandBreadcrumbJsonLd(brand: Brand, canonicalPathOverride?: string): JsonLdObject {
+  const locale = localeFromPath(canonicalPathOverride);
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -272,31 +281,32 @@ export function buildBrandBreadcrumbJsonLd(brand: Brand): JsonLdObject {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Trang chủ",
-        item: toCanonicalUrl(toHomePath()),
+        name: locale === "en" ? "Home" : "Trang chủ",
+        item: toCanonicalUrl(toHomePath(locale)),
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Thương hiệu",
-        item: toCanonicalUrl(toBrandListPath()),
+        name: locale === "en" ? "Brands" : "Thương hiệu",
+        item: toCanonicalUrl(toBrandListPath(locale)),
       },
       {
         "@type": "ListItem",
         position: 3,
         name: brand.name,
-        item: toCanonicalUrl(brand.seo?.canonicalUrl ?? toBrandPath(brand.slug)),
+        item: toCanonicalUrl(canonicalPathOverride ?? toBrandPath(brand.slug, locale)),
       },
     ],
   };
 }
 
-export function buildWebSiteJsonLd(siteName: string, searchPath = "/tim-kiem/"): JsonLdObject {
+export function buildWebSiteJsonLd(siteName: string, searchPath = "/tim-kiem/", locale: SeoLocale = "vi"): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: siteName,
-    url: toCanonicalUrl(toHomePath()),
+    url: toCanonicalUrl(toHomePath(locale)),
+    inLanguage: locale,
     potentialAction: {
       "@type": "SearchAction",
       target: `${toCanonicalUrl(searchPath)}?q={search_term_string}`,
@@ -305,12 +315,12 @@ export function buildWebSiteJsonLd(siteName: string, searchPath = "/tim-kiem/"):
   };
 }
 
-export function buildOrganizationJsonLd(siteName: string, logoPath: string): JsonLdObject {
+export function buildOrganizationJsonLd(siteName: string, logoPath: string, locale: SeoLocale = "vi"): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteName,
-    url: toCanonicalUrl(toHomePath()),
+    url: toCanonicalUrl(toHomePath(locale)),
     logo: toCanonicalUrl(logoPath),
   };
 }
@@ -327,6 +337,7 @@ export function buildLocalBusinessJsonLd(
     foundingDate?: string;
     areaServed?: string;
     priceRange?: string;
+    locale?: SeoLocale;
   } = {},
 ): JsonLdObject {
   const result: JsonLdObject = {
@@ -334,7 +345,7 @@ export function buildLocalBusinessJsonLd(
     "@type": "LocalBusiness",
     name,
     logo: toCanonicalUrl(logo),
-    url: toCanonicalUrl(toHomePath()),
+    url: toCanonicalUrl(toHomePath(opts.locale ?? "vi")),
   };
   if (address) result.address = address;
   if (phone) result.telephone = phone;
@@ -347,6 +358,10 @@ export function buildLocalBusinessJsonLd(
   // CỐ Ý không khai aggregateRating ở đây: shop chưa có review thật trên hệ thống,
   // khai khống số sao vi phạm guideline Google. Chỉ thêm khi có dữ liệu thật.
   return result;
+}
+
+function localeFromPath(path?: string): SeoLocale {
+  return path === "/en" || path?.startsWith("/en/") ? "en" : "vi";
 }
 
 function collectProductImages(product: Product): string[] {

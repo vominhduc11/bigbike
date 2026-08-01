@@ -1,9 +1,6 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicProductList } from "@/lib/api/client-api";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import type { Product } from "@/lib/contracts/public";
 
@@ -14,23 +11,7 @@ import type { Product } from "@/lib/contracts/public";
  */
 export function HomeFeaturedProducts({ initialProducts }: { initialProducts: Product[] }) {
   const locale = useLocale();
-  const isAlt = locale !== DEFAULT_LOCALE;
-
-  const { data } = useQuery({
-    queryKey: ["home-featured", locale],
-    queryFn: () =>
-      fetchPublicProductList({
-        page: 1,
-        size: 12,
-        sort: "homepageOrder:asc",
-        homepageBlock: "FEATURED_GRID",
-        lang: locale,
-      }).then((r) => r.data),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const products = isAlt && data && data.length > 0 ? data : initialProducts;
+  const products = initialProducts;
   if (products.length === 0) return null;
 
   return <ProductSwiper key={locale} products={products} />;

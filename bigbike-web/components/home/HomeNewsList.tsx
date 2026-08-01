@@ -1,9 +1,5 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicArticleList } from "@/lib/api/client-api";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
@@ -17,18 +13,7 @@ import type { Article } from "@/lib/contracts/public";
  * thì refetch bài mới nhất (category tin-tuc) theo lang ở client.
  */
 export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }) {
-  const locale = useLocale();
-  const isAlt = locale !== DEFAULT_LOCALE;
-
-  const { data } = useQuery({
-    queryKey: ["home-news", locale],
-    queryFn: () =>
-      fetchPublicArticleList({ page: 1, size: 3, category: "tin-tuc", lang: locale }).then((r) => r.data),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const newsArticles = isAlt && data && data.length > 0 ? data : initialArticles;
+  const newsArticles = initialArticles;
   if (newsArticles.length === 0) return null;
 
   return (
@@ -45,7 +30,7 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
                 </div>
                 <div className="relative">
                   <div className="absolute -top-5 left-0 flex h-10 items-stretch">
-                    <p className="m-0 bg-brand pl-5 pr-2 font-body text-b5-label font-semibold uppercase leading-10 text-white"><LocalDate value={a.publishedAt ?? a.createdAt} dateStyle="slash" /></p>
+                    <p className="m-0 bg-brand pl-5 pr-2 font-cta text-b5-label font-semibold uppercase leading-10 text-white"><LocalDate value={a.publishedAt ?? a.createdAt} dateStyle="slash" /></p>
                     <span className="-ml-2 block w-6 skew-x-[-20deg] bg-brand" aria-hidden="true" />
                   </div>
                   <div className="px-5 pb-8 pt-10">

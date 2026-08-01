@@ -185,16 +185,16 @@ export function MobilePdpAnchorNav({
       // lọt ra desktop (chỉ được phép xuất hiện ở mobile). `top` đặt runtime bằng mép dưới
       // header thật (style inline), CSS var chỉ là fallback frame đầu. Hiệu ứng reveal:
       // thanh TRƯỢT XUỐNG TỪ SAU HEADER (-translate-y-full → 0) kèm fade. Header WP là nền
-      // ĐEN ĐẶC, z-index:10 (xem quy tắc header tương ứng trong app/globals.css).
-      // → thanh PHẢI có z THẤP HƠN 10 (đặt `z-[9]`) để chui SAU header và bị header che kín
+      // ĐEN ĐẶC, z-index dùng token header (xem quy tắc header tương ứng trong app/globals.css).
+      // → thanh PHẢI thấp hơn header đúng 1 lớp để chui SAU header và bị header che kín
       // khi trượt. Trước đây để `z-40` (cao hơn header) nên thanh ĐÈ LÊN header, lúc trượt/
       // lúc header headroom đang slide thì hở ra cảnh chồng chữ lên logo/menu — KHÔNG dùng lại.
-      // z-[9] vẫn nổi trên nội dung trang (nội dung không tạo stacking context cao).
+      // z thấp hơn header vẫn nổi trên nội dung trang (nội dung không tạo stacking context cao).
       // Easing ease-out-expo (cubic-bezier .16,1,.3,1) giảm tốc mượt, 300ms; will-change
       // để GPU lo transform. Lúc ẩn dùng pointer-events-none để không chặn tương tác bên
       // dưới. Tôn trọng prefers-reduced-motion (tắt transition → hiện tức thì, không trượt).
       className={cn(
-        "bb-pdp-anchor-nav flex flex-nowrap whitespace-nowrap md:!hidden top-[var(--bb-header-height)] z-[9]",
+        "bb-pdp-anchor-nav flex flex-nowrap whitespace-nowrap md:!hidden top-[var(--bb-header-height)] z-[calc(var(--bb-z-header)_-_1)]",
         "overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory]",
         "bg-white border-b border-border px-2 gap-0 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.25)]",
         stickyInline
@@ -220,7 +220,7 @@ export function MobilePdpAnchorNav({
           data-id={item.id}
           className={cn(
             "flex-none [scroll-snap-align:start] py-2.5 px-3.5 border-b-2 bg-transparent",
-            "font-body text-b4-action font-bold uppercase tracking-normal whitespace-nowrap cursor-pointer -mb-px min-h-11",
+            "font-cta text-b4-action font-bold uppercase tracking-normal whitespace-nowrap cursor-pointer -mb-px min-h-11",
             activeId === item.id
               ? "text-brand border-b-brand"
               : "text-muted-foreground border-b-transparent",

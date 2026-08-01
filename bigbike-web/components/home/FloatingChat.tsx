@@ -42,7 +42,7 @@ const fabHaloRing =
 // (of the FAB) rather than always-on, keeping the persistent footprint to just the
 // circular button while still showing the hint the moment a visitor reaches for it.
 const chatTitlePill =
-  "absolute right-full bottom-1/2 mr-3 translate-y-1/2 bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
+  "absolute right-full bottom-1/2 mr-3 translate-y-1/2 bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-body whitespace-nowrap max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
 // margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
@@ -192,7 +192,7 @@ function ChatOverlay({
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="fixed inset-0 z-[2147483644] cursor-default bg-black/55 [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] md:bg-transparent md:[backdrop-filter:none] md:[-webkit-backdrop-filter:none]"
+        className="fixed inset-0 z-[var(--bb-z-overlay)] cursor-default bg-black/55 [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] md:bg-transparent md:[backdrop-filter:none] md:[-webkit-backdrop-filter:none]"
       />
 
       {/* Contact panel — WP #sudovn-btn-social: white card, min-width 300px,
@@ -201,7 +201,7 @@ function ChatOverlay({
         role="dialog"
         aria-modal="true"
         aria-label={t("ariaPanel")}
-        className="bb-floating-chat-panel fixed z-[2147483645] w-[min(86vw,320px)] min-w-75 !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
+        className="bb-floating-chat-panel fixed z-[var(--bb-z-overlay)] w-[min(86vw,320px)] min-w-75 !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
       >
         {items.map((item) => (
           <a
@@ -220,7 +220,7 @@ function ChatOverlay({
       </div>
 
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
-      <div className="bb-floating-chat-portal-fab fixed z-[2147483647]">
+      <div className="bb-floating-chat-portal-fab fixed z-[var(--bb-z-overlay)]">
         <div dir="ltr" className="group relative flex flex-col-reverse items-end">
           <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>
@@ -316,7 +316,7 @@ export function FloatingChat({
         <div
           id="sudovn-btn-wrapper"
           dir="ltr"
-          className="group relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
+          className="group relative font-body flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
         >
           <div id="sudovn-btn-title" className={chatTitlePill}>
             {t("needHelp")}

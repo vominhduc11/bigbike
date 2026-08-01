@@ -369,10 +369,10 @@ function AdminApp() {
           tone={fallbackPath ? 'info' : 'neutral'}
           title={fallbackPath
             ? t('app.loadingSession')
-            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng module nào' })}
+            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng khu vực nào' })}
           description={fallbackPath
             ? t('app.loadingSessionDesc')
-            : t('app.noAllowedModulesDesc', { defaultValue: 'Liên hệ quản trị viên để được cấp quyền phù hợp với công việc.' })}
+            : t('app.noAllowedModulesDesc', { defaultValue: 'Liên hệ người quản trị để được cấp quyền phù hợp với công việc.' })}
         />
       </AdminShell>
     )
@@ -386,7 +386,7 @@ function AdminApp() {
           title={t('app.routeNotFound')}
           description={fallbackPath
             ? t('app.routeNotFoundDesc')
-            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng module nào' })}
+            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng khu vực nào' })}
           actionLabel={fallbackPath ? t('app.goToModule') : undefined}
           onAction={fallbackPath ? () => navigate(fallbackPath) : undefined}
         />
@@ -399,7 +399,7 @@ function AdminApp() {
   if (missingPermissions.length > 0) {
     return (
       <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
-        <StatePanel tone="warning" title={t('app.permissionDenied')} description={`${t('app.missingPermission')} ${missingPermissions.join(', ')}`}
+        <StatePanel tone="warning" title={t('app.permissionDenied')} description={t('app.missingPermissionDesc', { defaultValue: 'Tài khoản chưa được cấp quyền cần thiết để xem khu vực này. Hãy liên hệ người quản trị để được hỗ trợ.' })}
           actionLabel={fallbackPath ? t('app.goToAllowedModule') : undefined}
           onAction={fallbackPath ? () => navigate(fallbackPath) : undefined} />
       </AdminShell>

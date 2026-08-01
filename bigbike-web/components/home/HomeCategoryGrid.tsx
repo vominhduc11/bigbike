@@ -1,9 +1,5 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicCategoryList } from "@/lib/api/client-api";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { Category } from "@/lib/contracts/public";
@@ -17,18 +13,7 @@ import { ChevronRight } from "lucide-react";
  * nguyên dữ liệu và thứ tự do admin cấu hình.
  */
 export function HomeCategoryGrid({ initialCategories }: { initialCategories: Category[] }) {
-  const locale = useLocale();
-  const isAlt = locale !== DEFAULT_LOCALE;
-
-  const { data } = useQuery({
-    queryKey: ["home-categories", locale],
-    queryFn: () =>
-      fetchPublicCategoryList({ size: 100, sort: "sortOrder:asc", showOnHomepage: true, lang: locale }),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const categories = isAlt && data && data.length > 0 ? data : initialCategories;
+  const categories = initialCategories;
   if (categories.length === 0) return null;
 
   return (
@@ -48,7 +33,7 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                   <span className="block">
                     <img src={img} className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
                   </span>
-                  <span className="mt-7.5 block line-clamp-2 font-body text-category-label font-normal normal-case leading-6 text-foreground group-hover:text-white">{c.name}</span>
+                  <span className="mt-7.5 block line-clamp-2 font-body text-a4-content font-semibold normal-case leading-body text-foreground group-hover:text-white">{c.name}</span>
                   <ChevronRight className="mx-auto mt-0 h-0 w-6 text-foreground opacity-0 transition-all duration-300 group-hover:mt-8 group-hover:h-6 group-hover:text-white group-hover:opacity-100" aria-hidden="true" />
                 </span>
               </LocalizedLink>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/Avatar";
 import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
-import { toLoginPath, translatePath } from "@/lib/utils/routes";
+import { toHomePath, toLoginPath, translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
@@ -49,7 +49,7 @@ function navIsActive(
 export function AccountSectionHeading({ title }: { title: string }) {
   return (
     <div className="mb-6 border-b border-border pb-3">
-      <h1 className="font-cta text-a2-page font-bold uppercase leading-tight text-foreground">
+      <h1 className="font-body text-a2-page font-bold leading-title text-foreground">
         {title}
       </h1>
     </div>
@@ -89,7 +89,7 @@ export function AccountNav({
     if (!window.confirm(t("logoutConfirm"))) return;
     setLoggingOut(true);
     await performLogout();
-    router.push("/");
+    router.push(toHomePath(locale));
   }
 
   if (auth.status === "loading") {
@@ -141,7 +141,7 @@ export function AccountNav({
         <nav className="py-8 text-a5-meta text-muted-foreground" aria-label={t("breadcrumbAccount")}>
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
-              <Link href="/" className="font-semibold hover:text-brand">
+              <Link href={toHomePath(locale)} className="font-semibold hover:text-brand">
                 <span property="name">Bigbike.vn</span>
               </Link>
             </li>
@@ -209,7 +209,7 @@ export function AccountNav({
                     variant="ghost"
                     onClick={handleLogout}
                     disabled={loggingOut}
-                    className="h-auto min-h-0 p-0 font-body text-b4-action font-semibold text-foreground hover:bg-transparent hover:text-brand"
+                    className="h-auto min-h-0 p-0 font-cta text-b4-action font-semibold uppercase text-foreground hover:bg-transparent hover:text-brand"
                   >
                     {loggingOut ? t("loggingOut") : t("logout")}
                   </Button>

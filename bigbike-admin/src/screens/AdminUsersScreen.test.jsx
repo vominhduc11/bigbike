@@ -18,7 +18,12 @@ vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key, values = {}) => {
-      const text = values.defaultValue ?? key
+      const roleLabels = {
+        'roles.roleLabel_SUPER_ADMIN': 'Chủ hệ thống',
+        'roles.roleLabel_ADMIN': 'Quản trị viên',
+        'roles.roleLabel_EDITOR': 'Biên tập viên',
+      }
+      const text = roleLabels[key] ?? values.defaultValue ?? key
       return String(text).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
     },
   }),
@@ -80,7 +85,9 @@ vi.mock('../components/ColumnVisibilityToggle', () => ({
   ColumnVisibilityToggle: () => <div data-testid="column-visibility" />,
 }))
 vi.mock('../components/FilterChips', () => ({ FilterChips: () => null }))
-vi.mock('../components/PaginationControls', () => ({ PaginationControls: () => null }))
+vi.mock('../components/PaginationControls', () => ({
+  PaginationControls: () => <div data-testid="pagination-controls" />,
+}))
 vi.mock('../components/ReadOnlyBanner', () => ({
   ReadOnlyBanner: ({ warning }) => <div role="status">{warning}</div>,
 }))
@@ -174,7 +181,12 @@ beforeEach(() => {
     items: USERS,
     pagination: { page: 1, pageSize: 20, totalItems: USERS.length, totalPages: 1 },
   })
-  mocks.fetchRoles.mockResolvedValue({ items: [{ id: 'WAREHOUSE', name: 'Kho hàng' }] })
+  mocks.fetchRoles.mockResolvedValue({ items: [
+    { id: 'SUPER_ADMIN', name: 'Super Admin' },
+    { id: 'ADMIN', name: 'Admin' },
+    { id: 'EDITOR', name: 'Editor' },
+    { id: 'WAREHOUSE', name: 'Kho hàng' },
+  ] })
   mocks.showConfirm.mockResolvedValue(true)
 })
 
@@ -190,10 +202,25 @@ describe('AdminUsersScreen', () => {
   it('loads the accounts and fully locks mutations in view-only mode', async () => {
     renderScreen({ canUpdate: false })
 
-    expect(await screen.findByText('Biên tập viên')).toBeInTheDocument()
+    expect(await screen.findByTestId('admin-row-editor')).toBeInTheDocument()
     expect(screen.getByText('adminUsers.readOnlyHint')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'adminUsers.createBtn' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'common.edit' })).not.toBeInTheDocument()
+  })
+
+  it('uses the API role catalog for both filtering and account assignment', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByTestId('admin-row-editor')
+
+    const roleFilter = screen.getByLabelText('adminUsers.filterRole')
+    expect(within(roleFilter).getByRole('option', { name: 'Biên tập viên' })).toBeInTheDocument()
+    expect(within(roleFilter).queryByRole('option', { name: 'Quản lý shop' })).not.toBeInTheDocument()
+
+    await user.click(within(row('editor')).getByRole('button', { name: 'common.edit' }))
+    const dialog = screen.getByRole('dialog', { name: 'adminUsers.editTitle' })
+    expect(within(dialog).getByRole('option', { name: 'Biên tập viên' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('option', { name: 'Quản lý shop' })).not.toBeInTheDocument()
   })
 
   it('does not offer a manual activation action for an invited account', async () => {
@@ -224,7 +251,7 @@ describe('AdminUsersScreen', () => {
   it('locks every field when a lower-tier admin opens a SUPER_ADMIN account', async () => {
     const user = userEvent.setup()
     renderScreen()
-    await screen.findByText('Chủ hệ thống')
+    await screen.findByTestId('admin-row-owner')
     await user.click(within(row('owner')).getByRole('button', { name: 'common.edit' }))
 
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.editTitle' })
@@ -272,7 +299,7 @@ describe('AdminUsersScreen', () => {
   it('blocks a short password before calling the server', async () => {
     const user = userEvent.setup()
     renderScreen()
-    await screen.findByText('Biên tập viên')
+    await screen.findByTestId('admin-row-editor')
     await user.click(within(row('editor')).getByRole('button', { name: 'common.edit' }))
 
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.editTitle' })
@@ -292,11 +319,11 @@ describe('AdminUsersScreen', () => {
       inviteUrl: 'https://admin.bigbike.vn/accept-invite/token',
     })
     renderScreen()
-    await screen.findByText('Biên tập viên')
+    await screen.findByTestId('admin-row-editor')
     await user.click(screen.getByRole('button', { name: 'adminUsers.createBtn' }))
 
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.createTitle' })
-    expect(within(dialog).queryByRole('option', { name: 'adminUsers.roleSuperAdmin' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('option', { name: 'Chủ hệ thống' })).not.toBeInTheDocument()
     await user.type(within(dialog).getByLabelText(/^adminUsers\.formEmail/), 'new@bigbike.vn')
     await user.type(within(dialog).getByLabelText(/^adminUsers\.formDisplayName/), 'Quản trị viên mới')
     await user.click(within(dialog).getByRole('button', { name: 'adminUsers.createBtn' }))
@@ -312,11 +339,11 @@ describe('AdminUsersScreen', () => {
   it('shows SUPER_ADMIN as an assignable role only to a system owner', async () => {
     const user = userEvent.setup()
     renderScreen({ isSuperAdmin: true })
-    await screen.findByText('Biên tập viên')
+    await screen.findByTestId('admin-row-editor')
     await user.click(screen.getByRole('button', { name: 'adminUsers.createBtn' }))
 
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.createTitle' })
-    expect(within(dialog).getByRole('option', { name: 'adminUsers.roleSuperAdmin' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('option', { name: 'Chủ hệ thống' })).toBeInTheDocument()
   })
 
   it('requires confirmation before locking an active account', async () => {
@@ -325,10 +352,17 @@ describe('AdminUsersScreen', () => {
       item: { ...USERS[1], status: 'DISABLED' },
     })
     renderScreen()
-    await screen.findByText('Biên tập viên')
+    await screen.findByTestId('admin-row-editor')
     await user.click(within(row('editor')).getByRole('button', { name: 'adminUsers.actionLock' }))
 
     expect(mocks.showConfirm).toHaveBeenCalled()
     await waitFor(() => expect(mocks.updateAdminUser).toHaveBeenCalledWith('editor', { status: 'DISABLED' }))
+  })
+
+  it('keeps pagination text aligned with card padding', async () => {
+    renderScreen()
+
+    await screen.findByTestId('pagination-controls')
+    expect(screen.getByTestId('pagination-controls').parentElement).toHaveClass('px-4')
   })
 })

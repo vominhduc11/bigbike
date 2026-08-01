@@ -1,7 +1,7 @@
 "use client";
 
 import { ShoppingCart } from "lucide-react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useLocale } from "next-intl";
 
 import { HeaderCartCount } from "@/components/layout/header/HeaderCartCount";

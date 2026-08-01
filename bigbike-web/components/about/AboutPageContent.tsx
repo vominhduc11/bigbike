@@ -44,7 +44,7 @@ function ServiceTile({
       )}
     >
       <img src={image} alt={title} className="mb-6 block h-auto max-w-full" />
-      <h3 className="mb-4 font-cta text-a4-content font-bold uppercase leading-snug">
+      <h3 className="mb-4 font-body text-a4-content font-bold leading-title">
         {title}
       </h3>
       <p className="m-0 text-a4-content leading-relaxed">{body}</p>
@@ -96,10 +96,10 @@ export function AboutPageContent({
     <div className="mb-20 text-foreground">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
         <div className="md:col-span-4">
-          <h2 className="m-0 font-cta text-a1-title font-medium uppercase leading-tight">
+          <h2 className="m-0 font-body text-a1-title font-semibold leading-title">
             {t("kicker")}
           </h2>
-          <p className="m-0 mt-4 font-cta text-a3-section uppercase leading-snug text-foreground">
+          <p className="m-0 mt-4 font-body text-a3-section leading-title text-foreground">
             {t("tagline")}
           </p>
         </div>
@@ -131,7 +131,7 @@ export function AboutPageContent({
 
       <div className="mt-20 grid grid-cols-1 gap-8 md:grid-cols-3">
         <div className="max-w-sm">
-          <h2 className="mb-5 font-cta text-a3-section font-medium uppercase leading-snug">
+          <h2 className="mb-5 font-body text-a3-section font-semibold leading-title">
             {t("qualityHeading")}
           </h2>
           <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{t("qualityBody")}</p>
@@ -145,7 +145,7 @@ export function AboutPageContent({
       </div>
 
       <div className="mt-20">
-        <h2 className="mb-4 font-cta text-a3-section font-medium uppercase leading-snug">{t("connectHeading")}</h2>
+        <h2 className="mb-4 font-body text-a3-section font-semibold leading-title">{t("connectHeading")}</h2>
         <p className="m-0 mt-3 text-a4-content leading-relaxed text-muted-foreground">{t("connect1")}</p>
         <p className="m-0 mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("connect2")}</p>
 

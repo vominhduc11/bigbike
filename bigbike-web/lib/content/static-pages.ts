@@ -36,6 +36,12 @@ const isEn = (locale: string) => locale === "en";
 const pick = (en: string | null, vi: string, locale: string): string => (isEn(locale) && en ? en : vi);
 const pickN = (en: string | null, vi: string | null, locale: string): string | null =>
   isEn(locale) && en ? en : vi;
+// Pages with a custom bilingual renderer must not fall back to Vietnamese HTML
+// if a future route accidentally renders the generic body. An empty English
+// body is an intentional omission; the route-specific renderer remains the
+// source of truth for these pages.
+const pickBody = (en: string | null, vi: string, locale: string): string =>
+  isEn(locale) ? en ?? "" : vi;
 
 /** Trang thông tin tĩnh theo slug; null nếu slug không thuộc bộ đã đóng cứng. */
 export function getStaticPage(slug: string, locale: string): LocalizedStaticPage | null {
@@ -44,7 +50,7 @@ export function getStaticPage(slug: string, locale: string): LocalizedStaticPage
   return {
     slug: p.slug,
     title: pick(p.titleEn, p.title, locale),
-    body: pick(p.bodyEn, p.body, locale),
+    body: pickBody(p.bodyEn, p.body, locale),
     heroTitle: pickN(p.heroTitleEn, p.heroTitle, locale),
     seoTitle: pickN(p.seoTitleEn, p.seoTitle, locale),
     seoDescription: pickN(p.seoDescriptionEn, p.seoDescription, locale),

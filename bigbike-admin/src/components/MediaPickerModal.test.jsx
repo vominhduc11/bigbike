@@ -144,7 +144,7 @@ describe('MediaPickerModal', () => {
     mocks.hasPermission.mockReturnValue(false)
     renderPicker()
 
-    expect(await screen.findByText('Không thể mở Thư viện Media')).toBeInTheDocument()
+    expect(await screen.findByText('Không thể mở thư viện ảnh/video')).toBeInTheDocument()
     expect(mocks.fetchMedia).not.toHaveBeenCalled()
     expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
     expect(mocks.fetchMediaTags).not.toHaveBeenCalled()

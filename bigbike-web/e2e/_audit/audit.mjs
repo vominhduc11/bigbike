@@ -142,8 +142,10 @@ function measure() {
   });
   offenders = offenders.map((o) => ({ ...o, clip: nearestClipper(o.el) }));
   const realBleed = offenders.filter((o) => o.clip === "html-body")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit the DOM node from the serializable report
     .map(({ el, ...r }) => r).sort((a, b) => b.over - a.over).slice(0, 10);
   const contained = offenders.filter((o) => o.clip !== "html-body")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit the DOM node from the serializable report
     .map(({ el, ...r }) => r).sort((a, b) => b.over - a.over).slice(0, 8);
 
   // Fixed elements bleeding past viewport (chat btn, sticky bars)
@@ -211,7 +213,7 @@ async function discoverDynamic(page) {
       const hrefs = await page.$$eval("a[href]", (as) => as.map((a) => a.getAttribute("href")));
       const m = hrefs.find((h) => h && re.test(h));
       if (m) found[key] = m.startsWith("http") ? new URL(m).pathname + new URL(m).search : m;
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   };
   await grab("/sp", /\/product\//, "product");
   await grab("/sp", /\/danh-muc\/[^/?#]+\/?$/, "category");
@@ -279,7 +281,7 @@ async function run() {
           await page.evaluate(() => window.scrollTo(0, 0));
           const name = `${TAG}__${slug(route)}__${w}x${h}.png`;
           await page.screenshot({ path: join(SHOTS, name), fullPage: true });
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
       }
     }
     report.routes[route] = rrep;

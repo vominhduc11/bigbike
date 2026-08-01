@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * Shared quantity stepper — single horizontal control used everywhere a
@@ -24,9 +25,10 @@ export function QuantityStepper({
   min = 1,
   max,
   disabled = false,
-  ariaLabel = "Số lượng",
+  ariaLabel,
   className,
 }: QuantityStepperProps) {
+  const t = useTranslations("Common");
   const clamp = (n: number) => {
     let v = n;
     if (v < min) v = min;
@@ -52,7 +54,7 @@ export function QuantityStepper({
         className={btnClass}
         onClick={() => onChange(clamp(value - 1))}
         disabled={disabled || value <= min}
-        aria-label="Giảm số lượng"
+        aria-label={t("decreaseQuantity")}
       >
         −
       </button>
@@ -63,7 +65,7 @@ export function QuantityStepper({
         max={max}
         value={value}
         disabled={disabled}
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? t("quantity")}
         onChange={(e) => {
           const n = parseInt(e.target.value, 10);
           if (Number.isFinite(n)) onChange(clamp(n));
@@ -80,7 +82,7 @@ export function QuantityStepper({
         className={btnClass}
         onClick={() => onChange(clamp(value + 1))}
         disabled={disabled || (max != null && value >= max)}
-        aria-label="Tăng số lượng"
+        aria-label={t("increaseQuantity")}
       >
         +
       </button>

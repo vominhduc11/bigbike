@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/i18n/StorefrontLink";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toCategoryPath } from "@/lib/utils/routes";
+import { toCategoryPath, toSearchPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import type { PopularCategory } from "./types";
-import { SEARCH_PATH, preChip, preChips, preLabel, preLabelRow, sResults } from "./styles";
+import { preChip, preChips, preLabel, preLabelRow, sResults } from "./styles";
 
 // Desktop pre-suggestions dropdown (no query yet): recent searches + trending +
 // popular categories. Hidden ≤767 (mobile uses MobileSearchBody instead).
@@ -28,13 +29,14 @@ export function PreSuggestions({
   handleClose: () => void;
 }) {
   const t = useTranslations("Search");
+  const locale = useLocale() as Locale;
   return (
     <div className={cn(sResults, "max-[767px]:hidden")} aria-label={t("suggestionsLabel")}>
       {recentSearches.length > 0 && (
         <>
           <div className={preLabelRow}>
             <span className={preLabel}>{t("recentLabel")}</span>
-            <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-b5-label text-brand-on-dark hover:underline" onClick={clearAll}>
+            <button type="button" className="cursor-pointer border-none bg-transparent p-0 font-cta text-b4-action uppercase text-brand-on-dark hover:underline" onClick={clearAll}>
               {t("recentClear")}
             </button>
           </div>
@@ -42,7 +44,7 @@ export function PreSuggestions({
             <div key={item} className="flex items-center border-b border-border transition-colors duration-fast last-of-type:border-b-0 hover:bg-card">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent py-[9px] pl-4 pr-2 text-left font-body text-b4-action text-foreground hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent py-[9px] pl-4 pr-2 text-left font-cta text-b4-action uppercase text-foreground hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none"
                 onClick={() => runSearch(item)}
               >
                 <Clock size={14} aria-hidden className="shrink-0 text-muted-foreground" />
@@ -78,7 +80,7 @@ export function PreSuggestions({
         {resolvedCategories.map((cat) => (
           <Link
             key={cat.slug || cat.name}
-            href={cat.slug ? toCategoryPath(cat.slug) : `${SEARCH_PATH}?s=${encodeURIComponent(cat.name)}`}
+            href={cat.slug ? toCategoryPath(cat.slug, locale) : `${toSearchPath(locale)}?s=${encodeURIComponent(cat.name)}`}
             className={preChip}
             onClick={handleClose}
           >

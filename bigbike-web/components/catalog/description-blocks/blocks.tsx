@@ -92,11 +92,11 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!text) return null;
       const small = block.level === 3;
       return small ? (
-        <h3 className="font-heading text-a3-section font-bold uppercase leading-tight text-foreground">{text}</h3>
+        <h3 className="font-body text-a3-section font-bold leading-title text-foreground">{text}</h3>
       ) : (
         // Thanh nhấn đỏ DỌC bên trái, tự cao bằng cả khối tiêu đề (self-stretch) — cân đối với tiêu đề
         // dài nhiều dòng, không còn căn giữa lệch theo dòng đầu như trước.
-        <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
+        <h2 className="flex gap-3 font-body text-a3-section font-bold leading-title text-foreground">
           <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
           <span>{text}</span>
         </h2>
@@ -115,7 +115,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
           <ol className="flex list-none flex-col gap-2 text-a4-content leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
-                <span className="font-heading font-bold text-brand">{idx + 1}.</span>
+                <span className="font-body font-bold text-brand">{idx + 1}.</span>
                 <span>{it}</span>
               </li>
             ))}
@@ -171,14 +171,14 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
         <div className="flex flex-col gap-1.5">
           {subheading ? (
             // Tiêu đề phụ (eyebrow) — nhãn nhỏ in hoa màu brand, phía trên tiêu đề chính.
-            // text-a5-meta = 14px CỐ ĐỊNH (thang PDP §nhỏ; không dùng text-a5-meta rem vì gốc 14px → 12.25px).
-            <p className="!mb-0 font-heading text-a5-meta font-bold uppercase tracking-display text-brand">
+            // B5 là nhóm canonical cho eyebrow/nhãn nhỏ.
+            <p className="!mb-0 font-cta text-b5-label font-bold uppercase tracking-display text-brand">
               {subheading}
             </p>
           ) : null}
           {heading ? (
             // text-a3-section = 20px CỐ ĐỊNH — thang PDP §tiêu đề phụ (heading trong mô tả), trên nội dung 18px.
-            <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
+            <h2 className="flex gap-3 font-body text-a3-section font-bold leading-title text-foreground">
               <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
               <span>{heading}</span>
             </h2>
@@ -195,7 +195,7 @@ function BlockTitle({ text }: { text?: string }) {
   const t = (text ?? "").trim();
   if (!t) return null;
   return (
-    <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
+    <h2 className="flex gap-3 font-body text-a3-section font-bold leading-title text-foreground">
       <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
       <span>{t}</span>
     </h2>

@@ -1,11 +1,13 @@
 import { Mail, MapPin, Minus, Phone, Plus } from "lucide-react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
 import { Tr } from "@/components/i18n/Tr";
 import { Container } from "@/components/layout/Container";
 import { FooterMenuLinks } from "@/components/layout/FooterMenuLinks";
+import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +17,8 @@ import {
 import { listPublicSettings } from "@/lib/api/public-api";
 import { cn } from "@/lib/utils";
 import { telHref } from "@/lib/utils/format";
+import { toHomePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { pickSetting } from "@/lib/utils/settings";
 
 /**
@@ -44,29 +48,10 @@ const FOOTER_SOCIAL_LINKS = {
   youtube: "https://www.youtube.com/@bigbike-shop",
   tiktok: "https://www.tiktok.com/@bigbike.vn",
   shopee: "https://shopee.vn/shopbaohobigbike",
-};
+} as const;
 
-/** Rút nhãn hiển thị gọn từ URL Facebook (vd https://facebook.com/bigbike.vn → fb/bigbike.vn). */
-function facebookLabel(url: string): string {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/^\/+|\/+$/g, "");
-    return path ? `fb/${path}` : u.host.replace(/^www\./, "");
-  } catch {
-    return "fb/bigbike.vn";
-  }
-}
-
-/** Rút nhãn hiển thị gọn từ URL mạng xã hội (prefix/handle), fallback về tên mạng. */
-function socialLabel(url: string, prefix: string, fallback: string): string {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/^\/+|\/+$/g, "");
-    return path ? `${prefix}/${path}` : u.host.replace(/^www\./, "");
-  } catch {
-    return fallback;
-  }
-}
+const SOCIAL_CHANNELS = ["facebook", "youtube", "tiktok", "shopee"] as const;
+type SocialChannel = (typeof SOCIAL_CHANNELS)[number];
 
 /** Logo thương hiệu (simple-icons) cho mạng xã hội — lucide-react không có glyph
  * brand-chính-xác cho facebook/youtube/tiktok/shopee. */
@@ -81,14 +66,13 @@ const BRAND_ICON_PATH = {
     "M15.9414 17.9633c.229-1.879-.981-3.077-4.1758-4.0969-1.548-.528-2.277-1.22-2.26-2.1719.065-1.056 1.048-1.825 2.352-1.85a5.2898 5.2898 0 0 1 2.8838.89c.116.072.197.06.263-.039.09-.145.315-.494.39-.62.051-.081.061-.187-.068-.281-.185-.1369-.704-.4149-.983-.5319a6.4697 6.4697 0 0 0-2.5118-.514c-1.909.008-3.4129 1.215-3.5389 2.826-.082 1.1629.494 2.1078 1.73 2.8278.262.152 1.6799.716 2.2438.892 1.774.552 2.695 1.5419 2.478 2.6969-.197 1.047-1.299 1.7239-2.818 1.7439-1.2039-.046-2.2878-.537-3.1278-1.19l-.141-.11c-.104-.08-.218-.075-.287.03-.05.077-.376.547-.458.67-.077.108-.035.168.045.234.35.293.817.613 1.134.775a6.7097 6.7097 0 0 0 2.8289.727 4.9048 4.9048 0 0 0 2.0759-.354c1.095-.465 1.8029-1.394 1.9449-2.554zM11.9986 1.4009c-2.068 0-3.7539 1.95-3.8329 4.3899h7.6657c-.08-2.44-1.765-4.3899-3.8328-4.3899zm7.8516 22.5981-.08.001-15.7843-.002c-1.074-.04-1.863-.91-1.971-1.991l-.01-.195L1.298 6.2858a.459.459 0 0 1 .45-.494h4.9748C6.8448 2.568 9.1607 0 11.9996 0c2.8388 0 5.1537 2.5689 5.2757 5.7898h4.9678a.459.459 0 0 1 .458.483l-.773 15.5883-.007.131c-.094 1.094-.979 1.9769-2.0709 2.0059z",
 } as const;
 
-function SocialSvgIcon({ name, label }: { name: keyof typeof BRAND_ICON_PATH; label: string }) {
+function SocialSvgIcon({ name }: { name: SocialChannel }) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="20"
       height="20"
-      role="img"
-      aria-label={label}
+      aria-hidden="true"
       focusable="false"
       className="shrink-0 fill-current text-brand-on-dark"
     >
@@ -119,7 +103,7 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
     >
       <AccordionTrigger
         className={cn(
-          "group min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-medium uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
+          "group min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
           value === "social" ? "mb-5.5!" : "mb-[19px]!",
         )}
         indicator={
@@ -144,16 +128,13 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
 }
 
 /** Footer bigbike.vn dùng Tailwind + Radix. */
-export async function Footer() {
-  const [settingsVi, settingsEn] = await Promise.all([
-    listPublicSettings("vi"),
-    listPublicSettings("en"),
-  ]);
-  const settingDescription = pickSetting(settingsVi.data ?? [], ["footer_description"]);
-  const settingDescriptionEn = pickSetting(settingsEn.data ?? [], ["footer_description"]);
+export async function Footer({ locale }: { locale: Locale }) {
+  const t = await getTranslations({ locale, namespace: "Footer" });
+  const settingsResult = await listPublicSettings(locale);
+  const settingDescription = pickSetting(settingsResult.data ?? [], ["footer_description"]);
 
   return (
-    <footer data-bb-focus="general_brand" className="relative z-[661] font-body text-white md:z-[655]">
+    <footer data-bb-focus="general_brand" className="relative z-0 font-body text-white">
       <div className="bg-footer-top pt-15 md:pb-[85px]">
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">
@@ -163,14 +144,14 @@ export async function Footer() {
               </h2>
               <div className="mb-7.5 flex flex-col gap-0">
                 {FOOTER_HOTLINES.map((phone) => (
-                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold">
+                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold uppercase">
                     <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     <a href={telHref(phone)} className="text-white! no-underline!">
                       {phone}
                     </a>
                   </p>
                 ))}
-                <p className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold">
+                <p className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold uppercase">
                   <a
                     href={`mailto:${FOOTER_EMAIL}`}
                     className="flex items-center gap-[29px] text-white! no-underline!"
@@ -179,17 +160,17 @@ export async function Footer() {
                     {FOOTER_EMAIL}
                   </a>
                 </p>
-                <p className="m-0! flex items-start gap-[29px] font-cta text-b2-contact font-semibold">
+                <p className="m-0! flex items-start gap-[29px] font-cta text-b2-contact font-semibold uppercase">
                   <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                   <Tr ns="Footer" k="address" />
                 </p>
               </div>
             </div>
             <div className="md:col-span-5">
-              <p className="mb-[27px]! text-a4-content leading-[25px]">
+              <p className="mb-[27px]! text-a4-content leading-body">
                 <LocalizedSetting
                   vi={settingDescription}
-                  en={settingDescriptionEn}
+                  en={settingDescription}
                   fallback={<Tr ns="Footer" k="description" />}
                 />
               </p>
@@ -206,46 +187,22 @@ export async function Footer() {
                 <div className="min-[992px]:col-span-5">
                   <AccordionPanel value="social" title={<Tr ns="Footer" k="socialHeading" />}>
                     <ul className="m-0 flex list-none flex-col gap-[25px] p-0">
-                      <li>
-                        <a
-                          rel="nofollow"
-                          href={FOOTER_SOCIAL_LINKS.facebook}
-                          className="flex items-center gap-5! text-white! no-underline!"
-                        >
-                          <SocialSvgIcon name="facebook" label="Facebook" />
-                          <span>{facebookLabel(FOOTER_SOCIAL_LINKS.facebook)}</span>
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          rel="nofollow"
-                          href={FOOTER_SOCIAL_LINKS.youtube}
-                          className="flex items-center gap-5! text-white! no-underline!"
-                        >
-                          <SocialSvgIcon name="youtube" label="YouTube" />
-                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.youtube, "yt", "YouTube")}</span>
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          rel="nofollow"
-                          href={FOOTER_SOCIAL_LINKS.tiktok}
-                          className="flex items-center gap-5! text-white! no-underline!"
-                        >
-                          <SocialSvgIcon name="tiktok" label="TikTok" />
-                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.tiktok, "tiktok", "TikTok")}</span>
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          rel="nofollow"
-                          href={FOOTER_SOCIAL_LINKS.shopee}
-                          className="flex items-center gap-5! text-white! no-underline!"
-                        >
-                          <SocialSvgIcon name="shopee" label="Shopee" />
-                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.shopee, "shopee", "Shopee")}</span>
-                        </a>
-                      </li>
+                      {SOCIAL_CHANNELS.map((key) => {
+                        const profile = SOCIAL_LINK_LABELS[key];
+                        return (
+                          <li key={key}>
+                            <a
+                              rel="nofollow"
+                              href={FOOTER_SOCIAL_LINKS[key]}
+                              aria-label={`${profile.platform} - ${profile.displayName}`}
+                              className="flex items-center gap-5! text-white! no-underline!"
+                            >
+                              <SocialSvgIcon name={key} />
+                              <span>{profile.displayName}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </AccordionPanel>
                 </div>
@@ -260,11 +217,11 @@ export async function Footer() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brand/commerce-certification.png"
-              alt="Đã thông báo Bộ Công Thương"
+              alt={t("commerceCertificationAlt")}
               width="200"
               height="74"
             />
-            <p className="mb-0 mt-[3px]! text-a4-content leading-[20px]! text-[color:var(--bb-text-footer-legal)]">
+            <p className="mb-0 mt-[3px]! text-a4-content leading-body! text-[color:var(--bb-text-footer-legal)]">
               <Tr ns="Footer" k="businessRegistration" />
             </p>
           </a>
@@ -272,9 +229,9 @@ export async function Footer() {
         <div className="bg-black">
           <Container variant="blog" className="grid min-h-[85px] grid-cols-3 items-center px-[15px]! py-[15px]">
             <p className="col-span-2 m-0 text-a5-meta leading-5">
-              Copyright © {new Date().getFullYear()}. All Rights Reserved.
+              {t("copyright", { year: new Date().getFullYear() })}
             </p>
-            <Link href="/" className="justify-self-end">
+            <Link href={toHomePath(locale)} className="justify-self-end">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/footer-wordmark.png" alt="BigBike" width="100" height="37" />
             </Link>
@@ -285,24 +242,24 @@ export async function Footer() {
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-12 items-center gap-x-7.5 pb-[31px] pt-7.5">
             <div className="col-span-2">
-              <Link href="/" className="inline-block">
+              <Link href={toHomePath(locale)} className="inline-block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/brand/footer-wordmark.png" alt="BigBike" width="150" height="56" />
               </Link>
             </div>
             <div className="col-span-4">
-              <p className="m-0">Copyright © {new Date().getFullYear()}. All Rights Reserved.</p>
+              <p className="m-0">{t("copyright", { year: new Date().getFullYear() })}</p>
             </div>
             <div className="col-span-6 pl-34.5 pr-32.5">
               <a href={FOOTER_BCT_URL} className="flex flex-col items-start text-white! no-underline!">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/brand/commerce-certification.png"
-                  alt="Đã thông báo Bộ Công Thương"
+                  alt={t("commerceCertificationAlt")}
                   width="200"
                   height="74"
                 />
-                <p className="mb-0 mt-2.5! leading-[20px]!">
+                <p className="mb-0 mt-2.5! leading-body!">
                   <Tr ns="Footer" k="businessRegistration" />
                 </p>
               </a>

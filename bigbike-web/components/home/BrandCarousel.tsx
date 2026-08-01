@@ -1,7 +1,7 @@
 "use client";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";

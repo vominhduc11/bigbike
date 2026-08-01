@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useTranslations } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
@@ -85,7 +85,7 @@ export function SuggestionResults({
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <span className="text-a5-meta font-normal text-foreground line-clamp-2">{article.title}</span>
                       {article.category?.name && (
-                        <span className="text-b5-label font-semibold uppercase tracking-normal text-brand-on-dark">
+                        <span className="font-cta text-b5-label font-semibold uppercase tracking-normal text-brand-on-dark">
                           {article.category.name}
                         </span>
                       )}

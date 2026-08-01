@@ -41,7 +41,7 @@ export const mRecentRemove =
   "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
   mFocusRing;
 export const mChip =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-3.5 py-0 font-cta text-b4-action font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-3.5 py-0 font-cta text-b4-action font-semibold uppercase text-foreground [&>svg]:text-brand-on-dark " +
   mFocusRing;
 export const mGridCard =
   "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +

@@ -82,7 +82,7 @@ describe('VideoPickerModal', () => {
     mocks.hasPermission.mockReturnValue(false)
     render(<VideoPickerModal onSelect={vi.fn()} onClose={vi.fn()} />)
 
-    expect(await screen.findByText('Không thể mở Thư viện Media')).toBeInTheDocument()
+    expect(await screen.findByText('Không thể mở thư viện video')).toBeInTheDocument()
     expect(mocks.fetchMedia).not.toHaveBeenCalled()
     expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
     expect(mocks.fetchMediaTags).not.toHaveBeenCalled()

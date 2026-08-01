@@ -149,7 +149,7 @@ describe('SliderListScreen mobile image', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    const mobileThumbnail = await screen.findByTitle('Mobile')
+    const mobileThumbnail = await screen.findByTitle('Điện thoại')
     expect(mobileThumbnail).toHaveAttribute('src', '/media/sliders/mobile-old.jpg')
 
     await user.click(screen.getByRole('button', { name: 'Sửa' }))

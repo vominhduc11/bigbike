@@ -238,10 +238,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     let message
     if (refCount && refCount > 0) {
       message = t('media.hardDeleteConfirmInUse', { name, count: refCount,
-        defaultValue: `File "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm hỏng các nơi đang dùng. Tiếp tục?` })
+        defaultValue: `Tệp "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm ảnh hưởng các nơi đang dùng. Tiếp tục?` })
     } else if (refCheckFailed) {
       message = t('media.hardDeleteConfirmUnverified', { name,
-        defaultValue: `Không kiểm tra được file "${name}" có đang được dùng ở đâu không. Xoá vĩnh viễn KHÔNG thể hoàn tác và có thể làm hỏng nơi đang dùng. Tiếp tục?` })
+        defaultValue: `Không kiểm tra được tệp "${name}" có đang được dùng ở đâu không. Xoá vĩnh viễn KHÔNG thể hoàn tác và có thể làm ảnh hưởng nơi đang dùng. Tiếp tục?` })
     } else {
       message = t('media.hardDeleteConfirm', { name })
     }
@@ -256,7 +256,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       restoreItemLocally(snapshot)
       // Server thường chặn xoá vĩnh viễn khi file còn được tham chiếu — nêu rõ lý do
       // thay vì lỗi xoá chung chung, để admin biết cần gỡ file khỏi nơi đang dùng trước.
-      toast.error(e.message || t('media.hardDeleteError', { defaultValue: 'Không xoá được. File có thể đang được dùng ở nơi khác — hãy gỡ khỏi các nơi đang dùng rồi thử lại.' }))
+      toast.error(e.message || t('media.hardDeleteError', { defaultValue: 'Không xoá được. Tệp có thể đang được dùng ở nơi khác — hãy gỡ khỏi các nơi đang dùng rồi thử lại.' }))
     }
     finally { setDeleting(null) }
   }
@@ -552,7 +552,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyDesc')}
             actionLabel={t('common.resetFilters')} onAction={resetFilters} />
         ) : (
-          <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyLibraryDesc', { defaultValue: 'Thư viện chưa có file nào. Tải file lên để bắt đầu.' })}
+          <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyLibraryDesc', { defaultValue: 'Thư viện chưa có tệp nào. Tải tệp lên để bắt đầu.' })}
             actionLabel={canUpdate ? t('common.upload') : undefined}
             onAction={canUpdate ? () => fileInputRef.current?.click() : undefined} />
         )

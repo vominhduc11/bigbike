@@ -15,9 +15,6 @@ export const DEFAULT_LOCALE: Locale = "vi";
  */
 export const DEFAULT_TIME_ZONE = "Asia/Ho_Chi_Minh";
 
-/** Name of the cookie that holds the visitor's locale preference. */
-export const LOCALE_COOKIE = "NEXT_LOCALE";
-
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
 }

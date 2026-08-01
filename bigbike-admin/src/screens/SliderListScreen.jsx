@@ -66,7 +66,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
             <img
               src={slider.desktopImage.url}
               alt={slider.desktopImage.alt || ''}
-              title="Desktop"
+              title="Máy tính"
               className="bb-slider-thumb bb-slider-thumb--desktop"
             />
           )}
@@ -74,7 +74,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
             <img
               src={slider.mobileImage.url}
               alt={slider.mobileImage.alt || ''}
-              title="Mobile"
+              title="Điện thoại"
               className="bb-slider-thumb bb-slider-thumb--mobile"
             />
           )}
@@ -466,7 +466,7 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
               </label>
 
               <div className="bb-form-section-label with-divider">
-                {t('sliders.sectionDesktopImage', { defaultValue: 'Ảnh desktop' })}
+                {t('sliders.sectionDesktopImage', { defaultValue: 'Ảnh hiển thị trên máy tính' })}
               </div>
               <div className="form-field form-field-wide">
                 <span>{t('sliders.formDesktopUrl')}</span>
@@ -479,16 +479,16 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
               </div>
 
               <div className="bb-form-section-label with-divider">
-                {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh mobile' })}
+                {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}
               </div>
               <div className="form-field form-field-wide">
-                <span>{t('sliders.formMobileUrl', { defaultValue: 'Ảnh mobile' })}</span>
+                <span>{t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}</span>
                 <ImageUrlInput
                   value={form.mobileImageUrl}
                   onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
                   alt={form.mobileImageAlt}
                   onAltChange={(alt) => setForm((p) => ({ ...p, mobileImageAlt: alt }))}
-                  previewAlt={form.mobileImageAlt || t('sliders.formMobileUrl', { defaultValue: 'Ảnh mobile' })}
+                  previewAlt={form.mobileImageAlt || t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}
                   recommend={IMAGE_RECO.sliderMobile}
                 />
                 <span className="hint">{t('sliders.formMobileUrlHint')}</span>
@@ -524,7 +524,7 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                     loading={isSearchingProducts}
                     items={productSearchItems}
                     onPick={handlePickProduct}
-                    placeholder={t('sliders.formProductSearchPlaceholder', { defaultValue: 'Tìm sản phẩm theo tên hoặc SKU…' })}
+                    placeholder={t('sliders.formProductSearchPlaceholder', { defaultValue: 'Tìm sản phẩm theo tên hoặc mã sản phẩm…' })}
                     loadingText={`${t('common.loading')}…`}
                     emptyText={t('sliders.formProductNoResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
                   />

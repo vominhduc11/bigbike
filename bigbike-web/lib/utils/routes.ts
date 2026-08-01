@@ -5,301 +5,265 @@ const SITE_ORIGIN =
   process.env.BIGBIKE_SITE_URL?.trim() ||
   "https://bigbike.vn";
 
-if (
-  globalThis.window === undefined &&
-  process.env.NODE_ENV === "production" &&
-  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\b/i.test(SITE_ORIGIN)
-) {
-  console.error(
-    `[routes] SITE_ORIGIN is "${SITE_ORIGIN}" in production. Set NEXT_PUBLIC_SITE_URL or BIGBIKE_SITE_URL to the canonical domain to prevent localhost URLs in sitemap/canonical tags.`,
-  );
-}
+type RouteParts = { vi: string; en: string };
+
+const STATIC_ROUTES: RouteParts[] = [
+  { vi: "/", en: "/" },
+  { vi: "/sp", en: "/products" },
+  { vi: "/gio-hang", en: "/cart" },
+  { vi: "/dat-hang", en: "/order" },
+  { vi: "/don-hang", en: "/orders" },
+  { vi: "/don-hang/xac-nhan", en: "/orders/confirm" },
+  { vi: "/tai-khoan", en: "/account" },
+  { vi: "/tai-khoan/don-hang", en: "/account/orders" },
+  { vi: "/tai-khoan/edit-account", en: "/account/edit-account" },
+  { vi: "/dang-nhap", en: "/login" },
+  { vi: "/dang-ky", en: "/register" },
+  { vi: "/quen-mat-khau", en: "/forgot-password" },
+  { vi: "/xac-nhan-email", en: "/verify-email" },
+  { vi: "/tim-kiem", en: "/search" },
+  { vi: "/lien-he", en: "/contact" },
+  { vi: "/gioi-thieu", en: "/about" },
+  { vi: "/tin-tuc", en: "/news" },
+  { vi: "/brands", en: "/brands" },
+  { vi: "/chinh-sach/chinh-sach-bao-mat-thong-tin", en: "/policy/privacy-policy" },
+  { vi: "/chinh-sach/chinh-sach-bao-hanh", en: "/policy/warranty-policy" },
+  { vi: "/chinh-sach/chinh-sach-doi-tra-hang", en: "/policy/return-policy" },
+  { vi: "/huong-dan", en: "/guide" },
+  { vi: "/huong-dan/size-mu", en: "/guide/helmet-size" },
+  { vi: "/huong-dan/size-trang-phuc", en: "/guide/clothing-size" },
+  { vi: "/preview/product", en: "/preview/product" },
+  { vi: "/preview/article", en: "/preview/article" },
+];
+
+const DYNAMIC_ROUTES: RouteParts[] = [
+  { vi: "/product/", en: "/products/" },
+  { vi: "/danh-muc/", en: "/categories/" },
+  { vi: "/tin-tuc/", en: "/news/" },
+  { vi: "/brands/", en: "/brands/" },
+  { vi: "/tai-khoan/don-hang/", en: "/account/orders/" },
+  { vi: "/tai-khoan/edit-address/", en: "/account/edit-address/" },
+  { vi: "/dat-hang/order-received/", en: "/order/order-received/" },
+];
 
 function getActiveLocale(): Locale {
-  if (typeof window !== "undefined") {
-    return (globalThis.__NEXT_LOCALE__ as Locale) || "vi";
-  }
   return "vi";
 }
 
-export function translatePath(pathname: string, targetLocale: Locale): string {
-  const cleanPath = pathname.split("?")[0];
-  const search = pathname.includes("?") ? pathname.slice(pathname.indexOf("?")) : "";
-  const segments = cleanPath.split("/").filter(Boolean);
-  if (segments.length === 0) return pathname;
-
-  const seg0 = segments[0];
-  const seg1 = segments[1];
-  const remaining = segments.slice(2);
-
-  let mapped: string[] | null = null;
-
-  if (targetLocale === "en") {
-    // VI -> EN
-    if (seg0 === "gio-hang") mapped = ["cart"];
-    else if (seg0 === "dat-hang") {
-      if (seg1 === "order-received") mapped = ["order", "order-received", ...remaining];
-      else mapped = ["order", ...remaining];
-    }
-    else if (seg0 === "don-hang") {
-      if (seg1 === "xac-nhan") mapped = ["orders", "confirm", ...remaining];
-      else mapped = ["orders", ...remaining];
-    }
-    else if (seg0 === "tai-khoan") {
-      if (seg1 === "don-hang") mapped = ["account", "orders", ...remaining];
-      else if (seg1 === "edit-account") mapped = ["account", "edit-account", ...remaining];
-      else if (seg1 === "edit-address") mapped = ["account", "edit-address", ...remaining];
-      else mapped = ["account", ...remaining];
-    }
-    else if (seg0 === "dang-nhap") mapped = ["login"];
-    else if (seg0 === "dang-ky") mapped = ["register"];
-    else if (seg0 === "quen-mat-khau") mapped = ["forgot-password"];
-    else if (seg0 === "xac-nhan-email") mapped = ["verify-email"];
-    else if (seg0 === "sp" || seg0 === "san-pham") mapped = ["products"];
-    else if (seg0 === "lien-he") mapped = ["contact"];
-    else if (seg0 === "gioi-thieu") mapped = ["about"];
-    else if (seg0 === "chinh-sach") {
-      mapped = ["policy"];
-      if (seg1) mapped.push(seg1, ...remaining);
-    }
-    else if (seg0 === "huong-dan") {
-      mapped = ["guide"];
-      if (seg1) mapped.push(seg1, ...remaining);
-    }
-    else if (seg0 === "tim-kiem") mapped = ["search"];
-    else if (seg0 === "danh-muc" || seg0 === "danh-muc-san-pham") {
-      if (segments.length === 1) mapped = ["products"];
-    }
-    else if (seg0 === "tin-tuc") {
-      if (segments.length === 1) mapped = ["news"];
-    }
-  } else {
-    // EN -> VI
-    if (seg0 === "cart") mapped = ["gio-hang"];
-    else if (seg0 === "order") {
-      if (seg1 === "order-received") mapped = ["dat-hang", "order-received", ...remaining];
-      else mapped = ["dat-hang", ...remaining];
-    }
-    else if (seg0 === "orders") {
-      if (seg1 === "confirm") mapped = ["don-hang", "xac-nhan", ...remaining];
-      else mapped = ["don-hang", ...remaining];
-    }
-    else if (seg0 === "account") {
-      if (seg1 === "orders") mapped = ["tai-khoan", "don-hang", ...remaining];
-      else if (seg1 === "edit-account") mapped = ["tai-khoan", "edit-account", ...remaining];
-      else if (seg1 === "edit-address") mapped = ["tai-khoan", "edit-address", ...remaining];
-      else mapped = ["tai-khoan", ...remaining];
-    }
-    else if (seg0 === "login") mapped = ["dang-nhap"];
-    else if (seg0 === "register") mapped = ["dang-ky"];
-    else if (seg0 === "forgot-password") mapped = ["quen-mat-khau"];
-    else if (seg0 === "verify-email") mapped = ["xac-nhan-email"];
-    else if (seg0 === "products") {
-      // Only the bare list path is an alias for the VI list page — /products/{slug}/
-      // is now a real EN product detail route (app/products/[slug]/page.tsx) and
-      // must not be rewritten/redirected away.
-      if (segments.length === 1) mapped = ["sp"];
-    }
-    else if (seg0 === "contact") mapped = ["lien-he"];
-    else if (seg0 === "about") mapped = ["gioi-thieu"];
-    else if (seg0 === "policy") {
-      mapped = ["chinh-sach"];
-      if (seg1) mapped.push(seg1, ...remaining);
-    }
-    else if (seg0 === "guide") {
-      mapped = ["huong-dan"];
-      if (seg1) mapped.push(seg1, ...remaining);
-    }
-    else if (seg0 === "search") mapped = ["tim-kiem"];
-    else if (seg0 === "categories") {
-      // Same reasoning: /categories/{slug}/ is now a real EN category detail route.
-      // The bare category archive shares the canonical product listing.
-      if (segments.length === 1) mapped = ["sp"];
-    }
-    else if (seg0 === "news") {
-      // Same reasoning: /news/{slug}/ is now a real EN article detail route.
-      if (segments.length === 1) mapped = ["tin-tuc"];
-    }
-  }
-
-  if (!mapped) return pathname;
-
-  const hasTrailingSlash = cleanPath.endsWith("/");
-  return "/" + mapped.join("/") + (hasTrailingSlash ? "/" : "") + search;
+function splitHref(value: string) {
+  const match = value.match(/^([^?#]*)([?#].*)?$/);
+  return { pathname: match?.[1] || "/", suffix: match?.[2] || "" };
 }
 
+function cleanPath(pathname: string): string {
+  if (!pathname || pathname === "/") return "/";
+  return `/${pathname.split("/").filter(Boolean).join("/")}`;
+}
 
+function withTrailingSlash(pathname: string): string {
+  return pathname === "/" ? pathname : `${pathname.replace(/\/+$/, "")}/`;
+}
 
-export function toProductPath(slug: string, locale?: Locale, isEnSlug?: boolean): string {
-  const currentLocale = locale || getActiveLocale();
-  if (currentLocale === "en" && isEnSlug) {
-    return `/products/${slug}/`;
+function stripLocalePrefix(pathname: string): { path: string; locale: Locale } {
+  const normalized = cleanPath(pathname);
+  if (normalized === "/en") return { path: "/", locale: "en" };
+  if (normalized.startsWith("/en/")) {
+    return { path: normalized.slice(3) || "/", locale: "en" };
   }
-  return `/product/${slug}/`;
+  if (normalized === "/vi") return { path: "/", locale: "vi" };
+  if (normalized.startsWith("/vi/")) {
+    return { path: normalized.slice(3) || "/", locale: "vi" };
+  }
+  return { path: normalized, locale: "vi" };
+}
+
+function resolveInternalPath(pathname: string): string {
+  const stripped = stripLocalePrefix(pathname);
+  const path = cleanPath(stripped.path);
+
+  if (["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html", "/categories"].includes(path)) {
+    return "/sp";
+  }
+
+  for (const route of STATIC_ROUTES) {
+    if (path === route.vi || path === route.en) return route.vi;
+  }
+  for (const route of DYNAMIC_ROUTES) {
+    const viPrefix = route.vi.replace(/\/$/, "");
+    const enPrefix = route.en.replace(/\/$/, "");
+    if (path.startsWith(`${viPrefix}/`)) return `${viPrefix}${path.slice(viPrefix.length)}`;
+    if (path.startsWith(`${enPrefix}/`)) return `${viPrefix}${path.slice(enPrefix.length)}`;
+  }
+  return path;
+}
+
+function localizeInternalPath(internalPath: string, targetLocale: Locale): string {
+  const path = cleanPath(internalPath);
+  let localized = path;
+  for (const route of STATIC_ROUTES) {
+    if (path === route.vi) {
+      localized = targetLocale === "en" ? route.en : route.vi;
+      break;
+    }
+  }
+  if (localized === path) {
+    for (const route of DYNAMIC_ROUTES) {
+      const viPrefix = route.vi.replace(/\/$/, "");
+      if (path.startsWith(`${viPrefix}/`)) {
+        const targetPrefix = (targetLocale === "en" ? route.en : route.vi).replace(/\/$/, "");
+        localized = `${targetPrefix}${path.slice(viPrefix.length)}`;
+        break;
+      }
+    }
+  }
+
+  if (targetLocale === "en" && !localized.startsWith("/preview/")) {
+    localized = localized === "/" ? "/en" : `/en${localized}`;
+  }
+  return withTrailingSlash(localized);
+}
+
+/** Translate a storefront URL while preserving query parameters and hash. */
+export function translatePath(href: string, targetLocale: Locale): string {
+  const { pathname, suffix } = splitHref(href);
+  return `${localizeInternalPath(resolveInternalPath(pathname), targetLocale)}${suffix}`;
+}
+
+export function localizeStorefrontHref(value: string, locale: Locale): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith("#") || /^(mailto:|tel:|sms:|javascript:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.origin !== new URL(SITE_ORIGIN).origin) return trimmed;
+      parsed.pathname = translatePath(parsed.pathname, locale).split(/[?#]/)[0];
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+  return translatePath(normalizeStorefrontUrl(trimmed), locale);
+}
+
+export function toProductPath(slug: string, locale?: Locale, _isEnSlug?: boolean): string {
+  void _isEnSlug;
+  return translatePath(`/product/${encodeURIComponent(slug)}/`, locale ?? getActiveLocale());
 }
 
 export function toProductListPath(locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  return currentLocale === "en" ? "/products/" : "/sp/";
+  return translatePath("/sp/", locale ?? getActiveLocale());
 }
 
-
-
-export function toCategoryPath(slug: string, locale?: Locale, isEnSlug?: boolean): string {
-  const currentLocale = locale || getActiveLocale();
-  if (currentLocale === "en" && isEnSlug) {
-    return `/categories/${slug}/`;
-  }
-  return `/danh-muc/${slug}/`;
+export function toCategoryPath(slug: string, locale?: Locale, _isEnSlug?: boolean): string {
+  void _isEnSlug;
+  return translatePath(`/danh-muc/${encodeURIComponent(slug)}/`, locale ?? getActiveLocale());
 }
 
-
-
-export function toBrandPath(slug: string): string {
-  return `/brands/${slug}/`;
+export function toBrandPath(slug: string, locale?: Locale): string {
+  return translatePath(`/brands/${encodeURIComponent(slug)}/`, locale ?? getActiveLocale());
 }
 
-export function toBrandListPath(): string {
-  return "/brands/";
+export function toBrandListPath(locale?: Locale): string {
+  return translatePath("/brands/", locale ?? getActiveLocale());
 }
 
-export function toArticlePath(slug: string, locale?: Locale, isEnSlug?: boolean): string {
-  const currentLocale = locale || getActiveLocale();
-  if (currentLocale === "en" && isEnSlug) {
-    return `/news/${slug}/`;
-  }
-  return `/tin-tuc/${slug}/`;
+export function toArticlePath(slug: string, locale?: Locale, _isEnSlug?: boolean): string {
+  void _isEnSlug;
+  return translatePath(`/tin-tuc/${encodeURIComponent(slug)}/`, locale ?? getActiveLocale());
 }
 
 export function toArticleListPath(locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  return currentLocale === "en" ? "/news/" : "/tin-tuc/";
+  return translatePath("/tin-tuc/", locale ?? getActiveLocale());
+}
+
+export function toSearchPath(locale?: Locale): string {
+  return translatePath("/tim-kiem/", locale ?? getActiveLocale());
 }
 
 export function toCategoryListPath(locale?: Locale): string {
   return toProductListPath(locale);
 }
 
-/**
- * Normalizes storefront URLs that may come from persisted admin content.
- * Redirect sources keep the legacy values; generated links and canonical URLs do not.
- */
 export function normalizeStorefrontUrl(value: string): string {
-  const normalizePath = (pathname: string): string => {
-    const withoutTrailingSlash = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-
-    if (
-      withoutTrailingSlash === "/san-pham" ||
-      withoutTrailingSlash === "/danh-muc" ||
-      withoutTrailingSlash === "/danh-muc-san-pham" ||
-      withoutTrailingSlash === "/danh-muc-san-pham.html"
-    ) {
-      return "/sp/";
-    }
-
-    const legacyCategoryPrefix = "/danh-muc-san-pham/";
-    if (withoutTrailingSlash.startsWith(legacyCategoryPrefix)) {
-      const slug = withoutTrailingSlash.slice(legacyCategoryPrefix.length);
-      return slug ? `/danh-muc/${slug}/` : "/sp/";
-    }
-
-    return pathname;
-  };
-
   const trimmed = value.trim();
   if (!trimmed) return trimmed;
-
+  const normalizePath = (pathname: string) => {
+    const clean = cleanPath(pathname);
+    if (["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html"].includes(clean)) {
+      return "/sp/";
+    }
+    if (clean.startsWith("/danh-muc-san-pham/")) {
+      return `/danh-muc/${clean.slice("/danh-muc-san-pham/".length)}/`;
+    }
+    return pathname;
+  };
   if (/^https?:\/\//i.test(trimmed)) {
     try {
-      const parsed = new URL(trimmed);
-      parsed.pathname = normalizePath(parsed.pathname);
-      return parsed.toString();
+      const url = new URL(trimmed);
+      url.pathname = normalizePath(url.pathname);
+      return url.toString();
     } catch {
       return trimmed;
     }
   }
-
-  const suffixIndexes = [trimmed.indexOf("?"), trimmed.indexOf("#")].filter(
-    (index) => index >= 0,
-  );
-  const suffixIndex = suffixIndexes.length > 0 ? Math.min(...suffixIndexes) : trimmed.length;
-  const pathname = trimmed.slice(0, suffixIndex);
-  const suffix = trimmed.slice(suffixIndex);
+  const { pathname, suffix } = splitHref(trimmed);
   return normalizePath(pathname) + suffix;
 }
 
 export function toPagePath(slug: string, locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  const p = `/${slug}/`;
-  return translatePath(p, currentLocale);
+  return translatePath(`/${slug}/`, locale ?? getActiveLocale());
 }
 
-export function toHomePath(): string {
-  return "/";
+export function toHomePath(locale?: Locale): string {
+  return translatePath("/", locale ?? getActiveLocale());
 }
 
 export function toCartPath(locale?: Locale): string {
-  return translatePath("/gio-hang/", locale || getActiveLocale());
+  return translatePath("/gio-hang/", locale ?? getActiveLocale());
 }
 
 export function toCheckoutPath(locale?: Locale): string {
-  return translatePath("/dat-hang/", locale || getActiveLocale());
+  return translatePath("/dat-hang/", locale ?? getActiveLocale());
 }
 
 export function toOrderConfirmPath(orderNumber: string, orderKey?: string, locale?: Locale): string {
   const params = new URLSearchParams({ so: orderNumber });
-  if (orderKey) {
-    params.set("key", orderKey);
-  }
-  const basePath = translatePath("/don-hang/xac-nhan/", locale || getActiveLocale());
-  return `${basePath}?${params.toString()}`;
+  if (orderKey) params.set("key", orderKey);
+  return `${translatePath("/don-hang/xac-nhan/", locale ?? getActiveLocale())}?${params}`;
 }
 
 export function toOrderDetailPath(orderId: string, locale?: Locale): string {
-  return translatePath(`/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`, locale || getActiveLocale());
+  return translatePath(`/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`, locale ?? getActiveLocale());
 }
 
 export function toLoginPath(returnTo?: string, locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
+  const currentLocale = locale ?? getActiveLocale();
   const base = translatePath("/dang-nhap/", currentLocale);
-  if (returnTo) {
-    const translatedReturnTo = translatePath(returnTo, currentLocale);
-    return `${base}?tiep=${encodeURIComponent(translatedReturnTo)}`;
-  }
-  return base;
+  return returnTo ? `${base}?tiep=${encodeURIComponent(translatePath(returnTo, currentLocale))}` : base;
 }
 
-/**
- * Like toLoginPath but skips appending the returnTo when it is itself
- * an auth page (login, register, etc.) — prevents auth → auth redirect loops.
- */
 export function getSafeLoginHref(returnTo: string | undefined, locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  const base = translatePath("/dang-nhap/", currentLocale);
-  if (!returnTo || isAuthRoute(returnTo)) {
-    return base;
-  }
-  const translatedReturnTo = translatePath(returnTo, currentLocale);
-  return `${base}?tiep=${encodeURIComponent(translatedReturnTo)}`;
+  if (!returnTo || isAuthRoute(returnTo)) return toLoginPath(undefined, locale);
+  return toLoginPath(returnTo, locale);
 }
 
 export function toForgotPasswordPath(token?: string, locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  const base = translatePath("/quen-mat-khau/", currentLocale);
-  if (token) return `${base}?token=${encodeURIComponent(token)}`;
-  return base;
+  const base = translatePath("/quen-mat-khau/", locale ?? getActiveLocale());
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
 export function toRegisterPath(locale?: Locale): string {
-  return translatePath("/dang-ky/", locale || getActiveLocale());
+  return translatePath("/dang-ky/", locale ?? getActiveLocale());
 }
 
 export function toAccountPath(locale?: Locale): string {
-  return translatePath("/tai-khoan/", locale || getActiveLocale());
+  return translatePath("/tai-khoan/", locale ?? getActiveLocale());
 }
 
 export function toOrderHistoryPath(locale?: Locale): string {
-  return translatePath("/tai-khoan/don-hang/", locale || getActiveLocale());
+  return translatePath("/tai-khoan/don-hang/", locale ?? getActiveLocale());
 }
 
 export function toCanonicalUrl(path: string): string {
@@ -310,71 +274,25 @@ export function getSiteOrigin(): string {
   return SITE_ORIGIN;
 }
 
-// Auth pages that should never be used as returnTo destinations.
-// Handles both /path and /path/ variants.
-const AUTH_ROUTE_PATHS = [
-  "/dang-nhap",
-  "/dang-ky",
-  "/quen-mat-khau",
-  "/xac-nhan-email",
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/verify-email",
-] as const;
+const AUTH_ROUTE_PATHS = new Set([
+  "/dang-nhap", "/dang-ky", "/quen-mat-khau", "/xac-nhan-email",
+  "/login", "/register", "/forgot-password", "/verify-email",
+]);
 
-/** Returns true when pathname is an auth-specific page (login, register, etc.). */
 export function isAuthRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  const p = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  return (AUTH_ROUTE_PATHS as readonly string[]).includes(p);
+  const internal = resolveInternalPath(splitHref(pathname).pathname).replace(/\/+$/, "");
+  return AUTH_ROUTE_PATHS.has(internal);
 }
 
-type LocalizedRouteResult =
+export type LocalizedRouteResult =
   | { action: "redirect"; url: string }
   | { action: "rewrite"; url: string }
   | { action: "passthrough" };
 
-/**
- * Determines what the proxy/middleware should do with a given request path.
- *
- * - "redirect":   Browser should navigate to `url` (307).
- * - "rewrite":    Serve content from `url` transparently (URL bar unchanged).
- *                 Used when EN display paths (e.g. /cart/) map to VI physical
- *                 files (e.g. /gio-hang/) in the Next.js app directory.
- * - "passthrough": No action needed.
- */
-export function getLocalizedRoute(
-  pathnameWithSearch: string,
-  locale: Locale,
-): LocalizedRouteResult {
-  const qIdx = pathnameWithSearch.indexOf("?");
-  const search = qIdx >= 0 ? pathnameWithSearch.slice(qIdx) : "";
-  const pathname = qIdx >= 0 ? pathnameWithSearch.slice(0, qIdx) : pathnameWithSearch;
-
-  if (locale === "en") {
-    // Is this an EN display URL that has a VI physical equivalent?
-    // (e.g. /cart/ → /gio-hang/). True EN entity routes pass through unchanged.
-    const viEquivalent = translatePath(pathname, "vi");
-    if (viEquivalent !== pathname) {
-      // Rewrite: serve the VI physical file while keeping the EN URL in the browser.
-      return { action: "rewrite", url: viEquivalent + search };
-    }
-    // Is this a VI path that should be displayed as EN?
-    // (e.g. /gio-hang/ when locale is EN → redirect to /cart/)
-    const enEquivalent = translatePath(pathname, "en");
-    if (enEquivalent !== pathname) {
-      return { action: "redirect", url: enEquivalent + search };
-    }
-    return { action: "passthrough" };
-  } else {
-    // VI locale: any EN display path should redirect to its VI equivalent.
-    const viEquivalent = translatePath(pathname, "vi");
-    if (viEquivalent !== pathname) {
-      return { action: "redirect", url: viEquivalent + search };
-    }
-    return { action: "passthrough" };
-  }
+/** Compatibility helper for tests and legacy callers; next-intl middleware owns rewrites. */
+export function getLocalizedRoute(pathnameWithSearch: string, locale: Locale): LocalizedRouteResult {
+  const target = translatePath(pathnameWithSearch, locale);
+  const current = withTrailingSlash(splitHref(pathnameWithSearch).pathname) + splitHref(pathnameWithSearch).suffix;
+  return target === current ? { action: "passthrough" } : { action: "redirect", url: target };
 }
-
-

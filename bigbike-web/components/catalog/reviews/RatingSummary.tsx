@@ -22,7 +22,7 @@ export function RatingSummary({
     <div className="flex flex-col gap-6 border border-border p-6 sm:flex-row sm:items-center sm:gap-8">
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 max-sm:border-b max-sm:border-border max-sm:pb-6 sm:w-40 sm:border-r sm:border-border">
         <div className="flex items-baseline gap-1">
-          <span className="font-cta text-a1-title font-semibold leading-none text-[var(--bb-text-primary)]">
+          <span className="font-body text-a1-title font-semibold leading-none text-[var(--bb-text-primary)]">
             {avg.toFixed(1)}
           </span>
           <span className="text-a5-meta text-muted-foreground">/5</span>

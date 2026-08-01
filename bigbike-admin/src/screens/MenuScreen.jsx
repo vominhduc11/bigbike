@@ -586,7 +586,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                 <FilterSearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc URL...' })}
+                  placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc đường dẫn...' })}
                   ariaLabel={t('menus.searchAria', { defaultValue: 'Tìm kiếm mục menu' })}
                 />
               </div>

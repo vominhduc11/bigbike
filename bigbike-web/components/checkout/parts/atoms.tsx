@@ -9,7 +9,7 @@ import { zaloHref } from "@/lib/utils/format";
 
 export function CheckoutStepTitle({ step, children }: { step?: number; children: React.ReactNode }) {
   return (
-    <div className="mb-6 font-cta text-a2-page font-semibold uppercase">
+    <div className="mb-6 font-body text-a2-page font-semibold">
       {step == null ? (
         <h3 className="m-0">{children}</h3>
       ) : (

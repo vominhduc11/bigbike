@@ -2,6 +2,7 @@ import { HeaderClient } from "@/components/layout/HeaderClient";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { pickSetting } from "@/lib/utils/settings";
+import type { Locale } from "@/i18n/locale";
 
 function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
   return nodes
@@ -12,15 +13,14 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
 export async function Header({
   menuNodesVi,
   menuNodesEn,
+  locale,
 }: {
   menuNodesVi: HeaderNavNode[];
   menuNodesEn: HeaderNavNode[];
+  locale: Locale;
 }) {
-  const [settingsVi, settingsEn] = await Promise.all([
-    listPublicSettings("vi"),
-    listPublicSettings("en"),
-  ]);
-  const settings = settingsVi.data ?? [];
+  const settingsResult = await listPublicSettings(locale);
+  const settings = settingsResult.data ?? [];
 
   return (
     <HeaderClient
@@ -39,7 +39,7 @@ export async function Header({
           holiday: pickSetting(settings, ["opening_hours_holiday"]),
         },
         descriptionVi: pickSetting(settings, ["footer_description"]),
-        descriptionEn: pickSetting(settingsEn.data ?? [], ["footer_description"]),
+        descriptionEn: pickSetting(settings, ["footer_description"]),
       }}
     />
   );

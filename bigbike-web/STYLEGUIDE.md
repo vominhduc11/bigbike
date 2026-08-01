@@ -17,10 +17,11 @@
 | Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
 | Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
 | Font body / link | Arial |
-| Font heading / display / nav / CTA / label | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
+| Font display / nav / CTA / nhãn chức năng (nhóm B) | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
+| Font tiêu đề trang / tiêu đề nội dung / body / link (nhóm A) | Arial / Helvetica |
 | Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
 | Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
-| Copy | Tiếng Việt đầy đủ dấu; CTA và heading thường viết HOA |
+| Copy | Tiếng Việt đầy đủ dấu; nhóm B luôn viết HOA, nhóm A dùng sentence case |
 | Emoji | Không dùng |
 
 ---
@@ -150,7 +151,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
 - Tile: nền trắng, cao 290px (mobile co còn 170px), radius `0`, không shadow ở trạng thái nghỉ.
 - Icon: wrapper cố định 72px (mobile 48px) → 80px (≥ 1536) → 88px (≥ 2560), `object-contain`, căn giữa.
-- Label: Barlow Condensed, UPPERCASE, weight 600, nhóm A4; clamp tối đa 2 dòng. Màn siêu rộng chỉ nới tile, không đổi cỡ chữ.
+- Label: Arial/Helvetica, sentence case, weight 600, nhóm A4 (`text-a4-content`); clamp tối đa 2 dòng. Màn siêu rộng chỉ nới tile, không đổi cỡ chữ.
 - Hover: ảnh đỏ `cat-hover.jpg` phủ kín tile (200ms), icon invert trắng + scale `1.06`, label trắng.
 - Active: icon scale `0.97`. Focus-visible: outline `2px solid var(--bb-link-text)` (`#005FCC`), offset `-3px`.
 

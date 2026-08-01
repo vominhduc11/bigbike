@@ -11,10 +11,11 @@ import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
 import { cn } from "@/lib/utils";
+import { toSearchPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { iconBtn } from "@/lib/ui-classes";
 import type { ArticleSuggestion, PopularCategory, SearchSuggestion } from "./search/types";
 import {
-  SEARCH_PATH,
   sClose,
   sForm,
   sIcon,
@@ -41,7 +42,7 @@ export function SearchToggle({
   renderTrigger = true,
 }: SearchToggleProps) {
   const t = useTranslations("Search");
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const router = useRouter();
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +141,7 @@ export function SearchToggle({
     if (!trimmed) return;
     addSearch(trimmed);
     handleClose();
-    router.push(`${SEARCH_PATH}?s=${encodeURIComponent(trimmed)}`);
+    router.push(`${toSearchPath(locale)}?s=${encodeURIComponent(trimmed)}`);
   }
 
   return (

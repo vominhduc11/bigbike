@@ -20,6 +20,15 @@ import { pickDefaultAddress } from "./helpers";
 
 type VnAddress = { province: string; ward: string };
 const EMPTY_VN_ADDRESS: VnAddress = { province: "", ward: "" };
+const EMPTY_CHECKOUT_ADDRESS: CheckoutAddressFormValues = {
+  fullName: "",
+  phone: "",
+  email: "",
+  country: "VN",
+  province: "",
+  ward: "",
+  addressLine1: "",
+};
 
 /**
  * Toàn bộ state + logic nghiệp vụ của trang Thanh toán: 2 form địa chỉ (billing +
@@ -39,7 +48,7 @@ export function useCheckout() {
   const [submitError, setSubmitError] = useState("");
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
   const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
-  const [gtmFired, setGtmFired] = useState(false);
+  const gtmCartId = useRef<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
@@ -71,16 +80,6 @@ export function useCheckout() {
     () => zodResolver(createCheckoutAddressSchema(tValidation, true)),
     [tValidation],
   );
-  const billingDefaultValues = useRef<CheckoutAddressFormValues>({
-    fullName: "",
-    phone: "",
-    email: "",
-    country: "VN",
-    province: "",
-    ward: "",
-    addressLine1: "",
-  }).current;
-
   const {
     register,
     trigger,
@@ -90,7 +89,7 @@ export function useCheckout() {
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
     resolver: billingResolver,
-    defaultValues: billingDefaultValues,
+    defaultValues: EMPTY_CHECKOUT_ADDRESS,
   });
 
   // useWatch chỉ còn dùng cho 4 ô register()-based (fullName/phone/email/
@@ -103,16 +102,6 @@ export function useCheckout() {
     () => zodResolver(createCheckoutAddressSchema(tValidation)),
     [tValidation],
   );
-  const shipDefaultValues = useRef<CheckoutAddressFormValues>({
-    fullName: "",
-    phone: "",
-    email: "",
-    country: "VN",
-    province: "",
-    ward: "",
-    addressLine1: "",
-  }).current;
-
   const {
     register: registerShip,
     trigger: triggerShip,
@@ -121,18 +110,18 @@ export function useCheckout() {
     formState: { errors: shipErrors },
   } = useForm<CheckoutAddressFormValues>({
     resolver: shipResolver,
-    defaultValues: shipDefaultValues,
+    defaultValues: EMPTY_CHECKOUT_ADDRESS,
   });
 
   useEffect(() => {
-    if (!cart || gtmFired) return;
+    if (!cart || gtmCartId.current === cart.id) return;
     pushDataLayer("begin_checkout", {
       currency: cart.currency ?? "VND",
       value: cart.totals.totalAmount,
       items: toGtmCartItems(cart.items),
     });
-    setGtmFired(true);
-  }, [cart, gtmFired]);
+    gtmCartId.current = cart.id;
+  }, [cart]);
 
   // Không dùng "chạy một lần" (useRef khoá) — nếu request profile/addresses tới
   // chậm hơn lần mount trước, hoặc trang được giữ lại (không remount) khi khách rời
@@ -263,8 +252,8 @@ export function useCheckout() {
       } else {
         router.push(toOrderConfirmPath(order.orderNumber, order.orderKey, locale));
       }
-    } catch (err: unknown) {
-      setSubmitError((err as Error).message);
+    } catch {
+      setSubmitError(t("submitFailed"));
     } finally {
       setSubmitting(false);
     }

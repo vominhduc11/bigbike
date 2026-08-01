@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     // so the effective rhythm is pt-5/pb-10. 1.5rem font + 1.2 line-height per WP parity.
     const itemCls = "inline-block px-2 text-a2-page font-semibold";
     const linkBase =
-      "inline-flex items-center justify-center px-2.5 py-2.5 text-a2-page leading-[1.2] no-underline";
+      "inline-flex items-center justify-center px-2.5 py-2.5 text-a2-page leading-title no-underline";
     // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
     return (
       <nav className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>

@@ -1,19 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { useLocale } from "next-intl";
+import Link from "@/i18n/StorefrontLink";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
-import { fetchPublicMenu } from "@/lib/api/client-api";
+import { type Locale } from "@/i18n/locale";
 import { cn } from "@/lib/utils";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
-import { buildPublicMenuTree } from "@/lib/utils/public-menu";
-import { translatePath } from "@/lib/utils/routes";
+import { localizeStorefrontHref } from "@/lib/utils/routes";
 import { submenuIcon } from "@/lib/ui-classes";
 
 type HeaderMenuProps = {
@@ -39,16 +36,10 @@ const mobileIndent = ["pl-[25px]", "pl-12.5", "pl-17.5", "pl-22.5"];
 
 export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProps) {
   const locale = useLocale();
-  const isAlt = locale !== DEFAULT_LOCALE;
+  const t = useTranslations("Header");
   const [expanded, setExpanded] = useState<Set<HeaderNavNode["id"]>>(new Set());
   const [suppressedId, setSuppressedId] = useState<HeaderNavNode["id"] | null>(null);
-  const { data } = useQuery({
-    queryKey: ["header-menu", "primary", locale],
-    queryFn: () => fetchPublicMenu("primary", locale).then((res) => buildPublicMenuTree(res.items || [])),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
-  const nodes = filterMenuNodes(isAlt && data ? data : initialNodes);
+  const nodes = filterMenuNodes(initialNodes);
 
   function toggleNode(id: HeaderNavNode["id"]) {
     setExpanded((current) => {
@@ -61,23 +52,25 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
 
   if (variant === "mobile") {
     return (
-      <nav aria-label="Menu chính" className="text-white">
+      <nav aria-label={t("menu")} className="text-white">
         <MobileMenuList
           nodes={nodes}
           locale={locale}
           expanded={expanded}
           toggleNode={toggleNode}
           onNavigate={onNavigate}
+          expandLabel={t("mobileMenuExpandAriaLabel", { label: "{label}" })}
+          collapseLabel={t("mobileMenuCollapseAriaLabel", { label: "{label}" })}
         />
       </nav>
     );
   }
 
   return (
-    <nav aria-label="Menu chính" data-header-desktop-menu className="h-full">
+    <nav aria-label={t("menu")} data-header-desktop-menu className="h-full">
       <ul className="m-0 flex h-full list-none items-center p-0">
         {nodes.map((node) => {
-          const href = translatePath(normalizeMenuUrl(node.url) || "/", locale as Locale);
+          const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
           const hasChildren = node.children.length > 0;
           return (
             <li
@@ -135,7 +128,7 @@ function DesktopSubmenu({
       )}
     >
       {nodes.map((node) => {
-        const href = translatePath(normalizeMenuUrl(node.url) || "/", locale as Locale);
+        const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
         const hasChildren = node.children.length > 0;
         return (
           <li
@@ -177,6 +170,8 @@ function MobileMenuList({
   toggleNode,
   onNavigate,
   depth = 0,
+  expandLabel,
+  collapseLabel,
 }: {
   nodes: HeaderNavNode[];
   locale: string;
@@ -184,11 +179,13 @@ function MobileMenuList({
   toggleNode: (id: HeaderNavNode["id"]) => void;
   onNavigate?: () => void;
   depth?: number;
+  expandLabel: string;
+  collapseLabel: string;
 }) {
   return (
     <ul className="m-0 list-none p-0">
       {nodes.map((node) => {
-        const href = translatePath(normalizeMenuUrl(node.url) || "/", locale as Locale);
+        const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
         const hasChildren = node.children.length > 0;
         const open = expanded.has(node.id);
         return (
@@ -201,7 +198,9 @@ function MobileMenuList({
               className={cn(
                 "flex min-h-13 items-center pr-17.5 text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
-                depth === 0 ? "py-[15px] font-cta text-b4-action font-semibold uppercase" : "py-3 font-body text-a5-meta",
+                depth === 0
+                  ? "py-[15px] font-cta text-b4-action font-semibold uppercase"
+                  : "py-3 font-body text-a5-meta",
               )}
             >
               {node.iconUrl ? (
@@ -220,7 +219,7 @@ function MobileMenuList({
                 variant="ghost"
                 size="icon"
                 data-header-submenu-trigger
-                aria-label={`${open ? "Đóng" : "Mở"} ${node.label}`}
+                aria-label={(open ? collapseLabel : expandLabel).replace("{label}", node.label)}
                 aria-expanded={open}
                 onClick={() => toggleNode(node.id)}
                 className="absolute right-2 top-1 min-h-11 w-11 text-white hover:bg-white/10 hover:text-white hover:not-disabled:scale-100"
@@ -240,7 +239,7 @@ function MobileMenuList({
                 )}
               >
                 <div className="min-h-0 overflow-hidden">
-                  <MobileMenuList nodes={node.children} locale={locale} expanded={expanded} toggleNode={toggleNode} onNavigate={onNavigate} depth={depth + 1} />
+                  <MobileMenuList nodes={node.children} locale={locale} expanded={expanded} toggleNode={toggleNode} onNavigate={onNavigate} depth={depth + 1} expandLabel={expandLabel} collapseLabel={collapseLabel} />
                 </div>
               </div>
             ) : null}

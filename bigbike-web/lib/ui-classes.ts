@@ -40,27 +40,27 @@ export const accountSidebar =
  * Every font size maps to one canonical A/B group from docs/TYPOGRAPHY.md. */
 
 /** Form field label (was `.bb-field-label`). */
-export const fieldLabel = "text-a5-meta font-bold uppercase tracking-display text-muted-foreground";
+export const fieldLabel = "font-body text-a5-meta font-bold text-muted-foreground";
 /** Section eyebrow / kicker — the small uppercase label above a section title.
  * Compose with spacing, e.g. `cn(sectionEyebrow, "mb-3")`. */
 export const sectionEyebrow =
-  "font-body text-b5-label tracking-normal font-bold leading-title uppercase text-muted-foreground";
+  "font-cta text-b5-label tracking-normal font-bold leading-title uppercase text-muted-foreground";
 /** Primary section heading (h2-level), group A1. Compose with spacing, e.g.
  * `cn(sectionHeading, "mb-4")`. */
 export const sectionHeading =
-  "m-0 font-body text-a1-title font-semibold leading-title tracking-normal uppercase text-foreground";
+  "m-0 font-body text-a1-title font-semibold leading-title tracking-normal text-foreground";
 /** Smaller section subheading (was `.bb-section-subheading`). */
-export const sectionSubheading = "font-body text-a4-content font-semibold uppercase text-foreground";
+export const sectionSubheading = "font-body text-a4-content font-semibold text-foreground";
 /** Empty/error state title (was `.bb-state-title`). */
-export const stateTitle = "m-0 font-body text-a3-section font-semibold uppercase text-foreground";
+export const stateTitle = "m-0 font-body text-a3-section font-semibold text-foreground";
 /** Inline meta label (was `.bb-meta-label`). */
-export const metaLabel = "text-a5-meta uppercase tracking-display text-muted-foreground";
+export const metaLabel = "font-body text-a5-meta text-muted-foreground";
 /** Table column header (was `.bb-table-header`). */
-export const tableHeader = "font-body text-b5-label font-semibold uppercase tracking-wide";
+export const tableHeader = "font-cta text-b5-label font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
-export const detailTableCell = "mt-[3px] block text-a5-meta font-bold normal-case tracking-wide text-foreground";
+export const detailTableCell = "mt-[3px] block font-body text-a5-meta font-bold normal-case tracking-normal text-foreground";
 /** Category badge text (was `.bb-category-badge`), group B5. */
-export const categoryBadge = "m-0 text-b5-label font-bold uppercase tracking-display text-brand";
+export const categoryBadge = "m-0 font-cta text-b5-label font-bold uppercase tracking-display text-brand";
 
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
  * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
@@ -70,7 +70,7 @@ export const categoryBadge = "m-0 text-b5-label font-bold uppercase tracking-dis
  * per-button visibility classes (e.g. `hidden md:inline-flex`). */
 export const iconBtn =
   "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] 4xl:px-5 " +
-  "!text-white bg-transparent border-none rounded-none text-b4-action leading-none cursor-pointer no-underline " +
+  "!text-white bg-transparent border-none rounded-none font-cta text-b4-action uppercase leading-none cursor-pointer no-underline " +
   "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
   // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`
   // (brand red #cc0906) would otherwise beat this; rgba (not the /opacity form) to

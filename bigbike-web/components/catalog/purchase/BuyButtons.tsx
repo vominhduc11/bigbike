@@ -40,7 +40,7 @@ export function BuyButtons({
           type="button"
           variant="primary"
           data-purchase-add
-          className="h-13 w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action"
+          className="h-13 w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action uppercase"
           disabled={!canBuy || adding}
           onClick={onAdd}
         >
@@ -72,7 +72,7 @@ export function BuyButtons({
           // Xem trước: giữ đúng bố cục nút nhưng mờ + khóa bấm (span, không href).
           <span
             aria-disabled="true"
-            className="flex h-13 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo opacity-50 cursor-not-allowed"
+            className="flex h-13 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action uppercase text-zalo opacity-50 cursor-not-allowed"
           >
             <ZaloIcon className="size-5 shrink-0" />
             {tb("mobileZaloConsult")}
@@ -81,7 +81,7 @@ export function BuyButtons({
           <Button
             asChild
             variant="outline"
-            className="h-13 w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
+            className="h-13 w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action uppercase text-zalo hover:bg-zalo-soft hover:text-zalo"
           >
             <a
               href={zaloUrl ? zaloHref(zaloUrl) : "#"}

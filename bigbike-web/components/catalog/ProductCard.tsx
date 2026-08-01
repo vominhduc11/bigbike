@@ -70,7 +70,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
             data-product-sale
             className="absolute left-0 top-5 flex h-8 w-20 items-center justify-center bg-[url('/brand/product-sale-ticket.svg')] bg-left-top bg-no-repeat"
           >
-            <span className="-rotate-[20deg] font-cta text-b3-promo font-semibold leading-7 text-white">
+            <span className="-rotate-[20deg] font-cta text-b3-promo font-semibold uppercase leading-7 text-white">
               {discountPercent}%
             </span>
           </div>
@@ -91,7 +91,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
       <div className="flex flex-1 flex-col">
         <h3
           className={cn(
-            "m-0 font-body text-a4-content font-semibold uppercase",
+            "m-0 font-body text-a4-content font-semibold",
             layout === "grid"
               ? "line-clamp-2 min-h-10 leading-tight"
               : "h-6 min-h-6 truncate leading-normal",

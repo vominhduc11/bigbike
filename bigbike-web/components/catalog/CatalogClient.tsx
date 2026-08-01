@@ -4,7 +4,6 @@ import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicProductList, type PublicProductListResult } from "@/lib/api/client-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
@@ -125,11 +124,11 @@ export function CatalogClient({
     catalog.filters.minPrice === undefined &&
     catalog.filters.maxPrice === undefined;
   const initialData =
-    isDefaultView && locale === DEFAULT_LOCALE && initialProducts
+    isDefaultView && initialProducts
       ? { data: initialProducts, pagination: initialPagination }
       : undefined;
 
-  const { data, isLoading, isFetching, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ["catalog-products", productQuery],
     queryFn: () => fetchPublicProductList(productQuery),
     enabled: !hasValidationErrors && !blockedByEmptyQuery,
@@ -155,7 +154,7 @@ export function CatalogClient({
     : blockedByEmptyQuery
       ? emptyQueryText
       : isError
-        ? (error instanceof Error ? error.message : tCat("categoryLoadFailed"))
+        ? tCat("categoryLoadFailed")
         : firstLoading
           ? null
           : products.length === 0

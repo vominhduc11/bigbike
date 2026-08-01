@@ -139,7 +139,7 @@ export function ImportProductsDialog({ file, open, onClose }) {
           <div className="overflow-x-auto border border-border rounded-md">
             <table className="w-full text-sm">
               <caption className="sr-only">
-                {t('import.tableCaption', { defaultValue: 'Kết quả kiểm tra từng dòng sản phẩm trong file nhập' })}
+                {t('import.tableCaption', { defaultValue: 'Kết quả kiểm tra từng dòng sản phẩm trong tệp nhập' })}
               </caption>
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left">

@@ -285,7 +285,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
           <div className="flex gap-2 items-center">
             <Input
               aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-              placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'URL video đã tải lên' })}
+              placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'Địa chỉ video đã tải lên' })}
               value={block.url || ''}
               onChange={(e) => onChange({ url: e.target.value })}
               disabled={disabled || isEn}

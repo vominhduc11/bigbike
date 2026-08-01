@@ -1,5 +1,5 @@
 import { getRequestConfig } from "next-intl/server";
-import { DEFAULT_TIME_ZONE, resolveLocale } from "./locale";
+import { DEFAULT_TIME_ZONE, isLocale } from "./locale";
 
 /**
  * Server render tĩnh theo locale — mặc định `vi`, KHÔNG đọc cookie/header ở tầng
@@ -16,8 +16,9 @@ import { DEFAULT_TIME_ZONE, resolveLocale } from "./locale";
  *
  * Nội dung dữ liệu EN vốn fallback về VI field-by-field (PRODUCT_RULE_001/002).
  */
-export default getRequestConfig(async ({ locale }) => {
-  const resolved = resolveLocale(locale);
+export default getRequestConfig(async ({ requestLocale }) => {
+  const requested = await requestLocale;
+  const resolved = isLocale(requested) ? requested : "vi";
   return {
     locale: resolved,
     timeZone: DEFAULT_TIME_ZONE,

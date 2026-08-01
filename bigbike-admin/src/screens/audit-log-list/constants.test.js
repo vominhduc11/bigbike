@@ -121,14 +121,14 @@ describe('nhãn hiển thị', () => {
   })
 
   it('mã hành động lạ rơi về hiển thị nguyên mã trong ngoặc', () => {
-    expect(getActionLabel(t, 'SOMETHING_BRAND_NEW')).toBe('(SOMETHING_BRAND_NEW)')
+    expect(getActionLabel(t, 'SOMETHING_BRAND_NEW')).toBe('Hoạt động khác')
   })
 
   it('mã hành động lạ vẫn có nhãn dự phòng khi bộ dịch trả lại nguyên khóa', () => {
     const keyReturningT = (key, options = {}) => (
       key === 'auditLog.actionOther' ? `(${options.code})` : key
     )
-    expect(getActionLabel(keyReturningT, 'SOMETHING_BRAND_NEW')).toBe('(SOMETHING_BRAND_NEW)')
+    expect(getActionLabel(keyReturningT, 'SOMETHING_BRAND_NEW')).toBe('Hoạt động khác')
   })
 
   it('hành động rỗng hiển thị dấu gạch, không phải chuỗi rỗng', () => {

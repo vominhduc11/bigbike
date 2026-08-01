@@ -1012,12 +1012,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const seoTitleVal = langValue('seoTitle')
   const seoDescVal = langValue('seoDescription')
   const seoChecks = [
-    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
-    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
-    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
-    { ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(), label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
-    { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
-    { ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0, label: t('products.detail.seoCheckSchema', { defaultValue: 'Schema Product (đủ ảnh + giá)' }) },
+    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
+    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–160 ký tự' }) },
+    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
+    { ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(), label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có mô tả' }) },
+    { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
+    { ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0, label: t('products.detail.seoCheckSchema', { defaultValue: 'Thông tin sản phẩm có đủ ảnh và giá' }) },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
@@ -2063,7 +2063,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={<RoleBadge role="content" />}
               >
                 <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.' })}
+                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn kích cỡ (nhập theo cột/dòng hoặc dán nội dung có sẵn). Bảng sẽ hiển thị riêng trên trang sản phẩm, ngay sau mục Phù hợp với ai. Để trống, website sẽ ẩn bảng này.' })}
                 </p>
                 {sizeGuideCreateLockedInEn ? (
                   <p className="list-editor-empty">
@@ -2315,7 +2315,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <div className="flex items-center justify-between mb-2">
                     <span className="flex items-center gap-1.5 text-sm font-semibold">
                       <Check size={14} />
-                      {t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
+                      {t('products.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
                     </span>
                     <span className="font-mono text-sm font-bold text-success">
                       {seoPassed} / {seoChecks.length}

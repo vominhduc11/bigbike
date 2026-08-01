@@ -224,7 +224,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   async function attemptClose() {
     if (uploading || hasSelection) {
       const ok = await showConfirm(
-        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang chọn hoặc tải file lên. Đóng sẽ mất lựa chọn và tiến trình đang tải. Tiếp tục?' }),
+        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang chọn hoặc tải tệp lên. Đóng sẽ mất lựa chọn và tiến trình đang tải. Tiếp tục?' }),
         t('media.picker.closeConfirmTitle', { defaultValue: 'Đóng cửa sổ chọn?' }),
       )
       if (!ok) return
@@ -236,13 +236,13 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     return createPortal(
       <>
         <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-        <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label="Thiếu quyền Media">
+        <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label="Không thể mở thư viện ảnh/video">
           <div className="mpicker-header">
-            <h3 className="mpicker-title">Không thể mở Thư viện Media</h3>
+            <h3 className="mpicker-title">Không thể mở thư viện ảnh/video</h3>
             <Button variant="secondary" size="sm" type="button" onClick={onClose}>Đóng</Button>
           </div>
           <div className="p-4 text-sm text-muted-foreground">
-            Tài khoản cần quyền media.read để xem và chọn file. Không có yêu cầu Media nào được gửi.
+            Tài khoản chưa được cấp quyền xem thư viện ảnh/video. Bạn chưa thể chọn tệp ở đây.
           </div>
         </div>
       </>,

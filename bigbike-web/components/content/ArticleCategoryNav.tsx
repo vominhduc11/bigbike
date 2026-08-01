@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/i18n/StorefrontLink";
 import type { ContentCategoryWithCount } from "@/lib/contracts/public";
 import type { Locale } from "@/i18n/locale";
 import { buildQueryString } from "@/lib/utils/query";
@@ -22,7 +22,7 @@ export function ArticleCategoryNav({
 
   return (
     <aside className="md:col-span-3">
-      <h2 className="mb-3 border-b border-border pb-3 font-cta text-a3-section font-bold uppercase text-foreground">
+      <h2 className="mb-3 border-b border-border pb-3 font-body text-a3-section font-bold text-foreground">
         {heading}
       </h2>
       <nav aria-label={heading}>
@@ -45,7 +45,7 @@ export function ArticleCategoryNav({
                   )}
                 >
                   <span>{category.name}</span>
-                  <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-secondary px-2 py-1 text-b5-label text-muted-foreground">
+                  <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-secondary px-2 py-1 font-cta text-b5-label uppercase text-muted-foreground">
                     {category.articleCount}
                   </span>
                 </Link>

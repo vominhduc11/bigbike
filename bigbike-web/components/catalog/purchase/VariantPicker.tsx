@@ -41,7 +41,7 @@ export function VariantPicker({
         const opts = distinctOptions(variants, attr);
         return (
           <div key={attr}>
-            <p className="mb-3 font-cta text-a4-content font-semibold uppercase leading-none text-foreground">{attr}</p>
+            <p className="mb-3 font-cta text-b4-action font-semibold uppercase leading-none text-foreground">{attr}</p>
             <RadioGroup
               aria-label={attr}
               // Luôn MỘT HÀNG, không xuống dòng: nhiều ô hơn bề ngang thì CUỘN NGANG
@@ -76,7 +76,7 @@ export function VariantPicker({
                       if (checked) onPick(attr, o.value);
                     }}
                     className={cn(
-                      "flex shrink-0 items-center justify-center font-body text-a4-content font-semibold uppercase text-foreground [scroll-snap-align:start]",
+                      "flex shrink-0 items-center justify-center font-cta text-b4-action font-semibold uppercase text-foreground [scroll-snap-align:start]",
                       // Ô luôn VUÔNG (size-13) dù chữ hay ảnh — không còn giãn lấp hàng
                       // để khớp chiều rộng đồng nhất trên hàng cuộn ngang.
                       !color && "size-13 px-1",
