@@ -28,7 +28,7 @@ export function StarIcon({ filled, className }: { filled: boolean; className?: s
 export function PartialStarIcon({ fill, className, gradientId }: { fill: number; className?: string; gradientId: string }) {
   const pct = Math.round(fill * 100);
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={cn("h-4 w-4 text-brand", className)}>
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={cn("h-4 w-4 text-rating-star", className)}>
       <defs>
         <linearGradient id={gradientId}>
           <stop offset={`${pct}%`} stopColor="currentColor" />
@@ -85,7 +85,7 @@ export function StarRatingInput({
               {fill > 0 && (
                 <span className="pointer-events-none absolute inset-0.5">
                   {fill >= 1 ? (
-                    <StarIcon filled className="h-8 w-8 text-brand" />
+                    <StarIcon filled className="h-8 w-8 text-rating-star" />
                   ) : (
                     <PartialStarIcon fill={fill} className="h-8 w-8" gradientId={`${uid}-input-star-${star}`} />
                   )}

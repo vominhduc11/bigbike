@@ -69,7 +69,7 @@ export function RatingSummary({
               >
                 <span className="flex w-10 shrink-0 items-center gap-1 text-a5-meta text-[var(--bb-text-secondary)]">
                   {star}
-                  <StarIcon filled className="h-3.5 w-3.5 text-brand" />
+                  <StarIcon filled className="h-3.5 w-3.5 text-rating-star" />
                 </span>
                 <span className="h-2 flex-1 overflow-hidden bg-background">
                   <span className="block h-full bg-brand" style={{ width: `${pct}%` }} />

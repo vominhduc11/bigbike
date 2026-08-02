@@ -33,7 +33,7 @@ export function ReviewsPlaceholder({
     <div className="flex flex-col items-center justify-center gap-3 border border-border bg-card px-6 py-10 text-center max-md:py-8">
       <span
         aria-hidden="true"
-        className="flex h-14 w-14 items-center justify-center bg-[var(--bb-brand-primary-soft)] text-brand"
+        className="flex h-14 w-14 items-center justify-center bg-[var(--bb-brand-primary-soft)] text-rating-star"
       >
         <StarIcon filled className="h-7 w-7" />
       </span>
