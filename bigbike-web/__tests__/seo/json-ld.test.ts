@@ -118,6 +118,8 @@ describe("buildProductJsonLd", () => {
   it("KHÔNG khai aggregateRating khi chưa có review thật (chống khai khống #23)", () => {
     expect(obj(buildProductJsonLd(makeProduct({ rating: 0, ratingCount: 0 }))).aggregateRating).toBeUndefined();
     expect(obj(buildProductJsonLd(makeProduct({ rating: 4, ratingCount: 0 }))).aggregateRating).toBeUndefined();
+    expect(obj(buildProductJsonLd(makeProduct({ rating: null, ratingCount: 18 }))).aggregateRating).toBeUndefined();
+    expect(obj(buildProductJsonLd(makeProduct({ rating: 7, ratingCount: 18 }))).aggregateRating).toBeUndefined();
     expect(obj(buildProductJsonLd(makeProduct({ ratingCount: null }))).aggregateRating).toBeUndefined();
   });
 

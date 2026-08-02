@@ -2,18 +2,17 @@
 
 import { useTranslations } from "next-intl";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { resolveRatingDisplay } from "@/lib/rating";
 
-// Khối sao + microdata aggregateRating trên tiêu đề. Chỉ hiện sao khi có đánh giá
-// thật (hasReviews — REVIEW_RULE_003); không thì hiện "Chưa có đánh giá" + link viết.
+// Khối sao + microdata aggregateRating trên tiêu đề. Rating rỗng luôn có sao trung
+// tính; aggregateRating chỉ xuất khi score và approved count hợp lệ (REVIEW_RULE_003).
 export function RatingBlock({
-  hasReviews,
   rating,
   ratingCount,
   onScrollToReviews,
   onOpenWriteReview,
   previewMode = false,
 }: {
-  hasReviews: boolean;
   rating: number | null;
   ratingCount: number | null;
   onScrollToReviews: (e: React.MouseEvent<HTMLAnchorElement>) => void;
@@ -28,12 +27,23 @@ export function RatingBlock({
   // mờ (không bấm được) để admin hiểu đây chỉ để xem, tránh bấm vào không có gì xảy ra.
   const reviewLinkClass = "text-brand! underline-offset-2 hover:underline";
   const reviewDisabledClass = "text-muted-foreground/70 cursor-not-allowed";
+  const state = resolveRatingDisplay(rating, ratingCount);
+  const hasRatedReview = state.kind === "rated";
+  const ratingAriaLabel = hasRatedReview
+    ? tb("ratingAria", { rating: state.rating.toFixed(1), count: state.count })
+    : state.kind === "empty"
+      ? tb("emptyRatingAria")
+      : tb("unavailableRatingAria", { count: state.count });
 
-  if (!hasReviews) {
+  if (!hasRatedReview) {
     return (
       <div className="mt-5 font-body text-a4-content text-muted-foreground">
-        <p className="m-0">
-          {tb("noReviews")} —{" "}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label={ratingAriaLabel}>
+          <RatingStars value={state.rating} empty ariaLabel={ratingAriaLabel} />
+          <span>{state.kind === "empty" ? tb("noReviews") : tb("ratingUnavailable")}</span>
+          <span>{tb("ratingCount", { count: state.count })}</span>
+        </div>
+        <p className="m-0 mt-2">
           {previewMode ? (
             <span className={reviewDisabledClass} aria-disabled="true">{tb("writeFirst")}</span>
           ) : (
@@ -51,13 +61,13 @@ export function RatingBlock({
       {/* Sao vẽ bằng React (RatingStars) — KHÔNG để rỗng chờ plugin home.min.js
           vì script đó chỉ chạy lúc tải nguyên trang, điều hướng nội bộ vào PDP sẽ
           mất sao. text-a4-content = 18px khớp starSize cũ và thẻ sản phẩm. */}
-      <span className="text-a4-content">
-        <RatingStars value={rating} />
-      </span>
-      <br />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label={ratingAriaLabel}>
+        <RatingStars value={state.rating} ariaLabel={ratingAriaLabel} />
+        <span itemProp="ratingValue" className="tabular-nums">{state.rating.toFixed(1)}/5</span>
+        <span itemProp="reviewCount">{state.count}</span>
+        <span>{tb("ratingCount", { count: state.count })}</span>
+      </div>
       <p className="mb-0 mt-2">
-        {tb("ratingLabel")} <span itemProp="ratingValue">{rating}/</span>
-        <span itemProp="reviewCount">{ratingCount}</span>
         {" — "}
         {previewMode ? (
           <span className={reviewDisabledClass} aria-disabled="true">{tb("viewAllReviews")}</span>

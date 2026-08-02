@@ -26,8 +26,8 @@ function tabClass(active: boolean) {
   return cn(
     "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 [flex:1_1_0] " +
       "border-none bg-transparent cursor-pointer touch-manipulation font-cta tracking-normal " +
-      // `!` defeats the legacy unlayered legacy theme `a{color:#007bff}` that otherwise
-      // paints every tab bootstrap-blue and erases the active/inactive distinction.
+      // `!` defeats the legacy unlayered theme that otherwise paints every tab
+      // with its own link color and erases the active/inactive distinction.
       "text-white/50! transition-colors duration-150",
     active && "text-[color:var(--bb-brand-primary-on-dark)]!",
   );

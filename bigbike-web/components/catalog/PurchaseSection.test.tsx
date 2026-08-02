@@ -7,8 +7,15 @@ import { PurchaseSection } from "./PurchaseSection";
 const { localeState } = vi.hoisted(() => ({ localeState: { value: "vi" } }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string, values?: { rating?: string }) =>
-    key === "ratingStars" ? `${values?.rating} sao` : key,
+  useTranslations: () => (key: string, values?: { rating?: string; count?: number }) => {
+    if (key === "ratingStars") return `${values?.rating} sao`;
+    if (key === "ratingAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
+    if (key === "emptyRatingAria") return "Chưa có đánh giá, 0 đánh giá";
+    if (key === "unavailableRatingAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
+    if (key === "ratingCount") return `${values?.count} đánh giá`;
+    if (key === "ratingUnavailable") return "Chưa có điểm trung bình";
+    return key;
+  },
   useLocale: () => localeState.value,
 }));
 
@@ -63,31 +70,37 @@ beforeEach(() => {
   localeState.value = "vi";
 });
 
-describe("PurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () => {
-  it("ratingCount >= 1 → hiện sao (RatingStars) đúng trung bình + microdata aggregateRating", () => {
+describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_003", () => {
+  it("ratingCount >= 1 → hiển thị sao đúng trung bình + microdata aggregateRating", () => {
     const { container } = renderSection(4.0, 3);
-    const star = container.querySelector('[aria-label$="sao"]');
+    const star = container.querySelector('[aria-label="4.0 sao, 3 đánh giá"]');
     expect(star).not.toBeNull();
-    expect(star!.getAttribute("aria-label")).toBe("4.0 sao");
     const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
     expect(aggregate).not.toBeNull();
     expect(aggregate!.querySelector('[itemprop="reviewCount"]')!.textContent).toBe("3");
     expect(aggregate!.querySelector('[itemprop="ratingValue"]')!.textContent).toContain("4");
   });
 
-  it("0 review → ẩn sao hoàn toàn, hiện 'Chưa có đánh giá', KHÔNG xuất microdata", () => {
+  it("0 review → hiển thị sao trung tính và không xuất microdata", () => {
     const { container } = renderSection(null, null);
-    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
     expect(
       container.querySelector('[itemtype="https://schema.org/AggregateRating"]'),
     ).toBeNull();
     expect(screen.getByText(/noReviews/)).toBeInTheDocument();
   });
 
-  it("rating ảo 4.5 + ratingCount 0 (hàng WP-import) → vẫn ẩn sao (REVIEW_RULE_004)", () => {
+  it("rating ảo 4.5 + ratingCount 0 → vẫn hiển thị trạng thái trung tính", () => {
     const { container } = renderSection(4.5, 0);
-    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
     expect(screen.getByText(/noReviews/)).toBeInTheDocument();
+  });
+
+  it("count dương nhưng rating lỗi → giữ count và không xuất aggregateRating", () => {
+    const { container } = renderSection(null, 3);
+    expect(container.querySelector('[aria-label="Chưa có điểm trung bình, 3 đánh giá"]')).not.toBeNull();
+    expect(screen.getByText("3 đánh giá")).toBeInTheDocument();
+    expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
   });
 });
 

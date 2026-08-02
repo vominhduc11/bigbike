@@ -75,7 +75,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       <img
         src={slide.desktopSrc}
         alt={slide.alt}
-        className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
+        className="bb-main-banner-img block h-full min-h-[min(40vw,var(--bb-home-hero-height-max))] w-full object-cover object-center max-md:min-h-0"
         loading="eager"
         draggable={false}
       />
@@ -133,67 +133,70 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
-      className="bb-main-banner relative w-full h-[max(40vw,300px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black 3xl:max-h-270 4xl:max-h-300"
+      data-bb-full-bleed
+      className="bb-main-banner relative aspect-[12/5] h-auto w-full overflow-hidden bg-black max-md:aspect-[411/548]"
       aria-roledescription="carousel"
       aria-label="BigBike"
     >
-      {mounted ? (
-        <Swiper
-          className="js-home-banner"
-          modules={[Autoplay]}
-          loop={count > 1}
-          autoplay={
-            count > 1
-              ? { delay: 3000, disableOnInteraction: false }
-              : false
-          }
-          onSwiper={(swiper) => {
-            swiperRef.current = swiper;
-            enforceHorizontalTrack(swiper);
-          }}
-          onSlideChange={(swiper) => {
-            enforceHorizontalTrack(swiper);
-            setActiveIndex(swiper.realIndex);
-          }}
-          style={{ width: "100%", height: "100%" }}
-        >
-          {slides.map((slide) => (
-            <SwiperSlide
-              key={slide.id}
-              style={{ width: "100%", height: "100%" }}
-              product-code={slide.productCode || slide.categoryName || "BIGBIKE"}
-            >
-              <HeroSlideView slide={slide} />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      ) : (
-        <HeroSlideView slide={slides[0]} />
-      )}
+      <div className="relative h-full w-full">
+        {mounted ? (
+          <Swiper
+            className="js-home-banner"
+            modules={[Autoplay]}
+            loop={count > 1}
+            autoplay={
+              count > 1
+                ? { delay: 3000, disableOnInteraction: false }
+                : false
+            }
+            onSwiper={(swiper) => {
+              swiperRef.current = swiper;
+              enforceHorizontalTrack(swiper);
+            }}
+            onSlideChange={(swiper) => {
+              enforceHorizontalTrack(swiper);
+              setActiveIndex(swiper.realIndex);
+            }}
+            style={{ width: "100%", height: "100%" }}
+          >
+            {slides.map((slide) => (
+              <SwiperSlide
+                key={slide.id}
+                style={{ width: "100%", height: "100%" }}
+                product-code={slide.productCode || slide.categoryName || "BIGBIKE"}
+              >
+                <HeroSlideView slide={slide} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <HeroSlideView slide={slides[0]} />
+        )}
 
-      {count > 1 && mounted ? (
-        <>
-          <button
-            type="button"
-            className={`${ARROW_BASE} left-2.5`}
-            onClick={() => swiperRef.current?.slidePrev()}
-            aria-label={tA("slidePrev")}
-          >
-            <ChevronLeft aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            className={`${ARROW_BASE} right-2.5`}
-            onClick={() => swiperRef.current?.slideNext()}
-            aria-label={tA("slideNext")}
-          >
-            <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
-          </button>
-          <div className="absolute left-1/2 bottom-17.5 z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-a4-content leading-title text-left max-md:hidden">
-            <span>{activeIndex + 1}/{count}</span>
-          </div>
-        </>
-      ) : null}
+        {count > 1 && mounted ? (
+          <>
+            <button
+              type="button"
+              className={`${ARROW_BASE} left-2.5`}
+              onClick={() => swiperRef.current?.slidePrev()}
+              aria-label={tA("slidePrev")}
+            >
+              <ChevronLeft aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className={`${ARROW_BASE} right-2.5`}
+              onClick={() => swiperRef.current?.slideNext()}
+              aria-label={tA("slideNext")}
+            >
+              <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
+            </button>
+            <div className="absolute left-1/2 bottom-17.5 z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-a4-content leading-title text-left max-md:hidden">
+              <span>{activeIndex + 1}/{count}</span>
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

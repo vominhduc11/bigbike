@@ -25,7 +25,7 @@ export function CheckoutSkeleton() {
         <SkelText w="10%" />
         <SkelTitle w="25%" h="2em" />
       </div>
-      <div className="grid grid-cols-[1fr_420px] max-[1025px]:grid-cols-1 gap-8 max-md:gap-3.5 max-w-[var(--bb-container-wide)] min-[1536px]:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mb-10 max-md:mb-7 px-6 max-md:px-[var(--bb-mobile-page-x)]">
+      <div className="mx-auto mb-10 grid max-w-[var(--bb-container-wide)] grid-cols-[1fr_420px] gap-8 px-6 max-[1025px]:grid-cols-1 max-md:mb-7 max-md:gap-3.5 max-md:px-[var(--bb-mobile-page-x)]">
         <div>
           {/* Stepper */}
           <div className="flex gap-0 mb-6 max-md:mb-3.5 border-b border-b-border max-[601px]:overflow-x-auto max-[601px]:flex-nowrap max-[601px]:[scrollbar-width:none] max-[601px]:[&::-webkit-scrollbar]:hidden">

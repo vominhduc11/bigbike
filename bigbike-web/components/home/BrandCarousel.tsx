@@ -45,10 +45,6 @@ export function BrandCarousel({ brands }: Props) {
           watchOverflow
           breakpoints={{
             767: { slidesPerView: 5, spaceBetween: 40 },
-            // Ultra-wide: thêm logo để khớp container nới rộng (1600px @3xl, 2240px @4xl),
-            // giữ kích thước logo ~constant thay vì phình to. Chỉ tác động ≥1920/2560.
-            1920: { slidesPerView: 6, spaceBetween: 44 },
-            2560: { slidesPerView: 7, spaceBetween: 48 },
           }}
         >
           {brands.map((b) => {

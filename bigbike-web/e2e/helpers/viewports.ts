@@ -13,6 +13,7 @@ export type ViewportDef = {
 };
 
 export const VIEWPORTS: ViewportDef[] = [
+  { name: "mobile-360x800", width: 360, height: 800, kind: "mobile" },
   { name: "mobile-375x812", width: 375, height: 812, kind: "mobile" },
   { name: "mobile-390x844", width: 390, height: 844, kind: "mobile" },
   { name: "mobile-430x932", width: 430, height: 932, kind: "mobile" },
@@ -25,5 +26,5 @@ export const VIEWPORTS: ViewportDef[] = [
 ];
 
 /** Representative mobile/desktop used for visual snapshots + effect specs. */
-export const MOBILE: ViewportDef = VIEWPORTS[1]; // 390x844
-export const DESKTOP: ViewportDef = VIEWPORTS[6]; // 1440x900
+export const MOBILE: ViewportDef = VIEWPORTS.find((viewport) => viewport.name === "mobile-390x844")!;
+export const DESKTOP: ViewportDef = VIEWPORTS.find((viewport) => viewport.name === "desktop-1440x900")!;

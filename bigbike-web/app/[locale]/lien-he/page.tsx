@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { Container } from "@/components/layout/Container";
-import { ContactPageContent, type ContactInfo } from "@/components/contact/ContactPageContent";
+import { ContactMap, ContactPageContent, type ContactInfo } from "@/components/contact/ContactPageContent";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toPagePath } from "@/lib/utils/routes";
@@ -60,6 +60,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
 
   return (
     <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10 bb-contact-page">
+      <ContactMap contact={contact} />
       <Container>
         <ContactPageContent contact={contact} />
       </Container>

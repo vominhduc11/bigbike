@@ -1,6 +1,6 @@
 # BigBike Web Styleguide
 
-> Cập nhật ngày 2026-05-12: `bigbike-web` áp dụng theo file thiết kế do user cung cấp tại `C:\Users\vomin\Downloads\DESIGN.md`.
+> Cập nhật ngày 2026-08-01: `bigbike-web` áp dụng desktop canvas cố định 1440px; giao diện tại 1440px là baseline, không nới theo viewport lớn hơn.
 > Track B light-first WP-parity đã được chọn — xem `docs/audits/BIGBIKE_WEB_BACKGROUND_COLOR_AUDIT.md`.
 >
 > File này là nguồn rút gọn cho giao diện `bigbike-web`. Khi thay đổi token, layout, component hoặc trạng thái UI, phải giữ code khớp các quy tắc dưới đây.
@@ -14,7 +14,7 @@
 | Theme | Light-first (WP-parity): nền trang `#ffffff`, chữ đen; header và footer giữ dark |
 | CTA chính | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale |
 | Link / tương tác phụ | Xanh `#007BFF` |
-| Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
+| Chat / hỗ trợ | Cyan riêng (`--bb-chat-title-bg`), nút tròn cố định góc phải dưới |
 | Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
 | Font body / link | Arial |
 | Font display / nav / CTA / nhãn chức năng (nhóm B) | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
@@ -68,8 +68,8 @@ State colors:
 - Danger: `#FF0C09`
 - Warning: `#FCB900`
 - Info: `#007BFF`
-- Chat: `#00BFFF`
-- Success: `#2E7D32` (token `--bb-color-success` / Tailwind `text-success`) — ngoại lệ chức năng duy nhất dùng xanh lá (VD: "Còn hàng", huy hiệu "Chính hãng"). KHÔNG dùng cho logo, CTA hay bất kỳ phần tử thương hiệu nào khác.
+- Chat: dùng token riêng `--bb-chat-title-bg`, không dùng màu chủ đạo
+- Success: `#2E7D32` (token `--bb-color-success` / Tailwind `text-success`)
 
 Accessibility mappings:
 
@@ -91,7 +91,7 @@ Hai phông được giữ nguyên: **Arial / Helvetica** cho tiêu đề trang v
 | B1 | Trang trí / Display | Barlow Condensed, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
 | B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 30px | Hotline/email lớn, “Thông tin cửa hàng” |
 | B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 16px | 18px | “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 16px | Nút, menu chính, tab, nhãn Còn/Hết hàng |
+| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 18px | Nút, menu chính, tab, nhãn Còn/Hết hàng |
 | B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
 | A1 | Tiêu đề lớn H1 | Arial / Helvetica | 26px | 32px | Tiêu đề khối lớn, tên và giá lớn trên trang sản phẩm |
 | A2 | Tiêu đề trang H2 | Arial / Helvetica | 20px | 24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
@@ -139,18 +139,25 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 
 - Nền trắng, chữ đen, padding 20px, border `1px solid #DDDDDD`, radius `0`.
 - Ảnh vuông 1:1, full width.
-- Title: Arial/Helvetica, A4, weight 600.
+- Title: Arial/Helvetica, A4 variant, 16px on mobile and desktop, weight 600.
 - Price: Arial/Helvetica, A5, weight 600, đỏ `#FF0C09`.
 - Hover: border đỏ, shadow `0 4px 12px rgba(255,12,9,0.1)`.
 - Add-to-cart bar: đen, chữ trắng, trượt lên khi hover; trên touch luôn hiện.
 
+### Rating display
+
+- Public product ratings always show five stars and the approved-review count.
+- No approved reviews: use five neutral outline stars, `Chưa có đánh giá`/`No reviews yet`, and `0 đánh giá`/`0 reviews`; never show `0/5` or a default score.
+- Approved reviews: show the one-decimal average, partial star fill when needed, and the review count.
+- Inconsistent count/score data: keep neutral stars and the safe count; do not invent a score. Use existing brand, muted-text and spacing tokens.
+
 ### Category Tiles (lưới danh mục trang chủ)
 
 - Component: ô danh mục `CategoryListItem` dùng **chung một thiết kế** cho mọi breakpoint - chỉ responsive (co số cột + kích thước tile), không có layout mobile riêng.
-- Cột theo breakpoint: 2 (mobile) · 3 (≥ 600) · 4 (≥ 768 desktop) · **6 (4xl ≥ 2560)**. Số cột là ước của 12 danh mục để hàng luôn đầy (12 item ở 4xl = 6 × 2 hàng).
+- Cột theo breakpoint: 2 (mobile) · 3 (≥ 600) · 4 (≥ 768 desktop). Màn hình rộng hơn không tăng số cột vì toàn site giữ nguyên baseline 1440px.
 - Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
 - Tile: nền trắng, cao 290px (mobile co còn 170px), radius `0`, không shadow ở trạng thái nghỉ.
-- Icon: wrapper cố định 72px (mobile 48px) → 80px (≥ 1536) → 88px (≥ 2560), `object-contain`, căn giữa.
+- Icon: wrapper cố định 72px (mobile 48px), `object-contain`, căn giữa; không tăng kích thước theo viewport siêu rộng.
 - Label: Arial/Helvetica, sentence case, weight 600, nhóm A4 (`text-a4-content`); clamp tối đa 2 dòng. Màn siêu rộng chỉ nới tile, không đổi cỡ chữ.
 - Hover: ảnh đỏ `cat-hover.jpg` phủ kín tile (200ms), icon invert trắng + scale `1.06`, label trắng.
 - Active: icon scale `0.97`. Focus-visible: outline `2px solid var(--bb-link-text)` (`#005FCC`), offset `-3px`.
@@ -186,7 +193,9 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 ## Layout
 
 - Spacing theo thang 4px.
-- **Outer page rail = component `<Container>`** (`components/layout/Container.tsx`, token `--bb-container-xl`): mặc định 1200px, tự nới 1360/1600/2240 ở 2xl/3xl/4xl. Dùng `<Container>` cho MỌI rail ngoài của trang — KHÔNG hardcode `mx-auto w-full max-w-[1200px] px-4 sm:px-6`. Grid có sidebar: `<Container className="grid …">`.
+- **Desktop content canvas = 1440px** (token `--bb-desktop-canvas`): nội dung chrome của header và các khối media rộng giữ baseline 1440px, căn giữa bằng `margin-inline: auto`. Đây là giới hạn của **nội dung**, không phải giới hạn của dải nền ngoài.
+- **Inner content rail = component `<Container>`** (`components/layout/Container.tsx`, token `--bb-container-xl`): cố định tối đa 1200px ở mọi desktop tier. Dùng `<Container>` cho mọi rail nội dung ngoài của trang — KHÔNG hardcode wrapper 1200px riêng lẻ. Grid có sidebar: `<Container className="grid …">`.
+- **Full-bleed surface = 100% viewport**: header background, homepage hero, `PageHero`, section có ảnh/nền trang trí toàn khối, bản đồ Liên hệ và hai dải footer phải phủ hết chiều rộng viewport. Chữ, card, form, menu và carousel item bên trong vẫn dùng canvas 1440px hoặc rail 1200px; không kéo giãn card để lấp màn hình.
 - Desktop padding 24px; tablet 24px; mobile 16px (qua token `--bb-page-padding-*` / `--bb-mobile-page-x`).
 - Product grid: desktop 3 cột, tablet 2 cột, mobile 1 cột.
 - Section spacing: desktop 72px, tablet 52px, mobile 32px.
@@ -194,7 +203,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 
 ### Page frame: hero vs hero-less (né logo header)
 
-Header có logo-emblem thò xuống body ~92px (≥768px) · ~118px (3xl) · ~110px (4xl) khi ở đầu trang chưa cuộn. Hai biến thể khung xử lý việc này:
+Header có logo-emblem thò xuống body ~92px ở mọi desktop tier (≥768px) khi ở đầu trang chưa cuộn. Hai biến thể khung xử lý việc này:
 
 - **Hero**: render `<PageHero>` (banner tối 250/450px tự che logo). PageHero phát `data-page-hero` → `body:has([data-page-hero]) .bb-main { padding-top: 0 }`.
 - **Hero-less**: KHÔNG banner. Mọi shell hero-less phát class **`bb-heroless`** trên phần tử gốc → `body:has(.bb-heroless) .bb-main` cấp `padding-top = header-stack + overhang` (tự động theo tier). Đây là cơ chế **duy nhất** — KHÔNG dùng allowlist class thủ công. Shell đã phát sẵn: `StaticPageShell` (khi `showHero={false}`), `AccountShell`, `ProductView`; loading twin tương ứng (`gio-hang/loading`, account skeleton) cũng phải phát. Trang hero-less mới → dùng một trong các shell này (hoặc phát `bb-heroless`) là được né logo sẵn. Né theo chiều DỌC, nội dung vẫn căn trái tự nhiên.
@@ -212,38 +221,25 @@ Header có logo-emblem thò xuống body ~92px (≥768px) · ~118px (3xl) · ~11
 | `md:` | ≥ 768px | tablet — layout 2 cột ổn định |
 | `lg:` | ≥ 1024px | desktop — 3 cột / sidebar, padding 32px |
 | `xl:` | ≥ 1280px | large desktop — grid mở rộng |
-| `2xl:` | ≥ 1536px | extra-large — điều chỉnh spacing/type scale |
-| `3xl:` | ≥ 1920px | ultra-wide — full-bleed hero, container override 1600px |
-| `4xl:` | ≥ 2560px | wide-screen workstation / 32:9 super-ultrawide / showroom TV — container 2240px, grid sản phẩm 6 cột |
+| `2xl:` | ≥ 1536px | extra-large — mốc kiểm tra canvas; không nới content rail |
+| `3xl:` | ≥ 1920px | full HD — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component |
+| `4xl:` | ≥ 2560px | QHD/ultra-wide — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component |
 
-Container max-width: `--bb-container-xl` co giãn theo tier — `75rem` (1200px) mặc định → `85rem` (1360px) tại `2xl` → `100rem` (1600px) tại `3xl` → `140rem` (2240px) tại `4xl`. Override tập trung trong block `LARGE-DESKTOP RESPONSIVE EXPANSION` của `globals.css`.
+Content canvas max-width: `--bb-desktop-canvas = 90rem` (1440px). Inner content max-width: `--bb-container-xl = 75rem` (1200px) ở mọi tier. Full-bleed surface không có `max-width`.
 
-### Uniform ultra-wide expansion (phương án B — toàn site, chỉ `3xl`/`4xl`)
+### Fixed desktop canvas (toàn site)
 
-Mọi trang/component đều **nới đều** theo content rail ở `3xl`/`4xl`, không trang nào để dải trống hai bên hay lệch với phần còn lại. Các surface cũ ghim ở Bootstrap `.container` 1140px (header, footer, giỏ hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay bám `var(--bb-container-xl)` qua rule `body .container { max-width: var(--bb-container-xl) }` đặt trong block `UNIFORM ULTRA-WIDE EXPANSION` của `globals.css`. Các rail viết bằng Tailwind cũng nới đều nhờ đã đổi sang component `<Container>` (cùng token `--bb-container-xl`) — KHÔNG còn hardcode `max-w-[1200px]` cho rail ngoài (ngoại lệ: trang sản phẩm, xem dưới; và `<PageHero>` đã dùng chung `<Container>` để mép hero canh thẳng body).
-
-**Ràng buộc tuyệt đối:** block này **chỉ chứa media query `min-width:1920px` và `min-width:2560px`**; không tác động bất kỳ breakpoint nào ≤ `2xl`. Lấy hệ token `2xl→3xl→4xl` làm chuẩn cho đích width (1600/2240). Selector `body .…` được giữ để cô lập quy tắc màn hình rộng khỏi các phạm vi khác.
-
-Densify lưới (giữ kích thước tile ~constant, đặt cùng block):
-
-| Lưới | Selector | `3xl` | `4xl` |
-|---|---|---|---|
-| Sản phẩm archive/category/search (có sidebar) | `.product-list .col-md-3.col-6` | 5 cột | 6 cột |
-| Danh mục trang chủ (full-width) | `.product-category-list .col-md-3.col-6` | 5 cột | 6 cột |
-| Tin tức (có sidebar) | `.bb-blog-listing-parity .col-md-4` | 4 cột | 5 cột |
-| Thương hiệu (`/brands`) | Tailwind `lg:grid-cols-5` | `3xl:grid-cols-6` | `4xl:grid-cols-7` |
-| Carousel logo hãng (home) | Swiper `breakpoints` | `1920: 6` | `2560: 7` |
-
-Cap để giữ chất lượng khi container rộng:
-- **Cột chữ (prose):** `.blog-content.wyswyg` (bài viết) và `.col-md-9 > .static-page.wyswyg` (trang tĩnh có sidebar) cap `1000px`/`1100px` để dòng không quá dài. Trang `gioi-thieu`/`lien-he` (`.static-page.wyswyg` full-width `col-md-12`) **không** cap.
-- **Sidebar tài khoản:** `.account-dashboard > .row > .col-md-3` cap `320px`/`360px` (khớp tỉ lệ `.bb-account-layout`), content lấy phần còn lại.
-- **PDP:** trang sản phẩm gắn class `.bb-product-page` (+ `.bb-heroless` để né logo) trên `#main-content`. Rail nội dung chốt **`max-w-[1200px]` cố định ở mọi tier** (quyết định owner 2026-07-11 — KHÔNG nới ở ultra-wide, giữ tỉ lệ gallery ảnh, mọi mép trong trang canh thẳng ở 1200). Đây là ngoại lệ có chủ đích: các trang khác nới đều, riêng PDP giữ 1200.
+- Header/footer background và các media surface được đánh dấu full-bleed phủ viewport; nội dung bên trong không vượt content canvas 1440px.
+- Inner `<Container>` giữ 1200px. Các giới hạn đọc nội dung, sidebar, PDP, checkout và account tiếp tục giữ max-width riêng nếu đã hẹp hơn.
+- Lưới, card, carousel, icon, spacing và header height giữ đúng trạng thái tại 1440px khi viewport lên 1536/1920/2560px.
+- Thành phần `position: fixed` phục vụ thao tác (drawer, dialog, mobile bottom navigation, sticky purchase bar, chat, scroll-to-top) vẫn bám viewport; không ép vào canvas.
+- Không đặt `max-width: 1440px` lên `<main>`, `<header>` hoặc `<footer>` ngoài cùng. Full-bleed phải đến từ cấu trúc wrapper, không dùng `100vw` breakout bên trong rail vì dễ sinh tràn ngang.
 
 `bb-product-archive` / `bb-search-results-page` trong `globals.css` là **dead CSS** (không gắn vào markup) — giữ lại theo policy migration WP, **không** dùng làm hook cho rule mới; grid thật dùng Bootstrap `.col-md-3.col-6` trong `.product-list`.
 
-> **Ngoại lệ - trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt `max-w-[1200px]` cố định ở mọi tier** (KHÔNG nới ở ultra-wide — quyết định owner 2026-07-11), gồm breadcrumb, khối tổng quan ảnh+mua hàng, tabs mô tả và carousel sản phẩm liên quan, để mọi mép trái/phải canh thẳng nhau. Lý do giữ 1200 thay vì nới: nới rộng sẽ sinh dải trắng lớn quanh khu ảnh, vỡ tỉ lệ gallery. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px để Swiper có chiều cao xác định và cuộn được khi tràn. `self-start` chặn grid kéo giãn thanh. Nút cuộn chỉ hiện khi thumbnail thực sự tràn. Carousel liên quan giữ tối đa 4 cột cho khớp rail 1200px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm (khác các trang nới đều), phần rail né logo qua `.bb-heroless`.
+> **Trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ rail tiếp tục chốt `max-w-[1200px]` ở mọi tier, gồm breadcrumb, khối ảnh+mua hàng, tabs mô tả và carousel liên quan. Khu ảnh, thumbnail và cơ chế né logo giữ nguyên; canvas mới chỉ giới hạn khung ngoài.
 
-> **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`/`4xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới ngoài 7 tier trên. Khi thêm class `4xl:`, kiểm tra rằng container/grid cha cũng đã có rule tương ứng để tránh layout lệch ở viewport ≥ 2560px.
+> **Quy tắc:** Rule mới phải dùng breakpoint canonical. Không dùng `2xl:`/`3xl:`/`4xl:` để tăng chiều rộng, số cột, khoảng cách, typography hoặc kích thước component bên trong canvas.
 
 ### Legacy breakpoints (giữ nguyên, không ép đổi hàng loạt)
 

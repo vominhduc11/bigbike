@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/Avatar";
-import { StarRow } from "./stars";
+import { RatingStars } from "@/components/ui/RatingStars";
 import type { Review } from "./types";
 
 // Nội dung bình luận: chống tràn ngang (break-words cho chuỗi dài không khoảng
@@ -97,7 +97,9 @@ function ReviewPhotos({ photos, authorName }: { photos: string[]; authorName: st
 }
 
 export function ReviewCard({ review }: { review: Review }) {
+  const t = useTranslations("Product.reviews");
   const photos = review.photos ?? [];
+  const validRating = typeof review.rating === "number" && Number.isFinite(review.rating) && review.rating > 0 && review.rating <= 5;
   return (
     <li className="flex gap-4 border-b border-border py-5 first:pt-0">
       <Avatar url={review.authorAvatarUrl} name={review.authorName} size="md" variant="neutral" />
@@ -110,7 +112,13 @@ export function ReviewCard({ review }: { review: Review }) {
             <LocalDate value={review.createdAt} dateStyle="slashPad" />
           </time>
         </div>
-        <StarRow rating={review.rating} />
+        <RatingStars
+          value={review.rating}
+          empty
+          ariaLabel={validRating
+            ? t("reviewStarsAria", { rating: review.rating.toFixed(1) })
+            : t("ratingUnavailable")}
+        />
         {review.comment && <ReviewComment text={review.comment} />}
         {photos.length > 0 && <ReviewPhotos photos={photos} authorName={review.authorName} />}
       </div>

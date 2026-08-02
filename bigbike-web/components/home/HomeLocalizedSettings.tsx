@@ -19,7 +19,11 @@ export function HomeBlockHeading({
 }) {
   return (
     <div className={className}>
-      {kicker ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{kicker}</p> : null}
+      {kicker ? (
+        <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
+          <span className="inline-block origin-center scale-x-110">{kicker}</span>
+        </p>
+      ) : null}
       {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
     </div>
   );
@@ -39,7 +43,11 @@ export function HomeAboutSection({
     <section className="py-10">
       <Container>
         <div className="mb-10 text-center">
-          {subtitle ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
+              <span className="inline-block origin-center scale-x-110">{subtitle}</span>
+            </p>
+          ) : null}
           {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
         </div>
         {html ? (
@@ -63,7 +71,11 @@ export function HomeExperienceHeading({
   return (
     <Container>
       <div className="pb-10 text-center">
-        {subtitle ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
+            <span className="inline-block origin-center scale-x-110">{subtitle}</span>
+          </p>
+        ) : null}
         {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
         {desc ? (
           <p className="mx-auto mt-8 max-w-4xl text-a4-content leading-relaxed text-foreground">{desc}</p>
@@ -78,7 +90,7 @@ export function HomeContentBottom({ html }: { html: string }) {
   if (!html) return null;
 
   return (
-    <section className="bg-secondary py-8">
+    <section data-bb-full-bleed className="bg-secondary py-8">
       <Container>
         <RichContent html={html} />
       </Container>

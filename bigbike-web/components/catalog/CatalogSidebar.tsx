@@ -152,6 +152,7 @@ function CatalogToggleList({
 const filterListClass = "m-0 list-none p-0";
 const filterRowClass = "flex min-h-11 items-center justify-between gap-3 py-2.5";
 const filterLinkClass = "block flex-1 font-body font-semibold text-muted-foreground! no-underline! hover:text-brand!";
+const categoryLinkClass = "text-a4-content md:text-a5-meta";
 
 export function CatalogSidebar({
   brands,
@@ -226,7 +227,7 @@ export function CatalogSidebar({
                       kind="category"
                       viSlug={category.slug}
                       enSlug={category.slugEn}
-                      className={cn(filterLinkClass, "relative", category.menuIconUrl && "pl-7.5", active && "text-brand!")}
+                      className={cn(filterLinkClass, categoryLinkClass, "relative", category.menuIconUrl && "pl-7.5", active && "text-brand!")}
                     >
                       {category.menuIconUrl ? (
                         <span
@@ -247,7 +248,7 @@ export function CatalogSidebar({
                                 kind="category"
                                 viSlug={child.slug}
                                 enSlug={child.slugEn}
-                                className={cn(filterLinkClass, "relative", child.menuIconUrl && "pl-7.5", childActive && "text-brand!")}
+                                className={cn(filterLinkClass, categoryLinkClass, "relative", child.menuIconUrl && "pl-7.5", childActive && "text-brand!")}
                               >
                                 {child.menuIconUrl ? (
                                   <span

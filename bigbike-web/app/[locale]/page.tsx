@@ -14,7 +14,6 @@ import { Container } from "@/components/layout/Container";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
-import { ChevronRight } from "lucide-react";
 import {
   HomeAboutSection,
   HomeBlockHeading,
@@ -233,11 +232,11 @@ export default async function HomePage({ params }: HomePageProps) {
                           ) : null}
                         </Link>
                       </div>
-                      <h3 className="relative z-[1] mb-10 max-w-3/5 line-clamp-2 font-body text-a4-content font-semibold leading-5 text-foreground">
+                      <h3 className="relative z-[1] mb-10 line-clamp-2 w-full font-body text-a4-content font-semibold leading-5 text-foreground">
                         <Link href={href} className="text-foreground hover:text-brand">{h.productName}</Link>
                       </h3>
                       <Link className="relative z-[1] inline-flex items-center gap-1 font-body text-a4-content font-semibold text-brand" href={href}>
-                        <Tr ns="Home" k="buyNow" /> <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                        <Tr ns="Home" k="buyNow" />
                       </Link>
                   </article>
                 );
@@ -280,7 +279,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
-        <section className="pt-25">
+        <section data-bb-full-bleed className="w-full pt-25">
           <HomeExperienceHeading
             subtitle={tHome("experienceSubtitle")}
             title={tHome("experienceTitle")}
@@ -308,7 +307,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="relative overflow-hidden bg-surface-dark py-24 max-md:py-15">
+        <section data-bb-full-bleed className="relative overflow-hidden bg-surface-dark py-24 max-md:py-15">
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"

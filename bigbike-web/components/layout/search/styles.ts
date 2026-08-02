@@ -7,19 +7,17 @@ export const SEARCH_PATH = "/tim-kiem/";
 // — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
 // --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
-// 3xl/4xl (≥1920 / ≥2560) may widen spacing only. Typography never scales
-// outside the canonical 768px token switch.
 export const preLabelRow =
-  "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1 3xl:px-5 4xl:px-6";
+  "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1";
 export const preLabel =
   "font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
-export const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 3xl:gap-2 3xl:px-5 4xl:px-6";
+export const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5";
 export const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 4xl:px-4.5 4xl:py-2";
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
 export const resultItem =
-  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:gap-4 3xl:px-5 3xl:py-3 4xl:px-6 4xl:py-3.5";
+  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none";
 export const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground 3xl:px-5 4xl:px-6";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
 
 // Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
 // "whole-site refactor pass" to LIGHT, so these are the merged light values; the
@@ -77,7 +75,6 @@ export const sOverlay =
 export const sOverlayOpen = "max-md:z-[calc(var(--bb-mobile-panel-z)_-_1)]";
 export const sPanel =
   "fixed top-0 left-1/2 z-[calc(var(--bb-z-modal)_+_1)] w-[min(calc(100vw_-_24px),770px)] h-[var(--bb-header-height)] " +
-  "3xl:w-[min(calc(100vw_-_24px),940px)] 4xl:w-[min(calc(100vw_-_24px),1120px)] " +
   "px-10 py-0 [transform:translateX(-50%)] " +
   "max-md:left-0 max-md:z-[var(--bb-mobile-panel-z)] max-md:flex max-md:w-screen max-md:h-[100dvh] max-md:max-h-[100dvh] " +
   "max-md:flex-col max-md:p-0 max-md:overflow-hidden max-md:bg-[var(--bb-bg-page)] max-md:text-[color:var(--bb-text-primary)] max-md:[transform:none]";

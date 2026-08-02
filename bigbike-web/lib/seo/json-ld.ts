@@ -94,7 +94,7 @@ function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject 
 function buildAggregateRating(product: Product): JsonLdObject | undefined {
   const rating = product.rating;
   const count = product.ratingCount;
-  if (typeof rating !== "number" || !Number.isFinite(rating) || rating <= 0) {
+  if (typeof rating !== "number" || !Number.isFinite(rating) || rating <= 0 || rating > 5) {
     return undefined;
   }
   if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) {

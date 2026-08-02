@@ -80,7 +80,7 @@ export function BrandListClient({
   if (firstLoading) {
     // Skeleton lần tải đầu — giữ lưới, tránh layout shift.
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5">
             <Skeleton className="h-16 w-4/5" />
@@ -105,7 +105,7 @@ export function BrandListClient({
       <div className="relative">
         <div
           className={cn(
-            "grid grid-cols-2 gap-3 transition-opacity duration-200 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7",
+            "grid grid-cols-2 gap-3 transition-opacity duration-200 sm:grid-cols-3 lg:grid-cols-5",
             isRefetching && "opacity-50",
           )}
           aria-busy={isRefetching || undefined}

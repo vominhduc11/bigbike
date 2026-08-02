@@ -70,6 +70,7 @@
   --bb-text-inverse: var(--bb-color-white);
   --bb-text-inverse-secondary: var(--bb-color-gray-300);
   --bb-text-inverse-muted: var(--bb-color-gray-400); /* gray-400 (#abb8c3) = ~4.7:1 on #141414, passes WCAG AA */
+  --bb-home-kicker-label: var(--bb-color-gray-300);
   /* Use AA-safe brand text on light surfaces; keep --bb-brand-primary as the canonical red primitive. */
   --bb-text-brand: var(--bb-brand-primary-aa);
 
@@ -105,29 +106,27 @@
   --bb-state-info-border: rgba(0, 95, 204, 0.36);
 
   --bb-product-price: var(--bb-brand-primary-aa);
-  --bb-rating-star: #b45309;
+  --bb-rating-star: #FF8001;
   /* Floating-chat (WP sudovn widget) — exact source colours, kept as dedicated
      widget tokens so they live in one place. Values mirror the WP theme verbatim. */
-  --bb-chat-title-bg: #00aeef;       /* FAB + "Bạn cần hỗ trợ?" pill background (#sudovn-btn-title) */
-  --bb-chat-title-text: var(--bb-color-black);  /* FAB icon — dark X on the gray open button */
+  --bb-chat-title-bg: #00aeef;       /* FAB + "Bạn cần hỗ trợ?" pill background */
+  --bb-chat-title-text: var(--bb-color-white);  /* FAB icon — white for contrast on both FAB states */
+  --bb-chat-close-text: var(--bb-color-black);  /* Close/X icon — black on the open gray FAB */
   --bb-chat-close-bg: #d6d6d6;       /* FAB background while the popup is open (.b24-widget-button-bottom) */
   --bb-chat-text: #333333;           /* contact-row label + value text (.sudovn-btn-social-item) */
   /* Cart discount line color — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
-  /* Zalo brand blue — nút "Tư vấn Zalo" trên PDP. Màu thương hiệu Zalo cố định
-     (#0068ff), giữ thành token riêng để không hardcode hex rải rác. */
+  /* Zalo brand blue — keep this separate from the BigBike primary red. */
   --bb-color-zalo: #0068ff;
   --bb-color-zalo-hover: #0056d6;
   --bb-color-zalo-soft: rgba(0, 104, 255, 0.08);
-  /* Success / trạng thái tích cực (Còn hàng, Chính hãng…) — ngoại lệ chức năng
-     duy nhất dùng xanh lá, KHÔNG dùng cho logo/CTA. Chưa có trong palette gốc;
-     thêm làm token riêng thay vì hardcode hex rải rác (V300 trust block redesign). */
   --bb-color-success: #2e7d32;
 
   /* Typography — source of truth: docs/TYPOGRAPHY.md
      Chỉ 2 font thực: Arial (body/UI) và Barlow Condensed (CTA/nav desktop).
      font-cta = Barlow Condensed (injected by next/font via layout.tsx). */
   --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
+  --bb-font-barlow: var(--font-brand-barlow), Arial, Helvetica, "Helvetica Neue", sans-serif;
   --bb-font-cta:  var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
 
   /* Canonical 11-group typography — mobile values. Every readable/functional
@@ -136,13 +135,17 @@
   --bb-text-b1-display: 2rem;       /* 32px mobile → 40px tablet */
   --bb-text-b2-contact: 1.5rem;     /* 24px mobile → 32px tablet */
   --bb-text-b3-promo: 1.125rem;     /* 18px mobile → 20px tablet */
-  --bb-text-b4-action: 1.125rem;    /* 18px mobile → 20px tablet */
+  --bb-text-b4-action: 1rem;        /* 16px mobile → 18px tablet */
   --bb-text-b5-label: 0.75rem;      /* 12px mobile → 14px tablet */
+  --bb-text-pdp-eyebrow: 0.875rem;  /* 14px mobile + desktop — product eyebrow */
+  --bb-text-header-nav: 0.9375rem; /* 15px mobile → 15px desktop — main header navigation */
   --bb-text-a1-title: 1.75rem;      /* 28px mobile → 32px tablet */
   --bb-text-a2-page: 1.375rem;      /* 22px mobile → 26px tablet */
   --bb-text-a3-section: 1.25rem;    /* 20px mobile → 22px tablet */
-  --bb-text-a4-content: 1.125rem;   /* 18px mobile → 20px tablet */
+  --bb-text-a4-content: 1rem;        /* 16px mobile → 18px tablet */
   --bb-text-a5-meta: 0.875rem;      /* 14px mobile → 16px tablet */
+  --bb-text-home-kicker: 1rem;      /* 16px mobile + desktop — homepage kicker */
+  --bb-text-product-card: 1rem;     /* 16px mobile + desktop — product card title */
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;
@@ -177,8 +180,10 @@
   --bb-section-y: 4.5rem;
 
   /* Layout */
-  --bb-container-xl: 75rem;   /* 1200px — main content rail, overridden at 2xl/3xl/4xl in globals.css */
+  --bb-desktop-canvas: 90rem; /* 1440px — centered desktop content canvas inside full-bleed surfaces */
+  --bb-container-xl: 75rem;   /* 1200px — fixed inner content rail at every desktop tier */
   --bb-container-wide: 90rem; /* 1440px — PDP / breadcrumb / page-head / news / checkout */
+  --bb-home-hero-height-max: 36rem; /* 576px — 40% of the 1440px desktop canvas */
   --bb-page-padding-mobile: var(--bb-space-4);
   --bb-page-padding-tablet: var(--bb-space-6);
   --bb-page-padding-desktop: var(--bb-space-8);
@@ -362,12 +367,12 @@
     --bb-text-b1-display: 2.5rem;    /* 40px */
     --bb-text-b2-contact: 2rem;      /* 32px */
     --bb-text-b3-promo: 1.25rem;     /* 20px */
-    --bb-text-b4-action: 1.25rem;    /* 20px */
+    --bb-text-b4-action: 1.125rem;   /* 18px */
     --bb-text-b5-label: 0.875rem;    /* 14px */
     --bb-text-a1-title: 2rem;         /* 32px */
     --bb-text-a2-page: 1.625rem;      /* 26px */
     --bb-text-a3-section: 1.375rem;   /* 22px */
-    --bb-text-a4-content: 1.25rem;    /* 20px */
+    --bb-text-a4-content: 1.125rem;   /* 18px */
     --bb-text-a5-meta: 1rem;          /* 16px */
   }
 }

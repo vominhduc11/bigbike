@@ -4,10 +4,9 @@ import { useTranslations } from "next-intl";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
-import { RatingStars } from "@/components/ui/RatingStars";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
-import { hasApprovedReviews } from "@/lib/rating";
 import { cn } from "@/lib/utils";
 import {
   formatVndNumber,
@@ -27,7 +26,6 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
   const { current, retail, isSale, discountPercent } = derivePricing(product.price);
   const imageUrl = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
   const name = safeText(product.name, "");
-  const hasReviews = hasApprovedReviews(product.rating, product.ratingCount);
 
   return (
     <article
@@ -91,7 +89,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
       <div className="flex flex-1 flex-col">
         <h3
           className={cn(
-            "m-0 font-body text-a4-content font-semibold",
+            "m-0 font-body text-product-card font-semibold",
             layout === "grid"
               ? "line-clamp-2 min-h-10 leading-tight"
               : "h-6 min-h-6 truncate leading-normal",
@@ -116,11 +114,9 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
           ) : null}
         </div>
 
-        {hasReviews ? (
-          <div className="mt-2 text-a4-content">
-            <RatingStars value={product.rating} />
-          </div>
-        ) : null}
+        <div className="mt-2 font-body text-a5-meta text-muted-foreground">
+          <RatingDisplay rating={product.rating} ratingCount={product.ratingCount} />
+        </div>
       </div>
     </article>
   );

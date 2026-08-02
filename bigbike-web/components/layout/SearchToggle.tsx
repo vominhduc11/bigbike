@@ -172,7 +172,7 @@ export function SearchToggle({
           type="button"
           onClick={handleToggle}
         >
-          <Search size={20} aria-hidden className="4xl:size-6" />
+          <Search size={20} aria-hidden />
         </Button>
       )}
 

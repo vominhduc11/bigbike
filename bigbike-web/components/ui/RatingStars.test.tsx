@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { RatingStars } from "./RatingStars";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (_key: string, values: { rating: string }) => `${values.rating} sao`,
+  useTranslations: () => (key: string, values?: { rating?: string }) =>
+    key === "ratingStars" ? `${values?.rating} sao` : key,
 }));
 
 function fillWidth(container: HTMLElement): string | null {
@@ -12,43 +13,38 @@ function fillWidth(container: HTMLElement): string | null {
 }
 
 describe("RatingStars", () => {
-  it("tô đúng % theo trung bình cộng — 4.0 ([5,4,3]) → 80%", () => {
+  it("tô đúng % theo trung bình cộng — 4.0 → 80%", () => {
     const { container } = render(<RatingStars value={4.0} />);
     expect(fillWidth(container)).toBe("80%");
     expect(container.querySelector('[aria-label="4.0 sao"]')).not.toBeNull();
   });
 
-  it("tô đúng % theo trung bình cộng — 3.5 ([5,2]) → 70% (nửa sao)", () => {
+  it("tô đúng % theo trung bình cộng — 3.5 → 70%", () => {
     const { container } = render(<RatingStars value={3.5} />);
     expect(fillWidth(container)).toBe("70%");
-    expect(container.querySelector('[aria-label="3.5 sao"]')).not.toBeNull();
   });
 
-  it("clamp giá trị vượt thang về 5 sao", () => {
+  it("score vượt thang không tạo rating giả — hiển thị sao trung tính", () => {
     const { container } = render(<RatingStars value={7} />);
-    expect(fillWidth(container)).toBe("100%");
+    expect(fillWidth(container)).toBeNull();
+    expect(container.querySelectorAll("svg")).toHaveLength(5);
   });
 
-  // REVIEW_RULE_003: không còn default 4.5 — giá trị thiếu/không hợp lệ thì ẨN.
-  it("value = 0 → không render gì (ẩn sao)", () => {
-    const { container } = render(<RatingStars value={0} />);
-    expect(container.firstChild).toBeNull();
+  it.each([
+    [0, "ratingEmptyStars"],
+    [Number.NaN, "ratingEmptyStars"],
+    [null, "ratingEmptyStars"],
+    [undefined, "ratingEmptyStars"],
+    [-1, "ratingEmptyStars"],
+  ])("giá trị %s → 5 sao rỗng, không ẩn widget", (value, label) => {
+    const { container } = render(<RatingStars value={value} />);
+    expect(container.querySelector(`[aria-label="${label}"]`)).not.toBeNull();
+    expect(fillWidth(container)).toBeNull();
+    expect(container.querySelectorAll("svg")).toHaveLength(5);
   });
 
-  it("value = NaN → không render gì, không default 4.5", () => {
-    const { container } = render(<RatingStars value={Number.NaN} />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("value = null / undefined → không render gì, không default 4.5", () => {
-    const { container: c1 } = render(<RatingStars value={null} />);
-    expect(c1.firstChild).toBeNull();
-    const { container: c2 } = render(<RatingStars value={undefined} />);
-    expect(c2.firstChild).toBeNull();
-  });
-
-  it("value âm → không render gì", () => {
-    const { container } = render(<RatingStars value={-1} />);
+  it("empty=false giữ được primitive ẩn khi caller cần", () => {
+    const { container } = render(<RatingStars value={null} empty={false} />);
     expect(container.firstChild).toBeNull();
   });
 });

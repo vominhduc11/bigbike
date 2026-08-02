@@ -180,15 +180,26 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
               </div>
             </>
           ) : (
-            <ReviewsPlaceholder
-              title={t("noReviews")}
-              description={t("beFirst")}
-              action={
-                <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
-                  {t("writeButton")}
-                </Button>
-              }
-            />
+            <>
+              <RatingSummary
+                avg={avgRating}
+                total={total}
+                breakdown={ratingBreakdown}
+                activeStar={null}
+                onSelectStar={() => undefined}
+              />
+              <div className="mt-6">
+                <ReviewsPlaceholder
+                  title={t("noReviews")}
+                  description={t("beFirst")}
+                  action={
+                    <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
+                      {t("writeButton")}
+                    </Button>
+                  }
+                />
+              </div>
+            </>
           )}
       </div>
     </section>

@@ -10,7 +10,6 @@ import { queryKeys } from "@/lib/query/keys";
 import { formatVndNumber, safeText } from "@/lib/utils/format";
 import { collectAttributeNames, findColorPreviewVariant, findMatchingVariant } from "@/lib/utils/variant-match";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
-import { hasApprovedReviews } from "@/lib/rating";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
@@ -130,10 +129,6 @@ export function PurchaseSection({
   const canBuy =
     !previewMode && !isOutOfStock && (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
 
-  // Chỉ hiện sao + microdata aggregateRating khi có đánh giá thật; tránh số ảo
-  // (REVIEW_RULE_003 — gate theo ratingCount, dùng chung toàn app).
-  const hasReviews = hasApprovedReviews(rating, ratingCount);
-
   // Đánh giá là section flat luôn hiển thị (không còn là tab) — cuộn thẳng tới #reviews.
   function scrollToReviews(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
@@ -189,8 +184,8 @@ export function PurchaseSection({
     ? sanitizeRichHtml(product.shortDescription, { allowInlineStyles: true })
     : "";
 
-  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
-  // system web (text-brand + B5 canonical), KHÔNG dùng cỡ/phông ngoài design system.
+  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — badge PDP dùng Barlow,
+  // mobile và desktop đều 14px theo mockup.
   // category.name/brand.name/originBrandCountry resolve theo locale ở backend
   // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/
   // trustBadges ở trên (V319: originBrandCountry có cột *_en riêng).
@@ -254,7 +249,7 @@ export function PurchaseSection({
             />
           ) : null}
           {eyebrow ? (
-            <p className="mb-0 font-cta text-b5-label font-semibold uppercase leading-none tracking-display text-brand">
+            <p className="mb-0 font-barlow text-pdp-eyebrow font-semibold uppercase leading-none tracking-display text-brand">
               {eyebrow}
             </p>
           ) : null}
@@ -283,7 +278,6 @@ export function PurchaseSection({
             </div>
           </div>
           <RatingBlock
-            hasReviews={hasReviews}
             rating={rating}
             ratingCount={ratingCount}
             onScrollToReviews={scrollToReviews}

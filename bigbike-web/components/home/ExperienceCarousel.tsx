@@ -16,8 +16,8 @@ function normalizeLegacyUploadUrl(url: string | null | undefined): string | null
 function expandForSwiperLoop(articles: Article[]): Article[] {
   if (articles.length <= 1) return articles;
   const expanded = [...articles];
-  // Loop + centeredSlides needs ~2x the largest slidesPerView worth of real
-  // slides to clone from without leaving gaps. Largest is 4.43 at 4xl -> >=10.
+  // Loop + centeredSlides needs enough real slides to clone without leaving
+  // gaps at the fixed desktop baseline. Keep the existing ten-slide buffer.
   while (expanded.length < 10) expanded.push(...articles);
   return expanded;
 }
@@ -117,11 +117,12 @@ export function ExperienceCarousel({ articles }: Props) {
     <Swiper
       // PRE-INIT GUARD (`:not(.swiper-initialized)`): tới khi Swiper init, mỗi slide
       // width:100% → 1 thẻ phình full khung rồi nhảy. Khoá bề rộng xấp xỉ slidesPerView
-      // (1.2≈83% / md 2.43≈41% / 3xl 3.43≈29% / 4xl 4.43≈22.5%) để chặn cú phình; phần
-      // căn giữa (centeredSlides) settle nhẹ sau init — không còn cú nhảy lớn.
-      className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer [&:not(.swiper-initialized)_.swiper-slide]:!w-[83%] md:[&:not(.swiper-initialized)_.swiper-slide]:!w-[41%] min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-[29%] min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-[22.5%]"
+      // (mobile 83% / desktop tối đa 590px) để chặn cú phình. Desktop dùng slide
+      // width cố định theo baseline 1440px nên surface có thể full-bleed mà card
+      // không bị kéo giãn ở viewport 1920/2560.
+      className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer max-md:[&_.swiper-slide]:!w-[83%] md:[&_.swiper-slide]:!w-[min(41vw,590px)]"
       speed={1000}
-      slidesPerView={1.2}
+      slidesPerView="auto"
       spaceBetween={13}
       centeredSlides
       loop={hasSideSlides}
@@ -136,22 +137,7 @@ export function ExperienceCarousel({ articles }: Props) {
         // the CSS still applied mobile overrides (margin-top:-18%, no
         // height:auto !important on wrapper), which could clip slide content.
         768: {
-          slidesPerView: 2.43,
-          spaceBetween: 40,
-          autoHeight: false,
-        },
-        // 3xl — keep each card near its 2xl size instead of letting it grow.
-        // autoHeight must be re-stated: Swiper breakpoints override base params,
-        // they do NOT inherit from the 768 tier.
-        1920: {
-          slidesPerView: 3.43,
-          spaceBetween: 40,
-          autoHeight: false,
-        },
-        // 4xl — same .43 peek ratio as 2xl. Without this each slide ballooned to
-        // ~1050px wide, which over-pulled the mt-[-32%] product overlay.
-        2560: {
-          slidesPerView: 4.43,
+          slidesPerView: "auto",
           spaceBetween: 40,
           autoHeight: false,
         },

@@ -44,6 +44,7 @@ export function PageHero({
       className="relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5"
       style={{ backgroundImage: `url('${background}')` }}
       data-page-hero
+      data-bb-full-bleed
       data-bb-focus={focusId}
     >
       <Container className="relative z-10 flex min-h-62.5 items-center md:min-h-112.5">

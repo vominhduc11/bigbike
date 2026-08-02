@@ -15,10 +15,13 @@ test.describe("Shell interactions — header scroll + footer scroll @desktop", (
     await settle(page, "/");
     const header = page.locator("[data-bb-header]");
     await expect(header).toHaveAttribute("data-scrolled", "false");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-logo.png");
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(header).toHaveAttribute("data-scrolled", "true");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-mark.png");
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(header).toHaveAttribute("data-scrolled", "false");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-logo.png");
   });
 
   test("footer scroll button returns to top", async ({ page }) => {

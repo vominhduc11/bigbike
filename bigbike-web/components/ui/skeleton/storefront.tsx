@@ -32,7 +32,7 @@ export function HomeSkeleton() {
   return (
     <SkeletonRoot labelKey="home" className="bb-home">
       {/* Hero slider */}
-      <div className="relative w-full select-none bg-black [aspect-ratio:16/6] max-[600px]:aspect-[4/5]">
+      <div data-bb-full-bleed className="relative w-full select-none bg-black [aspect-ratio:16/6] max-[600px]:aspect-[4/5]">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
 
@@ -52,7 +52,7 @@ export function HomeSkeleton() {
 
         {/* Featured 3-tile — nhãn danh mục + tên + nút "Mua ngay" */}
         <div className={bbSection}>
-          <div className="grid grid-cols-1 gap-4 py-[var(--bb-space-12)] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
+          <div className="grid grid-cols-1 gap-4 py-[var(--bb-space-12)] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex min-h-50 flex-col justify-center gap-3 bg-muted p-6">
                 <SkelText w="35%" />
@@ -109,7 +109,7 @@ export function HomeSkeleton() {
             </div>
             <SkelButton w={120} />
           </div>
-          <div className="grid grid-cols-3 gap-6 4xl:grid-cols-4 max-[901px]:grid-cols-2 max-[601px]:grid-cols-1">
+          <div className="grid grid-cols-3 gap-6 max-[901px]:grid-cols-2 max-[601px]:grid-cols-1">
             {Array.from({ length: 3 }).map((_, i) => (
               <ArticleCardSkel key={i} />
             ))}
@@ -130,7 +130,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Two-col PDP */}
-      <div className="grid grid-cols-[1.1fr_1fr] max-[769px]:grid-cols-1 gap-12 max-[601px]:gap-6 max-w-[var(--bb-container-wide)] 2xl:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mt-5 px-6 max-[601px]:px-4 [align-items:start] min-w-0 [&>*]:min-w-0 bg-background">
+      <div className="mx-auto mt-5 grid min-w-0 max-w-[var(--bb-container-wide)] grid-cols-[1.1fr_1fr] items-start gap-12 bg-background px-6 max-[769px]:grid-cols-1 max-[601px]:gap-6 max-[601px]:px-4 [&>*]:min-w-0">
         {/* Gallery — cover image with a thumbnail row below */}
         <div>
           <div style={{ aspectRatio: "1", minWidth: 0 }}>
@@ -172,7 +172,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Below-fold: tabs + related */}
-      <div className="max-w-[var(--bb-container-wide)] 2xl:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mt-12 max-[601px]:mt-7 px-6 pt-10 pb-0 max-[601px]:px-4 max-[601px]:pt-6 border-t border-t-[var(--bb-border-default)] bg-background">
+      <div className="mx-auto mt-12 max-w-[var(--bb-container-wide)] border-t border-t-[var(--bb-border-default)] bg-background px-6 pt-10 pb-0 max-[601px]:mt-7 max-[601px]:px-4 max-[601px]:pt-6">
         <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ padding: "14px 22px" }}>
@@ -213,7 +213,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <SkeletonRoot labelKey="category">
       {withHero && (
-        <div className="relative h-75 md:h-107.5">
+        <div data-bb-full-bleed className="relative h-75 w-full md:h-107.5">
           <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
         </div>
       )}

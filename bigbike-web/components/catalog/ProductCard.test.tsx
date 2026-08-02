@@ -5,8 +5,16 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import type { Product } from "@/lib/contracts/public";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string, values?: { rating?: string }) =>
-    key === "ratingStars" ? `${values?.rating} sao` : key,
+  useTranslations: () => (key: string, values?: { rating?: string; count?: number }) => {
+    if (key === "ratingStars") return `${values?.rating} sao`;
+    if (key === "ratingSummaryAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
+    if (key === "ratingCount") return `${values?.count} đánh giá`;
+    if (key === "ratingEmpty") return "Chưa có đánh giá";
+    if (key === "ratingEmptyAria") return "Chưa có đánh giá, 0 đánh giá";
+    if (key === "ratingUnavailable") return "Chưa có điểm trung bình";
+    if (key === "ratingUnavailableAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
+    return key;
+  },
   useLocale: () => "vi",
 }));
 
@@ -26,31 +34,36 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
   } as Product;
 }
 
-describe("ProductCard - hiển thị đánh giá đã duyệt", () => {
-  it("hiển thị sao khi sản phẩm có đánh giá đã duyệt", () => {
+describe("ProductCard - hiển thị đánh giá", () => {
+  it("hiển thị điểm, sao và số lượt đánh giá khi có đánh giá đã duyệt", () => {
     const { container } = render(
       <ProductCard product={makeProduct({ rating: 3.5, ratingCount: 2 })} />,
     );
-    expect(container.querySelector('[aria-label="3.5 sao"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="3.5 sao, 2 đánh giá"]')).not.toBeNull();
+    expect(screen.getByText("3.5")).toBeInTheDocument();
+    expect(screen.getByText("2 đánh giá")).toBeInTheDocument();
   });
 
-  it("ẩn sao khi chưa có đánh giá", () => {
+  it("hiển thị sao trung tính và trạng thái chưa có đánh giá", () => {
     const { container } = render(
       <ProductCard product={makeProduct({ rating: null, ratingCount: 0 })} />,
     );
-    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
+    expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
+    expect(screen.getByText("0 đánh giá")).toBeInTheDocument();
   });
 
-  it("ẩn điểm nhập cũ khi không có số lượng đánh giá", () => {
+  it("không hiển thị điểm giả khi thiếu số lượt đánh giá", () => {
     const { container } = render(
       <ProductCard product={makeProduct({ rating: 4.5, ratingCount: null })} />,
     );
-    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
+    expect(screen.queryByText("4.5")).toBeNull();
   });
 
-  it("ẩn sao khi thiếu toàn bộ dữ liệu đánh giá", () => {
+  it("vẫn giữ vùng đánh giá khi payload thiếu dữ liệu", () => {
     const { container } = render(<ProductCard product={makeProduct()} />);
-    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
   });
 });
 

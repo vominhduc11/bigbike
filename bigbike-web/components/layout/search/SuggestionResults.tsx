@@ -53,12 +53,12 @@ export function SuggestionResults({
                   <img
                     src={resolveMediaUrl(product.image?.url)!}
                     alt={product.name}
-                    className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16"
+                    className="h-12 w-12 shrink-0 object-contain"
                     width={48}
                     height={48}
                   />
                 ) : (
-                  <div className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16" aria-hidden />
+                  <div className="h-12 w-12 shrink-0 object-contain" aria-hidden />
                 )}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="truncate text-a5-meta font-medium text-foreground">{product.name}</span>
@@ -98,7 +98,7 @@ export function SuggestionResults({
           {/* "View all" always visible at bottom, never scrolls away */}
           <Link
             href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-b4-action font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 4xl:py-4"
+            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-b4-action font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)]"
             onClick={handleClose}
           >
             {t("viewAllResultsBtn", { query: trimmedQuery })}

@@ -5,7 +5,7 @@ import { ReviewsSection } from "./ReviewsSection";
 
 vi.mock("next-intl", () => ({
   useLocale: () => "vi",
-  useTranslations: () => (key: string) => {
+  useTranslations: () => (key: string, values?: { rating?: string; count?: number }) => {
     const messages: Record<string, string> = {
       errorLoad: "Không thể tải đánh giá.",
       formStars: "Số sao",
@@ -14,7 +14,13 @@ vi.mock("next-intl", () => ({
       writeButton: "Viết đánh giá",
       submit: "Gửi đánh giá",
       submitting: "Đang gửi...",
+      ratingEmpty: "Chưa có đánh giá",
+      ratingUnavailable: "Chưa có điểm trung bình",
+      ratingEmptyAria: "Chưa có đánh giá, 0 đánh giá",
     };
+    if (key === "ratingSummaryAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
+    if (key === "ratingCount") return `(${values?.count} đánh giá)`;
+    if (key === "ratingUnavailableAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
     return messages[key] ?? key;
   },
 }));
@@ -138,9 +144,9 @@ describe("ReviewsSection", () => {
     return fetchMock;
   }
 
-  /** StarRow của summary là span[aria-label] — phân biệt với nút radio của form. */
-  function summaryStarRow(container: HTMLElement) {
-    return container.querySelector('span[aria-label="starsCount"]');
+  /** Rating summary là span[aria-label] — phân biệt với nút radio của form. */
+  function summaryRatingRow(container: HTMLElement) {
+    return container.querySelector('span[aria-label*="đánh giá"]');
   }
 
   /**
@@ -152,12 +158,15 @@ describe("ReviewsSection", () => {
     return container.querySelector(".text-a1-title")?.textContent ?? null;
   }
 
-  it("0 review (totalReviews = 0) → ẨN hoàn toàn block summary sao", async () => {
+  it("0 review (totalReviews = 0) → hiện sao trung tính và không hiện điểm giả", async () => {
     stubReviewsResponse({ avgRating: 0, totalReviews: 0 });
     const { container } = renderReviewsSection();
 
     expect(await screen.findByText("beFirst")).toBeInTheDocument();
-    expect(summaryStarRow(container)).toBeNull();
+    expect(summaryRatingRow(container)).not.toBeNull();
+    expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
+    expect(screen.getByText("(0 đánh giá)")).toBeInTheDocument();
+    expect(container.querySelector('[role="group"]')).toBeNull();
     expect(screen.queryByText("0.0")).not.toBeInTheDocument();
   });
 
@@ -170,13 +179,11 @@ describe("ReviewsSection", () => {
     const { container } = renderReviewsSection();
 
     expect(await screen.findByText("4.0")).toBeInTheDocument();
-    const starRow = summaryStarRow(container);
+    const starRow = summaryRatingRow(container);
     expect(starRow).not.toBeNull();
-    const svgs = Array.from(starRow!.querySelectorAll("svg"));
-    expect(svgs.filter((s) => s.getAttribute("fill") === "currentColor")).toHaveLength(4);
-    expect(svgs.filter((s) => s.getAttribute("fill") === "none")).toHaveLength(1);
-    // 4.0 tròn → không có sao lẻ (overlay)
-    expect(starRow!.querySelector("span.absolute")).toBeNull();
+    const overlay = starRow!.querySelector<HTMLElement>("span.absolute");
+    expect(overlay).not.toBeNull();
+    expect(overlay!.style.width).toBe("80%");
   });
 
   it("review [5,2] → trung bình 3.5: hiện '3.5', sao thứ 4 tô đúng 50% (nửa sao, khớp RatingStars)", async () => {
@@ -188,12 +195,10 @@ describe("ReviewsSection", () => {
     const { container } = renderReviewsSection();
 
     await waitFor(() => expect(avgScoreText(container)).toBe("3.5"));
-    const starRow = summaryStarRow(container);
+    const starRow = summaryRatingRow(container);
     expect(starRow).not.toBeNull();
     const overlay = starRow!.querySelector<HTMLElement>("span.absolute");
     expect(overlay).not.toBeNull();
-    // Tô một phần dùng linearGradient (không cắt hình chữ nhật) — stop đầu ở đúng 50%.
-    const stop = overlay!.querySelector("stop");
-    expect(stop?.getAttribute("offset")).toBe("50%");
+    expect(overlay!.style.width).toBe("70%");
   });
 });

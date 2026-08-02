@@ -75,8 +75,8 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           // nhảy thành lưới khi JS chạy (FOUC lúc reload). Khoá bề rộng slide khớp
           // slidesPerView từng breakpoint CHO TỚI khi init; sau init `:not(...)` hết
           // khớp nên Swiper tự tính lại — không ảnh hưởng runtime. Mirror breakpoints
-          // bên dưới (2 / md:4 / 1536:5 / 2560:6).
-          className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 min-[1536px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6"
+          // bên dưới (2 / md:4); desktop rộng giữ nguyên baseline 1440px.
+          className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4"
           modules={[Pagination]}
           autoHeight={autoHeight}
           onSwiper={(s) => {
@@ -92,8 +92,6 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           pagination={{ el: `#${paginationId}`, clickable: true }}
           breakpoints={{
             [BB_BREAKPOINTS.md]: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
-            [BB_BREAKPOINTS.xxl]: { slidesPerView: 5, slidesPerGroup: 5, spaceBetween: 30 },
-            [BB_BREAKPOINTS.xxxxl]: { slidesPerView: 6, slidesPerGroup: 6, spaceBetween: 30 },
           }}
         >
           {products.map((p) => (

@@ -23,19 +23,17 @@ const VideoModal = dynamic(
 // số cột thì mũi tên bật đúng (carousel tính cột theo bề rộng màn hình, không theo khung chứa).
 type Props = { videos: HomeVideo[]; surface?: "dark" | "light"; compact?: boolean };
 
-// Cấu hình số cột + khoá bề rộng pre-init khớp nhau. "home" trải full-width (2→7 cột);
+// Cấu hình số cột + khoá bề rộng pre-init khớp nhau. "home" giữ tối đa 5 cột;
 // "compact" cho khung hẹp PDP (1→2→3→4→5 cột). Class pre-init phải là chuỗi tĩnh để Tailwind sinh ra.
 const COLUMN_PRESET = {
   home: {
     preInit:
-      "min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 xl:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/7",
+      "min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 xl:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5",
     breakpoints: {
       480: { slidesPerView: 2, spaceBetween: 12 },
       768: { slidesPerView: 3, spaceBetween: 14 },
       1024: { slidesPerView: 4, spaceBetween: 16 },
       1280: { slidesPerView: 5, spaceBetween: 16 },
-      1920: { slidesPerView: 6, spaceBetween: 20 },
-      2560: { slidesPerView: 7, spaceBetween: 24 },
     },
   },
   compact: {

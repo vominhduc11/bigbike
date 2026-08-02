@@ -87,7 +87,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noopener" : undefined}
                 onClick={() => setSuppressedId(node.id)}
-                className="flex h-full items-center px-7.5 font-cta text-b4-action font-semibold uppercase text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className="flex h-full items-center px-7.5 font-cta text-header-nav font-black leading-body uppercase tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
               </Link>
@@ -199,7 +199,7 @@ function MobileMenuList({
                 "flex min-h-13 items-center pr-17.5 text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
                 depth === 0
-                  ? "py-[15px] font-cta text-b4-action font-semibold uppercase"
+                  ? "py-[15px] font-cta text-header-nav font-black leading-body uppercase tracking-wide"
                   : "py-3 font-body text-a5-meta",
               )}
             >

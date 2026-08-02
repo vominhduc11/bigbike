@@ -14,8 +14,7 @@ export type RecentProduct = {
   categoryName?: string | null;
   /** Approved-review average — chỉ dùng khi ratingCount ≥ 1 (REVIEW_RULE_003). */
   rating?: number | null;
-  /** Approved-review count — gate hiển thị sao. Entry cũ thiếu field này
-   *  được coi là "chưa xác minh có review" → card ẨN sao (không default). */
+  /** Approved-review count; missing/zero values resolve to neutral stars on cards. */
   ratingCount?: number | null;
 };
 

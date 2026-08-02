@@ -23,7 +23,7 @@ const fabInnerBlock =
 // Open state: FAB + mask turn gray (WP sudovn parity). Same size/position as the closed
 // FAB so toggling never makes the button jump — only the colour and icon change.
 const fabInnerBlockOpen =
-  "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+  "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-close-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
 const fabMaskOpen =
   "absolute -inset-1.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-10 pointer-events-none";
 const fabIconWrap = "relative flex-1 w-full h-full";
@@ -34,7 +34,7 @@ const fabBlockMobile = " max-md:w-12 max-md:h-12";
 // inset-0 auto-matches the button size (66px / 48px mobile); hidden for reduced motion.
 const fabHaloRing =
   "absolute inset-0 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-0 pointer-events-none motion-reduce:hidden";
-// "Bạn cần hỗ trợ?" pill — cyan box up-left of the FAB, shown in both closed and open
+// "Bạn cần hỗ trợ?" pill — dedicated cyan box up-left of the FAB, shown in both closed and open
 // states (WP sudovn parity). Hidden on mobile to avoid covering the bottom nav.
 // Reaches ~110px left of the FAB, which on wide desktop screens can land on top of
 // nearby in-page controls (eg. carousel next-arrows in the same right gutter) since
@@ -44,8 +44,8 @@ const fabHaloRing =
 const chatTitlePill =
   "absolute right-full bottom-1/2 mr-3 translate-y-1/2 bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-body whitespace-nowrap max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
-// margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
-// hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
+// margin-right 5px (= gap). The #333 text overrides the global link colour.
+// hover:!text keeps the row text #333 — overrides the global link hover rule
 // so the only hover change is the #f2f2f2 background, exactly like WP.
 const chatItem =
   "flex items-center gap-[5px] px-4 py-2 no-underline text-[var(--bb-chat-text)] ![transition:none] hover:!bg-muted hover:!text-[var(--bb-chat-text)]";
@@ -222,7 +222,6 @@ function ChatOverlay({
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
       <div className="bb-floating-chat-portal-fab fixed z-[var(--bb-z-overlay)]">
         <div dir="ltr" className="group relative flex flex-col-reverse items-end">
-          <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>
           <div className={fabMaskOpen} aria-hidden="true" />
           <div className={`${fabBlock}${fabBlockMobile}`}>

@@ -19,16 +19,20 @@ Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbik
 | B1 | Trang trí / Display | Barlow Condensed, IN HOA | 32px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
 | B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 32px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
 | B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 18px | 20px | Nhãn “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 18px | 20px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
+| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 18px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
 | B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 12px | 14px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
 | A1 | Tiêu đề lớn H1 | Arial / Helvetica | 28px | 32px | Tiêu đề khối lớn; tên và giá lớn trên trang sản phẩm |
 | A2 | Tiêu đề trang H2 | Arial / Helvetica | 22px | 26px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
 | A3 | Tiêu đề khối H3 | Arial / Helvetica | 20px | 22px | Tiêu đề khối trong trang, hộp thoại, sidebar |
-| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 18px | 20px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
+| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 16px | 18px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
 | A5 | Chú thích / Meta | Arial / Helvetica | 14px | 16px | Breadcrumb, phụ đề, nhãn form, giá phụ/giá gạch, bộ đếm |
 | D | Trang trí nền | Phông tại thành phần | `clamp()` | `clamp()` | Chỉ số “404” mờ trong `app/not-found.tsx` |
 
 Giá được phân nhóm theo cấp độ nơi hiển thị: giá lớn trên trang sản phẩm = A1; tổng tiền giỏ hàng = A2 hoặc A3; giá trong một dòng = A4; giá trên card = A5.
+
+Nhãn phụ (kicker) của các khối trang chủ là biến thể cố định dùng Barlow Condensed, 16px ở cả mobile và desktop, in đậm, màu `#CECECE`. Utility tương ứng là `text-home-kicker`.
+
+Tiêu đề product card là biến thể cố định của A4: Arial / Helvetica, 16px ở cả mobile và desktop, font-weight 600. Utility tương ứng là `text-product-card`.
 
 ## 3. Token nguồn — `styles/brand-tokens.css`
 
@@ -38,16 +42,16 @@ Mười token dưới đây là nguồn cỡ chữ duy nhất. Giá trị mobile
 --bb-text-b1-display: 2rem;       /* 32px → 40px */
 --bb-text-b2-contact: 1.5rem;     /* 24px → 32px */
 --bb-text-b3-promo: 1.125rem;     /* 18px → 20px */
---bb-text-b4-action: 1.125rem;    /* 18px → 20px */
+--bb-text-b4-action: 1rem;         /* 16px → 18px */
 --bb-text-b5-label: 0.75rem;      /* 12px → 14px */
 --bb-text-a1-title: 1.75rem;      /* 28px → 32px */
 --bb-text-a2-page: 1.375rem;      /* 22px → 26px */
 --bb-text-a3-section: 1.25rem;    /* 20px → 22px */
---bb-text-a4-content: 1.125rem;   /* 18px → 20px */
+--bb-text-a4-content: 1rem;        /* 16px → 18px */
 --bb-text-a5-meta: 0.875rem;      /* 14px → 16px */
 ```
 
-`body` và mọi ô nhập dùng A4. Cỡ mobile 18px bảo đảm trình duyệt iOS không tự phóng to khi người dùng nhập liệu.
+`body` và mọi ô nhập dùng A4. Cỡ mobile 16px là kích thước chuẩn của nhóm A4.
 
 ## 4. Tailwind v4 utilities — `app/globals.css`
 
@@ -66,6 +70,7 @@ Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành
 ## 5. Quy tắc sử dụng
 
 - Nhóm B phải đi với phông Barlow Condensed và chữ IN HOA; nhóm A đi với Arial/Helvetica.
+- Menu chính của header là biến thể điều chỉnh của B4: Barlow Condensed, 15px ở cả mobile và desktop, font-weight 900, line-height 21px.
 - Form input, textarea và select luôn dùng A4.
 - Không dùng `text-[Npx]`, `text-[…em]`, cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-2xl`, `text-3xl`, `text-4xl`, `text-5xl`) hoặc token số `text-ui-*`.
 - Không hardcode `font-size` bằng px trong CSS nếu vai trò đã thuộc một nhóm.

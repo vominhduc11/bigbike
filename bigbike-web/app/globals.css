@@ -55,6 +55,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-home-kicker-label: var(--bb-home-kicker-label);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -100,6 +101,7 @@
   --color-success: var(--bb-color-success);
 
   --font-body: var(--bb-font-body);
+  --font-barlow: var(--bb-font-barlow);
   --font-cta: var(--bb-font-cta);
 
   /* Canonical 11-group typography. Each utility is responsive through its source
@@ -109,11 +111,15 @@
   --text-b3-promo: var(--bb-text-b3-promo);
   --text-b4-action: var(--bb-text-b4-action);
   --text-b5-label: var(--bb-text-b5-label);
+  --text-pdp-eyebrow: var(--bb-text-pdp-eyebrow);
+  --text-header-nav: var(--bb-text-header-nav);
   --text-a1-title: var(--bb-text-a1-title);
   --text-a2-page: var(--bb-text-a2-page);
   --text-a3-section: var(--bb-text-a3-section);
   --text-a4-content: var(--bb-text-a4-content);
   --text-a5-meta: var(--bb-text-a5-meta);
+  --text-home-kicker: var(--bb-text-home-kicker);
+  --text-product-card: var(--bb-text-product-card);
 
   /* Letter-spacing tối thiểu (TYPOGRAPHY §7.6): normal mặc định, wide cho uppercase
      nav/button/kicker, display cho eyebrow nổi bật. Override Tailwind built-in tracking-wide
@@ -146,11 +152,8 @@
   --duration-normal: var(--bb-duration-normal);
 
   /* Breakpoints — Tailwind defaults sm/md/lg/xl/2xl (640/768/1024/1280/1536px) + custom
-     ultra-wide tiers below. Use ONLY for layout rules that genuinely need wide-screen
-     treatment (full-bleed hero, container overrides, denser grids at huge viewports).
-     New rules must use canonical values: sm/md/lg/xl/2xl/3xl/4xl — not raw px media queries.
-     - 3xl 1920px: Full HD ultrawide (single monitor 27"+, 21:9 ultrawide)
-     - 4xl 2560px: QHD / 4K-class workstation, 32" desktop, 32:9 super-ultrawide, showroom TV */
+     ultra-wide labels retained for QA and viewport-bound overlays. Site content must not
+     expand, add columns, or resize components beyond the fixed 1440px canvas baseline. */
   --breakpoint-3xl: 120rem; /* 1920px */
   --breakpoint-4xl: 160rem; /* 2560px */
 }
@@ -341,6 +344,7 @@
 }
 
 body {
+  margin: 0;
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
@@ -646,18 +650,6 @@ body:has([data-page-hero]) .bb-main {
 
   .bb-grid-categories {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-/* ≥2560px (4xl): dense up utility grids so the wider container doesn't
-   leave half-empty rows on wide-screen workstations. */
-@media (min-width: 2560px) {
-  .bb-grid-products {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .bb-grid-categories {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1023,20 +1015,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    - ≥768px: ở màn hẹp/vừa cột nội dung gần full → breadcrumb vẫn nằm dưới logo.
      Logo có đáy NHÌN THẤY ở ~162px (= 82px dưới header 80px), 10px cuối trong
      suốt → hạ 92px xuống 82px để logo vẫn không đè chữ, cắt phần đệm thừa.
-   - ≥1680px: khung 1200px lệch phải, mép trái breadcrumb (~256px) vượt mép phải
-     logo (214px, kể từ ~1596px) → logo treo hẳn ở lề trái trống, không phủ nội
-     dung → bỏ khoảng đẩy, chỉ chừa 24px thở dưới header. */
+   Canvas desktop cố định 1440px nên giữ cùng khoảng né logo ở mọi viewport lớn. */
 @media (min-width: 768px) {
   body:has(.bb-product-page.bb-heroless) .bb-main {
     padding-top: 82px;
   }
 }
-@media (min-width: 1680px) {
-  body:has(.bb-product-page.bb-heroless) .bb-main {
-    padding-top: 24px;
-  }
-}
-
 /* Mobile: logo-1.png hiện mặc định, không có scroll-swap */
 
 
@@ -1263,8 +1247,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-text-brand);
 }
 
-/* Trang Liên hệ (tĩnh): SĐT ở CỘT THÔNG TIN bên trái là link tel: nên dính màu xanh
-   `a{color:#007bff}` của stylesheet trang tĩnh cũ (theme nạp qua <link> SAU globals, unlayered).
+/* Trang Liên hệ (tĩnh): SĐT ở CỘT THÔNG TIN bên trái có thể dính màu của
+   stylesheet trang tĩnh cũ (theme nạp qua <link> SAU globals, unlayered).
    Ép về #000 cho khớp phần còn lại của cột (`.contact-page .information{color:#000}`), hover
    brand-red. Dùng !important để chắc chắn thắng rule `a` của theme bất kể thứ tự nạp/cache.
    Cột phải `.contact-form .webform` (kênh trực tuyến) KHÔNG đụng — vẫn giữ kiểu link. */
@@ -2054,6 +2038,12 @@ body { overflow-x: clip; overflow-y: visible; }
    body while the scrollbar on html stays visible — creating a visible gap on open/close. */
 html { scrollbar-gutter: stable; }
 
+/* Canvas có lề thật từ 2xl trở lên: dành gutter cân hai phía để thanh cuộn
+   không làm lệch header/main/footer khỏi tâm viewport. Mobile/tablet giữ nguyên. */
+@media (min-width: 1536px) {
+  html { scrollbar-gutter: stable both-edges; }
+}
+
 /* Global scrollbar — thin, brand-neutral, consistent across Chrome/Edge/Firefox */
 * {
   scrollbar-width: thin;
@@ -2532,7 +2522,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* ============================================================
  * DESIGN.md Enforcement
- * Dark-first, #FF0C09 CTA red, #007BFF secondary interaction,
+ * BigBike-red primary, blue secondary interaction,
  * System font (Arial/Helvetica), and zero-radius non-circular UI.
  * ============================================================ */
 
@@ -2743,7 +2733,7 @@ input[type="checkbox"] {
 
 
 
-/* -- Product grid: 2 cols at 640px, 3 cols at 1024px+, 4 cols at 2560px+ - */
+/* -- Product grid: 2 cols at 640px, 3 cols at 1024px+ ----------------- */
 
 @media (min-width: 640px) {
   .bb-grid-products,
@@ -2756,12 +2746,6 @@ input[type="checkbox"] {
   .bb-grid-products,
 .bb-grid-categories {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 2560px) {
-  .bb-grid-categories {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -4233,172 +4217,6 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   /* Footer contact typography remains controlled by B2; no size override here. */
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   LARGE-DESKTOP RESPONSIVE EXPANSION — project-wide
-   Canonical breakpoints: 1536px (2xl) → expand; 1920px (3xl) → wider;
-                          2560px (4xl) → wide-screen workstation / showroom TV.
-
-   Tier 1  Token via --bb-container-xl: all .bb-container auto-respond
-   Tier 3  Page layouts hard-coded at 1440px: push further
-   Tier 4  Selectors hard-coded at 1200px instead of using the token
-   Tier 5  Account layout (1280px sidebar grid)
-
-   NOT changed:
-   - Inner text-copy widths (970px, 68ch) — narrow column is correct for reading
-   - WP legacy 1140px parity rules — require separate visual regression pass
-   ══════════════════════════════════════════════════════════════════════ */
-
-@media (min-width: 1536px) {
-  /* Tier 1 — token: .bb-container expands globally */
-  :root {
-    --bb-container-xl: 85rem; /* 1360px */
-  }
-
-  /* Tier 3 — layouts already at 1440px (.bb-pdp/.bb-pdp-below skeleton inline) */
-  .bb-breadcrumb,
-  .bb-page-head {
-    max-width: 1480px;
-  }
-
-  /* Tier 5 — account layout (282px fixed sidebar + fluid main) */
-  .bb-account-layout {
-    max-width: 1400px;
-    grid-template-columns: 300px 1fr;
-  }
-  body:has(.bb-account-layout) .bb-breadcrumb { max-width: 1400px; }
-}
-
-@media (min-width: 1920px) {
-  /* Tier 1 */
-  :root {
-    --bb-container-xl: 100rem; /* 1600px */
-  }
-
-  /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
-  .bb-breadcrumb,
-  .bb-page-head {
-    max-width: 1760px;
-  }
-
-  /* Tier 5 */
-  .bb-account-layout {
-    max-width: 1560px;
-    grid-template-columns: 320px 1fr;
-  }
-  body:has(.bb-account-layout) .bb-breadcrumb { max-width: 1560px; }
-
-  /* Hero-less logo-emblem clearance inherits the base 92px — the logo is a fixed
-     w-[190px] and does not grow at 3xl, so no per-breakpoint override is needed. */
-
-  /* Header — height token + container rail alignment at 3xl (1600px rail).
-     max-width = var(--bb-container-xl) + 2×padding → logo/icon align with content column edges.
-     padding-inline switches clamp → fixed 2rem for precise math; diff is <1px at 1920px.
-     body:has(.bb-home) required: specificity (0,1,1) beats :root (0,1,0) for homepage override. */
-  :root {
-    --bb-header-height: 5.5rem; /* 88px — +10%, proportional with 1600px content rail */
-  }
-
-  body:has(.bb-home) {
-    --bb-header-height: 5.5rem;
-    --bb-header-stack: 5.5rem;
-  }
-
-}
-
-/* ≥2560px (4xl): wide-screen workstation, 32:9 super-ultrawide, showroom TV.
-   Container 140rem (2240px) → 160px each side at 2560 viewport (parity with 3xl ratio).
-   Tier 3 layouts get +160px headroom over the token, Tier 5 sits 40px below the token. */
-@media (min-width: 2560px) {
-  /* Tier 1 */
-  :root {
-    --bb-container-xl: 140rem; /* 2240px */
-  }
-
-  /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
-  .bb-breadcrumb,
-  .bb-page-head {
-    max-width: 2400px;
-  }
-
-  /* Tier 5 */
-  .bb-account-layout {
-    max-width: 2200px;
-    grid-template-columns: 360px 1fr;
-  }
-  body:has(.bb-account-layout) .bb-breadcrumb { max-width: 2200px; }
-
-  /* Hero-less logo-emblem clearance inherits the base 92px — the logo is a fixed
-     w-[190px] and does not grow at 4xl, so no per-breakpoint override is needed. */
-
-  /* Header — height token at 4xl (2240px rail). The header container's max-width is now
-     inline Tailwind (SiteHeader.tsx) keyed off var(--bb-container-xl) = 140rem (set in Tier 1). */
-  :root {
-    --bb-header-height: 6rem; /* 96px — +20%, proportional with 2240px content rail */
-  }
-
-  body:has(.bb-home) {
-    --bb-header-height: 6rem;
-    --bb-header-stack: 6rem;
-  }
-}
-
-/* WP-parity archive + PDP containers (Bootstrap 1140px base) */
-
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   UNIFORM ULTRA-WIDE EXPANSION — phương án B (toàn site), 3xl + 4xl ONLY.
-   Mọi surface từng ghim ở Bootstrap .container 1140px (header, footer, giỏ
-   hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay nới theo content
-   rail = var(--bb-container-xl) (1600px @3xl, 2240px @4xl) — lấy hệ token
-   2xl→3xl→4xl làm chuẩn. Kèm densify lưới + cap cột chữ + cap sidebar/PDP.
-
-   RÀNG BUỘC: KHÔNG có rule nào dưới 1920px trong block này — mọi breakpoint
-   ≤2xl giữ nguyên tuyệt đối. `body .…` để thắng specificity stylesheet cũ
-   (nạp sau globals, unlayered). Bootstrap .container = (0,1,0) → body cần (0,1,1).
-   ══════════════════════════════════════════════════════════════════════ */
-@media (min-width: 1920px) {
-  body .container { max-width: var(--bb-container-xl); }
-
-  /* 2 — Account (WP): cap sidebar khỏi giãn 25% (~400px) khi container rộng;
-        content chiếm phần còn lại. Khớp tỉ lệ .bb-account-layout (320px @3xl). */
-  body .account-dashboard > .row > .col-md-3 { flex: 0 0 320px; max-width: 320px; }
-  body .account-dashboard > .row > .col-md-9 { flex: 1 1 0%; max-width: none; }
-
-  /* 3 — Cap cột chữ (line-length) — container rộng nhưng prose không dài quá đọc.
-        Chỉ prose thuần: blog detail + trang tĩnh có sidebar (col-md-9). Trang
-        gioi-thieu/lien-he (static-page full-width col-md-12) KHÔNG bị cap. */
-  body .blog-content.wyswyg,
-  body .col-md-9 > .static-page.wyswyg { max-width: 1000px; }
-
-  /* 4 — Densify lưới để lấp cột, giữ kích thước tile ~constant so với 2xl.
-        Sản phẩm (archive/category/search, đều có sidebar): 4 → 5 cột.
-        Home category (full-width): 4 → 5 cột.  Tin tức (có sidebar): 3 → 4 cột. */
-  body .product-list .col-md-3.col-6 { flex: 0 0 20%; max-width: 20%; }
-  body .product-category-list .col-md-3.col-6 { flex: 0 0 20%; max-width: 20%; }
-  body .bb-blog-listing-parity .col-md-4 { flex: 0 0 25%; max-width: 25%; }
-}
-
-@media (min-width: 2560px) {
-  /* 1 — token = 2240. */
-  body .container { max-width: var(--bb-container-xl); }
-  /* PDP exception: mọi rail (.container) của trang sản phẩm chốt 1600 ở 4xl thay
-     vì 2240 — nếu nới tới 2240 sẽ sinh dải trắng lớn quanh gallery, vỡ tỉ lệ.
-     Ở 3xl token đã = 1600 nên không cần override. Xem STYLEGUIDE /product/[slug]. */
-
-  /* 2 — Account sidebar 360px @4xl (khớp .bb-account-layout). */
-  body .account-dashboard > .row > .col-md-3 { flex: 0 0 360px; max-width: 360px; }
-
-  /* 3 — Prose cap nới nhẹ ở màn rất rộng. */
-  body .blog-content.wyswyg,
-  body .col-md-9 > .static-page.wyswyg { max-width: 1100px; }
-
-  /* 4 — Densify: sản phẩm 5 → 6 cột, home category 5 → 6, tin tức 4 → 5. */
-  body .product-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
-  body .product-category-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
-  body .bb-blog-listing-parity .col-md-4 { flex: 0 0 20%; max-width: 20%; }
-}
-
 /* Nháy viền khi admin "Xem trên web" cuộn tới khối tương ứng (SettingsFocusScroller). */
 @keyframes bbFocusFlash {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232, 40, 30, 0); }
@@ -4666,11 +4484,11 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
 
   /* Product Grid Item */
   .product--item-title {
-    font-size: var(--bb-text-a4-content) !important; /* matches PDP body text */
+    font-size: var(--bb-text-product-card) !important; /* 16px on mobile and desktop */
     line-height: var(--bb-line-body);
   }
   .product--item-title a {
-    font-size: var(--bb-text-a4-content) !important;
+    font-size: var(--bb-text-product-card) !important;
     color: var(--bb-text-primary) !important;
     font-weight: 600;
   }

@@ -40,37 +40,6 @@ export function PartialStarIcon({ fill, className, gradientId }: { fill: number;
   );
 }
 
-export function StarRow({ rating, iconClassName }: { rating: number; iconClassName?: string }) {
-  const t = useTranslations("Product.reviews");
-  const uid = useId();
-  return (
-    <span
-      className="inline-flex items-center gap-0.5"
-      aria-label={t("starsCount", { count: rating.toFixed(1) })}
-    >
-      {Array.from({ length: 5 }, (_, i) => {
-        const fill = Math.max(0, Math.min(1, rating - i));
-        if (fill >= 1) {
-          return <StarIcon key={i} filled className={cn(iconClassName, "text-brand")} />;
-        }
-        if (fill <= 0) {
-          return (
-            <StarIcon key={i} filled={false} className={cn(iconClassName, "text-[var(--bb-text-secondary)]")} />
-          );
-        }
-        return (
-          <span key={i} className="relative inline-flex">
-            <StarIcon filled={false} className={cn(iconClassName, "text-[var(--bb-text-secondary)]")} />
-            <span className="absolute inset-0">
-              <PartialStarIcon fill={fill} className={iconClassName} gradientId={`${uid}-star-${i}`} />
-            </span>
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 // REVIEW_RULE_008: khách chọn được nửa sao — bấm/chạm nửa trái của sao thứ N
 // chọn (N - 0.5), nửa phải chọn N nguyên.
 function starValueFromPointer(e: { currentTarget: HTMLElement; clientX: number }, star: number): number {

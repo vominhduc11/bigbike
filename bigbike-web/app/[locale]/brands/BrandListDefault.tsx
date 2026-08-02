@@ -32,7 +32,7 @@ export async function BrandListDefault({
   return (
     <>
       <div className="relative">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {brands.map((brand) => {
             const name = safeText(brand.name, t("brandsTitle"));
             const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());

@@ -92,8 +92,7 @@ export const submenuIcon =
   "transition-[background-color] duration-[var(--bb-duration-normal)] ease-[ease]";
 
 /** Inline text link (was `.bb-link`): blue resting (--bb-link-text), red on
- * hover/focus. The base red is overridden by later WP-parity groups, so the
- * effective resting color is the blue link token. */
+ * hover/focus. */
 export const bbLink =
   "font-bold no-underline text-[var(--bb-link-text)] transition-colors duration-fast ease-[var(--bb-ease-standard)] hover:text-brand focus-visible:text-brand";
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
+import { SITE_CANVAS_CLASS } from "@/components/layout/Container";
 import { HeaderCartLink } from "@/components/layout/header/HeaderCartLink";
 import { HeaderMenu } from "@/components/layout/header/HeaderMenu";
 import { HeaderSearchButton } from "@/components/layout/header/HeaderSearchButton";
@@ -135,20 +136,21 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
     <>
       <header
         data-bb-header
+        data-bb-full-bleed
         data-scrolled={scrolled ? "true" : "false"}
-        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-15 bg-black text-white md:h-20"
+        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-15 w-full bg-black text-white md:h-20"
       >
-        <div className="mx-auto flex h-full w-full max-w-437.5 items-center px-4 md:px-6">
+        <div data-bb-canvas className={cn(SITE_CANVAS_CLASS, "flex h-full items-center px-4 md:px-6")}>
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
             <Link href={toHomePath(locale as Locale)} data-header-logo className="relative flex h-full items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}
                 alt="BigBike"
-                width={scrolled ? 150 : 190}
+                width={scrolled ? 150 : 210}
                 className={cn(
                   "hidden min-[1261px]:block!",
-                  scrolled ? "mt-[15px] w-37.5" : "w-47.5",
+                  scrolled ? "my-auto w-37.5" : "mt-0 w-52.5",
                 )}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -112,6 +112,22 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void publicGetReviews_averageUsesApprovedOnlyAndRoundsHalfUpToOneDecimal() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Half Up Average");
+        insertReview(product.id(), "Approved 4", new BigDecimal("4.0"), "Good", "APPROVED");
+        insertReview(product.id(), "Approved 4.5", new BigDecimal("4.5"), "Very good", "APPROVED");
+        insertReview(product.id(), "Pending 1", new BigDecimal("1.0"), "Ignored", "PENDING");
+        insertReview(product.id(), "Spam 1", new BigDecimal("1.0"), "Ignored", "SPAM");
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avgRating").value(4.3))
+                .andExpect(jsonPath("$.data.totalReviews").value(2))
+                .andExpect(jsonPath("$.data.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data.reviews.length()").value(2));
+    }
+
+    @Test
     void publicGetReviews_defaultPagination_returnsFirstPageMetadata() throws Exception {
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
                 .andExpect(status().isOk())
@@ -1421,6 +1437,10 @@ class Phase1NReviewsApiTest {
     }
 
     private Long insertReview(String productId, String authorName, int rating, String body, String status) {
+        return insertReview(productId, authorName, BigDecimal.valueOf(rating), body, status, Instant.now());
+    }
+
+    private Long insertReview(String productId, String authorName, BigDecimal rating, String body, String status) {
         return insertReview(productId, authorName, rating, body, status, Instant.now());
     }
 
@@ -1451,10 +1471,21 @@ class Phase1NReviewsApiTest {
             String status,
             Instant createdAt
     ) {
+        return insertReview(productId, authorName, BigDecimal.valueOf(rating), body, status, createdAt);
+    }
+
+    private Long insertReview(
+            String productId,
+            String authorName,
+            BigDecimal rating,
+            String body,
+            String status,
+            Instant createdAt
+    ) {
         ReviewEntity review = new ReviewEntity();
         review.setProductId(productId);
         review.setAuthorName(authorName);
-        review.setRating(BigDecimal.valueOf(rating));
+        review.setRating(rating);
         review.setBody(body);
         review.setStatus(status);
         if ("APPROVED".equals(status)) {

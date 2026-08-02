@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocale } from "next-intl";
 import { Store, Clock, Phone, MapPin, MessageSquare, ChevronRight, ExternalLink } from "lucide-react";
+import { Container } from "@/components/layout/Container";
 import { telHref } from "@/lib/utils/format";
 import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
 
@@ -13,7 +14,7 @@ import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
  *
  * ⚠️ TẠI SAO DÙNG INLINE STYLE THAY VÌ CLASS TAILWIND?
  * Trang nằm trong StaticPageShell; các quy tắc bên dưới giữ nguyên bố cục đã được duyệt.
- * trần UNLAYERED `a{color:#007bff}`, `p{margin-bottom:1rem}`… Tailwind v4 nằm trong @layer
+ * trần UNLAYERED `a{color:...}`, `p{margin-bottom:1rem}`… Tailwind v4 nằm trong @layer
  * nên LUÔN thua rule unlayered → màu/đậm/khoảng cách/link sẽ bị đè. Inline style thắng mọi
  * rule unlayered nên màu/viền/spacing/link đặt qua `style`. Chỉ CỠ CHỮ (nhóm A/B) và LƯỚI
  * responsive (grid + md:) dùng Tailwind — đây là các thuộc tính WP không nhắm tới element
@@ -246,6 +247,64 @@ const YoutubeIcon = (
   </svg>
 );
 
+export function ContactMap({ contact }: { contact: ContactInfo }) {
+  const locale = useLocale();
+  const vi = locale === "vi";
+  const { main: mainAddr } = getAddressParts(contact.address || "");
+  const mapUrl = contact.address
+    ? `https://www.google.com/maps?q=${encodeURIComponent(contact.address)}&z=17&output=embed`
+    : "";
+
+  if (!mapUrl) return null;
+
+  return (
+    <div
+      data-bb-full-bleed
+      className="relative mb-7.5 h-105 w-full overflow-hidden bg-secondary"
+    >
+      <iframe
+        src={mapUrl}
+        title={vi ? "Bản đồ vị trí Shop Bảo Hộ Bigbike.vn" : "BigBike store location map"}
+        className="block h-full w-full border-0"
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+      <div className="pointer-events-none absolute inset-0">
+        <Container className="relative h-full">
+          {mainAddr && (
+            <div
+              className="pointer-events-auto absolute right-4 top-18 z-[var(--bb-z-overlay)] flex max-w-[min(270px,calc(100%_-_32px))] items-center gap-2.5 border border-border bg-background px-3 py-2 shadow-md md:right-0"
+            >
+              <span className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-brand">
+                <MapPin size={16} color={COLORS.inverse} />
+              </span>
+              <span>
+                <span className="block font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">
+                  {vi ? "Cửa hàng chính" : "Main store"}
+                </span>
+                <strong className="block font-body text-a5-meta font-bold leading-body text-foreground">
+                  {mainAddr}
+                </strong>
+              </span>
+            </div>
+          )}
+          <a
+            href={`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={vi ? "Mở Google Maps" : "Open in Google Maps"}
+            className="pointer-events-auto absolute bottom-4 right-4 flex items-center gap-1.5 bg-brand px-3 py-2 text-a5-meta font-bold text-white no-underline shadow-md md:right-0"
+          >
+            <ExternalLink size={13} color={COLORS.inverse} />
+            <span>{vi ? "Xem trên Maps" : "Open in Maps"}</span>
+          </a>
+        </Container>
+      </div>
+    </div>
+  );
+}
+
 export function ContactPageContent({ contact }: { contact: ContactInfo }) {
   const locale = useLocale();
   const vi = locale === "vi";
@@ -278,9 +337,6 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
   const { main: mainAddr, sub: subAddr } = getAddressParts(contact.address || "");
   const zaloPhone = getZaloDisplayPhone(contact.zaloUrl || "");
-  const mapUrl = contact.address
-    ? `https://www.google.com/maps?q=${encodeURIComponent(contact.address)}&z=17&output=embed`
-    : "";
 
   const hasHours = contact.hoursWeekday || contact.hoursWeekend || contact.hoursHoliday;
 
@@ -292,109 +348,6 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
   return (
     <div>
-      {/* MAP — tràn 2 mép viewport (100vw), ngay dưới header. html/body đã overflow-x:clip
-          nên 100vw không sinh thanh cuộn ngang. Inline style để không phụ thuộc class theme. */}
-      {mapUrl && (
-        <div
-          style={{
-            position: "relative",
-            left: "50%",
-            right: "50%",
-            width: "100vw",
-            marginLeft: "-50vw",
-            marginRight: "-50vw",
-            marginBottom: 30,
-            height: 420,
-            overflow: "hidden",
-            background: COLORS.surfaceRaised,
-          }}
-        >
-          <iframe
-            src={mapUrl}
-            title={vi ? "Bản đồ vị trí Shop Bảo Hộ Bigbike.vn" : "BigBike store location map"}
-            style={{ width: "100%", height: "100%", border: 0, display: "block" }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-          {/* Floating address card */}
-          {mainAddr && (
-            <div
-              style={{
-                position: "absolute",
-                top: 72,
-                right: 16,
-                background: COLORS.surface,
-                border: `1px solid ${COLORS.border}`,
-                padding: "8px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                maxWidth: "min(270px, calc(100% - 32px))",
-                boxShadow: "0 2px 8px rgba(0,0,0,.12)",
-                zIndex: "var(--bb-z-overlay)",
-              }}
-            >
-              <span
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  background: COLORS.red,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <MapPin size={16} color={COLORS.inverse} />
-              </span>
-              <span>
-                <span
-                  className="font-cta text-b5-label uppercase tracking-wide"
-                  style={{ color: COLORS.faint, display: "block", fontWeight: 600 }}
-                >
-                  {vi ? "Cửa hàng chính" : "Main store"}
-                </span>
-                <strong
-                  className="font-body text-a5-meta leading-body"
-                  style={{ color: COLORS.text, display: "block", fontWeight: 700 }}
-                >
-                  {mainAddr}
-                </strong>
-              </span>
-            </div>
-          )}
-          {/* Open in Google Maps */}
-          {contact.address && (
-            <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={vi ? "Mở Google Maps" : "Open in Google Maps"}
-              className="text-a5-meta"
-              style={{
-                position: "absolute",
-                bottom: 16,
-                right: 20,
-                background: COLORS.red,
-                color: COLORS.inverse,
-                padding: "8px 12px",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                textDecoration: "none",
-                boxShadow: "0 2px 6px rgba(0,0,0,.2)",
-              }}
-            >
-              <ExternalLink size={13} color={COLORS.inverse} />
-              <span>{vi ? "Xem trên Maps" : "Open in Maps"}</span>
-            </a>
-          )}
-        </div>
-      )}
-
       {/* LƯỚI 2 CỘT — ngăn nhau bằng đường kẻ mảnh (gap 1px trên nền xám). Responsive:
           1 cột trên điện thoại → 2 cột từ md (768px) giống col-md-6 cũ. */}
       <div

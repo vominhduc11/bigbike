@@ -35,7 +35,7 @@ function scrollToBuyBox() {
  * laid out in two columns — shop name + address on the left, a "Mua ngay" primary
  * CTA + Zalo consult button on the right (stacked on mobile). White surface with a
  * red top accent per the brand design system; the action buttons reuse the exact
- * PDP purchase tokens (red `bg-brand` for buy, Zalo-blue outline for Zalo) so the
+ * PDP purchase tokens (red `bg-brand` for buy and consultation actions) so the
  * band reads as a real store block instead of a cramped centred caption. "Mua ngay"
  * scrolls back up to the buy box (variant picker + add-to-cart) rather than adding
  * to cart directly, since at this point in the page the shopper usually hasn't

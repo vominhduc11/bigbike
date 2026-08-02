@@ -14,6 +14,7 @@
  *
  * Run:  node e2e/_audit/audit.mjs            (full)
  *       node e2e/_audit/audit.mjs --quick    (subset routes, key viewports)
+ *       node e2e/_audit/audit.mjs --acceptance (six required acceptance viewports)
  *       node e2e/_audit/audit.mjs --tag=after (label the run / output file)
  */
 import { chromium } from "@playwright/test";
@@ -29,6 +30,7 @@ mkdirSync(SHOTS, { recursive: true });
 const BASE = process.env.BB_BASE || "http://localhost:3001";
 const argv = process.argv.slice(2);
 const QUICK = argv.includes("--quick");
+const ACCEPTANCE = argv.includes("--acceptance");
 const TAG = (argv.find((a) => a.startsWith("--tag=")) || "--tag=baseline").split("=")[1];
 
 // width x height — full matrix from the audit brief (mains + intermediates)
@@ -39,22 +41,24 @@ const VIEWPORTS_FULL = [
   [2048, 1152], [2560, 1440],
 ];
 const VIEWPORTS_QUICK = [[360, 800], [768, 1024], [1280, 900], [1920, 1080]];
-const VIEWPORTS = QUICK ? VIEWPORTS_QUICK : VIEWPORTS_FULL;
+const VIEWPORTS_ACCEPTANCE = [[360, 800], [390, 844], [768, 1024], [1440, 900], [1920, 1080], [2560, 1440]];
+const VIEWPORTS = ACCEPTANCE ? VIEWPORTS_ACCEPTANCE : QUICK ? VIEWPORTS_QUICK : VIEWPORTS_FULL;
 
 // Static routes always tested.
 const STATIC_ROUTES = [
   "/",
   "/sp",
-  "/sp",
   "/brands",
   "/tin-tuc",
   "/gioi-thieu",
   "/lien-he",
-  "/huong-dan/mua-hang",
-  "/bao-hanh",
+  "/huong-dan",
+  "/huong-dan/size-mu",
+  "/chinh-sach/chinh-sach-doi-tra-hang",
   "/gio-hang",
   "/dat-hang",
-  "/tim-kiem?q=ao",
+  "/don-hang/xac-nhan",
+  "/tim-kiem?s=__canvas_empty__",
   "/dang-nhap",
   "/dang-ky",
   "/quen-mat-khau",
@@ -62,6 +66,7 @@ const STATIC_ROUTES = [
   "/tai-khoan",
   "/tai-khoan/don-hang",
   "/tai-khoan/edit-account",
+  "/en",
 ];
 
 // Routes that get full-page screenshots (subset) at SHOT_VIEWPORTS.
@@ -69,7 +74,9 @@ const SHOT_ROUTE_HINTS = [
   "/", "/sp", "/tin-tuc", "/dang-nhap",
   "/gio-hang", "/dat-hang", "/gioi-thieu", "/lien-he", "/brands",
 ];
-const SHOT_VIEWPORTS = QUICK ? [[390, 844], [1280, 900]] : [[390, 844], [768, 1024], [1280, 900], [1920, 1080]];
+const SHOT_VIEWPORTS = QUICK
+  ? [[390, 844], [1440, 900], [1920, 1080]]
+  : [[360, 800], [390, 844], [768, 1024], [1440, 900], [1920, 1080], [2560, 1440]];
 
 function slug(s) {
   return s.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "root";

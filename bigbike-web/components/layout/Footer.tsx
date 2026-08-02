@@ -134,7 +134,7 @@ export async function Footer({ locale }: { locale: Locale }) {
   const settingDescription = pickSetting(settingsResult.data ?? [], ["footer_description"]);
 
   return (
-    <footer data-bb-focus="general_brand" className="relative z-0 font-body text-white">
+    <footer data-bb-full-bleed data-bb-focus="general_brand" className="relative z-0 w-full font-body text-white">
       <div className="bg-footer-top pt-15 md:pb-[85px]">
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">

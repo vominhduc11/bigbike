@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Script from "next/script";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
-import { fontBarlowCondensed } from "../fonts";
+import { fontBarlow, fontBarlowCondensed } from "../fonts";
 import "../globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -101,7 +101,10 @@ export default async function RootLayout({
     ? buildPublicMenuTree(primaryMenuResult.data.items)
     : [];
   return (
-    <html lang={locale} className={`h-full antialiased ${fontBarlowCondensed.variable}`}>
+    <html
+      lang={locale}
+      className={`h-full antialiased ${fontBarlow.variable} ${fontBarlowCondensed.variable}`}
+    >
       <body className="bb-theme min-h-full flex flex-col pt-0!">
         {GTM_ID && (
           <Script
@@ -129,7 +132,7 @@ export default async function RootLayout({
               <CartProvider>
                 <AltSlugProvider>
                   <Header menuNodesVi={primaryNodes} menuNodesEn={primaryNodes} locale={locale} />
-                  <main id="main-content" className="bb-main">{children}</main>
+                  <main id="main-content" className="bb-main w-full">{children}</main>
                   <div className="block md:hidden">
                     <MobileBottomNav />
                   </div>
