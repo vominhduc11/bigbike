@@ -2,7 +2,6 @@ package com.bigbike.bigbike_backend.repository.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +29,7 @@ public interface ContentReadRepository {
     // --- DB-paginated listing (replaces in-memory full-scan in ContentReadService) ---
 
     org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale);
+            String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale);
 
     // --- DB-paginated admin listing ---
 
@@ -42,7 +41,4 @@ public interface ContentReadRepository {
 
     List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale);
 
-    // --- Content categories with published-article counts (Tin tức filter) ---
-
-    List<ContentCategoryWithCount> listContentCategoriesWithCounts();
 }

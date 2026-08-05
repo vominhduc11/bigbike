@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -76,7 +78,9 @@ public class WordPressSqlDumpRowReader {
         var decoder = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPLACE)
                 .onUnmappableCharacter(CodingErrorAction.REPLACE);
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(dumpPath), decoder))) {
+        try (InputStream fileInput = Files.newInputStream(dumpPath);
+             InputStream dumpInput = isGzip(dumpPath) ? new GZIPInputStream(fileInput) : fileInput;
+             BufferedReader reader = new BufferedReader(new InputStreamReader(dumpInput, decoder))) {
             String line;
             while ((line = reader.readLine()) != null) {
 
@@ -158,6 +162,11 @@ public class WordPressSqlDumpRowReader {
         }
 
         return warnings;
+    }
+
+    private boolean isGzip(Path dumpPath) {
+        String filename = dumpPath.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+        return filename.endsWith(".gz") || filename.endsWith(".gzip");
     }
 
     /**

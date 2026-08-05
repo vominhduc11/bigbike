@@ -5,9 +5,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMa
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ArticleImporter implements DomainImporter {
 
     private final ArticleJpaRepository repo;
-    private final ContentCategoryJpaRepository categoryRepo;
 
     @Override
     public MigrationDomain domain() {
@@ -65,14 +62,10 @@ public class ArticleImporter implements DomainImporter {
                     isNew = true;
                 }
 
-                List<ContentCategoryEntity> categories = resolveCategories(ma, options.dryRun());
-
                 entity.setSlug(slug);
                 entity.setTitle(resolveTitle(ma, slug));
                 entity.setExcerpt(ma.excerpt());
                 entity.setBody(ma.content() != null ? ma.content() : "");
-                entity.setCategory(categories.isEmpty() ? null : categories.get(0));
-                entity.setCategories(categories);
                 entity.setPublishStatus(resolveStatus(ma.status()));
                 entity.setSeoTitle(ma.seoTitle());
                 entity.setSeoDescription(ma.seoDescription());
@@ -139,25 +132,6 @@ public class ArticleImporter implements DomainImporter {
             return article.title();
         }
         return fallbackSlug;
-    }
-
-    private List<ContentCategoryEntity> resolveCategories(MappedArticle article, boolean dryRun) {
-        if (article.categories() == null || article.categories().isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<ContentCategoryEntity> resolved = new ArrayList<>();
-        for (TaxonomyRef ref : article.categories()) {
-            String id = "wp-blog-cat-" + ref.sourceId();
-            ContentCategoryEntity entity = categoryRepo.findBySlug(ref.slug()).orElseGet(() -> categoryRepo.findById(id).orElseGet(() -> {
-                ContentCategoryEntity created = new ContentCategoryEntity();
-                created.setId(id);
-                created.setSlug(ref.slug());
-                created.setName(ref.name());
-                return dryRun ? created : categoryRepo.save(created);
-            }));
-            resolved.add(entity);
-        }
-        return resolved;
     }
 
     private PublishStatus resolveStatus(String status) {

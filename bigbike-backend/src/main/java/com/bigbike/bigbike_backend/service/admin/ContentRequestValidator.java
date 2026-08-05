@@ -5,9 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
@@ -18,20 +16,17 @@ import org.springframework.stereotype.Component;
 public class ContentRequestValidator {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final boolean isDev;
 
     public ContentRequestValidator(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
-            ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             HomeVideoUrlPolicy homeVideoUrlPolicy,
             Environment environment
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
-        this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.homeVideoUrlPolicy = homeVideoUrlPolicy;
         this.isDev = environment != null && java.util.Arrays.stream(environment.getActiveProfiles())
@@ -201,25 +196,4 @@ public class ContentRequestValidator {
         }
     }
 
-    /** Slug nhóm bài viết mặc định. Sau V275 chỉ còn 1 nhóm "Tin tức"; form admin đã bỏ ô danh mục. */
-    private static final String DEFAULT_CATEGORY_SLUG = "tin-tuc";
-
-    public ContentCategoryEntity resolveCategory(String categoryIdRaw, List<ApiErrorDetail> errors) {
-        String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
-        if (categoryId == null) {
-            // Không gửi categoryId (form bỏ ô danh mục) → tự gán nhóm "Tin tức" để bài không bị mất nhóm.
-            ContentCategoryEntity defaultCategory = contentCategoryJpaRepository == null
-                    ? null
-                    : contentCategoryJpaRepository.findBySlug(DEFAULT_CATEGORY_SLUG).orElse(null);
-            if (defaultCategory == null) {
-                errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Default category 'tin-tuc' not found."));
-            }
-            return defaultCategory;
-        }
-        ContentCategoryEntity category = contentCategoryJpaRepository.findById(categoryId).orElse(null);
-        if (category == null) {
-            errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Category does not exist."));
-        }
-        return category;
-    }
 }

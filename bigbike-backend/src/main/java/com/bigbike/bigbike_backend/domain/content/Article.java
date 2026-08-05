@@ -19,8 +19,6 @@ public record Article(
         ImageAsset coverImage,
         /** ACF product_image overlay for the Experience Carousel (re-added V171). Null when not set. */
         ImageAsset productImage,
-        ContentCategorySummary category,
-        List<ContentCategorySummary> categories,
         PublishStatus publishStatus,
         /** Featured article flag (V222). */
         boolean featured,

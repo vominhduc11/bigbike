@@ -72,7 +72,7 @@ class AdminContentApiTest {
 
     @Test
     @Sql(
-            statements = "INSERT INTO articles (id, slug, title, body, category_id, publish_status, created_at, updated_at, featured, seo_no_index, home_experience) VALUES ('article_trash_contract', 'article-trash-contract', 'Article trash contract', '<p>Trash.</p>', 'cc_blog', 'TRASH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false)",
+            statements = "INSERT INTO articles (id, slug, title, body, publish_status, created_at, updated_at, featured, seo_no_index, home_experience) VALUES ('article_trash_contract', 'article-trash-contract', 'Article trash contract', '<p>Trash.</p>', 'TRASH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false)",
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @Sql(
             statements = "DELETE FROM articles WHERE id = 'article_trash_contract'",

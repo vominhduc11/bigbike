@@ -9,21 +9,13 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.Version;
 
@@ -68,20 +60,6 @@ public class ArticleEntity {
     private String productImageUrl;
 
     private String productImageAlt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private ContentCategoryEntity category;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "article_category_map",
-            joinColumns = @JoinColumn(name = "article_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    @OrderColumn(name = "sort_order")
-    @BatchSize(size = 50)
-    private List<ContentCategoryEntity> categories = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

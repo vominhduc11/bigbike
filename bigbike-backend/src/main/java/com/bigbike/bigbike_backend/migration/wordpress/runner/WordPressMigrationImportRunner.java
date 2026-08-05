@@ -18,9 +18,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
- * Phase 2D — Idempotent import runner.
+ * Phase 2D — legacy rehearsal importer.
  *
- * This runner has FOUR mandatory guards before it will write to the database.
+ * Real writes through this Spring runner are permanently disabled. Its historical importer
+ * overwrites fields and creates placeholders, so it is incompatible with the guarded live
+ * migration contract. Production writes may only use the standalone LiveMigrationExecutionCli.
+ * The historical guards below remain as defense in depth for old configuration/tests.
  * ALL FOUR must be satisfied:
  *
  *   1. bigbike.migration.wordpress.enabled=true
@@ -75,6 +78,12 @@ public class WordPressMigrationImportRunner implements ApplicationRunner {
 
         // Guard 3: mode must be "import"
         if (!"import".equals(props.getMode())) return;
+
+        if (legacyRealWritesDisabled()) {
+            log.error("LEGACY WORDPRESS IMPORT ABORTED: this write path is permanently disabled. "
+                    + "Use the reviewed-plan LiveMigrationExecutionCli workflow.");
+            return;
+        }
 
         // Guard 4: explicit confirmation flag required
         if (!props.isConfirmExecute()) {
@@ -196,5 +205,9 @@ public class WordPressMigrationImportRunner implements ApplicationRunner {
                 })
                 .filter(d -> d != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private boolean legacyRealWritesDisabled() {
+        return true;
     }
 }

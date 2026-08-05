@@ -605,14 +605,6 @@
             }
           },
           {
-            "name": "category",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Content category slug."
-          },
-          {
             "name": "q",
             "in": "query",
             "schema": {
@@ -10420,20 +10412,6 @@
           }
         }
       },
-      "ContentCategorySummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
       "ArticleTranslationRequest": {
         "type": "object",
         "properties": {
@@ -10494,7 +10472,7 @@
       },
       "UpsertArticleRequest": {
         "type": "object",
-        "description": "Presence-flag upsert payload. BigBike Admin sends categoryId as an empty string to normalize to tin-tuc and derives seo.canonicalUrl from the Vietnamese slug.",
+        "description": "Presence-flag upsert payload. BigBike Admin derives seo.canonicalUrl from the Vietnamese slug.",
         "properties": {
           "slug": {
             "type": "string",
@@ -10524,10 +10502,6 @@
           },
           "productImage": {
             "$ref": "#/components/schemas/ImageAsset"
-          },
-          "categoryId": {
-            "type": "string",
-            "maxLength": 64
           },
           "publishStatus": {
             "type": "string",
@@ -10624,19 +10598,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "category": {
-            "$ref": "#/components/schemas/ContentCategorySummary"
-          },
-          "categoryId": {
-            "type": "string",
-            "nullable": true
-          },
-          "categories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ContentCategorySummary"
-            }
           },
           "translations": {
             "$ref": "#/components/schemas/ArticleTranslationRequest"
@@ -10788,20 +10749,6 @@
             "items": {
               "type": "object",
               "additionalProperties": true
-            }
-          },
-          "category": {
-            "$ref": "#/components/schemas/ContentCategorySummary"
-          },
-          "categoryId": {
-            "type": "string",
-            "nullable": true,
-            "description": "Persisted category id; article writes are normalized to the tin-tuc category."
-          },
-          "categories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ContentCategorySummary"
             }
           },
           "publishStatus": {

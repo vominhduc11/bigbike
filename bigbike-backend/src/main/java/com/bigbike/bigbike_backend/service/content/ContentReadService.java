@@ -3,13 +3,11 @@ package com.bigbike.bigbike_backend.service.content;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
-import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,7 +24,7 @@ public class ContentReadService {
     private final SortParser sortParser;
 
     public PageResult<Article> listArticles(
-            int page, int size, String sort, String category, String q, Boolean featured, Boolean homeExperience, String lang) {
+            int page, int size, String sort, String q, Boolean featured, Boolean homeExperience, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "publishedAt", SortDirection.DESC, ARTICLE_SORT_FIELDS);
 
         Sort springSort = toSpringSort(sortSpec);
@@ -39,7 +37,7 @@ public class ContentReadService {
 
         org.springframework.data.domain.Page<Article> result =
                 contentReadRepository.listPublishedArticles(
-                        blankToNull(category), blankToNull(q), featuredFilter, homeExperienceFilter, pageable, resolvedLang(lang));
+                        blankToNull(q), featuredFilter, homeExperienceFilter, pageable, resolvedLang(lang));
 
         return toPageResult(result);
     }
@@ -48,11 +46,6 @@ public class ContentReadService {
         return contentReadRepository.findArticleBySlug(slug, resolvedLang(lang))
                 .filter(article -> article.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Article not found."));
-    }
-
-    /** Content (news) categories with their PUBLISHED-article counts, for the Tin tức filter. */
-    public List<ContentCategoryWithCount> listContentCategories() {
-        return contentReadRepository.listContentCategoriesWithCounts();
     }
 
     private static Sort toSpringSort(SortSpec spec) {

@@ -5,14 +5,10 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
 
-import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageImpl;
@@ -27,9 +23,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     private final List<Article> articles;
 
     public InMemoryContentReadRepository() {
-        ContentCategorySummary ridingGuide = new ContentCategorySummary("content_cat_guide", "huong-dan", "Hướng dẫn");
-        ContentCategorySummary news = new ContentCategorySummary("content_cat_news", "tin-tuc", "Tin tức");
-
         Article article1 = new Article(
                 "article_chon_mu_fullface",
                 "chon-mu-fullface-phu-hop",
@@ -46,8 +39,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "image/jpeg"
                 ),
                 null,
-                ridingGuide,
-                List.of(ridingGuide),
                 PublishStatus.PUBLISHED,
                 true,                       // featured
                 true,                       // homeExperience
@@ -81,8 +72,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "image/jpeg"
                 ),
                 null,
-                news,
-                List.of(news),
                 PublishStatus.DRAFT,
                 false,                      // featured
                 false,                      // homeExperience
@@ -137,10 +126,9 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
+            String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(a -> matchesCategory(a, categorySlug))
                 .filter(a -> featured == null || a.featured() == featured)
                 .filter(a -> homeExperience == null || a.homeExperience() == homeExperience)
                 .filter(a -> matchesArticleQuery(a, q))
@@ -170,39 +158,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 .toList();
     }
 
-    @Override
-    public List<ContentCategoryWithCount> listContentCategoriesWithCounts() {
-        // Collect every category referenced by any article (primary or many-to-many).
-        Map<String, ContentCategorySummary> bySlug = new LinkedHashMap<>();
-        for (Article a : articles) {
-            if (a.category() != null) {
-                bySlug.putIfAbsent(a.category().slug(), a.category());
-            }
-            if (a.categories() != null) {
-                for (ContentCategorySummary c : a.categories()) {
-                    if (c != null) bySlug.putIfAbsent(c.slug(), c);
-                }
-            }
-        }
-        return bySlug.values().stream()
-                .map(c -> new ContentCategoryWithCount(
-                        c.id(), c.slug(), c.name(),
-                        articles.stream()
-                                .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
-                                .filter(a -> matchesCategory(a, c.slug()))
-                                .count()))
-                .sorted(Comparator.comparing(ContentCategoryWithCount::name, String.CASE_INSENSITIVE_ORDER))
-                .toList();
-    }
-
     // --- Filter helpers ---
-
-    private static boolean matchesCategory(Article a, String categorySlug) {
-        if (categorySlug == null || categorySlug.isBlank()) return true;
-        if (a.category() != null && categorySlug.equals(a.category().slug())) return true;
-        return a.categories() != null && a.categories().stream()
-                .anyMatch(c -> c != null && categorySlug.equals(c.slug()));
-    }
 
     private static boolean matchesArticleQuery(Article a, String q) {
         if (q == null || q.isBlank()) return true;

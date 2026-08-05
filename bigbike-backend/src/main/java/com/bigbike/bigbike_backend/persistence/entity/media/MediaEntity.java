@@ -42,6 +42,10 @@ public class MediaEntity {
     @Column(name = "file_size")
     private Long fileSize;
 
+    /** SHA-256 of the stored object bytes; nullable until the object has been verified. */
+    @Column(name = "content_sha256", length = 64)
+    private String contentSha256;
+
     private Integer width;
 
     private Integer height;

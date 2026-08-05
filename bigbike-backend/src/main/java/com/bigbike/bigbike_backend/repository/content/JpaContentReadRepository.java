@@ -6,13 +6,8 @@ import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.ArticleTranslations;
 
-import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
-
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class JpaContentReadRepository implements ContentReadRepository {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final com.bigbike.bigbike_backend.mapper.ArticleMapper articleMapper;
 
     // --- Single-entity lookups ---
@@ -110,13 +104,12 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
+            String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
         String normalizedQ = normalizeQuery(q);
-        String normalizedCategory = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug : null;
 
         org.springframework.data.domain.Page<String> idPage =
                 articleJpaRepository.findPublishedArticleIds(
-                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, featured, homeExperience, pageable);
+                        PublishStatus.PUBLISHED, normalizedQ, featured, homeExperience, pageable);
 
         return fetchAndOrderArticles(idPage, pageable, locale);
     }
@@ -147,13 +140,6 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     private static boolean isPresent(String value) {
         return value != null && !value.isBlank();
-    }
-
-    // --- Content categories with published-article counts ---
-
-    @Override
-    public List<ContentCategoryWithCount> listContentCategoriesWithCounts() {
-        return contentCategoryJpaRepository.findAllWithArticleCount();
     }
 
     // --- Two-query helpers ---

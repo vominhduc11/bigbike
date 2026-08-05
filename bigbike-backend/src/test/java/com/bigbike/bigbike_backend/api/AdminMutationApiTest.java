@@ -397,7 +397,6 @@ class AdminMutationApiTest {
                   "title": "Preview Article Dry Run",
                   "excerpt": "Đoạn mô tả ngắn xem trước.",
                   "body": "<p>Nội dung bài viết nháp.</p>",
-                  "categoryId": "cc_blog",
                   "publishStatus": "DRAFT"
                 }
                 """.formatted(slug);

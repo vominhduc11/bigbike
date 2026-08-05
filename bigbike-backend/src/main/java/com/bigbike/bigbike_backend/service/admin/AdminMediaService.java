@@ -31,8 +31,11 @@ import io.minio.RemoveObjectArgs;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -150,6 +153,30 @@ public class AdminMediaService {
             }
         }
 
+        String contentSha256 = sha256Hex(bytes);
+        var duplicate = mediaRepo.findByContentSha256(contentSha256);
+        if (duplicate.isPresent()) {
+            MediaEntity existing = duplicate.get();
+            boolean changed = false;
+            if ((existing.getAltText() == null || existing.getAltText().isBlank())
+                    && altText != null && !altText.isBlank()) {
+                existing.setAltText(altText.strip());
+                changed = true;
+            }
+            if (!"ACTIVE".equals(existing.getStatus())) {
+                existing.setStatus("ACTIVE");
+                changed = true;
+            }
+            if (changed) {
+                existing.setUpdatedAt(Instant.now());
+                mediaRepo.save(existing);
+            }
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN", adminId, "MEDIA_DEDUP_REUSED", "MEDIA", existing.getId(), null,
+                    toJson(Map.of("contentSha256", contentSha256))));
+            return toDetail(existing);
+        }
+
         String safeFilename = sanitizeFilename(file.getOriginalFilename());
         String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
@@ -183,6 +210,7 @@ public class AdminMediaService {
         // `bytes` always reflects what was actually written to MinIO — sanitized SVG, compressed
         // raster image, or the untouched original for anything else (e.g. video/mp4).
         media.setFileSize((long) bytes.length);
+        media.setContentSha256(contentSha256);
         media.setWidth(width);
         media.setHeight(height);
         media.setAltText(altText != null ? altText.strip() : null);
@@ -256,6 +284,14 @@ public class AdminMediaService {
             }
         }
 
+        String contentSha256 = sha256Hex(bytes);
+        mediaRepo.findByContentSha256(contentSha256)
+                .filter(other -> !other.getId().equals(mediaId))
+                .ifPresent(other -> {
+                    throw new ConflictException(
+                            "An identical media object already exists; reuse that media item instead.");
+                });
+
         String before = snapshot(media);
         String objectKey = media.getFilePath();
         String bucket = media.getBucket() != null ? media.getBucket() : minioProperties.getBucket();
@@ -279,6 +315,7 @@ public class AdminMediaService {
 
         media.setMimeType(newMime);
         media.setFileSize((long) bytes.length);
+        media.setContentSha256(contentSha256);
         if (width != null) media.setWidth(width);
         if (height != null) media.setHeight(height);
         media.setSizes(variants.isEmpty() ? null : toJson(variants));
@@ -701,6 +738,14 @@ public class AdminMediaService {
         } catch (Exception e) {
             log.warn("Failed to serialize audit JSON: {}", e.getMessage());
             return "{}";
+        }
+    }
+
+    private String sha256Hex(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
 

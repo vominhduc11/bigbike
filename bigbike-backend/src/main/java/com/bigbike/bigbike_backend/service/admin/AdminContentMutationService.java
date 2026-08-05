@@ -12,9 +12,7 @@ import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.repository.content.JpaContentReadRepository;
 import com.bigbike.bigbike_backend.mapper.ArticleMapper;
@@ -48,7 +46,6 @@ import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.gene
 public class AdminContentMutationService {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final ContentReadRepository contentReadRepository;
     private final JpaContentReadRepository jpaContentReadRepository;
     private final WebRevalidationService webRevalidationService;
@@ -65,7 +62,6 @@ public class AdminContentMutationService {
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
-            ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
             ObjectProvider<JpaContentReadRepository> jpaContentReadRepositoryProvider,
             WebRevalidationService webRevalidationService,
@@ -81,7 +77,6 @@ public class AdminContentMutationService {
             SlugRedirectHelper slugRedirectHelper
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
-        this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
         this.jpaContentReadRepository = jpaContentReadRepositoryProvider.getIfAvailable();
         this.webRevalidationService = webRevalidationService;
@@ -103,7 +98,6 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, null, true, false, errors);
-        ContentCategoryEntity category = contentRequestValidator.resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(PublishStatus.DRAFT, nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
@@ -114,7 +108,7 @@ public class AdminContentMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        applyArticlePatch(entity, request, slug, category, true);
+        applyArticlePatch(entity, request, slug, true);
         articleJpaRepository.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_CREATED", "CONTENT", null, null, articleJson(entity)));
@@ -139,7 +133,6 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, null, true, true, errors);
-        ContentCategoryEntity category = contentRequestValidator.resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(PublishStatus.DRAFT, nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
@@ -149,7 +142,7 @@ public class AdminContentMutationService {
         entity.setId("article_preview");
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        applyArticlePatch(entity, request, slug, category, true);
+        applyArticlePatch(entity, request, slug, true);
 
         // No save: pure in-memory build, mapped to the same public Article shape the
         // storefront blog detail renders.
@@ -169,20 +162,19 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, entity, false, false, errors);
-        ContentCategoryEntity category = contentRequestValidator.resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyArticlePatch(entity, request, slug, category, false);
+        applyArticlePatch(entity, request, slug, false);
         articleJpaRepository.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_UPDATED", "CONTENT", null, before, articleJson(entity)));
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/tin-tuc/" + previousSlug, "/tin-tuc/" + entity.getSlug());
         }
-        slugRedirectHelper.autoCreateSlugEnRedirect("/news/", "/tin-tuc/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
+        slugRedirectHelper.autoCreateSlugEnRedirect("/tin-tuc/", "/tin-tuc/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -355,8 +347,7 @@ public class AdminContentMutationService {
     }
 
     private void requireJpaPersistenceEnabled() {
-        if (articleJpaRepository == null
-                || contentCategoryJpaRepository == null) {
+        if (articleJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
@@ -367,7 +358,6 @@ public class AdminContentMutationService {
             ArticleEntity entity,
             UpsertArticleRequest request,
             String normalizedSlug,
-            ContentCategoryEntity category,
             boolean create
     ) {
         if (create || normalizedSlug != null) {
@@ -428,16 +418,6 @@ public class AdminContentMutationService {
             clearProductImage(entity);
         }
 
-        if (create || request.getCategoryId() != null) {
-            entity.setCategory(category);
-            // Sync the many-to-many categories list with the primary category on both create and update.
-            // This ensures the public category filter (which checks both fields) stays consistent.
-            List<ContentCategoryEntity> syncedCategories = new ArrayList<>();
-            if (category != null) {
-                syncedCategories.add(category);
-            }
-            entity.setCategories(syncedCategories);
-        }
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {

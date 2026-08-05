@@ -40,9 +40,6 @@ public class UpsertArticleRequest {
     @Valid
     private ImageAssetRequest productImage;
 
-    @Size(max = 64, message = "Category ID is too long.")
-    private String categoryId;
-
     private PublishStatus publishStatus;
 
     /** Featured article flag (V222). Null = leave unchanged on update. */
@@ -81,4 +78,3 @@ public class UpsertArticleRequest {
         return bodyBlocksPresent;
     }
 }
-

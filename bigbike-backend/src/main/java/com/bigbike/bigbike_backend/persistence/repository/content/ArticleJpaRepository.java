@@ -23,7 +23,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
     /** Public search: DB-level filter on title + excerpt to avoid full-table scan. */
     @Query("""
         SELECT a FROM ArticleEntity a
-        LEFT JOIN FETCH a.category
         WHERE a.publishStatus = :status
           AND (LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%'))
             OR LOWER(COALESCE(a.excerpt, '')) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%')))
@@ -36,15 +35,11 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
 
     /**
      * Paginated article IDs for the public listing.
-     * Uses LEFT JOIN for category to preserve articles with no category when filter is absent.
-     * Uses EXISTS subquery for multi-category filter to avoid row duplication.
+     * Content-category filtering was removed in V368.
      */
     @Query(value = """
-            SELECT a.id FROM ArticleEntity a LEFT JOIN a.category primaryCat
+            SELECT a.id FROM ArticleEntity a
             WHERE a.publishStatus = :publishStatus
-            AND (:categorySlug IS NULL
-                 OR primaryCat.slug = :categorySlug
-                 OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:featured IS NULL OR a.featured = :featured)
             AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
             AND (:q IS NULL
@@ -52,11 +47,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """,
             countQuery = """
-            SELECT COUNT(a) FROM ArticleEntity a LEFT JOIN a.category primaryCat
+            SELECT COUNT(a) FROM ArticleEntity a
             WHERE a.publishStatus = :publishStatus
-            AND (:categorySlug IS NULL
-                 OR primaryCat.slug = :categorySlug
-                 OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:featured IS NULL OR a.featured = :featured)
             AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
             AND (:q IS NULL
@@ -65,7 +57,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             """)
     Page<String> findPublishedArticleIds(
             @Param("publishStatus") PublishStatus publishStatus,
-            @Param("categorySlug") String categorySlug,
             @Param("q") String q,
             @Param("featured") Boolean featured,
             @Param("homeExperience") Boolean homeExperience,
@@ -100,23 +91,19 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             Pageable pageable);
 
     /**
-     * Fetch full article entities by IDs with eager ManyToOne associations.
-     * ManyToMany (categories, tags) are loaded in batch via @BatchSize on the entity.
+     * Fetch full article entities by IDs.
      */
     @Query("""
-            SELECT a FROM ArticleEntity a
-            LEFT JOIN FETCH a.category
-            WHERE a.id IN :ids
+            SELECT a FROM ArticleEntity a WHERE a.id IN :ids
             """)
     List<ArticleEntity> findWithAssociationsByIdIn(@Param("ids") List<String> ids);
 
     /**
      * Non-paginated filtered fetch for admin combined (type=null) listing.
-     * Returns all matching articles with eager ManyToOne associations.
+     * Returns all matching articles.
      */
     @Query("""
             SELECT a FROM ArticleEntity a
-            LEFT JOIN FETCH a.category
             WHERE ((:publishStatus IS NULL AND a.publishStatus <> :trashStatus)
                 OR a.publishStatus = :publishStatus)
             AND (:q IS NULL

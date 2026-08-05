@@ -23,8 +23,7 @@ public class SlugRedirectHelper {
     /**
      * 301-redirect bookkeeping when the optional English slug changes
      * (PRODUCT/CATEGORY/ARTICLE_RULE_003). English URLs now live at their own real
-     * route prefix (e.g. {@code "/products/"}, {@code "/categories/"}, {@code "/news/"}
-     * — see {@code app/products|categories|news/[slug]/page.tsx} on the web side),
+     * route prefix (e.g. {@code "/product/"}, {@code "/categories/"}, {@code "/tin-tuc/"}),
      * separate from the vi detail prefix (e.g. {@code "/product/"}). Changed →
      * old-EN-URL → new-EN-URL; cleared → old-EN-URL → vi URL. No-op when there was
      * no previous English slug or it is unchanged.

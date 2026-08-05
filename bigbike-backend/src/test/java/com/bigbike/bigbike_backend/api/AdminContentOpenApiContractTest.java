@@ -67,13 +67,19 @@ class AdminContentOpenApiContractTest {
         assertThat(fieldNames(article.path("properties")))
                 .contains("id", "type", "slug", "slugEn", "title", "excerpt", "body",
                         "bodyBlocks", "coverImage", "productImage", "featured", "homeExperience",
-                        "seo", "translations", "category", "categoryId", "categories",
+                        "seo", "translations",
                         "publishStatus", "publishedAt", "createdAt", "updatedAt");
+        assertThat(fieldNames(article.path("properties")))
+                .doesNotContain("category", "categoryId", "categories");
         assertThat(textValues(article.path("properties").path("publishStatus").path("enum")))
                 .containsExactly("DRAFT", "PUBLISHED", "TRASH");
         assertThat(document.path("components").path("schemas").path("UpsertArticleRequest")
                 .path("description").asText())
-                .contains("categoryId as an empty string", "tin-tuc", "canonicalUrl");
+                .contains("canonicalUrl")
+                .doesNotContain("categoryId", "tin-tuc");
+        assertThat(document.path("components").path("schemas").has("ContentCategorySummary")).isFalse();
+        assertThat(document.path("paths").path("/api/v1/articles").path("get").path("parameters")
+                .findValuesAsText("name")).doesNotContain("category");
     }
 
     private static JsonNode parameterNamed(JsonNode parameters, String name) {

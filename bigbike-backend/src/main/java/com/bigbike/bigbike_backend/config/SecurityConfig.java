@@ -69,7 +69,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/content-categories").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home/category-highlights").permitAll()

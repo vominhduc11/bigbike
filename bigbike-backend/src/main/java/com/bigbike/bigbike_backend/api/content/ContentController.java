@@ -4,15 +4,12 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
-import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.content.ContentReadService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,14 +34,13 @@ public class ContentController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sort,
-            @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(required = false) Boolean featured,
             @RequestParam(required = false) Boolean homeExperience,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, featured, homeExperience, lang), request);
+        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, q, featured, homeExperience, lang), request);
     }
 
     @GetMapping("/articles/{slug}")
@@ -55,13 +51,4 @@ public class ContentController {
     ) {
         return apiResponseFactory.data(contentReadService.getArticleBySlug(slug, lang), request);
     }
-
-    @GetMapping("/content-categories")
-    public ApiListResponse<ContentCategoryWithCount> listContentCategories(HttpServletRequest request) {
-        List<ContentCategoryWithCount> categories = contentReadService.listContentCategories();
-        PageResult<ContentCategoryWithCount> result =
-                new PageResult<>(categories, 1, categories.size(), categories.size(), 1);
-        return apiResponseFactory.list(result, request);
-    }
 }
-

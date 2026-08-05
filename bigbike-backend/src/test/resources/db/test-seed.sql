@@ -137,42 +137,33 @@ WHERE NOT EXISTS (
     WHERE product_id = 'prod_ls2_jacket_city' AND category_id = 'cat_jacket'
 );
 
--- ── Content categories ────────────────────────────────────────────────────────
-INSERT INTO content_categories (id, slug, name)
-SELECT 'cc_trai_nghiem', 'trai-nghiem', 'Trai nghiem'
-WHERE NOT EXISTS (SELECT 1 FROM content_categories WHERE id = 'cc_trai_nghiem');
-
-INSERT INTO content_categories (id, slug, name)
-SELECT 'cc_blog', 'blog', 'Blog'
-WHERE NOT EXISTS (SELECT 1 FROM content_categories WHERE id = 'cc_blog');
-
--- ── Articles (3 trai-nghiem + 3 blog + 1 specific for AdminReadApiTest) ───────
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_chon_mu_fullface', 'chon-mu-fullface-phu-hop', 'Chon mu bao hiem fullface phu hop', '<p>Huong dan chon mu.</p>', 'cc_trai_nghiem', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+-- ── Articles ──────────────────────────────────────────────────────────────────
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_chon_mu_fullface', 'chon-mu-fullface-phu-hop', 'Chon mu bao hiem fullface phu hop', '<p>Huong dan chon mu.</p>', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_chon_mu_fullface');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_trai_nghiem_2', 'trai-nghiem-mu-bao-hiem-2', 'Trai nghiem mu bao hiem 2', '<p>Bai viet 2.</p>', 'cc_trai_nghiem', 'PUBLISHED', DATEADD(SECOND, -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_trai_nghiem_2', 'trai-nghiem-mu-bao-hiem-2', 'Trai nghiem mu bao hiem 2', '<p>Bai viet 2.</p>', 'PUBLISHED', DATEADD(SECOND, -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_trai_nghiem_2');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_trai_nghiem_3', 'trai-nghiem-mu-bao-hiem-3', 'Trai nghiem mu bao hiem 3', '<p>Bai viet 3.</p>', 'cc_trai_nghiem', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_trai_nghiem_3', 'trai-nghiem-mu-bao-hiem-3', 'Trai nghiem mu bao hiem 3', '<p>Bai viet 3.</p>', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_trai_nghiem_3');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_blog_1', 'blog-tin-tuc-xe-may-1', 'Blog tin tuc xe may 1', '<p>Blog 1.</p>', 'cc_blog', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_blog_1', 'blog-tin-tuc-xe-may-1', 'Blog tin tuc xe may 1', '<p>Blog 1.</p>', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_1');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_blog_2', 'blog-tin-tuc-xe-may-2', 'Blog tin tuc xe may 2', '<p>Blog 2.</p>', 'cc_blog', 'PUBLISHED', DATEADD(SECOND, -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_blog_2', 'blog-tin-tuc-xe-may-2', 'Blog tin tuc xe may 2', '<p>Blog 2.</p>', 'PUBLISHED', DATEADD(SECOND, -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_2');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_blog_3', 'blog-tin-tuc-xe-may-3', 'Blog tin tuc xe may 3', '<p>Blog 3.</p>', 'cc_blog', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, published_at, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_blog_3', 'blog-tin-tuc-xe-may-3', 'Blog tin tuc xe may 3', '<p>Blog 3.</p>', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_3');
 
-INSERT INTO articles (id, slug, title, body, category_id, publish_status, created_at, updated_at, featured, seo_no_index, home_experience)
-SELECT 'article_draft_1', 'bai-viet-nhap-1', 'Bai viet nhap 1', '<p>Draft.</p>', 'cc_blog', 'DRAFT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
+INSERT INTO articles (id, slug, title, body, publish_status, created_at, updated_at, featured, seo_no_index, home_experience)
+SELECT 'article_draft_1', 'bai-viet-nhap-1', 'Bai viet nhap 1', '<p>Draft.</p>', 'DRAFT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_draft_1');
 
 
