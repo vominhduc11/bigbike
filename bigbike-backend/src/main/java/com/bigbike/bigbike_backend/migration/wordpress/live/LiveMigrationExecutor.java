@@ -92,7 +92,14 @@ final class LiveMigrationExecutor {
                 .read(sourceOptions.dumpPath(), sourceOptions.tablePrefix());
         verifySourceDump(sourceOptions.dumpPath(), plan.metadata().sourceDumpSha256(),
                 plan.metadata().sourceDumpBytes());
-        LiveMigrationContentRewriter rewriter = new LiveMigrationContentRewriter(plan.redirects());
+        // Same dead-image set the preflight used, taken from the reviewed plan so the written
+        // prose matches what was approved.
+        LiveMigrationContentRewriter rewriter = new LiveMigrationContentRewriter(
+                plan.redirects(),
+                plan.ownerDecisions().unavailableMediaFallbacks().stream()
+                        .filter(fallback -> fallback.entityType().startsWith("SOURCE_"))
+                        .map(LiveMigrationPreflightReport.UnavailableMediaFallbackPlan::relativePath)
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet()));
 
         connection.setAutoCommit(false);
         connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -381,9 +388,13 @@ final class LiveMigrationExecutor {
         }
         Map<String, String> publicUrls = byRelative.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey, entry -> entry.getValue().publicUrl(), (a, b) -> a));
+        // byAttachment is looked up with attachment ids that are legitimately absent — a product
+        // or article with no thumbnail/OG image yields a null id, and setAsset() already writes
+        // NULL columns for a null binding. Map.copyOf would throw on get(null), so keep a
+        // null-key-tolerant unmodifiable view instead.
         return new MediaBindings(
-                Map.copyOf(byPlanKey), Map.copyOf(byAttachment), Map.copyOf(byRelative),
-                Map.copyOf(publicUrls));
+                Map.copyOf(byPlanKey), java.util.Collections.unmodifiableMap(byAttachment),
+                Map.copyOf(byRelative), Map.copyOf(publicUrls));
     }
 
     private DomainCounts writeTargetMediaChecksum(
@@ -534,7 +545,7 @@ final class LiveMigrationExecutor {
             String sql = "insert into media "
                     + "(id,legacy_id,file_path,public_url,storage_provider,bucket,mime_type,file_size,"
                     + "content_sha256,width,height,alt_text,title,status,created_at,updated_at) "
-                    + "values (?::uuid,?,?,?,?,?,?,?,?,?,?,?,?,?,'ACTIVE',now(),now())";
+                    + "values (?::uuid,?,?,?,?,?,?,?,?,?,?,?,?,'ACTIVE',now(),now())";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int i = 1;
                 statement.setString(i++, binding.targetId());
@@ -696,7 +707,7 @@ final class LiveMigrationExecutor {
 
     private void forceOwnerSelectedProductDraft(
             Connection connection, ProductPlan plan) throws Exception {
-        if (plan.sourceId() != 41181L
+        if (plan.sourceId() != 41038L
                 || !"SCS-S10X".equals(LiveMigrationPreflightService.normalizeSku(plan.sourceSku()))
                 || plan.targetCreatedAt() == null || plan.targetUpdatedAt() == null) {
             throw new IllegalStateException(
@@ -754,8 +765,29 @@ final class LiveMigrationExecutor {
         BigDecimal sale = LiveMigrationPreflightService.sourceSalePrice(
                 mapped.regularPrice(), mapped.price(), mapped.salePrice());
         String brandId = requiredBrandId(connection, plan.targetBrandSlug());
-        String description = rewriter.rewriteHtml(mapped.description(), media.publicUrlsByRelative());
-        String shortDescription = rewriter.rewriteHtml(post.postExcerpt(), media.publicUrlsByRelative());
+        var translation = plan.translation();
+        // The owner supplies Vietnamese wording only for published English-only products; for a
+        // Polylang pair the Vietnamese source row is already the primary one.
+        String description = rewriter.rewriteHtml(
+                translation != null && hasText(translation.descriptionVi())
+                        ? translation.descriptionVi() : mapped.description(),
+                media.publicUrlsByRelative());
+        String shortDescription = rewriter.rewriteHtml(
+                translation != null && hasText(translation.shortDescriptionVi())
+                        ? translation.shortDescriptionVi() : post.postExcerpt(),
+                media.publicUrlsByRelative());
+        String name = translation != null && hasText(translation.nameVi())
+                ? translation.nameVi() : mapped.name();
+        String seoTitle = translation != null && hasText(translation.seoTitleVi())
+                ? translation.seoTitleVi() : mapped.seoTitle();
+        String seoDescription = translation != null && hasText(translation.seoDescriptionVi())
+                ? translation.seoDescriptionVi() : mapped.seoDescription();
+        // English wording goes through the very same rewrite as the primary text, otherwise a
+        // legacy WordPress link would survive in the *_en columns and fail the post-write scan.
+        String descriptionEn = translation == null ? null
+                : rewriter.rewriteHtml(translation.descriptionEn(), media.publicUrlsByRelative());
+        String shortDescriptionEn = translation == null ? null
+                : rewriter.rewriteHtml(translation.shortDescriptionEn(), media.publicUrlsByRelative());
         String canonical = rewriter.rewriteCanonical(sourceCanonical(meta),
                 "/product/" + plan.targetSlug() + "/");
         Instant createdAt = sourceInstant(post);
@@ -769,9 +801,11 @@ final class LiveMigrationExecutor {
                 + "length_cm,width_cm,height_cm,publish_status,seo_title,seo_description,seo_canonical_url,"
                 + "seo_og_image_id,seo_og_image_url,seo_og_image_alt,seo_og_image_width,"
                 + "seo_og_image_height,seo_og_image_mime_type,created_at,updated_at,weight_kg,"
-                + "homepage_block,gender,gallery,videos,available,discount_percent_override";
+                + "homepage_block,gender,gallery,videos,available,discount_percent_override,"
+                + "name_en,slug_en,short_description_en,description_en,"
+                + "seo_title_en,seo_description_en";
         String values = String.join(",", java.util.Collections.nCopies(39, "?"))
-                + ",cast(? as jsonb),cast(? as jsonb),?,?";
+                + ",cast(? as jsonb),cast(? as jsonb),?,?,?,?,?,?,?,?";
         try (PreparedStatement statement = connection.prepareStatement(
                 "insert into products (" + columns + ") values (" + values + ")")) {
             int i = 1;
@@ -779,7 +813,7 @@ final class LiveMigrationExecutor {
             statement.setString(i++, Long.toString(plan.sourceId()));
             statement.setString(i++, required(plan.sourceSku(), "product SKU"));
             statement.setString(i++, required(plan.targetSlug(), "product slug"));
-            statement.setString(i++, required(mapped.name(), "product name"));
+            statement.setString(i++, required(name, "product name"));
             statement.setString(i++, trimToNull(shortDescription));
             statement.setString(i++, trimToNull(description));
             statement.setString(i++, brandId);
@@ -799,8 +833,8 @@ final class LiveMigrationExecutor {
             statement.setBigDecimal(i++, mapped.widthCm());
             statement.setBigDecimal(i++, mapped.heightCm());
             statement.setString(i++, "DRAFT");
-            statement.setString(i++, trimToNull(mapped.seoTitle()));
-            statement.setString(i++, trimToNull(mapped.seoDescription()));
+            statement.setString(i++, trimToNull(seoTitle));
+            statement.setString(i++, trimToNull(seoDescription));
             statement.setString(i++, canonical);
             i = setAsset(statement, i, og);
             statement.setTimestamp(i++, Timestamp.from(createdAt));
@@ -812,7 +846,15 @@ final class LiveMigrationExecutor {
             statement.setString(i++, videos);
             statement.setBoolean(i++, available);
             statement.setBigDecimal(i++, mapped.discountPercentOverride());
-            if (i != 44) throw new IllegalStateException("Product insert binding count drift");
+            statement.setString(i++, translation == null ? null : trimToNull(translation.nameEn()));
+            statement.setString(i++, translation == null ? null : trimToNull(translation.slugEn()));
+            statement.setString(i++, trimToNull(shortDescriptionEn));
+            statement.setString(i++, trimToNull(descriptionEn));
+            statement.setString(i++,
+                    translation == null ? null : trimToNull(translation.seoTitleEn()));
+            statement.setString(i++,
+                    translation == null ? null : trimToNull(translation.seoDescriptionEn()));
+            if (i != 50) throw new IllegalStateException("Product insert binding count drift");
             assertOne(statement.executeUpdate(), "product insert", plan.targetId());
         }
         insertProductCategories(connection, plan.targetId(), plan.targetCategorySlugs());
@@ -954,7 +996,9 @@ final class LiveMigrationExecutor {
             int i = 1;
             statement.setString(i++, plan.targetId());
             statement.setString(i++, required(plan.targetParentId(), "variant parent"));
-            statement.setString(i++, required(mapped.sku(), "variant SKU"));
+            // Reviewed plan wins: a generated SKU is only present when WordPress had none.
+            statement.setString(i++, required(
+                    hasText(plan.plannedSku()) ? plan.plannedSku() : mapped.sku(), "variant SKU"));
             statement.setString(i++, required(post.postTitle(), "variant name"));
             statement.setBigDecimal(i++, retail);
             statement.setBigDecimal(i++, sale);
@@ -1353,8 +1397,11 @@ final class LiveMigrationExecutor {
                 ? rewriter.rewriteTargetField(
                         current, media.publicUrlsByRelative(), plan.entityType(), plan.entityId(),
                         plan.field(), isHtmlContentField(plan),
+                        // Mirrors the pinned owner policy. A drift would not slip through: the
+                        // afterSha256 check below refuses to write anything the reviewed plan
+                        // did not produce.
                         new LiveMigrationOwnerOverrides.TargetContentPolicy(
-                                true, true, false, false, false),
+                                true, true, false, false, false, List.of(), true),
                         unavailableFallbacks).value()
                 : rewriter.rewriteCanonical(current, plan.canonicalPath());
         if (rewritten == null || rewritten.equals(current)

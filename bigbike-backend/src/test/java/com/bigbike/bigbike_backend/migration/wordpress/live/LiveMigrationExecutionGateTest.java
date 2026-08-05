@@ -114,10 +114,12 @@ class LiveMigrationExecutionGateTest {
                 new LiveMigrationPreflightReport.OwnerOverridesMetadata(
                         ownerOverrideVersion, "2026-08-03", "/owner-overrides.json", "b".repeat(64)),
                 new LiveMigrationPreflightReport.DuplicateProductSelectionPlan(
-                        "SCS-S10X", List.of(41038L, 41181L), 41181L, 41038L,
+                        // Owner decision 2026-08-05: Vietnamese 41038 is canonical, English 41181
+                        // is the alias merged into the *_en columns.
+                        "SCS-S10X", List.of(41038L, 41181L), 41038L, 41181L,
                         Map.of(
-                                41038L, LocalDateTime.parse("2026-08-01T01:00:00"),
-                                41181L, LocalDateTime.parse("2026-08-02T01:00:00")),
+                                41038L, LocalDateTime.parse("2026-08-02T01:00:00"),
+                                41181L, LocalDateTime.parse("2026-08-01T01:00:00")),
                         "LATEST_POST_MODIFIED_GMT", "DRAFT",
                         "RELATED_CATEGORY_OR_ACKNOWLEDGED_NO_SAFE_TARGET", true, List.of()),
                 new LiveMigrationPreflightReport.ProductInferenceSummary(0, 0, 0, 0, 0, 0),

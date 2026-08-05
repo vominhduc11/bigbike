@@ -139,7 +139,36 @@ public record LiveMigrationPreflightReport(
             Instant targetLastAuditAt,
             String statusDecision,
             boolean manualReview,
+            /**
+             * Bilingual wording planned for this product, or null when it is single-language.
+             * Present either because Polylang pairs this source post with a translated one, or
+             * because the owner supplied Vietnamese wording for a published English-only product.
+             */
+            ProductTranslationPlan translation,
             List<String> reasons) {}
+
+    /**
+     * The exact bilingual text a product will be written with.
+     *
+     * <p>Vietnamese values are only set when the owner supplied them for an English-only source;
+     * otherwise the ordinary source mapping already provides the primary language. English values
+     * always come from a real source post — nothing here is machine-translated.</p>
+     */
+    public record ProductTranslationPlan(
+            String origin,
+            Long partnerSourceId,
+            String translationGroup,
+            String nameVi,
+            String shortDescriptionVi,
+            String descriptionVi,
+            String seoTitleVi,
+            String seoDescriptionVi,
+            String nameEn,
+            String slugEn,
+            String shortDescriptionEn,
+            String descriptionEn,
+            String seoTitleEn,
+            String seoDescriptionEn) {}
 
     /**
      * Direct product-video mapping from the WordPress source.
@@ -170,6 +199,12 @@ public record LiveMigrationPreflightReport(
             List<String> missingRequiredFields,
             Map<String, String> sourceOptions,
             List<Long> attachmentIds,
+            /**
+             * SKU the owner-approved rule derived for a variation WordPress left without one.
+             * Null whenever the source already carries a SKU, so the write path can tell an
+             * inherited value from a generated one.
+             */
+            String plannedSku,
             List<String> reasons) {}
 
     public record ArticlePlan(

@@ -31,8 +31,15 @@ final class LiveMigrationContentRewriter {
             + "news(?:/" + PATH_CHARACTER + "+)?))"
             + URL_SUFFIX
             + "(?=[\\s\\\\\"'<>]|$)";
+    /**
+     * Hosts whose {@code /wp-content/uploads/} paths are treated as ours to internalise. Owner
+     * decision 2026-08-05: product 39478 embedded seven illustrations straight from
+     * {@code poc-helmet.com}; they are recovered into our own store under the very same relative
+     * path, so the same rewrite must reach them. Measured scope of that host in the whole source:
+     * exactly seven occurrences, all in product 39478.
+     */
     private static final Pattern WP_UPLOAD_URL = Pattern.compile(
-            "(?:(?:(?:https?:)?//(?:www\\.)?(?:bigbike\\.vn|bbi\\.vn))/"
+            "(?:(?:(?:https?:)?//(?:www\\.)?(?:bigbike\\.vn|bbi\\.vn|poc-helmet\\.com))/"
                     + "|(?<![A-Za-z0-9.:/])/?)wp-content/uploads/"
                     + "([^\\s\\\\\"'<>?#]+)(?:[?#][^\\s\\\\\"'<>]*)?",
             Pattern.CASE_INSENSITIVE);
@@ -40,15 +47,31 @@ final class LiveMigrationContentRewriter {
             "(?:(?:https?://)(?:www\\.)?bigbike\\.vn(" + LEGACY_PATH + ")"
                     + "|(?<![A-Za-z0-9.:/])(" + LEGACY_PATH + "))",
             Pattern.CASE_INSENSITIVE);
+    /**
+     * Matches an anchor in raw HTML and in HTML that lives inside a JSON string, where the
+     * quotes around {@code href} arrive escaped ({@code <a href=\"…\">}). Group 2 captures the
+     * optional backslash so the closing quote must be escaped exactly like the opening one;
+     * group 4 is the href and group 6 the visible text, which is always preserved verbatim.
+     */
     private static final Pattern HTML_ANCHOR = Pattern.compile(
-            "(?is)<a\\b([^>]*?)\\bhref\\s*=\\s*([\"'])(.*?)\\2([^>]*)>(.*?)</a\\s*>");
+            "(?is)<a\\b([^>]*?)\\bhref\\s*=\\s*(\\\\?)([\"'])(.*?)\\2\\3([^>]*)>(.*?)</a\\s*>");
     private static final Pattern HTML_IMAGE = Pattern.compile(
             "(?is)<img\\b[^>]*?\\bsrc\\s*=\\s*([\"'])(.*?)\\1[^>]*>");
 
     private final Map<String, String> redirectTargets;
     private final java.util.Set<String> acknowledgedPaths;
+    /**
+     * Uploads whose file no longer exists anywhere. The owner reviewed each one, so their
+     * {@code <img>} tags are dropped from source prose instead of being carried over as broken
+     * images — every other character of the text is kept.
+     */
+    private final java.util.Set<String> deadUploadPaths;
 
     LiveMigrationContentRewriter(List<RedirectPlan> redirects) {
+        this(redirects, java.util.Set.of());
+    }
+
+    LiveMigrationContentRewriter(List<RedirectPlan> redirects, java.util.Set<String> deadUploadPaths) {
         Map<String, String> targets = new LinkedHashMap<>();
         LinkedHashSet<String> acknowledged = new LinkedHashSet<>();
         for (RedirectPlan redirect : redirects) {
@@ -66,13 +89,19 @@ final class LiveMigrationContentRewriter {
         }
         this.redirectTargets = Map.copyOf(targets);
         this.acknowledgedPaths = java.util.Set.copyOf(acknowledged);
+        this.deadUploadPaths = java.util.Set.copyOf(deadUploadPaths);
     }
 
     String rewriteHtml(String html, Map<String, String> mediaPublicUrlByRelativePath) {
         if (!hasText(html)) return html;
         String withMedia = replaceMedia(html, mediaPublicUrlByRelativePath);
         String withTargets = replaceInternalLinks(withMedia);
-        return unwrapAcknowledgedAnchors(withTargets).value();
+        String withoutDeadImages = withTargets;
+        for (String deadPath : deadUploadPaths) {
+            withoutDeadImages = removeExactDeadImages(withoutDeadImages, deadPath).value();
+            withoutDeadImages = unwrapExactDeadMediaAnchors(withoutDeadImages, deadPath).value();
+        }
+        return unwrapAcknowledgedAnchors(withoutDeadImages).value();
     }
 
     RewriteResult rewriteTargetField(
@@ -93,7 +122,11 @@ final class LiveMigrationContentRewriter {
         rewritten = withTargets;
 
         int unlinked = 0;
-        if (htmlField && policy.unlinkDeadInternalAnchors()) {
+        // Structured fields hold their prose as HTML inside JSON strings, so the same reviewed
+        // "drop the <a> wrapper, keep every character of the text" rule applies. Only the anchor
+        // tags are removed; JSON escaping and every non-anchor URL are left untouched.
+        if ((htmlField || policy.unlinkDeadAnchorsInStructuredContent())
+                && policy.unlinkDeadInternalAnchors()) {
             Transform anchorTransform = unwrapAcknowledgedAnchors(rewritten);
             rewritten = anchorTransform.value();
             unlinked += anchorTransform.count();
@@ -223,10 +256,10 @@ final class LiveMigrationContentRewriter {
         StringBuffer out = new StringBuffer(value.length());
         int count = 0;
         while (matcher.find()) {
-            String href = matcher.group(3);
+            String href = matcher.group(4);
             String path = internalRequestPath(href);
             if (path == null || !isAcknowledgedPath(path)) continue;
-            matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group(5)));
+            matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group(6)));
             count++;
         }
         matcher.appendTail(out);
@@ -260,8 +293,8 @@ final class LiveMigrationContentRewriter {
         StringBuffer out = new StringBuffer(value.length());
         int count = 0;
         while (matcher.find()) {
-            if (!wordpressUploadPaths(matcher.group(3)).contains(relativePath)) continue;
-            matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group(5)));
+            if (!wordpressUploadPaths(matcher.group(4)).contains(relativePath)) continue;
+            matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group(6)));
             count++;
         }
         matcher.appendTail(out);

@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "ownerDecisionDate": "2026-08-03",
+  "duplicateProductSelection": {
+    "sku": "SCS-S10X",
+    "sourceIds": [41038, 41181],
+    "selectionRule": "LATEST_POST_MODIFIED_GMT",
+    "expectedSelectedSourceId": 41181,
+    "mergeAllowed": false,
+    "selectedProductStatus": "DRAFT",
+    "excludedAliasPolicy": "RELATED_CATEGORY_OR_ACKNOWLEDGED_NO_SAFE_TARGET"
+  },
+  "productInference": {
+    "enabled": true,
+    "brandRuleId": "BRAND_EXACT_TARGET_TOKEN_OR_FALLBACK_V1",
+    "brandFallbackSlug": "uncategorized-brand",
+    "brandAliases": {},
+    "genderTokenRuleId": "GENDER_EXACT_TOKEN_V1",
+    "femaleTokens": ["nữ", "lady", "women", "female"],
+    "maleTokens": ["nam", "man", "men", "male"],
+    "unisexTokens": ["unisex"],
+    "neutralCategoryRuleId": "GENDER_NEUTRAL_EQUIPMENT_CATEGORY_V2",
+    "unisexNeutralSourceCategorySlugs": [
+      "balo-deo-lung-tui-deo-tui-treo-xe",
+      "balo-deo-lung",
+      "tui-treo-theo-xe",
+      "tui-deo-dui",
+      "tui-deo-hong-tui-bao-tu",
+      "tai-nghe-bluetooth-gan-mu-bao-hiem",
+      "pinlock-kinh-chong-suong-mu",
+      "phu-kien-gia-do-dien-thoai",
+      "quadlock",
+      "kewig",
+      "giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",
+      "mu-bao-hiem-fullface",
+      "mu-bao-hiem-fullface-lat-ham",
+      "mu-bao-hiem-3-4",
+      "mu-bao-hiem-cao-cao-dual-sport",
+      "non-fullface-ls2"
+    ],
+    "skuRuleId": "SKU_UNIQUE_CLEAR_MODEL_CODE_V1",
+    "skuIgnoredTokens": [
+      "2K", "4K", "11L", "15L", "18L", "20L", "25L", "30L", "40L",
+      "V2", "V3", "LEVEL-1", "LEVEL-2"
+    ],
+    "manualFieldOverrides": []
+  },
+  "sourceMediaRecovery": {
+    "recoveryManifestVersion": 1,
+    "approvedFiles": [
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-1.png",
+        "sha256": "bc5a2bd956008153396e2b6d6781a2b151ad09a31c697d2ff4851467d17009a3",
+        "bytes": 433464,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-1.jpg",
+        "sha256": "81583f368b5cdc00537f1d5a7b96c85fddb0a7740e6f2a6fe25c56e3da147db8",
+        "bytes": 178634,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-3.jpg",
+        "sha256": "d238bdc303f94f4682c065e49bef680631d22f00ec7402758d0580fb7566ea6b",
+        "bytes": 186754,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-4.jpg",
+        "sha256": "688e7b5578a2b972e92b53ba0b785eaf305abf9e7b264c2e42f5e96343f84c4c",
+        "bytes": 160305,
+        "mimeType": "image/jpeg"
+      }
+    ],
+    "unavailableFileFallbacks": [
+      {
+        "relativePath": "2021/05/mua-giay-scoyco-alpinestar-1024x772.png",
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-26064",
+        "fields": ["body", "body_en"],
+        "action": "REMOVE_EXACT_DEAD_IMAGE_ONLY"
+      }
+    ]
+  },
+  "targetMediaCleanup": {
+    "missingObjectPolicy": "DELETE_ROW_ONLY_IF_ZERO_REFERENCES_AFTER_FINAL_SCAN",
+    "duplicateCanonicalPriority": [
+      "OBJECT_EXISTS_AND_HASH_MATCHES",
+      "HIGHEST_REFERENCE_COUNT",
+      "ADMIN_OR_AUDIT_PROVENANCE",
+      "OLDEST_CREATED_AT",
+      "LEXICOGRAPHIC_ID_TIE_BREAKER"
+    ],
+    "deleteDuplicateObjectsBeforeCutover": false,
+    "duplicateObjectRetentionHours": 24
+  },
+  "redirects": {
+    "acknowledgeNoSafeTarget": true,
+    "acknowledgedAction": "ACKNOWLEDGED_NO_SAFE_TARGET",
+    "allowHomepageFallback": false,
+    "allowGenericProductListingFallback": false
+  },
+  "targetContent": {
+    "unlinkDeadInternalAnchors": true,
+    "preserveAnchorText": true,
+    "removePlainTextUrls": false,
+    "removeStructuredUrls": false,
+    "rewriteExternalLinks": false
+  }
+}

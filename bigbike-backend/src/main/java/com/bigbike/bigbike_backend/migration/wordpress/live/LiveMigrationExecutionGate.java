@@ -97,9 +97,11 @@ final class LiveMigrationExecutionGate {
             errors.add(label + " plan has no hash-bound owner override");
         } else {
             var duplicate = report.ownerDecisions().duplicateProductSelection();
+            // Owner decision 2026-08-05: the Vietnamese row 41038 is canonical and the English
+            // row 41181 is the alias whose wording is merged into the *_en columns.
             if (duplicate == null || !duplicate.expectedSelectionMatched()
-                    || !Long.valueOf(41181L).equals(duplicate.selectedSourceId())
-                    || !Long.valueOf(41038L).equals(duplicate.excludedSourceId())) {
+                    || !Long.valueOf(41038L).equals(duplicate.selectedSourceId())
+                    || !Long.valueOf(41181L).equals(duplicate.excludedSourceId())) {
                 errors.add(label + " plan does not contain the exact reviewed SCS-S10X selection");
             }
             if (report.ownerDecisions().overrides().version() >= 2

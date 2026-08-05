@@ -1,0 +1,655 @@
+{
+  "version": 4,
+  "ownerDecisionDate": "2026-08-05",
+  "duplicateProductSelection": {
+    "sku": "SCS-S10X",
+    "sourceIds": [
+      41038,
+      41181
+    ],
+    "selectionRule": "LATEST_POST_MODIFIED_GMT",
+    "expectedSelectedSourceId": 41038,
+    "mergeAllowed": true,
+    "selectedProductStatus": "DRAFT",
+    "excludedAliasPolicy": "RELATED_CATEGORY_OR_ACKNOWLEDGED_NO_SAFE_TARGET"
+  },
+  "productInference": {
+    "enabled": true,
+    "brandRuleId": "BRAND_EXACT_TARGET_TOKEN_OR_FALLBACK_V1",
+    "brandFallbackSlug": "uncategorized-brand",
+    "brandAliases": {},
+    "genderTokenRuleId": "GENDER_EXACT_TOKEN_V1",
+    "femaleTokens": [
+      "nữ",
+      "lady",
+      "women",
+      "female"
+    ],
+    "maleTokens": [
+      "nam",
+      "man",
+      "men",
+      "male"
+    ],
+    "unisexTokens": [
+      "unisex"
+    ],
+    "neutralCategoryRuleId": "GENDER_NEUTRAL_EQUIPMENT_CATEGORY_V2",
+    "unisexNeutralSourceCategorySlugs": [
+      "balo-deo-lung-tui-deo-tui-treo-xe",
+      "balo-deo-lung",
+      "tui-treo-theo-xe",
+      "tui-deo-dui",
+      "tui-deo-hong-tui-bao-tu",
+      "tai-nghe-bluetooth-gan-mu-bao-hiem",
+      "pinlock-kinh-chong-suong-mu",
+      "phu-kien-gia-do-dien-thoai",
+      "quadlock",
+      "kewig",
+      "giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",
+      "mu-bao-hiem-fullface",
+      "mu-bao-hiem-fullface-lat-ham",
+      "mu-bao-hiem-3-4",
+      "mu-bao-hiem-cao-cao-dual-sport",
+      "non-fullface-ls2"
+    ],
+    "skuRuleId": "SKU_UNIQUE_CLEAR_MODEL_CODE_V1",
+    "skuIgnoredTokens": [
+      "2K",
+      "4K",
+      "11L",
+      "15L",
+      "18L",
+      "20L",
+      "25L",
+      "30L",
+      "40L",
+      "V2",
+      "V3",
+      "LEVEL-1",
+      "LEVEL-2"
+    ],
+    "manualFieldOverrides": [
+      {
+        "sourceId": 26364,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 26955,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 28387,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29114,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29371,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29381,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29790,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29808,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 29819,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 30139,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 31348,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 31361,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 31372,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 31628,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 32398,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 35222,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states NAM/NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 36698,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 36725,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 36949,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 36984,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 38995,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 39004,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 39478,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 40018,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 42618,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex on 2026-08-05: this is protective equipment sold in a single cut, and the target catalogue already files comparable items as Unisex.",
+        "ruleId": "OWNER_MANUAL_GENDER_V3",
+        "confidence": "OWNER_CONFIRMED"
+      }
+    ],
+    "productCategoryOverrides": {
+      "26364": [
+        "ao-quan-bao-ho"
+      ],
+      "26955": [
+        "do-lot-the-thao-trum-dau-moto"
+      ],
+      "28387": [
+        "phu-kien-moto-khac"
+      ],
+      "29114": [
+        "gang-tay-xe-may-moto"
+      ],
+      "29371": [
+        "giay-bao-ho-moto-phuot"
+      ],
+      "29381": [
+        "giay-bao-ho-moto-phuot"
+      ],
+      "29790": [
+        "ao-quan-bao-ho"
+      ],
+      "29808": [
+        "ao-quan-bao-ho"
+      ],
+      "29819": [
+        "ao-quan-bao-ho"
+      ],
+      "30139": [
+        "giay-bao-ho-moto-phuot"
+      ],
+      "31348": [
+        "gang-tay-xe-may-moto"
+      ],
+      "31361": [
+        "ao-quan-bao-ho"
+      ],
+      "31372": [
+        "ao-quan-bao-ho"
+      ],
+      "31628": [
+        "ao-quan-bao-ho"
+      ],
+      "32398": [
+        "ao-quan-bao-ho"
+      ],
+      "36670": [
+        "ao-quan-bao-ho"
+      ],
+      "36698": [
+        "giap-bao-ho-tay-chan"
+      ],
+      "36725": [
+        "ao-quan-bao-ho"
+      ],
+      "36949": [
+        "giay-bao-ho-moto-phuot"
+      ],
+      "36984": [
+        "giay-bao-ho-moto-phuot"
+      ],
+      "39478": [
+        "mu-bao-hiem"
+      ],
+      "40018": [
+        "gang-tay-xe-may-moto"
+      ],
+      "41038": [
+        "tai-nghe-bluetooth-mu-bao-hiem"
+      ],
+      "41190": [
+        "ao-quan-bao-ho"
+      ],
+      "42618": [
+        "gang-tay-xe-may-moto"
+      ]
+    }
+  },
+  "sourceMediaRecovery": {
+    "recoveryManifestVersion": 1,
+    "approvedFiles": [
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-1.png",
+        "sha256": "bc5a2bd956008153396e2b6d6781a2b151ad09a31c697d2ff4851467d17009a3",
+        "bytes": 433464,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-1.jpg",
+        "sha256": "81583f368b5cdc00537f1d5a7b96c85fddb0a7740e6f2a6fe25c56e3da147db8",
+        "bytes": 178634,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-3.jpg",
+        "sha256": "d238bdc303f94f4682c065e49bef680631d22f00ec7402758d0580fb7566ea6b",
+        "bytes": 186754,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-4.jpg",
+        "sha256": "688e7b5578a2b972e92b53ba0b785eaf305abf9e7b264c2e42f5e96343f84c4c",
+        "bytes": 160305,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/02/chat-lieu-bao-ve-an-toan.png",
+        "sha256": "03150a3ae0f4831758a77fa6061b6c59368bb2ea9e942b1c77e41481166e9f57",
+        "bytes": 1727154,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/02/khoa-nam-cham-non-poc-1.png",
+        "sha256": "2be1850409265fa89cc4974d65ec7660113660a5ecf993ff7949675fc693812d",
+        "bytes": 909235,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/02/lot-non-em-ai.jpg",
+        "sha256": "2a07562e1dd508517178b742806d448e145a7c59ab86879f7fb7ae244ae4fdf2",
+        "bytes": 709037,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/02/mu-bao-hiem-poc-p10-mau-trang-bong.png",
+        "sha256": "ab9c8e57d7ba94f31fadbeb7d54a43b62c6122eed6313867bcf2a40691800af5",
+        "bytes": 330781,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/02/num-van-tang-chinh-kich-thuoc.png",
+        "sha256": "41748974c9626608d79bead8dc936691e2dbe3450dd517850bfa5fda802775d5",
+        "bytes": 1918408,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/02/op-tai.png",
+        "sha256": "9638a5c3c4e03d297b4d77efa5c68dda0a3c3c18c6fd293185811966e65f66a1",
+        "bytes": 1397943,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/02/thong-gio-mat-me-1.png",
+        "sha256": "280e3888d48f93c0b0db26cb3aa2e684f7f0c73d93b5d2beb597c22bcf0bfada",
+        "bytes": 1988347,
+        "mimeType": "image/png"
+      }
+    ],
+    "unavailableFileFallbacks": [
+      {
+        "relativePath": "2021/05/mua-giay-scoyco-alpinestar-1024x772.png",
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-26064",
+        "fields": [
+          "body",
+          "body_en"
+        ],
+        "action": "REMOVE_EXACT_DEAD_IMAGE_ONLY"
+      }
+    ],
+    "variantAttachmentOverrides": [
+      {
+        "sourceVariantId": 30187,
+        "sourceParentId": 30183,
+        "expectedThumbnailAttachmentId": 30186,
+        "expectedGalleryAttachmentIds": [
+          30184,
+          30185
+        ],
+        "retainedGalleryAttachmentIds": [
+          30185
+        ],
+        "action": "REMOVE_EXACT_MISSING_GALLERY_REFERENCE",
+        "evidence": "Owner approved removing only missing attachment 30184; retain thumbnail 30186 and gallery attachment 30185."
+      },
+      {
+        "sourceVariantId": 30188,
+        "sourceParentId": 30183,
+        "expectedThumbnailAttachmentId": 30186,
+        "expectedGalleryAttachmentIds": [
+          30184,
+          30185
+        ],
+        "retainedGalleryAttachmentIds": [
+          30185
+        ],
+        "action": "REMOVE_EXACT_MISSING_GALLERY_REFERENCE",
+        "evidence": "Owner approved removing only missing attachment 30184; retain thumbnail 30186 and gallery attachment 30185."
+      }
+    ]
+  },
+  "targetMediaCleanup": {
+    "missingObjectPolicy": "DELETE_ROW_ONLY_IF_ZERO_REFERENCES_AFTER_FINAL_SCAN",
+    "duplicateCanonicalPriority": [
+      "OBJECT_EXISTS_AND_HASH_MATCHES",
+      "HIGHEST_REFERENCE_COUNT",
+      "ADMIN_OR_AUDIT_PROVENANCE",
+      "OLDEST_CREATED_AT",
+      "LEXICOGRAPHIC_ID_TIE_BREAKER"
+    ],
+    "deleteDuplicateObjectsBeforeCutover": false,
+    "duplicateObjectRetentionHours": 24
+  },
+  "redirects": {
+    "acknowledgeNoSafeTarget": true,
+    "acknowledgedAction": "ACKNOWLEDGED_NO_SAFE_TARGET",
+    "allowHomepageFallback": false,
+    "allowGenericProductListingFallback": false
+  },
+  "targetContent": {
+    "unlinkDeadInternalAnchors": true,
+    "preserveAnchorText": true,
+    "removePlainTextUrls": false,
+    "removeStructuredUrls": false,
+    "rewriteExternalLinks": false,
+    "unlinkDeadAnchorsInStructuredContent": true,
+    "exactFieldMutations": [
+      {
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-41091",
+        "field": "body_blocks",
+        "action": "REMOVE_EXACT_JSON_IMAGE_NODES",
+        "targetMediaIds": [
+          "738a58ea-f268-4f7a-8f35-57ecb1b6b1cc",
+          "b80fbd1c-2da5-488e-86ed-22c4c38fa6dd",
+          "e8bb5168-7d5c-4a1c-be6b-63a7d2bdc65d"
+        ],
+        "exactValues": [
+          "/media/wp-uploads/2026/03/Non-bao-hiem-fullface-dat-chuan.jpg",
+          "/media/wp-uploads/2026/03/Bang-chon-size-non-phu-hop-cho-tung-co-dau.jpg",
+          "/media/wp-uploads/2026/03/Mu-bao-hiem-fullface-tai-Bigbike.jpg"
+        ],
+        "expectedBeforeSha256": "9c2f10d7789c92a8751ee2001b88bcbbccc0021dd215acdf9336b76b39d3d4e6",
+        "expectedAfterSha256": "1f1f1228bc8f134f9ebc7dbec3094d97ce1a18c7ea4fcf706801c2d9d1ed6d4f",
+        "plannedNull": false,
+        "evidence": "Owner approved removing only the three exact missing image nodes while preserving every remaining JSON element and prose byte-for-byte."
+      },
+      {
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-41091",
+        "field": "cover_image_url",
+        "action": "SET_NULL_IF_EXACT_VALUE",
+        "targetMediaIds": [
+          "ced523f3-c757-4546-afbd-f526f96d7b43"
+        ],
+        "exactValues": [
+          "https://media.bigbike.vn/bigbike-media/wp-uploads/2026/03/shop-mu-bao-hiem-gan-day-thumbnail.jpg"
+        ],
+        "expectedBeforeSha256": "5baec1551ea07d7aeb2bfe50cc7fa4a5f56c6153c7e525ced204c29f0bcdde52",
+        "expectedAfterSha256": null,
+        "plannedNull": true,
+        "evidence": "Owner approved nulling only the exact missing cover URL; the media row remains until a fresh separately confirmed cleanup scan."
+      }
+    ]
+  },
+  "variantSkuGeneration": {
+    "enabled": true,
+    "ruleId": "VARIANT_SKU_PARENT_PLUS_OPTIONS_V3",
+    "pattern": "<parentSku>-<optionValues…>",
+    "parentSourceIds": [
+      5951,
+      8478,
+      11376,
+      25206,
+      25843,
+      26187,
+      26287,
+      26948,
+      27555,
+      29106,
+      29489,
+      33313,
+      33983,
+      34037,
+      34065,
+      35115,
+      35222,
+      35277,
+      35346,
+      36296,
+      36357,
+      36670,
+      37104,
+      37368,
+      37433,
+      38995,
+      39004,
+      39563,
+      39835,
+      39854,
+      40089,
+      40467,
+      40469,
+      40471,
+      40496,
+      40559,
+      40706,
+      41070,
+      26364,
+      26955,
+      28387,
+      29114,
+      29371,
+      29381,
+      29790,
+      29808,
+      29819,
+      31361,
+      31628,
+      32398,
+      36949,
+      36984,
+      39478,
+      40018,
+      42618
+    ],
+    "retainedManualParentSourceIds": [
+      26942,
+      30587,
+      34009,
+      38771,
+      39532,
+      40513,
+      41359
+    ],
+    "skippedDuplicateVariantSourceIds": [
+      35273,
+      35275
+    ],
+    "evidence": "Owner decided on 2026-08-05 to generate SKUs for the 430 variations of the 38 products that are absent from the target, and to leave the 89 variations of the 7 products already re-entered by hand in the new admin untouched. WordPress holds two identical extra rows for jacket JK157 (same colour, size, price and stock); only the first of each pair is imported."
+  },
+  "translationMerge": {
+    "enabled": true,
+    "languageTaxonomy": "language",
+    "translationGroupTaxonomy": "post_translations",
+    "primaryLanguageSlug": "vi",
+    "secondaryLanguageSlug": "en",
+    "pairs": {
+      "41038": 41181,
+      "41070": 41176
+    },
+    "evidence": "Owner decided on 2026-08-05 that a Polylang pair is one bilingual product: the Vietnamese row stays canonical and the English wording moves into the *_en columns. Only these two pairs qualify; the third group's Vietnamese half (36519) is still a WordPress draft and is therefore outside the migration."
+  },
+  "sourceTranslationOverrides": [
+    {
+      "sourceId": 36670,
+      "nameVi": "ĐỒ BẢO HỘ MOTO LS2 APOLLO MAN",
+      "shortDescriptionVi": "<p>♦ Hỗ trợ trả góp 0% kỳ hạn 3-6-9-12 tháng<br />\n♦ Tặng kèm lớp lót mát bên trong<br />\n♦ Dòng touring dành cho xe ADV<br />\n♦ Mặc được cả bốn mùa trong năm</p>",
+      "descriptionVi": "<p><strong>Đồ bảo hộ LS2 Apollo Man – Chất liệu cao cấp, an toàn trọn vẹn</strong></p>\n<p>LS2 Apollo Man không chỉ được biết đến nhờ thiết kế hiện đại mà còn nổi bật ở chất liệu và kết cấu bảo vệ vượt trội. Sản phẩm dùng vải chất lượng cao cùng nhiều tính năng tiên tiến, mang lại sự bảo vệ toàn diện cho người lái.</p>\n<p><strong>Chất liệu cao cấp:</strong></p>\n<ul>\n\t<li>\n<p><strong>Vải Cordura 3 lớp:</strong> Lớp Cordura 3 lớp ở mặt ngoài chịu mài mòn rất tốt, bảo vệ người mặc trước những va chạm mạnh.</p>\n</li>\n\t<li>\n<p><strong>Vải Oxford Dobby 3 lớp:</strong> Dùng song song với Cordura, lớp Oxford Dobby 3 lớp tăng độ bền và khả năng bảo vệ, giúp sản phẩm chịu được điều kiện khắc nghiệt nhất.</p>\n</li>\n\t<li>\n<p><strong>Lớp lót giữ nhiệt tháo rời:</strong> Giữ ấm cơ thể trong những ngày lạnh và có thể tháo ra khi không cần, nhờ vậy mặc được nhiều mùa trong năm.</p>\n</li>\n\t<li>\n<p><strong>Chống nước tối ưu:</strong> Với chỉ số chống nước 21.000 mm, LS2 Apollo Man che chắn mưa gió trên mọi cung đường, giữ cơ thể luôn khô ráo.</p>\n</li>\n\t<li>\n<p><strong>Thoáng khí:</strong> Chỉ số thoát hơi 16.077 mm mang lại cảm giác dễ chịu, hạn chế bí nóng và đổ mồ hôi ngay cả khi trời oi bức.</p>\n</li>\n</ul>\n<p><strong>Tính năng bảo vệ:</strong></p>\n<ul>\n\t<li>\n<p><strong>Giáp gối chuẩn CE Level 2:</strong> Bảo vệ vùng chân và tháo lắp dễ dàng khi không cần dùng.</p>\n</li>\n\t<li>\n<p><strong>Giáp hông chuẩn CE Level 1:</strong> Đảm bảo an toàn tối đa mà vẫn thoải mái khi di chuyển.</p>\n</li>\n\t<li>\n<p><strong>Nhiều lớp gia cố bảo vệ:</strong> Những vị trí dễ va đập được gia cố thêm lớp bảo vệ, giảm thiểu rủi ro khi xảy ra tai nạn.</p>\n</li>\n</ul>\n<p><strong>Chi tiết gia cố khác:</strong></p>\n<ul>\n\t<li>\n<p><strong>Khóa kéo YKK:</strong> Khóa kéo mặt trước dùng YKK – thương hiệu nổi tiếng về độ bền, giúp sản phẩm luôn chắc chắn và an toàn khi mặc.</p>\n</li>\n\t<li>\n<p><strong>Dây điều chỉnh có móc:</strong> Cho phép người mặc chỉnh độ ôm dễ dàng để thoải mái khi vận động.</p>\n</li>\n\t<li>\n<p><strong>Túi hộp chống nước:</strong> Hệ thống túi hộp được thiết kế chống nước, bảo vệ đồ dùng cá nhân khỏi ẩm ướt trong mọi điều kiện thời tiết.</p>\n</li>\n</ul>",
+      "seoTitleVi": null,
+      "seoDescriptionVi": null,
+      "evidence": "Owner decided on 2026-08-05 to import the published English-only products with Vietnamese wording. Vietnamese text is a faithful translation of the source post; the English original is preserved in the *_en columns."
+    },
+    {
+      "sourceId": 36698,
+      "nameVi": "ĐAI BẢO VỆ THẮT LƯNG LS2 KOKU KIDNEY BELT",
+      "shortDescriptionVi": "<p>- Bảo vệ vùng lưng dưới và thận</p>\n<p>- Thiết kế nhẹ, thoáng khí</p>\n<p>- Đệm mềm, dây đai điều chỉnh được</p>\n<p>- Tăng độ an toàn và thoải mái cho người lái.</p>",
+      "descriptionVi": "<p><strong>Đai bảo vệ thắt lưng LS2 Koku</strong> thuộc dòng Protectors, được thiết kế riêng để bảo vệ vùng lưng dưới khỏi va đập và chấn thương khi chạy địa hình hoặc vận động cường độ cao. Sản phẩm phù hợp cho cả người chơi chuyên nghiệp lẫn bất kỳ ai cần bảo vệ thêm cho vùng lưng dưới.</p>\n<p><strong>Thiết kế ôm dáng, thoải mái:</strong></p>\n<p>- <strong>Chất liệu cao cấp</strong>: Làm từ vải lưới thoáng khí, đai LS2 Koku tối ưu khả năng thông gió, mang lại cảm giác dễ chịu trên những chặng đường dài. Chất liệu đàn hồi tốt, bền và không bị giãn.<br />\n- <strong>Thiết kế thông minh</strong>: Dáng ôm theo đường cong cơ thể, đảm bảo thoải mái tối đa. Trọng lượng nhẹ, rất hợp cho các chuyến đi xa.<br />\n- <strong>Điều chỉnh linh hoạt</strong>: Đai có hai dây co giãn, cho phép người dùng chỉnh độ ôm quanh eo theo ý muốn.<br />\n- <strong>Nhiều cỡ</strong>: Có sẵn cho vòng bụng từ 65-140cm, đáp ứng nhiều vóc dáng khác nhau.</p>\n<p><strong>Tính năng nổi bật:</strong></p>\n<p>- <strong>Nâng đỡ và bảo vệ</strong>: Đai LS2 Koku nâng đỡ vùng lưng dưới và cột sống, giảm nguy cơ chấn thương và căng cơ khi vận động, đồng thời bảo vệ thận khỏi tác động từ bên ngoài.<br />\n- <strong>Dễ sử dụng</strong>: Hệ thống dán gai tiện lợi giúp đeo vào hoặc tháo ra nhanh chóng.<br />\n- <strong>Thoáng khí tối ưu</strong>: Hệ lưới thoáng khí giảm nóng và mồ hôi, giữ lưng luôn khô ráo, dễ chịu.</p>\n<p>Đây là lựa chọn rất đáng cân nhắc cho người cần bảo vệ vùng lưng dưới mà vẫn thoải mái khi vận động mạnh.</p>",
+      "seoTitleVi": null,
+      "seoDescriptionVi": null,
+      "evidence": "Owner decided on 2026-08-05 to treat this as an English-only product: its Vietnamese counterpart (36519) is still a WordPress draft and is not part of the migration."
+    },
+    {
+      "sourceId": 36725,
+      "nameVi": "QUẦN BẢO HỘ MOTO LS2 APOLLO WP",
+      "shortDescriptionVi": "<ul>\n\t<li>Hỗ trợ trả góp 0% kỳ hạn 3-6-9-12 tháng</li>\n\t<li>Tặng kèm quần lót spandex mát</li>\n\t<li>Dòng touring dành cho xe ADV</li>\n\t<li>Mặc được cả bốn mùa trong năm</li>\n</ul>",
+      "descriptionVi": "<p>Quần Apollo được làm từ vải Cordura – đúng loại vật liệu quân đội Mỹ dùng cho quân phục tác chiến, nổi tiếng nhờ khả năng chịu đựng những điều kiện khắc nghiệt nhất. Với công nghệ Cordura Triple Layers gồm ba lớp bảo vệ, Apollo chống mài mòn, ma sát, đâm xuyên, rách và nhiệt, đạt chuẩn CE AAA – mức an toàn cao nhất dành cho đồ bảo hộ mô tô.</p>\n<p><img class=\"alignnone wp-image-36711 size-full\" title=\"quần apollo 2\" src=\"https://bigbike.vn/wp-content/uploads/2024/10/quan-apollo-2.png\" alt=\"quần apollo 2\" width=\"800\" height=\"857\" /></p>\n<p>Tại những vùng chịu mài mòn nhiều như đầu gối và hông, Apollo được gia cố thêm vải Oxford Dobby ba lớp, tăng độ bền và giữ khả năng bảo vệ tối ưu trong suốt quá trình sử dụng lâu dài.</p>\n<p>Khả năng chống nước của Apollo đạt tới 21.000 mm, vượt nhiều loại áo mưa cao cấp, trong khi vẫn giữ độ thoát hơi rất tốt ở mức 16.077g/m²/24h.</p>\n<p>Được thiết kế cho người chơi chuyên nghiệp và những ai chinh phục khí hậu khắc nghiệt, Apollo có lớp lót giữ nhiệt giúp người mặc dễ chịu ở nhiệt độ xuống tới -10°C. Sản phẩm còn được trang bị giáp chống va đập Level 2 ở đầu gối và Level 1 ở hông để tăng khả năng bảo vệ.</p>",
+      "seoTitleVi": null,
+      "seoDescriptionVi": null,
+      "evidence": "Owner decided on 2026-08-05 to import the published English-only products with Vietnamese wording. The source excerpt contained pasted editor markup with no product information; the Vietnamese short description keeps only the four real selling points."
+    },
+    {
+      "sourceId": 41190,
+      "nameVi": "ÁO BẢO HỘ MOTO NỮ LS2 ZOOM LADY",
+      "shortDescriptionVi": null,
+      "descriptionVi": "<h2><b>Áo bảo hộ mô tô LS2 Zoom Lady - Áo bảo hộ nữ dáng sport, PKL, có lót giữ nhiệt và chống mưa</b></h2>\n<p>Áo bảo hộ LS2 Zoom Lady được thiết kế cho phái nữ đi mô tô với phom dáng sport, kiểu dáng thể thao, linh hoạt và giữ ấm rất tốt. Mang phong cách hiện đại, LS2 Zoom Lady đạt tiêu chuẩn an toàn châu Âu, có khả năng chống nước nhẹ và lớp lót giữ nhiệt dày dặn, giúp người mới chơi mô tô yên tâm hơn. Dòng LS2 Zoom có cả bản nữ và bản nam.</p>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0943/6479/5161/files/ao-ls2-zoom-lady-2.jpg?v=1766140883\" alt=\"Áo bảo hộ xe máy LS2 Zoom Lady - Mẫu áo bảo hộ LS2 mới nhất thiết kế dành cho nữ\" width=\"1000\" height=\"1000\" /></p>\n<p><i><b>Áo bảo hộ mô tô LS2 Zoom Lady</b> - Mẫu áo bảo hộ LS2 mới nhất thiết kế dành cho nữ</i></p>\n<p>Áo LS2 Zoom Lady được xây dựng trên nền tảng an toàn đã được chứng nhận, kèm nhiều tùy chỉnh theo người mặc:</p>\n<ul>\n\t<li><b>Chứng nhận CE Class A:</b> Đạt chuẩn chống mài mòn và chống rách (EN 17092), phù hợp chạy trong phố và touring ở tốc độ vừa phải.</li>\n\t<li><b>Giáp bảo vệ linh hoạt: Trang bị giáp vai và giáp cùi chỏ chuẩn CE Level 1, tháo lắp được.</b> Giáp cùi chỏ có 2 nấc điều chỉnh để vừa vặn hơn với tay của từng người.</li>\n</ul>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0943/6479/5161/files/ao-ls2-zoom-lady-4.jpg?v=1766141873\" alt=\"Áo có giáp bảo vệ ở những vị trí quan trọng\" width=\"1000\" height=\"1000\" /></p>\n<p><b>Áo LS2 Zoom Lady</b> được thiết kế tăng cường bảo vệ ở những vị trí dễ va đập</p>\n<ul>\n\t<li>Giáp vai TPU: Tăng khả năng chịu va đập, đồng thời làm rõ nhận diện thương hiệu LS2.</li>\n\t<li>Nâng cấp được: Áo có sẵn túi chuyên dụng để lắp thêm giáp ngực và giáp lưng LS2 851 chuẩn Level 2 (bán riêng).</li>\n</ul>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0943/6479/5161/files/ao-ls2-zoom-lady-3.jpg?v=1766141872\" alt=\"Áo bảo hộ motor LS2 Zoom Lady chuẩn form Asian Fit\" width=\"1000\" height=\"1000\" /></p>\n<p><b>Áo bảo hộ mô tô LS2 Zoom Lady</b> hợp với vóc dáng phụ nữ châu Á</p>\n<h2><b>Thích ứng thời tiết: Ấm khi trời lạnh, thoáng khi cần</b></h2>\n<p>Áo LS2 Zoom Lady phù hợp với nhiều kiểu thời tiết thay đổi:</p>\n<ul>\n\t<li>Lót giữ nhiệt tháo rời: Giữ ấm khi trời lạnh hoặc khi chạy đêm, và tháo ra dễ dàng khi trời ấm lên.</li>\n\t<li>Màng chống nước: Lớp chống nước cố định đạt mức 8000 mm H2O, che chắn những cơn mưa bất chợt và chống nước hiệu quả.</li>\n\t<li>Thông gió thông minh (LS2 Vent Smart System): Khóa thông gió ở ngực, lưng và tay áo giúp tăng luồng khí khi trời nóng.</li>\n</ul>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0943/6479/5161/files/ao-ls2-zoom-man-7.jpg?v=1766138832\" alt=\"Tăng độ thoáng cho áo khi chạy mùa hè\" width=\"1000\" height=\"1000\" /></p>\n<p><b>Áo LS2 Zoom Lady</b> có thiết kế thông gió thông minh, tăng độ thoáng tới 60%. Khóa kéo YKK.</p>\n<p>Thiết kế của áo bảo hộ mô tô LS2 Zoom Lady chú trọng sự thoải mái khi mặc liên tục và chạy đường dài:</p>\n<ul>\n\t<li>Dễ điều chỉnh: Dán gai ở cổ tay và eo, cùng nút chỉnh ở tay áo, giúp áo ôm gọn và giảm phần phật khi chạy.</li>\n\t<li>Cổ áo dễ chịu: Lót cổ bằng neoprene mềm, có dán gai điều chỉnh, không gây cấn cổ.</li>\n\t<li>Nối với quần: Tích hợp khóa kéo nối chuẩn để ghép với quần LS2, tạo thành bộ đồ chạy xe hoàn chỉnh.</li>\n\t<li>Nhiều túi tiện dụng: Gồm túi hông, túi ngực Napoleon dễ lấy đồ, túi trong chống nước cho điện thoại, và túi trong đa năng đựng được giáp ngực hoặc đồ cá nhân.</li>\n</ul>\n<p><b>Áo bảo hộ mô tô LS2 Zoom Lady</b> là lựa chọn tốt nhất cho nữ biker muốn giữ ấm khi trời lạnh — một chiếc áo đa dụng, bền bỉ với mức giá dễ chịu. Áo đáp ứng từ nhu cầu chạy sport hằng ngày đến những chuyến touring ngắn, mang lại sự tự tin hơn khi chạy trong thời tiết lạnh.</p>\n<hr />\n<h2 style=\"text-align: center;\"><span style=\"text-decoration: underline;\"><span style=\"color: #ff0000; text-decoration: underline;\">THÔNG TIN</span></span></h2>\n<h2>Thông tin liên hệ</h2>\n<ul>\n\t<li>\n<p><b>Địa chỉ:</b> 79/30/52 Đường Âu Cơ, Phường 14 (hoặc Phường Hòa Bình theo cách gọi cũ), Quận Tân Bình, TP.HCM.</p>\n</li>\n\t<li>\n<p><b>Hotline (Thư BigbikeVN):</b> 0764 640 679</p>\n</li>\n\t<li>\n<p><b>Cửa hàng (Shop BigbikeVN):</b> 028 6279 7251</p>\n</li>\n</ul>\n<h2>Giờ làm việc</h2>\n<ul>\n\t<li>\n<p><b>Thứ 2 - Thứ 7:</b> 09:00 – 21:00</p>\n</li>\n\t<li>\n<p><b>Chủ Nhật:</b> 09:00 – 17:00</p>\n</li>\n</ul>\n<p><img class=\"wp-image-40855\" title=\"79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804413_31e6f9207f5f1d1f0bdb3150fb63515b-1024x768.jpg\" alt=\"79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11\" width=\"680\" height=\"510\" /></p>\n<p><img class=\"wp-image-40856\" title=\"79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804637_9cf132a55914f36fbdc38a090b091f2f-1024x768.jpg\" alt=\"79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11\" width=\"680\" height=\"510\" /></p>",
+      "seoTitleVi": null,
+      "seoDescriptionVi": null,
+      "evidence": "Owner decided on 2026-08-05 to import the published English-only products with Vietnamese wording. WordPress [caption] shortcodes were converted to plain image plus caption markup because the new site does not render shortcodes; no wording was added or dropped."
+    }
+  ]
+}

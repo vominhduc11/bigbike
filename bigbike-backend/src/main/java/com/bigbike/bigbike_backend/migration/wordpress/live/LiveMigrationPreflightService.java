@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflig
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.OwnerDecisionPlans;
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.OwnerOverridesMetadata;
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.ProductPlan;
+import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.ProductTranslationPlan;
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.ProductInferencePlan;
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.ProductInferenceSummary;
 import com.bigbike.bigbike_backend.migration.wordpress.live.LiveMigrationPreflightReport.ProductVideoPlan;
@@ -29,6 +30,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMa
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpPost;
 import com.bigbike.bigbike_backend.migration.wordpress.parser.PhpSerializeParser;
+import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.migration.wordpress.parser.WordPressSqlDumpRowReader;
 import com.bigbike.bigbike_backend.service.video.YouTubeUrlParser;
 import io.minio.MinioClient;
@@ -125,8 +127,11 @@ public final class LiveMigrationPreflightService {
                 targetContentScan.legacyInternalPaths(), ownerOverrides.config().redirects());
         List<LiveMigrationOwnerOverrides.UnavailableFileFallback> unavailableFallbacks =
                 activeUnavailableFallbacks(ownerOverrides.config(), options.uploadsPath());
-        mediaReferences.addAll(filterFallbackMediaReferences(
-                targetContentScan.mediaReferences(), unavailableFallbacks));
+        mediaReferences.addAll(targetContentScan.mediaReferences());
+        // Owner-reviewed dead images are dropped from every reference, source-side and
+        // target-side alike, so a file that no longer exists cannot be planned for copying.
+        mediaReferences = new ArrayList<>(
+                filterFallbackMediaReferences(mediaReferences, unavailableFallbacks));
         var mediaResult = mediaPlanner.plan(
                 mediaReferences, options.uploadsPath(), target.media(),
                 options.targetMinioBucket(), options.hashTargetMedia(), targetMinioClient);
@@ -366,11 +371,28 @@ public final class LiveMigrationPreflightService {
                     .distinct().toList();
             List<String> exactCategorySlugs = sourceCategorySlugs.stream()
                     .filter(activeCategories::containsKey).distinct().toList();
+            // Owner-reviewed categories win over the fallback but never over an exact slug match:
+            // the owner only ruled on products that would otherwise land in "uncategorized".
+            List<String> ownerCategorySlugs = ownerOverrides.productInference()
+                    .productCategoryOverrides().getOrDefault(post.id(), List.of()).stream()
+                    .map(LiveMigrationPreflightService::normalizeSlug)
+                    .filter(java.util.Objects::nonNull).distinct().toList();
+            for (String slug : ownerCategorySlugs) {
+                if (!activeCategories.containsKey(slug)) {
+                    throw new IllegalStateException(
+                            "Owner-reviewed category is not an active target category: "
+                                    + post.id() + " -> " + slug);
+                }
+            }
             String categoryConfidence;
             List<String> plannedCategories;
             if (!exactCategorySlugs.isEmpty()) {
                 plannedCategories = exactCategorySlugs;
                 categoryConfidence = "EXACT_SLUG";
+            } else if (!ownerCategorySlugs.isEmpty()) {
+                plannedCategories = ownerCategorySlugs;
+                categoryConfidence = "OWNER_REVIEWED_CATEGORY";
+                reasons.add("Owner reviewed the target category for this product");
             } else if (uncategorized != null) {
                 plannedCategories = List.of(uncategorized.slug());
                 categoryConfidence = sourceCategorySlugs.isEmpty()
@@ -385,10 +407,15 @@ public final class LiveMigrationPreflightService {
             if (existing != null && existing.categorySlugs() != null
                     && !existing.categorySlugs().isEmpty()) {
                 LinkedHashSet<String> preservedCategories = new LinkedHashSet<>(existing.categorySlugs());
-                boolean appendedExact = preservedCategories.addAll(exactCategorySlugs);
+                List<String> appendable = exactCategorySlugs.isEmpty()
+                        ? ownerCategorySlugs : exactCategorySlugs;
+                boolean appendedExact = preservedCategories.addAll(appendable);
                 plannedCategories = List.copyOf(preservedCategories);
                 categoryConfidence = appendedExact
-                        ? "TARGET_PRESERVED_PLUS_EXACT_SLUG" : "TARGET_PRESERVED";
+                        ? (exactCategorySlugs.isEmpty()
+                                ? "TARGET_PRESERVED_PLUS_OWNER_REVIEWED"
+                                : "TARGET_PRESERVED_PLUS_EXACT_SLUG")
+                        : "TARGET_PRESERVED";
             }
 
             List<String> sourceBrandSlugs = source.taxonomyTerms(post.id(), "pwb-brand").stream()
@@ -564,7 +591,8 @@ public final class LiveMigrationPreflightService {
                 if (isEmptyJsonArray(existing.videosText()) && !sourceVideos.isEmpty()) {
                     fieldsToFill.add("videos");
                 }
-                for (String category : exactCategorySlugs) {
+                for (String category : exactCategorySlugs.isEmpty()
+                        ? ownerCategorySlugs : exactCategorySlugs) {
                     if (existing.categorySlugs().stream()
                             .noneMatch(value -> category.equals(normalizeSlug(value)))) {
                         fieldsToFill.add("categoryIds:" + category);
@@ -624,6 +652,9 @@ public final class LiveMigrationPreflightService {
                         "CATEGORY_MAPPING_UNCERTAIN", "No exact target category slug; use uncategorized"));
             }
 
+            ProductTranslationPlan translation = planProductTranslation(
+                    source, post, ownerOverrides, issues);
+
             ProductPlan plan = new ProductPlan(
                     post.id(), "PUBLISHED", source.postModifiedGmt(post.id()),
                     effectiveSku, trimToNull(mapped.slug()),
@@ -641,7 +672,7 @@ public final class LiveMigrationPreflightService {
                     existing == null ? 0 : existing.statusAuditCount(),
                     existing == null ? null : existing.lastAuditAt(),
                     statusDecision,
-                    manualReview, List.copyOf(reasons));
+                    manualReview, translation, List.copyOf(reasons));
             plans.add(plan);
             contexts.put(post.id(), new ProductContext(post, mapped, meta, plan, existing, inlinePaths));
         }
@@ -700,7 +731,7 @@ public final class LiveMigrationPreflightService {
                 categoryConfidence, List.of(), null, List.of(), null,
                 List.of(), List.of(), List.of(), null, null,
                 "OWNER_OVERRIDE_EXCLUDED_SOURCE_ROW", 0, 0, 0, null,
-                "EXCLUDED_NO_CONTENT_IMPORT", false, List.copyOf(reasons));
+                "EXCLUDED_NO_CONTENT_IMPORT", false, null, List.copyOf(reasons));
         plans.add(plan);
         contexts.put(post.id(), new ProductContext(
                 post, mapped, immutableMapAllowingNullValues(meta), plan, null, List.of()));
@@ -742,7 +773,7 @@ public final class LiveMigrationPreflightService {
                             ? "EXACT_SLUG_ALIAS_ONLY" : "NO_UNIQUE_SAFE_ALIAS_CATEGORY",
                     List.of(), null, List.of(), null, List.of(), List.of(), List.of(),
                     null, null, "OWNER_OVERRIDE_PENDING_EVIDENCE", 0, 0, 0, null,
-                    "BLOCKED_UNEXPECTED_POST_MODIFIED_GMT", true, List.copyOf(reasons));
+                    "BLOCKED_UNEXPECTED_POST_MODIFIED_GMT", true, null, List.copyOf(reasons));
             plans.add(plan);
             contexts.put(post.id(), new ProductContext(
                     post, mapped, immutableMapAllowingNullValues(meta), plan, null, List.of()));
@@ -782,6 +813,26 @@ public final class LiveMigrationPreflightService {
         List<Reference> mediaReferences = new ArrayList<>();
         List<Issue> issues = new ArrayList<>();
 
+        var skuGeneration = ownerOverrides.variantSkuGeneration();
+        boolean generateSkus = skuGeneration != null && skuGeneration.enabled();
+        Set<Long> skuGenerationParents = generateSkus
+                ? Set.copyOf(skuGeneration.parentSourceIds()) : Set.of();
+        Set<Long> retainedManualParents = generateSkus
+                ? Set.copyOf(skuGeneration.retainedManualParentSourceIds()) : Set.of();
+        Set<Long> skippedDuplicateVariants = generateSkus
+                ? Set.copyOf(skuGeneration.skippedDuplicateVariantSourceIds()) : Set.of();
+        // Every SKU already spoken for: existing target variants, existing target products and
+        // every SKU this run intends to write. A generated SKU may collide with none of them.
+        Set<String> reservedSkus = new LinkedHashSet<>();
+        target.variants().stream().map(v -> normalizeSku(v.sku()))
+                .filter(java.util.Objects::nonNull).forEach(reservedSkus::add);
+        target.products().stream().map(p -> normalizeSku(p.sku()))
+                .filter(java.util.Objects::nonNull).forEach(reservedSkus::add);
+        selected.stream().map(p -> normalizeSku(source.meta(p.id()).get("_sku")))
+                .filter(java.util.Objects::nonNull).forEach(reservedSkus::add);
+        products.values().stream().map(context -> normalizeSku(context.plan().sourceSku()))
+                .filter(java.util.Objects::nonNull).forEach(reservedSkus::add);
+
         for (WpPost post : selected) {
             ProductContext parent = products.get(post.postParent());
             Map<String, String> meta = source.meta(post.id());
@@ -790,6 +841,8 @@ public final class LiveMigrationPreflightService {
             List<String> missing = new ArrayList<>();
             List<String> fields = new ArrayList<>();
             List<Long> attachments = new ArrayList<>();
+            String plannedSku = null;
+            boolean ownerRetainedManual = false;
             Long thumbnailId = parseLong(meta.get("_thumbnail_id"));
             var attachmentOverride = attachmentOverridePlanner.plan(
                     post.id(), post.postParent(), thumbnailId, mapped.galleryAttachmentIds());
@@ -847,7 +900,36 @@ public final class LiveMigrationPreflightService {
                     || reason.contains("another product"))) {
                 action = Action.CONFLICT;
             } else if (existing == null) {
-                require(missing, "sku", mapped.sku());
+                if (!hasText(mapped.sku())) {
+                    if (skippedDuplicateVariants.contains(post.id())) {
+                        // WordPress holds a second, identical row for this colour/size. Only the
+                        // first is imported; nothing is deleted on the old site.
+                        ownerRetainedManual = true;
+                        reasons.add("Owner reviewed this row as an exact duplicate of an earlier "
+                                + "variation with the same options");
+                    } else if (skuGenerationParents.contains(post.postParent())) {
+                        plannedSku = generateVariantSku(
+                                parent.plan().sourceSku(), mapped.attributes(), reservedSkus);
+                        if (plannedSku == null) {
+                            issues.add(new Issue("BLOCKER", "VARIANT", Long.toString(post.id()),
+                                    "VARIANT_SKU_GENERATION_FAILED",
+                                    "No unique SKU could be derived from the parent SKU and the "
+                                            + "variation options"));
+                        } else {
+                            reservedSkus.add(plannedSku);
+                            reasons.add("SKU generated from the parent SKU and the reviewed "
+                                    + "variation options: " + plannedSku);
+                        }
+                    } else if (retainedManualParents.contains(post.postParent())) {
+                        // Owner keeps the hand-entered variants of this product. Skipping is the
+                        // decision, not an unresolved gap, so no required field may stay open.
+                        ownerRetainedManual = true;
+                        reasons.add("Owner keeps the hand-entered variants of this product");
+                    }
+                }
+                if (!ownerRetainedManual) {
+                    require(missing, "sku", plannedSku == null ? mapped.sku() : plannedSku);
+                }
                 require(missing, "name", post.postTitle());
                 require(missing, "stockState", meta.get("_stock_status"));
                 if (!"VND".equalsIgnoreCase(sourceCurrency)) missing.add("currency");
@@ -855,7 +937,8 @@ public final class LiveMigrationPreflightService {
                     missing.add("retailPrice");
                 }
                 if (!hasText(targetParentId)) missing.add("productId");
-                action = missing.isEmpty() ? Action.INSERT : Action.SKIP;
+                action = ownerRetainedManual || !missing.isEmpty() ? Action.SKIP : Action.INSERT;
+                if (ownerRetainedManual) missing.clear();
                 if (action == Action.INSERT) {
                     addAttachmentReferences(mediaReferences, attachments, attachmentPaths,
                             "VARIANT", Long.toString(post.id()));
@@ -903,9 +986,117 @@ public final class LiveMigrationPreflightService {
                     post.id(), post.postParent(), trimToNull(mapped.sku()), targetId,
                     targetParentId, matchMethod, action, List.copyOf(fields), List.copyOf(missing),
                     mapped.attributes() == null ? Map.of() : Map.copyOf(mapped.attributes()),
-                    attachments, List.copyOf(reasons)));
+                    attachments, plannedSku, List.copyOf(reasons)));
         }
         return new VariantResult(List.copyOf(plans), List.copyOf(mediaReferences), List.copyOf(issues));
+    }
+
+    /**
+     * Resolves the bilingual wording for one source product.
+     *
+     * <p>Two independent cases, both owner-reviewed and both fail-closed:</p>
+     * <ul>
+     *   <li>Polylang pairs this Vietnamese post with an English one. The pair claimed by the owner
+     *       file is verified against the source taxonomies before anything is planned — a mismatch
+     *       raises a blocker rather than silently importing half a translation.</li>
+     *   <li>The source is one of the published English-only products and the owner supplied the
+     *       Vietnamese wording. The English original moves into the {@code *_en} columns.</li>
+     * </ul>
+     *
+     * @return null when the product is single-language
+     */
+    private ProductTranslationPlan planProductTranslation(
+            LiveWordPressSnapshotReader.Snapshot source,
+            WpPost post,
+            LiveMigrationOwnerOverrides.Config ownerOverrides,
+            List<Issue> issues) {
+
+        var merge = ownerOverrides.translationMerge();
+        if (merge != null && merge.enabled() && merge.pairs().containsKey(post.id())) {
+            long partnerId = merge.pairs().get(post.id());
+            String group = translationGroup(source, post.id(), merge.translationGroupTaxonomy());
+            String partnerGroup = translationGroup(source, partnerId, merge.translationGroupTaxonomy());
+            WpPost partner = source.postsById().get(partnerId);
+            boolean verified = partner != null
+                    && group != null && group.equals(partnerGroup)
+                    && merge.primaryLanguageSlug().equals(
+                            languageSlug(source, post.id(), merge.languageTaxonomy()))
+                    && merge.secondaryLanguageSlug().equals(
+                            languageSlug(source, partnerId, merge.languageTaxonomy()));
+            if (!verified) {
+                issues.add(new Issue("BLOCKER", "PRODUCT", Long.toString(post.id()),
+                        "TRANSLATION_PAIR_UNVERIFIED",
+                        "Source taxonomies do not confirm the reviewed translation pair "
+                                + post.id() + "<-" + partnerId));
+                return null;
+            }
+            var partnerMapped = productMapper.map(
+                    partner, source.metaByPost().getOrDefault(partnerId, List.of()));
+            return new ProductTranslationPlan(
+                    "POLYLANG_TRANSLATION_PAIR", partnerId, group,
+                    null, null, null, null, null,
+                    trimToNull(partnerMapped.name()), trimToNull(partner.postName()),
+                    trimToNull(partner.postExcerpt()), trimToNull(partnerMapped.description()),
+                    trimToNull(partnerMapped.seoTitle()), trimToNull(partnerMapped.seoDescription()));
+        }
+
+        var owned = ownerOverrides.sourceTranslationOverrides().stream()
+                .filter(value -> value.sourceId() == post.id()).findFirst().orElse(null);
+        if (owned == null) return null;
+        var mapped = productMapper.map(
+                post, source.metaByPost().getOrDefault(post.id(), List.of()));
+        return new ProductTranslationPlan(
+                "OWNER_SUPPLIED_TRANSLATION", null,
+                translationGroup(source, post.id(),
+                        merge == null ? "post_translations" : merge.translationGroupTaxonomy()),
+                trimToNull(owned.nameVi()), trimToNull(owned.shortDescriptionVi()),
+                trimToNull(owned.descriptionVi()), trimToNull(owned.seoTitleVi()),
+                trimToNull(owned.seoDescriptionVi()),
+                trimToNull(mapped.name()), trimToNull(post.postName()),
+                trimToNull(post.postExcerpt()), trimToNull(mapped.description()),
+                trimToNull(mapped.seoTitle()), trimToNull(mapped.seoDescription()));
+    }
+
+    private String translationGroup(
+            LiveWordPressSnapshotReader.Snapshot source, long postId, String taxonomy) {
+        return source.taxonomyTerms(postId, taxonomy).stream()
+                .map(term -> trimToNull(term.term().slug()))
+                .filter(java.util.Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private String languageSlug(
+            LiveWordPressSnapshotReader.Snapshot source, long postId, String taxonomy) {
+        return source.taxonomyTerms(postId, taxonomy).stream()
+                .map(term -> normalizeSlug(term.term().slug()))
+                .filter(java.util.Objects::nonNull).findFirst().orElse(null);
+    }
+
+    /**
+     * Builds the owner-approved SKU for a variation WordPress left without one:
+     * {@code <parent SKU>-<option value>-…}, options ordered by attribute name so the result is
+     * identical on every run. Each option value is stripped of Vietnamese diacritics and of every
+     * character that is not a letter or digit, then upper-cased — {@code Đen Đỏ Trắng} becomes
+     * {@code DENDOTRANG}.
+     *
+     * <p>Returns null when the parent has no SKU, when the variation carries no usable options,
+     * or when the result would collide with a SKU that is already spoken for. The caller turns a
+     * null into a blocker instead of inventing a fallback.</p>
+     */
+    static String generateVariantSku(
+            String parentSku, Map<String, String> attributes, Set<String> reservedSkus) {
+        String parent = normalizeSku(parentSku);
+        if (parent == null || attributes == null || attributes.isEmpty()) return null;
+        List<String> tokens = attributes.entrySet().stream()
+                .filter(entry -> hasText(entry.getKey()) && hasText(entry.getValue()))
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> ProductSlugGenerator.toSlug(entry.getValue()).replace("-", ""))
+                .filter(LiveMigrationPreflightService::hasText)
+                .map(token -> token.toUpperCase(Locale.ROOT))
+                .toList();
+        if (tokens.isEmpty()) return null;
+        String candidate = parent + "-" + String.join("-", tokens);
+        if (candidate.length() > 100) return null;
+        return reservedSkus.contains(candidate) ? null : candidate;
     }
 
     private ArticleResult planArticles(
@@ -1570,9 +1761,17 @@ public final class LiveMigrationPreflightService {
             List<LiveMigrationOwnerOverrides.UnavailableFileFallback> fallbacks) {
         Set<String> excluded = new HashSet<>();
         for (LiveMigrationOwnerOverrides.UnavailableFileFallback fallback : fallbacks) {
+            String path = LiveMediaPlanner.normalizeRelativePath(fallback.relativePath());
+            if (fallback.entityType().startsWith("SOURCE_")) {
+                // The dead image is embedded in a WordPress source post, so the reference is
+                // keyed by the source entity rather than by a target field.
+                excluded.add(fallback.entityType().substring("SOURCE_".length())
+                        + "|" + fallback.entityId() + "|" + path);
+                continue;
+            }
             for (String field : fallback.fields()) {
                 excluded.add("TARGET_" + fallback.entityType() + "|"
-                        + fallback.entityId() + ":" + field + "|" + fallback.relativePath());
+                        + fallback.entityId() + ":" + field + "|" + path);
             }
         }
         return references.stream().filter(reference -> !excluded.contains(

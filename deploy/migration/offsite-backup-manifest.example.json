@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "snapshotId": "final-YYYYMMDDTHHMMSSZ",
+  "sourceDumpSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "verifiedReadableAt": "2026-08-03T02:00:00Z",
+  "retentionUntil": "2026-09-15T02:00:00Z",
+  "artifacts": [
+    { "kind": "SOURCE_DATABASE", "location": "s3://example-private-bucket/bigbike/source-db.sql.gz", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bytes": 1, "verifiedReadable": true },
+    { "kind": "SOURCE_UPLOADS", "location": "s3://example-private-bucket/bigbike/source-uploads.tar.zst", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "bytes": 1, "verifiedReadable": true },
+    { "kind": "TARGET_DATABASE", "location": "s3://example-private-bucket/bigbike/target-db.sql.gz", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "bytes": 1, "verifiedReadable": true },
+    { "kind": "TARGET_MEDIA_METADATA", "location": "s3://example-private-bucket/bigbike/target-media-metadata.json.gz", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "bytes": 1, "verifiedReadable": true },
+    { "kind": "NGINX_CONFIG", "location": "s3://example-private-bucket/bigbike/nginx-config.tar.zst", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "bytes": 1, "verifiedReadable": true },
+    { "kind": "DEPLOYMENT_CONFIG", "location": "s3://example-private-bucket/bigbike/deployment-config.tar.zst", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "bytes": 1, "verifiedReadable": true }
+  ]
+}

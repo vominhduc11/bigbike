@@ -1,0 +1,192 @@
+{
+  "version": 2,
+  "ownerDecisionDate": "2026-08-03",
+  "duplicateProductSelection": {
+    "sku": "SCS-S10X",
+    "sourceIds": [41038, 41181],
+    "selectionRule": "LATEST_POST_MODIFIED_GMT",
+    "expectedSelectedSourceId": 41181,
+    "mergeAllowed": false,
+    "selectedProductStatus": "DRAFT",
+    "excludedAliasPolicy": "RELATED_CATEGORY_OR_ACKNOWLEDGED_NO_SAFE_TARGET"
+  },
+  "productInference": {
+    "enabled": true,
+    "brandRuleId": "BRAND_EXACT_TARGET_TOKEN_OR_FALLBACK_V1",
+    "brandFallbackSlug": "uncategorized-brand",
+    "brandAliases": {},
+    "genderTokenRuleId": "GENDER_EXACT_TOKEN_V1",
+    "femaleTokens": ["nữ", "lady", "women", "female"],
+    "maleTokens": ["nam", "man", "men", "male"],
+    "unisexTokens": ["unisex"],
+    "neutralCategoryRuleId": "GENDER_NEUTRAL_EQUIPMENT_CATEGORY_V2",
+    "unisexNeutralSourceCategorySlugs": [
+      "balo-deo-lung-tui-deo-tui-treo-xe",
+      "balo-deo-lung",
+      "tui-treo-theo-xe",
+      "tui-deo-dui",
+      "tui-deo-hong-tui-bao-tu",
+      "tai-nghe-bluetooth-gan-mu-bao-hiem",
+      "pinlock-kinh-chong-suong-mu",
+      "phu-kien-gia-do-dien-thoai",
+      "quadlock",
+      "kewig",
+      "giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",
+      "mu-bao-hiem-fullface",
+      "mu-bao-hiem-fullface-lat-ham",
+      "mu-bao-hiem-3-4",
+      "mu-bao-hiem-cao-cao-dual-sport",
+      "non-fullface-ls2"
+    ],
+    "skuRuleId": "SKU_UNIQUE_CLEAR_MODEL_CODE_V1",
+    "skuIgnoredTokens": [
+      "2K", "4K", "11L", "15L", "18L", "20L", "25L", "30L", "40L",
+      "V2", "V3", "LEVEL-1", "LEVEL-2"
+    ],
+    "manualFieldOverrides": [
+      {
+        "sourceId": 35222,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states NAM/NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V2",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 38995,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V2",
+        "confidence": "OWNER_CONFIRMED"
+      },
+      {
+        "sourceId": 39004,
+        "field": "gender",
+        "value": "Unisex",
+        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "ruleId": "OWNER_MANUAL_GENDER_V2",
+        "confidence": "OWNER_CONFIRMED"
+      }
+    ]
+  },
+  "sourceMediaRecovery": {
+    "recoveryManifestVersion": 1,
+    "approvedFiles": [
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-1.png",
+        "sha256": "bc5a2bd956008153396e2b6d6781a2b151ad09a31c697d2ff4851467d17009a3",
+        "bytes": 433464,
+        "mimeType": "image/png"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-1.jpg",
+        "sha256": "81583f368b5cdc00537f1d5a7b96c85fddb0a7740e6f2a6fe25c56e3da147db8",
+        "bytes": 178634,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-3.jpg",
+        "sha256": "d238bdc303f94f4682c065e49bef680631d22f00ec7402758d0580fb7566ea6b",
+        "bytes": 186754,
+        "mimeType": "image/jpeg"
+      },
+      {
+        "relativePath": "2024/01/quan-bao-ho-ls2-straight-man-4.jpg",
+        "sha256": "688e7b5578a2b972e92b53ba0b785eaf305abf9e7b264c2e42f5e96343f84c4c",
+        "bytes": 160305,
+        "mimeType": "image/jpeg"
+      }
+    ],
+    "unavailableFileFallbacks": [
+      {
+        "relativePath": "2021/05/mua-giay-scoyco-alpinestar-1024x772.png",
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-26064",
+        "fields": ["body", "body_en"],
+        "action": "REMOVE_EXACT_DEAD_IMAGE_ONLY"
+      }
+    ],
+    "variantAttachmentOverrides": [
+      {
+        "sourceVariantId": 30187,
+        "sourceParentId": 30183,
+        "expectedThumbnailAttachmentId": 30186,
+        "expectedGalleryAttachmentIds": [30184, 30185],
+        "retainedGalleryAttachmentIds": [30185],
+        "action": "REMOVE_EXACT_MISSING_GALLERY_REFERENCE",
+        "evidence": "Owner approved removing only missing attachment 30184; retain thumbnail 30186 and gallery attachment 30185."
+      },
+      {
+        "sourceVariantId": 30188,
+        "sourceParentId": 30183,
+        "expectedThumbnailAttachmentId": 30186,
+        "expectedGalleryAttachmentIds": [30184, 30185],
+        "retainedGalleryAttachmentIds": [30185],
+        "action": "REMOVE_EXACT_MISSING_GALLERY_REFERENCE",
+        "evidence": "Owner approved removing only missing attachment 30184; retain thumbnail 30186 and gallery attachment 30185."
+      }
+    ]
+  },
+  "targetMediaCleanup": {
+    "missingObjectPolicy": "DELETE_ROW_ONLY_IF_ZERO_REFERENCES_AFTER_FINAL_SCAN",
+    "duplicateCanonicalPriority": [
+      "OBJECT_EXISTS_AND_HASH_MATCHES",
+      "HIGHEST_REFERENCE_COUNT",
+      "ADMIN_OR_AUDIT_PROVENANCE",
+      "OLDEST_CREATED_AT",
+      "LEXICOGRAPHIC_ID_TIE_BREAKER"
+    ],
+    "deleteDuplicateObjectsBeforeCutover": false,
+    "duplicateObjectRetentionHours": 24
+  },
+  "redirects": {
+    "acknowledgeNoSafeTarget": true,
+    "acknowledgedAction": "ACKNOWLEDGED_NO_SAFE_TARGET",
+    "allowHomepageFallback": false,
+    "allowGenericProductListingFallback": false
+  },
+  "targetContent": {
+    "unlinkDeadInternalAnchors": true,
+    "preserveAnchorText": true,
+    "removePlainTextUrls": false,
+    "removeStructuredUrls": false,
+    "rewriteExternalLinks": false,
+    "exactFieldMutations": [
+      {
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-41091",
+        "field": "body_blocks",
+        "action": "REMOVE_EXACT_JSON_IMAGE_NODES",
+        "targetMediaIds": [
+          "738a58ea-f268-4f7a-8f35-57ecb1b6b1cc",
+          "b80fbd1c-2da5-488e-86ed-22c4c38fa6dd",
+          "e8bb5168-7d5c-4a1c-be6b-63a7d2bdc65d"
+        ],
+        "exactValues": [
+          "/media/wp-uploads/2026/03/Non-bao-hiem-fullface-dat-chuan.jpg",
+          "/media/wp-uploads/2026/03/Bang-chon-size-non-phu-hop-cho-tung-co-dau.jpg",
+          "/media/wp-uploads/2026/03/Mu-bao-hiem-fullface-tai-Bigbike.jpg"
+        ],
+        "expectedBeforeSha256": "9c2f10d7789c92a8751ee2001b88bcbbccc0021dd215acdf9336b76b39d3d4e6",
+        "expectedAfterSha256": "1f1f1228bc8f134f9ebc7dbec3094d97ce1a18c7ea4fcf706801c2d9d1ed6d4f",
+        "plannedNull": false,
+        "evidence": "Owner approved removing only the three exact missing image nodes while preserving every remaining JSON element and prose byte-for-byte."
+      },
+      {
+        "entityType": "ARTICLE",
+        "entityId": "wp-art-41091",
+        "field": "cover_image_url",
+        "action": "SET_NULL_IF_EXACT_VALUE",
+        "targetMediaIds": ["ced523f3-c757-4546-afbd-f526f96d7b43"],
+        "exactValues": [
+          "https://media.bigbike.vn/bigbike-media/wp-uploads/2026/03/shop-mu-bao-hiem-gan-day-thumbnail.jpg"
+        ],
+        "expectedBeforeSha256": "5baec1551ea07d7aeb2bfe50cc7fa4a5f56c6153c7e525ced204c29f0bcdde52",
+        "expectedAfterSha256": null,
+        "plannedNull": true,
+        "evidence": "Owner approved nulling only the exact missing cover URL; the media row remains until a fresh separately confirmed cleanup scan."
+      }
+    ]
+  }
+}
