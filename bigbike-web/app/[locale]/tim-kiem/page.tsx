@@ -72,9 +72,14 @@ export default async function SearchPage({ params }: SearchPageProps) {
 
         <div id="main-content">
           <Container>
+            {/* canonicalPath phải dịch theo locale: CatalogClient dùng nó làm gốc cho
+                link phân trang (buildPaginationHref) và nút xoá lọc. Truyền thẳng
+                SEARCH_PATH thì trang /en/search/ phát toàn bộ link về /tim-kiem/, kéo
+                bản EN sang không gian URL tiếng Việt — generateMetadata ở trên đã
+                dịch cho canonical, chỗ này phải khớp. */}
             <Suspense fallback={null}>
               <CatalogClient
-                canonicalPath={SEARCH_PATH}
+                canonicalPath={translatePath(SEARCH_PATH, locale)}
                 brands={brandsResult.data}
                 categories={filterCategories}
                 facets={facetsResult.data}

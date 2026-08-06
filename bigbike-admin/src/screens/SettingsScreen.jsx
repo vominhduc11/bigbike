@@ -113,10 +113,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     const map = new Map()
     for (const s of state.items) {
       if (HIDDEN_KEYS.has(s.key)) continue
-      // Super-admin-only settings (vd phân công sản phẩm) chỉ hiện với super admin.
-      if (s.superAdminOnly && !isSuperAdmin) continue
       const g = (s.settingGroup || 'GENERAL').toUpperCase()
       if (HIDDEN_GROUPS.has(g)) continue
+      // Product-assignment settings remain hidden and have their own synthetic tab below.
+      // (Chế độ bảo trì đã rời khỏi màn này ở V374 — nay có màn riêng cho DEVELOPER.)
+      if (s.superAdminOnly && !isSuperAdmin) continue
       if (!map.has(g)) map.set(g, [])
       map.get(g).push(s)
     }
@@ -397,7 +398,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       itemCount: items.length,
       dirtyCount: items.filter((setting) => isSettingDirty(setting, drafts, draftsEn)).length,
       sensitive: SENSITIVE_SETTING_TABS.has(tab.id),
-      restricted: false,
+      restricted: !isSuperAdmin && items.length > 0 && items.every((setting) => setting.superAdminOnly),
     }
   }
   const tabInfos = navTabs.map(getTabInfo)
@@ -631,6 +632,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 drafts={drafts}
                 draftsEn={draftsEn}
                 errors={errors}
+                isSuperAdmin={isSuperAdmin}
                 onDraftChange={handleDraftChange}
                 onDraftChangeEn={handleDraftChangeEn}
                 onDraftBlur={handleDraftBlur}

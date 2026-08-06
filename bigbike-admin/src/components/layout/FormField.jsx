@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useId } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, AlertTriangle } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
@@ -9,16 +9,20 @@ import { cn } from '@/lib/utils'
  * vào control con, để trạng thái lỗi/bắt buộc không chỉ dựa vào màu (control nhận viền đỏ
  * qua aria-invalid, kèm icon ở dòng lỗi). `full` trải field ra 2 cột grid; `count`/`countWarn`
  * hiện bộ đếm ký tự đối diện nhãn (dùng cho field có giới hạn độ dài).
+ *
+ * `warning` là cảnh báo MỀM: giá trị hợp lệ, vẫn lưu được, chỉ nhắc admin xem lại — khác `error`
+ * (chặn lưu, viền đỏ, aria-invalid). Thứ tự ưu tiên hiển thị: error > warning > helper.
  */
-export function FormField({ label, required, helper, error, htmlFor, count, countWarn, full, children }) {
+export function FormField({ label, required, helper, error, warning, htmlFor, count, countWarn, full, children }) {
   const autoId = useId()
   // Nếu control con tự đặt id, ưu tiên id đó để htmlFor của Label khớp đúng control
   // (tránh Label trỏ vào autoId trong khi control mang id riêng).
   const childId = isValidElement(children) ? children.props.id : undefined
   const fieldId = htmlFor || childId || autoId
   const errorId = `${fieldId}-error`
+  const warningId = `${fieldId}-warning`
   const helperId = `${fieldId}-helper`
-  const describedBy = error ? errorId : helper ? helperId : undefined
+  const describedBy = error ? errorId : warning ? warningId : helper ? helperId : undefined
 
   const control = isValidElement(children)
     ? cloneElement(children, {
@@ -47,8 +51,18 @@ export function FormField({ label, required, helper, error, htmlFor, count, coun
         </div>
       ) : null}
       {control}
-      {helper && !error ? (
+      {helper && !error && !warning ? (
         <span id={helperId} className="text-xs text-muted-foreground">{helper}</span>
+      ) : null}
+      {warning && !error ? (
+        <span
+          id={warningId}
+          className="flex items-center gap-1 text-xs text-[var(--admin-color-status-warning-text)] font-semibold"
+          role="status"
+        >
+          <AlertTriangle size={13} aria-hidden="true" className="shrink-0" />
+          {warning}
+        </span>
       ) : null}
       {error ? (
         <span id={errorId} className="flex items-center gap-1 text-xs text-danger font-semibold" role="alert">

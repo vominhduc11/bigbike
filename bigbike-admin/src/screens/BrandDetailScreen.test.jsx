@@ -27,13 +27,22 @@ function formWithSeo(overrides = {}) {
 }
 
 describe('BrandDetailScreen toPayload', () => {
+  // canonicalUrl không còn gửi từ form (SEO_RULE_003 — tự sinh từ slug ở tầng web);
+  // noIndex/noIndexEn thêm ở V371 (SEO_RULE_001 — cờ tách riêng VI/EN).
   it('gửi khối SEO rỗng rõ ràng để xóa dữ liệu cũ', () => {
     expect(toBrandPayload(formWithSeo()).seo).toEqual({
       title: null,
       description: null,
-      canonicalUrl: null,
+      noIndex: false,
+      noIndexEn: false,
       ogImage: null,
     })
+  })
+
+  it('gửi cờ cho-Google-hiển-thị tách riêng cho từng ngôn ngữ', () => {
+    const payload = toBrandPayload(formWithSeo({ seoNoIndex: false, seoNoIndexEn: true }))
+    expect(payload.seo.noIndex).toBe(false)
+    expect(payload.seo.noIndexEn).toBe(true)
   })
 
   it('giữ nội dung mô tả ảnh chia sẻ khi có ảnh', () => {

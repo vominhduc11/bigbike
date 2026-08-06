@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -27,6 +27,7 @@ import { queryKeys } from '../lib/queryKeys'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -89,7 +90,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
   // Snapshot of the edit form taken at open time, to detect unsaved changes (F6)
-  const editItemSnapshotRef = useRef(EMPTY_ITEM)
+  const [editItemSnapshot, setEditItemSnapshot] = useState(EMPTY_ITEM)
 
   // ── Queries ────────────────────────────────────────────────────────────────
   // Pull the full menu list once so we can map location → menuId without
@@ -111,6 +112,22 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
 
   const selectedMenuSummary = menuByLocation.get(selectedLocation) ?? null
   const selectedMenuId = selectedMenuSummary?.id ?? null
+
+  const addDraftKey = `draft:menu-add:${selectedLocation}`
+  const editDraftKey = `draft:menu-edit:${selectedMenuId ?? 'none'}:${editItem?.id ?? 'none'}`
+  const { clear: clearAddDraft } = useDraftAutosave(
+    addDraftKey,
+    { menuId: selectedMenuId, form: newItem },
+    { enabled: showItemModal, dirty: showItemModal && JSON.stringify(newItem) !== JSON.stringify(EMPTY_ITEM) },
+  )
+  const { clear: clearEditDraft } = useDraftAutosave(
+    editDraftKey,
+    { menuId: selectedMenuId, itemId: editItem?.id ?? null, form: editItemForm },
+    {
+      enabled: Boolean(editItem),
+      dirty: Boolean(editItem) && JSON.stringify(editItemForm) !== JSON.stringify(editItemSnapshot),
+    },
+  )
 
   const {
     data: detailData,
@@ -193,6 +210,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
       setShowItemModal(false)
       setNewItem(EMPTY_ITEM)
+      clearAddDraft()
       toast.success(t('menus.addItem'))
     },
     onError: (e) => setItemError(e.message || t('common.error')),
@@ -225,6 +243,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
+      clearEditDraft()
       setEditItem(null)
       toast.success(t('menus.saveMenu'))
     },
@@ -452,16 +471,24 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       targetType: item.targetType || 'CUSTOM',
       targetId: item.targetId || '',
     }
+    const saved = readDraft(`draft:menu-edit:${selectedMenuId ?? 'none'}:${item.id}`)
+    const savedForm = saved?.value?.menuId === selectedMenuId && saved?.value?.itemId === item.id
+      ? saved.value.form
+      : null
     setEditItem(item)
-    setEditItemForm(form)
-    editItemSnapshotRef.current = form
+    setEditItemForm(savedForm ? { ...form, ...savedForm } : form)
+    setEditItemSnapshot(form)
     setEditItemError('')
+    if (savedForm) toast.info(t('menus.draftRestored', { defaultValue: 'Đã khôi phục bản nháp mục menu.' }))
   }
 
   function openAddItem() {
-    setNewItem(EMPTY_ITEM)
+    const saved = readDraft(addDraftKey)
+    const savedForm = saved?.value?.menuId === selectedMenuId ? saved.value.form : null
+    setNewItem(savedForm ? { ...EMPTY_ITEM, ...savedForm } : EMPTY_ITEM)
     setItemError('')
     setShowItemModal(true)
+    if (savedForm) toast.info(t('menus.draftRestored', { defaultValue: 'Đã khôi phục bản nháp mục menu.' }))
   }
 
   // F6 — đóng modal Thêm mục: hỏi xác nhận nếu form đang khác EMPTY_ITEM (còn
@@ -479,11 +506,12 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     setShowItemModal(false)
     setNewItem(EMPTY_ITEM)
     setItemError('')
+    clearAddDraft()
   }
 
   // F6 — đóng modal Sửa mục: so với snapshot lấy lúc mở modal thay vì EMPTY_ITEM.
   async function closeEditModal() {
-    const dirty = JSON.stringify(editItemForm) !== JSON.stringify(editItemSnapshotRef.current)
+    const dirty = JSON.stringify(editItemForm) !== JSON.stringify(editItemSnapshot)
     if (dirty) {
       const confirmed = await showConfirm(
         t('menus.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?' }),
@@ -493,6 +521,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     }
     setEditItem(null)
     setEditItemError('')
+    clearEditDraft()
   }
 
 

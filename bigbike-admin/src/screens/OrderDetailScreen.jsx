@@ -15,6 +15,7 @@ import { ORDER_STATUS_TONE } from '../lib/statusTone'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
+import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { useAdminPresence } from '../lib/useAdminPresence'
 import { Button } from '@/components/ui/button'
@@ -113,6 +114,19 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     return unsubscribe
   }, [orderId, queryClient])
 
+  // Khi hệ thống mở lại, tải lại dữ liệu thật của đơn. Không khôi phục trạng thái
+  // lạc quan và không tự tải lại toàn bộ trang admin.
+  useEffect(() => {
+    const unsubscribe = subscribeAdminWs('/topic/admin/maintenance', (event) => {
+      if (event?.state === 'NORMAL') {
+        queryClient.invalidateQueries({ queryKey: ['order', orderId] })
+        queryClient.invalidateQueries({ queryKey: ['order-transitions', orderId] })
+        queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
+      }
+    })
+    return unsubscribe
+  }, [orderId, queryClient])
+
   const order = orderQuery.data?.item ?? null
   const transitionsQuery = useQuery({
     queryKey: ['order-transitions', orderId, order?.orderStatus],
@@ -128,6 +142,15 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [saving, setSaving] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [reasonModal, setReasonModal] = useState(null)
+  const [reasonDraft, setReasonDraft] = useState('')
+  const [unsavedActionWarning, setUnsavedActionWarning] = useState('')
+
+  const orderReasonDraftKey = `draft:order-detail:${orderId}:status-reason`
+  const { clear: clearOrderReasonDraft } = useDraftAutosave(
+    orderReasonDraftKey,
+    { orderId, targetStatus: reasonModal?.targetStatus ?? null, reason: reasonDraft },
+    { enabled: Boolean(reasonModal), dirty: Boolean(reasonModal && reasonDraft.trim()) },
+  )
 
   useUnsavedChanges(false)
 
@@ -151,11 +174,31 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       const response = await updateOrderStatus(orderId, newStatus, reason)
       const updatedOrder = response.item
       applyOrderUpdate(updatedOrder)
+      clearOrderReasonDraft()
+      setUnsavedActionWarning('')
       toast.success(t('orders.detail.statusUpdated'))
       return true
     } catch (err) {
       toast.error(getOrderMutationError(err, t))
       const errorStatus = Number(err?.status)
+      // 423 MAINTENANCE_ACTIVE: khoá bảo trì trang quản trị đã từ chối thao tác ghi.
+      // Cố ý KHÔNG dùng 503 — nginx nuốt thân phản hồi 503 nên mã lỗi không tới được đây.
+      const maintenanceFailure = err?.code === 'MAINTENANCE_ACTIVE'
+        || errorStatus === 423
+        || errorStatus === 0
+        || err?.code === 'NETWORK_ERROR'
+      if (maintenanceFailure) {
+        setUnsavedActionWarning(t('orders.detail.unsavedActionWarning', {
+          defaultValue: 'Thao tác CHƯA được lưu. Hệ thống đang bảo trì hoặc kết nối đã ngắt. Sau khi hệ thống hoạt động, dữ liệu đơn sẽ được tải lại.',
+        }))
+        setReasonModal(null)
+        clearOrderReasonDraft()
+        await Promise.allSettled([
+          orderQuery.refetch(),
+          transitionsQuery.refetch(),
+          auditQuery.refetch(),
+        ])
+      }
       if (errorStatus === 404) {
         setReasonModal(null)
         queryClient.invalidateQueries({ queryKey: ['orders'] })
@@ -178,6 +221,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   async function handleStatusChange(newStatus) {
     if (REASON_REQUIRED.has(newStatus)) {
+      const saved = readDraft(orderReasonDraftKey)
+      const savedReason = saved?.value?.orderId != null
+        && String(saved.value.orderId) === String(orderId)
+        && saved.value.targetStatus === newStatus
+        ? saved.value.reason
+        : ''
+      setReasonDraft(savedReason || '')
       setReasonModal({ targetStatus: newStatus })
       return
     }
@@ -191,6 +241,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!confirmed) return
     }
     await doStatusChange(newStatus, undefined)
+  }
+
+  function closeReasonModal() {
+    clearOrderReasonDraft()
+    setReasonDraft('')
+    setReasonModal(null)
   }
 
   if (status === 'loading') {
@@ -298,6 +354,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       </div>
 
       {!canUpdate ? <ReadOnlyBanner warning={t('orders.readOnlyWarning')} /> : null}
+
+      {unsavedActionWarning ? (
+        <Alert tone="warning" size="sm" className="mb-4" role="alert">
+          {unsavedActionWarning}
+        </Alert>
+      ) : null}
 
       {orderQuery.isError && orderQuery.data ? (
         <Alert tone="danger" size="sm" className="mb-4 flex flex-wrap items-center justify-between gap-3" role="alert">
@@ -674,11 +736,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {reasonModal && (
         <ReasonConfirmModal
           loading={saving}
+          initialReason={reasonDraft}
+          onReasonChange={setReasonDraft}
           onConfirm={async (reason) => {
             const ok = await doStatusChange(reasonModal.targetStatus, reason)
-            if (ok) setReasonModal(null)
+            if (ok) {
+              setReasonDraft('')
+              setReasonModal(null)
+            }
           }}
-          onClose={() => setReasonModal(null)}
+          onClose={closeReasonModal}
         />
       )}
     </div>

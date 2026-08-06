@@ -25,6 +25,7 @@ public class SecurityConfig {
     private final RateLimitingFilter rateLimitingFilter;
     private final SecurityHeadersFilter securityHeadersFilter;
     private final PublicCacheHeaderFilter publicCacheHeaderFilter;
+    private final MaintenanceWriteLockFilter maintenanceWriteLockFilter;
     private final RestAuthenticationEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -133,7 +134,11 @@ public class SecurityConfig {
                 // Public catalog/content GETs: relax Cache-Control so browsers/CDN
                 // may cache briefly. Runs last — after Spring Security's default
                 // header writer — so the overwrite sticks before the controller runs.
-                .addFilterAfter(publicCacheHeaderFilter, CustomerCsrfFilter.class);
+                .addFilterAfter(publicCacheHeaderFilter, CustomerCsrfFilter.class)
+                // Admin maintenance lock runs last: it needs the AdminPrincipal that JwtAuthFilter
+                // put in the SecurityContext, and it deliberately passes unauthenticated requests
+                // through so AuthorizationFilter can still answer 401/403 rather than 423.
+                .addFilterAfter(maintenanceWriteLockFilter, PublicCacheHeaderFilter.class);
 
         return http.build();
     }

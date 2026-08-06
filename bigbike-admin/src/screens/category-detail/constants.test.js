@@ -16,13 +16,27 @@ describe('Category payload contract', () => {
     expect(payload).not.toHaveProperty('visible')
   })
 
+  // canonicalUrl không còn được gửi từ form: SEO_RULE_003 — canonical tự sinh từ slug
+  // theo locale ở tầng web, ô nhập tay đã gỡ (2026-08-06) vì web chưa bao giờ đọc nó.
+  // noIndex/noIndexEn thêm ở V371 — cờ cho-Google-hiển-thị tách riêng VI/EN (SEO_RULE_001).
   it('always sends an explicit SEO block and normalizes blank values to null', () => {
     expect(toPayload(buildEmptyForm()).seo).toEqual({
       title: null,
       description: null,
-      canonicalUrl: null,
+      noIndex: false,
+      noIndexEn: false,
       ogImage: null,
     })
+  })
+
+  it('gửi cờ cho-Google-hiển-thị tách riêng cho từng ngôn ngữ', () => {
+    const payload = toPayload({ ...buildEmptyForm(), seoNoIndex: true, seoNoIndexEn: false })
+    expect(payload.seo.noIndex).toBe(true)
+    expect(payload.seo.noIndexEn).toBe(false)
+  })
+
+  it('không còn gửi canonicalUrl từ form (SEO_RULE_003)', () => {
+    expect(toPayload(buildEmptyForm()).seo).not.toHaveProperty('canonicalUrl')
   })
 
   it('keeps the alt text of each persisted media role separate', () => {

@@ -76,3 +76,17 @@ Khung xem trước chỉ để **xem giao diện**, nên các thao tác/điều 
 | 2 | Web | Khi chọn tỉnh/thành, hiển thị trực tiếp phường/xã thuộc tỉnh; không có bước quận/huyện | `CONFIRMED_FROM_CODE` | `VnAddressFields.tsx` |
 
 API địa chỉ backend (`GET /api/v1/address/provinces[...]`) đã gỡ 2026-07-15 (AUD-056, owner decision #8 — web/admin không gọi, không có client ngoài); nguồn dữ liệu duy nhất là `VN_PROVINCES` tích hợp trong web. Field `district` chỉ là dữ liệu lịch sử, không được thu thập cho địa chỉ mới — xem `DATA_CONTRACT.md` §Address fields.
+
+## Maintenance Workflow (owner-confirmed 2026-08-06, thu gọn phạm vi cùng ngày)
+
+Không còn script trên máy chủ: toàn bộ luồng nằm trong màn **Bảo trì hệ thống** của trang quản trị, chỉ vai trò `DEVELOPER` nhìn thấy.
+
+| Bước | Người thực hiện | Luồng | Trạng thái | Căn cứ |
+|---|---|---|---|---|
+| 1 | Dev | Mở màn Bảo trì hệ thống, ghi lời nhắn cho nhân viên và giờ dự kiến xong | `CONFIRMED_FROM_OWNER_DECISION` | `API_CONTRACT.md` §Maintenance API |
+| 2 | Dev | Bấm "Báo trước cho nhân viên" → `UPCOMING`; mọi phiên admin đang mở nhận cảnh báo realtime qua STOMP | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_003` |
+| 3 | Nhân viên | Vẫn lưu được bình thường ở `UPCOMING`; tranh thủ hoàn tất việc đang làm dở | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_003` |
+| 4 | Dev | Bấm "Khoá ngay" → hộp xác nhận hiện số tệp đang tải lên dở dang; xác nhận thì chuyển `ACTIVE` | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_007` |
+| 5 | Hệ thống | Mọi thao tác ghi admin bị từ chối `423 MAINTENANCE_ACTIVE`; nhân viên (không phải dev) thấy hộp thông báo **che kín toàn màn** nên không thao tác được gì, kể cả tra cứu | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_004` |
+| 6 | Khách hàng | **Không bị ảnh hưởng gì** — duyệt web, thêm giỏ và đặt hàng bình thường suốt thời gian khoá | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_002` |
+| 7 | Dev | Bấm "Mở lại" → `NORMAL`; phiên admin của nhân viên tự hồi phục trong tối đa một chu kỳ (STOMP tức thì, poll 60 giây dự phòng) | `CONFIRMED_FROM_OWNER_DECISION` | `DEPLOYMENT_GUIDE.md` §Maintenance runbook |

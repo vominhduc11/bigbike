@@ -125,7 +125,7 @@
 | AUD-012 | Static content | Hai route hướng dẫn bắt buộc trả 404 | `static-pages.ts:68-90`; `huong-dan/[...sub]/page.tsx:11-15` | Code bug |
 | AUD-013 | Static content / i18n | Chuyển EN không kích hoạt nội dung EN của trang tĩnh | `i18n/request.ts:4-18`; `ClientIntlProvider.tsx:74-95` | Code bug |
 | AUD-014 | Catalog / i18n | List sản phẩm, thương hiệu, tin tức EN bị giữ dữ liệu VI và không refetch | `CatalogClient.tsx:78-135` | Code bug |
-| AUD-015 | SEO / i18n | Sitemap phát URL EN nhưng không tạo trang EN crawl độc lập | `sitemap.ts:91-158`; `routes.ts:292-313` | Code bug |
+| AUD-015 | SEO / i18n | Sitemap phát URL EN nhưng không tạo trang EN crawl độc lập | `sitemap.ts:91-158`; `routes.ts:292-313` | Code bug — **ĐÓNG 2026-08-06** (fix cũ hồi quy; thay bằng `SEO_RULE_002`) |
 | AUD-016 | Admin orders | List đơn hiển thị mọi đơn là chưa fulfil vì DTO thiếu field | `OrderListScreen.jsx:240-246`; `AdminOrderListItemResponse.java:7-20` | Code bug |
 | AUD-017 | Admin notifications | Cache thông báo có thể lộ chéo giữa tài khoản trên cùng trình duyệt | `NotificationBell.jsx:17,26-38,82-110` | Code bug bảo mật |
 | AUD-018 | Admin notifications | Một admin mở chuông làm mọi admin mất trạng thái chưa đọc | `V102__create_admin_notifications_table.sql:3-10`; `NotificationBell.jsx:116-143` | Code bug |

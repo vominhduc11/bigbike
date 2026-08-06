@@ -271,6 +271,46 @@ On update (`PATCH`), `null` cho bất kỳ field nào = giữ nguyên giá trị
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `UpsertArticleRequest.homeExperience`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`, `V272__add_article_home_experience.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)" và §"Article home_experience (V272)".
 
+> **Đã mở rộng ở V371** — `seo.noIndex` không còn là trường riêng của bài viết, và có thêm `seo.noIndexEn` ở phía ghi. Xem §"SEO `noIndex` cho cả 4 loại (V371)" ngay dưới.
+
+### SEO `noIndex` cho cả 4 loại (V371)
+
+Trước `V371`, `seo.noIndex` chỉ có ý nghĩa với **bài viết**; product/category/brand luôn
+serialize `false` (hardcode ở `JpaCatalogReadSupport.toSeoMeta`) và `seo.noIndex` gửi lên trong
+upsert bị **nhận rồi vứt im lặng** (`ProductFieldApplier.applySeo` không đọc `getNoIndex()`).
+Từ `V371`, cả 4 loại — **Product, Category, Brand, Article** — dùng chung contract dưới đây.
+Rule nghiệp vụ: [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) `SEO_RULE_001`, `SEO_RULE_002`.
+
+**Đọc (public + admin detail + admin/public list)**
+
+- `seo.noIndex` — boolean. **Giá trị đã resolve theo `lang` của request**, không phải giá trị thô
+  của cột:
+  - `lang=vi` → cờ tiếng Việt.
+  - `lang=en` → cờ tiếng Anh **HOẶC** bản EN chưa đạt ngưỡng đủ nội dung (`SEO_RULE_002`).
+    Nghĩa là một sản phẩm chưa dịch sẽ trả `seo.noIndex: true` khi đọc bằng `lang=en` dù admin
+    chưa tắt cờ nào.
+- Object `seo` có thể là `null` khi không có field SEO nào **và** `noIndex` = `false` → coi như
+  `false`. Khi `noIndex` = `true` thì `seo` luôn khác `null`.
+- **Thay đổi shape của list** (`GET /api/v1/products`, `/categories`, `/brands`): DTO danh sách
+  trước đây bỏ hẳn `seo` (`CatalogReadSupport.toListView` set `null // seo — detail only`). Nay
+  danh sách trả `seo` **chỉ chứa `noIndex`** (các field còn lại vẫn `null`, vì chúng là detail-only)
+  để `sitemap.xml` lọc được mà không phải gọi API chi tiết cho từng mục.
+
+**Ghi (admin upsert `POST`/`PATCH`)** — `SeoMetaRequest` áp dụng cho cả 4 loại:
+
+- `seo.noIndex` (boolean, nullable) — cờ **bản tiếng Việt**. `null` = giữ nguyên.
+- `seo.noIndexEn` (boolean, nullable) — cờ **bản tiếng Anh**. `null` = giữ nguyên.
+- Không có cách nào ghi đè ngưỡng `SEO_RULE_002` qua API: gửi `noIndexEn: false` cho một thực thể
+  chưa đủ nội dung EN vẫn cho ra `seo.noIndex: true` khi đọc bằng `lang=en`.
+
+**Phá vỡ tương thích cần lưu ý:** client nào đang gửi `seo.noIndex` cho product/category/brand và
+quen với việc nó bị bỏ qua thì nay giá trị **sẽ được lưu thật**.
+
+Status: `CONFIRMED_FROM_CODE` — `SeoMetaRequest`, `ProductFieldApplier.applySeo`,
+`ContentFieldApplier.applySeo`, `SeoIndexPolicy`, `JpaCatalogReadSupport.toSeoMeta`,
+`CatalogReadSupport.toListView`, migration `V371__add_seo_no_index_per_locale.sql`.
+Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"SEO noindex theo từng ngôn ngữ (V371)".
+
 ### Admin content list — sort params
 
 `GET /api/v1/admin/content` accepts an optional `sort` param in `field:direction` format (default `updatedAt:desc`). The allowed sort fields are whitelisted by `AdminContentReadService.CONTENT_SORT_FIELDS`:
@@ -808,13 +848,14 @@ Evidence: `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.
 `seo.canonicalUrl` is validated on **every** Product/Category/Brand upsert (`CatalogRequestValidator.validateProductRequest`/`validateCategoryRequest`/`validateBrandRequest`, all three call the shared `AdminMutationValidators.validateSeoMeta`) and every Article upsert (`ContentRequestValidator`) — including **preview**, which shares the exact same call with no carve-out for this field (unlike slug uniqueness, see "Product preview" above).
 
 Rule (`AdminMutationValidators.validatePublicUrl`): the URL must be `http(s)` and its **host** must be either:
-- `bigbike.vn` or `www.bigbike.vn` (always allowed),
-- `103.1.236.148` (owner-approved VPS/storefront IP used by the product JSON template, including `:3000` URLs), or
+- `bigbike.vn` or `www.bigbike.vn` (always allowed), or
 - `localhost` or `127.0.0.1` (allowed **only** when the backend's active Spring profile is `dev`/`mock`/`test`/`local` — `CatalogRequestValidator.isDev`/`ContentRequestValidator.isDev`, read from `Environment.getActiveProfiles()`).
 
-Any other host → `400 VALIDATION_ERROR` `field=seo.canonicalUrl, code=INVALID_VALUE, message="Canonical URL must belong to bigbike.vn, www.bigbike.vn, or 103.1.236.148."` — **on both preview and the real save**, since the rule is not preview-specific.
+Any other host → `400 VALIDATION_ERROR` `field=seo.canonicalUrl, code=INVALID_VALUE, message="Canonical URL must belong to bigbike.vn or www.bigbike.vn."` — **on both preview and the real save**, since the rule is not preview-specific.
 
-**Frontend contract this implies (`bigbike-admin`):** the product form never lets the admin type a canonical URL — `canonicalUrlFromSlug()` (`bigbike-admin/src/screens/product-detail/constants.js`) auto-derives it from the slug. Its base URL MUST resolve to `https://bigbike.vn` (or a literal `localhost`/`127.0.0.1` origin) to ever pass the rule above — it must **not** blindly reuse `VITE_STOREFRONT_BASE_URL`, because that env var is independently dedicated to the live-preview iframe's `src` (see "Admin storefront-preview URL" gotcha — on a VPS it is deliberately pinned to the server's public IP to dodge a Private Network Access block, not to the production domain). Conflating the two: any environment where `VITE_STOREFRONT_BASE_URL` is neither `bigbike.vn` nor `localhost`/`127.0.0.1` (e.g. a VPS IP) makes **every** product preview and save fail this check. This exact incident happened 2026-07-08 (host-allowlist rule shipped in a same-day refactor, `canonicalUrlFromSlug`'s reuse of `VITE_STOREFRONT_BASE_URL` had existed since 2026-06-21 with no backend host check to conflict with until then) — fixed by having `canonicalUrlFromSlug`'s base resolve the env var's host itself and fall back to `https://bigbike.vn` unless that host is literally `localhost`/`127.0.0.1`.
+**Changed 2026-08-06 (domain cutover):** the VPS public IP `103.1.236.148` used to be a third allowed host, back when the storefront was served at `http://103.1.236.148:3000` before DNS/TLS went live. Every public URL now runs through nginx on the real domains and the container ports are loopback-only, so the IP was dropped from the allowlist — a canonical URL pointing at it is now a validation error.
+
+**Frontend contract this implies (`bigbike-admin`):** the product form never lets the admin type a canonical URL — `canonicalUrlFromSlug()` (`bigbike-admin/src/screens/product-detail/constants.js`) auto-derives it from the slug. Its base URL MUST resolve to `https://bigbike.vn` (or a literal `localhost`/`127.0.0.1` origin) to ever pass the rule above — it must **not** blindly reuse `VITE_STOREFRONT_BASE_URL`, because that env var is independently dedicated to the live-preview iframe's `src` (see "Admin storefront-preview URL" gotcha — it must be an origin the browser can load AND one that `bigbike-web` lists in its `/preview/*` `frame-ancestors`; since the 2026-08-06 domain cutover both are `https://bigbike.vn`, but the two settings stay independent). Conflating the two: any environment where `VITE_STOREFRONT_BASE_URL` is neither `bigbike.vn` nor `localhost`/`127.0.0.1` (e.g. a VPS IP) makes **every** product preview and save fail this check. This exact incident happened 2026-07-08 (host-allowlist rule shipped in a same-day refactor, `canonicalUrlFromSlug`'s reuse of `VITE_STOREFRONT_BASE_URL` had existed since 2026-06-21 with no backend host check to conflict with until then) — fixed by having `canonicalUrlFromSlug`'s base resolve the env var's host itself and fall back to `https://bigbike.vn` unless that host is literally `localhost`/`127.0.0.1`.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -1180,10 +1221,14 @@ theo thứ tự gán. Object `brand` nhúng (`BrandSummary`) chỉ mang `id`/`sl
 
 **Ghi — `POST/PATCH` admin categories/products/articles:** `translations.en` nhận thêm
 khóa `slug` (optional): pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$`, max 100. Bỏ trống/null →
-xoá `slug_en` (URL EN fallback về vi). Validation uniqueness: `slugEn` trùng `slug` vi
-của entity này, hoặc trùng `slug`/`slug_en` của entity khác cùng loại → lỗi
-`DUPLICATE`/`INVALID_VALUE` tại path `translations.en.slug`; `slug` vi mới trùng
-`slug_en` đang có → lỗi tại path `slug`. Catalog đổi/xoá `slug_en` tự sinh redirect 301;
+xoá `slug_en` (URL EN fallback về vi). Validation uniqueness: `slugEn` trùng
+`slug`/`slug_en` của entity **khác** cùng loại → lỗi `DUPLICATE`/`INVALID_VALUE` tại path
+`translations.en.slug`; `slug` vi mới trùng `slug_en` đang có → lỗi tại path `slug`.
+**`slugEn` trùng `slug` vi của CHÍNH entity đó KHÔNG bị chặn** (owner decision 2026-08-06,
+xem `PRODUCT_RULE_003`): sản phẩm tên vốn tiếng Anh thì hai slug trùng nhau là hợp lệ —
+màn hình quản trị chỉ hiện cảnh báo mềm, API vẫn trả 200. (Bản trước của tài liệu mô tả
+đây là lỗi `DUPLICATE`; `CatalogRequestValidator.validateEnglishSlug` thực tế chưa từng
+chặn case này — nay chốt giữ nguyên hành vi code.) Catalog đổi/xoá `slug_en` tự sinh redirect 301;
 **bài viết KHÔNG sinh redirect** (module nội dung không có cơ chế này).
 
 **409 DATA_CONFLICT thân thiện — sản phẩm (2026-07-04):** nếu app-layer validation ở trên bị
@@ -1750,3 +1795,41 @@ Trang chi tiết sản phẩm (public `GET /api/v1/products/{slug}` + admin upse
 Status: `CONFIRMED_FROM_CODE` — `CatalogController` (public detail), `AdminCatalogController` (upsert/preview),
 `UpsertProductRequest` (`descriptionBlocks`, single presence flag since V326), `Product` domain record.
 Spec `featured` và các mảng cấu trúc `specifications`/`specStats`/`trustBadges` đã gỡ; xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Product specs HTML" / "Product spec-stats HTML" / "Product trust-badges HTML".
+
+## Maintenance API (owner-confirmed 2026-08-06, thu gọn phạm vi cùng ngày)
+
+Phạm vi: **admin panel only**. There is no public maintenance endpoint any more — the storefront never enters maintenance, so `GET /api/v1/maintenance/status` and the host-operated `POST /api/internal/maintenance/state` / `GET /api/internal/maintenance/uploads` were **removed** in the same change (V374). Nothing else on `/api/internal/**` changed; the redirect lookups keep sharing `BIGBIKE_INTERNAL_TOKEN`.
+
+### `GET /api/v1/admin/maintenance`
+
+Readable by **any** signed-in admin — deliberately not permission-gated, because every staff member must be able to see why the panel refuses to save. `SecurityConfig` already restricts `/api/v1/admin/**` to authenticated non-customers.
+
+```json
+{
+  "data": {
+    "state": "NORMAL|UPCOMING|ACTIVE",
+    "staffNote": "Nâng cấp dữ liệu sản phẩm",
+    "expectedAt": "2026-08-06T15:00:00Z",
+    "updatedAt": "2026-08-06T14:05:11Z",
+    "canToggle": false,
+    "uploadCount": 0
+  },
+  "meta": { "requestId": "...", "timestamp": "..." }
+}
+```
+
+`canToggle` reports whether **this caller** may change the state, so the frontend never re-derives the role rule. `uploadCount` is the number of in-flight admin uploads, surfaced in the "lock now" confirm dialog. `expectedAt` is display-only and never triggers a transition.
+
+### `PUT /api/v1/admin/maintenance`
+
+Body: `{ "state": "NORMAL|UPCOMING|ACTIVE", "staffNote": "…|null", "expectedAt": "ISO-8601|null" }`.
+
+Restricted to the **`DEVELOPER` role by exact role-name check**, not by permission — `SUPER_ADMIN` receives `403`. See `PERMISSION_MATRIX.md` §Maintenance Authority for why a permission cannot express this. Invalid `state` → `400 VALIDATION_ERROR`. Success returns the same shape as the GET, plus a broadcast on the admin STOMP topic `/topic/admin/maintenance`.
+
+### `423 MAINTENANCE_ACTIVE` — global admin write error
+
+While `state = ACTIVE`, `MaintenanceWriteLockFilter` rejects every `POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/admin/**` with HTTP `423` and code `MAINTENANCE_ACTIVE`, in the ordinary `ApiErrorResponse` envelope. Exceptions that pass through: safe methods, requests with no admin principal (so `401`/`403` still work), the `DEVELOPER` caller, `PUT /api/v1/admin/maintenance` itself, and three read-shaped POSTs that persist nothing (`/products/preview`, `/categories/permanent-delete-impact`, `/content/articles/preview`).
+
+**Why 423 and not 503 — do not "simplify" this back.** `deploy/nginx/api.bigbike.vn.conf` declares `error_page 502 503 504 =503` together with `proxy_intercept_errors on`, so nginx replaces the body of any upstream 503 with its static outage JSON, which has no `error.code` field. A 503 here would reach the admin as an unrecognisable payload in production while passing every local and MockMvc test. 423 is not in the intercept list and is semantically correct ("the source resource is locked").
+
+Customer-facing endpoints are untouched in every state: `POST /api/v1/checkout` has no maintenance guard, and the `ORDERING_PAUSED` error no longer exists.

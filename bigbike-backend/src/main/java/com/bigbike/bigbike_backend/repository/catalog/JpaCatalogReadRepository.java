@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.SeoIndexPolicy;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -813,7 +814,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType()
+                        entity.getSeoOgImageMimeType(),
+                        SeoIndexPolicy.resolveNoIndex(
+                                locale,
+                                entity.isSeoNoIndex(),
+                                entity.isSeoNoIndexEn(),
+                                SeoIndexPolicy.productEnglishReady(
+                                        entity.getNameEn(),
+                                        entity.getShortDescriptionEn(),
+                                        entity.getDescriptionEn()
+                                )
+                        )
                 ),
                 publicView ? null : toTranslations(entity),
                 entity.getCreatedAt(),
@@ -867,7 +878,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType()
+                        entity.getSeoOgImageMimeType(),
+                        SeoIndexPolicy.resolveNoIndex(
+                                locale,
+                                entity.isSeoNoIndex(),
+                                entity.isSeoNoIndexEn(),
+                                SeoIndexPolicy.categoryEnglishReady(
+                                        entity.getNameEn(),
+                                        entity.getDescriptionEn(),
+                                        entity.getIntroContentEn()
+                                )
+                        )
                 ),
                 entity.isVisible(),
                 entity.isDeleted(),
@@ -915,7 +936,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType()
+                        entity.getSeoOgImageMimeType(),
+                        SeoIndexPolicy.resolveNoIndex(
+                                locale,
+                                entity.isSeoNoIndex(),
+                                entity.isSeoNoIndexEn(),
+                                SeoIndexPolicy.brandEnglishReady(entity.getDescriptionEn())
+                        )
                 ),
                 entity.isVisible(),
                 entity.isShowOnHomepage(),

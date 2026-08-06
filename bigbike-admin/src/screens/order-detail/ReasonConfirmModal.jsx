@@ -5,9 +5,9 @@ import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-export function ReasonConfirmModal({ onConfirm, onClose, loading = false }) {
+export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initialReason = '', onReasonChange }) {
   const { t } = useTranslation()
-  const [reason, setReason] = useState('')
+  const [reason, setReason] = useState(initialReason)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -46,7 +46,11 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false }) {
             id="reason-confirm-input"
             rows={3}
             value={reason}
-            onChange={(e) => { setReason(e.target.value); setError('') }}
+            onChange={(e) => {
+              setReason(e.target.value)
+              onReasonChange?.(e.target.value)
+              setError('')
+            }}
             onBlur={() => { if (!reason.trim()) setError(t('orders.detail.reasonRequired')) }}
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"

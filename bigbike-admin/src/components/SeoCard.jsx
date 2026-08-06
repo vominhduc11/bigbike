@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, ChevronDown } from 'lucide-react'
 import { ImageUrlInput } from './ImageUrlInput'
+import { SeoIndexField } from './SeoIndexField'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,6 +22,10 @@ export function SeoCard({
   updateField, updateTranslation, onFieldBlur,
   i18nPrefix, descKey, previewBase, previewSlugDefault,
   collapsible = false, open = true, onToggle,
+  // SEO_RULE_002 — bản tiếng Anh đã đủ nội dung để được khai báo với Google chưa.
+  // Ngưỡng do backend quyết (SeoIndexPolicy); truyền vào đây chỉ để báo trước cho
+  // người vận hành, tránh cảnh bật ô mà trang vẫn không lên Google.
+  englishReady = true,
 }) {
   const { t } = useTranslation()
   const p = (key, defaultValue) => t(`${i18nPrefix}.${key}`, { defaultValue })
@@ -33,8 +38,10 @@ export function SeoCard({
   const seoDescVal = (isEnLang ? form.translations?.en?.seoDescription : form.seoDescription) ?? ''
   const nameVal = (isEnLang ? form.translations?.en?.name : form.name) ?? ''
   const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || previewSlugDefault
-  const canonicalUrlVal = form.seoCanonicalUrl ?? ''
-  const previewUrl = canonicalUrlVal.trim() || `${previewBase}/${previewSlug}`
+  // SEO_RULE_003: canonical LUÔN tự sinh từ slug theo locale. Ô nhập tay đã gỡ (2026-08-06) —
+  // web chưa bao giờ đọc `seo.canonicalUrl` để dựng thẻ canonical, nên đó là trường chết
+  // khiến người vận hành tưởng mình đang điều khiển địa chỉ chuẩn.
+  const previewUrl = `${previewBase}/${previewSlug}`
 
   const enHint = isEnLang && (
     <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>
@@ -134,23 +141,14 @@ export function SeoCard({
             </span>
           )}
         </label>
-        <label className="form-field">
-          <span>{p('seoCanonicalUrl', 'Địa chỉ chuẩn (canonical URL)')}</span>
-          <Input
-            value={canonicalUrlVal}
-            onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-            onBlur={() => onFieldBlur?.('seoCanonicalUrl')}
-            disabled={isReadOnly}
-            placeholder={p('seoCanonicalUrlPlaceholder', 'https://bigbike.vn/...')}
-            aria-invalid={validationErrors.seoCanonicalUrl ? true : undefined}
-            aria-describedby={validationErrors.seoCanonicalUrl ? errId('seoCanonicalUrl') : undefined}
-          />
-          {validationErrors.seoCanonicalUrl && (
-            <span id={errId('seoCanonicalUrl')} role="alert" className="hint text-danger flex items-center gap-1">
-              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoCanonicalUrl}
-            </span>
-          )}
-        </label>
+        <SeoIndexField
+          noIndexVi={form.seoNoIndex}
+          noIndexEn={form.seoNoIndexEn}
+          isEnLang={isEnLang}
+          isReadOnly={isReadOnly}
+          englishReady={englishReady}
+          onChange={updateField}
+        />
         {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
         <div className="form-field" data-field="seoOgImageUrl">
           <span>{p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}</span>

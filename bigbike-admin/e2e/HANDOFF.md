@@ -8,7 +8,7 @@
 Kiểm thử toàn diện UI/UX, responsive, transition/effect, runtime/network của **bigbike-admin** bằng Playwright; fix các lỗi UI/UX đã xác nhận trong phạm vi an toàn; chạy lại để verify; xuất báo cáo cuối.
 
 ## 1. Sự thật môi trường (đã verify — TUÂN THỦ, đừng dò lại từ đầu)
-- **Máy này CHÍNH LÀ `103.1.236.148`.** `http://103.1.236.148:4000` = container Docker `bigbike-admin` local (nginx serve **production build**), nhưng build trong image cũ hơn source hiện tại một chút (chỉ lệch vài dòng CSS). **Không tự `docker compose up/build/restart`** — phải xin phép user.
+- **Máy này CHÍNH LÀ máy chủ chạy `bigbike.vn`.** Bản admin đang chạy = container Docker `bigbike-admin` (nginx serve **production build**), truy cập qua `https://admin.bigbike.vn`. Từ cutover domain 2026-08-06, cổng `4000` chỉ nghe `127.0.0.1` nên lối vào cũ `http://103.1.236.148:4000` **không còn dùng được**. Build trong image có thể cũ hơn source hiện tại. **Không tự `docker compose up/build/restart`** — phải xin phép user.
 - **Target test chính = LOCAL PRODUCTION PREVIEW** từ source hiện tại: `http://localhost:4280` (vite build → vite preview). Đây là nơi verify fix.
 - **Backend thật** `localhost:8080` (healthy), **MinIO** `localhost:9000`. Đăng nhập: `admin@bigbike.vn` / `admin123` → role **SUPER_ADMIN**, `permissions: ["*"]` (mọi route truy cập được).
 - **BUILD PHẢI có biến** giống Dockerfile, nếu không WebSocket sẽ trỏ sai host:
@@ -47,7 +47,7 @@ Kiểm thử toàn diện UI/UX, responsive, transition/effect, runtime/network 
 3. **Chạy FULL suite** lấy tổng kết + HTML report:
    - `npx playwright test` (đảm bảo đã build mới + preview 4280 chạy). Kỳ vọng auth+smoke+responsive+effects xanh, visual xanh sau khi có baseline.
    - `npm run test:e2e:report` để mở report.
-4. **(Tuỳ chọn) Spot-check bản LIVE `:4000`**: `E2E_BASE_URL=http://103.1.236.148:4000 E2E_NO_WEBSERVER=1 npx playwright test smoke-routes effects` để kiểm CSP/console của artifact production thật (preview không có CSP của nginx). Lưu ý bản live chưa có fix CSS (container cũ).
+4. **(Tuỳ chọn) Spot-check bản LIVE**: `E2E_BASE_URL=https://admin.bigbike.vn E2E_NO_WEBSERVER=1 npx playwright test smoke-routes effects` để kiểm CSP/console của artifact production thật (preview không có CSP của nginx). Lưu ý bản live có thể chưa có fix mới nhất (container cũ).
 5. **Deploy fix (cần user)**: container `:4000` sẽ KHÔNG có fix `admin-prototype.css` cho tới khi rebuild. Hỏi user có muốn `docker compose up -d --build bigbike-admin` không (đừng tự chạy).
 6. **Viết BÁO CÁO CUỐI (task #11)** gồm: tóm tắt setup; danh sách file tạo/sửa; route đã test; viewport đã test; danh sách issue phát hiện; issue đã fix; issue còn lại/blocker; lệnh chạy lại (full/responsive/effects/visual/debug/report); kết luận mức sẵn sàng (usability / responsive / form-table / effect / runtime-network / production-readiness risk).
 7. **Trước khi commit (nếu user yêu cầu)**: chạy `/hygiene` (mojibake, tiếng Việt có dấu, dead CSS) và `/preflight`. Chỉ commit khi user yêu cầu; tạo branch nếu đang ở `main`.

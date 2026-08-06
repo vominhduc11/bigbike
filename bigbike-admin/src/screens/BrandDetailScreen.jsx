@@ -51,7 +51,8 @@ function buildEmptyForm() {
     bannerAlt: '',
     seoTitle: '',
     seoDescription: '',
-    seoCanonicalUrl: '',
+    seoNoIndex: false,
+    seoNoIndexEn: false,
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     translations: { en: { description: '', seoTitle: '', seoDescription: '' } },
@@ -71,7 +72,8 @@ function buildFormFromItem(item) {
     bannerAlt: item.bannerImage?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
-    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
+    seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     translations: {
@@ -321,7 +323,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       setValidationErrors(clientErrors)
       // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó.
       if (clientErrors.description || clientErrors.logoUrl || clientErrors.bannerUrl) setOptionalOpen(true)
-      if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoCanonicalUrl || clientErrors.seoOgImageUrl) setSeoOpen(true)
+      if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoOgImageUrl) setSeoOpen(true)
       return
     }
 
@@ -412,7 +414,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xóa thông tin SEO".
   const hasSeoData = Boolean(
-    form.seoTitle?.trim() || form.seoDescription?.trim() || form.seoCanonicalUrl?.trim() ||
+    form.seoTitle?.trim() || form.seoDescription?.trim() ||
     form.seoOgImageUrl?.trim() || form.seoOgImageAlt?.trim() ||
     form.translations?.en?.seoTitle?.trim() || form.translations?.en?.seoDescription?.trim()
   )
@@ -420,14 +422,16 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // Xóa toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
   async function handleClearSeo() {
     const ok = await showConfirm(
-      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, địa chỉ chuẩn, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
+      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
       t('brands.detail.clearSeoTitle', { defaultValue: 'Xóa thông tin hiển thị trên Google?' }),
       { variant: 'danger', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin hiển thị trên Google' }), cancelLabel: t('common.cancel', { defaultValue: 'Hủy' }) },
     )
     if (!ok) return
     setForm((prev) => ({
       ...prev,
-      seoTitle: '', seoDescription: '', seoCanonicalUrl: '', seoOgImageUrl: '', seoOgImageAlt: '',
+      // Cố ý KHÔNG reset seoNoIndex/seoNoIndexEn: xoá phần văn bản/ảnh là một chuyện,
+      // bật lại một trang đang cố tình ẩn khỏi Google là chuyện khác (SEO_RULE_001).
+      seoTitle: '', seoDescription: '', seoOgImageUrl: '', seoOgImageAlt: '',
       translations: { ...prev.translations, en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' } },
     }))
     toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xóa thông tin hiển thị trên Google.' }))
@@ -712,6 +716,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           descKey="brands.detail.sectionSeoDesc"
           previewBase={STOREFRONT_BASE}
           previewSlugDefault="duong-dan-thuong-hieu"
+          englishReady={Boolean(form.translations?.en?.description?.trim())}
           collapsible
           open={seoOpen}
           onToggle={() => setSeoOpen((v) => !v)}

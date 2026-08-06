@@ -40,6 +40,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String PRODUCTS_PERMISSION = "products.read";
     private static final String PRESENCE_DESTINATION = "/app/admin/presence";
     private static final String ACCESS_DESTINATION = "/user/queue/admin/access";
+    private static final String MAINTENANCE_TOPIC = "/topic/admin/maintenance";
+    private static final String MAINTENANCE_UPLOAD_DESTINATION = "/app/admin/maintenance/uploads";
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
     private static final String SESSION_ATTR_ACCESS_VERSION = "accessVersion";
@@ -133,7 +135,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     SessionAccess session = sessionAccess(accessor);
                     String destination = accessor.getDestination();
                     boolean allowedAccessQueue = ACCESS_DESTINATION.equals(destination) && isCurrentAccess(session);
-                    if (!allowedAccessQueue && (session == null || !hasPermissionForDestination(session, destination))) {
+                    boolean allowedMaintenanceTopic = MAINTENANCE_TOPIC.equals(destination) && isCurrentAccess(session);
+                    if (!allowedAccessQueue && !allowedMaintenanceTopic
+                            && (session == null || !hasPermissionForDestination(session, destination))) {
                         log.warn("WS SUBSCRIBE rejected for {} to {}", session, destination);
                         throw new IllegalArgumentException("Not permitted to subscribe to " + destination + ".");
                     }
@@ -141,11 +145,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
                 if (StompCommand.SEND.equals(accessor.getCommand())) {
                     SessionAccess session = sessionAccess(accessor);
-                    if (session == null
-                            || !PRESENCE_DESTINATION.equals(accessor.getDestination())
-                            || !isCurrentAccess(session)) {
+                    boolean validPresence = PRESENCE_DESTINATION.equals(accessor.getDestination());
+                    boolean validUploadLease = MAINTENANCE_UPLOAD_DESTINATION.equals(accessor.getDestination());
+                    if (session == null || (!validPresence && !validUploadLease) || !isCurrentAccess(session)) {
                         log.warn("WS SEND rejected for {} to {}", session, accessor.getDestination());
-                        throw new IllegalArgumentException("Invalid admin presence destination.");
+                        throw new IllegalArgumentException("Invalid admin realtime destination.");
                     }
                 }
 
@@ -190,9 +194,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor =
                         MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (accessor == null || !requiresPermission(accessor.getDestination())) {
+                if (accessor == null) {
                     return message;
                 }
+
+                if (MAINTENANCE_TOPIC.equals(accessor.getDestination())) {
+                    SessionAccess session = accessor.getSessionId() == null
+                            ? null : sessions.get(accessor.getSessionId());
+                    if (!isCurrentAccess(session)) {
+                        log.debug("WS maintenance outbound blocked for {}", session);
+                        return null;
+                    }
+                    return message;
+                }
+                if (!requiresPermission(accessor.getDestination())) return message;
 
                 SessionAccess session = accessor.getSessionId() == null ? null : sessions.get(accessor.getSessionId());
                 if (session == null || !hasPermissionForDestination(session, accessor.getDestination())) {

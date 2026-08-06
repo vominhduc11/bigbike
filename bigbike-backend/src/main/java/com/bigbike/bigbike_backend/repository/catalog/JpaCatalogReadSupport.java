@@ -273,6 +273,15 @@ final class JpaCatalogReadSupport {
         return new ImageAsset(id, url, alt, width, height, mimeType);
     }
 
+    /**
+     * V371: {@code noIndex} không còn hardcode {@code false}. Giá trị truyền vào phải là kết quả
+     * đã resolve theo locale qua {@link com.bigbike.bigbike_backend.domain.catalog.SeoIndexPolicy}
+     * — BUSINESS_RULES {@code SEO_RULE_001} + {@code SEO_RULE_002}.
+     *
+     * <p>Khi {@code noIndex} = true thì object SeoMeta LUÔN khác null kể cả không có field SEO nào,
+     * nếu không cờ sẽ biến mất trên đường ra API (cùng cách {@code ArticleMapper.toSeoMeta} đã làm
+     * từ V222).
+     */
     static SeoMeta toSeoMeta(
             String title,
             String description,
@@ -282,9 +291,11 @@ final class JpaCatalogReadSupport {
             String ogImageAlt,
             Integer ogImageWidth,
             Integer ogImageHeight,
-            String ogImageMimeType
+            String ogImageMimeType,
+            boolean noIndex
     ) {
-        if ((title == null || title.isBlank())
+        if (!noIndex
+                && (title == null || title.isBlank())
                 && (description == null || description.isBlank())
                 && (canonicalUrl == null || canonicalUrl.isBlank())
                 && (ogImageUrl == null || ogImageUrl.isBlank())) {
@@ -296,7 +307,7 @@ final class JpaCatalogReadSupport {
                 description,
                 canonicalUrl,
                 toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                false   // noIndex — catalog entities (product/brand/category) don't expose per-entity noindex
+                noIndex
         );
     }
 }

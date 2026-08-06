@@ -3,8 +3,9 @@
  *
  * Defaults target a LOCAL production preview (vite build + vite preview) on
  * localhost:4280 so fixes can be rebuilt and re-verified against the same
- * artifact we edit. Point E2E_BASE_URL at http://103.1.236.148:4000 to audit
- * the live (nginx-served) deployment instead.
+ * artifact we edit. Point E2E_BASE_URL at https://admin.bigbike.vn to audit
+ * the live (nginx-served) deployment instead — the old http://IP:4000 entry
+ * point was closed at the 2026-08-06 domain cutover.
  *
  * Credentials default to the SUPER_ADMIN account supplied for this engagement
  * (permissions: ["*"], so every route is reachable). Override via env to keep

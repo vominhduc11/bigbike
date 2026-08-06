@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="refresh" content="60">
+    <title>BIGBIKE | Hệ thống đang tạm gián đoạn</title>
+    <style>
+      :root {
+        --brand-red: {{BRAND_RED}};
+        --brand-red-dark: {{BRAND_RED_DARK}};
+        --ink: {{INK}};
+        --muted: {{MUTED}};
+        --surface: {{SURFACE}};
+        --canvas: {{CANVAS}};
+        --line: {{LINE}};
+      }
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1rem;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.5;
+      }
+      main {
+        width: min(100%, 42rem);
+        padding: clamp(2rem, 7vw, 4rem) clamp(1.25rem, 6vw, 4rem);
+        background: var(--surface);
+        border-top: 0.35rem solid var(--brand-red);
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+        text-align: center;
+      }
+      .logo {
+        display: block;
+        width: min(10rem, 48vw);
+        height: auto;
+        margin: 0 auto 2rem;
+        /* Logo gốc có nền tối đóng cứng trong ảnh (không trong suốt); bo góc để trên nền sáng
+           nó đọc ra như một huy hiệu có chủ ý thay vì một ô đen bị lỗi. */
+        border-radius: 12px;
+      }
+      h1 {
+        margin: 0;
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: clamp(1.6rem, 5vw, 2.35rem);
+        line-height: 1.15;
+        text-transform: uppercase;
+      }
+      p { margin: 1rem 0 0; font-size: 1rem; }
+      .lead { font-size: 1.15rem; font-weight: 700; }
+      .contact-copy { margin-top: 1.75rem; color: var(--muted); }
+      .contact-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+      .contact-actions a {
+        min-height: 2.75rem;
+        display: inline-grid;
+        place-items: center;
+        padding: 0.7rem 0.5rem;
+        border: 0.1rem solid var(--brand-red);
+        color: var(--brand-red-dark);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .contact-actions a:first-child {
+        background: var(--brand-red);
+        color: var(--surface);
+      }
+      .contact-actions a:hover,
+      .contact-actions a:focus-visible { background: var(--brand-red-dark); color: var(--surface); }
+      .address { margin-top: 1.5rem; }
+      .reload-note { margin-top: 1.75rem; color: var(--muted); font-size: 0.875rem; }
+      @media (max-width: 32rem) {
+        .contact-actions { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main aria-labelledby="maintenance-title">
+      <img class="logo" src="{{LOGO_DATA_URI}}" alt="BIGBIKE">
+      <h1 id="maintenance-title">Hệ thống đang tạm gián đoạn</h1>
+      <p class="lead">Chúng tôi đang khắc phục và sẽ trở lại sớm nhất có thể.</p>
+      <p>Rất mong quý khách thông cảm.</p>
+      <p class="contact-copy">Trong thời gian này, quý khách có thể liên hệ:</p>
+      <nav class="contact-actions" aria-label="Liên hệ BigBike">
+        <a href="tel:{{HOTLINE_TEL}}">Gọi {{HOTLINE}}</a>
+        <a href="{{ZALO_URL}}" rel="noopener noreferrer">Zalo</a>
+        <a href="{{FACEBOOK_URL}}" rel="noopener noreferrer">Fanpage</a>
+      </nav>
+      <p class="address">Cửa hàng: {{ADDRESS}}</p>
+      <p>{{OPENING_HOURS}}</p>
+      <p class="reload-note">Trang tự tải lại khi hệ thống sẵn sàng.</p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>BIGBIKE ADMIN | Hệ thống đang tạm gián đoạn</title>
+    <style>
+      :root {
+        --brand-red: {{BRAND_RED}};
+        --brand-red-dark: {{BRAND_RED_DARK}};
+        --ink: {{INK}};
+        --muted: {{MUTED}};
+        --surface: {{SURFACE}};
+        --canvas: {{CANVAS}};
+      }
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 2rem 1rem;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.5;
+      }
+      main {
+        width: min(100%, 36rem);
+        padding: clamp(2rem, 7vw, 4rem) clamp(1.25rem, 6vw, 4rem);
+        background: var(--surface);
+        border-top: 0.35rem solid var(--brand-red);
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+        text-align: center;
+      }
+      .mark {
+        display: inline-grid;
+        place-items: center;
+        width: 4rem;
+        height: 4rem;
+        margin-bottom: 1.5rem;
+        background: var(--brand-red);
+        color: var(--surface);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1.15; text-transform: uppercase; }
+      p { margin: 1rem 0 0; }
+      .note { color: var(--muted); }
+      strong { color: var(--brand-red-dark); }
+    </style>
+  </head>
+  <body>
+    <main aria-labelledby="maintenance-title">
+      <div class="mark" aria-hidden="true">BB</div>
+      <h1 id="maintenance-title">Hệ thống quản trị đang tạm gián đoạn</h1>
+      <p>Máy chủ không phản hồi. Bộ phận kỹ thuật đang khắc phục.</p>
+      <p class="note">Trang tự tải lại khi hệ thống sẵn sàng. Thao tác chưa lưu trước đó <strong>chưa</strong> được ghi nhận — hãy kiểm tra lại sau khi đăng nhập được.</p>
+    </main>
+  </body>
+</html>

@@ -35,6 +35,16 @@ public class AdminRoleService {
     private static final Set<String> ASSIGNED_USER_STATUSES =
             Set.of("ACTIVE", "INVITED", "DISABLED", "SUSPENDED");
 
+    /**
+     * Roles whose permission set may never be edited through the API.
+     *
+     * <p>SUPER_ADMIN holds the wildcard and has always been frozen. DEVELOPER joined it because
+     * its permissions are what let a developer release the maintenance lock: un-ticking
+     * {@code maintenance.manage} in the Roles screen would leave the panel lockable but not
+     * unlockable, with nothing in the UI hinting at the connection.
+     */
+    private static final Set<String> PERMISSION_LOCKED_ROLES = Set.of("SUPER_ADMIN", "DEVELOPER");
+
     private final AdminRoleJpaRepository roleRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogWriter auditLogWriter;
@@ -67,8 +77,8 @@ public class AdminRoleService {
         AdminRoleEntity role = roleRepo.findById(roleId.toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new NotFoundException("Role not found: " + roleId));
 
-        if ("SUPER_ADMIN".equals(role.getId())) {
-            throw new ConflictException("Cannot modify SUPER_ADMIN permissions.");
+        if (PERMISSION_LOCKED_ROLES.contains(role.getId())) {
+            throw new ConflictException("Cannot modify " + role.getId() + " permissions.");
         }
 
         validatePermissionKeys(permissions);

@@ -420,8 +420,12 @@ public class CatalogRequestValidator {
 
     /**
      * Cross-column uniqueness for the optional English slug (PRODUCT/CATEGORY_RULE_003):
-     * the en slug must differ from this entity's own vi slug, and must not collide with any
-     * other entity's vi slug or en slug of the same kind. Errors target {@code translations.en.slug}.
+     * the en slug must not collide with any OTHER entity's vi slug or en slug of the same kind.
+     * Errors target {@code translations.en.slug}.
+     *
+     * <p>Trùng với slug vi của CHÍNH entity đó là HỢP LỆ (owner decision 2026-08-06): sản phẩm
+     * mang tên vốn là tiếng Anh (mã máy như {@code komine-jk-176}) thì hai slug trùng nhau là
+     * bình thường. Admin chỉ hiện cảnh báo mềm. Vì vậy {@code viSlug} cố ý không được dùng ở đây.
      */
     private static void validateEnglishSlug(
             String slugEn,

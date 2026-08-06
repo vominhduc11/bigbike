@@ -3,6 +3,7 @@ import type { Article, Product, VideoAsset } from "@/lib/contracts/public";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
+  buildLocalBusinessJsonLd,
   buildProductJsonLd,
   buildArticleBreadcrumbJsonLd,
   buildVideoObjectsJsonLd,
@@ -94,13 +95,9 @@ describe("buildProductJsonLd", () => {
       reviewCount: 12,
     });
 
-    // positiveNotes / negativeNotes → ItemList có position tăng dần.
-    expect(obj(ld.positiveNotes)["@type"]).toBe("ItemList");
-    expect(obj(ld.positiveNotes).itemListElement).toEqual([
-      { "@type": "ListItem", position: 1, name: "Nhẹ" },
-      { "@type": "ListItem", position: 2, name: "Thoáng khí" },
-    ]);
-    expect(obj(ld.negativeNotes).itemListElement).toHaveLength(1);
+    // Ưu/nhược điểm KHÔNG được vào JSON-LD dù makeProduct() có sẵn dữ liệu.
+    expect(ld.positiveNotes).toBeUndefined();
+    expect(ld.negativeNotes).toBeUndefined();
   });
 
   it("dùng giá bán lẻ khi không có giá khuyến mãi", () => {
@@ -123,10 +120,27 @@ describe("buildProductJsonLd", () => {
     expect(obj(buildProductJsonLd(makeProduct({ ratingCount: null }))).aggregateRating).toBeUndefined();
   });
 
-  it("bỏ field rỗng khi thiếu dữ liệu GĐ3 (ưu/nhược)", () => {
-    const ld = obj(buildProductJsonLd(makeProduct({ positiveNotes: [], negativeNotes: [] })));
-    expect(ld.positiveNotes).toBeUndefined();
-    expect(ld.negativeNotes).toBeUndefined();
+  // Chặn hồi quy: Google chỉ hỗ trợ rich result ưu/nhược điểm cho trang đánh giá
+  // biên tập độc lập, KHÔNG cho trang bán hàng của người bán. Khai lại = sai loại
+  // trang, nguy cơ phạt thủ công toàn site. Ưu/nhược vẫn hiển thị dạng HTML thường.
+  it("KHÔNG BAO GIỜ khai ưu/nhược điểm vào JSON-LD, kể cả khi có đủ dữ liệu", () => {
+    const withNotes = obj(
+      buildProductJsonLd(
+        makeProduct({
+          positiveNotes: [{ content: "Nhẹ" }, { content: "Thoáng khí" }],
+          negativeNotes: [{ content: "Giá cao" }],
+        }),
+      ),
+    );
+    const empty = obj(buildProductJsonLd(makeProduct({ positiveNotes: [], negativeNotes: [] })));
+
+    for (const ld of [withNotes, empty]) {
+      expect(ld.positiveNotes).toBeUndefined();
+      expect(ld.negativeNotes).toBeUndefined();
+      // Không được lách sang tên khác (Review/pros/cons) — quét cả chuỗi đã serialize.
+      const serialized = JSON.stringify(ld);
+      expect(serialized).not.toMatch(/positiveNotes|negativeNotes|"pros"|"cons"|"@type":"Review"/);
+    }
   });
 });
 
@@ -227,6 +241,66 @@ describe("buildVideoObjectsJsonLd", () => {
     const bare = makeProduct({ image: undefined, gallery: [] });
     expect(buildVideoObjectsJsonLd([{ title: "Không URL" }], bare)).toEqual([]);
     expect(buildVideoObjectsJsonLd([{ url: "https://cdn/x.mp4" }], bare)).toEqual([]);
+  });
+});
+
+describe("buildLocalBusinessJsonLd", () => {
+  const ADDRESS = "79/30/52 Âu Cơ, Phường Hoà Bình, TP. Hồ Chí Minh";
+
+  it("tách địa chỉ một dòng thành PostalAddress có cấu trúc", () => {
+    const ld = obj(buildLocalBusinessJsonLd("BigBike", "/logo.png", ADDRESS, "0906 902 404"));
+    expect(obj(ld.address)).toEqual({
+      "@type": "PostalAddress",
+      addressCountry: "VN",
+      streetAddress: "79/30/52 Âu Cơ, Phường Hoà Bình",
+      addressLocality: "TP. Hồ Chí Minh",
+    });
+  });
+
+  it("địa chỉ không có dấu phẩy thì giữ nguyên, không đoán tỉnh/thành", () => {
+    const ld = obj(buildLocalBusinessJsonLd("BigBike", "/logo.png", "79 Âu Cơ", "0906"));
+    expect(obj(ld.address).streetAddress).toBe("79 Âu Cơ");
+    expect(obj(ld.address).addressLocality).toBeUndefined();
+  });
+
+  it("đổi giờ mở cửa dạng chữ sang OpeningHoursSpecification", () => {
+    const ld = obj(
+      buildLocalBusinessJsonLd("BigBike", "/logo.png", ADDRESS, "0906", {
+        openingHours: ["T2 - T7: 09h00 - 21h00", "CN: 09h00 - 17h00"],
+      }),
+    );
+    expect(arr(ld.openingHoursSpecification)).toEqual([
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        opens: "09:00",
+        closes: "21:00",
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Sunday"],
+        opens: "09:00",
+        closes: "17:00",
+      },
+    ]);
+  });
+
+  it("KHÔNG đọc nhầm ký hiệu thứ thành giờ (T7: phải không ra 07:00)", () => {
+    const ld = obj(
+      buildLocalBusinessJsonLd("BigBike", "/logo.png", ADDRESS, "0906", {
+        openingHours: ["T2 - T7: 09h00 - 21h00"],
+      }),
+    );
+    expect(arr(ld.openingHoursSpecification)[0].opens).toBe("09:00");
+  });
+
+  it("bỏ qua dòng không có giờ cụ thể thay vì đoán bừa", () => {
+    const ld = obj(
+      buildLocalBusinessJsonLd("BigBike", "/logo.png", ADDRESS, "0906", {
+        openingHours: ["Lễ / Tết: nghỉ có thông báo", "", null, undefined],
+      }),
+    );
+    expect(ld.openingHoursSpecification).toBeUndefined();
   });
 });
 

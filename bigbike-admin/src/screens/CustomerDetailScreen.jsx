@@ -20,6 +20,7 @@ import {
 import { toast } from '@/lib/toast'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { recordRecentItem } from '@/lib/useRecentItems'
 import { CustomerStatusReasonModal } from '../components/CustomerStatusReasonModal'
 import { DetailSection } from '../components/DetailSection'
@@ -198,6 +199,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     JSON.stringify(normalizedEditForm) !== JSON.stringify(editBaseline)
   useUnsavedChanges(isDirty)
 
+  const customerDraftKey = `draft:customer-detail:${customerId}`
+  const { clear: clearCustomerDraft } = useDraftAutosave(
+    customerDraftKey,
+    { customerId, form: editForm },
+    { enabled: Boolean(canUpdate && editOpen), dirty: isDirty },
+  )
+
   const beginMutation = useCallback((action) => {
     if (mutationLockRef.current) return false
     mutationLockRef.current = true
@@ -326,16 +334,23 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       displayName: customer.displayName || '',
       phone: customer.phone || '',
     }
-    setEditForm(initial)
+    const saved = readDraft(customerDraftKey)
+    const savedForm = saved?.value?.customerId != null
+      && String(saved.value.customerId) === String(customerId)
+      ? saved.value.form
+      : null
+    setEditForm(savedForm ? { ...initial, ...savedForm } : initial)
     setEditBaseline({
       displayName: initial.displayName,
       phone: normalizePhoneInput(initial.phone),
     })
     setFieldErrors({})
     setEditOpen(true)
+    if (savedForm) toast.info(t('customers.detail.draftRestored', { defaultValue: 'Đã khôi phục bản nháp thông tin khách hàng.' }))
   }
 
   function handleEditCancel() {
+    clearCustomerDraft()
     setEditOpen(false)
     setEditBaseline(null)
     setFieldErrors({})
@@ -360,6 +375,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       }
       const r = await updateCustomer(customerId, payload)
       setState((p) => ({ ...p, customer: r.item }))
+      clearCustomerDraft()
       setEditOpen(false)
       setEditBaseline(null)
       // Đồng bộ lại danh sách khách hàng để tên/SĐT vừa sửa hiển thị khi quay lại.
@@ -384,6 +400,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     editForm.phone,
     endMutation,
     isDirty,
+    clearCustomerDraft,
     normalizedEditForm.phone,
     queryClient,
     t,

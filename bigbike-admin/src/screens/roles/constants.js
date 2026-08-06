@@ -44,6 +44,9 @@ export const BUILTIN_CATALOG = [
       perm('home_highlights.write', 'home_highlights', 'WRITE', false, ['home_highlights.read', 'products.read']),
       perm('redirects.read', 'redirects', 'READ'),
       perm('redirects.write', 'redirects', 'WRITE', false, ['redirects.read']),
+      // V372 cấp cho ADMIN/EDITOR. Thiếu ở đây thì màn Vai trò gửi lên một key mà backend
+      // không nhận ra → lưu ADMIN/EDITOR là lỗi 400 UNKNOWN_PERMISSION.
+      perm('seo.index', 'seo', 'WRITE', true),
     ],
   },
   {
@@ -56,6 +59,10 @@ export const BUILTIN_CATALOG = [
       perm('roles.read', 'roles', 'READ'),
       perm('roles.write', 'roles', 'WRITE', true, ['roles.read']),
       perm('audit-logs.read', 'audit-logs', 'READ', true),
+      // V375. Giữ quyền này KHÔNG đủ để bật/tắt bảo trì — endpoint còn đòi đúng vai trò
+      // DEVELOPER, vì quyền '*' của Chủ hệ thống thoả mãn mọi permission. Cấp cho vai trò
+      // khác sẽ không có tác dụng; nhãn hiển thị đã nói rõ điều đó.
+      perm('maintenance.manage', 'maintenance', 'WRITE', true),
     ],
   },
 ]
@@ -89,6 +96,7 @@ export const PERM_LABEL_KEY_MAP = {
   'home_highlights.write':      'roles.permHomeHighlightsWrite',
   'redirects.read':             'roles.permRedirectsRead',
   'redirects.write':            'roles.permRedirectsWrite',
+  'seo.index':                  'roles.permSeoIndex',
   'settings.read':              'roles.permSettingsRead',
   'settings.write':             'roles.permSettingsWrite',
   'admin-users.read':           'roles.permAdminUsersRead',
@@ -96,6 +104,7 @@ export const PERM_LABEL_KEY_MAP = {
   'roles.read':                 'roles.permRolesRead',
   'roles.write':                'roles.permRolesWrite',
   'audit-logs.read':            'roles.permAuditLogsRead',
+  'maintenance.manage':         'roles.permMaintenanceManage',
 }
 
 // Permissions an admin must never be able to strip from their OWN role —
@@ -127,10 +136,12 @@ export const MODULE_LABELS = {
   home_videos: 'Video trang chủ',
   home_highlights: 'Điểm nhấn trang chủ',
   redirects: 'Chuyển hướng',
+  seo: 'Hiển thị trên Google',
   settings: 'Cài đặt',
   'admin-users': 'Tài khoản quản trị',
   roles: 'Vai trò & phân quyền',
   'audit-logs': 'Nhật ký hoạt động',
+  maintenance: 'Bảo trì hệ thống',
 }
 
 export function closePermissionDependencies(inputPermissions, catalog) {

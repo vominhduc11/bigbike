@@ -69,8 +69,10 @@ test.describe("Error handling @1440", () => {
     const guards = installPageGuards(page);
     const resp = await gotoAndSettle(page, "/khong-ton-tai-zzz-9999/");
 
-    // Next renders the not-found UI; some catch-all routes may 200 with an empty state.
-    expect(resp?.status() ?? 0, "404 status").toBeLessThan(500);
+    // Phải là 404 thật. Trước 2026-08-06 route này trả 200 vì `app/[locale]/loading.tsx`
+    // bọc cả app và làm response stream trước khi notFound() chạy — xem
+    // __tests__/seo/render-boundaries.test.ts và e2e/http-status.e2e.ts.
+    expect(resp?.status() ?? 0, "404 status").toBe(404);
     await expect(page.locator("footer").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "not-found @1440");
 

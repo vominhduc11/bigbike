@@ -23,12 +23,17 @@ import { CartProvider } from "@/lib/cart-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 import { AltSlugProvider } from "@/components/i18n/AltSlugProvider";
+import { getSiteOrigin } from "@/lib/utils/routes";
 import { env } from "@/env";
 
 const FAVICON_BASE = "/brand/favicon";
 
 const sharedMetadata: Omit<Metadata, "title" | "description"> = {
-  metadataBase: new URL("https://bigbike.vn"),
+  // Phải dùng CHUNG nguồn với canonical (lib/utils/routes.ts → NEXT_PUBLIC_SITE_URL,
+  // fallback https://bigbike.vn). Đóng cứng bigbike.vn ở đây làm OG image và canonical
+  // trỏ hai nơi khác nhau khi build thiếu biến môi trường — Dockerfile:26 mặc định
+  // NEXT_PUBLIC_SITE_URL=http://localhost:3000 và biến này được nhúng lúc build.
+  metadataBase: new URL(getSiteOrigin()),
   icons: {
     icon: [
       { url: `${FAVICON_BASE}/favicon-16x16.png`, sizes: "16x16", type: "image/png" },

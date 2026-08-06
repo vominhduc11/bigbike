@@ -82,7 +82,15 @@ public final class PermissionCatalog {
             read("home_highlights.read"),
             write("home_highlights.write", false, "home_highlights.read", "products.read"),
             read("redirects.read"),
-            write("redirects.write", false, "redirects.read")
+            write("redirects.write", false, "redirects.read"),
+            // Granted to ADMIN/EDITOR by V372. Registering it here is not optional: any key
+            // present in role_permissions but missing from this catalog makes
+            // AdminRoleService.validatePermissionKeys reject the whole role on save, so the
+            // Roles screen 400s on ADMIN and EDITOR. Sensitive because switching a category or
+            // article out of the search index silently costs traffic with no customer-visible
+            // sign. No `requires`: the flag lives on both products and articles, so depending on
+            // either module's read permission would be wrong.
+            entry("seo.index", "seo", Kind.WRITE, true)
         )),
 
         new Group("roles.groupSystem", List.of(
@@ -92,7 +100,16 @@ public final class PermissionCatalog {
             write("admin-users.write", true, "admin-users.read", "roles.read"),
             read("roles.read"),
             write("roles.write", true, "roles.read"),
-            entry("audit-logs.read", "audit-logs", Kind.READ, true)
+            entry("audit-logs.read", "audit-logs", Kind.READ, true),
+            // Registered so the capability is visible in the Roles screen, and so the maintenance
+            // endpoint stops borrowing `settings.write` to authenticate — an unrelated permission
+            // that is editable right there, whose removal would silently disable the lock.
+            //
+            // Holding it is necessary but NOT sufficient: the endpoint also requires the caller's
+            // role to literally be DEVELOPER, because SUPER_ADMIN's '*' satisfies every permission
+            // and the owner requires SUPER_ADMIN to be excluded. Granting this to any other role
+            // therefore does nothing — the admin label says so.
+            entry("maintenance.manage", "maintenance", Kind.WRITE, true)
         ))
     );
 

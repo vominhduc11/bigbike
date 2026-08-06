@@ -34,6 +34,7 @@ import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layou
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { SeoIndexField } from '../components/SeoIndexField'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -1032,6 +1033,23 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
                 </div>
+
+                {/* Cho Google hiển thị — khôi phục 2026-08-06 sau khi bị gỡ ở 578c2961.
+                    Lần gỡ đó có lý do đúng ("đồng bộ tab SEO tin tức với sản phẩm"), nhưng
+                    hệ quả là cờ trở thành trường chết: dữ liệu vẫn đi vòng qua state và
+                    payload mà không ai bật/tắt được, nên 185/185 bài viết đều noIndex=false.
+                    Nay cả 4 loại (sản phẩm/danh mục/thương hiệu/bài viết) đều có ô này nên
+                    tab SEO KHÔNG còn lệch nhau — đúng mục tiêu ban đầu của lần gỡ đó. */}
+                <SeoIndexField
+                  noIndexVi={form.seoNoIndex}
+                  noIndexEn={form.seoNoIndexEn}
+                  isEnLang={isEnLang}
+                  isReadOnly={isReadOnly}
+                  englishReady={Boolean(
+                    form.translations?.en?.title?.trim() && form.translations?.en?.body?.trim(),
+                  )}
+                  onChange={updateField}
+                />
 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">

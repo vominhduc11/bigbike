@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { MapPin, MessageCircle, ShoppingCart } from "lucide-react";
 import { safeText, zaloHref } from "@/lib/utils/format";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
+import { Button } from "@/components/ui/button";
 
 type ProductContactCtaProps = {
   /** Bản tiếng Việt (SSR/ISR) — dùng làm fallback khi đang ở vi hoặc khi bản EN chưa tải xong. */
@@ -84,14 +85,15 @@ export function ProductContactCta({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-4 max-md:w-full max-md:flex-col">
-          <button
+          <Button
             type="button"
+            variant="primary"
             onClick={scrollToBuyBox}
-            className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-b4-action font-bold uppercase !text-white transition-colors hover:!bg-brand-active max-md:w-full"
+            className="h-auto rounded-none px-7 py-3.5 font-cta text-b4-action font-bold uppercase max-md:w-full"
           >
             <ShoppingCart className="size-5" aria-hidden="true" />
             {t("buyNow")}
-          </button>
+          </Button>
           {zaloUrl && (
             <a
               href={zaloHref(zaloUrl)}

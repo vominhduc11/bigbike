@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   updateOrderStatus: vi.fn(),
   showConfirm: vi.fn(),
   subscribeAdminWs: vi.fn(() => vi.fn()),
-  wsHandler: null,
+  wsHandlers: new Map(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
@@ -140,9 +140,9 @@ beforeEach(() => {
     item: { ...baseOrder, orderStatus: 'PROCESSING' },
   })
   mocks.showConfirm.mockResolvedValue(true)
-  mocks.wsHandler = null
+  mocks.wsHandlers = new Map()
   mocks.subscribeAdminWs.mockImplementation((_destination, handler) => {
-    mocks.wsHandler = handler
+    mocks.wsHandlers.set(_destination, handler)
     return vi.fn()
   })
 })
@@ -208,7 +208,7 @@ describe('OrderDetailScreen', () => {
 
     expect(await screen.findByText('BB-1001')).toBeInTheDocument()
     await act(async () => {
-      mocks.wsHandler({ orderId: 'order-1' })
+      mocks.wsHandlers.get('/topic/admin/orders')({ orderId: 'order-1' })
     })
 
     expect(await screen.findByText('orders.detail.refreshError')).toBeInTheDocument()

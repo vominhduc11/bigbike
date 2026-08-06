@@ -31,6 +31,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
 import { useKeyboardNav } from '../lib/useKeyboardNav'
+import { sendAdminWs } from '../lib/adminWebSocket'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -140,15 +141,19 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     let succeeded = 0
     let failed = 0
     for (const item of queue) {
+      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: item.id, status: 'PENDING' })
       setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'uploading' } : u))
+      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: item.id, status: 'UPLOADING' })
       try {
         await uploadMedia(item.file, '', (pct) => {
           setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, progress: pct } : u))
         })
         setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'done', progress: 100 } : u))
+        sendAdminWs('/app/admin/maintenance/uploads', { uploadId: item.id, status: 'DONE' })
         succeeded += 1
       } catch (err) {
         setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'error', error: err.message } : u))
+        sendAdminWs('/app/admin/maintenance/uploads', { uploadId: item.id, status: 'ERROR' })
         failed += 1
       }
     }

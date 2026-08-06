@@ -218,11 +218,12 @@ final class AdminMutationValidators {
                     errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must have a valid host."));
                     return;
                 }
+                // The VPS public IP (103.1.236.148) was allowed here until the 2026-08-06
+                // domain cutover; everything public now runs on bigbike.vn behind nginx.
                 boolean isProductionDomain = host.equalsIgnoreCase("bigbike.vn") || host.equalsIgnoreCase("www.bigbike.vn");
-                boolean isApprovedVpsIp = host.equalsIgnoreCase("103.1.236.148");
                 boolean isDevAllowed = isDev && (host.equalsIgnoreCase("localhost") || host.equalsIgnoreCase("127.0.0.1"));
-                if (!isProductionDomain && !isApprovedVpsIp && !isDevAllowed) {
-                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must belong to bigbike.vn, www.bigbike.vn, or 103.1.236.148."));
+                if (!isProductionDomain && !isDevAllowed) {
+                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must belong to bigbike.vn or www.bigbike.vn."));
                 }
             } catch (URISyntaxException e) {
                 errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must be a valid URL."));

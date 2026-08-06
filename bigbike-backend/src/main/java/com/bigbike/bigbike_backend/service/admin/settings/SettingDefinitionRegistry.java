@@ -118,6 +118,12 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Lịch nghỉ lễ / Tết.").build(),
 
+                // Chế độ bảo trì CỐ Ý không nằm ở đây (V374). Registry chỉ mô tả thêm cho các dòng
+                // site_settings; danh sách màn Cài đặt lấy từ settingRepo.findAll(), và mọi guard
+                // dựa trên registry đều coi key lạ là KHÔNG hạn chế. Giữ trạng thái bảo trì ở đây
+                // đồng nghĩa bất kỳ ai có `settings.write` cũng tự mở khoá được. Trạng thái nay
+                // nằm ở bảng riêng `maintenance_state`, chỉ đổi qua PUT /api/v1/admin/maintenance.
+
                 // ── PAYMENT ── (tài khoản nhận chuyển khoản — admin tự nhập & đối soát thủ công,
                 // không có cổng thanh toán tự động; hiển thị cho khách ở trang xác nhận đơn BACS)
                 SettingDefinition.builder("bank_account_holder", "payment", SettingValueType.STRING)

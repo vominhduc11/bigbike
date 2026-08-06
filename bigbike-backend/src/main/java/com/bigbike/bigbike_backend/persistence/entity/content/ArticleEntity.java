@@ -91,9 +91,17 @@ public class ArticleEntity {
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
 
-    /** Per-article SEO noindex flag (V222) — web emits meta noindex when true. */
-    @Column(name = "seo_no_index", nullable = false)
+    /**
+     * Cờ "cho Google hiển thị" bản tiếng Việt (V222) — web phát meta noindex khi true.
+     * Từ V371 cờ này chỉ còn áp cho bản VI; bản EN dùng {@link #seoNoIndexEn}.
+     * BUSINESS_RULES `SEO_RULE_001`.
+     */
+    @Column(name = "seo_no_index", nullable = false, columnDefinition = "boolean default false")
     private boolean seoNoIndex;
+
+    /** Cờ bản tiếng Anh (V371) — ghi đè thủ công, còn phải qua ngưỡng `SEO_RULE_002`. */
+    @Column(name = "seo_no_index_en", nullable = false, columnDefinition = "boolean default false")
+    private boolean seoNoIndexEn;
 
     // English translations (V138) — nullable; storefront falls back to VI per ARTICLE_RULE_002
     private String titleEn;

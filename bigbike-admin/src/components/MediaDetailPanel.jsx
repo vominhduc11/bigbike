@@ -7,6 +7,7 @@ import { useMediaReferences } from '../lib/useMediaReferences'
 import { showConfirm } from '../lib/confirm'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useDraftAutosave } from '../lib/useDraftAutosave'
 import { TagInput } from './TagInput'
 import { CollapsibleSection } from './CollapsibleSection'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -59,6 +60,14 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     folderId !== (media.folderId ?? '') ||
     JSON.stringify(tags) !== JSON.stringify(Array.isArray(media.tags) ? media.tags : [])
 
+  const mediaDraftKey = `draft:media-detail:${media.id}`
+  const mediaDraftValue = { mediaId: media.id, altText, title, folderId, tags }
+  const { recovered: recoveredMediaDraft, clear: clearMediaDraft } = useDraftAutosave(
+    mediaDraftKey,
+    mediaDraftValue,
+    { enabled: Boolean(canUpdate && !isTrash), dirty },
+  )
+
   // Cảnh báo khi rời trang lúc đang sửa (mở link tham chiếu → điều hướng cả trang,
   // reload/đóng tab, hoặc điều hướng nội bộ qua router) — attemptClose chỉ lo nút
   // Đóng/Huỷ/Esc trong panel.
@@ -75,18 +84,23 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       )
       if (!confirmed) return
     }
+    clearMediaDraft()
     onClose()
-  }, [dirty, onClose, t])
+  }, [clearMediaDraft, dirty, onClose, t])
 
   // Reset form fields when switching media
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAltText(media.altText ?? '')
-    setTitle(media.title ?? '')
-    setFolderId(media.folderId ?? '')
-    setTags(Array.isArray(media.tags) ? media.tags : [])
+    const savedForm = recoveredMediaDraft?.value?.mediaId === media.id
+      ? recoveredMediaDraft.value
+      : null
+    setAltText(savedForm?.altText ?? media.altText ?? '')
+    setTitle(savedForm?.title ?? media.title ?? '')
+    setFolderId(savedForm?.folderId ?? media.folderId ?? '')
+    setTags(savedForm?.tags ?? (Array.isArray(media.tags) ? media.tags : []))
     setError('')
-  }, [media.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [media.altText, media.folderId, media.id, media.tags, media.title, recoveredMediaDraft])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (Array.isArray(foldersProp)) return
@@ -118,6 +132,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       if (folderId === '') { payload.clearFolder = true } else { payload.folderId = folderId }
       const result = await updateMedia(media.id, payload)
       onSaved(result.item)
+      clearMediaDraft()
       toast.success(t('media.saveSuccess'))
     } catch {
       // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.

@@ -91,6 +91,7 @@ export function buildEmptyForm(contentType) {
     featured: false,
     homeExperience: false,
     seoNoIndex: false,
+    seoNoIndexEn: false,
     coverImageUrl: '',
     coverImageAlt: '',
     coverImageWidth: null,
@@ -126,6 +127,7 @@ export function buildFormFromItem(contentType, item) {
     featured: Boolean(item.featured),
     homeExperience: Boolean(item.homeExperience),
     seoNoIndex: Boolean(item.seo?.noIndex),
+    seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     coverImageUrl: item.coverImage?.rawUrl || item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
     coverImageWidth: item.coverImage?.width ?? null,
@@ -269,8 +271,10 @@ export function toPayload(form, _isCreate) {
           mimeType: form.seoOgImageMimeType?.trim() || null,
         }
       : null,
-    // noindex toggle — gửi boolean trong object seo cùng các field SEO khác.
+    // Cờ cho-Google-hiển-thị, tách riêng VI/EN (SEO_RULE_001). Gửi trong object seo
+    // cùng các field SEO khác.
     noIndex: Boolean(form.seoNoIndex),
+    noIndexEn: Boolean(form.seoNoIndexEn),
   }
 
   payload.translations = {

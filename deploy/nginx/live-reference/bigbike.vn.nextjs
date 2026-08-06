@@ -1,0 +1,123 @@
+# ==============================================================================
+# Nginx Configuration for bigbike.vn (Main Website — Next.js)
+# Requires shared-config.conf for upstream and rate-limit zone definitions.
+# ==============================================================================
+
+# HTTP → HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name bigbike.vn www.bigbike.vn;
+
+    access_log /var/log/nginx/bigbike.vn-http-access.log;
+    error_log /var/log/nginx/bigbike.vn-http-error.log;
+
+    return 301 https://bigbike.vn$request_uri;
+}
+
+# www → canonical redirect
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.bigbike.vn;
+
+    ssl_certificate /etc/ssl/bigbike.vn/fullchain.crt;
+    ssl_certificate_key /etc/ssl/bigbike.vn/private.key;
+
+    return 301 https://bigbike.vn$request_uri;
+}
+
+# HTTPS — Main Website
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name bigbike.vn;
+
+    # ==================== SSL ====================
+    ssl_certificate /etc/ssl/bigbike.vn/fullchain.crt;
+    ssl_certificate_key /etc/ssl/bigbike.vn/private.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MainSSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # ==================== Security Headers ====================
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # ==================== Logs ====================
+    access_log /var/log/nginx/bigbike.vn-access.log;
+    error_log /var/log/nginx/bigbike.vn-error.log warn;
+
+    # ==================== Client Settings ====================
+    client_body_timeout 60s;
+    client_header_timeout 30s;
+    client_max_body_size 10m;
+
+    # ==================== SEO Product 301 Redirects ====================
+    # 189 luật dọn dẹp sản phẩm ngừng bán, giữ y nguyên như cấu hình WordPress cũ
+    # (/etc/nginx/conf.d/bigbike-seo-redirects-map.conf). Chỉ 20/189 luật này có
+    # trong bảng redirects của web mới, nên bỏ khối này là mất 169 chuyển hướng
+    # đang chạy tốt. Đích của chúng là các URL danh mục .html — đã bổ sung luật
+    # trong CSDL ngày 2026-08-06 nên chuỗi chuyển hướng kết thúc ở trang 200.
+    if ($bigbike_seo_redirect) {
+        return 301 $bigbike_seo_redirect;
+    }
+
+    # ==================== llms.txt ====================
+    # Bản hướng dẫn cho trợ lý AI, mang nguyên từ web WordPress cũ (thư mục gốc).
+    # Phục vụ thẳng ở đây để khỏi phải dựng lại bigbike-web. Về lâu dài thợ web nên
+    # chuyển file này vào bigbike-web/public/ rồi bỏ khối này đi.
+    location = /llms.txt {
+        alias /var/www/bigbike-static/llms.txt;
+        default_type text/plain;
+        charset utf-8;
+        add_header Cache-Control "public, max-age=3600";
+        access_log off;
+    }
+
+    # ==================== Trang xin lỗi khách khi web không phản hồi ==========
+    # Thay trang lỗi trắng mặc định của nginx bằng trang có logo, hotline, Zalo,
+    # Fanpage, địa chỉ và giờ mở cửa — sinh từ cài đặt thật bằng
+    # deploy/maintenance/render-fallback-pages.sh (chạy lại mỗi khi đổi thông tin liên hệ).
+    # Trả 503 + Retry-After để Google hiểu là tạm thời, không phải trang đã bị xoá.
+    #
+    # CỐ Ý không bật `proxy_intercept_errors`: chỉ kích hoạt khi nginx TỰ sinh 502/504
+    # (container chết hoặc đang dựng lại), không đụng vào phản hồi lỗi hợp lệ của Next.js.
+    error_page 502 503 504 =503 /__bigbike_outage.html;
+    location = /__bigbike_outage.html {
+        internal;
+        alias /var/www/bigbike-static/maintenance/maintenance-web.html;
+        default_type text/html;
+        charset utf-8;
+        add_header Retry-After "60" always;
+        add_header Cache-Control "no-store" always;
+    }
+
+    # ==================== Proxy to Next.js ====================
+    location / {
+        limit_req zone=general_limit burst=30 nodelay;
+
+        proxy_pass http://main_frontend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}

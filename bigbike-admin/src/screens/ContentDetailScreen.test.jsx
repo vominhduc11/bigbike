@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   setContentLang: vi.fn(),
   contentLang: 'vi',
   toast: { success: vi.fn(), error: vi.fn() },
+  // Quyền riêng cho ô "cho Google hiển thị" (V372 `seo.index`). Mặc định là có, để các
+  // test nội dung không phải bận tâm; test riêng bên dưới tắt đi để kiểm nhánh khoá.
+  hasPermission: vi.fn(() => true),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -39,6 +42,7 @@ vi.mock('../lib/contentLang', () => ({
   useContentLang: () => mocks.contentLang,
   setContentLang: mocks.setContentLang,
 }))
+vi.mock('../lib/auth', () => ({ useHasPermission: () => mocks.hasPermission }))
 vi.mock('../lib/useUnsavedChanges', () => ({ useUnsavedChanges: vi.fn() }))
 vi.mock('../lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
@@ -149,6 +153,7 @@ function renderScreen({
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.contentLang = 'vi'
+  mocks.hasPermission.mockImplementation(() => true)
   localStorage.clear()
   mocks.fetchContentDetail.mockResolvedValue({ item: baseArticle })
   mocks.createContent.mockResolvedValue({ item: baseArticle })
@@ -192,7 +197,11 @@ describe('ContentDetailScreen', () => {
     })
   })
 
-  it('dùng cùng hướng dẫn SEO với màn Sản phẩm và không hiện tùy chọn riêng', async () => {
+  // Bản trước của test này (commit 578c2961, 2026-07-29) khẳng định ô "cho Google hiển thị"
+  // phải KHÔNG tồn tại, để tab SEO tin tức trông giống tab SEO sản phẩm. Mục tiêu đồng bộ
+  // đó vẫn giữ — nhưng từ V371 cả 4 loại (sản phẩm/danh mục/thương hiệu/bài viết) đều có ô
+  // này, nên "giống nhau" giờ nghĩa là ĐỀU CÓ. Xem BUSINESS_RULES `SEO_RULE_001`.
+  it('dùng cùng hướng dẫn SEO với màn Sản phẩm, gồm cả ô cho Google hiển thị', async () => {
     const user = userEvent.setup()
     renderScreen()
 
@@ -201,8 +210,34 @@ describe('ContentDetailScreen', () => {
     expect(screen.getByText('0 / 60')).toBeInTheDocument()
     expect(screen.getByText('0 / 155')).toBeInTheDocument()
     expect(screen.getByText('content.detail.seoOgImageUrl')).toBeInTheDocument()
+    // Khối "Tùy chọn nâng cao" gập lại vẫn không quay về — ô nằm thẳng trong tab.
     expect(screen.queryByText('content.detail.seoAdvanced')).not.toBeInTheDocument()
-    expect(screen.queryByText('content.detail.seoNoIndex')).not.toBeInTheDocument()
+    expect(screen.getByText('seoIndex.labelVi')).toBeInTheDocument()
+  })
+
+  it('ô cho Google hiển thị mặc định đang bật và tắt được', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('tab', { name: 'content.detail.tabSeoPublish' }))
+
+    // Nhãn theo chiều khẳng định: tick = cho hiển thị, dữ liệu lưu là noIndex (phủ định).
+    const checkbox = screen.getByRole('checkbox', { name: 'seoIndex.labelVi' })
+    expect(checkbox).toBeChecked()
+
+    await user.click(checkbox)
+    expect(checkbox).not.toBeChecked()
+  })
+
+  it('không có quyền seo.index thì ô bị khoá', async () => {
+    const user = userEvent.setup()
+    mocks.hasPermission.mockImplementation(() => false)
+    renderScreen()
+
+    await user.click(await screen.findByRole('tab', { name: 'content.detail.tabSeoPublish' }))
+
+    expect(screen.getByRole('checkbox', { name: 'seoIndex.labelVi' })).toBeDisabled()
+    expect(screen.getByText('seoIndex.noPermission')).toBeInTheDocument()
   })
 
   it('xem trước SEO tiếng Anh bằng đúng đường dẫn và nội dung tiếng Anh', async () => {

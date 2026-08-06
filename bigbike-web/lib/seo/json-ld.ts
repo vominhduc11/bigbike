@@ -68,26 +68,12 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
     // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
     // bao giờ khai khống — vi phạm guideline Google (checklist #23).
     aggregateRating: buildAggregateRating(product),
-    // Ưu/Nhược điểm (V175) — pros & cons rich result.
-    positiveNotes: buildNotesList(product.positiveNotes),
-    negativeNotes: buildNotesList(product.negativeNotes),
-  };
-}
-
-function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject | undefined {
-  const items = (notes ?? [])
-    .map((note) => stripHtmlToText(note?.content ?? ""))
-    .filter((content): content is string => Boolean(content));
-  if (items.length === 0) {
-    return undefined;
-  }
-  return {
-    "@type": "ItemList",
-    itemListElement: items.map((content, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: content,
-    })),
+    // CỐ Ý KHÔNG khai positiveNotes/negativeNotes (gỡ 2026-08-06, thay cho V175).
+    // Google chỉ hỗ trợ rich result ưu/nhược điểm cho trang ĐÁNH GIÁ biên tập độc
+    // lập, không cho trang bán hàng của chính người bán — khai ở đây là sai loại
+    // trang và có nguy cơ bị phạt thủ công toàn site. Ưu/nhược điểm vẫn hiển thị
+    // cho khách dưới dạng HTML thường qua <ProductProsCons>, chỉ không vào JSON-LD.
+    // Không thêm lại dưới bất kỳ tên nào (positiveNotes, negativeNotes, Review, pros, cons).
   };
 }
 
@@ -337,6 +323,12 @@ export function buildLocalBusinessJsonLd(
     areaServed?: string;
     priceRange?: string;
     locale?: SeoLocale;
+    /**
+     * Các dòng giờ mở cửa dạng chữ do admin nhập (settings `opening_hours_*`), ví dụ
+     * "T2 - T7: 09h00 - 21h00". Dòng nào không tách được giờ thì BỎ QUA — thà thiếu
+     * còn hơn khai sai giờ, vì khách đến nơi thấy đóng cửa sẽ đánh giá xấu trên Maps.
+     */
+    openingHours?: (string | null | undefined)[];
   } = {},
 ): JsonLdObject {
   const result: JsonLdObject = {
@@ -346,8 +338,10 @@ export function buildLocalBusinessJsonLd(
     logo: toCanonicalUrl(logo),
     url: toCanonicalUrl(toHomePath(opts.locale ?? "vi")),
   };
-  if (address) result.address = address;
+  if (address) result.address = toPostalAddress(address);
   if (phone) result.telephone = phone;
+  const openingHoursSpec = buildOpeningHoursSpecification(opts.openingHours);
+  if (openingHoursSpec.length > 0) result.openingHoursSpecification = openingHoursSpec;
   if (opts.email) result.email = opts.email;
   const sameAs = (opts.sameAs ?? []).filter((u): u is string => Boolean(u && u.trim()));
   if (sameAs.length > 0) result.sameAs = sameAs;
@@ -357,6 +351,93 @@ export function buildLocalBusinessJsonLd(
   // CỐ Ý không khai aggregateRating ở đây: shop chưa có review thật trên hệ thống,
   // khai khống số sao vi phạm guideline Google. Chỉ thêm khi có dữ liệu thật.
   return result;
+}
+
+/**
+ * Địa chỉ trong settings là một dòng chữ tự do; Google đọc PostalAddress có cấu trúc
+ * tốt hơn nhiều so với chuỗi liền. Tách bảo thủ: cụm cuối cùng là tỉnh/thành, phần
+ * còn lại là số nhà + đường + phường. Không có dấu phẩy thì giữ nguyên làm streetAddress.
+ */
+function toPostalAddress(address: string): JsonLdObject {
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  const result: JsonLdObject = { "@type": "PostalAddress", addressCountry: "VN" };
+  if (parts.length >= 2) {
+    result.streetAddress = parts.slice(0, -1).join(", ");
+    result.addressLocality = parts[parts.length - 1];
+  } else {
+    result.streetAddress = address.trim();
+  }
+  return result;
+}
+
+// Chỉ số 0 = Thứ Hai … 6 = Chủ Nhật, khớp cách đánh số T2…T7/CN của tiếng Việt.
+const SCHEMA_DAY_NAMES = [
+  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+];
+
+function vietnameseDayIndex(token: string): number | null {
+  const normalized = token.trim().toUpperCase();
+  if (normalized === "CN") return 6;
+  const match = normalized.match(/^T([2-7])$/);
+  return match ? Number(match[1]) - 2 : null;
+}
+
+function parseDayTokens(text: string): string[] {
+  const range = text.match(/\b(T[2-7]|CN)\s*[-–—]\s*(T[2-7]|CN)\b/i);
+  if (range) {
+    const from = vietnameseDayIndex(range[1]);
+    const to = vietnameseDayIndex(range[2]);
+    if (from === null || to === null || to < from) return [];
+    return SCHEMA_DAY_NAMES.slice(from, to + 1);
+  }
+  const singles = text.match(/\b(T[2-7]|CN)\b/gi) ?? [];
+  const indexes = singles
+    .map(vietnameseDayIndex)
+    .filter((index): index is number => index !== null);
+  return [...new Set(indexes)].sort((a, b) => a - b).map((index) => SCHEMA_DAY_NAMES[index]);
+}
+
+function parseOpenCloseTimes(text: string): { opens: string; closes: string } | null {
+  // Bỏ phần ký hiệu ngày trước khi dò giờ, nếu không "T7:" sẽ bị đọc nhầm thành 07:00.
+  const timeText = text
+    .replace(/\b(T[2-7]|CN)\b\s*[-–—]?\s*/gi, "")
+    .replace(/^\s*:\s*/, "");
+  const matches = [...timeText.matchAll(/(\d{1,2})\s*(?:h|:|giờ)\s*(\d{2})?/gi)];
+  if (matches.length < 2) return null;
+  const format = (match: RegExpMatchArray): string | null => {
+    const hour = Number(match[1]);
+    const minute = match[2] ? Number(match[2]) : 0;
+    if (!Number.isInteger(hour) || hour > 23 || !Number.isInteger(minute) || minute > 59) {
+      return null;
+    }
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  };
+  const opens = format(matches[0]);
+  const closes = format(matches[1]);
+  return opens && closes ? { opens, closes } : null;
+}
+
+/**
+ * Đổi các dòng giờ mở cửa dạng chữ ("T2 - T7: 09h00 - 21h00") sang
+ * OpeningHoursSpecification. Dòng nào thiếu ngày hoặc thiếu giờ (ví dụ
+ * "Lễ / Tết: nghỉ có thông báo") thì bỏ qua thay vì đoán.
+ */
+function buildOpeningHoursSpecification(lines: (string | null | undefined)[] | undefined): JsonLdObject[] {
+  return (lines ?? [])
+    .map((line): JsonLdObject | null => {
+      const text = (line ?? "").trim();
+      if (!text) return null;
+      const dayOfWeek = parseDayTokens(text);
+      const times = parseOpenCloseTimes(text);
+      if (dayOfWeek.length === 0 || !times) return null;
+      return {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek,
+        opens: times.opens,
+        closes: times.closes,
+      };
+    })
+    .filter((spec): spec is JsonLdObject => spec !== null);
 }
 
 function localeFromPath(path?: string): SeoLocale {

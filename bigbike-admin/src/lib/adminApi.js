@@ -1136,6 +1136,33 @@ export async function batchUpdateSettings(updates) {
   return { items }
 }
 
+// Maintenance (admin-panel lock)
+//
+// Read is intentionally ungated so every signed-in staff member sees why the panel is
+// locked; the server restricts the write to the DEVELOPER role and reports it back as
+// `canToggle`, so the UI never has to re-derive the rule.
+
+export async function fetchMaintenance() {
+  try {
+    const payload = await requestJson('/admin/maintenance')
+    return payload?.data || null
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function updateMaintenance({ state, staffNote, expectedAt }) {
+  const payload = await requestJson('/admin/maintenance', {
+    method: 'PUT',
+    body: {
+      state,
+      staffNote: staffNote?.trim() ? staffNote.trim() : null,
+      expectedAt: expectedAt || null,
+    },
+  })
+  return payload?.data || null
+}
+
 // Editable "Phân công" guide text for the product create/edit banner.
 // Read is gated by products.read (not settings.read) so SHOP_MANAGER/EDITOR see it too.
 export async function fetchProductAssignment() {

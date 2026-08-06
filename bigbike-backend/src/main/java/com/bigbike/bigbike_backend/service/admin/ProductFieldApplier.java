@@ -421,6 +421,16 @@ final class ProductFieldApplier {
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
 
+        // V371 — cờ "cho Google hiển thị", tách theo ngôn ngữ (BUSINESS_RULES `SEO_RULE_001`).
+        // Trước V371 hai field này được nhận, validate rồi VỨT IM LẶNG: API trả 200 nhưng không
+        // lưu gì. `null` = giữ nguyên giá trị hiện có (presence-flag pattern như ContentFieldApplier).
+        if (request.getNoIndex() != null) {
+            entity.setSeoNoIndex(request.getNoIndex());
+        }
+        if (request.getNoIndexEn() != null) {
+            entity.setSeoNoIndexEn(request.getNoIndexEn());
+        }
+
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
             entity.setSeoOgImageUrl(null);
@@ -440,6 +450,9 @@ final class ProductFieldApplier {
     }
 
     public static void clearSeo(ProductEntity entity) {
+        // CỐ Ý không đụng seoNoIndex/seoNoIndexEn: "xoá SEO" là xoá phần văn bản/ảnh chia sẻ,
+        // còn cờ cho-Google-hiển-thị là một quyết định vận hành riêng. Reset ngầm nó ở đây sẽ
+        // bật lại một trang đang cố tình ẩn mà không ai biết. Muốn đổi thì gửi cờ tường minh.
         entity.setSeoTitle(null);
         entity.setSeoDescription(null);
         entity.setSeoCanonicalUrl(null);
@@ -455,6 +468,16 @@ final class ProductFieldApplier {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
+
+        // V371 — cờ "cho Google hiển thị", tách theo ngôn ngữ (BUSINESS_RULES `SEO_RULE_001`).
+        // Trước V371 hai field này được nhận, validate rồi VỨT IM LẶNG: API trả 200 nhưng không
+        // lưu gì. `null` = giữ nguyên giá trị hiện có (presence-flag pattern như ContentFieldApplier).
+        if (request.getNoIndex() != null) {
+            entity.setSeoNoIndex(request.getNoIndex());
+        }
+        if (request.getNoIndexEn() != null) {
+            entity.setSeoNoIndexEn(request.getNoIndexEn());
+        }
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -475,6 +498,9 @@ final class ProductFieldApplier {
     }
 
     public static void clearSeo(CategoryEntity entity) {
+        // CỐ Ý không đụng seoNoIndex/seoNoIndexEn: "xoá SEO" là xoá phần văn bản/ảnh chia sẻ,
+        // còn cờ cho-Google-hiển-thị là một quyết định vận hành riêng. Reset ngầm nó ở đây sẽ
+        // bật lại một trang đang cố tình ẩn mà không ai biết. Muốn đổi thì gửi cờ tường minh.
         entity.setSeoTitle(null);
         entity.setSeoDescription(null);
         entity.setSeoCanonicalUrl(null);
@@ -490,6 +516,16 @@ final class ProductFieldApplier {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
+
+        // V371 — cờ "cho Google hiển thị", tách theo ngôn ngữ (BUSINESS_RULES `SEO_RULE_001`).
+        // Trước V371 hai field này được nhận, validate rồi VỨT IM LẶNG: API trả 200 nhưng không
+        // lưu gì. `null` = giữ nguyên giá trị hiện có (presence-flag pattern như ContentFieldApplier).
+        if (request.getNoIndex() != null) {
+            entity.setSeoNoIndex(request.getNoIndex());
+        }
+        if (request.getNoIndexEn() != null) {
+            entity.setSeoNoIndexEn(request.getNoIndexEn());
+        }
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -517,6 +553,9 @@ final class ProductFieldApplier {
     }
 
     public static void clearSeo(BrandEntity entity) {
+        // CỐ Ý không đụng seoNoIndex/seoNoIndexEn: "xoá SEO" là xoá phần văn bản/ảnh chia sẻ,
+        // còn cờ cho-Google-hiển-thị là một quyết định vận hành riêng. Reset ngầm nó ở đây sẽ
+        // bật lại một trang đang cố tình ẩn mà không ai biết. Muốn đổi thì gửi cờ tường minh.
         entity.setSeoTitle(null);
         entity.setSeoDescription(null);
         entity.setSeoCanonicalUrl(null);

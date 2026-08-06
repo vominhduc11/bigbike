@@ -267,6 +267,18 @@ public class ProductEntity {
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
 
+    /** Cờ "cho Google hiển thị" bản tiếng Việt (V371) — BUSINESS_RULES `SEO_RULE_001`. */
+    @Column(name = "seo_no_index", nullable = false, columnDefinition = "boolean default false")
+    private boolean seoNoIndex;
+
+    /**
+     * Cờ "cho Google hiển thị" bản tiếng Anh (V371). Đây chỉ là lớp ghi đè thủ công:
+     * giá trị thật sự phát ra cho `lang=en` còn phải qua ngưỡng đủ nội dung EN
+     * (`SeoIndexPolicy`, BUSINESS_RULES `SEO_RULE_002`).
+     */
+    @Column(name = "seo_no_index_en", nullable = false, columnDefinition = "boolean default false")
+    private boolean seoNoIndexEn;
+
     // Optional English content (V136). Vietnamese stays on the columns above (canonical).
     // Null = no English; reads fall back to the Vietnamese column field-by-field.
     @Column(name = "name_en")

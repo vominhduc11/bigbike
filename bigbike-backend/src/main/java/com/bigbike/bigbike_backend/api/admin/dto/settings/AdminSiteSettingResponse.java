@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin.dto.settings;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 public record AdminSiteSettingResponse(
@@ -17,5 +18,6 @@ public record AdminSiteSettingResponse(
         String valueType,
         boolean sensitive,
         boolean masked,
-        boolean superAdminOnly
+        boolean superAdminOnly,
+        Set<String> allowedValues
 ) {}

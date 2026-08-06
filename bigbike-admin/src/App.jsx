@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
   Package, Settings, Shield, ShoppingCart, Star, Tag,
-  Users,
+  Users, Wrench,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -57,6 +57,7 @@ const ReportsScreen      = lazyScreen(() => import('./screens/ReportsScreen'),  
 const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),        'RolesScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
+const MaintenanceScreen  = lazyScreen(() => import('./screens/MaintenanceScreen'),  'MaintenanceScreen')
 
 // Dashboard: backend giới hạn theo VAI TRÒ (ADMIN/SUPER_ADMIN/SHOP_MANAGER) ngoài
 // quyền orders.read — mirror ở frontend để người có orders.read nhưng khác vai trò
@@ -111,6 +112,10 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/admin-users',  labelKey: 'nav.adminUsers',  policyKey: 'adminUsersRead', icon: Shield },
       { path: '/admin/roles',        labelKey: 'nav.roles',       policyKey: 'rolesRead', icon: KeyRound },
       { path: '/admin/audit-logs',   labelKey: 'nav.auditLogs',   policyKey: 'auditLogsRead', icon: Activity },
+      // Khoá bảo trì: gate theo VAI TRÒ, không theo permission. Quyền '*' của SUPER_ADMIN
+      // short-circuit mọi permission check ở backend, nên một policyKey sẽ vẫn cho chủ hệ
+      // thống thấy mục này — đúng thứ owner đã chốt là KHÔNG được (2026-08-06).
+      { path: '/admin/maintenance',  labelKey: 'nav.maintenance', policyKey: 'settingsRead', roles: ['DEVELOPER'], icon: Wrench },
     ],
   },
 ]
@@ -172,6 +177,7 @@ function parseRoute(pathname) {
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
+  if (module === 'maintenance') return { kind: 'screen', name: 'maintenance' }
 
   return { kind: 'not-found' }
 }
@@ -275,11 +281,13 @@ function AdminApp() {
         groupKey: group.groupKey,
         label: t(group.labelKey),
         items: group.items
-          .filter((item) => authState.status === 'authenticated' && canAccess(item.policyKey))
+          .filter((item) => authState.status === 'authenticated'
+            && canAccess(item.policyKey)
+            && (!item.roles || item.roles.some((role) => userRoles.includes(role))))
           .map((item) => ({ path: item.path, label: t(item.labelKey), icon: item.icon })),
       }))
       .filter((group) => group.items.length > 0),
-    [authState.status, canAccess, t],
+    [authState.status, canAccess, t, userRoles],
   )
 
   // Active page label for topbar
@@ -291,9 +299,10 @@ function AdminApp() {
   }, [activePath, t])
 
   const fallbackPath = useMemo(() => {
-    const first = NAV_FLAT.find((item) => canAccess(item.policyKey))
+    const first = NAV_FLAT.find((item) => canAccess(item.policyKey)
+      && (!item.roles || item.roles.some((role) => userRoles.includes(role))))
     return first?.path || null
-  }, [canAccess])
+  }, [canAccess, userRoles])
 
   const routePolicyKey = useMemo(
     () => (route.kind === 'screen' ? policyForRoute(route.name) : null),
@@ -396,6 +405,17 @@ function AdminApp() {
 
   if (route.kind !== 'screen') return null
 
+  // Chặn cả khi gõ thẳng URL: nav đã ẩn nhưng route phải tự bảo vệ.
+  if (route.name === 'maintenance' && !userRoles.includes('DEVELOPER')) {
+    return (
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+        <StatePanel tone="warning" title={t('app.permissionDenied')} description={t('maintenance.developerOnly', { defaultValue: 'Chỉ tài khoản kỹ thuật (DEVELOPER) mới bật/tắt được chế độ bảo trì.' })}
+          actionLabel={fallbackPath ? t('app.goToAllowedModule') : undefined}
+          onAction={fallbackPath ? () => navigate(fallbackPath) : undefined} />
+      </AdminShell>
+    )
+  }
+
   if (missingPermissions.length > 0) {
     return (
       <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
@@ -470,6 +490,8 @@ function AdminApp() {
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} currentUserRoles={authState.user?.roles} />; break
     case 'featured-products':
       screen = <FeaturedProductsScreen canUpdate={canAccess('featuredProducts')} />; break
+    case 'maintenance':
+      screen = <MaintenanceScreen />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

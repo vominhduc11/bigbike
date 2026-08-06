@@ -531,7 +531,6 @@ export function createCategorySchema(t) {
       menuIconUrl: z.string().optional(),
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
-      seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
       // English content (V137 + V213 slug). TRANSLATION_RULE_002: `name` is required
@@ -591,9 +590,6 @@ export function createCategorySchema(t) {
       if ((data.seoDescription ?? '').trim().length > 5000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoDescriptionTooLong'), path: ['seoDescription'] })
       }
-      if ((data.seoCanonicalUrl ?? '').trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
-      }
       if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })
       }
@@ -617,7 +613,6 @@ export function createBrandSchema(t) {
     description: z.string().optional(),
     logoUrl: z.string().optional(),
     bannerUrl: z.string().optional(),
-    seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
     // English content (V137). BRAND_RULE_001/003: brand name and slug are shared
     // across VI/EN; translated fields here are optional and format/length-only.
@@ -648,9 +643,6 @@ export function createBrandSchema(t) {
     // không nhận link ngoài (cùng chuẩn với logo và ảnh chia sẻ SEO).
     if (data.bannerUrl?.trim() && !MEDIA_URL_REGEX.test(data.bannerUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errBannerUrl'), path: ['bannerUrl'] })
-    }
-    if (data.seoCanonicalUrl?.trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
     }
     if (data.seoOgImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })

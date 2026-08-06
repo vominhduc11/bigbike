@@ -14,6 +14,7 @@ import { FilterSelect } from './FilterSelect'
 import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
+import { sendAdminWs } from '../lib/adminWebSocket'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -150,7 +151,9 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       // Khoá theo id duy nhất, KHÔNG theo tên: hai file trùng tên sẽ không còn bị
       // cập nhật nhầm tiến trình lẫn nhau.
       const itemId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
-      setUploadQueue((q) => [...q, { id: itemId, name: file.name, progress: 0, error: null }])
+      setUploadQueue((q) => [...q, { id: itemId, name: file.name, progress: 0, error: null, status: 'pending' }])
+      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'PENDING' })
+      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'UPLOADING' })
       try {
         const result = await uploadMedia(file, '', (pct) => {
           setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: pct } : item))
@@ -161,11 +164,18 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           // isNewUpload tells callers this item has no saved alt/title yet — they
           // should sync the context alt the admin types back into the library.
           mediaCacheRef.current.set(url, { ...result.item, isNewUpload: true })
-          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100 } : item))
+          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100, status: 'done' } : item))
+          sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'DONE' })
+        } else {
+          setUploadQueue((q) => q.map((item) => item.id === itemId
+            ? { ...item, error: t('media.picker.uploadFailed'), status: 'error' }
+            : item))
+          sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
         }
       } catch {
         // Thông báo thân thiện thay vì message lỗi thô.
-        setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, error: t('media.picker.uploadFailed') } : item))
+        setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, error: t('media.picker.uploadFailed'), status: 'error' } : item))
+        sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
       }
     }
 

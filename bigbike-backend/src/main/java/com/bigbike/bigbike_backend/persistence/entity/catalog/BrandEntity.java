@@ -64,6 +64,14 @@ public class BrandEntity {
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
 
+    /** Cờ "cho Google hiển thị" bản tiếng Việt (V371) — BUSINESS_RULES `SEO_RULE_001`. */
+    @Column(name = "seo_no_index", nullable = false, columnDefinition = "boolean default false")
+    private boolean seoNoIndex;
+
+    /** Cờ bản tiếng Anh (V371) — ghi đè thủ công, còn phải qua ngưỡng `SEO_RULE_002`. */
+    @Column(name = "seo_no_index_en", nullable = false, columnDefinition = "boolean default false")
+    private boolean seoNoIndexEn;
+
     @Column(columnDefinition = "text")
     private String descriptionEn;
 

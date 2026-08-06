@@ -560,8 +560,20 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       // Live-preview iframe routes — relax frame-ancestors to the admin origin only.
+      //
+      // PHẢI có cả 2 rule: `i18n/routing.ts` khai /preview/product và /preview/article
+      // cho CẢ hai locale, và `localePrefix: "as-needed"` đặt bản tiếng Anh ở
+      // /en/preview/*. Chỉ khai /preview/:path* thì bản EN không khớp rule nào —
+      // đã đo 2026-08-06: /preview/product/ có X-Robots-Tag, /en/preview/product/
+      // hoàn toàn không có header lẫn thẻ meta (trang là "use client" nên không
+      // export generateMetadata được). Không vá bằng robots.txt: Google phải tải
+      // được trang thì mới đọc được lệnh noindex (SEO_RULE_004).
       {
         source: "/preview/:path*",
+        headers: previewHeaders,
+      },
+      {
+        source: "/en/preview/:path*",
         headers: previewHeaders,
       },
       // Noindex for specific legacy routes from CSV

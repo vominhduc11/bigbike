@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.mapper;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.SeoIndexPolicy;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
@@ -57,7 +58,13 @@ public interface ArticleMapper {
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
                         entity.getSeoOgImageMimeType(),
-                        entity.isSeoNoIndex()
+                        // V371: cờ tách theo ngôn ngữ + ngưỡng đủ nội dung EN (SEO_RULE_001/002).
+                        SeoIndexPolicy.resolveNoIndex(
+                                locale,
+                                entity.isSeoNoIndex(),
+                                entity.isSeoNoIndexEn(),
+                                SeoIndexPolicy.articleEnglishReady(entity.getTitleEn(), entity.getBodyEn())
+                        )
                 ),
                 includeTranslations ? toArticleTranslations(entity) : null,
                 entity.getPublishedAt(),

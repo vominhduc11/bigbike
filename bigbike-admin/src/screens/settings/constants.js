@@ -389,6 +389,7 @@ export const KEY_GUIDE = {
   bank_name:             ['payment_bank', 'tên ngân hàng'],
   bank_branch:           ['payment_bank', 'chi nhánh'],
 
+
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_image_alt:        ['hero_products', 'mô tả ảnh (SEO)'],
   hero_products_title:            ['hero_products', 'tiêu đề trên banner'],

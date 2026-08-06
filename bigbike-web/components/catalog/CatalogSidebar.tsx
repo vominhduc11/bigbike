@@ -273,8 +273,11 @@ export function CatalogSidebar({
 
         <FilterSection title={t("filterPrice")}>
           <ul className={filterListClass}>
+            {/* rel="nofollow" như lọc giới tính/màu/thương hiệu bên dưới: queryHref mang
+                theo TẤT CẢ tham số lọc đang bật, nên một link giá không nofollow sẽ mở
+                lại đúng không gian URL tổ hợp mà 3 nhóm kia đã đóng. */}
             <li className={filterRowClass}>
-              <Link className={cn(filterLinkClass, noPrice && "text-brand!")} href={queryHref({ min_price: undefined, max_price: undefined })}>
+              <Link className={cn(filterLinkClass, noPrice && "text-brand!")} rel="nofollow" href={queryHref({ min_price: undefined, max_price: undefined })}>
                 {t("allColors")}
               </Link>
             </li>
@@ -284,6 +287,7 @@ export function CatalogSidebar({
                 <li className={filterRowClass} key={band.key}>
                   <Link
                     className={cn(filterLinkClass, active && "text-brand!")}
+                    rel="nofollow"
                     href={active ? queryHref({ min_price: undefined, max_price: undefined }) : queryHref({ min_price: band.min, max_price: band.max })}
                   >
                     {band.label}

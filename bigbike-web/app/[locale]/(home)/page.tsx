@@ -200,6 +200,13 @@ export default async function HomePage({ params }: HomePageProps) {
       areaServed: locale === "en" ? "Ho Chi Minh City" : "Thành phố Hồ Chí Minh",
       priceRange: "₫₫",
       locale,
+      // Lấy từ đúng settings đang hiển thị cho khách — sửa giờ trong trang quản trị
+      // là schema tự đổi theo, không phải sửa code. Dòng lễ/Tết không có giờ cụ thể
+      // nên builder tự bỏ qua.
+      openingHours: [
+        pickSetting(settings, ["opening_hours_weekday"]),
+        pickSetting(settings, ["opening_hours_weekend"]),
+      ],
     }),
   );
 

@@ -56,6 +56,15 @@ export function canonicalUrlFromSlug(slug) {
   return s ? `${PRODUCT_STOREFRONT_BASE}/${s}/` : null
 }
 
+// URL bản tiếng Anh của trang chi tiết. Theo PRODUCT_RULE_003 (chuẩn hoá 2026-08-03) trang EN
+// LUÔN tồn tại tại /en/product/{slugEn hoặc slug}/ — slugEn trống chỉ nghĩa là dùng slug tiếng
+// Việt dưới prefix /en, KHÔNG phải "chưa có trang tiếng Anh". null khi chưa có slug nào.
+export function englishUrlFromSlugs(slug, slugEn) {
+  const s = (slugEn || '').trim() || (slug || '').trim()
+  if (!s) return null
+  return `${PRODUCT_STOREFRONT_BASE.replace(/\/product$/, '/en/product')}/${s}/`
+}
+
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 export function extractYouTubeId(url) {
   if (!url || typeof url !== 'string') return null
@@ -177,6 +186,9 @@ export function getPublishReadiness(form, t) {
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
     { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
+    // SEO_RULE_002 — bản tiếng Anh chưa đủ nội dung thì trang /en/ không được khai báo
+    // với Google dù cờ đang bật. Cảnh báo, KHÔNG chặn đăng bán (required: false).
+    { id: 'englishContent', label: t('products.detail.checklist.englishContent', { defaultValue: 'Bản tiếng Anh đủ để hiện trên Google (tên + mô tả)' }), ok: productEnglishReady(form), required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
     { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: Boolean((form.suitabilitySection?.html || '').trim() || (form.suitabilitySection?.cards || []).some(suitabilityCardHasContent)),    required: false },
@@ -302,6 +314,8 @@ export function buildEmptyForm() {
     seoTitle: '',
     seoTitleManuallyEdited: false,
     seoDescription: '',
+    seoNoIndex: false,
+    seoNoIndexEn: false,
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     seoOgImageWidth: null,
@@ -339,11 +353,26 @@ export function buildEmptyForm() {
   }
 }
 
+/**
+ * Ngưỡng "đủ nội dung tiếng Anh" của SẢN PHẨM — mirror `SeoIndexPolicy.productEnglishReady`
+ * ở backend (BUSINESS_RULES `SEO_RULE_002`). Backend mới là nơi quyết định thật; bản này chỉ
+ * để màn quản trị báo trước cho người vận hành, tránh cảnh bật ô mà trang vẫn không lên Google.
+ *
+ * `slug` tiếng Anh CỐ Ý không nằm trong ngưỡng — `PRODUCT_RULE_003` ghi rõ slugEn không phải
+ * điều kiện tồn tại trang.
+ */
+export function productEnglishReady(form) {
+  const en = form?.translations?.en || {}
+  return Boolean(en.name?.trim() && (en.shortDescription?.trim() || en.description?.trim()))
+}
+
 // English product-level content — eight optional translatable text fields.
 export function buildEmptyTranslation() {
   return {
-    // Optional English URL slug (V214). Lives at top-level `slugEn` on the API but is
-    // carried inside the form's translations.en block; payload maps it back to slugEn.
+    // Optional English URL slug (V214). Bất đối xứng đọc/ghi có chủ đích:
+    // ĐỌC từ top-level `slugEn` của response (xem buildFormFromItem), GHI qua
+    // `translations.en.slug` của request (ProductTranslationRequest.ProductContentRequest.slug).
+    // Form giữ nó trong khối translations.en cho cùng chỗ với các field EN khác.
     slug: '',
     name: '',
     shortDescription: '',
@@ -578,6 +607,8 @@ export function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoTitleManuallyEdited: Boolean(item.seo?.title),
     seoDescription: item.seo?.description || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
+    seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoOgImageWidth: item.seo?.ogImage?.width ?? null,
@@ -841,8 +872,12 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
       ? {
           title: form.seoTitle.trim() || null,
           description: form.seoDescription.trim() || null,
-           canonicalUrl,
-           ogImage: form.seoOgImageUrl.trim()
+          // Cờ cho-Google-hiển-thị, tách riêng VI/EN (SEO_RULE_001). Trước V371 hai field
+          // này được backend nhận rồi vứt im lặng — API trả 200 mà không lưu gì.
+          noIndex: Boolean(form.seoNoIndex),
+          noIndexEn: Boolean(form.seoNoIndexEn),
+          canonicalUrl,
+          ogImage: form.seoOgImageUrl.trim()
             ? {
                 url: form.seoOgImageUrl.trim(),
                 alt: form.seoOgImageAlt.trim() || null,

@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
+import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
@@ -183,7 +184,7 @@ final class CatalogReadSupport {
      *
      * <p>Drops the detail-only payload the storefront catalog list does not
      * render — {@code description}, {@code gallery}, {@code videos},
-     * {@code contentBottom}, {@code seo}. Variants are reduced to stubs (see {@link #toVariantStub}):
+     * {@code contentBottom}. Variants are reduced to stubs (see {@link #toVariantStub}):
      * the card needs the variant <em>count</em> to choose the buy-box button,
      * but never reads variant internals on a list. {@code shortDescription} is
      * kept — it is the card subtitle. Stock masking already happened upstream
@@ -231,11 +232,26 @@ final class CatalogReadSupport {
                 null,                       // descriptionBlocks — detail only
                 null,                       // suitabilitySection — detail only
                 null,                       // sizeGuideSection — detail only
-                null,                       // seo — detail only
+                toListSeo(p.seo()),         // seo — CHỈ giữ noIndex (V371), phần còn lại là detail-only
                 null,                       // translations — admin detail read only
                 p.createdAt(),
                 p.updatedAt()
         );
+    }
+
+    /**
+     * V371 — danh sách phải mang được cờ {@code noIndex} để {@code sitemap.xml} lọc mà không phải
+     * gọi API chi tiết cho từng mục (BUSINESS_RULES {@code SEO_RULE_001}/{@code SEO_RULE_002}).
+     *
+     * <p>Chỉ giữ đúng {@code noIndex}; title/description/canonical/ogImage vẫn là detail-only nên
+     * để {@code null}. Trả {@code null} khi không có gì để nói (noIndex = false) để payload danh
+     * sách không phình thêm object rỗng.
+     */
+    private static SeoMeta toListSeo(SeoMeta seo) {
+        if (seo == null || !seo.noIndex()) {
+            return null;
+        }
+        return new SeoMeta(null, null, null, null, true);
     }
 
     /**

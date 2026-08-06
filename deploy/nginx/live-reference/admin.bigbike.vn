@@ -1,0 +1,108 @@
+# ==============================================================================
+# Nginx Configuration for admin.bigbike.vn (Admin Dashboard — Vite/React)
+# Requires shared-config.conf for upstream definitions.
+# ==============================================================================
+
+# HTTP → HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name admin.bigbike.vn;
+
+    access_log /var/log/nginx/admin.bigbike.vn-http-access.log;
+    error_log /var/log/nginx/admin.bigbike.vn-http-error.log;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS — Admin Dashboard
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name admin.bigbike.vn;
+
+    # ==================== SSL (wildcard *.bigbike.vn) ====================
+    ssl_certificate /etc/ssl/bigbike.vn/fullchain.crt;
+    ssl_certificate_key /etc/ssl/bigbike.vn/private.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:AdminSSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # ==================== Security Headers ====================
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # ==================== Logs ====================
+    access_log /var/log/nginx/admin.bigbike.vn-access.log;
+    error_log /var/log/nginx/admin.bigbike.vn-error.log warn;
+
+    # ==================== Client Settings ====================
+    client_body_timeout 60s;
+    client_header_timeout 30s;
+    client_max_body_size 20m;
+
+    # ==================== Trang xin lỗi khi container admin không phản hồi ====
+    # Chỉ kích hoạt khi nginx TỰ sinh 502/504 (container chết / đang dựng lại).
+    # CỐ Ý không bật `proxy_intercept_errors`: các lời gọi API của admin cũng đi qua
+    # `location /`, bật lên là mọi phản hồi lỗi 503 của API bị thay bằng trang HTML này
+    # và giao diện mất luôn mã lỗi để xử lý.
+    error_page 502 503 504 =503 /__bigbike_outage.html;
+    location = /__bigbike_outage.html {
+        internal;
+        alias /var/www/bigbike-static/maintenance/maintenance-admin.html;
+        default_type text/html;
+        charset utf-8;
+        add_header Retry-After "60" always;
+        add_header Cache-Control "no-store" always;
+    }
+
+    # ==================== WebSocket (STOMP) ====================
+    # Bắt buộc là location RIÊNG. `location /` đặt `Connection ""` — đúng cho HTTP
+    # keep-alive nhưng chính nó xoá mất `Connection: upgrade` của trình duyệt, nên
+    # handshake WebSocket luôn thất bại. Chuông báo đơn mới và thông báo bảo trì
+    # realtime đều đi qua đây. Container admin đã có sẵn `location /ws` chuyển tiếp
+    # tới backend:8080 — chỗ hỏng nằm ở lớp nginx máy chủ này.
+    location /ws {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Kết nối STOMP sống lâu; timeout mặc định 60s sẽ cắt ngang liên tục.
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    # ==================== Proxy to Admin (Vite SPA) ====================
+    # NOTE: proxy directly to 127.0.0.1:4000 (bigbike-admin). Do NOT use the shared
+    # `admin_frontend` upstream from conf.d/shared-config.conf — that points to 4173
+    # (4thitek admin, a separate project). Keep the two projects isolated.
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}

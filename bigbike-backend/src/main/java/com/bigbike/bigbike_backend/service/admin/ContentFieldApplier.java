@@ -54,9 +54,13 @@ final class ContentFieldApplier {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        // Per-article SEO noindex (V222): null in the request leaves the stored flag untouched.
+        // Cờ "cho Google hiển thị" (V222 bản VI, V371 thêm bản EN — BUSINESS_RULES `SEO_RULE_001`).
+        // null = giữ nguyên giá trị đang lưu.
         if (request.getNoIndex() != null) {
             entity.setSeoNoIndex(request.getNoIndex());
+        }
+        if (request.getNoIndexEn() != null) {
+            entity.setSeoNoIndexEn(request.getNoIndexEn());
         }
 
         if (request.getOgImage() == null) {

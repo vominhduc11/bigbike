@@ -386,6 +386,12 @@ export function normalizeProduct(input) {
     id,
     sku: toTrimmedString(source.sku) || undefined,
     slug,
+    // English URL slug — field top-level trên Product (V214), KHÔNG nằm trong
+    // translations.en. Phải surface ở đây, nếu không buildFormFromItem đọc
+    // item.slugEn ra undefined → ô Đường dẫn tab EN luôn trống dù DB có dữ liệu,
+    // và bấm Lưu sẽ gửi slug rỗng → backend full-replace xoá trắng slug_en.
+    // Đối xứng normalizeCategory/normalizeContentItem bên dưới.
+    slugEn: toTrimmedString(source.slugEn) || undefined,
     name: toTrimmedString(source.name) || 'Untitled product',
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
@@ -839,6 +845,7 @@ export function normalizeSetting(input) {
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
     superAdminOnly: Boolean(s.superAdminOnly),
+    allowedValues: Array.isArray(s.allowedValues) ? s.allowedValues.map((v) => String(v)) : [],
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProductDetailScreen } from './ProductDetailScreen'
+import { normalizeProduct } from '../lib/contracts'
 
 const mocks = vi.hoisted(() => ({
   fetchProductDetail: vi.fn(),
@@ -16,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   mapValidationErrors: vi.fn(() => ({})),
   showConfirm: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  // Ngôn ngữ nội dung đang xem (VI/EN). Đổi được để test nhánh tiếng Anh — trước đây
+  // bị khoá cứng 'vi' nên toàn bộ nhánh EN của màn hình chưa từng được kiểm.
+  contentLang: 'vi',
 }))
 
 vi.mock('react-i18next', () => ({
@@ -43,7 +47,7 @@ vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
 vi.mock('@/lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../lib/contentLang', () => ({
-  useContentLang: () => 'vi',
+  useContentLang: () => mocks.contentLang,
   setContentLang: vi.fn(),
   overlayEnNames: (items) => items ?? [],
 }))
@@ -191,6 +195,7 @@ function renderScreen({ canUpdate = true } = {}) {
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  mocks.contentLang = 'vi'
   mocks.fetchProductDetail.mockResolvedValue({ item: product })
   mocks.fetchBrands.mockResolvedValue({ items: [product.brand] })
   mocks.fetchCategoryTree.mockResolvedValue({ items: product.categories })
@@ -350,5 +355,135 @@ describe('ProductDetailScreen', () => {
 
     expect(await screen.findByText('products.detail.notFound')).toBeInTheDocument()
     expect(screen.getByText('products.detail.notFoundDesc')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Regression 2026-08-06 — đường dẫn tiếng Anh biến mất khỏi màn hình sửa sản phẩm.
+ *
+ * Dữ liệu giả ở đây đi qua `normalizeProduct` THẬT (giống adminApi.fetchProductDetail/
+ * updateProduct chạy `parseDetailPayload(payload, normalizeProduct)`), nên bộ test này
+ * canh đúng chuỗi thật: API → normalize → form → payload → form sau khi lưu.
+ */
+describe('ProductDetailScreen — đường dẫn tiếng Anh (tab EN)', () => {
+  const VI_SLUG = 'mu-agv-k1s'
+  const EN_SLUG = 'agv-k1s-fullface-helmet'
+
+  // Backend giả: nhận translations.en.slug khi ghi, trả lại ở top-level slugEn khi đọc —
+  // đúng bất đối xứng của hợp đồng API (ProductTranslationRequest vs Product record).
+  function serve(rawItem) {
+    mocks.fetchProductDetail.mockResolvedValue({ item: normalizeProduct(rawItem) })
+    mocks.updateProduct.mockImplementation(async (_id, payload) => ({
+      item: normalizeProduct({
+        ...rawItem,
+        name: payload.name,
+        slug: payload.slug,
+        slugEn: payload.translations?.en?.slug ?? null,
+      }),
+    }))
+  }
+
+  const withEnSlug = { ...product, slugEn: EN_SLUG }
+
+  async function renderEn(rawItem) {
+    serve(rawItem)
+    mocks.contentLang = 'en'
+    const user = userEvent.setup()
+    renderScreen()
+    const slugInput = await screen.findByLabelText('products.detail.slug')
+    return { user, slugInput }
+  }
+
+  it('chuyển sang tab tiếng Anh: ô Đường dẫn hiện slug EN đã lưu, không để trống', async () => {
+    const { slugInput } = await renderEn(withEnSlug)
+    expect(slugInput).toHaveValue(EN_SLUG)
+  })
+
+  it('sản phẩm chưa có slug EN thì ô để trống, không mượn slug tiếng Việt', async () => {
+    const { slugInput } = await renderEn(product)
+    expect(slugInput).toHaveValue('')
+  })
+
+  it('nhập slug EN thì payload gửi qua translations.en.slug, slug tiếng Việt giữ nguyên', async () => {
+    const { user, slugInput } = await renderEn(product)
+
+    await user.clear(slugInput)
+    await user.type(slugInput, EN_SLUG)
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    const payload = mocks.updateProduct.mock.calls[0][1]
+    expect(payload.translations.en.slug).toBe(EN_SLUG)
+    expect(payload.slug).toBe(VI_SLUG)
+  })
+
+  it('lưu xong ô vẫn giữ slug EN mới, KHÔNG bị reset về trống', async () => {
+    const { user, slugInput } = await renderEn(product)
+
+    await user.clear(slugInput)
+    await user.type(slugInput, EN_SLUG)
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+
+    await waitFor(() => expect(mocks.toast.success).toHaveBeenCalledWith('products.detail.successUpdate'))
+    expect(await screen.findByLabelText('products.detail.slug')).toHaveValue(EN_SLUG)
+  })
+
+  it('sửa ô khác ở tab tiếng Việt rồi lưu thì KHÔNG xoá mất slug EN đã lưu', async () => {
+    // Đây là đường mất dữ liệu âm thầm: admin chỉ sửa tên tiếng Việt, không đụng tab EN.
+    // Trước khi sửa lỗi, form nạp slug EN rỗng nên payload xoá trắng slug_en trong DB.
+    serve(withEnSlug)
+    const user = userEvent.setup()
+    renderScreen()
+
+    const nameInput = await screen.findByDisplayValue('Mũ AGV K1S')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Mũ AGV K1S 2026')
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    expect(mocks.updateProduct.mock.calls[0][1].translations.en.slug).toBe(EN_SLUG)
+  })
+
+  it('ô trống: gõ tên tiếng Anh thì tự gợi ý slug EN', async () => {
+    const { user, slugInput } = await renderEn(product)
+
+    const nameInput = screen.getByLabelText(/^products\.detail\.name/)
+    await user.clear(nameInput)
+    await user.type(nameInput, 'AGV K1S Helmet')
+
+    expect(slugInput).toHaveValue('agv-k1s-helmet')
+  })
+
+  it('ô đã có giá trị: gõ tên tiếng Anh KHÔNG đè lên slug người dùng đã lưu', async () => {
+    const { user, slugInput } = await renderEn(withEnSlug)
+
+    const nameInput = screen.getByLabelText(/^products\.detail\.name/)
+    await user.clear(nameInput)
+    await user.type(nameInput, 'AGV K1S Helmet Renamed')
+
+    expect(slugInput).toHaveValue(EN_SLUG)
+  })
+
+  it('sửa slug EN không làm đổi slug tiếng Việt', async () => {
+    const { user, slugInput } = await renderEn(withEnSlug)
+
+    await user.clear(slugInput)
+    await user.type(slugInput, 'agv-k1s-intercom')
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    const payload = mocks.updateProduct.mock.calls[0][1]
+    expect(payload.translations.en.slug).toBe('agv-k1s-intercom')
+    expect(payload.slug).toBe(VI_SLUG)
+  })
+
+  it('cảnh báo khi slug EN trùng slug tiếng Việt, nhưng vẫn cho lưu', async () => {
+    const { user, slugInput } = await renderEn(product)
+
+    await user.clear(slugInput)
+    await user.type(slugInput, VI_SLUG)
+
+    expect(await screen.findByText('products.detail.slugDuplicateEnVi')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'products.detail.saveDraft' })).toBeEnabled()
   })
 })

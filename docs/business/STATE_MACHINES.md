@@ -57,7 +57,7 @@ File này liên quan trực tiếp đến:
 | Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | Snapshot đối soát đọc-chỉ; không tạo thêm trục trạng thái trên Order và không điều khiển chuyển trạng thái đơn. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). New variants default available; a new no-variant product defaults `IN_STOCK` unless admin marks it Hết. Selling/cancelling does not change availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `ProductMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
-| Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. | Backend service + optimistic version | `OWNER_CONFIRMED_2026-07-28` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
@@ -554,18 +554,39 @@ Same forbidden publish transition rules as product, enforced by shared validator
 
 - Update article calls `validatePublishTransition`.
 - Delete article sequences `PUBLISHED → DRAFT → TRASH` in one request when currently `PUBLISHED`, else sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
-- Public content visibility filtering needs deeper audit.
+- Public content visibility filtering: đã audit 2026-08-06 — `ContentReadService.java:45-49`
+  lọc `PublishStatus.PUBLISHED` ở detail, `JpaContentReadRepository.java:110-112` lọc ở list.
+  Xem bảng "Public Read Filtering" bên dưới.
 
 ### Test Coverage
 
 - Direct tests not found by targeted search.
 - Status: `MISSING_TEST_COVERAGE`.
 
+### Public Read Filtering — `CONFIRMED_FROM_CODE` (xác minh 2026-08-06)
+
+Nội dung chưa xuất bản **không** lọt ra API công khai. Lớp lọc khác nhau theo entity:
+
+| Entity | Lọc ở đâu | Evidence |
+|---|---|---|
+| Product (list + search) | Repository, trong Specification | `JpaCatalogReadRepository.java:160-172` (`cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED)`), `:228-230` |
+| Product (detail) | Service | `CatalogReadService.java:163-165` |
+| Product (related/accessory) | Repository | `JpaCatalogReadRepository.java:1030, :1045` |
+| Article (list) | Repository | `JpaContentReadRepository.java:71, :110-112` (`findPublishedArticleIds`) |
+| Article (detail) | Service | `ContentReadService.java:45-49` |
+| Category / Brand | Service, lọc in-memory `isVisible()` | `CatalogReadService.java:206, :215-218, :234, :243-246, :295` |
+
+Kiểm chứng runtime cùng ngày: sản phẩm `DRAFT`/`TRASH`, bài viết chưa đăng và danh mục
+ẩn đều trả trang không-tìm-thấy kèm thẻ noindex — không có bản nháp nào lọt ra.
+
+**SEO route behavior cho nội dung đã ẩn/xoá** — cũng đã xác minh:
+- Sản phẩm `TRASH` → backend trả `410 Gone` (`CatalogReadService.java:163-176`); web trả
+  404 vì Next.js không có hàm phát 410. Xem `BUSINESS_RULES.md` rule `SEO_RULE_005`.
+- Bài viết / danh mục / thương hiệu ẩn → `404 Not Found`.
+
 ### Needs Verification
 
 - DTO enum acceptance for `PENDING`, `PRIVATE`, `TRASH` on content.
-- Public read filtering of non-published content.
-- SEO route behavior for archived/hidden content.
 - `HIDDEN` as a mutation target is now uniformly rejected (`RESERVED_PUBLISH_STATUS`) regardless of DTO-level acceptance — no longer needs verification for that question specifically; whether the DTO layer itself still deserializes the legacy enum values (vs rejecting at JSON-parse time) remains `NEEDS_VERIFICATION`.
 
 ## 13. Media State Machine
@@ -755,7 +776,7 @@ Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 | Order | `COMPLETED` | Order timestamps | `completedAt` set if null. | Record completion time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | Read-only reconciliation metadata; no effect on order state. | `STATUS_ONLY` |
-| Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` |
+| Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Blocks login (`AdminAuthService.login`) **and every subsequent authenticated request**, not just login. | Security — fixed 2026-07-06: `JwtAuthFilter` now re-checks the admin's current status/role from DB (cached, evicted on write) on every request instead of trusting the JWT claims alone, so a lock/suspend/demote takes effect on the admin's very next request instead of surviving up to the ~15min access-token TTL. | `CONFIRMED_BACKEND_ENFORCED` — `JwtAuthFilter.java`, `AdminAccountStatusService.java`, `AdminAdminUsersService.java` (evicts cache on status/role change) |
 | ~~Shipping Method~~ | — | — | **REMOVED 2026-06-23** (`SHIP_RULE_001`): shipping-method management dropped (V264); no shipping choice or fee at checkout. | — | `REMOVED` |
@@ -875,3 +896,19 @@ Notes:
 ## Audit Notes
 
 Documentation này được tạo bằng thao tác đọc/inspect repository qua GitHub connector. Không chạy migration, seed, deploy, refactor hoặc command có side effect. Không sửa business logic hoặc source code ứng dụng.
+
+## Maintenance State Machine
+
+Phạm vi: **chỉ trang quản trị**. Storefront không có state machine bảo trì (`BUSINESS_RULES` `MAINTENANCE_RULE_001`).
+
+```text
+NORMAL ──(dev bấm "Báo trước")──> UPCOMING ──(dev bấm "Khoá ngay")──> ACTIVE
+  ^                                                                      |
+  └──────────────────────────(dev bấm "Mở lại")─────────────────────────┘
+```
+
+- `NORMAL`: nhân viên thao tác bình thường.
+- `UPCOMING`: nhân viên nhận cảnh báo realtime để lưu việc đang làm dở; **không chặn ghi** — chặn ở đây sẽ làm cảnh báo trở nên vô nghĩa.
+- `ACTIVE`: backend từ chối mọi thao tác ghi admin bằng `423 MAINTENANCE_ACTIVE` (đọc không bị chặn ở tầng backend, nhưng giao diện che kín toàn màn với nhân viên nên thực tế họ không tra cứu được). Riêng `DEVELOPER` vẫn ghi được, nếu không thì chính người khoá cũng không mở lại được.
+- Mọi chuyển trạng thái đều **thủ công**, do `DEVELOPER` bấm, theo cả hai chiều. Không có timer, không có `@Scheduled`, không tự động nhả khoá (`MAINTENANCE_RULE_006`).
+- Trạng thái nằm ở bảng riêng `maintenance_state` (1 dòng, có `CHECK` constraint), không nằm trong `site_settings`.

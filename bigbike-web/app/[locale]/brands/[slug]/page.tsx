@@ -62,8 +62,14 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
     canonicalPath: toBrandPath(brand.slug, locale),
     locale,
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
+    // Cờ đã resolve theo locale ở backend (SeoIndexPolicy) — SEO_RULE_001/002. Với thương hiệu,
+    // ngưỡng EN chỉ xét `description_en` vì bảng brands không có name_en/slug_en (DROP ở V352).
+    noIndex: brand.seo?.noIndex ?? false,
     // BRAND_RULE_003: brand slug is shared across VI/EN; no separate hreflang URL.
-    languageAlternates: { vi: toBrandPath(brand.slug, "vi"), en: toBrandPath(brand.slug, "en") },
+    // Trang noindex thì không khai hreflang — xem ghi chú ở trang sản phẩm.
+    ...(brand.seo?.noIndex
+      ? {}
+      : { languageAlternates: { vi: toBrandPath(brand.slug, "vi"), en: toBrandPath(brand.slug, "en") } }),
   });
 }
 

@@ -18,6 +18,7 @@ import { showConfirm } from '../lib/confirm'
 import { toast } from '@/lib/toast'
 import { useDebounce } from '../lib/useDebounce'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
+import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -38,6 +39,12 @@ const STATUS_META = {
   SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
 }
 const MANUALLY_EDITABLE_STATUSES = ['ACTIVE', 'DISABLED', 'SUSPENDED']
+
+function adminUserEditDraftKey(userId) {
+  return userId ? `draft:admin-user-edit:${userId}` : 'draft:admin-user-edit:none'
+}
+
+const ADMIN_USER_CREATE_DRAFT_KEY = 'draft:admin-user-create'
 
 // Role → bb-badge palette.
 const ROLE_BADGE = {
@@ -234,6 +241,39 @@ export function AdminUsersScreen({
   // After an invite is created/resent: { email, inviteUrl, emailSent } — shown as a banner.
   const [inviteInfo, setInviteInfo] = useState(null)
 
+  // Chỉ lưu các trường có thể khôi phục an toàn. Tuyệt đối không lưu mật khẩu
+  // mới, token, liên kết mời hoặc dữ liệu xác thực vào localStorage.
+  const editDraftKey = adminUserEditDraftKey(editUser?.id)
+  const editDraftValue = {
+    userId: editUser?.id ?? null,
+    form: {
+      displayName: editForm.displayName || '',
+      status: editForm.status || '',
+      role: editForm.role || '',
+    },
+  }
+  const { clear: clearEditDraft } = useDraftAutosave(
+    editDraftKey,
+    editDraftValue,
+    {
+      enabled: Boolean(editUser),
+      dirty: Boolean(editUser) && (
+        (editForm.displayName || '') !== (editUser.displayName || '')
+        || editForm.status !== editUser.status
+        || editForm.role !== editUser.role
+      ),
+    },
+  )
+  const createDraftValue = { form: { ...createForm } }
+  const { clear: clearCreateDraft } = useDraftAutosave(
+    ADMIN_USER_CREATE_DRAFT_KEY,
+    createDraftValue,
+    {
+      enabled: createOpen,
+      dirty: createOpen && isCreateFormDirty(),
+    },
+  )
+
   // ── Load list ───────────────────────────────────────────────────────────
   useEffect(() => {
     let active = true
@@ -256,14 +296,19 @@ export function AdminUsersScreen({
 
   // ── Handlers ────────────────────────────────────────────────────────────
   function openEdit(user) {
+    const initialForm = { displayName: user.displayName || '', status: user.status || 'ACTIVE', role: user.role || '', newPassword: '' }
+    const saved = readDraft(adminUserEditDraftKey(user.id))
+    const savedForm = saved?.value?.userId === user.id ? saved.value.form : null
     setEditUser(user)
-    setEditForm({ displayName: user.displayName || '', status: user.status || 'ACTIVE', role: user.role || '', newPassword: '' })
+    setEditForm({ ...initialForm, ...(savedForm || {}), newPassword: '' })
     setEditError('')
     setEditFieldErrors({})
     setEditSuccess(false)
+    if (savedForm) toast.info(t('adminUsers.draftRestored', { defaultValue: 'Đã khôi phục bản nháp tài khoản quản trị.' }))
   }
 
   function closeEdit() {
+    clearEditDraft()
     setEditUser(null)
     setEditError('')
     setEditFieldErrors({})
@@ -292,12 +337,17 @@ export function AdminUsersScreen({
   }
 
   function openCreate() {
-    setCreateForm({ email: '', displayName: '', role: defaultRole })
+    const saved = readDraft(ADMIN_USER_CREATE_DRAFT_KEY)
+    const savedForm = saved?.value?.form
+    const role = savedForm?.role && createRoleOptions.includes(savedForm.role) ? savedForm.role : defaultRole
+    setCreateForm(savedForm ? { ...savedForm, role } : { email: '', displayName: '', role: defaultRole })
     setCreateError('')
     setCreateOpen(true)
+    if (savedForm) toast.info(t('adminUsers.draftRestored', { defaultValue: 'Đã khôi phục bản nháp tài khoản quản trị.' }))
   }
 
   function closeCreate() {
+    clearCreateDraft()
     setCreateOpen(false)
     setCreateError('')
     setCreateFieldErrors({})
@@ -438,6 +488,7 @@ export function AdminUsersScreen({
       // Đồng bộ form với dữ liệu vừa lưu + xoá ô mật khẩu để không bị coi là còn thay đổi
       // (tránh hỏi "bỏ thay đổi?" nhầm khi đóng sau khi đã lưu thành công).
       setEditForm({ displayName: r.item.displayName || '', status: r.item.status || 'ACTIVE', role: r.item.role || '', newPassword: '' })
+      clearEditDraft()
       setEditSuccess(true)
       if (payload.role || payload.status || payload.newPassword) {
         toast.success(t('adminUsers.accessApplied'))
@@ -457,7 +508,7 @@ export function AdminUsersScreen({
     } finally {
       setEditSaving(false)
     }
-  }, [editUser, editForm, currentUserId, canChangeRoles, t])
+  }, [editUser, editForm, currentUserId, canChangeRoles, clearEditDraft, t])
 
   // Kiểm tra hợp lệ phía client cho form tạo mới — trả về true nếu hợp lệ.
   function validateCreateForm() {

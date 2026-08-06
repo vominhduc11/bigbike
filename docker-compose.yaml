@@ -82,17 +82,27 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    # Pre-live (owner 2026-07-15): exposed directly over http because DNS/TLS is not
-    # live yet and .env.vps bakes http://IP:8080 into the frontends. When the domain
-    # goes live, re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
+    # Domain cutover 2026-08-06 (AUD-009): loopback only — public traffic must come
+    # through nginx (https://api.bigbike.vn). Trước đó cổng này mở 0.0.0.0 nên
+    # /v3/api-docs gọi thẳng qua IP:8080 được, bỏ qua mọi rule của nginx.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     deploy:
       resources:
         limits:
           memory: 1g
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # Deployment-specific: bỏ qua các migration đã chạy nhưng không còn trên
+      # classpath của profile hiện tại (VPS đã chạy 14 migration dev V1001..V1015
+      # trước khi chuyển sang prod). Để trống ở môi trường mới -> Flyway kiểm tra
+      # như cũ. Lưu ý phải gồm cả `*:future`, không chỉ `*:missing`: V1001+ cao
+      # hơn mọi version trên classpath nên Flyway xếp vào nhóm "future".
+      SPRING_FLYWAY_IGNORE_MIGRATION_PATTERNS: "${SPRING_FLYWAY_IGNORE_MIGRATION_PATTERNS:-}"
+      # Hệ quả của V1001+ đã applied: mọi migration prod MỚI (V371 trở đi) có số
+      # thấp hơn 1015 nên bị Flyway xếp vào nhóm "ignored" và KHÔNG chạy. Bật cờ
+      # này để chúng vẫn được áp dụng. Môi trường mới không dính -> mặc định false.
+      SPRING_FLYWAY_OUT_OF_ORDER: "${SPRING_FLYWAY_OUT_OF_ORDER:-false}"
       BIGBIKE_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bigbike}
       BIGBIKE_DB_USERNAME: ${POSTGRES_USER:-bigbike}
       BIGBIKE_DB_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - see .env.example}"
@@ -119,6 +129,8 @@ services:
       # Must equal INTERNAL_API_TOKEN on bigbike-web below. Empty in dev is fine (allow-open=true
       # in application-dev.properties); empty in prod = redirect feature silently disabled (401s, fail-open).
       BIGBIKE_INTERNAL_TOKEN: "${BIGBIKE_INTERNAL_TOKEN:-}"
+      # Admin maintenance lock kill switch. Admin panel only — never affects the storefront.
+      BIGBIKE_MAINTENANCE_LOCK_ENABLED: "${BIGBIKE_MAINTENANCE_LOCK_ENABLED:-true}"
       WEB_REVALIDATE_URL: "${WEB_REVALIDATE_URL:-http://bigbike-web:3000/api/revalidate/}"
       WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       WEB_REDIRECT_CACHE_CLEAR_URL: "${WEB_REDIRECT_CACHE_CLEAR_URL:-}"
@@ -179,10 +191,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
-    # Pre-live (owner 2026-07-15): exposed directly over http until the domain goes
-    # live. Then re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
+    # Domain cutover 2026-08-06 (AUD-009): loopback only — public traffic must come
+    # through nginx (https://bigbike.vn).
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     deploy:
       resources:
         limits:
@@ -235,10 +247,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
-    # Pre-live (owner 2026-07-15): exposed directly over http until the domain goes
-    # live. Then re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
+    # Domain cutover 2026-08-06 (AUD-009): loopback only — public traffic must come
+    # through nginx (https://admin.bigbike.vn).
     ports:
-      - "4000:80"
+      - "127.0.0.1:4000:80"
     deploy:
       resources:
         limits:

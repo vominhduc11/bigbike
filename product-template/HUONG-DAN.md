@@ -37,7 +37,7 @@ Chỉ còn **1 file duy nhất**: `mau-day-du.json`. Mỗi object trong mảng =
 2. **Ảnh trong nội dung LUÔN bị hệ thống xoá trắng khi nhập — không có ngoại lệ.** `descriptionBlocks`/`suitabilitySection`/`sizeGuideSection` dùng ảnh gì (kể cả ảnh đã đúng kho MinIO của shop) cũng đều bị lược bỏ trước khi lưu, giống hệt ảnh đại diện/gallery/video sản phẩm. Khối "Hình ảnh" và khối "Ảnh phải/trái + chữ" vẫn được giữ (không bị xoá cả khối) nhưng luôn ở trạng thái "chưa có ảnh" — vào trang quản trị bấm chọn ảnh cho từng khối sau khi nạp. `url` của khối "Hình ảnh" vẫn là ô **bắt buộc phải điền một giá trị** để file hợp lệ (không được để trống), nhưng giá trị đó **không được dùng** — điền tạm URL nào cũng được, không cần và không nên mất công tìm ảnh MinIO thật cho việc này.
 3. **JSON KHÔNG được có khoá lạ.** Chỉ dùng đúng các khoá liệt kê bên dưới. Thừa 1 khoá (kể cả khoá ghi chú `_comment`) → **cả file bị từ chối**. Muốn ghi chú thì ghi ở file hướng dẫn này, không ghi trong file JSON.
 4. **KHÔNG để chữ nháp lọt ra khách:** bỏ hết `[Cần ảnh: ...]`, `[gắn link]`, `[Bigbike kiểm tra bổ sung]`. Link sản phẩm khác phải là URL thật hoặc bỏ.
-5. **URL (canonical, link nội dung)** dùng `bigbike.vn` hoặc IP vận hành đã chốt `http://103.1.236.148:3000/...` theo file mẫu. Không dùng host ngoài khác.
+5. **URL (canonical, link nội dung)** chỉ dùng `https://bigbike.vn/...` (hoặc `www.bigbike.vn`) theo file mẫu. Không dùng host ngoài khác. Từ 2026-08-06 địa chỉ IP `103.1.236.148` **không còn được chấp nhận** — file JSON dùng IP sẽ bị từ chối khi nạp.
 
 > Import **luôn lưu sản phẩm ở trạng thái Nháp**, kể cả khi tạo mới hoặc cập nhật sản phẩm đã có. Sau khi nạp xong, vào trang quản trị **bấm đăng tay** để lên web.
 

@@ -18,7 +18,7 @@ import {
 
 export function SettingTabPanel({
   title, description, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
-  onDraftBlur, onSave, onDiscard, saving, saveSuccess, saveError,
+  onDraftBlur, onSave, onDiscard, saving, saveSuccess, saveError, isSuperAdmin = false,
 }) {
   const { t } = useTranslation()
   const isDirtyField = (setting) => isSettingDirty(setting, drafts, draftsEn)
@@ -49,7 +49,8 @@ export function SettingTabPanel({
           <SettingField
             setting={setting}
             where={settingWhere(setting, t)}
-            canUpdate={canUpdate}
+            canUpdate={canUpdate && (!setting.superAdminOnly || isSuperAdmin)}
+            isSuperAdmin={isSuperAdmin}
             draft={drafts[setting.key]}
             draftEn={draftsEn[setting.key]}
             error={errors[setting.key]}

@@ -1,6 +1,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
+import { toInternalPaths } from "@/lib/utils/revalidation";
 
 export const runtime = "nodejs";
 
@@ -66,7 +67,9 @@ export async function POST(request: NextRequest) {
     // fallback=false prerenders such as hardcoded guide/static-policy pages.
     revalidateTag(tag, "max");
     for (const path of pathsForTag(tag)) {
-      paths.add(path);
+      for (const internalPath of toInternalPaths(path)) {
+        paths.add(internalPath);
+      }
     }
   }
 

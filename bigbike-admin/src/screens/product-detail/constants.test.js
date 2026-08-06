@@ -5,10 +5,13 @@ import {
   buildCategoryPathMap,
   buildCategoryTreeOrder,
   buildVisibleCategoryTreeRows,
+  buildEmptyForm,
   buildFormFromItem,
+  englishUrlFromSlugs,
   cleanDescriptionBlocks,
   computeAttrSetWarning,
   getPublishReadiness,
+  productEnglishReady,
   resolveColorChangeMedia,
   toPayload,
 } from './constants'
@@ -397,5 +400,120 @@ describe('publish readiness — mục phân loại hệ thống', () => {
 
     expect(categoryItems.find((entry) => entry.id === 'category')?.ok).toBe(false)
     expect(brandItems.find((entry) => entry.id === 'brand')?.ok).toBe(false)
+  })
+})
+
+// BUSINESS_RULES `SEO_RULE_001` (cờ tách riêng VI/EN) + `SEO_RULE_002` (ngưỡng đủ nội
+// dung tiếng Anh). Ngưỡng thật do backend quyết (SeoIndexPolicy); bản ở admin chỉ để
+// cảnh báo trước, nên hai bên PHẢI khớp nhau.
+describe('cho Google hiển thị — cờ theo từng ngôn ngữ', () => {
+  const withEn = (en) => ({ ...buildEmptyForm(), translations: { en: { ...en } } })
+
+  it('SEO_RULE_002 — cần tên tiếng Anh VÀ ít nhất một phần mô tả tiếng Anh', () => {
+    expect(productEnglishReady(withEn({ name: 'Helmet', shortDescription: 'Short' }))).toBe(true)
+    expect(productEnglishReady(withEn({ name: 'Helmet', description: 'Long' }))).toBe(true)
+
+    expect(productEnglishReady(withEn({ name: 'Helmet' }))).toBe(false)
+    expect(productEnglishReady(withEn({ shortDescription: 'Short' }))).toBe(false)
+    expect(productEnglishReady(withEn({ name: '  ', shortDescription: 'Short' }))).toBe(false)
+    expect(productEnglishReady(buildEmptyForm())).toBe(false)
+  })
+
+  it('đường dẫn tiếng Anh KHÔNG nằm trong ngưỡng (PRODUCT_RULE_003)', () => {
+    // slugEn chỉ là slug ưu tiên, không phải điều kiện tồn tại trang. Đưa nó vào ngưỡng
+    // sẽ loại gần hết sản phẩm khỏi index tiếng Anh.
+    expect(productEnglishReady(withEn({ name: 'Helmet', shortDescription: 'Short', slug: '' }))).toBe(true)
+  })
+
+  it('payload gửi cả hai cờ, không gộp làm một', () => {
+    const payload = toPayload({ ...buildEmptyForm(), slug: 'mu-bao-hiem', seoNoIndex: true, seoNoIndexEn: false })
+    expect(payload.seo.noIndex).toBe(true)
+    expect(payload.seo.noIndexEn).toBe(false)
+  })
+
+  it('mặc định form mới là cho hiển thị ở cả hai ngôn ngữ', () => {
+    const payload = toPayload({ ...buildEmptyForm(), slug: 'mu-bao-hiem' })
+    expect(payload.seo.noIndex).toBe(false)
+    expect(payload.seo.noIndexEn).toBe(false)
+  })
+
+  it('đọc lại cờ từ dữ liệu API', () => {
+    const form = buildFormFromItem({
+      id: 'p1', slug: 'mu', name: 'Mũ',
+      seo: { title: null, description: null, noIndex: true, noIndexEn: true },
+    })
+    expect(form.seoNoIndex).toBe(true)
+    expect(form.seoNoIndexEn).toBe(true)
+  })
+
+  it('checklist đăng bán cảnh báo khi bản tiếng Anh chưa đủ, nhưng KHÔNG chặn đăng', () => {
+    const t = (key, opts) => opts?.defaultValue ?? key
+    const row = getPublishReadiness(buildEmptyForm(), t).find((item) => item.id === 'englishContent')
+    expect(row).toBeDefined()
+    expect(row.ok).toBe(false)
+    expect(row.required).toBe(false)
+  })
+})
+
+// Regression 2026-08-06: slug tiếng Anh biến mất khỏi màn hình sửa sản phẩm.
+// Bất đối xứng có chủ đích của hợp đồng API: ĐỌC từ top-level `slugEn`, GHI qua
+// `translations.en.slug`. Form giữ giá trị ở translations.en.slug cho cả hai chiều.
+describe('đường dẫn tiếng Anh — vòng đọc/ghi', () => {
+  const item = { id: 'p1', slug: 'tai-nghe-scs-s7x', name: 'Tai nghe SCS S7X' }
+
+  it('nạp slug tiếng Anh từ trường slugEn của API vào form', () => {
+    const form = buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' })
+    expect(form.translations.en.slug).toBe('scs-s7x-headset')
+    // Slug tiếng Việt phải giữ nguyên, không bị bản tiếng Anh đè lên.
+    expect(form.slug).toBe('tai-nghe-scs-s7x')
+  })
+
+  it('không có slugEn thì ô tiếng Anh để trống, không vỡ form', () => {
+    const form = buildFormFromItem(item)
+    expect(form.translations.en.slug).toBe('')
+    expect(form.slug).toBe('tai-nghe-scs-s7x')
+  })
+
+  it('gửi slug tiếng Anh qua translations.en.slug khi lưu', () => {
+    const form = buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' })
+    expect(toPayload(form).translations.en.slug).toBe('scs-s7x-headset')
+  })
+
+  it('mở rồi lưu ngay mà không sửa gì thì KHÔNG xoá mất slug tiếng Anh đã lưu', () => {
+    // Trước khi sửa: normalizeProduct bỏ sót slugEn nên form nạp rỗng, payload gửi undefined,
+    // backend full-replace ghi slug_en = NULL — mất dữ liệu âm thầm.
+    const payload = toPayload(buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' }))
+    expect(payload.translations.en.slug).toBe('scs-s7x-headset')
+    expect(payload.slug).toBe('tai-nghe-scs-s7x')
+  })
+
+  it('sửa slug tiếng Anh không làm đổi slug tiếng Việt', () => {
+    const form = buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' })
+    const edited = { ...form, translations: { en: { ...form.translations.en, slug: 'scs-s7x-intercom' } } }
+    const payload = toPayload(edited)
+    expect(payload.translations.en.slug).toBe('scs-s7x-intercom')
+    expect(payload.slug).toBe('tai-nghe-scs-s7x')
+  })
+
+  it('xoá trắng ô tiếng Anh thì gửi rỗng để backend xoá slug_en', () => {
+    const form = buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' })
+    const cleared = { ...form, translations: { en: { ...form.translations.en, slug: '' } } }
+    expect(toPayload(cleared).translations.en.slug).toBeUndefined()
+  })
+})
+
+describe('englishUrlFromSlugs — địa chỉ trang tiếng Anh (PRODUCT_RULE_003)', () => {
+  it('dùng slug tiếng Anh khi có', () => {
+    expect(englishUrlFromSlugs('tai-nghe-scs', 'scs-headset'))
+      .toBe('https://bigbike.vn/en/product/scs-headset/')
+  })
+
+  it('slug tiếng Anh trống vẫn có trang EN — rơi về slug tiếng Việt', () => {
+    expect(englishUrlFromSlugs('tai-nghe-scs', ''))
+      .toBe('https://bigbike.vn/en/product/tai-nghe-scs/')
+  })
+
+  it('chưa có slug nào thì trả null', () => {
+    expect(englishUrlFromSlugs('', '')).toBeNull()
   })
 })

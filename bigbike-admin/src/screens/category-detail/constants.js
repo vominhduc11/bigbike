@@ -26,7 +26,8 @@ export function buildEmptyForm() {
     menuIconUrl: '',
     seoTitle: '',
     seoDescription: '',
-    seoCanonicalUrl: '',
+    seoNoIndex: false,
+    seoNoIndexEn: false,
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     translations: { en: { slug: '', name: '', description: '', introContent: '', seoTitle: '', seoDescription: '' } },
@@ -54,7 +55,8 @@ export function buildFormFromItem(item) {
     menuIconUrl: item.menuIconUrl || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
-    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
+    seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     translations: {
@@ -148,12 +150,13 @@ export function toPayload(form, { isCreate = false } = {}) {
 
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()
-  const seoCanonicalUrl = form.seoCanonicalUrl.trim()
   const seoOgImageUrl = form.seoOgImageUrl.trim()
   payload.seo = {
     title: seoTitle || null,
     description: seoDescription || null,
-    canonicalUrl: seoCanonicalUrl || null,
+    // SEO_RULE_003: canonical tự sinh từ slug ở tầng web — không gửi từ form nữa.
+    noIndex: Boolean(form.seoNoIndex),
+    noIndexEn: Boolean(form.seoNoIndexEn),
     ogImage: seoOgImageUrl
       ? { url: seoOgImageUrl, alt: String(form.seoOgImageAlt ?? '').trim() || null }
       : null,

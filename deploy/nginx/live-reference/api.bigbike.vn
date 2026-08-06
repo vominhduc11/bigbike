@@ -1,0 +1,189 @@
+# ==============================================================================
+# Nginx Configuration for api.bigbike.vn (API Gateway — Spring Boot)
+# CORS is handled by the backend via CORS_ALLOWED_ORIGINS env var.
+# Requires shared-config.conf for upstream and rate-limit zone definitions.
+# ==============================================================================
+
+# HTTP → HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.bigbike.vn;
+
+    access_log /var/log/nginx/api.bigbike.vn-http-access.log;
+    error_log /var/log/nginx/api.bigbike.vn-http-error.log;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS — API Gateway
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.bigbike.vn;
+
+    # ==================== SSL (wildcard *.bigbike.vn) ====================
+    ssl_certificate /etc/ssl/bigbike.vn/fullchain.crt;
+    ssl_certificate_key /etc/ssl/bigbike.vn/private.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:ApiSSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # ==================== Security Headers ====================
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # ==================== Logs ====================
+    access_log /var/log/nginx/api.bigbike.vn-access.log;
+    error_log /var/log/nginx/api.bigbike.vn-error.log warn;
+
+    # ==================== Client Settings ====================
+    client_body_timeout 300s;
+    client_header_timeout 60s;
+
+    # ==================== Phản hồi khi backend không trả lời =================
+    # Máy gọi API phải nhận JSON, không phải trang HTML lỗi của nginx.
+    #
+    # CỐ Ý không bật `proxy_intercept_errors`: bật lên thì MỌI phản hồi 503 hợp lệ của
+    # backend cũng bị thay bằng JSON tĩnh này, và ứng dụng mất mã lỗi để xử lý. Ở đây
+    # chỉ kích hoạt khi nginx TỰ sinh 502/504 vì backend không phản hồi.
+    error_page 502 503 504 =503 /__bigbike_outage.json;
+    location = /__bigbike_outage.json {
+        internal;
+        default_type application/json;
+        charset utf-8;
+        add_header Retry-After "60" always;
+        add_header Cache-Control "no-store" always;
+        return 503 '{"error":{"code":"SERVICE_UNAVAILABLE","message":"Hệ thống đang tạm gián đoạn, vui lòng thử lại sau ít phút."}}';
+    }
+
+    # ==================== Block Swagger/API Docs (Production) ====================
+    # Swagger UI must NOT be accessible on the public production host.
+    # APP_DOCS_PUBLIC_ENABLED=false in backend .env is the first line of defence;
+    # these Nginx rules are a second, independent layer.
+    location = /swagger-ui {
+        return 403;
+    }
+
+    location ^~ /swagger-ui/ {
+        return 403;
+    }
+
+    location = /swagger-ui.html {
+        return 403;
+    }
+
+    location = /v3/api-docs {
+        return 403;
+    }
+
+    location ^~ /v3/api-docs/ {
+        return 403;
+    }
+
+    location ^~ /webjars/ {
+        return 403;
+    }
+
+    # ==================== WebSocket Proxy ====================
+    location /ws {
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_send_timeout 7d;
+        proxy_read_timeout 7d;
+        proxy_buffering off;
+    }
+
+    # ==================== Admin Media Upload ====================
+    # Media upload endpoints accept files up to 50 MB (see AdminMediaService).
+    # Declared before `location /` so this larger body limit applies to uploads.
+    location ^~ /api/v1/admin/media {
+        limit_req zone=api_limit burst=20 nodelay;
+
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+
+        client_max_body_size 55m;
+        proxy_request_buffering off;
+        proxy_buffering off;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Connection "";
+        add_header X-Request-Id $request_id always;
+
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+    }
+
+    # ==================== Block Actuator (except health) ====================
+    # The exact-match `location = /actuator/health` below has higher priority and still
+    # works. Everything else under /actuator/ (metrics, prometheus, env, ...) must not be
+    # reachable on the public host — Prometheus scrapes the backend on the private network.
+    location ^~ /actuator/ {
+        return 403;
+    }
+
+    # ==================== Main API Proxy ====================
+    location / {
+        limit_req zone=api_limit burst=20 nodelay;
+
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+
+        client_max_body_size 10m;
+        proxy_request_buffering off;
+        proxy_buffering off;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Connection "";
+        add_header X-Request-Id $request_id always;
+
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+    }
+
+    # ==================== Health Check ====================
+    location = /actuator/health {
+        proxy_pass http://api_backend/actuator/health;
+        proxy_set_header Host $host;
+        proxy_set_header X-Request-Id $request_id;
+        access_log off;
+    }
+}

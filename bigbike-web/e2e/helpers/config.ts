@@ -5,7 +5,7 @@
 export const BASE_URL =
   process.env.E2E_BASE_URL ??
   process.env.PLAYWRIGHT_BASE_URL ??
-  "http://103.1.236.148:3000";
+  "https://bigbike.vn";
 
 export const BASE_ORIGIN = (() => {
   try {

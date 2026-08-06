@@ -32,6 +32,7 @@ import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { BrandCombobox } from './product-detail/BrandCombobox'
 import { useProductPicker } from '../lib/useProductPicker'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
+import { SeoIndexField } from '../components/SeoIndexField'
 import { parseSpecsFromHtml } from '../lib/specSheet'
 import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml } from '../lib/trustBadgesBlock'
@@ -72,6 +73,7 @@ import {
   buildFormFromItem,
   toPayload,
   canonicalUrlFromSlug,
+  englishUrlFromSlugs,
   TAB_SECTIONS,
   computeSectionErrorsFromMap,
   findTabForErrors,
@@ -80,6 +82,7 @@ import {
   MAIN_GROUPS_DEFAULT_OPEN,
   groupsWithErrors,
   getPublishReadiness,
+  productEnglishReady,
   publishBadgeClass,
   RELATED_PRODUCTS_MAX,
   SPEC_STAT_MAX,
@@ -517,6 +520,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   const isEnLang = contentLang === 'en'
+  // Slug tiếng Anh trùng y hệt slug tiếng Việt của CHÍNH sản phẩm này — hợp lệ khi tên sản phẩm
+  // vốn là tiếng Anh, đáng ngờ khi tên là tiếng Việt. Chỉ cảnh báo, không chặn lưu.
+  const enSlugDuplicatesVi = Boolean(
+    form.slug?.trim() && form.translations?.en?.slug?.trim() === form.slug.trim(),
+  )
   // PRODUCT_RULE_005 — sản phẩm có biến thể khi có ≥1 dòng biến thể thật (đã đặt tên qua
   // thuộc tính). Dùng để quyết định SKU/giá cấp sản phẩm có bắt buộc hay không (mirror schemas.js).
   const hasVariants = form.variants.some((v) => v.name?.trim())
@@ -1315,8 +1323,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     label={t('products.detail.slug')}
                     required={!isEnLang}
                     error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
+                    // Trùng slug VI/EN KHÔNG chặn lưu (owner decision 2026-08-06): sản phẩm tên vốn
+                    // tiếng Anh (mã máy như komine-jk-176) trùng là hợp lệ. Chỉ nhắc để tránh lặp lại
+                    // sự cố slug tiếng Anh đè lên slug tiếng Việt của sản phẩm tên tiếng Việt.
+                    warning={isEnLang && enSlugDuplicatesVi
+                      ? t('products.detail.slugDuplicateEnVi')
+                      : undefined}
                     helper={isEnLang
-                      ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống nghĩa là sản phẩm chưa có trang tiếng Anh.' })
+                      ? t('products.detail.slugHintEn')
                       : t('products.detail.slugHint')}
                   >
                     <Input
@@ -2238,9 +2252,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </div>
                     <div className="text-xs text-google-url break-all mb-1">
                       {isEnLang
-                        ? (form.translations?.en?.slug
-                            ? `https://bigbike.vn/products/${form.translations.en.slug}/`
-                            : t('products.detail.serpNoEnglishUrl', { defaultValue: 'Chưa có trang tiếng Anh' }))
+                        ? (englishUrlFromSlugs(form.slug, form.translations?.en?.slug)
+                            || 'https://bigbike.vn/en/product/product-url/')
                         : (canonicalUrlFromSlug(form.slug) || 'https://bigbike.vn/product/duong-dan-san-pham/')}
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
@@ -2309,6 +2322,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
 
                 </div>
+
+                {/* Cho Google hiển thị — tách riêng bản Việt và bản Anh (SEO_RULE_001).
+                    Trước V371 sản phẩm không có cờ này ở BẤT KỲ tầng nào: cách duy nhất để
+                    gỡ một trang khỏi Google là chuyển về Nháp, kéo theo khách cũng không
+                    xem được và link cũ hỏng. */}
+                <SeoIndexField
+                  noIndexVi={form.seoNoIndex}
+                  noIndexEn={form.seoNoIndexEn}
+                  isEnLang={isEnLang}
+                  isReadOnly={isReadOnly}
+                  englishReady={productEnglishReady(form)}
+                  onChange={updateField}
+                />
 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">

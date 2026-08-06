@@ -24,7 +24,9 @@ export function toBrandPayload(form) {
   payload.seo = {
     title: form.seoTitle.trim() || null,
     description: form.seoDescription.trim() || null,
-    canonicalUrl: form.seoCanonicalUrl.trim() || null,
+    // SEO_RULE_003: canonical tự sinh từ slug ở tầng web — không gửi từ form nữa.
+    noIndex: Boolean(form.seoNoIndex),
+    noIndexEn: Boolean(form.seoNoIndexEn),
     ogImage: form.seoOgImageUrl.trim()
       ? {
           url: form.seoOgImageUrl.trim(),

@@ -81,11 +81,18 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
     canonicalPath: toCategoryPath(locale === "en" ? category.slugEn?.trim() || category.slug : category.slug, locale),
     locale,
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
+    // Cờ đã resolve theo locale ở backend (SeoIndexPolicy) — SEO_RULE_001/002.
+    noIndex: category.seo?.noIndex ?? false,
     // hreflang vi/en khi danh mục có slug tiếng Anh riêng (CATEGORY_RULE_003).
-    languageAlternates: {
-      vi: toCategoryPath(category.slug, "vi"),
-      en: toCategoryPath(category.slugEn?.trim() || category.slug, "en"),
-    },
+    // Trang noindex thì không khai hreflang — xem ghi chú ở trang sản phẩm.
+    ...(category.seo?.noIndex
+      ? {}
+      : {
+          languageAlternates: {
+            vi: toCategoryPath(category.slug, "vi"),
+            en: toCategoryPath(category.slugEn?.trim() || category.slug, "en"),
+          },
+        }),
   });
 }
 

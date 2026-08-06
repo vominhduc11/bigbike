@@ -30,6 +30,47 @@ const EMPTY_CHECKOUT_ADDRESS: CheckoutAddressFormValues = {
   addressLine1: "",
 };
 
+const CHECKOUT_DRAFT_KEY = "bigbike:checkout:draft:v1";
+
+type CheckoutDraft = {
+  cartId: string | number | null;
+  billingAddress: CheckoutAddressFormValues;
+  shippingAddress: CheckoutAddressFormValues;
+  customerNote: string;
+  shipToDifferent: boolean;
+  paymentMethod: CheckoutPaymentMethod;
+};
+
+function readCheckoutDraft(): CheckoutDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CHECKOUT_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CheckoutDraft & { savedAt?: number };
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > 24 * 60 * 60 * 1000) {
+      window.localStorage.removeItem(CHECKOUT_DRAFT_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCheckoutDraft(draft: CheckoutDraft): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() }));
+  } catch {
+    // Trình duyệt có thể chặn storage; form vẫn hoạt động bình thường.
+  }
+}
+
+function clearCheckoutDraft(): void {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch { /* storage may be blocked */ }
+}
+
 /**
  * Toàn bộ state + logic nghiệp vụ của trang Thanh toán: 2 form địa chỉ (billing +
  * giao tới địa chỉ khác) react-hook-form/zod, prefill từ profile/address,
@@ -53,6 +94,7 @@ export function useCheckout() {
   const [shipToDifferent, setShipToDifferent] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
   const idempotencyKey = useRef<string>(generateId());
+  const [draftReady, setDraftReady] = useState(false);
 
   // Tỉnh/Phường KHÔNG sống trong react-hook-form như 4 ô còn lại (Họ tên/SĐT/Email/
   // Địa chỉ) — dùng state phẳng làm nguồn sự thật cho UI + payload gửi đi, chỉ đồng
@@ -105,6 +147,7 @@ export function useCheckout() {
   const {
     register: registerShip,
     trigger: triggerShip,
+    control: controlShip,
     setValue: setValueShip,
     getValues: getValuesShip,
     formState: { errors: shipErrors },
@@ -112,6 +155,8 @@ export function useCheckout() {
     resolver: shipResolver,
     defaultValues: EMPTY_CHECKOUT_ADDRESS,
   });
+
+  const formShippingAddress = useWatch({ control: controlShip });
 
   useEffect(() => {
     if (!cart || gtmCartId.current === cart.id) return;
@@ -163,6 +208,35 @@ export function useCheckout() {
     return () => clearTimeout(timer);
   }, [profile, addresses, setValue, getValues]);
 
+  // Giữ bản nháp form checkout trong trình duyệt để khách không mất thông tin
+  // khi backend/nginx tạm ngắt. Không lưu mật khẩu, token hoặc dữ liệu thanh toán.
+  useEffect(() => {
+    if (!cart || draftReady) return;
+    const draft = readCheckoutDraft();
+    if (draft && (!draft.cartId || String(draft.cartId) === String(cart.id))) {
+      const timer = setTimeout(() => {
+        const billing = draft.billingAddress ?? EMPTY_CHECKOUT_ADDRESS;
+        const shipping = draft.shippingAddress ?? EMPTY_CHECKOUT_ADDRESS;
+        setValue("fullName", billing.fullName ?? "");
+        setValue("phone", billing.phone ?? "");
+        setValue("email", billing.email ?? "");
+        setValue("addressLine1", billing.addressLine1 ?? "");
+        setVnAddress({ province: billing.province ?? "", ward: billing.ward ?? "" });
+        setValueShip("fullName", shipping.fullName ?? "");
+        setValueShip("phone", shipping.phone ?? "");
+        setValueShip("addressLine1", shipping.addressLine1 ?? "");
+        setVnShip({ province: shipping.province ?? "", ward: shipping.ward ?? "" });
+        setCustomerNote(draft.customerNote ?? "");
+        setShipToDifferent(draft.shipToDifferent === true);
+        setPaymentMethod(draft.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "COD");
+        setDraftReady(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => setDraftReady(true), 0);
+    return () => clearTimeout(timer);
+  }, [cart, draftReady, setValue, setValueShip]);
+
   const resolvedAddress = useMemo(
     () => ({
       fullName: formAddress.fullName ?? "",
@@ -175,6 +249,34 @@ export function useCheckout() {
     }),
     [formAddress, vnAddress],
   );
+
+  const resolvedShippingAddress = useMemo(
+    () => ({
+      fullName: formShippingAddress.fullName ?? "",
+      phone: formShippingAddress.phone ?? "",
+      email: formShippingAddress.email ?? "",
+      country: formShippingAddress.country || "VN",
+      province: vnShip.province,
+      ward: vnShip.ward,
+      addressLine1: formShippingAddress.addressLine1 ?? "",
+    }),
+    [formShippingAddress, vnShip],
+  );
+
+  const checkoutDraft = useMemo<CheckoutDraft>(() => ({
+    cartId: cart?.id ?? null,
+    billingAddress: resolvedAddress,
+    shippingAddress: resolvedShippingAddress,
+    customerNote,
+    shipToDifferent,
+    paymentMethod,
+  }), [cart?.id, customerNote, paymentMethod, resolvedAddress, resolvedShippingAddress, shipToDifferent]);
+
+  useEffect(() => {
+    if (!cart || !draftReady || !cart.items.length) return undefined;
+    const timer = setTimeout(() => saveCheckoutDraft(checkoutDraft), 10 * 1000);
+    return () => clearTimeout(timer);
+  }, [cart, checkoutDraft, draftReady]);
 
   // Đơn online không tính phí vận chuyển → tổng = subtotal - giảm giá (cart.totalAmount).
   const cartSubtotal = cart?.totals.subtotalAmount ?? 0;
@@ -245,6 +347,7 @@ export function useCheckout() {
         },
         idempotencyKey.current,
       );
+      clearCheckoutDraft();
       refreshCount();
       if (order.priceChanges && order.priceChanges.length > 0) {
         setPriceChanges(order.priceChanges);

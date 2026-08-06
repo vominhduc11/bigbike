@@ -40,7 +40,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     staleTime: 5 * 60 * 1000,
   });
   const activeSettings = freshSettingsResult?.data ?? settings;
-  const hotline = pickSetting(activeSettings, ["hotline", "phone"]);
+  const activeHotline = pickSetting(activeSettings, ["hotline", "phone"]);
   const contactAddress = pickSetting(activeSettings, ["contact_address", "address"]);
   const zaloUrl = pickSetting(activeSettings, ["zalo_url"]);
   const zaloDisplay = pickSetting(activeSettings, ["zalo_display"]);
@@ -216,8 +216,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
             </Button>
             <p className="mb-0 mt-3 text-center text-a5-meta text-muted-foreground">
               {t("confirmationTiming")}
-              {hotline ? (
-                <> {t("hotlineLabel")}: <a className="font-semibold text-foreground hover:text-brand" href={telHref(hotline)}>{hotline}</a></>
+              {activeHotline ? (
+                <> {t("hotlineLabel")}: <a className="font-semibold text-foreground hover:text-brand" href={telHref(activeHotline)}>{activeHotline}</a></>
               ) : null}
             </p>
           </section>

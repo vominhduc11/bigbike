@@ -82,6 +82,9 @@ public class CheckoutService {
             String clientIp,
             String userAgent
     ) {
+        // No maintenance guard here by design: the storefront is never put into maintenance, so
+        // customers can always order even while the admin panel is locked
+        // (BUSINESS_RULES `MAINTENANCE_RULE_002`, owner decision 2026-08-06).
         IdempotencyReservation idempotency = reserveIdempotency(
                 FLOW_CHECKOUT, customerId, guestSessionId, idempotencyKey, req);
         if (idempotency.existingSummary() != null) {

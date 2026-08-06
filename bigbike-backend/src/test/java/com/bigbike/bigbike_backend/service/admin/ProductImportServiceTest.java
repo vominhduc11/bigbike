@@ -3,6 +3,9 @@ package com.bigbike.bigbike_backend.service.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -59,5 +62,53 @@ class ProductImportServiceTest {
         assertThat(((DescriptionBlock.FeatureBlock) exported.get(0)).getHeading()).isEqualTo("Khối một");
         assertThat(firstAuto.getSide()).isEqualTo("auto");
         assertThat(secondAuto.getSide()).isNull();
+    }
+
+    /**
+     * Regression 2026-08-06 — nhập hàng loạt xoá mất đường dẫn tiếng Anh.
+     *
+     * {@code ProductFieldApplier.applyTranslations} full-replace toàn bộ cột _en, nên một file
+     * nhập chỉ khai vài trường EN sẽ xoá trắng phần còn lại. {@code backfillTranslationsFromExisting}
+     * tồn tại để ngăn đúng chuyện đó, nhưng từng bỏ sót {@code slug} và {@code originBrandCountry}.
+     */
+    @Test
+    void partialEnglishBlockKeepsExistingEnglishSlugAndOriginBrandCountry() {
+        ProductEntity existing = new ProductEntity();
+        existing.setSlugEn("scs-s7x-motorcycle-bluetooth-helmet-headset");
+        existing.setOriginBrandCountry("Thương hiệu Nhật Bản");
+        existing.setOriginBrandCountryEn("Japanese brand");
+        existing.setNameEn("SCS S7X motorcycle bluetooth helmet headset");
+
+        // File nhập chỉ khai seoTitle tiếng Anh — không đụng slug/xuất xứ.
+        ProductTranslationRequest.ProductContentRequest en =
+                new ProductTranslationRequest.ProductContentRequest();
+        en.setSeoTitle("SCS S7X BLUETOOTH HELMET HEADSET");
+
+        UpsertProductRequest request = new UpsertProductRequest();
+        request.setTranslations(new ProductTranslationRequest(en));
+
+        ProductImportService.backfillTranslationsFromExisting(request, existing);
+
+        assertThat(en.getSlug()).isEqualTo("scs-s7x-motorcycle-bluetooth-helmet-headset");
+        assertThat(en.getOriginBrandCountry()).isEqualTo("Japanese brand");
+        assertThat(en.getName()).isEqualTo("SCS S7X motorcycle bluetooth helmet headset");
+        assertThat(en.getSeoTitle()).isEqualTo("SCS S7X BLUETOOTH HELMET HEADSET");
+    }
+
+    @Test
+    void explicitEnglishSlugInFileWinsOverExistingValue() {
+        ProductEntity existing = new ProductEntity();
+        existing.setSlugEn("slug-cu");
+
+        ProductTranslationRequest.ProductContentRequest en =
+                new ProductTranslationRequest.ProductContentRequest();
+        en.setSlug("slug-moi");
+
+        UpsertProductRequest request = new UpsertProductRequest();
+        request.setTranslations(new ProductTranslationRequest(en));
+
+        ProductImportService.backfillTranslationsFromExisting(request, existing);
+
+        assertThat(en.getSlug()).isEqualTo("slug-moi");
     }
 }

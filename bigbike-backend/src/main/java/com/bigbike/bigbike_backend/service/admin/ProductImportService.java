@@ -613,12 +613,17 @@ public class ProductImportService {
      * silently wipe every other existing EN field — including `name` itself — back to blank, since
      * {@code applyTranslations} is a full replace of every EN column at once.
      */
-    private void backfillTranslationsFromExisting(UpsertProductRequest request, ProductEntity existing) {
+    static void backfillTranslationsFromExisting(UpsertProductRequest request, ProductEntity existing) {
         ProductTranslationRequest translations = request.getTranslations();
         if (translations == null || translations.getEn() == null) {
             return;
         }
         ProductTranslationRequest.ProductContentRequest en = translations.getEn();
+        // slug + originBrandCountry từng bị bỏ sót ở đây: applyTranslations full-replace nên
+        // một file nhập chỉ khai vài trường EN sẽ âm thầm xoá slug_en/origin_brand_country_en
+        // của sản phẩm — đúng thứ javadoc trên cam kết ngăn.
+        if (en.getSlug() == null) en.setSlug(existing.getSlugEn());
+        if (en.getOriginBrandCountry() == null) en.setOriginBrandCountry(existing.getOriginBrandCountryEn());
         if (en.getName() == null) en.setName(existing.getNameEn());
         if (en.getShortDescription() == null) en.setShortDescription(existing.getShortDescriptionEn());
         if (en.getDescription() == null) en.setDescription(existing.getDescriptionEn());

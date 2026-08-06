@@ -75,7 +75,6 @@ public class SettingValueValidator {
     }
 
     private void validateByType(String key, String rawValue, SettingDefinition def) {
-
         switch (def.type()) {
             case STRING -> validateLength(key, rawValue, MAX_STRING_LENGTH);
             case LONG_TEXT -> validateLength(key, rawValue, MAX_LONG_TEXT_LENGTH);

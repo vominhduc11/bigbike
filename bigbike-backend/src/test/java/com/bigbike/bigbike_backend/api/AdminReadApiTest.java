@@ -176,6 +176,9 @@ class AdminReadApiTest {
         seo.setTitle("Phase 3 read SEO title " + suffix);
         seo.setDescription("Phase 3 read SEO description " + suffix);
         seo.setCanonicalUrl(canonicalUrl);
+        // V371: cờ noIndex của sản phẩm được LƯU THẬT (trước đó bị nhận rồi vứt im lặng, và
+        // assertion `noIndex == true` bên dưới không thể đúng). BUSINESS_RULES `SEO_RULE_001`.
+        seo.setNoIndex(true);
         ImageAssetRequest ogImage = new ImageAssetRequest();
         ogImage.setUrl(ogImageUrl);
         ogImage.setAlt("Phase 3 read OG image " + suffix);

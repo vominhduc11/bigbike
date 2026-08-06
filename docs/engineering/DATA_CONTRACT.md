@@ -1253,7 +1253,47 @@ Migration `V222__add_article_featured_and_seo_no_index.sql` thêm 2 cột boolea
 
 **Lưu ý lịch sử — `articles.seo_no_index`:** cột này từng tồn tại ở `V1` nhưng bị **DROP** ở `V152` (chưa dùng đến). `V222` **tái thêm** để dùng thật trong contract per-article SEO noindex.
 
+> **Đã mở rộng ở `V371`** — xem §"SEO noindex theo từng ngôn ngữ (V371)" bên dưới. Từ `V371`, `articles.seo_no_index` là cờ của **riêng bản tiếng Việt**; bản tiếng Anh dùng cột mới `seo_no_index_en`.
+
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.featured`, `ArticleEntity.seoNoIndex`, migration `V222__add_article_featured_and_seo_no_index.sql` (ghi chú: cột `seo_no_index` từng bị drop ở `V152`). Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
+
+### SEO noindex theo từng ngôn ngữ (V371)
+
+Migration `V371__add_seo_no_index_per_locale.sql` đưa cờ "cho Google hiển thị" về đủ 4 loại
+thực thể và **tách theo ngôn ngữ**. Rule nghiệp vụ: [BUSINESS_RULES.md](../business/BUSINESS_RULES.md)
+`SEO_RULE_001` (cờ thủ công) và `SEO_RULE_002` (ngưỡng đủ nội dung EN).
+
+| Bảng | Cột thêm ở V371 | Kiểu | Default |
+|---|---|---|---|
+| `products` | `seo_no_index`, `seo_no_index_en` | `BOOLEAN NOT NULL` | `false` |
+| `categories` | `seo_no_index`, `seo_no_index_en` | `BOOLEAN NOT NULL` | `false` |
+| `brands` | `seo_no_index`, `seo_no_index_en` | `BOOLEAN NOT NULL` | `false` |
+| `articles` | `seo_no_index_en` *(cột `seo_no_index` đã có từ `V222`)* | `BOOLEAN NOT NULL` | `false` |
+
+Lịch sử đầy đủ của họ cột này: `V1` (5 bảng, nullable, chưa dùng) → `V152` DROP toàn bộ →
+`V222` khôi phục riêng `articles` → `V371` khôi phục đủ 4 loại và tách VI/EN.
+
+**Không backfill.** Ngưỡng "đủ nội dung tiếng Anh" (`SEO_RULE_002`) được **tính động từ dữ liệu**
+tại thời điểm đọc, không lưu thành cột. Nhờ vậy bản dịch mới tạo tự động ở trạng thái ẩn cho tới
+khi có nội dung, và dịch xong là tự hiện. Hai cột trên là lớp **ghi đè thủ công** thêm vào.
+
+**Cách map ra payload** — trường `seo.noIndex` trong response là **giá trị đã resolve theo `lang`
+của request**, không phải giá trị thô của cột:
+
+| `lang` | `seo.noIndex` = |
+|---|---|
+| `vi` | `seo_no_index` |
+| `en` | `seo_no_index_en` **OR NOT** (đủ nội dung EN theo `SEO_RULE_002`) |
+
+Cột dùng để xét ngưỡng EN: sản phẩm `name_en` + (`short_description_en` \| `description_en`);
+danh mục `name_en` + (`description_en` \| `intro_content_en`); bài viết `title_en` + `body_en`;
+thương hiệu `description_en` (bảng `brands` không có `name_en`/`slug_en` — đã DROP ở `V352`).
+**`slug_en` không tham gia ngưỡng.**
+
+Status: `CONFIRMED_FROM_CODE` — migration `V371__add_seo_no_index_per_locale.sql`,
+`ProductEntity`/`CategoryEntity`/`BrandEntity`/`ArticleEntity`, `SeoIndexPolicy.java`,
+`JpaCatalogReadSupport.toSeoMeta`, `ArticleMapper`. Xem [API_CONTRACT.md](API_CONTRACT.md)
+§"SEO `noIndex` cho cả 4 loại (V371)".
 
 ### Article home_experience (V272)
 
@@ -1863,3 +1903,22 @@ The production migration plan is not an alternate application data model. It is 
 - `OwnerDecisionPlans` also carries exact recovery-file evidence, the active unavailable-media fallback, and the read-only target media cleanup plan. Target cleanup rows include integrity state, UUID/object key/public URL, reference evidence, canonical ID, audit/reference/age evidence and whole-field hash-bound rebinds. They are not executable by the migration writer.
 
 Status: `OWNER_CONFIRMED_2026-08-03` and `CONFIRMED_FROM_CODE` — `live-migration-owner-overrides-v1.json`, `LiveMigrationPreflightReport`, `LiveDuplicateProductSelectionPlanner`, `LiveProductInferencePlanner`, `LiveSourceMediaRecoveryPlanner`, `LiveTargetMediaCleanupPlanner`, `LiveMigrationContentRewriter`, `LiveMigrationExecutionGate`.
+
+## Maintenance State Data Contract
+
+Migration `V374__maintenance_admin_lock.sql` creates a dedicated single-row table and **deletes** the five `site_settings` rows added by `V373` (V373 already ran in production, so V374 is forward-only and V373 must not be edited).
+
+| Column | Type | Default | Notes |
+|---|---|---|---|
+| `id` | `SMALLINT` PK | `1` | `CHECK (id = 1)` — exactly one row |
+| `state` | `VARCHAR(16)` | `NORMAL` | `CHECK (state IN ('NORMAL','UPCOMING','ACTIVE'))` |
+| `staff_note` | `TEXT` | null | Message shown to staff on the maintenance overlay |
+| `expected_at` | `TIMESTAMPTZ` | null | Display only; never drives a transition |
+| `updated_by` | `UUID` | null | Admin who last changed the state |
+| `updated_at` | `TIMESTAMPTZ` | `NOW()` | |
+
+**Why a dedicated table instead of `site_settings`.** `AdminSettingsService.listSettings` reads `settingRepo.findAll()` and does not consult `SettingDefinitionRegistry`, while every registry-driven guard treats an unregistered key as *unrestricted* (`requireSuperAdminForRestrictedKey` uses `.orElse(false)`, and value validation only runs when a definition exists). Keeping the lock in `site_settings` would therefore let any holder of `settings.write` flip it — defeating the `DEVELOPER`-only rule — and would let an arbitrary string be written into `maintenance_mode`, which `MaintenanceService.normalizedState` rejects on every subsequent read, bricking the status endpoint. The separate table plus `CHECK` constraint makes both unreachable by construction.
+
+V374 also creates the `DEVELOPER` role (`is_system = TRUE`) with 34 explicitly enumerated permissions. It deliberately does **not** copy `ADMIN`'s permission set: `ADMIN` holds `seo.index` (granted by V372) which is missing from `PermissionCatalog`, so copying would propagate that latent `400 UNKNOWN_PERMISSION` on the Roles screen to a third role.
+
+No customer or order data is touched by a state change. The response DTO (`state`, `staffNote`, `expectedAt`, `updatedAt`, `canToggle`, `uploadCount`) is derived, not a second persisted model — `canToggle` and `uploadCount` are computed per request. Checkout draft fields remain browser-local only and must never contain an access token, refresh token, password or payment secret.

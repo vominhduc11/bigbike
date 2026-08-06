@@ -241,3 +241,20 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 |---|---|---|
 | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics dashboard |
 | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports and the full Product catalog export (audit log gate) |
+
+## Maintenance Authority
+
+| Action | Allowed actor | Notes |
+|---|---|---|
+| Read maintenance state (`GET /api/v1/admin/maintenance`) | **Any** signed-in admin | Deliberately not permission-gated: every staff member must be able to see why the panel refuses to save. Also pushed over STOMP `/topic/admin/maintenance` |
+| Change the state (`PUT /api/v1/admin/maintenance`) | **`DEVELOPER` role only**, and the caller must hold `maintenance.manage` | `SUPER_ADMIN` is explicitly excluded (owner decision 2026-08-06) even though its wildcard grants the permission |
+| Edit the `DEVELOPER` role's permissions | **Nobody** — `AdminRoleService` refuses, like `SUPER_ADMIN` | Those permissions are what let a developer *release* the lock |
+| Write anything else under `/api/v1/admin/**` while `ACTIVE` | `DEVELOPER` only | Everyone else receives `423 MAINTENANCE_ACTIVE`. The backend does not block reads, but the admin UI covers the screen for non-developers, so in practice staff cannot look anything up either (owner decision) |
+| Regenerate the static outage pages | Dev/operator with VPS access | `deploy/maintenance/render-fallback-pages.sh`; unrelated to the lock |
+| Break-glass unlock | Dev/operator with DB or VPS access | `UPDATE maintenance_state SET state='NORMAL' WHERE id=1;` + restart backend, or `BIGBIKE_MAINTENANCE_LOCK_ENABLED=false` — see `DEPLOYMENT_GUIDE.md` |
+
+**The decisive gate is the role name, not the permission — and it has to be.** `DevAdminAuthService.hasAnyPermission` short-circuits `return true` for any role holding `*`, so *any* permission invented for this endpoint is automatically held by `SUPER_ADMIN`, including `maintenance.manage`. An exact comparison against `profile.roles()` is the only construct in this codebase that the wildcard cannot satisfy (same shape as `AdminReviewController.requireSuperAdminWithReviewsWrite`). If someone ever "tidies" the role check away and relies on the permission alone, the owner's requirement silently breaks; `MaintenanceLockIntegrationTest.superAdmin_cannotToggleMaintenance_despiteHoldingWildcard` exists to catch exactly that.
+
+**Why `maintenance.manage` exists anyway (V375).** A pure role-name gate left the capability invisible: the Roles screen lists permissions, so nothing there showed that `DEVELOPER` could lock the panel. Worse, the endpoint originally authenticated with `settings.write` — an unrelated permission that *is* editable in that screen, so un-ticking it would silently disable the maintenance toggle with no visible connection. The dedicated permission makes the capability appear where operators look for it and removes the accidental coupling. Granting it to any other role does nothing (the role gate still rejects them); the admin label states this outright. The `DEVELOPER` role's permissions are frozen so the pairing cannot be broken from the UI.
+
+Operational consequence, accepted by the owner: if the developer is unavailable, the owner cannot unlock from the admin UI and must use one of the break-glass paths above. Provision **two** `DEVELOPER` accounts — there is no admin self-service password reset, and `resend-invite` is itself blocked while the lock is `ACTIVE`.

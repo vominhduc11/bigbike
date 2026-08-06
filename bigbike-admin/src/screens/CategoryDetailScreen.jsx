@@ -1000,6 +1000,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               descKey="categories.sectionSeoDesc"
               previewBase={STOREFRONT_BASE}
               previewSlugDefault="duong-dan-danh-muc"
+              englishReady={Boolean(
+                form.translations?.en?.name?.trim()
+                && (form.translations?.en?.description?.trim() || form.translations?.en?.introContent?.trim()),
+              )}
               collapsible
               open={seoOpen}
               onToggle={() => setSeoOpen((v) => !v)}

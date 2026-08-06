@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, CheckCircle2, ImageOff, MapPin } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ImageOff, Lock, MapPin } from 'lucide-react'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { ImageUrlInput } from '../../components/ImageUrlInput'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
@@ -15,7 +15,7 @@ import {
 } from './constants'
 
 export function SettingField({
-  setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur,
+  setting, where, canUpdate, isSuperAdmin = false, draft, draftEn, error, onChange, onChangeEn, onBlur,
 }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -32,6 +32,7 @@ export function SettingField({
   const isImage = setting.valueType === 'IMAGE_URL'
   const isLongText = setting.valueType === 'LONG_TEXT'
   const isBoolean = setting.valueType === 'BOOLEAN'
+  const isEnum = setting.valueType === 'ENUM' && Array.isArray(setting.allowedValues) && setting.allowedValues.length > 0
   const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = isEnLang
@@ -120,6 +121,11 @@ export function SettingField({
         >
           {label}
         </LabelElement>
+        {setting.superAdminOnly && !isSuperAdmin ? (
+          <span className="bb-badge bb-badge-neutral">
+            <Lock size={12} aria-hidden="true" /> {t('settings.superAdminOnly')}
+          </span>
+        ) : null}
         {isDirty ? (
           <span className="bb-badge bb-badge-warning">
             {t('settings.unsavedDot')}
@@ -179,6 +185,17 @@ export function SettingField({
               aria-invalid={error ? true : undefined}
             />
           </div>
+        ) : isEnum ? (
+          <Select value={activeValue || undefined} onValueChange={handleActiveChange}>
+            <SelectTrigger id={controlId} aria-labelledby={labelId} aria-describedby={describedBy}>
+              <SelectValue placeholder={t('settings.empty')} />
+            </SelectTrigger>
+            <SelectContent>
+              {setting.allowedValues.map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <Input
             id={controlId}

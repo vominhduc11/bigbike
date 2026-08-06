@@ -75,10 +75,16 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
     ogImage: article.seo?.ogImage?.url ?? article.coverImage?.url ?? undefined,
     ogType: "article",
     // hreflang vi/en khi bài viết có slug tiếng Anh riêng (ARTICLE_RULE_003).
-    languageAlternates: {
-      vi: toArticlePath(article.slug, "vi"),
-      en: toArticlePath(article.slugEn?.trim() || article.slug, "en"),
-    },
+    // Trang noindex thì không khai hreflang — khai một bản dịch mà mình vừa bảo Google
+    // đừng hiển thị là tín hiệu mâu thuẫn. SEO_RULE_001/002.
+    ...(article.seo?.noIndex
+      ? {}
+      : {
+          languageAlternates: {
+            vi: toArticlePath(article.slug, "vi"),
+            en: toArticlePath(article.slugEn?.trim() || article.slug, "en"),
+          },
+        }),
   });
 }
 

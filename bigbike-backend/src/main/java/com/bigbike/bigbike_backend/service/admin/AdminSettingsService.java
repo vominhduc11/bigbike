@@ -338,7 +338,8 @@ public class AdminSettingsService {
                 masked ? null : s.getSettingValueEn(),
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
                 s.getCreatedAt(), s.getUpdatedAt(),
-                valueType, sensitive, masked, superAdminOnly
+                valueType, sensitive, masked, superAdminOnly,
+                defOpt.map(SettingDefinition::allowedValues).orElse(java.util.Set.of())
         );
     }
 

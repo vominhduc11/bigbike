@@ -162,6 +162,16 @@ describe('SettingsScreen', () => {
     expect(screen.getByLabelText('Chủ tài khoản nhận chuyển khoản')).toHaveValue('BIGBIKE')
   })
 
+  // V374: chế độ bảo trì đã rời khỏi màn Cài đặt hẳn — nay là màn riêng gate theo vai
+  // trò DEVELOPER. Giữ trong site_settings sẽ khiến bất kỳ ai có `settings.write` cũng
+  // mở khoá được, vì AdminSettingsService coi key không có định nghĩa là KHÔNG hạn chế.
+  it('no longer exposes a maintenance tab in settings', async () => {
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'GENERAL' })
+    expect(screen.queryByRole('button', { name: 'MAINTENANCE' })).not.toBeInTheDocument()
+  })
+
   it('confirms and saves bank-transfer details as one atomic batch', async () => {
     const user = userEvent.setup()
     renderScreen()

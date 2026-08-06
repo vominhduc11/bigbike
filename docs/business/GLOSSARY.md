@@ -779,11 +779,11 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Nhóm thuật ngữ SEO technical: sitemap hỗ trợ discovery, robots kiểm crawl, canonical URL định URL chuẩn, redirect giữ URL legacy. |
-| BigBike Context | Canonical route helper và redirect/migration support có evidence; sitemap/robots cần verify thêm. |
+| BigBike Context | Cả 4 đều đã triển khai và đang chạy. `app/sitemap.ts` phát URL VI+EN kèm hreflang, dựng theo request (`force-dynamic`) và **ném lỗi khi API hỏng** thay vì xuất bản bản thiếu. `app/robots.ts` chỉ chặn endpoint không render HTML được (`/api/`, `/admin/`, `/_internal/`) — xem `BUSINESS_RULES.md` rule `SEO_RULE_004`. Canonical tự sinh từ slug theo locale (`SEO_RULE_003`), không phải trường admin nhập. |
 | Example | `toCanonicalUrl(path)` tạo canonical URL; legacy WordPress redirect map hỗ trợ SEO migration. |
-| Related Docs | `MODULE_CATALOG.md`, `WORKFLOW_OVERVIEW.md` |
-| Status | Canonical/Redirect `CONFIRMED_FROM_REPO`; sitemap/robots `DOCUMENTED_NEEDS_VERIFICATION` |
-| Evidence | `bigbike-web/lib/utils/routes.ts`, `README.md` |
+| Related Docs | `MODULE_CATALOG.md`, `WORKFLOW_OVERVIEW.md`, `BUSINESS_RULES.md` (`SEO_RULE_001`–`SEO_RULE_005`) |
+| Status | `CONFIRMED_FROM_REPO` (sitemap/robots xác minh 2026-08-06 bằng code + phản hồi HTTP thật) |
+| Evidence | `bigbike-web/app/sitemap.ts`, `bigbike-web/app/robots.ts`, `bigbike-web/lib/utils/routes.ts`, `bigbike-web/__tests__/seo/` |
 
 ## 15. BigBike-Specific Terms
 
