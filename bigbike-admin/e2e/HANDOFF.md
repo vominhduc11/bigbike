@@ -1,6 +1,6 @@
 # Prompt tiếp nối — QA Playwright cho `bigbike-admin`
 
-> Dán nguyên prompt này vào một phiên Claude Code mới (mở tại repo `bigbike-web-new`) để tiếp tục và hoàn thành task. Vai trò: **Senior QA Automation Engineer + Senior Admin UI/UX Engineer**.
+> Dán nguyên prompt này vào một phiên Claude Code mới (mở tại repo `bigbike`) để tiếp tục và hoàn thành task. Vai trò: **Senior QA Automation Engineer + Senior Admin UI/UX Engineer**.
 
 ---
 

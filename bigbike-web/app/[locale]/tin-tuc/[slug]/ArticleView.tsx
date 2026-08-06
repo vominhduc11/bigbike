@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
@@ -43,11 +42,9 @@ export function ArticleView({
   previewMode = false,
 }: ArticleViewProps) {
   const locale = useLocale() as Locale;
-  const articleTitleFallback = useTranslations("Blog")("articleTitleFallback");
-  const articleCategoryFallback = useTranslations("Blog")("articleCategoryFallback");
+  const tBlog = useTranslations("Blog");
+  const articleTitleFallback = tBlog("articleTitleFallback");
   const articleTitle = safeText(article.title, articleTitleFallback);
-  const categoryLabel = getArticleCategoryLabel(article, articleCategoryFallback);
-  const categoryHref = getArticleCategoryHref(article, locale);
   const articleDate = getArticleDate(article);
 
   const legacyShareUrl = toCanonicalUrl(`/tin-tuc/${article.slug}.html`);
@@ -56,7 +53,7 @@ export function ArticleView({
 
   const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath(locale as "vi" | "en") },
-    { label: categoryLabel, href: categoryHref },
+    { label: tBlog("breadcrumb"), href: toArticleListPath(locale) },
     { label: articleTitle, labelNode: <LText field="title">{articleTitle}</LText> },
   ];
 
@@ -84,19 +81,11 @@ export function ArticleView({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={BLOG_THUMBNAIL} alt="" className="h-auto w-full" />
 
-          <div className="my-5 flex flex-wrap items-center gap-2 text-a5-meta text-muted-foreground">
-            <p className="m-0">
-              <Link href={categoryHref} className="font-semibold text-brand hover:underline">
-                {categoryLabel}
-              </Link>
-            </p>
-            {articleDate ? (
-              <>
-                <span aria-hidden>/</span>
-                <p className="m-0"><LocalDate value={articleDate} dateStyle="long" /></p>
-              </>
-            ) : null}
-          </div>
+          {articleDate ? (
+            <div className="my-5 text-a5-meta text-muted-foreground">
+              <p className="m-0"><LocalDate value={articleDate} dateStyle="long" /></p>
+            </div>
+          ) : null}
 
           <ArticleTableOfContents />
 
@@ -150,13 +139,11 @@ export function ArticleView({
               title={<Tr ns="Blog" k="featuredNews" />}
               articles={highlighted}
               titleFallback={articleTitleFallback}
-              categoryFallback={articleCategoryFallback}
             />
             <ArticleSidebarWidget
               title={<Tr ns="Blog" k="latestNews" />}
               articles={newest}
               titleFallback={articleTitleFallback}
-              categoryFallback={articleCategoryFallback}
             />
           </aside>
         ) : null}
@@ -189,12 +176,10 @@ function ArticleSidebarWidget({
   title,
   articles,
   titleFallback,
-  categoryFallback,
 }: {
   title: ReactNode;
   articles: Article[];
   titleFallback: string;
-  categoryFallback: string;
 }) {
   if (articles.length === 0) return null;
 
@@ -207,7 +192,6 @@ function ArticleSidebarWidget({
             key={article.id}
             article={article}
             titleFallback={titleFallback}
-            categoryFallback={categoryFallback}
           />
         ))}
       </div>
@@ -218,16 +202,13 @@ function ArticleSidebarWidget({
 function ArticleSidebarItem({
   article,
   titleFallback,
-  categoryFallback,
 }: {
   article: Article;
   titleFallback: string;
-  categoryFallback: string;
 }) {
   const title = safeText(article.title, titleFallback);
   const imageUrl = resolveArticleImageUrl(article);
   const fallbackUrl = makeSlugThumbnailFallback(imageUrl, article.slug);
-  const categoryLabel = getArticleCategoryLabel(article, categoryFallback);
   const date = getArticleDate(article);
 
   return (
@@ -236,10 +217,11 @@ function ArticleSidebarItem({
         <ArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} className="aspect-video h-full w-full object-cover" />
       </LocalizedLink>
       <div className="w-3/5 min-w-0 p-3">
-        <div className="mb-1 font-cta text-b5-label uppercase text-muted-foreground">
-          <p className="m-0 font-semibold text-brand">{categoryLabel}</p>
-          {date ? <p className="m-0"><LocalDate value={date} dateStyle="long" /></p> : null}
-        </div>
+        {date ? (
+          <div className="mb-1 font-cta text-b5-label uppercase text-muted-foreground">
+            <p className="m-0"><LocalDate value={date} dateStyle="long" /></p>
+          </div>
+        ) : null}
         <h3 className="mb-1 font-body text-a5-meta font-semibold leading-5 text-foreground">
           <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn} className="text-foreground hover:text-brand">
             {title}
@@ -249,16 +231,6 @@ function ArticleSidebarItem({
       </div>
     </article>
   );
-}
-
-function getArticleCategoryLabel(article: Article, fallback: string): string {
-  return safeText(article.category?.name ?? article.categories?.[0]?.name, fallback);
-}
-
-function getArticleCategoryHref(article: Article, locale: Locale): string {
-  const slug = article.category?.slug ?? article.categories?.[0]?.slug;
-  if (!slug || slug === "tin-tuc") return toArticleListPath(locale);
-  return `${toArticleListPath(locale)}?category=${encodeURIComponent(slug)}`;
 }
 
 function getArticleDate(article: Article): string | null | undefined {

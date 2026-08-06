@@ -35,7 +35,7 @@ test.describe("VI/EN URL locale contract", () => {
     await page.goto(productHref!);
     await page.getByRole("button", { name: "EN", exact: true }).first().click();
     await expect(page).toHaveURL(/\/en\/products\/[a-z0-9-]+\/$/);
-    await expect(page.locator('link[rel="canonical"][href*="/en/products/"]')).toHaveCount(1);
+    await expect(page.locator('link[rel="canonical"][href*="/en/product/"]')).toHaveCount(1);
 
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");

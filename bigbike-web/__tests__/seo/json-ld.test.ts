@@ -167,7 +167,7 @@ describe("English JSON-LD locale", () => {
       createdAt: "2026-06-01T00:00:00Z",
       updatedAt: "2026-06-01T00:00:00Z",
     } as Article;
-    const ld = obj(buildArticleBreadcrumbJsonLd(article, "/en/news/english-article/"));
+    const ld = obj(buildArticleBreadcrumbJsonLd(article, "/en/tin-tuc/english-article/"));
     const names = arr(ld.itemListElement).map((item) => item.name);
 
     expect(names).toEqual(["Home", "News", "English article"]);

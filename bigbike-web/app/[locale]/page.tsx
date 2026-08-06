@@ -103,7 +103,6 @@ export default async function HomePage({ params }: HomePageProps) {
     categoriesResult,
     expPickedResult,
     expFallbackResult,
-    newsArticlesResult,
     brandsResult,
     settingsResult,
     carouselProductsResult,
@@ -122,7 +121,6 @@ export default async function HomePage({ params }: HomePageProps) {
     listArticles({ page: 1, homeExperience: true, size: 3, sort: "publishedAt:desc", lang: locale }),
     // Dự phòng khi admin chưa chọn bài nào: 3 bài viết mới nhất (sau khi gộp nhóm còn 1 "Tin tức").
     listArticles({ page: 1, size: 3, sort: "publishedAt:desc", lang: locale }),
-    listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc", lang: locale }),
     listBrands({ page: 1, size: 12, sort: "name:asc", showOnHomepage: true, lang: locale }),
     listPublicSettings(locale),
     listProducts({
@@ -172,7 +170,7 @@ export default async function HomePage({ params }: HomePageProps) {
   // Bài admin chọn tay được ưu tiên; nếu chưa chọn bài nào thì dùng 3 bài Reviews mới nhất.
   const expPicked = expPickedResult.data ?? [];
   const expArticles = expPicked.length > 0 ? expPicked : (expFallbackResult.data ?? []);
-  const newsArticles = newsArticlesResult.data ?? [];
+  const newsArticles = expFallbackResult.data ?? [];
   const brands = brandsResult.data ?? [];
   const carouselProducts = carouselProductsResult.data ?? [];
   const homeHighlights = homeHighlightsResult.data ?? [];

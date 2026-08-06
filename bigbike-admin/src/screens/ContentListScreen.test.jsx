@@ -170,7 +170,6 @@ describe('ContentListScreen', () => {
       expect.objectContaining({
         title: 'Bài nháp',
         publishStatus: 'PUBLISHED',
-        categoryId: '',
         translations: expect.objectContaining({
           en: expect.objectContaining({ title: 'Draft article' }),
         }),

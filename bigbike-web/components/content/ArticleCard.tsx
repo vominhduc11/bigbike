@@ -6,7 +6,6 @@ import { useLocalDate } from "@/components/i18n/LocalDate";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { MediaImage } from "@/components/ui/MediaImage";
-import { categoryBadge } from "@/lib/ui-classes";
 
 type ArticleCardProps = {
   article: Article;
@@ -34,8 +33,6 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   const titleRaw = article.title?.trim();
   const title = titleRaw && titleRaw.length > 0 ? titleRaw : t("articleTitleFallback");
   const excerpt = resolveArticleExcerpt(article);
-  const categoryRaw = (article.category?.name ?? article.categories?.[0]?.name)?.trim();
-  const category = categoryRaw && categoryRaw.length > 0 ? categoryRaw : t("articleCategoryFallback");
   const fmtDate = useLocalDate();
   const publishedDate = fmtDate(article.publishedAt ?? article.createdAt, "slashPad");
   const isFeatured = variant === "featured";
@@ -62,7 +59,6 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             {publishedDate}
           </span>
           <div className="flex flex-col gap-2 flex-1">
-            <p className={categoryBadge}>{category}</p>
             <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
               {title}
             </h3>
@@ -100,9 +96,6 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
-          <p className={categoryBadge}>
-            {category}
-          </p>
           <h3
             className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
           >

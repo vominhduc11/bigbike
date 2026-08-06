@@ -225,7 +225,7 @@ if (-not $VerifyOnly) {
         }
     }
     Invoke-ScpExistingFile -RemotePath $SourceDumpRemotePath -DestinationPath $files.SOURCE_DATABASE
-    Invoke-SshBinaryStream -DestinationPath $files.SOURCE_UPLOADS -RemoteCommand 'set -euo pipefail; tar -C /root/myproject/bigbike/files/wp-content -czf - uploads'
+    Invoke-SshBinaryStream -DestinationPath $files.SOURCE_UPLOADS -RemoteCommand 'set -euo pipefail; tar -C /root/myproject/bigbike-wp-legacy/files/wp-content -czf - uploads'
 
     $targetDatabaseCommand = @'
 set -euo pipefail
@@ -246,7 +246,7 @@ set -euo pipefail
     Invoke-SshBinaryStream -DestinationPath $files.TARGET_MEDIA_METADATA -RemoteCommand $mediaCommand
 
     Invoke-SshBinaryStream -DestinationPath $files.NGINX_CONFIG -RemoteCommand 'set -euo pipefail; tar -C / -czf - etc/nginx/nginx.conf etc/nginx/conf.d etc/nginx/sites-available etc/nginx/sites-enabled'
-    Invoke-SshBinaryStream -DestinationPath $files.DEPLOYMENT_CONFIG -RemoteCommand 'set -euo pipefail; tar -C /root/myproject/bigbike-web-new -czf - docker-compose.yaml .env.vps deploy bigbike-backend/Dockerfile bigbike-web/Dockerfile bigbike-admin/Dockerfile bigbike-admin/nginx.conf'
+    Invoke-SshBinaryStream -DestinationPath $files.DEPLOYMENT_CONFIG -RemoteCommand 'set -euo pipefail; tar -C /root/myproject/bigbike -czf - docker-compose.yaml .env.vps deploy bigbike-backend/Dockerfile bigbike-web/Dockerfile bigbike-admin/Dockerfile bigbike-admin/nginx.conf'
 }
 
 foreach ($entry in $files.GetEnumerator()) {

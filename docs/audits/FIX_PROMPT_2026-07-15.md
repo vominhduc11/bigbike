@@ -1,6 +1,6 @@
 # PROMPT — Đợt sửa lỗi theo AUDIT_2026-07-15_FINAL (toàn bộ 77 finding)
 
-> **Cách dùng (cho user):** mở session Claude Code mới tại thư mục gốc repo (`bigbike-web-new/`) và gõ:
+> **Cách dùng (cho user):** mở session Claude Code mới tại thư mục gốc repo (`bigbike/`) và gõ:
 >
 > **"Đọc và thực hiện docs/audits/FIX_PROMPT_2026-07-15.md"**
 >

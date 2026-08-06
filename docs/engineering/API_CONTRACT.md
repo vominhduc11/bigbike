@@ -67,7 +67,7 @@ By default every API response carries `Cache-Control: no-cache, no-store, max-ag
 - `GET /api/v1/catalog/**` (facets)
 - `GET /api/v1/articles`, `/api/v1/articles/**`
 - `GET /api/v1/menus/**`
-- `GET /api/v1/sliders`, `/api/v1/home-videos`, `/api/v1/content-categories`
+- `GET /api/v1/sliders`, `/api/v1/home-videos`
 - `GET /api/v1/settings/public`
 
 Any path containing `/admin/` or `/internal/` is excluded defensively. Cart, checkout, customer, order and all other cookie/auth-bearing endpoints are **not** on the allowlist and keep `no-store`, so no personalised response can leak into a shared cache.
@@ -82,7 +82,6 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
 | `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
-| `GET` | `/api/v1/content-categories` | List content (news) categories with published-article counts, for the Tin tức category filter | `ApiListResponse<ContentCategoryWithCount>` | `CONFIRMED_FROM_CODE` | `ContentController.java` |
 | `GET` | `/api/v1/sliders?location=home` | Trả các homepage slider đang active theo `sortOrder`. Mỗi item có `desktopImage` và `mobileImage`; `mobileImage` là tùy chọn (`ImageAsset` hoặc `null`). Storefront dùng `mobileImage.url` dưới 768px khi có, nếu không dùng `desktopImage.url`. | `ApiDataResponse<List<PublicSliderResponse>>` | `OWNER_CONFIRMED_2026-07-30` | `PublicSliderController.java`, `PublicSliderResponse.java`, `HeroSlider.tsx` |
 | `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
 | `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
@@ -211,19 +210,9 @@ Validation: image only — declared Content-Type and Apache Tika magic-byte dete
 
 Every successful upload also creates a durable unclaimed record containing its canonical object key, product ID and upload timestamp. A scheduled cleanup atomically removes records still unclaimed after 24 hours and then deletes the corresponding MinIO object. Once claimed by a submitted review, the object cannot be claimed again.
 
-## Content Categories Contract
+## Content Categories — REMOVED (2026-08-03)
 
-`GET /api/v1/content-categories` — public, no auth. Powers the Tin tức (news) category filter, including the mobile category drawer.
-
-No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
-- `id`, `slug`, `name` — the content category.
-- `articleCount` — number of `PUBLISHED` articles in that category.
-
-**Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
-
-**Admin reference list — REMOVED (2026-07-15, AUD-056):** `GET /api/v1/admin/content/reference/categories` đã gỡ. Endpoint vốn nuôi ô chọn danh mục của form bài viết, nhưng ô chọn đã bị gỡ từ V275 (bài viết tự gán nhóm mặc định `tin-tuc`) nên endpoint thành orphan — xóa theo owner decision #8.
-
-**No admin CRUD.** There is no create/update/delete endpoint for content categories — the admin "Quản lý danh mục bài viết" screen was removed (the inventory of categories is fixed/seed-managed). The public list reads from the `content_categories` table.
+The content-category feature is removed across database, backend, storefront and admin. `GET /api/v1/content-categories` no longer exists; `GET /api/v1/articles` no longer accepts `category`; article requests/responses no longer expose `categoryId`, `category` or `categories`. Product-category contracts are unchanged.
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
@@ -299,11 +288,9 @@ An unsupported field returns `400 UNSUPPORTED_SORT_FIELD` (not a silent fallback
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentReadService.CONTENT_SORT_FIELDS` + `contentComparator`, `SortParser.parse`.
 
-### Article admin save defaults — category and canonical
+### Article admin canonical
 
-Every Article create/update request from BigBike Admin sends `categoryId=""`, which instructs `ContentRequestValidator.resolveCategory` to normalize the record to the sole `tin-tuc` category, including legacy records with a stale category. The form does not expose a category picker.
-
-The form does not expose `seo.canonicalUrl`. It derives the Vietnamese canonical URL from `slug` as `https://bigbike.vn/tin-tuc/{slug}/` (or the literal localhost/127.0.0.1 origin in local development). The English URL remains independently controlled by optional `translations.en.slug` / `slugEn` and the `/news/{slugEn}/` contract.
+The form does not expose `seo.canonicalUrl`. It derives the Vietnamese canonical URL from `slug` as `https://bigbike.vn/tin-tuc/{slug}/` (or the literal localhost/127.0.0.1 origin in local development). The English URL remains independently controlled by optional `translations.en.slug` / `slugEn` and the `/en/tin-tuc/{slugEn}/` contract.
 
 ### Article preview — admin dry-run render (`POST /api/v1/admin/content/articles/preview`)
 
@@ -1176,8 +1163,8 @@ ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`ARTICLE_RULE_002`)
 **Response — thêm trường `slugEn`:** public detail (và list) của category/product/article trả thêm
 `slugEn: string | null` cạnh `slug`. `slug` luôn là canonical tiếng Việt (không đổi
 theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Từ 2026-07-24,
-`slugEn` khi có giá trị chọn slug ưu tiên cho trang tiếng Anh tại `/en/products/`,
-`/en/categories/`, `/en/news/` (xem `PRODUCT_RULE_003`/`CATEGORY_RULE_003`/`ARTICLE_RULE_003`).
+`slugEn` khi có giá trị chọn slug ưu tiên cho trang tiếng Anh tại `/en/product/`,
+`/en/categories/`, `/en/tin-tuc/` (xem `PRODUCT_RULE_003`/`CATEGORY_RULE_003`/`ARTICLE_RULE_003`).
 `slugEn` rỗng **không làm mất trang EN**: web dùng `slug` VI dưới prefix `/en` và dữ liệu `lang=en`
 vẫn fallback từng trường về VI theo contract hiện hành. `slugEn` không đổi data shape và không quyết
 định khả năng đọc record từ API. Brand response **không có field `slugEn`**; URL VI/EN của thương hiệu

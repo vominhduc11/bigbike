@@ -24,7 +24,7 @@ const STATIC_ROUTES: RouteParts[] = [
   { vi: "/tim-kiem", en: "/search" },
   { vi: "/lien-he", en: "/contact" },
   { vi: "/gioi-thieu", en: "/about" },
-  { vi: "/tin-tuc", en: "/news" },
+  { vi: "/tin-tuc", en: "/tin-tuc" },
   { vi: "/brands", en: "/brands" },
   { vi: "/chinh-sach/chinh-sach-bao-mat-thong-tin", en: "/policy/privacy-policy" },
   { vi: "/chinh-sach/chinh-sach-bao-hanh", en: "/policy/warranty-policy" },
@@ -37,9 +37,9 @@ const STATIC_ROUTES: RouteParts[] = [
 ];
 
 const DYNAMIC_ROUTES: RouteParts[] = [
-  { vi: "/product/", en: "/products/" },
+  { vi: "/product/", en: "/product/" },
   { vi: "/danh-muc/", en: "/categories/" },
-  { vi: "/tin-tuc/", en: "/news/" },
+  { vi: "/tin-tuc/", en: "/tin-tuc/" },
   { vi: "/brands/", en: "/brands/" },
   { vi: "/tai-khoan/don-hang/", en: "/account/orders/" },
   { vi: "/tai-khoan/edit-address/", en: "/account/edit-address/" },
@@ -84,6 +84,13 @@ function resolveInternalPath(pathname: string): string {
   if (["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html", "/categories"].includes(path)) {
     return "/sp";
   }
+
+  // Compatibility aliases from the English URL contract used before 2026-08-03.
+  // They are input-only: localization always emits the singular product and
+  // Vietnamese `tin-tuc` segments chosen for the live migration.
+  if (path === "/news") return "/tin-tuc";
+  if (path.startsWith("/news/")) return `/tin-tuc${path.slice("/news".length)}`;
+  if (path.startsWith("/products/")) return `/product${path.slice("/products".length)}`;
 
   for (const route of STATIC_ROUTES) {
     if (path === route.vi || path === route.en) return route.vi;

@@ -1,8 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { ArticleCard } from "@/components/content/ArticleCard";
-import { ArticleCategoryNav } from "@/components/content/ArticleCategoryNav";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
-import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
+import type { Article } from "@/lib/contracts/public";
 import { toArticleListPath } from "@/lib/utils/routes";
 import { resolveLocale } from "@/i18n/locale";
 
@@ -13,19 +12,16 @@ type ArticlePagination = {
 };
 
 export async function ArticleListDefault({
-  categories,
   articles,
   pagination,
   locale,
 }: {
-  categories: ContentCategoryWithCount[];
   articles: Article[];
   pagination?: ArticlePagination | null;
   locale: string;
 }) {
   const t = await getTranslations("Blog");
   const resolvedLocale = resolveLocale(locale);
-  const hasMultipleCategories = categories.length > 1;
 
   return (
     <>
@@ -34,15 +30,7 @@ export async function ArticleListDefault({
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-        {hasMultipleCategories ? (
-          <ArticleCategoryNav
-            categories={categories}
-            locale={resolvedLocale}
-            heading={t("categoriesHeading")}
-          />
-        ) : null}
-
-        <div className={hasMultipleCategories ? "min-w-0 md:col-span-9" : "min-w-0 md:col-span-12"}>
+        <div className="min-w-0 md:col-span-12">
           {articles.length === 0 ? (
             <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{t("listEmpty")}</p>
           ) : (

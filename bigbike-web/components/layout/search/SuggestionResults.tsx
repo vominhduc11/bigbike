@@ -84,11 +84,6 @@ export function SuggestionResults({
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <span className="text-a5-meta font-normal text-foreground line-clamp-2">{article.title}</span>
-                      {article.category?.name && (
-                        <span className="font-cta text-b5-label font-semibold uppercase tracking-normal text-brand-on-dark">
-                          {article.category.name}
-                        </span>
-                      )}
                     </div>
                   </LocalizedLink>
                 ))}

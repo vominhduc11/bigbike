@@ -156,8 +156,49 @@ function isLoop(currentPath: string, target: string): boolean {
   }
 }
 
+function legacyEnglishCanonicalPath(pathname: string): string | null {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (normalized === "/en/news") return "/en/tin-tuc/";
+  if (normalized.startsWith("/en/news/")) {
+    return `${normalized.replace("/en/news/", "/en/tin-tuc/")}/`;
+  }
+  if (normalized.startsWith("/en/products/")) {
+    return `${normalized.replace("/en/products/", "/en/product/")}/`;
+  }
+  return null;
+}
+
+function legacyHtmlLookupPath(pathname: string): string | null {
+  if (!pathname.toLowerCase().endsWith(".html")) return null;
+  if (pathname.startsWith("/vi/")) return pathname.slice(3) || "/";
+  if (pathname.startsWith("/en/")) return pathname.slice(3) || "/";
+  return pathname;
+}
+
+function redirectResponse(
+  request: NextRequest,
+  rule: RedirectLookup,
+  currentPath: string,
+  locale: "vi" | "en",
+): NextResponse | null {
+  if (isLoop(currentPath, rule.target)) return null;
+
+  const localizedTarget = rule.target.startsWith("/")
+    ? translatePath(rule.target, locale)
+    : rule.target;
+  const destination = localizedTarget.startsWith("/")
+    ? new URL(localizedTarget, request.url)
+    : new URL(rule.target);
+  if (!destination.search && request.nextUrl.search) {
+    destination.search = request.nextUrl.search;
+  }
+  void recordHit(rule.redirectId);
+  return NextResponse.redirect(destination, rule.statusCode || 301);
+}
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
+  const legacyEnglishTarget = legacyEnglishCanonicalPath(pathname);
 
   if (pathname === REDIRECT_CACHE_CLEAR_PATH || pathname === `${REDIRECT_CACHE_CLEAR_PATH}/`) {
     if (request.method !== "POST") {
@@ -180,12 +221,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     });
   }
 
+  // Legacy .html URLs must hit the redirect table before locale/trailing-slash
+  // normalization. This keeps /vi/...html and /en/...html to one direct 301 hop.
+  const htmlLookupPath = legacyHtmlLookupPath(pathname);
+  if (htmlLookupPath) {
+    const htmlRule = await lookupRedirect(htmlLookupPath);
+    if (htmlRule) {
+      const response = redirectResponse(request, htmlRule, htmlLookupPath, locale);
+      if (response) return response;
+    }
+  }
+
   // Vietnamese is canonical without a prefix. Normalize /vi in one permanent
   // hop while retaining query parameters and hashes from the requested URL.
   if (pathname === "/vi" || pathname.startsWith("/vi/")) {
     const destination = request.nextUrl.clone();
-    destination.pathname = translatePath(pathname, "vi").split(/[?#]/)[0];
-    return NextResponse.redirect(destination, 308);
+    destination.pathname = htmlLookupPath ?? translatePath(pathname, "vi").split(/[?#]/)[0];
+    return NextResponse.redirect(destination, 301);
   }
 
   // Migrate the former unprefixed English URLs to the canonical /en namespace.
@@ -238,26 +290,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const rule = await lookupRedirect(viPathname);
-  if (!rule) return handleI18nRouting(request);
-
-  if (isLoop(viPathname, rule.target)) {
+  if (!rule) {
+    if (legacyEnglishTarget) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = legacyEnglishTarget;
+      return NextResponse.redirect(destination, 301);
+    }
     return handleI18nRouting(request);
   }
 
-  const localizedTarget = rule.target.startsWith("/")
-    ? translatePath(rule.target, locale)
-    : rule.target;
-  const destination = localizedTarget.startsWith("/")
-    ? new URL(localizedTarget, request.url)
-    : new URL(rule.target);
-  if (!destination.search && request.nextUrl.search) {
-    destination.search = request.nextUrl.search;
-  }
-
-  // Fire-and-forget: increment hit counter; response is already prepared.
-  void recordHit(rule.redirectId);
-
-  return NextResponse.redirect(destination, rule.statusCode || 301);
+  return redirectResponse(request, rule, viPathname, locale) ?? handleI18nRouting(request);
 }
 
 export const config = {
@@ -265,6 +307,10 @@ export const config = {
     // Locale routing only applies to document URLs. Public assets, media and
     // metadata files must retain their original paths instead of being rewritten
     // beneath /vi or /en.
-    "/((?!api|_next|_vercel|.*\\..*).*)",
+    // `xml` giữ cho /sitemap.xml + /brand/favicon/browserconfig.xml, `ttf|otf|eot`
+    // giữ cho 12 font trong public/fonts, còn `mp4|webm|mp3|wasm|mjs` là loại file
+    // tĩnh có thể thêm sau này. Thiếu chúng thì next-intl viết lại đường dẫn xuống
+    // /vi/... và file trả 404 (sitemap còn trả nhầm HTML) — đã đo 2026-08-06.
+    "/((?!api|_next|_vercel|.*\\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|otf|pdf|png|svg|ttf|txt|wasm|webm|webmanifest|webp|woff2?|xml)$).*)",
   ],
 };

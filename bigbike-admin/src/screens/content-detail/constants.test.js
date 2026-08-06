@@ -100,10 +100,10 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
     })
   })
 
-  it('luôn chuẩn hoá danh mục Tin tức và canonical tiếng Việt theo slug', () => {
+  it('không gửi danh mục nội dung và chuẩn hoá canonical tiếng Việt theo slug', () => {
     const payload = toPayload(articleForm({ slug: '  xe-moi-2026  ' }), false)
 
-    expect(payload.categoryId).toBe('')
+    expect(payload).not.toHaveProperty('categoryId')
     expect(payload.seo.canonicalUrl).toBe(canonicalUrlFromSlug('xe-moi-2026'))
     expect(payload.seo.canonicalUrl).toMatch(/\/tin-tuc\/xe-moi-2026\/$/)
     expect(canonicalUrlFromSlug('')).toBeNull()

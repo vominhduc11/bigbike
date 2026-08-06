@@ -5,8 +5,8 @@ import { DEFAULT_TIME_ZONE, isLocale } from "./locale";
  * Server render tĩnh theo locale — mặc định `vi`, KHÔNG đọc cookie/header ở tầng
  * này (đọc cookie sẽ ép mọi route thành dynamic/SSR, mất ISR/SSG).
  *
- * Route Sản phẩm/Danh mục/Bài viết tiếng Anh thật (`app/products/[slug]`,
- * `app/categories/[slug]`, `app/news/[slug]`) tự truyền `{ locale: "en" }` tường
+ * Route Sản phẩm/Danh mục/Bài viết tiếng Anh thật (`/en/product/[slug]`,
+ * `/en/categories/[slug]`, `/en/tin-tuc/[slug]`) tự truyền `{ locale: "en" }` tường
  * minh vào từng lời gọi `getTranslations`/`getFormatter` — giá trị đó đi thẳng vào
  * tham số `locale` bên dưới mà KHÔNG cần đọc `requestLocale` (next-intl chỉ resolve
  * `requestLocale` qua `next/headers` khi callback này thực sự đọc nó — cố tình

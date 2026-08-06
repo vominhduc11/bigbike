@@ -226,7 +226,8 @@
       "Bash(exit 0)",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/vi.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/en.json','utf8'\\)\\); console.log\\('OK'\\)\")",
       "Bash(npx eslint *)",
-      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({scripts:p.scripts, lintStaged:p['lint-staged']}, null, 2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({scripts:p.scripts, lintStaged:p['lint-staged']}, null, 2\\)\\)\")",
+      "Bash(curl -s \"https://bigbike.vn/product/mu-bao-hiem-dual-sport-caberg-tanami-carbon-2in1/\")"
     ],
     "additionalDirectories": [
       "e:\\Project\\bigbike\\bigbike_vn__2026_04_17\\files\\wp-content\\cache\\page_enhanced\\bigbike.vn"

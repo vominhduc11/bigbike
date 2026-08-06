@@ -582,12 +582,6 @@ export function normalizeContentItem(input) {
   const publishStatus = normalizePublishStatus(source.publishStatus)
   const type = normalizeContentType(source.type || source.contentType)
 
-  const categorySource = source.category && typeof source.category === 'object' ? source.category : null
-  const categoryId =
-    toTrimmedString(source.categoryId) ||
-    (categorySource ? toTrimmedString(categorySource.id) : undefined) ||
-    undefined
-
   return {
     id,
     type,
@@ -600,14 +594,7 @@ export function normalizeContentItem(input) {
     body: toTrimmedString(source.body) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
     productImage: normalizeImageAsset(source.productImage),
-    // Flat id scalar — required by ContentDetailScreen to pre-select dropdown
-    // and to re-send on save so backend does not clear the association.
-    categoryId,
     parentId: toTrimmedString(source.parentId) || undefined,
-    categories: Array.isArray(source.categories)
-      ? source.categories.map(normalizeCategorySummary).filter(Boolean)
-      : [],
-    category: normalizeCategorySummary(source.category),
     publishStatus,
     // Bài viết nổi bật — backend gửi top-level boolean; mặc định false khi thiếu.
     featured: Boolean(source.featured),

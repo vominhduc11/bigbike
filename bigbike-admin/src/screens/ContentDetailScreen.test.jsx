@@ -242,7 +242,6 @@ describe('ContentDetailScreen', () => {
       'article-1',
       expect.objectContaining({
         publishStatus: 'DRAFT',
-        categoryId: '',
         seo: expect.objectContaining({
           canonicalUrl: expect.stringMatching(/\/tin-tuc\/bai-viet\/$/),
         }),

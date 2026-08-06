@@ -17,12 +17,12 @@ export const routing = defineRouting({
   pathnames: {
     "/": "/",
     "/sp": { vi: "/sp", en: "/products" },
-    "/product/[slug]": { vi: "/product/[slug]", en: "/products/[slug]" },
+    "/product/[slug]": { vi: "/product/[slug]", en: "/product/[slug]" },
     "/danh-muc/[slug]": { vi: "/danh-muc/[slug]", en: "/categories/[slug]" },
     "/brands": "/brands",
     "/brands/[slug]": "/brands/[slug]",
-    "/tin-tuc": { vi: "/tin-tuc", en: "/news" },
-    "/tin-tuc/[slug]": { vi: "/tin-tuc/[slug]", en: "/news/[slug]" },
+    "/tin-tuc": "/tin-tuc",
+    "/tin-tuc/[slug]": "/tin-tuc/[slug]",
     "/gio-hang": { vi: "/gio-hang", en: "/cart" },
     "/dat-hang": { vi: "/dat-hang", en: "/order" },
     "/dat-hang/order-received/[id]": {

@@ -252,9 +252,6 @@ export function toPayload(form, _isCreate) {
     ? { url: form.productImageUrl.trim(), alt: form.productImageAlt?.trim() || null }
     : { url: '' }
 
-  // The only Article category is tin-tuc. Sending the blank presence flag forces
-  // legacy records with stale categories through the backend's default resolver.
-  payload.categoryId = ''
   payload.featured = Boolean(form.featured)
   payload.homeExperience = Boolean(form.homeExperience)
 

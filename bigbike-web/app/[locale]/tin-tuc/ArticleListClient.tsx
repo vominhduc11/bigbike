@@ -6,12 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { ArticleCard } from "@/components/content/ArticleCard";
-import { ArticleCategoryNav } from "@/components/content/ArticleCategoryNav";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fetchPublicArticleList, type PublicArticleListResult } from "@/lib/api/client-api";
-import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
+import type { Article } from "@/lib/contracts/public";
 import { buildQueryString } from "@/lib/utils/query";
 import { toArticleListPath } from "@/lib/utils/routes";
 import { type Locale } from "@/i18n/locale";
@@ -19,11 +18,9 @@ import { type Locale } from "@/i18n/locale";
 const DEFAULT_PAGE_SIZE = 12;
 
 export function ArticleListClient({
-  categories,
   initialArticles,
   initialPagination = null,
 }: {
-  categories: ContentCategoryWithCount[];
   initialArticles?: Article[];
   initialPagination?: PublicArticleListResult["pagination"];
 }) {
@@ -31,19 +28,17 @@ export function ArticleListClient({
   const locale = useLocale() as Locale;
   const t = useTranslations("Blog");
 
-  const { page, size, category, q } = useMemo(() => {
-    const rawCategory = searchParams.get("category") ?? undefined;
+  const { page, size, q } = useMemo(() => {
     const pageNum = Number(searchParams.get("paged") ?? searchParams.get("page") ?? "1");
     const sizeNum = Number(searchParams.get("size") ?? `${DEFAULT_PAGE_SIZE}`);
     return {
       page: Number.isFinite(pageNum) && pageNum >= 1 ? Math.floor(pageNum) : 1,
       size: Number.isFinite(sizeNum) && sizeNum >= 1 ? Math.floor(sizeNum) : DEFAULT_PAGE_SIZE,
-      category: rawCategory === "all" ? undefined : rawCategory?.trim() || undefined,
       q: searchParams.get("q")?.trim() || undefined,
     };
   }, [searchParams]);
 
-  const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && !category && !q;
+  const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && !q;
   // Chỉ seed initialData cho key `vi` — seed cả key `en` sẽ ghim dữ liệu VI "fresh"
   // suốt staleTime và không refetch khi khách đổi ngôn ngữ (AUD-014).
   const initialData =
@@ -52,8 +47,8 @@ export function ArticleListClient({
       : undefined;
 
   const { data, isLoading, isFetching, isError } = useQuery({
-    queryKey: ["public-articles", { page, size, category, q, lang: locale }],
-    queryFn: () => fetchPublicArticleList({ page, size, category, q, lang: locale }),
+    queryKey: ["public-articles", { page, size, q, lang: locale }],
+    queryFn: () => fetchPublicArticleList({ page, size, q, lang: locale }),
     staleTime: 60 * 1000,
     placeholderData: (previous) => previous,
     initialData,
@@ -62,14 +57,12 @@ export function ArticleListClient({
 
   const articles = data?.data ?? [];
   const pagination = data?.pagination ?? null;
-  const showCategoryIntro = !category && !q;
+  const showCategoryIntro = !q;
   const firstLoading = isLoading && articles.length === 0;
   const isRefetching = isFetching && !firstLoading;
-  const hasMultipleCategories = categories.length > 1;
-
-  const makeListHref = (overrides: { category?: string; size?: number }) => {
+  const makeListHref = (overrides: { size?: number }) => {
     const nextSize = overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
-    return `${toArticleListPath(locale)}${buildQueryString({ size: nextSize, category: overrides.category, q })}`;
+    return `${toArticleListPath(locale)}${buildQueryString({ size: nextSize, q })}`;
   };
 
   const emptyNotice = isError
@@ -87,16 +80,7 @@ export function ArticleListClient({
       ) : null}
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-        {hasMultipleCategories ? (
-          <ArticleCategoryNav
-            categories={categories}
-            activeSlug={category}
-            locale={locale}
-            heading={t("categoriesHeading")}
-          />
-        ) : null}
-
-        <div className={hasMultipleCategories ? "min-w-0 md:col-span-9" : "min-w-0 md:col-span-12"}>
+        <div className="min-w-0 md:col-span-12">
           {firstLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -136,7 +120,7 @@ export function ArticleListClient({
                 <CatalogPagination
                   page={pagination.page}
                   totalPages={pagination.totalPages}
-                  baseHref={makeListHref({ size, category })}
+                  baseHref={makeListHref({ size })}
                 />
               ) : null}
             </>

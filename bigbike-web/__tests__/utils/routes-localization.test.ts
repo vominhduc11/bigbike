@@ -3,6 +3,7 @@ import {
   translatePath,
   getLocalizedRoute,
   toCategoryPath,
+  toProductPath,
   toArticlePath,
   toCartPath,
   toCheckoutPath,
@@ -67,12 +68,12 @@ describe("Route Localization Utility Tests", () => {
 
     it("keeps the Vietnamese slug as an English fallback when slugEn is missing", () => {
       expect(translatePath("/danh-muc/ao-giap-chong-nuoc/", "en")).toBe("/en/categories/ao-giap-chong-nuoc/");
-      expect(translatePath("/tin-tuc/bai-viet-moi/", "en")).toBe("/en/news/bai-viet-moi/");
+      expect(translatePath("/tin-tuc/bai-viet-moi/", "en")).toBe("/en/tin-tuc/bai-viet-moi/");
     });
 
     it("should translate list pages for categories and news", () => {
       expect(translatePath("/danh-muc/", "en")).toBe("/en/products/");
-      expect(translatePath("/tin-tuc/", "en")).toBe("/en/news/");
+      expect(translatePath("/tin-tuc/", "en")).toBe("/en/tin-tuc/");
       expect(translatePath("/categories/", "vi")).toBe("/sp/");
       expect(translatePath("/news/", "vi")).toBe("/tin-tuc/");
     });
@@ -116,7 +117,7 @@ describe("Route Localization Utility Tests", () => {
       const catRes = getLocalizedRoute("/en/categories/waterproof-armor/", "en");
       expect(catRes.action).toBe("passthrough");
 
-      const newsRes = getLocalizedRoute("/en/news/new-article/", "en");
+      const newsRes = getLocalizedRoute("/en/tin-tuc/new-article/", "en");
       expect(newsRes.action).toBe("passthrough");
     });
 
@@ -134,8 +135,12 @@ describe("Route Localization Utility Tests", () => {
     });
 
     it("toArticlePath", () => {
-      expect(toArticlePath("new-article", "en", true)).toBe("/en/news/new-article/");
-      expect(toArticlePath("bai-viet-moi", "en", false)).toBe("/en/news/bai-viet-moi/");
+      expect(toArticlePath("new-article", "en", true)).toBe("/en/tin-tuc/new-article/");
+      expect(toArticlePath("bai-viet-moi", "en", false)).toBe("/en/tin-tuc/bai-viet-moi/");
+    });
+
+    it("toProductPath keeps the English detail route singular", () => {
+      expect(toProductPath("helmet", "en")).toBe("/en/product/helmet/");
     });
 
     it("toCartPath / toCheckoutPath / Lists", () => {
@@ -146,7 +151,7 @@ describe("Route Localization Utility Tests", () => {
       expect(toProductListPath("vi")).toBe("/sp/");
       expect(toCategoryListPath("en")).toBe("/en/products/");
       expect(toCategoryListPath("vi")).toBe("/sp/");
-      expect(toArticleListPath("en")).toBe("/en/news/");
+      expect(toArticleListPath("en")).toBe("/en/tin-tuc/");
     });
 
     it("normalizes persisted legacy storefront URLs without dropping query strings", () => {

@@ -272,7 +272,6 @@ export async function fetchPublicProductList(
  type PublicArticleListQuery = {
   page?: number;
   size?: number;
-  category?: string;
   q?: string;
   lang?: string;
 };
@@ -282,7 +281,7 @@ export type PublicArticleListResult = {
   pagination: { page: number; totalPages: number; totalItems?: number | null } | null;
 };
 
-/** Client-side article list fetch — lưới tin tức CSR (lọc danh mục/tìm/phân trang). */
+/** Client-side article list fetch — lưới tin tức CSR (tìm/phân trang). */
 export async function fetchPublicArticleList(
   query: PublicArticleListQuery,
 ): Promise<PublicArticleListResult> {
@@ -291,7 +290,6 @@ export async function fetchPublicArticleList(
   put("page", query.page);
   put("size", query.size);
   put("sort", "publishedAt:desc");
-  put("category", query.category);
   put("q", query.q);
   put("lang", query.lang);
 

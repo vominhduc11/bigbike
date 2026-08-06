@@ -8,7 +8,6 @@ import type {
   CatalogFacets,
   Category,
   ClientError,
-  ContentCategoryWithCount,
   DataResult,
   HomeHighlightItem,
   HomeSlider,
@@ -406,7 +405,6 @@ export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<
   page?: number;
   size?: number;
   sort?: string;
-  category?: string;
   q?: string;
   featured?: boolean;
   homeExperience?: boolean;
@@ -420,7 +418,6 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
       page: query.page,
       size: query.size,
       sort: query.sort ?? "publishedAt:desc",
-      category: query.category,
       q: query.q,
       featured: query.featured ? "true" : undefined,
       homeExperience: query.homeExperience ? "true" : undefined,
@@ -433,10 +430,6 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
 
 export function getArticleBySlug(slug: string, lang?: string): Promise<DataResult<Article>> {
   return loadDataWithQuery(`/api/v1/articles/${slug}`, { lang }, 3600, ["articles", `article:${slug}`, `lang:${lang ?? "vi"}`]);
-}
-
-export function listContentCategories(): Promise<ListResult<ContentCategoryWithCount>> {
-  return loadList("/api/v1/content-categories", {}, 3600, ["articles"]);
 }
 
 export function getPublicMenu(location: string, lang?: string): Promise<DataResult<PublicMenu>> {
@@ -491,4 +484,3 @@ export function getOrderLookup(orderNumber: string, orderKey: string, lang?: str
 // Cross-domain search helpers (`search`, `searchSuggest`) removed 2026-07-15 (AUD-060):
 // no caller. The search page fetches products directly and the header dropdown calls the
 // Next.js route /app/api/search-suggest, which proxies the backend /api/v1/search-suggest.
-

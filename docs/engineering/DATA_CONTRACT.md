@@ -20,6 +20,7 @@ Evidence:
 
 - Canonical public media shape remains `image`, `gallery[]`, and `videos[]` at the product/content contract level.
 - Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, and storage metadata.
+- `media.content_sha256` (V369) stores the lowercase SHA-256 of the bytes actually held in object storage. It is nullable for historical rows, format-checked, and unique when present. Live migration and admin upload use it to reuse identical content even when filenames differ; a checksum must never be populated until the object bytes have been read and verified.
 - Allowlist includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, MP4 video, and selected audio. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -28,6 +29,10 @@ Evidence:
 
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
+
+### Live migration audit/checkpoint tables (V370)
+
+`live_migration_runs` and `live_migration_checkpoints` are operational audit data for the one-time WordPress cutover. A run binds one immutable source snapshot SHA-256 and reviewed plan SHA-256 to its status and protected-domain baseline counts. Domain checkpoints are unique by `(run_id, domain,batch_number)`, but they are audit markers rather than partial-commit resume points: all PostgreSQL data, the run row, and checkpoints commit atomically only after post-write validation. A failure rolls the whole database transaction back; a small hash-bound `FAILED` run record may then be committed separately, with no data checkpoints. Content-addressed MinIO objects copied before rollback may remain and are reverified/reused by the next fresh-plan retry. These tables never contain source rows, customer/order/admin payloads, database passwords, OAuth/SMTP secrets, or backup credentials. They are not application catalog/content APIs and must not be repurposed as business data.
 
 ### Media dimension validation — ratio enforced, size is advisory only (owner clarification 2026-07-30)
 
@@ -1187,7 +1192,7 @@ còn 1 cột tên (`name`) và 1 cột slug (`slug`), không tách VI/EN.
 
 **Response:** domain record của category/product/article trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. `Brand`/`BrandSummary` domain record **không có field `slugEn`** (đã bỏ hẳn cùng `V352`); web luôn dùng `brand.slug` cho mọi locale. Mọi `CategorySummary` trong `category` và `categories[]` đều mang `slugEn`, `visible`, `deleted`; `category` là phần tử đầu của danh sách có thứ tự để breadcrumb PDP điều hướng đúng URL EN và chỉ tạo liên kết khi danh mục còn công khai.
 
-**Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-07-24, URL EN là route thật riêng (`/products/`, `/categories/`, `/news/` — khác prefix VI `/product/`, `/danh-muc/`, `/tin-tuc/`), nên redirect nguồn/đích dùng đúng 2 prefix khác nhau thay vì dùng chung 1 prefix như trước. Từ 2026-07-29, mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
+**Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→slug VI trong cùng locale; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-08-03, chi tiết sản phẩm EN dùng `/en/product/`, bài viết EN dùng `/en/tin-tuc/`; các alias cũ `/en/products/{slug}` và `/en/news...` redirect 301 tương thích, trong khi danh sách sản phẩm vẫn là `/en/products/` và danh mục vẫn dùng `/en/categories/`. Mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
 
 **Ngoài phạm vi:** trang thông tin/chính sách nay là **nội dung tĩnh ở web** (module pages đã gỡ 2026-06-24, bảng `pages` drop ở `V271`) — web định tuyến bằng slug cố định trong `static-pages.json`, không qua backend.
 
@@ -1262,21 +1267,11 @@ Trang chủ hiển thị tối đa 3 bài có `home_experience = true` (mới nh
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.homeExperience`, migration `V272__add_article_home_experience.sql`. Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
 
-### Content categories gộp về 1 nhóm "Tin tức" (V275)
+### Content categories — REMOVED (V368)
 
-Owner decision 2026-06-24: bỏ phân biệt nhóm bài viết. Migration `V275__merge_content_categories_into_news.sql`:
+Owner decision 2026-08-03: xóa toàn bộ chức năng danh mục nội dung. Forward migration `V368__drop_content_categories.sql` detach mọi bài viết rồi xóa `articles.category_id`, `article_category_map` và `content_categories` cùng foreign key/index liên quan. Không sửa migration lịch sử V275; rollback yêu cầu restore snapshot target trước migration. `article_tags` và danh mục sản phẩm không bị ảnh hưởng.
 
-1. Dồn `articles.category_id` của mọi bài về nhóm `tin-tuc` ("Tin tức", id `wp-blog-cat-361`).
-2. Dựng lại `article_category_map` để mỗi bài chỉ map tới `tin-tuc`.
-3. `DELETE` mọi `content_categories` còn lại (Reviews `wp-blog-cat-365`, các nhóm WP rác, `blog`, `trai-nghiem`…).
-
-Sau migration **chỉ còn 1 content category**. Hệ quả:
-- Trang `/tin-tuc`: sidebar lọc theo `articleCount > 0` nên tự rút còn 1 nhóm — không cần đổi code filter.
-- Khối "Góc trải nghiệm" trang chủ: fallback chuyển từ `category=reviews` → 3 bài mới nhất bất kỳ.
-- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi hoặc gửi trống `categoryId` (trước đây null = không nhóm). Từ quyết định 2026-07-29, form luôn gửi `categoryId=""` khi lưu để cả bản ghi legacy đang mang danh mục cũ cũng được chuẩn hóa lại về `tin-tuc`. Endpoint `/admin/content/reference/categories` thành orphan và đã bị xóa 2026-07-15 (AUD-056).
-- **Một chiều:** không khôi phục được bài nào từng là Reviews vs Tin tức.
-
-Status: `CONFIRMED_FROM_CODE` — migration `V275__merge_content_categories_into_news.sql`.
+Hệ quả contract: bài viết không còn category ở entity/request/response, API list không còn query filter `category`, storefront không còn sidebar/drawer/label category và importer không tạo content category.
 
 ### Page bilingual content — REMOVED (2026-06-24)
 
@@ -1857,3 +1852,14 @@ Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.resolveForLocale`,
 `AdminCatalogMutationService`, migrations `V229` (products-column table row,
 nay REMOVED) – `V230` – `V326` (drop `description_blocks_en`, xem §"Product description blocks").
 Xem [API_CONTRACT.md](API_CONTRACT.md) §"PDP — descriptionBlocks / specifications.featured (V229–V230, gộp song ngữ V326)".
+
+## Live WordPress migration owner-plan contract (2026-08-03)
+
+The production migration plan is not an alternate application data model. It is a one-time, immutable, JSON-serialized write contract generated by `migration.wordpress.live` and bound to the source-dump hash, target snapshot, owner-override SHA-256 and every record-level action.
+
+- `ProductPlan.sourceModifiedGmt` is the exact parsed WordPress `post_modified_gmt`. For duplicate SKU `SCS-S10X`, sources `41038` and `41181` must both exist with distinct timestamps; only the latest may be selected and the selected ID must be `41181`. Source `41038` has action `EXCLUDE_OWNER_OVERRIDE` and contributes no product/SEO/translation/media values.
+- Each inferred required product value is a `ProductInferencePlan` containing source ID, field, inferred value, evidence, rule ID, confidence, uniqueness evidence and decision. Unresolved values use `MANUAL_REVIEW`; no executor path accepts that action. `uncategorized-brand` is a real target fallback plus warning, never a newly invented brand.
+- `ACKNOWLEDGED_NO_SAFE_TARGET` has a null target and is non-actionable: no `redirects` row is inserted or updated. It stays in the reviewed report and preserves the legacy 404. HTML-anchor unlink and the exact `wp-art-26064` dead-image removal are `TargetContentRewritePlan` operations with exact before/after whole-field SHA-256; JSON/plain/canonical URL deletion is not part of this contract.
+- `OwnerDecisionPlans` also carries exact recovery-file evidence, the active unavailable-media fallback, and the read-only target media cleanup plan. Target cleanup rows include integrity state, UUID/object key/public URL, reference evidence, canonical ID, audit/reference/age evidence and whole-field hash-bound rebinds. They are not executable by the migration writer.
+
+Status: `OWNER_CONFIRMED_2026-08-03` and `CONFIRMED_FROM_CODE` — `live-migration-owner-overrides-v1.json`, `LiveMigrationPreflightReport`, `LiveDuplicateProductSelectionPlanner`, `LiveProductInferencePlanner`, `LiveSourceMediaRecoveryPlanner`, `LiveTargetMediaCleanupPlanner`, `LiveMigrationContentRewriter`, `LiveMigrationExecutionGate`.

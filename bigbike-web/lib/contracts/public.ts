@@ -412,20 +412,6 @@ export type CatalogFacets = {
   priceBands: PriceBucket[];
 };
 
- type ContentCategorySummary = {
-  id: string;
-  slug: string;
-  name: string;
-};
-
-/** A content (news) category plus its count of published articles — powers the Tin tức filter. */
-export type ContentCategoryWithCount = {
-  id: string;
-  slug: string;
-  name: string;
-  articleCount: number;
-};
-
 export type Article = {
   id: string;
   slug: string;
@@ -437,8 +423,6 @@ export type Article = {
   coverImage?: ImageAsset;
   /** ACF product_image overlay used by the Experience Carousel. Null when not set. */
   productImage?: ImageAsset | null;
-  category?: ContentCategorySummary;
-  categories?: ContentCategorySummary[];
   publishStatus: PublishStatus;
   /** Khi true, bài thuộc nhóm "Tin nổi bật" — lọc qua `GET /api/v1/articles?featured=true`. */
   featured?: boolean;

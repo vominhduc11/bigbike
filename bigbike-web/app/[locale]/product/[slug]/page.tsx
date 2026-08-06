@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
     locale,
     ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
     // hreflang vi/en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003) — trang EN
-    // thật nằm ở /products/{slugEn}/ (app/products/[slug]/page.tsx).
+    // thật nằm ở /en/product/{slugEn}/.
     languageAlternates: {
       vi: toProductPath(product.slug, "vi"),
       en: toProductPath(product.slugEn?.trim() || product.slug, "en"),

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
-import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
+import { listArticles, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
@@ -13,7 +13,7 @@ import { ArticleListDefault } from "./ArticleListDefault";
 import { Tr } from "@/components/i18n/Tr";
 import type { Locale } from "@/i18n/locale";
 
-// Shell — hero (settings "hero_news") + danh mục tin tức + danh sách bài view MẶC ĐỊNH
+// Shell — hero (settings "hero_news") + danh sách bài view MẶC ĐỊNH
 // (trang 1, chưa lọc) đều fetch ở server (revalidate tag "articles"/"settings") và truyền
 // xuống → bài viết nằm trong HTML server (SEO). Lọc/tìm/phân trang do client tiếp quản.
 // size phải khớp default ArticleListClient (12) để query key trùng → dùng đúng initialData.
@@ -37,9 +37,8 @@ export default async function ArticleListPage({ params }: ArticleListPageProps) 
   setRequestLocale(locale);
   const t = await getTranslations("Blog");
 
-  const [settingsResult, categoriesResult, articlesResult] = await Promise.all([
+  const [settingsResult, articlesResult] = await Promise.all([
     listPublicSettings(locale),
-    listContentCategories(),
     listArticles({ page: 1, size: 12, sort: "publishedAt:desc", lang: locale }),
   ]);
 
@@ -56,8 +55,6 @@ export default async function ArticleListPage({ params }: ArticleListPageProps) 
     { label: "Bigbike.vn", href: toHomePath(locale) },
     { label: t("breadcrumb"), labelNode: <Tr ns="Blog" k="breadcrumb" /> },
   ];
-
-  const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
 
   return (
     <div>
@@ -76,7 +73,6 @@ export default async function ArticleListPage({ params }: ArticleListPageProps) 
             <Suspense
               fallback={
                 <ArticleListDefault
-                  categories={sidebarCategories}
                   articles={articlesResult.data}
                   pagination={articlesResult.pagination}
                   locale={locale}
@@ -84,7 +80,6 @@ export default async function ArticleListPage({ params }: ArticleListPageProps) 
               }
             >
               <ArticleListClient
-                categories={sidebarCategories}
                 initialArticles={articlesResult.data}
                 initialPagination={articlesResult.pagination}
               />
