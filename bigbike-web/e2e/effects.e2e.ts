@@ -132,6 +132,12 @@ test.describe("Effects — desktop @1440", () => {
     await page.locator("[data-header-logo]").first().hover();
     await expect(submenu).toBeHidden();
     expect(await isScrollLocked(page), "scroll lock stuck after dropdown close").toBeFalsy();
+
+    // Focus không được giữ dropdown mở sau khi người dùng chuyển focus ra ngoài menu.
+    await parent.locator("a").first().focus();
+    await expect(submenu).toBeVisible();
+    await page.locator("[data-header-logo]").first().focus();
+    await expect(submenu).toBeHidden();
   });
 
   test("featured product card keeps add-to-cart CTA available on hover", async ({ page }) => {

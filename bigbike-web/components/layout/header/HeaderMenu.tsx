@@ -27,7 +27,7 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
 
 const itemGroups = ["group/l1", "group/l2", "group/l3"];
 const submenuReveal = [
-  "group-hover/top:visible group-hover/top:translate-y-0 group-hover/top:opacity-100 group-focus-within/top:visible group-focus-within/top:translate-y-0 group-focus-within/top:opacity-100",
+  "",
   "group-hover/l1:visible group-hover/l1:translate-x-0 group-hover/l1:opacity-100 group-focus-within/l1:visible group-focus-within/l1:translate-x-0 group-focus-within/l1:opacity-100",
   "group-hover/l2:visible group-hover/l2:translate-x-0 group-hover/l2:opacity-100 group-focus-within/l2:visible group-focus-within/l2:translate-x-0 group-focus-within/l2:opacity-100",
   "group-hover/l3:visible group-hover/l3:translate-x-0 group-hover/l3:opacity-100 group-focus-within/l3:visible group-focus-within/l3:translate-x-0 group-focus-within/l3:opacity-100",
@@ -38,7 +38,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
   const locale = useLocale();
   const t = useTranslations("Header");
   const [expanded, setExpanded] = useState<Set<HeaderNavNode["id"]>>(new Set());
-  const [suppressedId, setSuppressedId] = useState<HeaderNavNode["id"] | null>(null);
+  const [openNodeId, setOpenNodeId] = useState<HeaderNavNode["id"] | null>(null);
   const nodes = filterMenuNodes(initialNodes);
 
   function toggleNode(id: HeaderNavNode["id"]) {
@@ -67,26 +67,43 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
   }
 
   return (
-    <nav aria-label={t("menu")} data-header-desktop-menu className="h-full">
+    <nav
+      aria-label={t("menu")}
+      data-header-desktop-menu
+      className="h-full"
+      onPointerLeave={() => setOpenNodeId(null)}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          setOpenNodeId(null);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") setOpenNodeId(null);
+      }}
+    >
       <ul className="m-0 flex h-full list-none items-center p-0">
         {nodes.map((node) => {
           const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
           const hasChildren = node.children.length > 0;
+          const open = openNodeId === node.id;
           return (
             <li
               key={node.id}
               data-header-menu-item-with-children={hasChildren ? "" : undefined}
-              onMouseLeave={() => setSuppressedId(null)}
+              onPointerEnter={() => setOpenNodeId(hasChildren ? node.id : null)}
+              onFocus={() => setOpenNodeId(hasChildren ? node.id : null)}
               className={cn(
-                "group/top relative flex h-full list-none items-center after:absolute after:right-[-3px] after:top-1/2 after:h-[5px] after:w-[5px] after:-translate-y-1/2 after:rotate-45 after:bg-brand-on-dark after:content-[''] last:after:hidden",
-                suppressedId === node.id && "[&>[data-header-submenu]]:invisible! [&>[data-header-submenu]]:opacity-0!",
+                "relative flex h-full list-none items-center after:absolute after:right-[-3px] after:top-1/2 after:h-[5px] after:w-[5px] after:-translate-y-1/2 after:rotate-45 after:bg-brand-on-dark after:content-[''] last:after:hidden",
               )}
             >
               <Link
                 href={href}
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noopener" : undefined}
-                onClick={() => setSuppressedId(node.id)}
+                aria-haspopup={hasChildren ? "menu" : undefined}
+                aria-expanded={hasChildren ? open : undefined}
+                onClick={() => setOpenNodeId(null)}
                 className="flex h-full items-center px-7.5 font-cta text-header-nav font-black leading-body uppercase tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
@@ -96,7 +113,8 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                   nodes={node.children}
                   locale={locale}
                   depth={0}
-                  onNavigate={() => setSuppressedId(node.id)}
+                  open={open}
+                  onNavigate={() => setOpenNodeId(null)}
                 />
               ) : null}
             </li>
@@ -111,11 +129,13 @@ function DesktopSubmenu({
   nodes,
   locale,
   depth,
+  open,
   onNavigate,
 }: {
   nodes: HeaderNavNode[];
   locale: string;
   depth: number;
+  open?: boolean;
   onNavigate: () => void;
 }) {
   return (
@@ -124,6 +144,7 @@ function DesktopSubmenu({
       className={cn(
         "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-75 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
         depth === 0 ? "left-0 top-full -translate-y-[10px]" : "left-full top-0 -translate-x-[10px]",
+        depth === 0 && open && "visible translate-y-0 opacity-100",
         submenuReveal[Math.min(depth, submenuReveal.length - 1)],
       )}
     >
