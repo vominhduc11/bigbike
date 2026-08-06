@@ -336,9 +336,11 @@ export function CatalogSidebar({
                 const imageSrc = brand.image?.url?.trim() ? resolveMediaUrl(brand.image.url.trim()) : null;
                 return (
                   <li className={filterRowClass} key={brand.key}>
-                    <Link className={cn(filterLinkClass, "flex items-center gap-2", active && "text-brand!")} rel="nofollow" href={active ? queryHref({ "pwb-brand": undefined }) : queryHref({ "pwb-brand": brand.key })}>
-                      {imageSrc ? <img src={imageSrc} alt={safeText(brand.image?.alt, brand.label)} width={92} loading="lazy" className="h-8 w-auto object-contain" /> : null}
-                      <span>{brand.label}</span>
+                    <Link className={cn(filterLinkClass, "flex min-w-0 items-center gap-3", active && "text-brand!")} rel="nofollow" href={active ? queryHref({ "pwb-brand": undefined }) : queryHref({ "pwb-brand": brand.key })}>
+                      <span className="flex h-8 w-24 shrink-0 items-center justify-center" aria-hidden={!imageSrc}>
+                        {imageSrc ? <img src={imageSrc} alt={safeText(brand.image?.alt, brand.label)} width={92} height={32} loading="lazy" className="max-h-full max-w-full w-auto object-contain" /> : null}
+                      </span>
+                      <span className="min-w-0">{brand.label}</span>
                     </Link>
                   </li>
                 );
