@@ -132,7 +132,6 @@ class Phase2D4RedirectMappingTest {
         MappedRedirect mr = result.resolved().get(0);
         assertThat(mr.sourcePattern()).isEqualTo("/old-product.html");
         assertThat(mr.targetPattern()).isEqualTo("/product/" + PRODUCT_SLUG);
-        assertThat(mr.redirectCode()).isEqualTo(301);
         assertThat(mr.enabled()).isTrue();
         assertThat(result.deferredCount()).isZero();
     }
@@ -166,7 +165,7 @@ class Phase2D4RedirectMappingTest {
         assertThat(result.selfLoopCount()).isEqualTo(1);
 
         // Also verify RedirectImporter rejects self-loop MappedRedirects
-        MappedRedirect selfLoop = new MappedRedirect(1L, "/loop-me", "/loop-me", 301, true, List.of());
+        MappedRedirect selfLoop = new MappedRedirect(1L, "/loop-me", "/loop-me", true, List.of());
         MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
         MigrationExecutionReport.DomainResult importResult =
                 redirectImporter.importBatch(List.of(selfLoop), opts);
@@ -211,8 +210,28 @@ class Phase2D4RedirectMappingTest {
         var saved = redirectRepo.findBySourcePattern("/old-rankmath-url");
         assertThat(saved).isPresent();
         assertThat(saved.get().getTargetUrl()).isEqualTo("/new-rankmath-target");
-        assertThat(saved.get().getStatusCode()).isEqualTo(301);
         assertThat(saved.get().isEnabled()).isTrue();
+    }
+
+    @Test
+    void rankmath_legacyCodesAllImportAsManaged301Rules() {
+        List<WpRedirectRow> rows = List.of(
+                new WpRedirectRow(5102L, "{\"pattern\":\"/legacy-302\"}", "/target-302", 302,
+                        "active", "/legacy-302"),
+                new WpRedirectRow(5103L, "{\"pattern\":\"/legacy-307\"}", "/target-307", 307,
+                        "active", "/legacy-307"),
+                new WpRedirectRow(5104L, "{\"pattern\":\"/legacy-410\"}", "/target-410", 410,
+                        "active", "/legacy-410"),
+                new WpRedirectRow(5105L, "{\"pattern\":\"/legacy-451\"}", "/target-451", 451,
+                        "active", "/legacy-451"));
+
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+        RankMathRedirectImporter.ImportResult result = rankMathImporter.importAll(rows, opts);
+
+        assertThat(result.imported()).isEqualTo(4);
+        assertThat(rows).allSatisfy(row -> assertThat(redirectRepo.findBySourcePattern(row.sourcePattern()))
+                .as("legacy source %s", row.sourcePattern())
+                .isPresent());
     }
 
     @Test
@@ -265,30 +284,29 @@ class Phase2D4RedirectMappingTest {
     }
 
     @Test
-    void fallback_redirects_have_301_status() {
+    void fallback_redirects_are_enabled() {
         LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
         assertThat(result.redirects()).isNotEmpty();
-        assertThat(result.redirects()).allSatisfy(r -> assertThat(r.redirectCode()).isEqualTo(301));
+        assertThat(result.redirects()).allSatisfy(r -> assertThat(r.enabled()).isTrue());
     }
 
-    // ── RedirectImporter — 301 default, idempotency, dry-run ─────────────────
+    // ── RedirectImporter — implicit 301, idempotency, dry-run ─────────────────
 
     @Test
-    void status_code_301_default_enforced() {
-        // redirectCode=0 must be stored as 301
-        MappedRedirect mr = new MappedRedirect(1L, "/zero-code-test.html", "/new-target", 0, true, List.of());
+    void imported_redirects_use_the_implicit_301_behavior() {
+        MappedRedirect mr = new MappedRedirect(1L, "/zero-code-test.html", "/new-target", true, List.of());
         MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
 
         redirectImporter.importBatch(List.of(mr), opts);
 
         var saved = redirectRepo.findBySourcePattern("/zero-code-test.html");
         assertThat(saved).isPresent();
-        assertThat(saved.get().getStatusCode()).isEqualTo(301);
+        assertThat(saved.get().isEnabled()).isTrue();
     }
 
     @Test
     void no_duplicate_enabled_redirects() {
-        MappedRedirect mr = new MappedRedirect(1L, "/dup-check.html", "/product/dup-target", 301, true, List.of());
+        MappedRedirect mr = new MappedRedirect(1L, "/dup-check.html", "/product/dup-target", true, List.of());
         MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
 
         redirectImporter.importBatch(List.of(mr), opts);
@@ -346,7 +364,6 @@ class Phase2D4RedirectMappingTest {
         var saved = redirectRepo.findBySourcePattern("/import-test.html");
         assertThat(saved).isPresent();
         assertThat(saved.get().getTargetUrl()).isEqualTo("/product/" + PRODUCT_SLUG);
-        assertThat(saved.get().getStatusCode()).isEqualTo(301);
         assertThat(saved.get().isEnabled()).isTrue();
     }
 

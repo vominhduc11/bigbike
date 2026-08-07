@@ -2911,13 +2911,20 @@ a {
 .medialib-card:hover .medialib-action-overlay,
 .medialib-card:focus-within .medialib-action-overlay {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .medialib-overlay-actions {
   display: flex;
   gap: 4px;
   width: 100%;
+}
+
+/* Thiết bị cảm ứng không có hover: luôn để lộ các thao tác cần thiết. Overlay
+   vẫn bỏ qua pointer để vùng xem lớn hoạt động; chỉ hàng nút nhận click/tap. */
+@media (hover: none) {
+  .medialib-action-overlay {
+    opacity: 1;
+  }
 }
 
 /* Default: translucent white-stroked icon button — sits on the dark gradient overlay */

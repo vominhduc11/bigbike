@@ -1,11 +1,10 @@
 // Constants + pure helpers for MediaLibraryScreen.
 // Kept in a plain .js file so fast-refresh stays component-only in the .jsx parts.
 
-export const ALLOWED_MIME = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
-  'video/mp4',
-]
-export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+import { MAX_MEDIA_UPLOAD_BYTES, MEDIA_UPLOAD_MIME_TYPES } from '../../lib/mediaConstants'
+
+export const ALLOWED_MIME = MEDIA_UPLOAD_MIME_TYPES
+export const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
 export const PAGE_SIZE_OPTIONS = [12, 24, 48, 96]
 
 export const DEFAULT_QUERY = {

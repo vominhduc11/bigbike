@@ -61,8 +61,6 @@ public class RedirectImporter implements DomainImporter {
                 }
                 entity.setSourcePattern(mr.sourcePattern());
                 entity.setTargetUrl(mr.targetPattern());
-                entity.setStatusCode(mr.redirectCode() > 0 ? mr.redirectCode() : 301);
-                entity.setRedirectType("PERMANENT");
                 entity.setEnabled(mr.enabled());
                 entity.setLegacyId(mr.sourceId());
                 entity.setUpdatedAt(Instant.now());

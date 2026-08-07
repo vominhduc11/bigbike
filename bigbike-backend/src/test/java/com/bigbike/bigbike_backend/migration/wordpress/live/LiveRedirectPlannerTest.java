@@ -151,7 +151,7 @@ class LiveRedirectPlannerTest {
     private TargetRedirect redirect(String target, boolean adminAudited) {
         return new TargetRedirect(
                 "11111111-1111-1111-1111-111111111111",
-                "/old.html", target, "PERMANENT", 301, true, adminAudited);
+                "/old.html", target, true, adminAudited);
     }
 
     private WpPost product(long id, String slug) {

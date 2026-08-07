@@ -36,8 +36,8 @@ vi.mock('../lib/adminApi', async () => {
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 vi.mock('../components/AdminTable', () => ({
-  AdminTable: ({ rows, columns }) => (
-    <div data-testid="redirect-table">
+  AdminTable: ({ rows, columns, loading, selectable }) => (
+    <div data-testid="redirect-table" data-loading={String(Boolean(loading))} data-selectable={String(Boolean(selectable))}>
       {rows.map((row) => (
         <div key={row.id}>
           {columns.map((column) => <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>)}
@@ -133,13 +133,82 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     await user.click(screen.getByRole('button', { name: 'common.save' }))
 
     await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalledWith(
-      expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page', redirectType: 'PERMANENT' }),
+      expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page' }),
     ))
+    const [payload] = mocks.createRedirect.mock.calls.at(-1)
+    expect(payload).not.toHaveProperty('statusCode')
+    expect(payload).not.toHaveProperty('redirectType')
   })
 
   it('chỉ có quyền đọc thì ẩn nút tạo chuyển hướng', async () => {
     renderScreen(false)
     expect(await screen.findByTestId('redirect-table')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tạo chuyển hướng' })).not.toBeInTheDocument()
+    expect(screen.getByText('Bạn chỉ có quyền xem chuyển hướng; mọi thao tác thay đổi đều bị khóa.')).toBeInTheDocument()
+    expect(screen.getByTestId('redirect-table')).toHaveAttribute('data-selectable', 'false')
+  })
+
+  it('chặn địa chỉ cũ có tên miền, query hoặc dấu # ngay trên form', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
+    await user.type(screen.getByPlaceholderText('/dia-chi-cu'), 'https://bigbike.vn/old?q=1#x')
+    await user.type(screen.getByPlaceholderText('/dia-chi-moi'), '/new-page')
+    await user.click(screen.getByRole('button', { name: 'common.save' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.',
+    )
+    expect(mocks.createRedirect).not.toHaveBeenCalled()
+  })
+
+  it('làm sạch tham số URL sai trước khi tải danh sách', async () => {
+    const longSearch = 'a'.repeat(250)
+    window.history.replaceState({}, '', `/admin/redirects?page=-3&pageSize=999&enabled=unknown&search=${longSearch}`)
+
+    renderScreen()
+
+    await waitFor(() => expect(mocks.fetchRedirects).toHaveBeenCalledWith({
+      search: 'a'.repeat(200),
+      enabled: 'ALL',
+      page: 1,
+      pageSize: 20,
+    }))
+    expect(window.location.search).toBe(`?search=${'a'.repeat(200)}`)
+  })
+
+  it('phân biệt danh sách trống với kết quả lọc không có dữ liệu', async () => {
+    window.history.replaceState({}, '', '/admin/redirects?search=khong-co')
+    renderScreen()
+
+    expect(await screen.findByText('Không có chuyển hướng phù hợp')).toBeInTheDocument()
+    expect(screen.getByText('Hãy đổi từ khóa hoặc bộ lọc để xem kết quả khác.')).toBeInTheDocument()
+  })
+
+  it('chỉ xóa sau khi người dùng xác nhận thao tác không thể hoàn tác', async () => {
+    const user = userEvent.setup()
+    mocks.fetchRedirects.mockResolvedValue({
+      items: [{
+        id: 'rd_delete', sourcePattern: '/old-delete', targetUrl: '/new-delete',
+        enabled: true, hitCount: 0, updatedAt: '2026-08-07T00:00:00Z',
+      }],
+      pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
+    })
+    mocks.showConfirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    mocks.deleteRedirect.mockResolvedValue(undefined)
+    renderScreen()
+
+    const deleteButton = await screen.findByRole('button', { name: 'Xóa chuyển hướng /old-delete' })
+    await user.click(deleteButton)
+    expect(mocks.deleteRedirect).not.toHaveBeenCalled()
+
+    await user.click(deleteButton)
+    await waitFor(() => expect(mocks.deleteRedirect).toHaveBeenCalledWith('rd_delete'))
+    expect(mocks.showConfirm).toHaveBeenLastCalledWith(
+      'Xóa vĩnh viễn chuyển hướng "/old-delete"? Thao tác này không thể hoàn tác.',
+      'Xóa chuyển hướng',
+      { confirmLabel: 'common.delete', variant: 'danger' },
+    )
   })
 })

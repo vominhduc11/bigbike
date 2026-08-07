@@ -21,7 +21,7 @@ Evidence:
 - Canonical public media shape remains `image`, `gallery[]`, and `videos[]` at the product/content contract level.
 - Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, and storage metadata.
 - `media.content_sha256` (V369) stores the lowercase SHA-256 of the bytes actually held in object storage. It is nullable for historical rows, format-checked, and unique when present. Live migration and admin upload use it to reuse identical content even when filenames differ; a checksum must never be populated until the object bytes have been read and verified.
-- Allowlist includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, MP4 video, and selected audio. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
+- Allowlist for **new Admin Media Library uploads** includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, and MP4 video only. Audio was removed by the owner decision recorded in `BUSINESS_RULES.md` § Media Rules (AUD-074); historical audio or other legacy objects already present in storage are not deleted automatically. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -1204,22 +1204,22 @@ Stores admin-managed URL-redirect rules, independent from the `slug_en`-triggere
 
 | Column | Type | Notes |
 |---|---|---|
-| `source_pattern` | `VARCHAR(1024)` | The old/legacy path. **Case-sensitive, stored without a trailing slash** (except the root `/`) — canonicalized by `AdminRedirectService.canonicalizePath` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
+| `source_pattern` | `VARCHAR(1024)` | The old/legacy exact internal path. **Case-sensitive, stored without trailing slashes** (except root `/`), and never contains a scheme/host, query or fragment — canonicalized by `AdminRedirectService` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
 | `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. |
-| `redirect_type` | `VARCHAR(32)` | `PERMANENT`/`TEMPORARY`/`CUSTOM` — **UI/classification label only**. It has no effect on the actual HTTP response; only `status_code` is honored at resolution time (`InternalRedirectController`/`bigbike-web/proxy.ts`). |
-| `status_code` | `INT` | One of `{301, 302, 307, 308}` (`REDIRECT_RULE_005`). Bean Validation on the DTO only bounds `100-599`; the allow-list is enforced in `AdminRedirectService.normalizeStatusCode` (business rule, not a structural constraint). |
 | `enabled` | `BOOLEAN` | Disabled rules are skipped by the internal lookup. |
 | `hit_count` / `last_hit_at` | `INT` / `TIMESTAMP` | Incremented fire-and-forget by `bigbike-web/proxy.ts` after a served redirect. |
 | `legacy_id` | `BIGINT` nullable | Reference to the original WordPress redirect row id (migration provenance only). |
 | `notes` | `TEXT` nullable | Free-text admin note. |
 
-**Normalization policy** (`AdminRedirectService.canonicalizePath`, applied to `source_pattern` and internal-path `target_url` before persistence and before the uniqueness/loop checks): case-sensitive (matches `bigbike-web/proxy.ts`'s lookup, which never lowercases the incoming pathname, and Postgres's default case-sensitive text equality), trailing slash stripped except for the root `/`. `/Foo` and `/foo` remain distinct, independently-manageable rows by design; `/foo` and `/foo/` are treated as the same rule.
+**Normalization policy** (`AdminRedirectService`, applied before persistence and the uniqueness/loop checks): case-sensitive (matches `bigbike-web/proxy.ts`'s pathname lookup and PostgreSQL text equality), all trailing slashes stripped except for root `/`. `/Foo` and `/foo` remain distinct; `/foo`, `/foo/` and `/foo///` are the same source. Loop comparison uses the target pathname, so `/foo?campaign=old`, `/foo#section` and an absolute same-site URL ending in `/foo` are still self-loops for source `/foo`.
 
-**Business rules enforced in `AdminRedirectService`** (see BUSINESS_RULES.md `REDIRECT_RULE_001`–`006` for the authoritative list): self-redirect prevention, multi-hop loop detection (max chain depth 20, walked via `redirectRepo.findBySourcePattern`), source-pattern uniqueness, open-redirect protection, status-code allow-list, hit-count tracking.
+**Redirect behavior:** mọi dòng trong bảng này được phục vụ bằng HTTP 301. `status_code` và `redirect_type` đã được loại khỏi schema ở migration `V376__normalize_redirects_to_http_301`; dữ liệu lịch sử trước migration được chuẩn hóa về 301/PERMANENT trước khi xóa cột. Các snapshot audit cũ giữ nguyên nội dung lịch sử; snapshot mới không ghi hai trường này.
 
-**Migration-seeded data caveat:** `V106__import_legacy_wp_redirects.sql` inserts rows directly via SQL (`ON CONFLICT (source_pattern) DO NOTHING` for uniqueness only) — this one-time import bypasses the application-level self-loop/open-redirect checks that gate the admin API. Existing rows are not retroactively re-validated.
+**Business rules enforced in `AdminRedirectService`** (see BUSINESS_RULES.md `REDIRECT_RULE_001`–`006` for the authoritative list): self-redirect prevention, multi-hop loop detection (max chain depth 20, walked via `redirectRepo.findBySourcePattern`), source-pattern uniqueness, open-redirect protection, HTTP 301 behavior, hit-count tracking.
 
-Status: `CONFIRMED_FROM_CODE` — `RedirectEntity.java`, `AdminRedirectService.java`, `V4__create_media_redirect_menu_tables.sql`, `V80__add_redirect_source_pattern_unique.sql`, `V106__import_legacy_wp_redirects.sql`.
+**Migration-seeded data:** `V106__import_legacy_wp_redirects.sql` inserts reviewed paths directly. Historical runtime imports accidentally persisted 49 PHP-serialized RankMath `sources` values as one unusable source each; `V377__repair_serialized_redirect_sources.sql` expands their 72 exact patterns, keeps already-existing canonical rows on conflict, inserts the 14 missing paths, then removes the 49 unusable serialized rows. The storefront proxy still fails closed on unsafe/off-domain targets and direct loops because legacy rows did not necessarily pass the admin validator.
+
+Status: `CONFIRMED_FROM_CODE_AND_RUNTIME_DATA_2026-08-07` — `RedirectEntity.java`, `AdminRedirectService.java`, `bigbike-web/proxy.ts`, `V4__create_media_redirect_menu_tables.sql`, `V80__add_redirect_source_pattern_unique.sql`, `V106__import_legacy_wp_redirects.sql`, `V377__repair_serialized_redirect_sources.sql`.
 
 ### Article bilingual content — English columns (V138)
 

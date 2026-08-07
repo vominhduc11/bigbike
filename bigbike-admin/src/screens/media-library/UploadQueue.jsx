@@ -33,19 +33,12 @@ export function UploadQueue({ queue, onDismiss }) {
             {u.status === 'error' ? (
               <p className="text-danger mt-1 mb-0 text-xs">{u.error}</p>
             ) : (
-              <div
-                className="h-1 bg-surface-muted rounded-full mt-1 overflow-hidden"
-                role="progressbar"
-                aria-valuenow={Math.round(u.progress ?? 0)}
-                aria-valuemin={0}
-                aria-valuemax={100}
+              <progress
+                className={cn('mt-1 h-1 w-full', u.status === 'done' ? 'accent-success' : 'accent-primary')}
+                value={Math.round(u.progress ?? 0)}
+                max={100}
                 aria-label={t('media.uploadProgress', { name: u.name, defaultValue: 'Tiến độ tải lên {{name}}' })}
-              >
-                <div
-                  className={cn('h-full transition-[width] duration-200', u.status === 'done' ? 'bg-success' : 'bg-primary')}
-                  style={{ width: `${u.progress}%` }}
-                />
-              </div>
+              />
             )}
           </div>
         )

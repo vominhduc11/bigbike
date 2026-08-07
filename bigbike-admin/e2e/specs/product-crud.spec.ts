@@ -66,7 +66,7 @@ function productRowBySku(page: Page, sku: string) {
 }
 
 async function filterProductRows(page: Page, sku: string) {
-  const searchInput = page.getByPlaceholder('Tên sản phẩm, SKU, slug')
+  const searchInput = page.getByPlaceholder(/Tên sản phẩm.*đường dẫn/)
   await searchInput.fill('')
   await expect(searchInput).toHaveValue('')
 
@@ -148,7 +148,7 @@ interface FillOptions {
 async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   const basicCard = sectionCard(page, 'Thông tin cơ bản')
   await basicCard.getByLabel('Tên', { exact: false }).fill(opts.name) // also auto-derives slug
-  await basicCard.getByLabel('SKU', { exact: false }).fill(opts.sku)
+  await basicCard.getByLabel(/SKU|Mã sản phẩm/, { exact: false }).fill(opts.sku)
 
   // The category picker is a multi-select popover; choose the first available
   // category so it becomes the primary category. The remaining comboboxes are
@@ -258,7 +258,7 @@ test.describe('product-crud', () => {
 
     await test.step('sản phẩm xuất hiện trong danh sách /admin/products', async () => {
       await navigateSpa(adminPage, '/admin/products')
-      await adminPage.getByPlaceholder('Tên sản phẩm, SKU, slug').fill(createdProductSku!)
+      await adminPage.getByPlaceholder(/Tên sản phẩm.*đường dẫn/).fill(createdProductSku!)
       await expect(adminPage.getByRole('link', { name: createdProductName!, exact: false })).toBeVisible({ timeout: 10_000 })
     })
 
@@ -374,7 +374,7 @@ test.describe('product-crud', () => {
     expect(createResponse.status(), 'Sản phẩm thiếu ảnh vẫn phải lưu Nháp được').toBeLessThan(300)
 
     await navigateSpa(adminPage, '/admin/products')
-    await adminPage.getByPlaceholder('Tên sản phẩm, SKU, slug').fill(validationProductSku)
+    await adminPage.getByPlaceholder(/Tên sản phẩm.*đường dẫn/).fill(validationProductSku)
     const row = productRowBySku(adminPage, validationProductSku)
     await expect(row).toHaveCount(1, { timeout: 10_000 })
     await row.getByRole('button', { name: 'Xuất bản', exact: true }).click()

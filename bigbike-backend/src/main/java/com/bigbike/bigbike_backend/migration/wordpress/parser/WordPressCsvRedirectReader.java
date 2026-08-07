@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * Reads docs/legacy/SEO_REDIRECT_MAP.csv.
- * Expected header: sourcePattern,targetPattern,redirectType,status,notes
+ * Expected legacy header: sourcePattern,targetPattern,redirectType,status,notes.
+ * The legacy code column is read only for source compatibility and is never mapped to the
+ * RedirectEntity model; all imported rules are HTTP 301.
  */
 @Service
 public class WordPressCsvRedirectReader {
@@ -19,7 +21,7 @@ public class WordPressCsvRedirectReader {
     public record RedirectCsvRow(
             String sourcePattern,
             String targetPattern,
-            String redirectType,
+            String legacyStatusCode,
             String status,
             String notes
     ) {}

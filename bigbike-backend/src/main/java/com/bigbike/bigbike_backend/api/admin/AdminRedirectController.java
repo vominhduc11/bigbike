@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,14 +42,13 @@ public class AdminRedirectController extends AdminControllerSupport {
     public ApiListResponse<AdminRedirectResponse> listRedirects(
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            @RequestParam(required = false) String q,
+            @RequestParam(required = false) @Size(max = 200) String q,
             @RequestParam(required = false) Boolean enabled,
-            @RequestParam(required = false) Integer statusCode,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "redirects.read");
         return apiResponseFactory.list(
-                adminRedirectService.listRedirects(page, size, q, enabled, statusCode),
+                adminRedirectService.listRedirects(page, size, q, enabled),
                 request
         );
     }

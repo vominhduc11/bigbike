@@ -3,8 +3,12 @@ package com.bigbike.bigbike_backend.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -214,7 +218,7 @@ class AdminMediaP0Test {
 
     @Test
     void hardDelete_noRefs_returns204() throws Exception {
-        UUID mediaId = createTestMedia("/media/uploads/test-" + UUID.randomUUID() + "/img.jpg");
+        UUID mediaId = createDeletedTestMedia("/media/uploads/test-" + UUID.randomUUID() + "/img.jpg");
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
                         .param("permanent", "true")
@@ -227,7 +231,7 @@ class AdminMediaP0Test {
     @Test
     void hardDelete_withRefs_returns409() throws Exception {
         String publicUrl = "/media/uploads/ref-" + UUID.randomUUID() + "/img.jpg";
-        UUID mediaId = createTestMedia(publicUrl);
+        UUID mediaId = createDeletedTestMedia(publicUrl);
 
         BrandEntity brand = new BrandEntity();
         brand.setId("bref-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
@@ -250,7 +254,7 @@ class AdminMediaP0Test {
 
     @Test
     void hardDelete_storageFailure_keepsDbRow() throws Exception {
-        UUID mediaId = createTestMedia("/media/uploads/fail-" + UUID.randomUUID() + "/img.jpg");
+        UUID mediaId = createDeletedTestMedia("/media/uploads/fail-" + UUID.randomUUID() + "/img.jpg");
         doThrow(new IOException("MinIO unavailable"))
                 .when(minioClient).removeObject(any(RemoveObjectArgs.class));
 
@@ -319,7 +323,7 @@ class AdminMediaP0Test {
 
     @Test
     void bulkHardDelete_superAdmin_returns200AndDeletesRow() throws Exception {
-        UUID mediaId = createTestMedia("/media/uploads/bulk-sa-" + UUID.randomUUID() + "/img.jpg");
+        UUID mediaId = createDeletedTestMedia("/media/uploads/bulk-sa-" + UUID.randomUUID() + "/img.jpg");
 
         mockMvc.perform(post("/api/v1/admin/media/bulk-hard-delete")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -335,7 +339,7 @@ class AdminMediaP0Test {
 
     @Test
     void hardDelete_superAdmin_thenDetailReturns404() throws Exception {
-        UUID mediaId = createTestMedia("/media/uploads/detail-" + UUID.randomUUID() + "/img.jpg");
+        UUID mediaId = createDeletedTestMedia("/media/uploads/detail-" + UUID.randomUUID() + "/img.jpg");
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
                         .param("permanent", "true")
@@ -346,6 +350,83 @@ class AdminMediaP0Test {
                         .get("/api/v1/admin/media/" + mediaId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void hardDelete_activeMedia_returns409AndKeepsRow() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/active-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .param("permanent", "true")
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isConflict());
+
+        assertThat(mediaRepo.findById(mediaId)).isPresent();
+    }
+
+    @Test
+    void hardDelete_usesBucketStoredOnMediaRow() throws Exception {
+        String publicUrl = "/media/uploads/custom-bucket-" + UUID.randomUUID() + "/img.jpg";
+        UUID mediaId = createDeletedTestMedia(publicUrl);
+        MediaEntity media = mediaRepo.findById(mediaId).orElseThrow();
+        media.setBucket("historical-media-bucket");
+        mediaRepo.save(media);
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .param("permanent", "true")
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isNoContent());
+
+        verify(minioClient, atLeastOnce()).removeObject(argThat(args ->
+                "historical-media-bucket".equals(args.bucket())
+                        && media.getFilePath().equals(args.object())));
+    }
+
+    @Test
+    void replaceRasterWithSvg_clearsStaleDimensions() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/replace-" + UUID.randomUUID() + "/img.jpg");
+        MediaEntity media = mediaRepo.findById(mediaId).orElseThrow();
+        media.setWidth(1600);
+        media.setHeight(900);
+        media.setBucket("historical-media-bucket");
+        mediaRepo.save(media);
+        byte[] svg = ("<svg xmlns=\"http://www.w3.org/2000/svg\" data-id=\"" + UUID.randomUUID()
+                + "\"><path d=\"M0 0h10v10H0z\"/></svg>").getBytes();
+        MockMultipartFile file = new MockMultipartFile("file", "replacement.svg", "image/svg+xml", svg);
+
+        mockMvc.perform(multipart("/api/v1/admin/media/" + mediaId + "/replace")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        MediaEntity replaced = mediaRepo.findById(mediaId).orElseThrow();
+        assertThat(replaced.getWidth()).isNull();
+        assertThat(replaced.getHeight()).isNull();
+        assertThat(replaced.getMimeType()).isEqualTo("image/svg+xml");
+    }
+
+    @Test
+    void updateMedia_unknownFolder_returns404() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/folder-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(patch("/api/v1/admin/media/" + mediaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"folderId\":\"" + UUID.randomUUID() + "\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void bulkMove_unknownFolder_returns404WithoutMovingMedia() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/bulk-folder-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(post("/api/v1/admin/media/bulk-move")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\":[\"" + mediaId + "\"],\"folderId\":\"" + UUID.randomUUID() + "\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+
+        assertThat(mediaRepo.findById(mediaId).orElseThrow().getFolderId()).isNull();
     }
 
     @Test
@@ -422,6 +503,14 @@ class AdminMediaP0Test {
     }
 
     private UUID createTestMedia(String publicUrl) {
+        return createTestMedia(publicUrl, "ACTIVE");
+    }
+
+    private UUID createDeletedTestMedia(String publicUrl) {
+        return createTestMedia(publicUrl, "DELETED");
+    }
+
+    private UUID createTestMedia(String publicUrl, String status) {
         MediaEntity m = new MediaEntity();
         m.setFilePath(publicUrl.replaceFirst("^/media/", ""));
         m.setPublicUrl(publicUrl);
@@ -430,7 +519,7 @@ class AdminMediaP0Test {
         m.setFileSize(10000L);
         m.setAltText("Test image");
         m.setTitle("Test");
-        m.setStatus("ACTIVE");
+        m.setStatus(status);
         Instant now = Instant.now();
         m.setCreatedAt(now);
         m.setUpdatedAt(now);

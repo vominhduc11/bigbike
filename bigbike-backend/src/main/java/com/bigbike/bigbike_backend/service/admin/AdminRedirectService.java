@@ -13,14 +13,10 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.net.URI;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +25,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,19 +40,11 @@ public class AdminRedirectService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
-    private static final Set<Integer> ALLOWED_STATUS_CODES = Set.of(301, 302, 307, 308);
-    private static final Map<Integer, String> DEFAULT_TYPE_BY_STATUS = Map.of(
-            301, "PERMANENT",
-            302, "TEMPORARY",
-            307, "TEMPORARY",
-            308, "PERMANENT"
-    );
 
     private final RedirectJpaRepository redirectRepo;
     private final RedirectMapper redirectMapper;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
-    private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
     private final ObjectMapper objectMapper;
 
@@ -64,20 +55,25 @@ public class AdminRedirectService {
             int page,
             int size,
             String q,
-            Boolean enabled,
-            Integer statusCode
+            Boolean enabled
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Specification<RedirectEntity> spec = RedirectSpecification.withFilters(q, enabled, statusCode);
-        List<AdminRedirectResponse> items = redirectRepo.findAll(spec).stream()
-                .sorted(Comparator.comparing(RedirectEntity::getUpdatedAt).reversed()
-                        .thenComparing(RedirectEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(redirectMapper::toResponse)
-                .toList();
-
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        Specification<RedirectEntity> spec = RedirectSpecification.withFilters(q, enabled);
+        Sort stableSort = Sort.by(
+                Sort.Order.desc("updatedAt"),
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id"));
+        Page<RedirectEntity> dbPage = redirectRepo.findAll(
+                spec,
+                PageRequest.of(normalizedPage - 1, normalizedSize, stableSort));
+        return new PageResult<>(
+                dbPage.getContent().stream().map(redirectMapper::toResponse).toList(),
+                normalizedPage,
+                normalizedSize,
+                dbPage.getTotalElements(),
+                dbPage.getTotalPages());
     }
 
     public AdminRedirectResponse getRedirect(UUID id) {
@@ -88,22 +84,19 @@ public class AdminRedirectService {
 
     @Transactional
     public AdminRedirectResponse createRedirect(UUID adminId, CreateRedirectRequest request) {
+        rejectLegacyStatusConfiguration(request.statusCode(), request.redirectType());
         String sourcePattern = normalizeSourcePattern(request.sourcePattern());
         String targetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
         validateTargetUrl(targetUrl);
         validateNoRedirectLoop(sourcePattern, targetUrl, null);
         ensureUniqueSourcePattern(sourcePattern, null);
 
-        int statusCode = normalizeStatusCode(request.statusCode());
-        String redirectType = normalizeRedirectType(request.redirectType(), statusCode);
         boolean enabled = request.enabled() == null || request.enabled();
 
         Instant now = Instant.now();
         RedirectEntity entity = new RedirectEntity();
         entity.setSourcePattern(sourcePattern);
         entity.setTargetUrl(targetUrl);
-        entity.setRedirectType(redirectType);
-        entity.setStatusCode(statusCode);
         entity.setEnabled(enabled);
         entity.setHitCount(0);
         entity.setLastHitAt(null);
@@ -112,7 +105,7 @@ public class AdminRedirectService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         try {
-            entity = redirectRepo.save(entity);
+            entity = redirectRepo.saveAndFlush(entity);
         } catch (DataIntegrityViolationException e) {
             // uq_redirects_source_pattern is the DB-level safety net for concurrent inserts
             // that race past the ensureUniqueSourcePattern application-level check above —
@@ -129,6 +122,7 @@ public class AdminRedirectService {
 
     @Transactional
     public AdminRedirectResponse updateRedirect(UUID id, UUID adminId, UpdateRedirectRequest request) {
+        rejectLegacyStatusConfiguration(request.statusCode(), request.redirectType());
         RedirectEntity entity = redirectRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Redirect not found."));
         String before = snapshot(entity);
@@ -151,15 +145,6 @@ public class AdminRedirectService {
         if (request.targetUrl() != null) {
             entity.setTargetUrl(nextTargetUrl);
         }
-        if (request.statusCode() != null) {
-            entity.setStatusCode(normalizeStatusCode(request.statusCode()));
-            if (request.redirectType() == null || request.redirectType().isBlank()) {
-                entity.setRedirectType(defaultRedirectType(entity.getStatusCode()));
-            }
-        }
-        if (request.redirectType() != null && !request.redirectType().isBlank()) {
-            entity.setRedirectType(normalizeRedirectType(request.redirectType(), entity.getStatusCode()));
-        }
         if (request.enabled() != null) {
             entity.setEnabled(request.enabled());
         }
@@ -173,11 +158,12 @@ public class AdminRedirectService {
         if (request.legacyId() != null) {
             entity.setLegacyId(request.legacyId());
         }
-        if (entity.getRedirectType() == null || entity.getRedirectType().isBlank()) {
-            entity.setRedirectType(defaultRedirectType(entity.getStatusCode()));
-        }
         entity.setUpdatedAt(Instant.now());
-        entity = redirectRepo.save(entity);
+        try {
+            entity = redirectRepo.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Redirect source already exists: " + nextSourcePattern);
+        }
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "REDIRECT_UPDATED", "REDIRECT", entity.getId(), before, snapshot(entity)));
@@ -202,8 +188,30 @@ public class AdminRedirectService {
         if (trimmed == null) {
             throw ValidationException.fromField("sourcePattern", "REQUIRED", "Source pattern is required.");
         }
+        if (trimmed.startsWith("//")
+                || trimmed.contains("?")
+                || trimmed.contains("#")
+                || trimmed.matches("(?i)^[a-z][a-z0-9+.-]*:.*")) {
+            throw ValidationException.fromField(
+                    "sourcePattern",
+                    "INVALID_SOURCE",
+                    "Source must be an internal path without a domain, query, or fragment.");
+        }
         String withLeadingSlash = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
-        return canonicalizePath(withLeadingSlash);
+        try {
+            URI uri = URI.create(withLeadingSlash);
+            if (uri.isAbsolute() || uri.getRawAuthority() != null
+                    || uri.getRawQuery() != null || uri.getRawFragment() != null
+                    || uri.getRawPath() == null || uri.getRawPath().isBlank()) {
+                throw new IllegalArgumentException("Not an exact internal path");
+            }
+            return canonicalizePath(uri.getRawPath());
+        } catch (IllegalArgumentException e) {
+            throw ValidationException.fromField(
+                    "sourcePattern",
+                    "INVALID_SOURCE",
+                    "Source must be a valid internal path, for example '/old-page'.");
+        }
     }
 
     private String normalizeRequiredUrl(String value, String field) {
@@ -212,46 +220,27 @@ public class AdminRedirectService {
             throw ValidationException.fromField(field, "REQUIRED", "Target URL is required.");
         }
         if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
-            return canonicalizePath(trimmed);
+            try {
+                URI uri = URI.create(trimmed);
+                if (uri.isAbsolute() || uri.getRawAuthority() != null
+                        || uri.getRawPath() == null || uri.getRawPath().isBlank()) {
+                    throw new IllegalArgumentException("Not an internal URL");
+                }
+                // Preserve the target pathname exactly (including a meaningful trailing slash).
+                // Canonicalization belongs only to source uniqueness and loop comparison.
+                StringBuilder normalized = new StringBuilder(uri.getRawPath());
+                if (uri.getRawQuery() != null) normalized.append('?').append(uri.getRawQuery());
+                if (uri.getRawFragment() != null) normalized.append('#').append(uri.getRawFragment());
+                return normalized.toString();
+            } catch (IllegalArgumentException e) {
+                throw ValidationException.fromField(field, "INVALID_TARGET", "Target URL is not valid.");
+            }
         }
         return trimmed;
     }
 
     private String normalizeNotes(String value) {
         return trimToNull(value);
-    }
-
-    private int normalizeStatusCode(Integer statusCode) {
-        int value = statusCode == null ? 301 : statusCode;
-        if (!ALLOWED_STATUS_CODES.contains(value)) {
-            throw ValidationException.fromField(
-                    "statusCode",
-                    "INVALID",
-                    "Status code must be 301, 302, 307 or 308."
-            );
-        }
-        return value;
-    }
-
-    private String normalizeRedirectType(String redirectType, int statusCode) {
-        String trimmed = trimToNull(redirectType);
-        if (trimmed == null) {
-            return defaultRedirectType(statusCode);
-        }
-
-        String normalized = trimmed.toUpperCase(Locale.ROOT);
-        if (!Set.of("PERMANENT", "TEMPORARY", "CUSTOM").contains(normalized)) {
-            throw ValidationException.fromField(
-                    "redirectType",
-                    "INVALID",
-                    "Redirect type must be PERMANENT, TEMPORARY or CUSTOM."
-            );
-        }
-        return normalized;
-    }
-
-    private String defaultRedirectType(int statusCode) {
-        return DEFAULT_TYPE_BY_STATUS.getOrDefault(statusCode, "PERMANENT");
     }
 
     private void validateTargetUrl(String targetUrl) {
@@ -306,7 +295,9 @@ public class AdminRedirectService {
      */
     private void validateNoRedirectLoop(String sourcePattern, String targetUrl, UUID excludeId) {
         String normalizedSource = canonicalizePath(sourcePattern);
-        String normalizedTarget = canonicalizePath(targetUrl);
+        String normalizedTarget = redirectLookupPath(targetUrl);
+
+        if (normalizedTarget == null) return;
 
         // Direct self-loop
         if (normalizedSource.equals(normalizedTarget)) {
@@ -327,9 +318,6 @@ public class AdminRedirectService {
         int maxDepth = 20; // guard against pathological data in DB
 
         while (maxDepth-- > 0) {
-            // External URLs break the internal chain — no further hops possible
-            if (isExternalUrl(current)) break;
-
             if (visited.contains(current)) {
                 throw ValidationException.fromField(
                         "targetUrl",
@@ -345,30 +333,61 @@ public class AdminRedirectService {
                     : redirectRepo.findBySourcePattern(current);
 
             if (next.isEmpty()) break; // chain ends here — no loop
-            current = canonicalizePath(next.get().getTargetUrl());
+            current = redirectLookupPath(next.get().getTargetUrl());
+            if (current == null) break;
         }
     }
 
     /**
      * Canonical form of an internal path used for storage, uniqueness, and loop comparison:
-     * trim, strip one trailing slash unless the path is exactly "/". Case-sensitive — matches
+     * trim, strip trailing slashes unless the path is exactly "/". Case-sensitive — matches
      * {@code bigbike-web/proxy.ts}'s lookup behavior (never lowercases the incoming pathname)
      * and the case-sensitive DB uniqueness constraint (see DATA_CONTRACT.md "Redirects table").
      */
     private static String canonicalizePath(String path) {
         if (path == null) return "";
         String trimmed = path.trim();
-        if (trimmed.length() > 1 && trimmed.endsWith("/")) {
+        while (trimmed.length() > 1 && trimmed.endsWith("/")) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed;
     }
 
-    /** Returns true if the given URL is an external (non-relative) URL. */
-    private static boolean isExternalUrl(String url) {
-        if (url == null) return false;
-        String lower = url.toLowerCase(Locale.ROOT);
-        return lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("//");
+    /**
+     * Converts a redirect target to the exact pathname the web proxy will look up next.
+     * Query/fragment never participate in redirect lookup. Same-site absolute URLs stay in
+     * the chain; a genuinely external URL terminates it.
+     */
+    private String redirectLookupPath(String targetUrl) {
+        if (targetUrl == null || targetUrl.isBlank()) return null;
+        try {
+            URI uri = URI.create(targetUrl.trim());
+            if (uri.isAbsolute()) {
+                String scheme = uri.getScheme();
+                String baseHost = URI.create(siteBaseUrl).getHost();
+                if (scheme == null
+                        || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+                        || uri.getHost() == null
+                        || baseHost == null
+                        || !uri.getHost().equalsIgnoreCase(baseHost)) {
+                    return null;
+                }
+            } else if (uri.getRawAuthority() != null) {
+                return null;
+            }
+            String path = uri.getRawPath();
+            return canonicalizePath(path == null || path.isBlank() ? "/" : path);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private void rejectLegacyStatusConfiguration(Integer statusCode, String redirectType) {
+        if (statusCode == null && (redirectType == null || redirectType.isBlank())) return;
+        throw ValidationException.fromField(
+                statusCode != null ? "statusCode" : "redirectType",
+                "UNSUPPORTED",
+                "Managed redirects always use HTTP 301; statusCode and redirectType are not configurable.");
     }
 
     private void ensureUniqueSourcePattern(String sourcePattern, UUID currentId) {
@@ -387,8 +406,6 @@ public class AdminRedirectService {
                 "id", entity.getId() == null ? "" : entity.getId().toString(),
                 "sourcePattern", nvl(entity.getSourcePattern()),
                 "targetUrl", nvl(entity.getTargetUrl()),
-                "redirectType", nvl(entity.getRedirectType()),
-                "statusCode", entity.getStatusCode(),
                 "enabled", entity.isEnabled(),
                 "hitCount", entity.getHitCount(),
                 "legacyId", entity.getLegacyId() == null ? "" : entity.getLegacyId(),

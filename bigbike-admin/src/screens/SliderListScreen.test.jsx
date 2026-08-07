@@ -78,7 +78,11 @@ vi.mock('../components/ImageUrlInput', () => ({
         <button
           type="button"
           onClick={() => {
-            onChange(`/media/sliders/${kind}-new.jpg`)
+            onChange(`/media/sliders/${kind}-new.jpg`, {
+              width: kind === 'mobile' ? 780 : 3840,
+              height: kind === 'mobile' ? 1040 : 1536,
+              mimeType: 'image/jpeg',
+            })
             onAltChange?.(`Alt ${kind} mới`)
           }}
         >
@@ -115,10 +119,16 @@ const legacySlider = {
   desktopImage: {
     url: '/media/sliders/desktop-old.jpg',
     alt: 'Ảnh desktop cũ',
+    width: 3840,
+    height: 1536,
+    mimeType: 'image/webp',
   },
   mobileImage: {
     url: '/media/sliders/mobile-old.jpg',
     alt: 'Ảnh mobile cũ',
+    width: 780,
+    height: 1040,
+    mimeType: 'image/webp',
   },
   externalLink: '/sp/',
   productId: 'prod_1',
@@ -172,7 +182,26 @@ describe('SliderListScreen mobile image', () => {
         mobileImage: {
           url: '/media/sliders/mobile-new.jpg',
           alt: 'Alt mobile mới',
+          width: 780,
+          height: 1040,
+          mimeType: 'image/jpeg',
         },
+      }),
+    ))
+  })
+
+  it('giữ nguyên metadata ảnh desktop/mobile khi mở sửa rồi lưu không đổi ảnh', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'Sửa' }))
+    await user.click(screen.getByRole('button', { name: 'Cập nhật' }))
+
+    await waitFor(() => expect(mocks.updateSlider).toHaveBeenCalledWith(
+      legacySlider.id,
+      expect.objectContaining({
+        desktopImage: legacySlider.desktopImage,
+        mobileImage: legacySlider.mobileImage,
       }),
     ))
   })

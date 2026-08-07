@@ -154,7 +154,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
             onDuplicate={() => duplicateBlock(index)}
             onPickImage={() => setMediaPickerIndex(index)}
             onPickVideo={() => setVideoPickerIndex(index)}
-            onAltBlur={(value) => getMediaAltSync(index).flushAltSync(value)}
+            onAltBlur={(value) => getMediaAltSync(block._key ?? index).flushAltSync(value)}
           />
         )}
       />
@@ -188,7 +188,8 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
           recommend={blocks[mediaPickerIndex]?.type === 'feature' ? IMAGE_RECO.featureImage : IMAGE_RECO.general}
           kind="image"
           onSelect={(url, media) => {
-            const alt = getMediaAltSync(mediaPickerIndex).pickAlt(blocks[mediaPickerIndex]?.alt, media)
+            const block = blocks[mediaPickerIndex]
+            const alt = getMediaAltSync(block?._key ?? mediaPickerIndex).pickAlt(block?.alt, media)
             updateBlock(mediaPickerIndex, { url, alt })
             setMediaPickerIndex(null)
           }}

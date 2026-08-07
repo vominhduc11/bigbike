@@ -27,12 +27,6 @@ public class RedirectEntity {
     @Column(name = "target_url", nullable = false, columnDefinition = "text")
     private String targetUrl;
 
-    @Column(name = "redirect_type", nullable = false, length = 50)
-    private String redirectType;
-
-    @Column(name = "status_code", nullable = false)
-    private int statusCode = 301;
-
     @Column(nullable = false)
     private boolean enabled = true;
 

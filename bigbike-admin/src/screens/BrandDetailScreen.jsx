@@ -47,6 +47,9 @@ function buildEmptyForm() {
     showOnHomepage: true,
     logoUrl: '',
     logoAlt: '',
+    logoWidth: null,
+    logoHeight: null,
+    logoMimeType: '',
     bannerUrl: '',
     bannerAlt: '',
     seoTitle: '',
@@ -55,6 +58,9 @@ function buildEmptyForm() {
     seoNoIndexEn: false,
     seoOgImageUrl: '',
     seoOgImageAlt: '',
+    seoOgImageWidth: null,
+    seoOgImageHeight: null,
+    seoOgImageMimeType: '',
     translations: { en: { description: '', seoTitle: '', seoDescription: '' } },
   }
 }
@@ -66,9 +72,12 @@ function buildFormFromItem(item) {
     name: item.name || '',
     description: item.description || '',
     showOnHomepage: item.showOnHomepage !== false,
-    logoUrl: item.logo?.url || '',
+    logoUrl: item.logo?.rawUrl || item.logo?.url || '',
     logoAlt: item.logo?.alt || '',
-    bannerUrl: item.bannerImage?.url || '',
+    logoWidth: item.logo?.width ?? null,
+    logoHeight: item.logo?.height ?? null,
+    logoMimeType: item.logo?.mimeType || '',
+    bannerUrl: item.bannerImage?.rawUrl || item.bannerImage?.url || '',
     bannerAlt: item.bannerImage?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
@@ -76,6 +85,9 @@ function buildFormFromItem(item) {
     seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
+    seoOgImageWidth: item.seo?.ogImage?.width ?? null,
+    seoOgImageHeight: item.seo?.ogImage?.height ?? null,
+    seoOgImageMimeType: item.seo?.ogImage?.mimeType || '',
     translations: {
       en: {
         description: item.translations?.en?.description || '',
@@ -271,6 +283,23 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
     setValidationErrors((previous) => {
+      if (!previous[field]) return previous
+      const next = { ...previous }
+      delete next[field]
+      return next
+    })
+  }
+
+  function updateImageAsset(prefix, url, media) {
+    setForm((previous) => ({
+      ...previous,
+      [`${prefix}Url`]: url,
+      [`${prefix}Width`]: media?.width ?? null,
+      [`${prefix}Height`]: media?.height ?? null,
+      [`${prefix}MimeType`]: media?.mimeType ?? '',
+    }))
+    setValidationErrors((previous) => {
+      const field = `${prefix}Url`
       if (!previous[field]) return previous
       const next = { ...previous }
       delete next[field]
@@ -673,7 +702,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <span>{t('brands.detail.logoUrl')}</span>
               <ImageUrlInput
                 value={form.logoUrl}
-                onChange={(url) => updateField('logoUrl', url)}
+                onChange={(url, media) => updateImageAsset('logo', url, media)}
                 alt={form.logoAlt}
                 onAltChange={(v) => updateField('logoAlt', v)}
                 disabled={isReadOnly}

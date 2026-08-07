@@ -114,6 +114,34 @@ class Phase1KOpenApiContractTest {
     }
 
     @Test
+    void openApi_redirectContractUsesOnlyPermanent301Shape() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+        JsonNode listParameters = paths.path("/api/v1/admin/redirects").path("get").path("parameters");
+        JsonNode schemas = document.path("components").path("schemas");
+
+        assertThat(listParameters.findValuesAsText("name"))
+                .containsExactly("page", "size", "q", "enabled");
+        assertThat(parameterNamed(listParameters, "q").path("schema").path("maxLength").asInt())
+                .isEqualTo(200);
+        assertThat(parameterNamed(listParameters, "enabled").path("schema").path("type").asText())
+                .isEqualTo("boolean");
+
+        assertThat(fieldNames(schemas.path("CreateRedirectRequest").path("properties")))
+                .contains("sourcePattern", "targetUrl", "enabled", "notes", "legacyId")
+                .doesNotContain("statusCode", "redirectType");
+        assertThat(fieldNames(schemas.path("UpdateRedirectRequest").path("properties")))
+                .doesNotContain("statusCode", "redirectType");
+        assertThat(fieldNames(schemas.path("AdminRedirectResponse").path("properties")))
+                .doesNotContain("statusCode", "redirectType");
+
+        assertThat(fieldNames(paths)).contains(
+                "/api/internal/redirect",
+                "/api/internal/redirects/active",
+                "/api/internal/redirects/hit/{redirectId}");
+    }
+
+    @Test
     void openApi_adminOrderContractMatchesControllerFiltersAndAuditEndpoint() throws Exception {
         JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
         JsonNode paths = document.path("paths");
@@ -305,6 +333,58 @@ class Phase1KOpenApiContractTest {
         assertThat(body).contains("/api/v1/admin/customers");
         assertThat(body).contains("/api/v1/admin/media");
         assertThat(body).contains("/api/v1/home-videos");
+    }
+
+    @Test
+    void openApi_adminMediaContractCoversLibraryLifecycleAndFolderManagement() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+
+        assertThat(fieldNames(paths)).contains(
+                "/api/v1/admin/media",
+                "/api/v1/admin/media/stats",
+                "/api/v1/admin/media/tags",
+                "/api/v1/admin/media/bulk-move",
+                "/api/v1/admin/media/bulk-delete",
+                "/api/v1/admin/media/bulk-restore",
+                "/api/v1/admin/media/bulk-hard-delete",
+                "/api/v1/admin/media/{mediaId}",
+                "/api/v1/admin/media/{mediaId}/references",
+                "/api/v1/admin/media/{mediaId}/replace",
+                "/api/v1/admin/media/{mediaId}/restore",
+                "/api/v1/admin/media-folders",
+                "/api/v1/admin/media-folders/{id}");
+
+        JsonNode listParameters = paths.path("/api/v1/admin/media").path("get").path("parameters");
+        assertThat(listParameters.findValuesAsText("name")).containsExactly(
+                "page", "size", "q", "mimeType", "status", "storageProvider",
+                "usageFilter", "uploadedFrom", "uploadedTo", "minSize", "maxSize",
+                "minWidth", "minHeight", "sort", "dir", "folderFilter", "tag");
+        assertThat(parameterNamed(listParameters, "size").path("schema").path("maximum").asInt())
+                .isEqualTo(100);
+
+        JsonNode uploadFile = paths.path("/api/v1/admin/media").path("post")
+                .path("requestBody").path("content").path("multipart/form-data")
+                .path("schema").path("properties").path("file");
+        assertThat(uploadFile.path("format").asText()).isEqualTo("binary");
+        assertThat(uploadFile.path("description").asText()).contains("200 MB", "MP4");
+
+        JsonNode updateProperties = paths.path("/api/v1/admin/media/{mediaId}").path("patch")
+                .path("requestBody").path("content").path("application/json")
+                .path("schema").path("properties");
+        assertThat(fieldNames(updateProperties))
+                .containsExactly("title", "altText", "folderId", "clearFolder", "tags");
+        assertThat(parameterNamed(paths.path("/api/v1/admin/media/{mediaId}").path("delete")
+                .path("parameters"), "permanent").path("schema").path("default").asBoolean())
+                .isFalse();
+
+        JsonNode folderProperties = paths.path("/api/v1/admin/media-folders").path("post")
+                .path("requestBody").path("content").path("application/json")
+                .path("schema").path("properties");
+        assertThat(fieldNames(folderProperties)).containsExactly("name", "slug", "description");
+        assertThat(folderProperties.path("name").path("maxLength").asInt()).isEqualTo(120);
+        assertThat(folderProperties.path("slug").path("maxLength").asInt()).isEqualTo(160);
+        assertThat(folderProperties.path("description").path("maxLength").asInt()).isEqualTo(2000);
     }
 
     @Test

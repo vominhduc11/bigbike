@@ -128,9 +128,9 @@ class LiveOwnerOverrideV3Test {
     @Test
     void unlinksDeadAnchorsInsideJsonBlocksWhileLeavingPlainStructuredUrlsAlone() {
         var rewriter = new LiveMigrationContentRewriter(List.of(new RedirectPlan(
-                "/sp/khong-co-dich.html", null, 301, "PRODUCT", 10L,
+                "/sp/khong-co-dich.html", null, "PRODUCT", 10L,
                 "owner acknowledged", "MANUAL_REVIEW", Action.ACKNOWLEDGED_NO_SAFE_TARGET,
-                null, null, null, null, null, null, List.of("No safe target"))));
+                null, null, null, null, List.of("No safe target"))));
         var policy = new LiveMigrationOwnerOverrides.TargetContentPolicy(
                 true, true, false, false, false, List.of(), true);
 
@@ -155,9 +155,9 @@ class LiveOwnerOverrideV3Test {
     @Test
     void leavesJsonBlocksUntouchedWhileTheStructuredSwitchIsOff() {
         var rewriter = new LiveMigrationContentRewriter(List.of(new RedirectPlan(
-                "/sp/khong-co-dich.html", null, 301, "PRODUCT", 10L,
+                "/sp/khong-co-dich.html", null, "PRODUCT", 10L,
                 "owner acknowledged", "MANUAL_REVIEW", Action.ACKNOWLEDGED_NO_SAFE_TARGET,
-                null, null, null, null, null, null, List.of("No safe target"))));
+                null, null, null, null, List.of("No safe target"))));
         var policy = new LiveMigrationOwnerOverrides.TargetContentPolicy(
                 true, true, false, false, false);
         String blocks = "[{\"html\": \"<a href=\\\"/sp/khong-co-dich.html\\\">Mũ cũ</a>\"}]";

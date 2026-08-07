@@ -16,6 +16,7 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.media.CompressionProfile;
 import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.media.MediaFolderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaSpecifications;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -84,6 +85,7 @@ public class AdminMediaService {
             new CompressionProfile(2000, 2000, 0.85f, false);
 
     private final MediaJpaRepository mediaRepo;
+    private final MediaFolderJpaRepository mediaFolderRepo;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
     private final MinioClient minioClient;
@@ -294,7 +296,9 @@ public class AdminMediaService {
 
         String before = snapshot(media);
         String objectKey = media.getFilePath();
-        String bucket = media.getBucket() != null ? media.getBucket() : minioProperties.getBucket();
+        String bucket = media.getBucket() != null && !media.getBucket().isBlank()
+                ? media.getBucket()
+                : minioProperties.getBucket();
 
         // Overwrite original at the same key — URL stays valid for everyone referencing it
         try {
@@ -310,14 +314,16 @@ public class AdminMediaService {
         }
 
         // Old variants are stale — remove them, then regenerate
-        imageVariantService.deleteVariants(objectKey);
-        Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, newMime);
+        imageVariantService.deleteVariants(objectKey, bucket);
+        Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, newMime, bucket);
 
         media.setMimeType(newMime);
         media.setFileSize((long) bytes.length);
         media.setContentSha256(contentSha256);
-        if (width != null) media.setWidth(width);
-        if (height != null) media.setHeight(height);
+        // Replacing a raster with SVG/undecodable legacy image must clear stale
+        // dimensions instead of reporting the previous file's width/height.
+        media.setWidth(width);
+        media.setHeight(height);
         media.setSizes(variants.isEmpty() ? null : toJson(variants));
         media.setUpdatedAt(Instant.now());
         mediaRepo.save(media);
@@ -537,6 +543,7 @@ public class AdminMediaService {
         if (Boolean.TRUE.equals(req.clearFolder())) {
             media.setFolderId(null);
         } else if (req.folderId() != null) {
+            requireMediaFolder(req.folderId());
             media.setFolderId(req.folderId());
         }
 
@@ -556,19 +563,18 @@ public class AdminMediaService {
     @Transactional
     public int bulkMoveToFolder(List<UUID> mediaIds, UUID folderId, UUID adminId) {
         if (mediaIds == null || mediaIds.isEmpty()) return 0;
+        if (folderId != null) requireMediaFolder(folderId);
         int count = 0;
         for (UUID id : mediaIds) {
-            try {
-                MediaEntity m = mediaRepo.findById(id).orElse(null);
-                if (m == null) continue;
-                String before = snapshot(m);
-                m.setFolderId(folderId); // null is allowed → clears folder
-                m.setUpdatedAt(Instant.now());
-                mediaRepo.save(m);
-                auditLogWriter.save(auditLogFactory.build(
-                        "ADMIN", adminId, "MEDIA_MOVED_FOLDER", "MEDIA", id, before, snapshot(m)));
-                count++;
-            } catch (Exception ignored) { /* skip failures */ }
+            MediaEntity m = mediaRepo.findById(id).orElse(null);
+            if (m == null) continue;
+            String before = snapshot(m);
+            m.setFolderId(folderId); // null is allowed → clears folder
+            m.setUpdatedAt(Instant.now());
+            mediaRepo.save(m);
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN", adminId, "MEDIA_MOVED_FOLDER", "MEDIA", id, before, snapshot(m)));
+            count++;
         }
         return count;
     }
@@ -662,10 +668,13 @@ public class AdminMediaService {
 
         // Storage deletion must succeed before the DB row is removed.
         // If MinIO fails, the exception propagates and the transaction rolls back (no DB delete).
+        String bucket = media.getBucket() != null && !media.getBucket().isBlank()
+                ? media.getBucket()
+                : minioProperties.getBucket();
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
-                            .bucket(minioProperties.getBucket())
+                            .bucket(bucket)
                             .object(media.getFilePath())
                             .build());
         } catch (Exception e) {
@@ -674,7 +683,7 @@ public class AdminMediaService {
         }
 
         // Variants are best-effort — we already committed to deleting the original
-        imageVariantService.deleteVariants(media.getFilePath());
+        imageVariantService.deleteVariants(media.getFilePath(), bucket);
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MEDIA_HARD_DELETED", "MEDIA", mediaId, before, null));
@@ -730,6 +739,12 @@ public class AdminMediaService {
                 "altText", nvl(m.getAltText()),
                 "title", nvl(m.getTitle()),
                 "status", nvl(m.getStatus())));
+    }
+
+    private void requireMediaFolder(UUID folderId) {
+        if (!mediaFolderRepo.existsById(folderId)) {
+            throw new NotFoundException("Media folder not found.");
+        }
     }
 
     private String toJson(Object value) {

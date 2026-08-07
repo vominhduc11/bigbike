@@ -14,7 +14,6 @@ function mockRedirect(source: string, target: string) {
       return new Response(JSON.stringify({
         redirectId: "redirect-test",
         target,
-        statusCode: 301,
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (init?.method === "POST") return new Response(null, { status: 204 });
@@ -68,5 +67,29 @@ describe("legacy redirect proxy", () => {
 
     expect(response.status).toBe(301);
     expect(response.headers.get("location")).toBe(`https://bigbike.vn${target}`);
+  });
+
+  it.each([
+    ["/legacy-loop-query/", "/legacy-loop-query?campaign=old"],
+    ["/legacy-loop-fragment/", "/legacy-loop-fragment#details"],
+    ["/legacy-loop-absolute/", "https://bigbike.vn/legacy-loop-absolute/"],
+  ])("fails closed instead of serving a direct loop from %s", async (source, target) => {
+    const fetchSpy = mockRedirect(source.replace(/\/$/, ""), target);
+
+    const response = await proxy(new NextRequest(`https://bigbike.vn${source}`));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(fetchSpy.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  });
+
+  it("fails closed on an off-domain target from legacy data", async () => {
+    const fetchSpy = mockRedirect("/legacy-external", "https://evil.example/phishing");
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/legacy-external/"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(fetchSpy.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 });

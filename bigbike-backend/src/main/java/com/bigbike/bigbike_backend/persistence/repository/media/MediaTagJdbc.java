@@ -26,18 +26,6 @@ public class MediaTagJdbc {
 
     public MediaTagJdbc(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
-        ensureTable();
-    }
-
-    private void ensureTable() {
-        jdbc.execute("""
-                CREATE TABLE IF NOT EXISTS media_tags (
-                    media_id UUID NOT NULL,
-                    tag VARCHAR(120) NOT NULL,
-                    PRIMARY KEY (media_id, tag)
-                )
-                """);
-        jdbc.execute("CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag)");
     }
 
     /** Returns the tags currently attached to a single media. */

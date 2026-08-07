@@ -431,7 +431,6 @@ class Phase2BWordPressCatalogDryRunImporterTest {
         assertThat(result.sourceId()).isEqualTo(1L);
         assertThat(result.sourcePattern()).isEqualTo("/vi/san-pham");
         assertThat(result.targetPattern()).isEqualTo("/san-pham.html");
-        assertThat(result.redirectCode()).isEqualTo(301);
         assertThat(result.enabled()).isTrue();
         assertThat(result.warnings()).isEmpty();
     }

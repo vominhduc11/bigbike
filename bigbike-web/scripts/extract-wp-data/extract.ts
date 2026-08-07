@@ -306,7 +306,7 @@ async function extractPages(db: mysql.Connection) {
 
 async function extractRedirects(db: mysql.Connection) {
   const [rows] = await db.query(`
-    SELECT id, url_from AS source, url_to AS destination, header_code AS statusCode
+    SELECT id, url_from AS source, url_to AS destination, header_code AS legacyStatusCode
     FROM ${PREFIX}rank_math_redirections
     WHERE status = 'active'
     ORDER BY id

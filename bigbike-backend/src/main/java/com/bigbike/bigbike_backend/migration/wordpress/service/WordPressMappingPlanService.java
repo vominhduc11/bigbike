@@ -141,11 +141,11 @@ public class WordPressMappingPlanService {
                 List.of(
                         new FieldMapping("sources[0].pattern", "sourcePattern", "RANKMATH_JSON_PARSE", true),
                         new FieldMapping("url_to", "targetPattern", "DIRECT", true),
-                        new FieldMapping("header_code", "redirectType", "CAST_INT", true),
                         new FieldMapping("status=active", "enabled=true", "STATUS_MAP", true)
                 ),
                 List.of(
                         "RankMath sources field is serialized JSON array",
+                        "All imported redirect source codes (including 302/307/410/451) normalize to HTTP 301; the target model stores no status/type fields",
                         "kd_fg_redirect: legacy plugin table, lower priority",
                         "docs/legacy/SEO_REDIRECT_MAP.csv: currently empty (header only)",
                         "Polylang vi/ and en/ prefixes already redirect to canonical"

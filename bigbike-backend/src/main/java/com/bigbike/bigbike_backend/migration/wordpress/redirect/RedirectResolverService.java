@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  *   - No self-loops (source == target) are ever imported.
  *   - No duplicate sourcePatterns — first source to claim a pattern wins.
  *   - No existing redirects are overwritten by a lower-priority source.
- *   - 301 is enforced as default when redirectCode is 0 or invalid.
+ *   - Every imported redirect is served as HTTP 301; no status is carried by the target model.
  *   - Deferred FG rows are never imported.
  */
 @Service

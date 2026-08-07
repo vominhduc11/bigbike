@@ -289,7 +289,6 @@ function buildRedirectQuery(query) {
     size: query?.pageSize,
     q: query?.search,
     enabled: query?.enabled,
-    statusCode: query?.statusCode,
   }
 }
 
@@ -400,6 +399,12 @@ function translateValidationMessage(field, detail) {
   }
   if (code === 'UNSAFE_TARGET' && field === 'targetUrl') {
     return 'Địa chỉ mới chưa đúng. Hãy nhập đường dẫn trong website, bắt đầu bằng dấu "/" (ví dụ /sp/).'
+  }
+  if (code === 'INVALID_SOURCE' && field === 'sourcePattern') {
+    return 'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.'
+  }
+  if (code === 'UNSUPPORTED' && (field === 'statusCode' || field === 'redirectType')) {
+    return 'Hệ thống chỉ hỗ trợ chuyển hướng vĩnh viễn 301; hãy bỏ cấu hình kiểu chuyển hướng cũ.'
   }
 
   return rawMessage || 'Giá trị chưa hợp lệ.'
@@ -1080,8 +1085,11 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
           resolve({ item: normalizeMediaItem(payload?.data || {}) })
         } else {
           const error = payload?.error || {}
+          const detailMessage = Array.isArray(error.details)
+            ? error.details.find((detail) => typeof detail?.message === 'string' && detail.message.trim())?.message
+            : ''
           reject(new ApiClientError(
-            error.message || `Upload failed with status ${xhr.status}`,
+            detailMessage || error.message || `Upload failed with status ${xhr.status}`,
             xhr.status,
             error.code || 'UPLOAD_FAILED',
             error.details || [],
@@ -1098,9 +1106,27 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
   try {
     return await attempt(accessToken)
   } catch (err) {
-    if (err?.status === 401 && accessToken) {
-      const refreshed = await performTokenRefresh()
-      if (refreshed) return await attempt(refreshed)
+    if (err?.status === 401) {
+      if (accessToken) {
+        const refreshed = await performTokenRefresh()
+        if (refreshed) {
+          try {
+            return await attempt(refreshed)
+          } catch (retryError) {
+            if (retryError?.status === 403 && authorizationErrorListener) authorizationErrorListener()
+            if (retryError?.status === 401) {
+              clearTokens()
+              if (authErrorListener) authErrorListener()
+            }
+            throw retryError
+          }
+        }
+      }
+      clearTokens()
+      if (authErrorListener) authErrorListener()
+    }
+    if (err?.status === 403 && authorizationErrorListener) {
+      authorizationErrorListener()
     }
     throw err
   }

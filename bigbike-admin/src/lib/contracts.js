@@ -620,17 +620,16 @@ export function normalizeContentItem(input) {
 export function normalizeRedirect(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-redirect'
-  const statusCode = Number(source.statusCode)
   const hitCount = Number(source.hitCount)
-  const legacyId = Number(source.legacyId)
+  const legacyId = source.legacyId === null || source.legacyId === undefined
+    ? Number.NaN
+    : Number(source.legacyId)
 
   return {
     id,
     sourcePattern: toTrimmedString(source.sourcePattern) || '',
     targetUrl: toTrimmedString(source.targetUrl) || '',
-    redirectType: toTrimmedString(source.redirectType) || 'PERMANENT',
-    statusCode: Number.isFinite(statusCode) ? statusCode : 301,
-    enabled: source.enabled !== false,
+    enabled: typeof source.enabled === 'boolean' ? source.enabled : undefined,
     hitCount: Number.isFinite(hitCount) ? hitCount : 0,
     lastHitAt: toTrimmedString(source.lastHitAt) || undefined,
     notes: toTrimmedString(source.notes) || undefined,

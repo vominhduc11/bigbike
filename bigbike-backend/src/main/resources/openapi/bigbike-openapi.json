@@ -2128,43 +2128,23 @@
           }
         ],
         "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "mimeType",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "mimeType", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "DELETED"] } },
+          { "name": "storageProvider", "in": "query", "schema": { "type": "string" } },
+          { "name": "usageFilter", "in": "query", "schema": { "type": "string", "enum": ["ALL", "USED", "UNUSED"] } },
+          { "name": "uploadedFrom", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "uploadedTo", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "minSize", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "maxSize", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "minWidth", "in": "query", "schema": { "type": "integer" } },
+          { "name": "minHeight", "in": "query", "schema": { "type": "integer" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["createdAt", "fileSize", "title", "usageCount"] } },
+          { "name": "dir", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "folderFilter", "in": "query", "schema": { "type": "string", "description": "Folder UUID or NONE for uncategorized assets" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
@@ -2186,6 +2166,21 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, WebP, GIF, sanitized SVG, or MP4; maximum 200 MB" },
+                  "altText": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created"
@@ -2238,6 +2233,26 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "altText": { "type": "string" },
+                  "folderId": { "type": "string", "format": "uuid" },
+                  "clearFolder": { "type": "boolean" },
+                  "tags": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -2257,6 +2272,10 @@
           {
             "AdminBearerAuth": []
           }
+        ],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "permanent", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "true requires wildcard permission, DELETED state, and zero references" }
         ],
         "responses": {
           "204": {
@@ -4892,6 +4911,202 @@
         }
       }
     },
+    "/api/v1/admin/media/stats": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "Get filtered media statistics (admin)",
+        "operationId": "adminGetMediaStats",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "mimeType", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "DELETED"] } },
+          { "name": "storageProvider", "in": "query", "schema": { "type": "string" } },
+          { "name": "uploadedFrom", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "uploadedTo", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "minSize", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "maxSize", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "minWidth", "in": "query", "schema": { "type": "integer" } },
+          { "name": "minHeight", "in": "query", "schema": { "type": "integer" } },
+          { "name": "folderFilter", "in": "query", "schema": { "type": "string" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Filtered media statistics" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/media/tags": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "List media tags (admin)",
+        "operationId": "adminListMediaTags",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "prefix", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Tag names" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/media/bulk-move": {
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Move media assets to a folder (admin)",
+        "operationId": "adminBulkMoveMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["ids"], "properties": { "ids": { "type": "array", "maxItems": 500, "items": { "type": "string", "format": "uuid" } }, "folderId": { "type": "string", "format": "uuid", "nullable": true } } } } } },
+        "responses": {
+          "200": { "description": "Affected item count" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/admin/media/bulk-delete": {
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Move media assets to trash (admin)",
+        "operationId": "adminBulkDeleteMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["ids"], "properties": { "ids": { "type": "array", "maxItems": 500, "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": {
+          "200": { "description": "Affected item count" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/media/bulk-restore": {
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Restore media assets from trash (admin)",
+        "operationId": "adminBulkRestoreMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["ids"], "properties": { "ids": { "type": "array", "maxItems": 500, "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": {
+          "200": { "description": "Affected item count" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/media/bulk-hard-delete": {
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Permanently delete trashed, unused media assets (admin wildcard only)",
+        "operationId": "adminBulkHardDeleteMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["ids"], "properties": { "ids": { "type": "array", "maxItems": 500, "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": {
+          "200": { "description": "Deleted, missing, and blocked item counts" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/media/{mediaId}/references": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "List usages of a media asset (admin)",
+        "operationId": "adminGetMediaReferences",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Media references" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/admin/media/{mediaId}/replace": {
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Replace an image while keeping its public URL (admin)",
+        "operationId": "adminReplaceMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, WebP, GIF, or sanitized SVG; maximum 200 MB" } } } } } },
+        "responses": {
+          "200": { "description": "Updated media detail" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/admin/media-folders": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "List media folders (admin)",
+        "operationId": "adminListMediaFolders",
+        "security": [{ "AdminBearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Media folders with item counts" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Media"],
+        "summary": "Create a media folder (admin)",
+        "operationId": "adminCreateMediaFolder",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 } } } } } },
+        "responses": {
+          "201": { "description": "Created folder" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/media-folders/{id}": {
+      "patch": {
+        "tags": ["Admin Media"],
+        "summary": "Rename a media folder (admin)",
+        "operationId": "adminRenameMediaFolder",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 } } } } } },
+        "responses": {
+          "200": { "description": "Updated folder" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Media"],
+        "summary": "Delete a media folder and uncategorize its assets (admin)",
+        "operationId": "adminDeleteMediaFolder",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "204": { "description": "Folder deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
     "/api/v1/admin/media/{mediaId}/restore": {
       "post": {
         "tags": [
@@ -4903,6 +5118,9 @@
           {
             "AdminBearerAuth": []
           }
+        ],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
         ],
         "responses": {
           "200": {
@@ -6182,7 +6400,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 1
+              "default": 1,
+              "minimum": 1
             }
           },
           {
@@ -6190,37 +6409,47 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
             "name": "q",
             "in": "query",
+            "description": "Case-insensitive search in sourcePattern, targetUrl, and notes",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 200
             }
           },
           {
             "name": "enabled",
             "in": "query",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "statusCode",
-            "in": "query",
-            "schema": {
-              "type": "integer"
+              "type": "boolean"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Redirect list"
+            "description": "Redirect list ordered by updatedAt, createdAt, and id descending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRedirectListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       },
@@ -6235,12 +6464,38 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRedirectRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Redirect created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRedirectDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -6263,16 +6518,30 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Redirect detail"
+            "description": "Redirect detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRedirectDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -6287,12 +6556,52 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRedirectRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Redirect updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRedirectDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       },
@@ -6307,13 +6616,102 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "No content"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
+        }
+      }
+    },
+    "/api/internal/redirect": {
+      "get": {
+        "tags": ["Internal Redirects"],
+        "summary": "Look up one enabled redirect by exact source path",
+        "operationId": "internalLookupRedirect",
+        "security": [{ "InternalToken": [] }],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enabled redirect match",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InternalRedirectLookupResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/internal/redirects/active": {
+      "get": {
+        "tags": ["Internal Redirects"],
+        "summary": "List all enabled redirects for storefront cold-start cache",
+        "operationId": "internalListActiveRedirects",
+        "security": [{ "InternalToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Active redirect items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/InternalActiveRedirectItem" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/internal/redirects/hit/{redirectId}": {
+      "post": {
+        "tags": ["Internal Redirects"],
+        "summary": "Record a redirect hit",
+        "operationId": "internalRecordRedirectHit",
+        "security": [{ "InternalToken": [] }],
+        "parameters": [
+          {
+            "name": "redirectId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Hit recorded" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
@@ -7158,6 +7556,12 @@
         "in": "header",
         "name": "X-CSRF-Token",
         "description": "CSRF token required for all cart/checkout mutations. Value must match the bb_csrf cookie set by the server."
+      },
+      "InternalToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-Token",
+        "description": "Shared service token required by internal redirect endpoints in staging and production."
       }
     },
     "responses": {
@@ -11604,6 +12008,95 @@
           "message": {
             "type": "string"
           }
+        }
+      },
+      "AdminRedirectResponse": {
+        "type": "object",
+        "required": ["id", "sourcePattern", "targetUrl", "enabled", "hitCount", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "sourcePattern": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Exact internal pathname without domain, query, or fragment"
+          },
+          "targetUrl": { "type": "string", "maxLength": 2048 },
+          "enabled": { "type": "boolean" },
+          "hitCount": { "type": "integer", "format": "int64", "minimum": 0 },
+          "lastHitAt": { "type": "string", "format": "date-time", "nullable": true },
+          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
+          "legacyId": { "type": "integer", "format": "int64", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "description": "Managed redirects always emit HTTP 301; statusCode and redirectType are intentionally absent."
+      },
+      "CreateRedirectRequest": {
+        "type": "object",
+        "required": ["sourcePattern", "targetUrl"],
+        "properties": {
+          "sourcePattern": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Exact internal pathname without domain, query, or fragment"
+          },
+          "targetUrl": { "type": "string", "maxLength": 2048 },
+          "enabled": { "type": "boolean", "default": true },
+          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
+          "legacyId": { "type": "integer", "format": "int64", "minimum": 1, "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "UpdateRedirectRequest": {
+        "type": "object",
+        "properties": {
+          "sourcePattern": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Exact internal pathname without domain, query, or fragment"
+          },
+          "targetUrl": { "type": "string", "maxLength": 2048 },
+          "enabled": { "type": "boolean" },
+          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
+          "legacyId": { "type": "integer", "format": "int64", "minimum": 1, "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "AdminRedirectDataResponse": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AdminRedirectResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "AdminRedirectListResponse": {
+        "type": "object",
+        "required": ["data", "pagination", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminRedirectResponse" }
+          },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "InternalRedirectLookupResponse": {
+        "type": "object",
+        "required": ["redirectId", "target"],
+        "properties": {
+          "redirectId": { "type": "string", "format": "uuid" },
+          "target": { "type": "string" }
+        }
+      },
+      "InternalActiveRedirectItem": {
+        "type": "object",
+        "required": ["id", "sourcePattern", "targetUrl"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "sourcePattern": { "type": "string" },
+          "targetUrl": { "type": "string" }
         }
       },
       "AdminMaintenanceResponse": {

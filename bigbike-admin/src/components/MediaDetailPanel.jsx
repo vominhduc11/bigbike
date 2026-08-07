@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { X as XIcon, Copy, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, RefreshCw } from 'lucide-react'
+import { X as XIcon, Copy, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, ImageOff, RefreshCw } from 'lucide-react'
 import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { showConfirm } from '../lib/confirm'
@@ -14,20 +14,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getMediaReferenceAdminPath, REFERENCE_TYPE_KEYS, formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
+import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES } from '../lib/mediaConstants'
 
 
 function formatDate(iso) {
   if (!iso) return '—'
   try {
-    return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return '—'
+    return date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
   } catch { return iso }
+}
+
+function detailActionError(t, error, fallback) {
+  if (error?.status === 403) return t('media.actionForbidden')
+  if (error?.status === 404) return t('media.actionNotFound')
+  if (error?.status === 409) return error.message || t('media.actionConflict')
+  if (error?.status === 0 || error?.code === 'NETWORK_ERROR') return t('media.actionNetworkError')
+  return error?.message || fallback
 }
 
 /**
  * Slide-in detail panel — does not block the grid behind it.
  * Shows preview, editable metadata, technical info, references.
  */
-export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete, onRestore, onHardDelete, canUpdate, canHardDelete, folders: foldersProp }) {
+export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete, onRestore, onHardDelete, canUpdate, canHardDelete, actionBusy = false, folders: foldersProp }) {
   const { t } = useTranslation()
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
@@ -43,7 +54,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   // Thao tác hiếm + không hoàn tác được (thay ảnh) và danh sách biến thể kỹ thuật
   // gom vào đây, đóng sẵn — luồng chính chỉ còn xem, sửa mô tả, phân loại, xoá.
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const { refs, refsLoading } = useMediaReferences(media)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const { refs, refsLoading, refsError, retryRefs } = useMediaReferences(media)
   const replaceInputRef = useRef(null)
 
   const isImage = media.mimeType?.startsWith('image/')
@@ -99,6 +111,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     setFolderId(savedForm?.folderId ?? media.folderId ?? '')
     setTags(savedForm?.tags ?? (Array.isArray(media.tags) ? media.tags : []))
     setError('')
+    setPreviewFailed(false)
   }, [media.altText, media.folderId, media.id, media.tags, media.title, recoveredMediaDraft])
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -134,9 +147,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       onSaved(result.item)
       clearMediaDraft()
       toast.success(t('media.saveSuccess'))
-    } catch {
-      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
-      setError(t('media.saveError'))
+    } catch (saveError) {
+      setError(detailActionError(t, saveError, t('media.saveError')))
     } finally { setSaving(false) }
   }
 
@@ -154,6 +166,17 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
+    if (!IMAGE_MEDIA_MIME_TYPES.includes(file.type)) {
+      toast.error(t('media.unsupportedType', { type: file.type || t('common.unknown') }))
+      return
+    }
+    if (file.size > MAX_MEDIA_UPLOAD_BYTES) {
+      toast.error(t('media.fileTooLarge', {
+        size: formatBytes(file.size),
+        limit: formatBytes(MAX_MEDIA_UPLOAD_BYTES),
+      }))
+      return
+    }
     // Thay file có hiệu lực ngay ở MỌI nơi đang dùng (giữ nguyên URL) và không hoàn tác được →
     // bắt buộc xác nhận trước khi upload.
     const ok = await showConfirm(
@@ -167,9 +190,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       const result = await replaceMediaFile(media.id, file)
       onSaved(result.item)
       toast.success(t('media.replaceSuccess'))
-    } catch {
-      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
-      toast.error(t('media.replaceError'))
+    } catch (replaceError) {
+      toast.error(detailActionError(t, replaceError, t('media.replaceError')))
     } finally { setReplacing(false) }
   }
 
@@ -185,11 +207,16 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       <div className="mediadetail-body">
         {/* Preview */}
         <section className="mediadetail-preview">
-          <Button variant="unstyled" onClick={onPreview} aria-label={t('media.preview')} className="mediadetail-preview-area">
-            {isImage && media.publicUrl ? (
-              <img src={media.publicUrl} alt={altText || ''} />
+          <Button variant="unstyled" onClick={onPreview} disabled={!media.publicUrl} aria-label={t('media.preview')} className="mediadetail-preview-area">
+            {previewFailed ? (
+              <div role="alert" className="flex flex-col items-center gap-2 text-sm text-danger">
+                <ImageOff size={40} aria-hidden="true" />
+                <span>{t('media.mediaLoadError')}</span>
+              </div>
+            ) : isImage && media.publicUrl ? (
+              <img src={media.publicUrl} alt={altText || filename || t('media.preview')} onError={() => setPreviewFailed(true)} />
             ) : isVideo && media.publicUrl ? (
-              <video src={media.publicUrl} controls preload="metadata" onClick={(e) => e.stopPropagation()} />
+              <video src={media.publicUrl} controls preload="metadata" onError={() => setPreviewFailed(true)} onClick={(e) => e.stopPropagation()} />
             ) : isAudio && media.publicUrl ? (
               <div className="mediadetail-audio-wrap">
                 <Music size={48} />
@@ -198,7 +225,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             ) : (
               <FileText size={48} />
             )}
-            {(isImage || isVideo) && (
+            {!previewFailed && media.publicUrl && (isImage || isVideo) && (
               <span className="mediadetail-preview-hint">
                 <Maximize2 size={14} /> {t('media.preview')}
               </span>
@@ -231,8 +258,9 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             </label>
             <label className="mediadetail-field">
               <span>{t('media.folder')}</span>
-              <Select value={folderId}
-                onValueChange={setFolderId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <Select value={folderId || '__NONE__'}
+                onValueChange={(value) => setFolderId(value === '__NONE__' ? '' : value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="__NONE__">{t('media.uncategorized')}</SelectItem>
                 {folders.map((f) => (
                   <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
@@ -265,23 +293,30 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
         <section className="mediadetail-info">
           <p className="mediadetail-section-title">
             {t('media.usageTitle')}
-            {media.usageCount > 0
-              ? <span className="mediadetail-badge mediadetail-badge-primary">{media.usageCount}</span>
+            {(refsError ? media.usageCount : refs.length) > 0
+              ? <span className="mediadetail-badge mediadetail-badge-primary">{refsError ? media.usageCount : refs.length}</span>
               : <span className="mediadetail-badge mediadetail-badge-muted">{t('media.usageUnused')}</span>}
           </p>
           {refsLoading && <p className="mediadetail-muted">{t('common.loading')}</p>}
-          {!refsLoading && (media.usageCount ?? 0) === 0 && (
+          {!refsLoading && refsError && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-danger" role="alert">
+              <span>{t('media.referencesLoadError')}</span>
+              <Button type="button" variant="secondary" size="sm" onClick={retryRefs}>{t('common.retry')}</Button>
+            </div>
+          )}
+          {!refsLoading && !refsError && refs.length === 0 && (
             <p className="mediadetail-muted">{t('media.usageNoneDesc')}</p>
           )}
-          {!refsLoading && refs.length > 0 && (
+          {!refsLoading && !refsError && refs.length > 0 && (
             <ul className="mediadetail-ref-list">
               {refs.map((r, i) => {
                 const adminPath = getMediaReferenceAdminPath(r)
+                const referenceName = r.name || t('common.unknown')
                 return (
                   <li key={i}>
-                    <span className="mediadetail-ref-type">{REFERENCE_TYPE_KEYS[r.type] ? t(REFERENCE_TYPE_KEYS[r.type]) : r.type}</span>
-                    {adminPath ? <a href={adminPath} title={r.name}>{r.name}</a>
-                      : <span title={r.name}>{r.name}</span>}
+                    <span className="mediadetail-ref-type">{REFERENCE_TYPE_KEYS[r.type] ? t(REFERENCE_TYPE_KEYS[r.type]) : (r.type || t('common.unknown'))}</span>
+                    {adminPath ? <a href={adminPath} title={referenceName}>{referenceName}</a>
+                      : <span title={referenceName}>{referenceName}</span>}
                   </li>
                 )
               })}
@@ -299,7 +334,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             {canReplace && (
               <div className="flex flex-col gap-1.5">
                 {/* Raw hidden file input is required to trigger the OS file picker. */}
-                <input ref={replaceInputRef} type="file" accept="image/*"
+                <input ref={replaceInputRef} type="file" accept={IMAGE_MEDIA_MIME_TYPES.join(',')}
                   className="hidden" onChange={handleReplaceFile} />
                 <Button variant="outline" size="sm" onClick={handleReplaceClick}
                   loading={replacing} className="w-full">
@@ -342,23 +377,23 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       <footer className="mediadetail-footer">
         <div className="mediadetail-danger-actions">
           {canUpdate && !isTrash && onDelete && (
-            <Button variant="danger" onClick={onDelete} title={t('common.delete')}>
+            <Button variant="danger" type="button" onClick={onDelete} loading={actionBusy} disabled={actionBusy} title={t('common.delete')}>
               <Trash2 size={14} /> {t('common.delete')}
             </Button>
           )}
           {canUpdate && isTrash && onRestore && (
-            <Button onClick={onRestore}>
+            <Button type="button" onClick={onRestore} loading={actionBusy} disabled={actionBusy}>
               <RotateCcw size={14} /> {t('media.restore')}
             </Button>
           )}
           {canHardDelete && isTrash && onHardDelete && (
-            <Button variant="danger" type="button" onClick={onHardDelete} className="text-xs">
+            <Button variant="danger" type="button" onClick={onHardDelete} loading={actionBusy} disabled={actionBusy} className="text-xs">
               <AlertTriangle size={14} className="align-text-bottom" /> {t('media.hardDelete')}
             </Button>
           )}
         </div>
         <div className="mediadetail-save-actions">
-          <Button variant="outline" onClick={attemptClose} disabled={saving}>
+          <Button variant="outline" type="button" onClick={attemptClose} disabled={saving || actionBusy}>
             {t('common.cancel')}
           </Button>
           {canUpdate && !isTrash && (

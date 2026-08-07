@@ -58,6 +58,7 @@ vi.mock('../components/ImageUrlInput', () => ({ ImageUrlInput: () => null }))
 vi.mock('../components/MediaRequirementHint', () => ({ MediaRequirementHint: () => null }))
 
 import { HomeVideoListScreen } from './HomeVideoListScreen'
+import { buildHomeVideoThumbnail } from './homeVideoPayload'
 
 class ResizeObserverMock {
   observe() {}
@@ -79,6 +80,22 @@ function renderScreen() {
 }
 
 describe('HomeVideoListScreen video sources', () => {
+  it('giữ đầy đủ metadata thumbnail do picker trả về', () => {
+    expect(buildHomeVideoThumbnail({
+      thumbnailUrl: '  /media/home/video-thumb.webp  ',
+      thumbnailAlt: '  Ảnh video  ',
+      thumbnailWidth: 500,
+      thumbnailHeight: 900,
+      thumbnailMimeType: 'image/webp',
+    })).toEqual({
+      url: '/media/home/video-thumb.webp',
+      alt: 'Ảnh video',
+      width: 500,
+      height: 900,
+      mimeType: 'image/webp',
+    })
+  })
+
   it('legacy record vẫn mở được nhưng form chỉ có YouTube và Upload / media library', async () => {
     const user = userEvent.setup()
     renderScreen()

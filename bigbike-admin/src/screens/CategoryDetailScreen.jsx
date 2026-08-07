@@ -394,6 +394,23 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
   }
 
+  function updateImageAsset(prefix, url, media) {
+    setForm((previous) => ({
+      ...previous,
+      [`${prefix}Url`]: url,
+      [`${prefix}Width`]: media?.width ?? null,
+      [`${prefix}Height`]: media?.height ?? null,
+      [`${prefix}MimeType`]: media?.mimeType ?? '',
+    }))
+    setValidationErrors((previous) => {
+      const field = `${prefix}Url`
+      if (!previous[field]) return previous
+      const next = { ...previous }
+      delete next[field]
+      return next
+    })
+  }
+
   function handleNameChange(value) {
     updateField('name', value)
     if (isCreate && !slugManuallyEdited) {
@@ -923,7 +940,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <span>{t('categories.detail.imageUrl')}</span>
                   <ImageUrlInput
                     value={form.imageUrl}
-                    onChange={(url) => updateField('imageUrl', url)}
+                    onChange={(url, media) => updateImageAsset('image', url, media)}
                     alt={form.imageAlt}
                     onAltChange={(alt) => updateField('imageAlt', alt)}
                     previewAlt={form.imageAlt || t('categories.detail.imageAlt', { defaultValue: 'Ảnh đại diện danh mục' })}
@@ -964,7 +981,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <span>{t('categories.detail.heroImageUrl')}</span>
                   <ImageUrlInput
                     value={form.heroImageUrl}
-                    onChange={(url) => updateField('heroImageUrl', url)}
+                    onChange={(url, media) => updateImageAsset('heroImage', url, media)}
                     alt={form.heroImageAlt}
                     onAltChange={(alt) => updateField('heroImageAlt', alt)}
                     previewAlt={form.heroImageAlt || t('categories.detail.heroAlt', { defaultValue: 'Ảnh minh họa hero danh mục' })}

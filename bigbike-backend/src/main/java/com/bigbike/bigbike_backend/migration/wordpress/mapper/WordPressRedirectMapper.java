@@ -19,7 +19,6 @@ public class WordPressRedirectMapper {
             long sourceId,
             String sourcePattern,
             String targetPattern,
-            int redirectCode,
             boolean enabled,
             List<String> warnings
     ) {}
@@ -39,14 +38,11 @@ public class WordPressRedirectMapper {
             warnings.add("Empty url_to for redirect id=" + row.id());
         }
 
-        int code = row.headerCode();
-        if (code != 301 && code != 302 && code != 307 && code != 410 && code != 451) {
-            warnings.add("Non-standard redirect code " + code + " for id=" + row.id());
-        }
-
         boolean enabled = "active".equalsIgnoreCase(row.status());
 
-        return new MappedRedirect(row.id(), source, target, code, enabled, warnings);
+        // The raw headerCode remains available on WpRedirectRow for source compatibility,
+        // but the target model has one behavior and therefore carries no status field.
+        return new MappedRedirect(row.id(), source, target, enabled, warnings);
     }
 
     /** Returns every exact source path from either RankMath JSON or PHP serialize() storage. */

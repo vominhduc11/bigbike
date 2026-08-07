@@ -145,7 +145,7 @@ class Phase2AWordPressMigrationFoundationTest {
         assertThat(result.headerValid()).isTrue();
         assertThat(result.rows()).hasSize(4);
         assertThat(result.rows().get(0).sourcePattern()).isEqualTo("/vi/san-pham");
-        assertThat(result.rows().get(0).redirectType()).isEqualTo("301");
+        assertThat(result.rows().get(0).legacyStatusCode()).isEqualTo("301");
         assertThat(result.rows().get(0).status()).isEqualTo("active");
     }
 

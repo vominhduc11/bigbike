@@ -13,8 +13,8 @@ describe('media constants', () => {
     expect(ALLOWED_MIME).not.toContain('text/html')
   })
 
-  it('giới hạn dung lượng client là 50MB', () => {
-    expect(MAX_FILE_SIZE).toBe(50 * 1024 * 1024)
+  it('giới hạn dung lượng client là 200MB theo hợp đồng nghiệp vụ', () => {
+    expect(MAX_FILE_SIZE).toBe(200 * 1024 * 1024)
   })
 
   // Đợt tinh gọn: bỏ hẳn bộ lọc nâng cao (ngày/dung lượng/kích thước) và kiểu xem

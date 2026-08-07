@@ -57,6 +57,11 @@ handle it, and **both are required** — either one alone leaves the stack broke
 Both default to the safe value (blank / `false`) so a fresh deployment keeps full Flyway
 validation. Only set them on a stack carrying this legacy history.
 
+For local Docker development, the root `.env` uses `SPRING_PROFILES_ACTIVE=dev` and must
+set `SPRING_FLYWAY_OUT_OF_ORDER=true` when the database already contains the
+`db/migration-dev` history. `docker-compose.yaml` passes this variable into the backend,
+so an explicit `false` overrides the profile's dev setting and prevents `V368+` from running.
+
 ## Deployment Notes
 
 - Backend healthcheck uses `GET /actuator/health`. `CONFIRMED_FROM_CONFIG`
@@ -91,7 +96,7 @@ validation. Only set them on a stack carrying this legacy history.
 
 ## Schema And Migration Notes
 
-- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V373` (2026-08-06). Do not use an older documentation note as a schema baseline—verify the migration directory and `flyway_schema_history` for the deployed environment. `CONFIRMED_FROM_CONFIG`
+- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V377` (2026-08-07). Do not use an older documentation note as a schema baseline—verify the migration directory and `flyway_schema_history` for the deployed environment. `CONFIRMED_FROM_CONFIG`
 - The one-time WordPress live migration must follow [LIVE_MIGRATION_RUNBOOK.md](LIVE_MIGRATION_RUNBOOK.md). The normal Spring `mode=import` runner is legacy rehearsal tooling and is not an authorized production write path. `CONFIRMED_FROM_CODE_2026-08-03`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
 

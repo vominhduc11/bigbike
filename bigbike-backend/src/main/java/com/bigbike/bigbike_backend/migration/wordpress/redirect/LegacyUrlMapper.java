@@ -71,7 +71,7 @@ public class LegacyUrlMapper {
             if (source.equals(target)) { selfLoops++; continue; }
             if (seenSources.contains(source)) { conflicts++; continue; }
             seenSources.add(source);
-            redirects.add(new MappedRedirect(0L, source, target, 301, true, List.of()));
+            redirects.add(new MappedRedirect(0L, source, target, true, List.of()));
             productCount++;
         }
 
@@ -84,7 +84,7 @@ public class LegacyUrlMapper {
             if (source.equals(target)) { selfLoops++; continue; }
             if (seenSources.contains(source)) { conflicts++; continue; }
             seenSources.add(source);
-            redirects.add(new MappedRedirect(0L, source, target, 301, true, List.of()));
+            redirects.add(new MappedRedirect(0L, source, target, true, List.of()));
             brandCount++;
         }
 
@@ -98,7 +98,7 @@ public class LegacyUrlMapper {
             if (source.equals(target)) { selfLoops++; continue; }
             if (seenSources.contains(source)) { conflicts++; continue; }
             seenSources.add(source);
-            redirects.add(new MappedRedirect(0L, source, target, 301, true, List.of()));
+            redirects.add(new MappedRedirect(0L, source, target, true, List.of()));
             categoryCount++;
         }
 

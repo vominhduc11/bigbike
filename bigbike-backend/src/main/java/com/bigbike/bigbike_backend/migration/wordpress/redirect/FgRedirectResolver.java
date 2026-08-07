@@ -77,7 +77,6 @@ public class FgRedirectResolver {
                     row.targetPostId(),
                     sourcePattern,
                     targetUrl,
-                    301,
                     true,
                     warnings));
         }

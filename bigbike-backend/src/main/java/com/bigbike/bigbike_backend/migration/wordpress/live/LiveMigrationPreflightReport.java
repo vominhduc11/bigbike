@@ -300,7 +300,6 @@ public record LiveMigrationPreflightReport(
     public record RedirectPlan(
             String sourcePath,
             String targetPath,
-            int statusCode,
             String sourceType,
             Long sourceId,
             String reason,
@@ -309,8 +308,6 @@ public record LiveMigrationPreflightReport(
             String existingRedirectId,
             String existingSourcePattern,
             String existingTargetUrl,
-            String existingRedirectType,
-            Integer existingStatusCode,
             Boolean existingEnabled,
             List<String> issues) {}
 

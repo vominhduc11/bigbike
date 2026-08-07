@@ -129,6 +129,37 @@ class RbacPermissionDependencyMigrationTest {
         }
     }
 
+    @Test
+    void v372SeedsSeoIndexOnlyForRolesThatStillExist() throws Exception {
+        try (Connection connection = postgres.createConnection("")) {
+            execute(connection, """
+                    INSERT INTO admin_roles (id) VALUES ('ADMIN'), ('SUPER_ADMIN');
+                    INSERT INTO role_permissions (role_id, permission)
+                    VALUES ('SUPER_ADMIN', '*');
+                    """);
+
+            migrate372(connection);
+
+            assertThat(hasGrant(connection, "ADMIN", "seo.index")).isTrue();
+            assertThat(roleExists(connection, "EDITOR")).isFalse();
+            assertThat(grantCount(connection, "SUPER_ADMIN")).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void v372SeedsSeoIndexForRetainedEditorRole() throws Exception {
+        try (Connection connection = postgres.createConnection("")) {
+            execute(connection, """
+                    INSERT INTO admin_roles (id) VALUES ('ADMIN'), ('EDITOR');
+                    """);
+
+            migrate372(connection);
+
+            assertThat(hasGrant(connection, "ADMIN", "seo.index")).isTrue();
+            assertThat(hasGrant(connection, "EDITOR", "seo.index")).isTrue();
+        }
+    }
+
     private void migrate365And366(Connection connection) {
         ScriptUtils.executeSqlScript(
                 connection,
@@ -140,6 +171,12 @@ class RbacPermissionDependencyMigrationTest {
         ScriptUtils.executeSqlScript(
                 connection,
                 new ClassPathResource("db/migration/V366__backfill_permission_dependencies.sql"));
+    }
+
+    private void migrate372(Connection connection) {
+        ScriptUtils.executeSqlScript(
+                connection,
+                new ClassPathResource("db/migration/V372__add_seo_index_permission.sql"));
     }
 
     private int dependencyViolationCount(Connection connection) throws Exception {

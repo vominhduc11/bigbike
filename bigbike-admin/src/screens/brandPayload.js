@@ -14,6 +14,9 @@ export function toBrandPayload(form) {
   payload.logo = {
     url: form.logoUrl.trim(),
     alt: form.logoAlt?.trim() || null,
+    width: Number.isFinite(form.logoWidth) ? form.logoWidth : null,
+    height: Number.isFinite(form.logoHeight) ? form.logoHeight : null,
+    mimeType: form.logoMimeType?.trim() || null,
   }
 
   payload.banner = {
@@ -31,6 +34,9 @@ export function toBrandPayload(form) {
       ? {
           url: form.seoOgImageUrl.trim(),
           alt: form.seoOgImageAlt.trim() || null,
+          width: Number.isFinite(form.seoOgImageWidth) ? form.seoOgImageWidth : null,
+          height: Number.isFinite(form.seoOgImageHeight) ? form.seoOgImageHeight : null,
+          mimeType: form.seoOgImageMimeType?.trim() || null,
         }
       : null,
   }

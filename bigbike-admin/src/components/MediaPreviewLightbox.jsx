@@ -20,6 +20,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
   useBodyScrollLock()
   const [loadedImageUrl, setLoadedImageUrl] = useState('')
   const [errorImageUrl, setErrorImageUrl] = useState('')
+  const [errorMediaUrl, setErrorMediaUrl] = useState('')
 
   // Resolve current item: prefer items[index] if both provided
   const current = (Array.isArray(items) && typeof index === 'number') ? items[index] : media
@@ -111,8 +112,14 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
           )
         )}
         {isVideo && current.publicUrl && (
-          <video src={current.publicUrl} controls
-            className="max-h-screen max-w-full rounded-xs bg-black" />
+          errorMediaUrl === current.publicUrl ? (
+            <div role="alert" className="rounded-md bg-surface px-6 py-8 text-center text-sm text-danger">
+              {t('media.mediaLoadError')}
+            </div>
+          ) : (
+            <video src={current.publicUrl} controls onError={() => setErrorMediaUrl(current.publicUrl)}
+              className="max-h-screen max-w-full rounded-xs bg-black" />
+          )
         )}
         {isAudio && current.publicUrl && (
             <div className="w-full max-w-md rounded-md bg-surface p-4 text-foreground sm:p-8">
@@ -123,11 +130,11 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
             <audio src={current.publicUrl} controls className="w-full" />
           </div>
         )}
-        {!isImage && !isVideo && !isAudio && (
+        {(!current.publicUrl || (!isImage && !isVideo && !isAudio)) && (
           <div className="bg-surface p-8 rounded-md text-foreground text-center">
             <FileText size={48} className="mx-auto mb-3" />
             <p className="m-0">{filename}</p>
-            <p className="mt-2 mb-0 text-sm text-muted-foreground">{current.mimeType ?? ''}</p>
+            <p className="mt-2 mb-0 text-sm text-muted-foreground">{current.publicUrl ? (current.mimeType || '—') : t('media.missingPublicUrl')}</p>
           </div>
         )}
       </div>

@@ -145,9 +145,9 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               onUpdate({
                 url,
                 alt: pickAlt(item.alt, media),
-                width: media.width ?? null,
-                height: media.height ?? null,
-                mimeType: media.mimeType ?? null,
+                width: media?.width ?? null,
+                height: media?.height ?? null,
+                mimeType: media?.mimeType ?? null,
               })
               setPickerOpen(false)
             }}
@@ -220,9 +220,9 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             onUpdate({
               url,
               alt: pickAlt(item.alt, media),
-              width: media.width ?? null,
-              height: media.height ?? null,
-              mimeType: media.mimeType ?? null,
+              width: media?.width ?? null,
+              height: media?.height ?? null,
+              mimeType: media?.mimeType ?? null,
             })
             setPickerOpen(false)
           }}
@@ -438,7 +438,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 aria-label={t('products.detail.video.titleLabel', { defaultValue: 'Tiêu đề video' })}
                 value={item.title || ''}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
-                onBlur={(e) => getMediaAltSync(index).flushAltSync(e.target.value)}
+                onBlur={(e) => getMediaAltSync(item._key ?? index).flushAltSync(e.target.value)}
                 disabled={disabled}
               />
               <Input
@@ -469,7 +469,8 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
         <VideoPickerModal
           recommend={IMAGE_RECO.video}
           onSelect={(url, media) => {
-            const title = getMediaAltSync(pickerOpenIndex).pickAlt(items[pickerOpenIndex]?.title, media)
+            const item = items[pickerOpenIndex]
+            const title = getMediaAltSync(item?._key ?? pickerOpenIndex).pickAlt(item?.title, media)
             updateItem(pickerOpenIndex, { url, type: 'upload', title })
             setPickerOpenIndex(null)
           }}

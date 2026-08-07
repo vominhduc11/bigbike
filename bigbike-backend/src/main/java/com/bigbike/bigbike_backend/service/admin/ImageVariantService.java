@@ -57,6 +57,16 @@ public class ImageVariantService {
      * @return map of variant name → public URL ({@code /media/...}), empty if not applicable
      */
     public Map<String, String> generateAndUpload(byte[] sourceBytes, String originalKey, String mimeType) {
+        return generateAndUpload(sourceBytes, originalKey, mimeType, minioProperties.getBucket());
+    }
+
+    /** Generate variants in the same bucket as an existing media record. */
+    public Map<String, String> generateAndUpload(
+            byte[] sourceBytes,
+            String originalKey,
+            String mimeType,
+            String bucket
+    ) {
         if (sourceBytes == null || sourceBytes.length == 0) return Map.of();
         if (mimeType == null || !mimeType.toLowerCase().startsWith("image/")) return Map.of();
         // Don't variant SVG/GIF — Thumbnailator can't handle them well, and animations would lose frames
@@ -96,7 +106,7 @@ public class ImageVariantService {
             try {
                 CompressionProfile profile = new CompressionProfile(targetWidth, targetWidth, JPEG_QUALITY, false);
                 byte[] resized = imageCompressionService.compress(sourceBytes, mimeType, profile);
-                uploadToMinio(variantKey, resized, outputMime);
+                uploadToMinio(bucket, variantKey, resized, outputMime);
                 result.put(name, MEDIA_PATH_PREFIX + variantKey);
             } catch (Exception e) {
                 log.warn("Failed to generate variant '{}' for {}: {}", name, originalKey, e.getMessage());
@@ -108,6 +118,11 @@ public class ImageVariantService {
 
     /** Removes all known variant objects from MinIO. Used by hard delete. */
     public void deleteVariants(String originalKey) {
+        deleteVariants(originalKey, minioProperties.getBucket());
+    }
+
+    /** Remove variants from the bucket recorded on the media row. */
+    public void deleteVariants(String originalKey, String bucket) {
         if (originalKey == null) return;
         // Try both extensions because we don't know what the variant format was at delete time
         for (String name : VARIANTS.keySet()) {
@@ -115,7 +130,7 @@ public class ImageVariantService {
                 String key = deriveVariantKey(originalKey, name, ext);
                 try {
                     minioClient.removeObject(RemoveObjectArgs.builder()
-                            .bucket(minioProperties.getBucket())
+                            .bucket(bucket)
                             .object(key)
                             .build());
                 } catch (Exception ignored) {
@@ -131,9 +146,9 @@ public class ImageVariantService {
         return originalKey.substring(0, dot) + "." + variantName + ext;
     }
 
-    private void uploadToMinio(String key, byte[] bytes, String contentType) throws Exception {
+    private void uploadToMinio(String bucket, String key, byte[] bytes, String contentType) throws Exception {
         minioClient.putObject(PutObjectArgs.builder()
-                .bucket(minioProperties.getBucket())
+                .bucket(bucket)
                 .object(key)
                 .stream(new ByteArrayInputStream(bytes), bytes.length, -1)
                 .contentType(contentType)

@@ -14,6 +14,9 @@ function formWithSeo(overrides = {}) {
     showOnHomepage: true,
     logoUrl: '',
     logoAlt: '',
+    logoWidth: null,
+    logoHeight: null,
+    logoMimeType: '',
     bannerUrl: '',
     bannerAlt: '',
     seoTitle: '',
@@ -21,6 +24,9 @@ function formWithSeo(overrides = {}) {
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
+    seoOgImageWidth: null,
+    seoOgImageHeight: null,
+    seoOgImageMimeType: '',
     translations: { en: { description: '', seoTitle: '', seoDescription: '' } },
     ...overrides,
   }
@@ -49,9 +55,15 @@ describe('BrandDetailScreen toPayload', () => {
     expect(toBrandPayload(formWithSeo({
       seoOgImageUrl: '/media/brands/ls2.jpg',
       seoOgImageAlt: 'Logo thương hiệu LS2',
+      seoOgImageWidth: 1200,
+      seoOgImageHeight: 630,
+      seoOgImageMimeType: 'image/jpeg',
     })).seo.ogImage).toEqual({
       url: '/media/brands/ls2.jpg',
       alt: 'Logo thương hiệu LS2',
+      width: 1200,
+      height: 630,
+      mimeType: 'image/jpeg',
     })
   })
 
@@ -75,16 +87,31 @@ describe('BrandDetailScreen toPayload', () => {
     const payload = toBrandPayload(formWithSeo({
       logoUrl: '/media/brands/ls2-logo.png',
       logoAlt: 'Logo thương hiệu LS2',
+      logoWidth: 800,
+      logoHeight: 400,
+      logoMimeType: 'image/png',
       bannerUrl: '/media/brands/ls2-banner.jpg',
       bannerAlt: 'Ảnh bìa thương hiệu LS2',
     }))
-    expect(payload.logo).toEqual({ url: '/media/brands/ls2-logo.png', alt: 'Logo thương hiệu LS2' })
+    expect(payload.logo).toEqual({
+      url: '/media/brands/ls2-logo.png',
+      alt: 'Logo thương hiệu LS2',
+      width: 800,
+      height: 400,
+      mimeType: 'image/png',
+    })
     expect(payload.banner).toEqual({ url: '/media/brands/ls2-banner.jpg', alt: 'Ảnh bìa thương hiệu LS2' })
   })
 
   it('gửi alt rỗng thành null khi admin xóa hết chữ alt', () => {
     const payload = toBrandPayload(formWithSeo({ logoUrl: '/media/brands/ls2-logo.png', logoAlt: '   ' }))
-    expect(payload.logo).toEqual({ url: '/media/brands/ls2-logo.png', alt: null })
+    expect(payload.logo).toEqual({
+      url: '/media/brands/ls2-logo.png',
+      alt: null,
+      width: null,
+      height: null,
+      mimeType: null,
+    })
   })
 
   it('luôn gửi mô tả kể cả khi rỗng để admin xóa được mô tả cũ', () => {

@@ -11,15 +11,16 @@ public final class RedirectSpecification {
 
     private RedirectSpecification() {}
 
-    public static Specification<RedirectEntity> withFilters(String q, Boolean enabled, Integer statusCode) {
+    public static Specification<RedirectEntity> withFilters(String q, Boolean enabled) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (q != null && !q.isBlank()) {
-                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                String pattern = "%" + escapeLikePattern(q.trim().toLowerCase(Locale.ROOT)) + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("sourcePattern")), pattern),
-                        cb.like(cb.lower(root.get("targetUrl")), pattern)
+                        cb.like(cb.lower(root.get("sourcePattern")), pattern, '!'),
+                        cb.like(cb.lower(root.get("targetUrl")), pattern, '!'),
+                        cb.like(cb.lower(root.get("notes")), pattern, '!')
                 ));
             }
 
@@ -27,11 +28,14 @@ public final class RedirectSpecification {
                 predicates.add(cb.equal(root.get("enabled"), enabled));
             }
 
-            if (statusCode != null) {
-                predicates.add(cb.equal(root.get("statusCode"), statusCode));
-            }
-
             return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private static String escapeLikePattern(String value) {
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
     }
 }

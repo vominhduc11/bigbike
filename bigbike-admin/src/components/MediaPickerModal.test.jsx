@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaPickerModal } from './MediaPickerModal'
@@ -144,7 +144,7 @@ describe('MediaPickerModal', () => {
     mocks.hasPermission.mockReturnValue(false)
     renderPicker()
 
-    expect(await screen.findByText('Không thể mở thư viện ảnh/video')).toBeInTheDocument()
+    expect(await screen.findByText('media.permissionDeniedTitle')).toBeInTheDocument()
     expect(mocks.fetchMedia).not.toHaveBeenCalled()
     expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
     expect(mocks.fetchMediaTags).not.toHaveBeenCalled()
@@ -183,8 +183,21 @@ describe('MediaPickerModal', () => {
 
     expect(onSelect).toHaveBeenCalledWith(
       uploadedMedia.publicUrl,
-      expect.objectContaining({ id: uploadedMedia.id, isNewUpload: true }),
+      expect.objectContaining({ id: uploadedMedia.id }),
     )
+  })
+
+  it('không che mất cảnh báo file sai khi một lượt tải có cả file hợp lệ', async () => {
+    renderPicker()
+    await screen.findByTitle('helmet-one.jpg')
+    const fileInput = document.querySelector('input[type="file"]')
+    const valid = new File(['jpeg-content'], 'anh-hop-le.jpg', { type: 'image/jpeg' })
+    const invalid = new File(['text-content'], 'ghi-chu.txt', { type: 'text/plain' })
+
+    fireEvent.change(fileInput, { target: { files: [invalid, valid] } })
+
+    expect(await screen.findByText('media.unsupportedType')).toBeInTheDocument()
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function)))
   })
 
   it('giữ nguyên chữ ký callback chọn ảnh', async () => {

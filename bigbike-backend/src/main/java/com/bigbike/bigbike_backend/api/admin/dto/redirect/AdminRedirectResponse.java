@@ -7,8 +7,6 @@ public record AdminRedirectResponse(
         UUID id,
         String sourcePattern,
         String targetUrl,
-        String redirectType,
-        int statusCode,
         boolean enabled,
         long hitCount,
         Instant lastHitAt,

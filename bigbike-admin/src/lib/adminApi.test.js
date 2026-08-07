@@ -61,4 +61,24 @@ describe('mapValidationErrors', () => {
       targetUrl: 'Địa chỉ mới chưa đúng. Hãy nhập đường dẫn trong website, bắt đầu bằng dấu "/" (ví dụ /sp/).',
     })
   })
+
+  it('dịch lỗi địa chỉ nguồn sai định dạng sang tiếng Việt', () => {
+    const error = new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
+      { field: 'sourcePattern', code: 'INVALID_SOURCE', message: 'Source must be an internal path.' },
+    ])
+
+    expect(mapValidationErrors(error)).toEqual({
+      sourcePattern: 'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.',
+    })
+  })
+
+  it('giải thích rõ cấu hình kiểu chuyển hướng cũ không còn được hỗ trợ', () => {
+    const error = new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
+      { field: 'statusCode', code: 'UNSUPPORTED', message: 'Managed redirects always use HTTP 301.' },
+    ])
+
+    expect(mapValidationErrors(error)).toEqual({
+      statusCode: 'Hệ thống chỉ hỗ trợ chuyển hướng vĩnh viễn 301; hãy bỏ cấu hình kiểu chuyển hướng cũ.',
+    })
+  })
 })

@@ -13,7 +13,8 @@
 -- token trong enum AdminRole cho bộ nhập WordPress). Không hồi sinh role đó — cấp permission mới
 -- trên các role đang sống.
 
-INSERT INTO role_permissions (role_id, permission) VALUES
-('ADMIN', 'seo.index'),
-('EDITOR', 'seo.index')
+INSERT INTO role_permissions (role_id, permission)
+SELECT id, 'seo.index'
+FROM admin_roles
+WHERE id IN ('ADMIN', 'EDITOR')
 ON CONFLICT (role_id, permission) DO NOTHING;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Trash2, Upload, X as XIcon } from 'lucide-react'
+import { RefreshCw, Trash2, Upload, X as XIcon } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/layout/Modal'
+import { ScreenHeader } from '@/components/layout'
 import {
   ALLOWED_MIME,
   MAX_FILE_SIZE,
@@ -48,12 +49,20 @@ import {
 } from './media-library/constants'
 import { UploadQueue } from './media-library/UploadQueue'
 
+function mediaActionError(t, error, fallback) {
+  if (error?.status === 403) return t('media.actionForbidden')
+  if (error?.status === 404) return t('media.actionNotFound')
+  if (error?.status === 409) return error.message || t('media.actionConflict')
+  if (error?.status === 0 || error?.code === 'NETWORK_ERROR') return t('media.actionNetworkError')
+  return error?.message || fallback
+}
+
 export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const { t } = useTranslation()
   const [query, setQuery] = useUrlSyncedState(DEFAULT_QUERY, {
     deserialize: { page: Number, pageSize: Number },
   })
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, error: '', refreshError: '' })
   const [stats, setStats] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [uploadQueue, setUploadQueue] = useState([]) // {id, name, progress, status, error}
@@ -63,6 +72,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false)
   const [folders, setFolders] = useState([])
+  const [dataRevision, setDataRevision] = useState(0)
 
   // Sidebar refresh signal — bumped when folder list might have changed (after bulk move, etc.)
   const [folderRefreshKey, setFolderRefreshKey] = useState(0)
@@ -85,17 +95,41 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     setQuery((p) => ({ ...p, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // URL back/forward, reset filter và nút bỏ chip đều có thể đổi query.search
+  // bên ngoài ô nhập. Đồng bộ lại để từ khoá cũ không tự xuất hiện trở lại sau debounce.
+  useEffect(() => {
+    setSearchInput(query.search ?? '')
+  }, [query.search])
+
   const apiQuery = query
 
   useEffect(() => {
     let active = true
-    setState((p) => ({ ...p, status: 'loading' }))
+    setState((p) => ({
+      ...p,
+      status: p.items.length > 0 ? 'refreshing' : 'loading',
+      error: '',
+      refreshError: '',
+    }))
     setSelectedIds(new Set())
     fetchMedia(apiQuery)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
+      .then((r) => {
+        if (!active) return
+        const totalPages = Math.max(1, Number(r.pagination?.totalPages) || 1)
+        if (apiQuery.page > totalPages) {
+          setQuery((p) => ({ ...p, page: totalPages }))
+          return
+        }
+        setState({ status: 'success', items: r.items, pagination: r.pagination, error: '', refreshError: '' })
+      })
+      .catch((e) => {
+        if (!active) return
+        setState((p) => p.items.length > 0
+          ? { ...p, status: 'success', refreshError: e.message || 'refresh-failed', error: '' }
+          : { status: 'error', items: [], pagination: null, error: e.message || '', refreshError: '' })
+      })
     return () => { active = false }
-  }, [apiQuery])
+  }, [apiQuery, dataRevision, setQuery])
 
   useEffect(() => {
     let active = true
@@ -104,7 +138,12 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
     return () => { active = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.folderFilter, apiQuery.tag])
+  }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.folderFilter, apiQuery.tag, dataRevision, t])
+
+  function refreshData({ foldersChanged = false } = {}) {
+    setDataRevision((revision) => revision + 1)
+    if (foldersChanged) setFolderRefreshKey((key) => key + 1)
+  }
 
   function updateQuery(partial, options = { resetPage: true }) {
     setQuery((p) => {
@@ -158,7 +197,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       }
     }
     // Refresh list once everyone done
-    setQuery((p) => ({ ...p }))
+    refreshData({ foldersChanged: true })
     // Báo đúng số thành công / lỗi thay vì luôn "hoàn tất N" kể cả khi có lỗi (P1-12).
     if (failed === 0) {
       toast.success(t('media.uploadComplete', { count: succeeded }))
@@ -180,54 +219,35 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   // panel. Otherwise dragging a file over the panel would trigger an upload overlay.
   const { isDragging } = useDragDropUpload(dropZoneRef, uploadFiles)
 
-  // Xoá item khỏi danh sách hiển thị nhưng GIỮ lại snapshot {item, index}
-  // để có thể chèn lại đúng vị trí nếu server từ chối (rollback optimistic, tiêu chí 8.4).
-  function removeItemLocally(mediaId) {
-    let snapshot = null
-    setState((p) => {
-      const index = p.items.findIndex((m) => m.id === mediaId)
-      if (index === -1) return p
-      snapshot = { item: p.items[index], index }
-      return { ...p, items: p.items.filter((m) => m.id !== mediaId) }
-    })
-    return snapshot
-  }
-
-  function restoreItemLocally(snapshot) {
-    if (!snapshot) return
-    setState((p) => {
-      if (p.items.some((m) => m.id === snapshot.item.id)) return p
-      const items = [...p.items]
-      items.splice(Math.min(snapshot.index, items.length), 0, snapshot.item)
-      return { ...p, items }
-    })
-  }
-
   // ── Single delete / restore / hard delete ────────────────────
   async function handleDelete(mediaId) {
     const confirmed = await showConfirm(t('media.deleteConfirm'), t('media.deleteConfirmTitle'))
-    if (!confirmed) return
+    if (!confirmed) return false
     setDeleting(mediaId)
-    const snapshot = removeItemLocally(mediaId)
     try {
       await deleteMedia(mediaId)
       toast.success(t('media.deleteSuccess'))
+      refreshData({ foldersChanged: true })
+      return true
     } catch (e) {
-      restoreItemLocally(snapshot)
-      toast.error(e.message || t('media.deleteError'))
+      toast.error(mediaActionError(t, e, t('media.deleteError')))
+      refreshData({ foldersChanged: true })
+      return false
     }
     finally { setDeleting(null) }
   }
 
   async function handleRestore(mediaId) {
     setDeleting(mediaId)
-    const snapshot = removeItemLocally(mediaId)
     try {
       await restoreMedia(mediaId)
       toast.success(t('media.restoreSuccess'))
+      refreshData({ foldersChanged: true })
+      return true
     } catch (e) {
-      restoreItemLocally(snapshot)
-      toast.error(e.message || t('media.deleteError'))
+      toast.error(mediaActionError(t, e, t('media.deleteError')))
+      refreshData({ foldersChanged: true })
+      return false
     }
     finally { setDeleting(null) }
   }
@@ -236,32 +256,28 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     // Cảnh báo mạnh hơn cho hành động không thể hoàn tác: cho admin thấy số nơi
     // đang dùng file trước khi xoá vĩnh viễn khỏi kho (tiêu chí 7.6).
     let refCount = null
-    let refCheckFailed = false
     try { refCount = (await fetchMediaReferences(media.id)).length }
-    catch { refCheckFailed = true } // không lấy được tham chiếu — cảnh báo admin chưa kiểm tra được thay vì lặng lẽ cho xoá
-    const name = (media.filename ?? '').split('/').pop()
-    let message
-    if (refCount && refCount > 0) {
-      message = t('media.hardDeleteConfirmInUse', { name, count: refCount,
-        defaultValue: `Tệp "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm ảnh hưởng các nơi đang dùng. Tiếp tục?` })
-    } else if (refCheckFailed) {
-      message = t('media.hardDeleteConfirmUnverified', { name,
-        defaultValue: `Không kiểm tra được tệp "${name}" có đang được dùng ở đâu không. Xoá vĩnh viễn KHÔNG thể hoàn tác và có thể làm ảnh hưởng nơi đang dùng. Tiếp tục?` })
-    } else {
-      message = t('media.hardDeleteConfirm', { name })
+    catch {
+      toast.error(t('media.hardDeleteReferenceCheckError'))
+      return false
     }
-    const confirmed = await showConfirm(message, t('media.hardDeleteConfirmTitle'))
-    if (!confirmed) return
+    const name = (media.filename ?? '').split('/').pop()
+    if (refCount && refCount > 0) {
+      toast.error(t('media.hardDeleteBlockedInUse', { name, count: refCount }))
+      return false
+    }
+    const confirmed = await showConfirm(t('media.hardDeleteConfirm', { name }), t('media.hardDeleteConfirmTitle'))
+    if (!confirmed) return false
     setDeleting(media.id)
-    const snapshot = removeItemLocally(media.id)
     try {
       await hardDeleteMedia(media.id)
       toast.success(t('media.hardDeleteSuccess'))
+      refreshData({ foldersChanged: true })
+      return true
     } catch (e) {
-      restoreItemLocally(snapshot)
-      // Server thường chặn xoá vĩnh viễn khi file còn được tham chiếu — nêu rõ lý do
-      // thay vì lỗi xoá chung chung, để admin biết cần gỡ file khỏi nơi đang dùng trước.
-      toast.error(e.message || t('media.hardDeleteError', { defaultValue: 'Không xoá được. Tệp có thể đang được dùng ở nơi khác — hãy gỡ khỏi các nơi đang dùng rồi thử lại.' }))
+      toast.error(mediaActionError(t, e, t('media.hardDeleteError')))
+      refreshData({ foldersChanged: true })
+      return false
     }
     finally { setDeleting(null) }
   }
@@ -277,7 +293,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       const affected = await bulkDeleteMedia([...selectedIds])
       setSelectedIds(new Set())
-      setQuery((p) => ({ ...p }))
+      refreshData({ foldersChanged: true })
       toast.success(t('media.bulkDeleteSuccess', { count: affected }))
     } catch (e) { toast.error(e.message || t('media.deleteError')) }
     finally { setBulkBusy(false) }
@@ -289,7 +305,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       const affected = await bulkRestoreMedia([...selectedIds])
       setSelectedIds(new Set())
-      setQuery((p) => ({ ...p }))
+      refreshData({ foldersChanged: true })
       toast.success(t('media.bulkRestoreSuccess', { count: affected }))
     } catch (e) { toast.error(e.message || t('media.deleteError')) }
     finally { setBulkBusy(false) }
@@ -302,8 +318,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       const affected = await bulkMoveMedia([...selectedIds], folderId || null)
       setSelectedIds(new Set())
       setBulkMoveOpen(false)
-      setQuery((p) => ({ ...p }))
-      setFolderRefreshKey((k) => k + 1)
+      refreshData({ foldersChanged: true })
       toast.success(t('media.bulkMoveSuccess', { count: affected }))
     } catch (e) { toast.error(e.message || t('media.deleteError')) }
     finally { setBulkBusy(false) }
@@ -328,6 +343,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const activeChips = buildActiveChips(query, t, folders, (key, val) => updateQuery({ [key]: val }))
   const allOnPageSelected = state.items.length > 0 && state.items.every((m) => selectedIds.has(m.id))
   const isTrash = query.status === 'DELETED'
+  const isRefreshing = state.status === 'refreshing'
 
   // Keyboard navigation: arrow keys to move focus, Space to select, Enter to open detail panel, Delete to delete
   const { focusIndex, setFocusIndex } = useKeyboardNav({
@@ -349,11 +365,12 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     selected: selectedIds.has(media.id),
     focused: focusIndex === idx,
     deleting: deleting === media.id,
-    onToggleSelect: canUpdate ? () => toggleSelected(media.id) : null,
+    onToggleSelect: canUpdate && !isRefreshing ? () => toggleSelected(media.id) : null,
     onPreview: () => { setPreviewIndex(idx); setFocusIndex(idx) },
-    onEdit: canUpdate && !isTrash ? () => setEditingMedia(media) : null,
-    onDelete: canUpdate && !isTrash ? () => handleDelete(media.id) : null,
-    onRestore: canUpdate && isTrash ? () => handleRestore(media.id) : null,
+    onEdit: canUpdate && !isRefreshing && !isTrash ? () => setEditingMedia(media) : null,
+    onViewDetail: !isRefreshing && (isTrash || !canUpdate) ? () => setEditingMedia(media) : null,
+    onDelete: canUpdate && !isRefreshing && !isTrash ? () => handleDelete(media.id) : null,
+    onRestore: canUpdate && !isRefreshing && isTrash ? () => handleRestore(media.id) : null,
   })
 
   const panelOpen = !!editingMedia
@@ -370,17 +387,27 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         </div>
       )}
 
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('media.eyebrow')}</p>
-          <h1>{t('media.title')}</h1>
-          <p className="bb-muted">{t('media.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('media.eyebrow')}
+        title={t('media.title')}
+        description={t('media.description')}
+        actions={(
+          <>
+          <Button
+            type="button"
+            variant="secondary"
+            className="min-h-11"
+            disabled={isRefreshing}
+            onClick={() => refreshData()}
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
+            {t('common.refresh')}
+          </Button>
           <Button variant="unstyled"
             type="button"
             className={isTrash ? 'bb-btn bb-btn-primary' : 'bb-btn bb-btn-secondary'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
+            disabled={isRefreshing}
             title={t('media.trashShortcut')}
           >
             <Trash2 size={14} />
@@ -396,10 +423,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
               </Button>
             </>
           )}
-        </div>
-      </div>
+          </>
+        )}
+      />
 
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? <ReadOnlyBanner warning={t('media.readOnly')} /> : null}
 
       {/* Upload queue */}
       {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} />}
@@ -494,6 +522,20 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         </div>
       </div>
 
+      {isRefreshing ? (
+        <p className="mb-3 text-sm text-muted-foreground" role="status" aria-live="polite">
+          {t('media.refreshing')}
+        </p>
+      ) : null}
+      {state.refreshError ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger" role="alert">
+          <span>{t('media.refreshError')}</span>
+          <Button type="button" variant="secondary" size="sm" onClick={() => refreshData()}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      ) : null}
+
       {/* Bulk action bar */}
       {canUpdate && selectedIds.size > 0 && (
         <BulkActionBar
@@ -512,11 +554,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {/* Bulk move dialog */}
       <Modal
         open={bulkMoveOpen}
-        onClose={() => setBulkMoveOpen(false)}
+        onClose={() => { if (!bulkBusy) setBulkMoveOpen(false) }}
         title={t('media.bulkMoveTitle', { count: selectedIds.size })}
         closeLabel={t('common.close')}
         actions={
-          <Button variant="outline" onClick={() => setBulkMoveOpen(false)}>
+          <Button variant="outline" onClick={() => setBulkMoveOpen(false)} disabled={bulkBusy}>
             {t('common.cancel')}
           </Button>
         }
@@ -548,7 +590,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {/* Grid / List */}
       {state.status === 'loading' && <MediaGridSkeleton count={Math.min(query.pageSize, 24)} />}
       {state.status === 'error' && <StatePanel tone="danger" title={t('media.loadError')} description={state.error}
-        actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
+        actionLabel={t('common.retry')} onAction={() => refreshData()} />}
       {/* T2 — chỉ hiện CTA "Xoá bộ lọc" khi thực sự có bộ lọc đang áp dụng; kho
           thật sự trống (chưa từng upload) thì mời admin tải file lên thay vì gợi
           ý xoá một bộ lọc không tồn tại. */}
@@ -563,16 +605,16 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         )
       )}
 
-      {state.status === 'success' && state.items.length > 0 && (
+      {(state.status === 'success' || state.status === 'refreshing') && state.items.length > 0 && (
         <>
-          <div className="medialib-grid" ref={gridRef}>
+          <div className="medialib-grid" ref={gridRef} aria-busy={isRefreshing || undefined}>
             {state.items.map((m, i) => <MediaCard key={m.id} {...cardProps(m, i)} />)}
           </div>
 
           {/* Số mỗi trang chỉ còn 1 chỗ duy nhất — bộ chọn ở thanh công cụ phía trên
               (PageSizeSelect). Bỏ bản lặp cạnh phân trang để tránh 2 control cùng chức năng. */}
           <div className="medialib-pagination-row">
-            <PaginationControls pagination={state.pagination} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
+            <PaginationControls pagination={state.pagination} disabled={isRefreshing} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
           </div>
         </>
       )}
@@ -584,6 +626,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           media={editingMedia}
           canUpdate={canUpdate}
           canHardDelete={canHardDelete}
+          actionBusy={deleting === editingMedia.id}
           folders={folders}
           onSaved={handleMediaSaved}
           onClose={() => setEditingMedia(null)}
@@ -591,9 +634,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             const idx = state.items.findIndex((m) => m.id === editingMedia.id)
             if (idx >= 0) setPreviewIndex(idx)
           }}
-          onDelete={async () => { await handleDelete(editingMedia.id); setEditingMedia(null) }}
-          onRestore={async () => { await handleRestore(editingMedia.id); setEditingMedia(null) }}
-          onHardDelete={async () => { await handleHardDelete(editingMedia); setEditingMedia(null) }}
+          onDelete={async () => { if (await handleDelete(editingMedia.id)) setEditingMedia(null) }}
+          onRestore={async () => { if (await handleRestore(editingMedia.id)) setEditingMedia(null) }}
+          onHardDelete={async () => { if (await handleHardDelete(editingMedia)) setEditingMedia(null) }}
         />
       )}
       {previewIndex !== null && state.items[previewIndex] && (

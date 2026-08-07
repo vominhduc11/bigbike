@@ -12,26 +12,26 @@ class LiveMigrationContentRewriterTest {
 
     private final LiveMigrationContentRewriter rewriter = new LiveMigrationContentRewriter(List.of(
             new RedirectPlan(
-                    "/sp/mu-cu.html", "/product/mu-moi/", 301, "PRODUCT", 7L,
+                    "/sp/mu-cu.html", "/product/mu-moi/", "PRODUCT", 7L,
                     "legacy product", "EXACT", Action.INSERT,
-                    null, null, null, null, null, null, List.of()),
+                    null, null, null, null, List.of()),
             new RedirectPlan(
-                    "/tin-tuc/bai-cu.html", "/tin-tuc/bai-moi/", 301, "ARTICLE", 8L,
+                    "/tin-tuc/bai-cu.html", "/tin-tuc/bai-moi/", "ARTICLE", 8L,
                     "legacy article", "EXACT", Action.INSERT,
-                    null, null, null, null, null, null, List.of()),
+                    null, null, null, null, List.of()),
             new RedirectPlan(
-                    "/sp/redirect-cu.html", "/product/redirect-moi/", 301, "FG_REDIRECT", 9L,
+                    "/sp/redirect-cu.html", "/product/redirect-moi/", "FG_REDIRECT", 9L,
                     "reviewed redirect repair", "EXACT", Action.UPDATE_REDIRECT_TARGET,
                     "11111111-1111-1111-1111-111111111111", "/sp/redirect-cu.html",
-                    "/product/missing", "PERMANENT", 301, true, List.of()),
+                    "/product/missing", true, List.of()),
             new RedirectPlan(
-                    "/sp/khong-co-dich.html", null, 301, "PRODUCT", 10L,
+                    "/sp/khong-co-dich.html", null, "PRODUCT", 10L,
                     "owner acknowledged", "MANUAL_REVIEW", Action.ACKNOWLEDGED_NO_SAFE_TARGET,
-                    null, null, null, null, null, null, List.of("No safe target")),
+                    null, null, null, null, List.of("No safe target")),
             new RedirectPlan(
-                    "/tin-tuc/content-only.html", "/tin-tuc/", 301,
+                    "/tin-tuc/content-only.html", "/tin-tuc/",
                     "TARGET_CONTENT_REFERENCE", 0L, "content-only", "SAFE_NEWS_LISTING_FALLBACK",
-                    Action.REWRITE_URLS_ONLY, null, null, null, null, null, null, List.of())));
+                    Action.REWRITE_URLS_ONLY, null, null, null, null, List.of())));
 
     @Test
     void rewritesOnlyVerifiedMediaAndMappedInternalLinksAndKeepsQuery() {

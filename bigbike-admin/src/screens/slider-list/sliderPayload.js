@@ -15,12 +15,21 @@ export function buildSliderPayload(form) {
     productId: form.productId.trim() || undefined,
   }
   if (form.desktopImageUrl.trim()) {
-    payload.desktopImage = { url: form.desktopImageUrl.trim() }
+    payload.desktopImage = {
+      url: form.desktopImageUrl.trim(),
+      alt: form.desktopImageAlt?.trim() || null,
+      width: Number.isFinite(form.desktopImageWidth) ? form.desktopImageWidth : null,
+      height: Number.isFinite(form.desktopImageHeight) ? form.desktopImageHeight : null,
+      mimeType: form.desktopImageMimeType?.trim() || null,
+    }
   }
   payload.mobileImage = form.mobileImageUrl.trim()
     ? {
         url: form.mobileImageUrl.trim(),
         alt: form.mobileImageAlt.trim() || null,
+        width: Number.isFinite(form.mobileImageWidth) ? form.mobileImageWidth : null,
+        height: Number.isFinite(form.mobileImageHeight) ? form.mobileImageHeight : null,
+        mimeType: form.mobileImageMimeType?.trim() || null,
       }
     : null
   return payload

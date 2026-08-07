@@ -17,12 +17,18 @@ export function buildEmptyForm() {
     showOnHomepage: false,
     imageUrl: '',
     imageAlt: '',
+    imageWidth: null,
+    imageHeight: null,
+    imageMimeType: '',
     bannerImageUrl: '',
     bannerImageAlt: '',
     mobileBannerImageUrl: '',
     mobileBannerImageAlt: '',
     heroImageUrl: '',
     heroImageAlt: '',
+    heroImageWidth: null,
+    heroImageHeight: null,
+    heroImageMimeType: '',
     menuIconUrl: '',
     seoTitle: '',
     seoDescription: '',
@@ -30,6 +36,9 @@ export function buildEmptyForm() {
     seoNoIndexEn: false,
     seoOgImageUrl: '',
     seoOgImageAlt: '',
+    seoOgImageWidth: null,
+    seoOgImageHeight: null,
+    seoOgImageMimeType: '',
     translations: { en: { slug: '', name: '', description: '', introContent: '', seoTitle: '', seoDescription: '' } },
   }
 }
@@ -43,15 +52,21 @@ export function buildFormFromItem(item) {
     introContent: item.introContent || '',
     parentId: item.parentId || '',
     showOnHomepage: Boolean(item.showOnHomepage),
-    imageUrl: item.image?.url || '',
+    imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
-    bannerImageUrl: item.bannerImage?.url || '',
+    imageWidth: item.image?.width ?? null,
+    imageHeight: item.image?.height ?? null,
+    imageMimeType: item.image?.mimeType || '',
+    bannerImageUrl: item.bannerImage?.rawUrl || item.bannerImage?.url || '',
     bannerImageAlt: item.bannerImage?.alt || '',
-    mobileBannerImageUrl: item.mobileBannerImage?.url || '',
+    mobileBannerImageUrl: item.mobileBannerImage?.rawUrl || item.mobileBannerImage?.url || '',
     mobileBannerImageAlt: item.mobileBannerImage?.alt || '',
     // Ảnh minh hoạ hero (WP ACF "image_left") nằm ở field `icon` của response, không phải `image`.
-    heroImageUrl: item.icon?.url || '',
+    heroImageUrl: item.icon?.rawUrl || item.icon?.url || '',
     heroImageAlt: item.icon?.alt || '',
+    heroImageWidth: item.icon?.width ?? null,
+    heroImageHeight: item.icon?.height ?? null,
+    heroImageMimeType: item.icon?.mimeType || '',
     menuIconUrl: item.menuIconUrl || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
@@ -59,6 +74,9 @@ export function buildFormFromItem(item) {
     seoNoIndexEn: Boolean(item.seo?.noIndexEn),
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
+    seoOgImageWidth: item.seo?.ogImage?.width ?? null,
+    seoOgImageHeight: item.seo?.ogImage?.height ?? null,
+    seoOgImageMimeType: item.seo?.ogImage?.mimeType || '',
     translations: {
       en: {
         // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
@@ -129,7 +147,15 @@ export function toPayload(form, { isCreate = false } = {}) {
   if (!isCreate || form.showOnHomepage) payload.showOnHomepage = Boolean(form.showOnHomepage)
 
   const imageUrl = form.imageUrl.trim()
-  payload.image = imageUrl ? { url: imageUrl, alt: String(form.imageAlt ?? '').trim() || null } : { url: null }
+  payload.image = imageUrl
+    ? {
+        url: imageUrl,
+        alt: String(form.imageAlt ?? '').trim() || null,
+        width: Number.isFinite(form.imageWidth) ? form.imageWidth : null,
+        height: Number.isFinite(form.imageHeight) ? form.imageHeight : null,
+        mimeType: form.imageMimeType?.trim() || null,
+      }
+    : { url: null }
 
   const bannerImageUrl = form.bannerImageUrl.trim()
   payload.banner = bannerImageUrl ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null } : { url: null }
@@ -142,7 +168,15 @@ export function toPayload(form, { isCreate = false } = {}) {
   // Ảnh minh hoạ hero (WP ACF "image_left") → backend field `icon` (icon_url). Đây là ảnh
   // web hiển thị ở hero trang danh mục; KHÁC `image` (thumbnail lưới) và `menuIcon` (icon menu).
   const heroImageUrl = form.heroImageUrl.trim()
-  payload.icon = heroImageUrl ? { url: heroImageUrl, alt: String(form.heroImageAlt ?? '').trim() || null } : { url: null }
+  payload.icon = heroImageUrl
+    ? {
+        url: heroImageUrl,
+        alt: String(form.heroImageAlt ?? '').trim() || null,
+        width: Number.isFinite(form.heroImageWidth) ? form.heroImageWidth : null,
+        height: Number.isFinite(form.heroImageHeight) ? form.heroImageHeight : null,
+        mimeType: form.heroImageMimeType?.trim() || null,
+      }
+    : { url: null }
 
   // Icon line đơn sắc cho menu header + bộ lọc danh mục (lưu vào menu_icon_url).
   const menuIconUrl = form.menuIconUrl.trim()
@@ -158,7 +192,13 @@ export function toPayload(form, { isCreate = false } = {}) {
     noIndex: Boolean(form.seoNoIndex),
     noIndexEn: Boolean(form.seoNoIndexEn),
     ogImage: seoOgImageUrl
-      ? { url: seoOgImageUrl, alt: String(form.seoOgImageAlt ?? '').trim() || null }
+      ? {
+          url: seoOgImageUrl,
+          alt: String(form.seoOgImageAlt ?? '').trim() || null,
+          width: Number.isFinite(form.seoOgImageWidth) ? form.seoOgImageWidth : null,
+          height: Number.isFinite(form.seoOgImageHeight) ? form.seoOgImageHeight : null,
+          mimeType: form.seoOgImageMimeType?.trim() || null,
+        }
       : null,
   }
 

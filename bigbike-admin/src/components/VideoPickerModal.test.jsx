@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoPickerModal } from './VideoPickerModal'
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   fetchMediaTags: vi.fn(),
   uploadMedia: vi.fn(),
   hasPermission: vi.fn(),
+  showConfirm: vi.fn(),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -22,121 +23,131 @@ vi.mock('../lib/adminApi', () => ({
   uploadMedia: mocks.uploadMedia,
 }))
 
-vi.mock('../lib/auth', () => ({
-  useHasPermission: () => mocks.hasPermission,
-}))
-
-vi.mock('../lib/useDebounce', () => ({
-  useDebounce: (value) => value,
-}))
-
+vi.mock('../lib/auth', () => ({ useHasPermission: () => mocks.hasPermission }))
+vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
+vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('../lib/useMediaDimensions', () => ({
-  useMediaValidation: () => ({
-    blocked: false,
-    status: 'idle',
-    reasons: [],
-    width: null,
-    height: null,
-  }),
+  useMediaValidation: () => ({ blocked: false, status: 'idle', reasons: [], width: null, height: null }),
 }))
-
-vi.mock('./FilterSelect', () => ({
-  FilterSelect: () => null,
-}))
-
 vi.mock('./MediaRequirementHint', () => ({
   MediaRequirementHint: () => null,
   MediaValidationError: () => null,
 }))
-
+vi.mock('./FilterSelect', () => ({ FilterSelect: () => null }))
 vi.mock('./media-picker/useModalBehavior', () => ({
   useModalFocusTrap: () => {},
   useBodyScrollLock: () => {},
 }))
 
-const existingVideo = {
+const video = {
   id: 'video-1',
-  filename: 'videos/existing.mp4',
-  publicUrl: '/media/videos/existing.mp4',
+  filename: 'catalog/gioi-thieu.mp4',
+  publicUrl: '/media/catalog/gioi-thieu.mp4',
   mimeType: 'video/mp4',
-  fileSize: 1024,
+  fileSize: 1_000_000,
 }
 
-function mediaResponse(items) {
-  return {
-    items,
-    pagination: { page: 1, pageSize: 20, totalItems: items.length, totalPages: 1 },
-  }
+function response(items) {
+  return { items, pagination: { page: 1, pageSize: 20, totalItems: items.length, totalPages: 1 } }
+}
+
+function renderPicker(overrides = {}) {
+  const props = { onSelect: vi.fn(), onClose: vi.fn(), ...overrides }
+  render(<VideoPickerModal {...props} />)
+  return props
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.hasPermission.mockReturnValue(true)
+  mocks.fetchMedia.mockResolvedValue(response([video]))
   mocks.fetchMediaFolders.mockResolvedValue([])
   mocks.fetchMediaTags.mockResolvedValue([])
-  mocks.fetchMedia.mockResolvedValue(mediaResponse([existingVideo]))
+  mocks.showConfirm.mockResolvedValue(true)
+  mocks.uploadMedia.mockImplementation(async (_file, _altText, onProgress) => {
+    onProgress?.(100)
+    return { item: { ...video, id: 'video-uploaded', publicUrl: '/media/catalog/video-moi.mp4' } }
+  })
 })
 
 describe('VideoPickerModal', () => {
-  it('không gọi Media API khi thiếu media.read', async () => {
+  it('không gọi API và giải thích rõ khi thiếu quyền xem media', async () => {
     mocks.hasPermission.mockReturnValue(false)
-    render(<VideoPickerModal onSelect={vi.fn()} onClose={vi.fn()} />)
+    renderPicker()
 
-    expect(await screen.findByText('Không thể mở thư viện video')).toBeInTheDocument()
+    expect(await screen.findByText('media.videoPermissionDeniedTitle')).toBeInTheDocument()
     expect(mocks.fetchMedia).not.toHaveBeenCalled()
     expect(mocks.fetchMediaFolders).not.toHaveBeenCalled()
     expect(mocks.fetchMediaTags).not.toHaveBeenCalled()
   })
 
-  it('filters the media library to videos and selects an existing item', async () => {
+  it('chỉ tải danh sách video và không cho chọn tệp legacy thiếu URL', async () => {
+    mocks.fetchMedia.mockResolvedValue(response([{ ...video, publicUrl: null }]))
+    renderPicker()
+
+    const item = await screen.findByTitle('gioi-thieu.mp4')
+    expect(item).toBeDisabled()
+    expect(screen.getByRole('img', { name: 'media.missingPublicUrl' })).toBeInTheDocument()
+    expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ mimeType: 'video/' }))
+  })
+
+  it('vẫn cho chọn video có sẵn nhưng ẩn tải lên khi thiếu media.write', async () => {
+    mocks.hasPermission.mockImplementation((permission) => permission === 'media.read')
+    renderPicker()
+
+    await screen.findByTitle('gioi-thieu.mp4')
+    expect(screen.queryByRole('button', { name: 'homeVideos.picker.uploadButton' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'homeVideos.picker.confirm' })).toBeInTheDocument()
+  })
+
+  it('tải video ngay trong form, tự chọn và trả đủ media cho màn gọi', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()
-    render(<VideoPickerModal onSelect={onSelect} onClose={vi.fn()} />)
+    renderPicker({ onSelect })
+    await screen.findByTitle('gioi-thieu.mp4')
 
-    await user.click(await screen.findByTitle('existing.mp4'))
-    await user.click(screen.getByRole('button', { name: 'homeVideos.picker.confirm' }))
+    const input = document.querySelector('input[type="file"]')
+    await user.upload(input, new File(['video'], 'video-moi.mp4', { type: 'video/mp4' }))
+    const confirm = screen.getByRole('button', { name: 'homeVideos.picker.confirm' })
+    await waitFor(() => expect(confirm).toBeEnabled())
+    await user.click(confirm)
 
-    expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({
-      mimeType: 'video/',
-      page: 1,
-      pageSize: 20,
-    }))
     expect(onSelect).toHaveBeenCalledWith(
-      existingVideo.publicUrl,
-      expect.objectContaining({ id: existingVideo.id }),
+      '/media/catalog/video-moi.mp4',
+      expect.objectContaining({ id: 'video-uploaded' }),
     )
   })
 
-  it('uploads a new MP4 and returns it', async () => {
+  it('chặn đúng tệp không phải MP4 và tệp vượt 200MB trước khi gọi máy chủ', async () => {
+    renderPicker()
+    await screen.findByTitle('gioi-thieu.mp4')
+    const input = document.querySelector('input[type="file"]')
+
+    fireEvent.change(input, { target: { files: [new File(['image'], 'anh.jpg', { type: 'image/jpeg' })] } })
+    expect(await screen.findByText('homeVideos.picker.unsupportedType')).toBeInTheDocument()
+
+    const oversized = new File(['video'], 'qua-lon.mp4', { type: 'video/mp4' })
+    Object.defineProperty(oversized, 'size', { configurable: true, value: 200 * 1024 * 1024 + 1 })
+    fireEvent.change(input, { target: { files: [oversized] } })
+    expect(await screen.findByText('homeVideos.picker.maxSizeError')).toBeInTheDocument()
+    expect(mocks.uploadMedia).not.toHaveBeenCalled()
+  })
+
+  it('giữ cửa sổ mở trong lúc video đang tải lên', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn()
-    const uploadedVideo = {
-      id: 'video-2',
-      filename: 'videos/new.mp4',
-      publicUrl: '/media/videos/new.mp4',
-      mimeType: 'video/mp4',
-      fileSize: 2 * 1024 * 1024,
-    }
-    mocks.uploadMedia.mockResolvedValue({ item: uploadedVideo })
-    mocks.fetchMedia
-      .mockResolvedValueOnce(mediaResponse([existingVideo]))
-      .mockResolvedValue(mediaResponse([uploadedVideo, existingVideo]))
+    let resolveUpload
+    mocks.uploadMedia.mockImplementation(() => new Promise((resolve) => { resolveUpload = resolve }))
+    const { onClose } = renderPicker()
+    await screen.findByTitle('gioi-thieu.mp4')
 
-    render(<VideoPickerModal onSelect={onSelect} onClose={vi.fn()} />)
-    await screen.findByTitle('existing.mp4')
+    const input = document.querySelector('input[type="file"]')
+    await user.upload(input, new File(['video'], 'video-moi.mp4', { type: 'video/mp4' }))
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalled())
+    await user.click(screen.getByRole('button', { name: 'homeVideos.picker.close' }))
 
-    const input = document.body.querySelector('input[type="file"]')
-    expect(input).toHaveAttribute('accept', 'video/mp4')
-    const file = new File(['video-data'], 'new.mp4', { type: 'video/mp4' })
-    await user.upload(input, file)
-
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function)))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'homeVideos.picker.confirm' })).toBeEnabled())
-    await user.click(screen.getByRole('button', { name: 'homeVideos.picker.confirm' }))
-
-    expect(onSelect).toHaveBeenCalledWith(
-      uploadedVideo.publicUrl,
-      expect.objectContaining({ id: uploadedVideo.id, isNewUpload: true }),
-    )
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('media.closeWhileUploading')).toBeInTheDocument()
+    resolveUpload({ item: { ...video, id: 'video-2', publicUrl: '/media/video-moi.mp4' } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'homeVideos.picker.uploadButton' })).toBeEnabled())
   })
 })

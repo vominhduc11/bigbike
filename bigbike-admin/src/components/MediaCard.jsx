@@ -1,4 +1,5 @@
-import { Pencil, Trash2, RotateCcw, Music, FileText, Copy } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Eye, Pencil, Trash2, RotateCcw, Music, FileText, ImageOff, Copy } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -16,14 +17,20 @@ const isAudio = (m) => m && m.startsWith('audio/')
 export function MediaCard({
   media, selected, focused, deleting,
   onToggleSelect, onPreview,
-  onEdit, onDelete, onRestore,
+  onEdit, onViewDetail, onDelete, onRestore,
 }) {
   const { t } = useTranslation()
+  const [previewFailed, setPreviewFailed] = useState(false)
   const filename = formatText((media.filename ?? '').split('/').pop())
   const displayName = media.title ? formatText(media.title) : filename
   const thumbUrl = resolveThumbUrl(media)
   const dimensions = media.width && media.height ? `${media.width}×${media.height}` : null
   const meta = [formatBytes(media.fileSize), dimensions].filter(Boolean).join(' · ')
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreviewFailed(false)
+  }, [thumbUrl, media.publicUrl])
 
   const className = [
     'medialib-card',
@@ -47,6 +54,16 @@ export function MediaCard({
           {t('media.statusDeleted')}
         </span>
       )}
+      {media.status === 'INACTIVE' && (
+        <span className="medialib-card-badge bg-warning-bg text-warning">
+          {t('media.statusInactive')}
+        </span>
+      )}
+      {!['ACTIVE', 'INACTIVE', 'DELETED'].includes(media.status) && (
+        <span className="medialib-card-badge bg-warning-bg text-warning">
+          {t('common.unknown')}
+        </span>
+      )}
       {onToggleSelect && (
         <Checkbox checked={selected} onCheckedChange={onToggleSelect}
           aria-label={t('media.selectNamed', { name: displayName, defaultValue: 'Chọn {{name}}' })}
@@ -57,10 +74,14 @@ export function MediaCard({
       {/* Thumb là container KHÔNG tương tác; vùng "mở xem lớn" và vùng "nút thao
           tác" là hai phần tử ANH EM bên trong, không lồng nút-trong-nút. */}
       <div className="medialib-thumb-wrap">
-        {isImage(media.mimeType) && thumbUrl ? (
-          <img src={thumbUrl} alt={media.altText || filename} loading="lazy" />
+        {previewFailed ? (
+          <div className="medialib-thumb-placeholder text-danger" role="img" aria-label={t('media.mediaLoadError')}>
+            <ImageOff size={36} aria-hidden="true" />
+          </div>
+        ) : isImage(media.mimeType) && thumbUrl ? (
+          <img src={thumbUrl} alt={media.altText || filename} loading="lazy" onError={() => setPreviewFailed(true)} />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
-          <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" />
+          <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" onError={() => setPreviewFailed(true)} />
         ) : (
           <div className="medialib-thumb-placeholder">
             {isAudio(media.mimeType)
@@ -72,15 +93,17 @@ export function MediaCard({
         {/* Vùng điều hướng: nút thật phủ kín thumb để mở xem lớn (Enter/Space
             chuẩn). Đặt TRƯỚC overlay để overlay (cùng position, đứng sau DOM) xếp
             trên và nhận click cho các nút thao tác. */}
-        <Button variant="unstyled" onClick={onPreview}
-          aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
-          className="absolute inset-0 cursor-zoom-in border-0 bg-transparent p-0" />
+        {media.publicUrl && (
+          <Button variant="unstyled" onClick={onPreview}
+            aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
+            className="absolute inset-0 z-0 cursor-zoom-in border-0 bg-transparent p-0" />
+        )}
 
         {/* Copy URL chỉ cần quyền xem — không gộp vào điều kiện quyền sửa, nếu không
             người chỉ có quyền xem sẽ mất luôn cả nút sao chép link. */}
-        {(media.publicUrl || onEdit || onDelete || onRestore) && (
-          <div className="medialib-action-overlay">
-            <div className="medialib-overlay-actions">
+        {(media.publicUrl || onEdit || onViewDetail || onDelete || onRestore) && (
+          <div className="medialib-action-overlay z-10">
+            <div className="medialib-overlay-actions pointer-events-auto">
               {media.publicUrl && (
                 <Button variant="unstyled" onClick={handleCopyUrl}
                   className="medialib-icon-btn"
@@ -93,6 +116,13 @@ export function MediaCard({
                   className="medialib-icon-btn"
                   title={t('common.edit')} aria-label={t('common.edit')}>
                   <Pencil size={14} />
+                </Button>
+              )}
+              {onViewDetail && (
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onViewDetail() }}
+                  className="medialib-icon-btn"
+                  title={t('app.detail')} aria-label={t('app.detail')}>
+                  <Eye size={14} />
                 </Button>
               )}
               {onRestore && (

@@ -29,8 +29,15 @@ const EMPTY_FORM = {
   location: HOME_LOCATION,
   sortOrder: '0',
   desktopImageUrl: '',
+  desktopImageAlt: '',
+  desktopImageWidth: null,
+  desktopImageHeight: null,
+  desktopImageMimeType: '',
   mobileImageUrl: '',
   mobileImageAlt: '',
+  mobileImageWidth: null,
+  mobileImageHeight: null,
+  mobileImageMimeType: '',
   productId: '',
   productName: '',
   isActive: true,
@@ -306,9 +313,16 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
     const next = {
       location: slider.location,
       sortOrder: String(slider.sortOrder),
-      desktopImageUrl: slider.desktopImage?.url || '',
-      mobileImageUrl: slider.mobileImage?.url || '',
+      desktopImageUrl: slider.desktopImage?.rawUrl || slider.desktopImage?.url || '',
+      desktopImageAlt: slider.desktopImage?.alt || '',
+      desktopImageWidth: slider.desktopImage?.width ?? null,
+      desktopImageHeight: slider.desktopImage?.height ?? null,
+      desktopImageMimeType: slider.desktopImage?.mimeType || '',
+      mobileImageUrl: slider.mobileImage?.rawUrl || slider.mobileImage?.url || '',
       mobileImageAlt: slider.mobileImage?.alt || '',
+      mobileImageWidth: slider.mobileImage?.width ?? null,
+      mobileImageHeight: slider.mobileImage?.height ?? null,
+      mobileImageMimeType: slider.mobileImage?.mimeType || '',
       productId: slider.productId || '',
       productName: slider.productName || slider.productNameEn || '',
       isActive: slider.isActive !== false,
@@ -472,7 +486,16 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                 <span>{t('sliders.formDesktopUrl')}</span>
                 <ImageUrlInput
                   value={form.desktopImageUrl}
-                  onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))}
+                  onChange={(url, media) => setForm((p) => ({
+                    ...p,
+                    desktopImageUrl: url,
+                    desktopImageWidth: media?.width ?? null,
+                    desktopImageHeight: media?.height ?? null,
+                    desktopImageMimeType: media?.mimeType ?? '',
+                  }))}
+                  alt={form.desktopImageAlt}
+                  onAltChange={(alt) => setForm((p) => ({ ...p, desktopImageAlt: alt }))}
+                  previewAlt={form.desktopImageAlt || t('sliders.formDesktopUrl')}
                   recommend={IMAGE_RECO.sliderDesktop}
                 />
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
@@ -485,7 +508,13 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                 <span>{t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}</span>
                 <ImageUrlInput
                   value={form.mobileImageUrl}
-                  onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
+                  onChange={(url, media) => setForm((p) => ({
+                    ...p,
+                    mobileImageUrl: url,
+                    mobileImageWidth: media?.width ?? null,
+                    mobileImageHeight: media?.height ?? null,
+                    mobileImageMimeType: media?.mimeType ?? '',
+                  }))}
                   alt={form.mobileImageAlt}
                   onAltChange={(alt) => setForm((p) => ({ ...p, mobileImageAlt: alt }))}
                   previewAlt={form.mobileImageAlt || t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}

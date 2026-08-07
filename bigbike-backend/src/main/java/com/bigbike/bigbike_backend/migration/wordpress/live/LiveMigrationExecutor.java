@@ -1292,8 +1292,8 @@ final class LiveMigrationExecutor {
         UUID id = UUID.nameUUIDFromBytes(
                 ("bigbike:wordpress-redirect:" + plan.sourcePath()).getBytes(StandardCharsets.UTF_8));
         String sql = "insert into redirects "
-                + "(id,source_pattern,target_url,redirect_type,status_code,enabled,hit_count,notes,"
-                + "legacy_id,created_at,updated_at) values (?,?,?,'PERMANENT',301,true,0,?,?,now(),now())";
+                + "(id,source_pattern,target_url,enabled,hit_count,notes,"
+                + "legacy_id,created_at,updated_at) values (?,?,?,true,0,?,?,now(),now())";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, id);
             statement.setString(2, required(plan.sourcePath(), "redirect source"));
@@ -1316,18 +1316,16 @@ final class LiveMigrationExecutor {
         String existingSource = required(
                 plan.existingSourcePattern(), "existing redirect source pattern");
         String existingTarget = required(plan.existingTargetUrl(), "existing redirect target URL");
-        String existingType = required(plan.existingRedirectType(), "existing redirect type");
-        if (plan.existingStatusCode() == null || plan.existingEnabled() == null) {
+        if (plan.existingEnabled() == null) {
             throw new IllegalStateException(
                     "Reviewed existing redirect metadata is incomplete: " + plan.sourcePath());
         }
         String notes = trimToNull(plan.reason() + " [" + plan.confidence()
                 + "; replaced reviewed legacy/missing/non-public target]");
-        String sql = "update redirects set target_url=?,redirect_type='PERMANENT',status_code=301,"
+        String sql = "update redirects set target_url=?,"
                 + "enabled=true,notes=coalesce(nullif(btrim(notes),''),?),"
                 + "legacy_id=coalesce(legacy_id,?),updated_at=now() "
-                + "where id=? and source_pattern=? and target_url=? and redirect_type=? "
-                + "and status_code=? and enabled=?";
+                + "where id=? and source_pattern=? and target_url=? and enabled=?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, required(plan.targetPath(), "redirect target"));
             statement.setString(2, notes);
@@ -1335,9 +1333,7 @@ final class LiveMigrationExecutor {
             statement.setObject(4, id);
             statement.setString(5, existingSource);
             statement.setString(6, existingTarget);
-            statement.setString(7, existingType);
-            statement.setInt(8, plan.existingStatusCode());
-            statement.setBoolean(9, plan.existingEnabled());
+            statement.setBoolean(7, plan.existingEnabled());
             assertOne(statement.executeUpdate(), "guarded redirect update", plan.sourcePath());
         }
 
@@ -1345,15 +1341,11 @@ final class LiveMigrationExecutor {
         before.put("id", id.toString());
         before.put("sourcePattern", existingSource);
         before.put("targetUrl", existingTarget);
-        before.put("redirectType", existingType);
-        before.put("statusCode", plan.existingStatusCode());
         before.put("enabled", plan.existingEnabled());
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("id", id.toString());
         after.put("sourcePattern", existingSource);
         after.put("targetUrl", plan.targetPath());
-        after.put("redirectType", "PERMANENT");
-        after.put("statusCode", 301);
         after.put("enabled", true);
         UUID auditId = UUID.nameUUIDFromBytes(
                 ("bigbike-live-migration:redirect-update:" + id + ":" + existingTarget
@@ -1775,7 +1767,7 @@ final class LiveMigrationExecutor {
                     : redirect.sourcePath();
             try (PreparedStatement statement = connection.prepareStatement(
                     "select count(*) from redirects where source_pattern=? and target_url=? "
-                            + "and status_code=301 and enabled")) {
+                            + "and enabled")) {
                 statement.setString(1, sourcePattern);
                 statement.setString(2, redirect.targetPath());
                 try (ResultSet rs = statement.executeQuery()) {

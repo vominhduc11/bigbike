@@ -851,9 +851,9 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
             onChange(variant._key, {
               imageUrl: url,
               imageAlt: pickAlt(variant.imageAlt, media),
-              imageWidth: media.width,
-              imageHeight: media.height,
-              imageMimeType: media.mimeType,
+              imageWidth: media?.width ?? null,
+              imageHeight: media?.height ?? null,
+              imageMimeType: media?.mimeType ?? null,
             })
             setPickerOpen(false)
           }}

@@ -620,12 +620,12 @@ From `AdminMediaService.ALLOWED_STATUSES`:
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| N/A | `ACTIVE` | Admin / role có `media.write` | MIME allowed; size <= 50 MB; storage upload succeeds. | Object uploaded to MinIO; media record created; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
+| N/A | `ACTIVE` | Admin / role có `media.write` | MIME allowed; file không rỗng; size <= 200 MB; storage upload succeeds. | Object uploaded to MinIO; media record created; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java`, `application.properties` |
 | any existing status | `ACTIVE` | Admin / role có `media.write` | Media exists; update or restore action. | Metadata/status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | any existing status | `INACTIVE` | Admin / role có `media.write` | Media exists. | Metadata/status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | any existing status | `DELETED` | Admin / role có `media.write` | Media exists; soft-delete action or update status. | Media excluded by default from list; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | `DELETED` | `ACTIVE` | Admin / role có `media.write` | Media exists. | Restored; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
-| any existing status | hard-deleted / removed | Admin / role có `media.write` | Media exists. | Try remove object from MinIO; audit log; DB row deleted. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
+| `DELETED` | hard-deleted / removed | `SUPER_ADMIN` có wildcard `*` | Media exists; không còn tham chiếu; xóa object gốc khỏi storage thành công. | Remove variants best-effort; audit log; DB row deleted. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaController.java`, `AdminMediaService.java`, `PERMISSION_MATRIX.md` |
 
 ### Forbidden Transitions
 
@@ -634,13 +634,16 @@ From `AdminMediaService.ALLOWED_STATUSES`:
 | any | unknown status | Only `ACTIVE`, `INACTIVE`, `DELETED` allowed. | Backend validation error. | `AdminMediaService.java` |
 | upload | unsupported MIME | Only MIME whitelist accepted (incl. `image/svg+xml`). | Backend validation error. | `AdminMediaService.java` |
 | upload | SVG without `<svg>` root | SVG content gate (sanitizer parse). | Backend validation error. | `SvgSanitizer.java` |
-| upload | > 50 MB | Upload limit. | Backend validation error. | `AdminMediaService.java` |
+| upload | > 200 MB | Upload limit (Spring multipart request cap is 210 MB). | Backend validation error. | `AdminMediaService.java`, `application.properties` |
 
 > SVG uploads are accepted but rewritten by `SvgSanitizer` (scripts, `on*` handlers, `javascript:`/external refs, `<foreignObject>`/`<image>`/`<style>` stripped) before storage.
 
 ### Frontend Behavior
 
-- Admin media module exists, but UI action visibility by media status needs audit.
+- Thư viện mặc định chỉ hiển thị `ACTIVE`; nút **Thùng rác** chuyển sang danh sách `DELETED`. Giao diện tinh gọn không có dropdown trạng thái và không tạo transition tới `INACTIVE`; giá trị này chỉ còn để đọc/tương thích dữ liệu hoặc gọi API quản trị trực tiếp.
+- `media.read` cho phép xem, lọc, mở chi tiết và sao chép URL. Thiếu `media.write` thì hiện trạng thái chỉ đọc và không render upload/sửa/chuyển thư mục/xóa mềm/khôi phục.
+- Xóa vĩnh viễn chỉ xuất hiện trong bảng chi tiết của item `DELETED` khi có wildcard `*`; giao diện phải kiểm tra tham chiếu trước và máy chủ luôn kiểm tra lại trước khi xóa.
+- Upload ở màn Thư viện và các picker dùng cùng allowlist/giới hạn 200 MB với backend. Picker theo vị trí có thể chặn **tỉ lệ** theo `DATA_CONTRACT.md`; kích thước pixel chỉ là khuyến nghị.
 
 ### Backend Enforcement
 

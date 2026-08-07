@@ -329,14 +329,14 @@ final class LiveTargetSnapshotReader {
     private List<TargetRedirect> readRedirects(
             Connection connection, Set<String> adminAuditedIds) throws SQLException {
         List<TargetRedirect> result = new ArrayList<>();
-        String sql = "select id::text, source_pattern, target_url, redirect_type, status_code, enabled "
+        String sql = "select id::text, source_pattern, target_url, enabled "
                 + "from redirects order by id";
         try (Statement statement = connection.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
             while (rs.next()) {
                 String id = rs.getString(1);
                 result.add(new TargetRedirect(
-                        id, rs.getString(2), rs.getString(3), rs.getString(4),
-                        rs.getInt(5), rs.getBoolean(6), adminAuditedIds.contains(id)));
+                        id, rs.getString(2), rs.getString(3),
+                        rs.getBoolean(4), adminAuditedIds.contains(id)));
             }
         }
         return result;
@@ -479,8 +479,6 @@ final class LiveTargetSnapshotReader {
             String id,
             String sourcePath,
             String targetPath,
-            String redirectType,
-            int statusCode,
             boolean enabled,
             boolean adminAudited) {}
 }

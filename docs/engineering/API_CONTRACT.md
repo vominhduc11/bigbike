@@ -483,19 +483,31 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `TRASH`.
   - Thực hiện xóa cứng bài viết khỏi DB.
 
-### 5. Thư viện ảnh (Media)
-- **Nơi đang sử dụng**: `GET /api/v1/admin/media/{id}/references`
-  - Mỗi tham chiếu trả `type`, `id`, `name`, `adminPath`.
-  - `adminPath` chỉ được trỏ tới route quản trị hợp lệ dưới `/admin`; tham chiếu sản phẩm và ảnh/biến thể của sản phẩm mở `/admin/products/{productId}`.
-  - Nếu không xác định được route quản trị an toàn hoặc entity không còn tồn tại thì client hiển thị tên tham chiếu dạng chỉ đọc, không điều hướng sang route public hoặc route 404.
-- **Xóa mềm**: `DELETE /api/v1/admin/media/{id}`
-  - Đặt `status = "DELETED"`.
-- **Khôi phục**: `POST /api/v1/admin/media/{id}/restore`
-  - Đặt `status = "ACTIVE"`.
-- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/media/{id}?permanent=true`
-  - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `DELETED`.
-  - Chặn lại bằng lỗi `409 Conflict` nếu ảnh đang được dùng.
-  - Thực hiện xóa cứng khỏi DB và xóa tệp khỏi MinIO.
+### 5. Thư viện ảnh/video (Media)
+
+**Quyền:** mọi đường đọc dùng `media.read`; upload/sửa metadata/thay file/chuyển thư mục/xóa mềm/khôi phục dùng `media.write`; xóa vĩnh viễn đơn hoặc bulk dùng wildcard `*` (SUPER_ADMIN), không chỉ `media.write`. Xem thêm `PERMISSION_MATRIX.md` § Media Library permissions.
+
+| Endpoint | Hành vi hiện hành |
+|---|---|
+| `POST /api/v1/admin/media` | `multipart/form-data`: `file` bắt buộc, `altText` tùy chọn. Nhận JPEG/PNG/WebP/GIF/SVG/MP4, tối đa **200 MB**; file rỗng, MIME khai báo không thuộc allowlist hoặc content detection không thuộc allowlist → `400 VALIDATION_ERROR`. SVG được sanitize; ảnh raster được nén theo `MEDIA_RULE_006`; upload trùng checksum tái sử dụng bản ghi có sẵn và đưa về `ACTIVE`. |
+| `GET /api/v1/admin/media` | Danh sách phân trang. Query: `page` (1..), `size` (1..100), `q`, `mimeType`, `status`, `storageProvider`, `usageFilter=USED|UNUSED`, `uploadedFrom`, `uploadedTo`, `minSize`, `maxSize`, `minWidth`, `minHeight`, `sort=createdAt|fileSize|title|usageCount`, `dir=asc|desc`, `folderFilter=<uuid>|NONE`, `tag`. Không truyền `status` thì loại `DELETED`. |
+| `GET /api/v1/admin/media/stats` | Tổng số/tổng dung lượng đã biết, số đã dùng/chưa dùng, số active/deleted và nhóm MIME theo cùng bộ lọc nền của list (không áp dụng `usageFilter`/sort/pagination). |
+| `GET /api/v1/admin/media/tags?prefix=&limit=` | Danh sách thẻ phổ biến hoặc autocomplete theo prefix; limit được chặn trong 1..50. |
+| `GET /api/v1/admin/media/{id}` | Chi tiết media, gồm `sizes`, `usageCount`, `references`, `folderId`, `tags`; không tồn tại → `404`. |
+| `GET /api/v1/admin/media/{id}/references` | Mỗi tham chiếu trả `type`, `id`, `name`, `adminPath`. `adminPath` chỉ được trỏ tới route quản trị hợp lệ dưới `/admin`; tham chiếu sản phẩm và ảnh/biến thể sản phẩm mở `/admin/products/{productId}`. Nếu không xác định được route an toàn hoặc entity không còn tồn tại thì client hiển thị dạng chỉ đọc. |
+| `PATCH /api/v1/admin/media/{id}` | Cập nhật `altText`, `title`, `status=ACTIVE|INACTIVE|DELETED`, `folderId`/`clearFolder`, `tags` (tối đa 50 thẻ, mỗi thẻ tối đa 64 ký tự). `clearFolder=true` thắng `folderId`. Folder không tồn tại → `404`. |
+| `POST /api/v1/admin/media/{id}/replace` | Thay object nhưng giữ nguyên id/URL; file mới tối đa 200 MB và phải cùng nhóm MIME cấp cao nhất (image/video/...) với file cũ. Recompute checksum, dung lượng, kích thước và variants; checksum trùng item khác → `409`. |
+| `DELETE /api/v1/admin/media/{id}` | Xóa mềm: đặt `status="DELETED"`; response `204`. |
+| `POST /api/v1/admin/media/{id}/restore` | Đặt `status="ACTIVE"`; trả detail đã cập nhật. |
+| `DELETE /api/v1/admin/media/{id}?permanent=true` | Chỉ khi `status="DELETED"` và không còn tham chiếu; sai trạng thái/đang dùng → `409`. Xóa object gốc khỏi đúng bucket trước; storage lỗi thì giữ nguyên DB row. |
+| `POST /api/v1/admin/media/bulk-move` | Body `{ ids[1..500], folderId|null }`; `null` chuyển về Chưa phân loại. Folder không tồn tại → `404`; id media không tồn tại được bỏ qua; trả `{ affected }`. |
+| `POST /api/v1/admin/media/bulk-delete` | Body `{ ids[1..500] }`; xóa mềm best-effort, bỏ qua id không tồn tại; trả `{ affected }`. |
+| `POST /api/v1/admin/media/bulk-restore` | Body `{ ids[1..500] }`; khôi phục best-effort, bỏ qua id không tồn tại; trả `{ affected }`. |
+| `POST /api/v1/admin/media/bulk-hard-delete` | Wildcard `*`; body `{ ids[1..500] }`; trả `{ deleted, missing, blocked }`. Endpoint còn tồn tại cho contract/backend nhưng giao diện Thư viện không cung cấp xóa vĩnh viễn hàng loạt. |
+
+**Thư mục media:** `GET /api/v1/admin/media-folders` (`media.read`); `POST /api/v1/admin/media-folders`, `PATCH /api/v1/admin/media-folders/{id}`, `DELETE /api/v1/admin/media-folders/{id}` (`media.write`). Create/update nhận `{ name, slug?, description? }`; tên tối đa 120 ký tự, slug tối đa 160, mô tả tối đa 2000. Xóa folder đặt `folder_id` của media về `null` bằng FK `ON DELETE SET NULL`.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolderController.java`, `AdminMediaService.java`, `AdminMediaFolderService.java`.
 
 ## Homepage Slider Contract
 
@@ -1498,10 +1510,10 @@ Admin CRUD for URL redirect rules (`redirects` table) plus an internal lookup AP
 
 | Method | Path | Permission | Body / Query | Response | Notes |
 |---|---|---|---|---|---|
-| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (search), `enabled` (`true`/`false`), `statusCode` | `{data: [...], pagination}` list of `AdminRedirectResponse` | Standard paginated list envelope. |
+| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (case-insensitive search trên nguồn, đích và ghi chú), `enabled` (`true`/`false`) | `{data: [...], pagination}` list of `AdminRedirectResponse` | Phân trang và sắp xếp ổn định tại DB theo `updatedAt DESC`, `createdAt DESC`, `id DESC`; không tải toàn bộ bảng vào bộ nhớ. Mọi redirect quản trị là HTTP 301. |
 | `GET` | `/redirects/{id}` | `redirects.read` | — | `{data: AdminRedirectResponse}` | |
-| `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required), `targetUrl` (required), `redirectType` (`PERMANENT`/`TEMPORARY`/`CUSTOM`, defaults from statusCode), `statusCode` (one of `301/302/307/308`, business rule — see `REDIRECT_RULE_005`), `enabled`, `notes`, `legacyId` | `{data: AdminRedirectResponse}` | Rejects self-redirect, multi-hop loop (max depth 20), duplicate `sourcePattern`, and open-redirect targets (see BUSINESS_RULES.md `REDIRECT_RULE_00x`). |
-| `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest` (same fields, all presence-guarded — an omitted field, including `notes`/`legacyId`, leaves the stored value unchanged; a partial PATCH like `{enabled}` no longer wipes them). To clear `notes`, send an explicit empty string `""`. `legacyId` cannot be cleared back to `null` via this endpoint once set (bare JSON `null` is indistinguishable from "field omitted") — only overwritten with a new id. | `{data: AdminRedirectResponse}` | Same validation as create. |
+| `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required exact internal path; no absolute URL/query/fragment), `targetUrl` (required), `enabled`, `notes`, `legacyId` | `{data: AdminRedirectResponse}` | Mọi redirect được phục vụ bằng HTTP 301. Rejects self-redirect (compares target pathname, including same-site absolute URLs and targets carrying query/fragment), multi-hop loop (max depth 20), duplicate `sourcePattern`, malformed source paths, and open-redirect targets (see BUSINESS_RULES.md `REDIRECT_RULE_00x`). |
+| `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest`: `sourcePattern`, `targetUrl`, `enabled`, `notes`, `legacyId` (all presence-guarded — an omitted field, including `notes`/`legacyId`, leaves the stored value unchanged; a partial PATCH like `{enabled}` no longer wipes them). To clear `notes`, send an explicit empty string `""`. `legacyId` cannot be cleared back to `null` via this endpoint once set (bare JSON `null` is indistinguishable from "field omitted") — only overwritten with a new id. | `{data: AdminRedirectResponse}` | Same validation as create. `statusCode` and `redirectType` are not accepted as redirect properties. |
 | `DELETE` | `/redirects/{id}` | `redirects.write` | — | `204 No Content` | |
 
 Every mutation writes an `AuditLogEntity` (`resourceType = REDIRECT`, see Audit Log Contract below).
@@ -1512,15 +1524,15 @@ Not wrapped in the standard `{data}` envelope (bare JSON, optimized for the hot 
 
 | Method | Path | Response | Notes |
 |---|---|---|---|
-| `GET` | `/redirect?path=` | `200 {redirectId, target, statusCode}` on an enabled match, `404` on miss, `401` unauthorized, `400` blank `path` | Exact-match lookup (`findBySourcePattern`), case-sensitive, no trailing slash (see DATA_CONTRACT.md). `redirectType` is **not** returned here — only `statusCode` drives the actual HTTP response `bigbike-web/proxy.ts` sends to the browser. |
-| `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (includes `redirectType`) | Not currently called by `bigbike-web` — reserved for future use, not part of the live request path. |
+| `GET` | `/redirect?path=` | `200 {redirectId, target}` on an enabled match, `404` on miss, `401` unauthorized, `400` blank `path` | Exact-match lookup (`findBySourcePattern`), case-sensitive, no trailing slash (see DATA_CONTRACT.md). `bigbike-web/proxy.ts` always sends HTTP 301 for a match. |
+| `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (`id`, `sourcePattern`, `targetUrl`) | Not currently called by `bigbike-web` — reserved for future use, not part of the live request path. |
 | `POST` | `/redirects/hit/{redirectId}` | `204` | Fire-and-forget hit-count increment, called by the proxy after a successful redirect. |
 
 Consumed only by `bigbike-web/proxy.ts` over the Docker-internal network (`http://bigbike-backend:8080`) — never over the public `api.bigbike.vn` domain. `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/**` from the public internet as a second layer of defense (see DEPLOYMENT_GUIDE.md).
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `InternalRedirectController.java`, `bigbike-web/proxy.ts`, `V4__create_media_redirect_menu_tables.sql`, `V58__add_redirect_permissions.sql`, `V80__add_redirect_source_pattern_unique.sql`.
+Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `InternalRedirectController.java`, `bigbike-web/proxy.ts`, `V4__create_media_redirect_menu_tables.sql`, `V58__add_redirect_permissions.sql`, `V80__add_redirect_source_pattern_unique.sql`, `V376__normalize_redirects_to_http_301.sql`.
 
 ## Audit Log Contract
 

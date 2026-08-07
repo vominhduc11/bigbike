@@ -154,7 +154,12 @@ export function SeoCard({
           <span>{p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}</span>
           <ImageUrlInput
             value={form.seoOgImageUrl}
-            onChange={(url) => updateField('seoOgImageUrl', url)}
+            onChange={(url, media) => {
+              updateField('seoOgImageUrl', url)
+              updateField('seoOgImageWidth', media?.width ?? null)
+              updateField('seoOgImageHeight', media?.height ?? null)
+              updateField('seoOgImageMimeType', media?.mimeType ?? '')
+            }}
             alt={form.seoOgImageAlt}
             onAltChange={(v) => updateField('seoOgImageAlt', v)}
             disabled={isReadOnly}

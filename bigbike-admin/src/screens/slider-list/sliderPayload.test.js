@@ -8,8 +8,15 @@ function baseForm(overrides = {}) {
     location: 'home',
     sortOrder: '2',
     desktopImageUrl: '',
+    desktopImageAlt: '',
+    desktopImageWidth: null,
+    desktopImageHeight: null,
+    desktopImageMimeType: '',
     mobileImageUrl: '',
     mobileImageAlt: '',
+    mobileImageWidth: null,
+    mobileImageHeight: null,
+    mobileImageMimeType: '',
     productId: '',
     isActive: true,
     ...overrides,
@@ -27,7 +34,30 @@ describe('buildSliderPayload', () => {
 
   it('chỉ gửi ảnh desktop khi có URL', () => {
     const payload = buildSliderPayload(baseForm({ desktopImageUrl: '  /media/sliders/hero.jpg ' }))
-    expect(payload.desktopImage).toEqual({ url: '/media/sliders/hero.jpg' })
+    expect(payload.desktopImage).toEqual({
+      url: '/media/sliders/hero.jpg',
+      alt: null,
+      width: null,
+      height: null,
+      mimeType: null,
+    })
+  })
+
+  it('giữ đầy đủ metadata ảnh desktop khi sửa banner hiện có', () => {
+    const payload = buildSliderPayload(baseForm({
+      desktopImageUrl: '/media/sliders/hero.jpg',
+      desktopImageAlt: 'Banner chính',
+      desktopImageWidth: 3840,
+      desktopImageHeight: 1536,
+      desktopImageMimeType: 'image/webp',
+    }))
+    expect(payload.desktopImage).toEqual({
+      url: '/media/sliders/hero.jpg',
+      alt: 'Banner chính',
+      width: 3840,
+      height: 1536,
+      mimeType: 'image/webp',
+    })
   })
 
   it('gửi rõ URL và alt của ảnh mobile', () => {
@@ -37,6 +67,9 @@ describe('buildSliderPayload', () => {
     })).mobileImage).toEqual({
       url: '/media/sliders/hero-mobile.jpg',
       alt: 'Banner mobile mùa hè',
+      width: null,
+      height: null,
+      mimeType: null,
     })
   })
 
@@ -48,6 +81,9 @@ describe('buildSliderPayload', () => {
     expect(buildSliderPayload(form).mobileImage).toEqual({
       url: '/media/sliders/hero-mobile-cu.jpg',
       alt: 'Ảnh mobile cũ',
+      width: null,
+      height: null,
+      mimeType: null,
     })
   })
 
@@ -65,6 +101,9 @@ describe('buildSliderPayload', () => {
     })).mobileImage).toEqual({
       url: '/media/sliders/hero-mobile.jpg',
       alt: null,
+      width: null,
+      height: null,
+      mimeType: null,
     })
   })
 })

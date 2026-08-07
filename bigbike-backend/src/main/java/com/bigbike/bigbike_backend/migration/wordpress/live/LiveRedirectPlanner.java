@@ -338,8 +338,6 @@ final class LiveRedirectPlanner {
                 } else if (existing.size() == 1) {
                     existingRow = existing.get(0);
                     boolean exactExistingRule = existingRow.enabled()
-                            && existingRow.statusCode() == 301
-                            && "PERMANENT".equalsIgnoreCase(existingRow.redirectType())
                             && targetPath.equals(existingRow.targetPath().trim().replace("\\/", "/"));
                     if (existingTargets.contains(targetPath) && exactExistingRule) {
                         action = Action.PRESERVE;
@@ -403,14 +401,12 @@ final class LiveRedirectPlanner {
                         sourcePath + ": " + String.join("; ", planIssues)));
             }
             plans.add(new RedirectPlan(
-                    sourcePath, targetPath, 301, representative.sourceType(),
+                    sourcePath, targetPath, representative.sourceType(),
                     representative.sourceId(), representative.reason(), representative.confidence(),
                     action,
                     existingRow == null ? null : existingRow.id(),
                     existingRow == null ? null : existingRow.sourcePath(),
                     existingRow == null ? null : existingRow.targetPath(),
-                    existingRow == null ? null : existingRow.redirectType(),
-                    existingRow == null ? null : existingRow.statusCode(),
                     existingRow == null ? null : existingRow.enabled(),
                     List.copyOf(planIssues)));
         }

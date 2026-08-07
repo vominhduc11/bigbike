@@ -64,8 +64,6 @@ public class SlugRedirectHelper {
                 .orElseGet(RedirectEntity::new);
         redirect.setSourcePattern(normalizedSource);
         redirect.setTargetUrl(normalizedTarget);
-        redirect.setRedirectType("PERMANENT");
-        redirect.setStatusCode(301);
         redirect.setEnabled(true);
         redirect.setUpdatedAt(Instant.now());
         if (redirect.getId() == null) {

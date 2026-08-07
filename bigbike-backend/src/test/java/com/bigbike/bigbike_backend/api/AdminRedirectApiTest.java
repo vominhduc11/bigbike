@@ -108,7 +108,6 @@ class AdminRedirectApiTest {
                                 {
                                   "sourcePattern": "%s",
                                   "targetUrl": "%s",
-                                  "statusCode": 301,
                                   "enabled": true
                                 }
                                 """.formatted(sourcePattern, targetUrl)))
@@ -144,7 +143,6 @@ class AdminRedirectApiTest {
                                 {
                                   "sourcePattern": "%s",
                                   "targetUrl": "%s",
-                                  "statusCode": 301,
                                   "enabled": true,
                                   "notes": "SEO migration test"
                                 }
@@ -152,7 +150,8 @@ class AdminRedirectApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sourcePattern").value(sourcePattern))
                 .andExpect(jsonPath("$.data.targetUrl").value(targetUrl))
-                .andExpect(jsonPath("$.data.statusCode").value(301))
+                .andExpect(jsonPath("$.data.statusCode").doesNotExist())
+                .andExpect(jsonPath("$.data.redirectType").doesNotExist())
                 .andExpect(jsonPath("$.data.enabled").value(true));
 
         RedirectEntity created = redirectJpaRepository.findBySourcePattern(sourcePattern)
@@ -186,6 +185,28 @@ class AdminRedirectApiTest {
                 .andExpect(status().isNoContent());
     }
 
+    @Test
+    void internalLookupReturnsOnlyTargetAndRedirectId() throws Exception {
+        String sourcePattern = "/internal-lookup-" + UUID.randomUUID().toString().substring(0, 8);
+        RedirectEntity entity = new RedirectEntity();
+        entity.setSourcePattern(sourcePattern);
+        entity.setTargetUrl("/internal-target");
+        entity.setEnabled(true);
+        entity.setCreatedAt(java.time.Instant.now());
+        entity.setUpdatedAt(java.time.Instant.now());
+        RedirectEntity saved = redirectJpaRepository.save(entity);
+
+        mockMvc.perform(get("/api/internal/redirect")
+                        .param("path", sourcePattern))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.redirectId").value(saved.getId().toString()))
+                .andExpect(jsonPath("$.target").value("/internal-target"))
+                .andExpect(jsonPath("$.statusCode").doesNotExist())
+                .andExpect(jsonPath("$.redirectType").doesNotExist());
+
+        redirectJpaRepository.delete(saved);
+    }
+
     // ── Permission checks ─────────────────────────────────────────────────────
 
     @Test
@@ -213,6 +234,67 @@ class AdminRedirectApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void shouldRejectPathEquivalentSelfLoops() throws Exception {
+        for (String target : List.of(
+                "/same-path?campaign=summer",
+                "/same-path#details",
+                "https://bigbike.vn/same-path")) {
+            mockMvc.perform(post("/api/v1/admin/redirects")
+                            .with(devAuth())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header("X-Admin-Permissions", "redirects.write")
+                            .content("""
+                                    {
+                                      "sourcePattern": "/same-path",
+                                      "targetUrl": "%s"
+                                    }
+                                    """.formatted(target)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.error.details[0].code").value("SELF_LOOP"));
+        }
+    }
+
+    @Test
+    void shouldRejectInvalidSourceShapes() throws Exception {
+        for (String source : List.of("https://bigbike.vn/old", "//evil.example/old", "/old?q=1", "/old#section")) {
+            mockMvc.perform(post("/api/v1/admin/redirects")
+                            .with(devAuth())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header("X-Admin-Permissions", "redirects.write")
+                            .content("""
+                                    {"sourcePattern":"%s","targetUrl":"/valid-target"}
+                                    """.formatted(source)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.details[0].code").value("INVALID_SOURCE"));
+        }
+    }
+
+    @Test
+    void shouldSearchNotesAndReturnDatabasePagination() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        RedirectEntity first = redirectJpaRepository.save(redirect(
+                "/notes-search-a-" + suffix, "/notes-target-a", "campaign-needle-" + suffix));
+        RedirectEntity second = redirectJpaRepository.save(redirect(
+                "/notes-search-b-" + suffix, "/notes-target-b", "campaign-needle-" + suffix));
+
+        try {
+            mockMvc.perform(get("/api/v1/admin/redirects")
+                            .with(devAuth())
+                            .param("page", "1")
+                            .param("size", "1")
+                            .param("q", "campaign-needle-" + suffix)
+                            .header("X-Admin-Permissions", "redirects.read"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                    .andExpect(jsonPath("$.pagination.totalPages").value(2));
+        } finally {
+            redirectJpaRepository.deleteAll(List.of(first, second));
+        }
     }
 
     @Test
@@ -336,19 +418,34 @@ class AdminRedirectApiTest {
     }
 
     @Test
-    void shouldRejectInvalidStatusCode() throws Exception {
+    void shouldRejectLegacyRedirectStatusFields() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String sourcePattern = "/legacy-status-" + suffix;
         mockMvc.perform(post("/api/v1/admin/redirects")
                         .with(devAuth())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "redirects.write")
                         .content("""
                                 {
-                                  "sourcePattern": "/bad-status-test",
+                                  "sourcePattern": "%s",
                                   "targetUrl": "/valid-target",
-                                  "statusCode": 200
+                                  "statusCode": 302,
+                                  "redirectType": "TEMPORARY"
                                 }
-                                """))
+                                """.formatted(sourcePattern)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("UNSUPPORTED"));
+    }
+
+    private static RedirectEntity redirect(String sourcePattern, String targetUrl, String notes) {
+        RedirectEntity entity = new RedirectEntity();
+        entity.setSourcePattern(sourcePattern);
+        entity.setTargetUrl(targetUrl);
+        entity.setNotes(notes);
+        entity.setEnabled(true);
+        entity.setCreatedAt(java.time.Instant.now());
+        entity.setUpdatedAt(java.time.Instant.now());
+        return entity;
     }
 }

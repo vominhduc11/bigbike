@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildEmptyForm, toPayload } from './constants'
+import { buildEmptyForm, buildFormFromItem, toPayload } from './constants'
 
 describe('Category payload contract', () => {
   it('omits the default homepage placement on create and never sends visibility', () => {
@@ -52,6 +52,25 @@ describe('Category payload contract', () => {
     expect(payload.icon.alt).toBe('Ảnh hero')
     expect(payload.banner.alt).toBe('Ảnh banner')
     expect(payload.mobileBanner.alt).toBe('Ảnh banner mobile')
+  })
+
+  it('giữ metadata ảnh thumbnail, ảnh hero và ảnh chia sẻ qua vòng đọc rồi lưu', () => {
+    const form = buildFormFromItem({
+      image: { url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp' },
+      icon: { url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png' },
+      seo: { ogImage: { url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg' } },
+    })
+    const payload = toPayload(form)
+
+    expect(payload.image).toEqual({
+      url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp',
+    })
+    expect(payload.icon).toEqual({
+      url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png',
+    })
+    expect(payload.seo.ogImage).toEqual({
+      url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg',
+    })
   })
 
   it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xóa được nội dung cũ', () => {

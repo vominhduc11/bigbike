@@ -50,6 +50,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useHasPermission } from '@/lib/auth'
+import { buildHomeVideoThumbnail } from './homeVideoPayload'
 
 const EMPTY_FORM = {
   title: '',
@@ -57,6 +58,10 @@ const EMPTY_FORM = {
   videoType: 'youtube',
   videoUrl: '',
   thumbnailUrl: '',
+  thumbnailAlt: '',
+  thumbnailWidth: null,
+  thumbnailHeight: null,
+  thumbnailMimeType: '',
   isActive: true,
 }
 
@@ -371,7 +376,11 @@ export function HomeVideoListScreen({ canUpdate }) {
         ? 'youtube'
         : (isAllowedMediaVideoUrl(video.videoUrl) ? 'upload' : ''),
       videoUrl: video.videoUrl,
-      thumbnailUrl: video.thumbnail?.url || '',
+      thumbnailUrl: video.thumbnail?.rawUrl || video.thumbnail?.url || '',
+      thumbnailAlt: video.thumbnail?.alt || '',
+      thumbnailWidth: video.thumbnail?.width ?? null,
+      thumbnailHeight: video.thumbnail?.height ?? null,
+      thumbnailMimeType: video.thumbnail?.mimeType || '',
       isActive: video.isActive,
     }
     setForm(next)
@@ -470,9 +479,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       videoUrl: videoCheck.normalized,
       sortOrder: editingVideo ? editingVideo.sortOrder : newSortOrder,
       isActive: form.isActive,
-      thumbnail: hasThumbnail
-        ? { url: form.thumbnailUrl.trim() }
-        : null,
+      thumbnail: buildHomeVideoThumbnail(form),
       ...(editingVideo && !hasThumbnail ? { clearThumbnail: true } : {}),
     }
 
@@ -829,7 +836,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                   type="button"
                   onClick={() => setVideoPickerOpen(true)}
                   disabled={!canUpdate || !canReadMedia}
-                  title={!canReadMedia ? 'Cần quyền media.read để chọn video nội bộ.' : undefined}
+                  title={!canReadMedia ? t('media.videoPermissionDeniedDesc') : undefined}
                 >
                   {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
                 </Button>
@@ -846,7 +853,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               </div>
               {!canReadMedia ? (
                 <span className="text-xs font-normal text-muted-foreground">
-                  Cần quyền media.read để chọn video nội bộ. Bạn vẫn có thể sửa URL/provider.
+                  {t('media.videoPermissionDeniedDesc')}
                 </span>
               ) : null}
               <MediaRequirementHint recommend={IMAGE_RECO.video} className="font-normal" />
@@ -870,7 +877,16 @@ export function HomeVideoListScreen({ canUpdate }) {
             {t('homeVideos.formThumbnail')}
             <ImageUrlInput
               value={form.thumbnailUrl}
-              onChange={(url) => setForm((prev) => ({ ...prev, thumbnailUrl: url }))}
+              onChange={(url, media) => setForm((prev) => ({
+                ...prev,
+                thumbnailUrl: url,
+                thumbnailWidth: media?.width ?? null,
+                thumbnailHeight: media?.height ?? null,
+                thumbnailMimeType: media?.mimeType ?? '',
+              }))}
+              alt={form.thumbnailAlt}
+              onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
+              previewAlt={form.thumbnailAlt || form.title}
               recommend={IMAGE_RECO.videoThumb}
             />
             <span className="text-xs text-muted-foreground font-normal">{t('homeVideos.formThumbnailHint')}</span>

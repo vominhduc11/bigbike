@@ -19,10 +19,13 @@ const API_BASE_URL =
 // entries after an admin change expire quickly.
 // Admin redirect mutations also call the internal clear endpoint below, so this
 // TTL is only a fallback if cross-replica invalidation fails.
-const TTL_SECONDS = Number.parseInt(
+const configuredTtlSeconds = Number.parseInt(
   process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? "30",
   10,
 );
+const TTL_SECONDS = Number.isFinite(configuredTtlSeconds) && configuredTtlSeconds > 0
+  ? configuredTtlSeconds
+  : 30;
 const REDIRECT_CACHE_CLEAR_PATH = "/_internal/redirect-cache/clear";
 const REDIRECT_CACHE_CLEAR_SECRET = process.env.REVALIDATE_SECRET ?? process.env.WEB_REVALIDATE_SECRET ?? "";
 
@@ -80,7 +83,6 @@ function clearRedirectL1Cache(): number {
 type RedirectLookup = {
   redirectId: string;
   target: string;
-  statusCode: number;
 };
 
 async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
@@ -143,17 +145,17 @@ async function lookupRedirect(path: string): Promise<RedirectLookup | null> {
   return fresh;
 }
 
-function isLoop(currentPath: string, target: string): boolean {
-  try {
-    const targetPath = target.startsWith("/")
-      ? target
-      : new URL(target).pathname;
-    const normalize = (path: string) =>
-      path.length > 1 ? path.replace(/\/+$/, "") : path;
-    return normalize(targetPath) === normalize(currentPath);
-  } catch {
-    return false;
-  }
+function normalizeRedirectPath(path: string): string {
+  return path.length > 1 ? path.replace(/\/+$/, "") : path;
+}
+
+function isLoop(currentPath: string, targetPath: string): boolean {
+  return normalizeRedirectPath(targetPath) === normalizeRedirectPath(currentPath);
+}
+
+function isAllowedRedirectDestination(request: NextRequest, destination: URL): boolean {
+  return (destination.protocol === "http:" || destination.protocol === "https:")
+    && destination.hostname.toLowerCase() === request.nextUrl.hostname.toLowerCase();
 }
 
 function legacyEnglishCanonicalPath(pathname: string): string | null {
@@ -181,19 +183,38 @@ function redirectResponse(
   currentPath: string,
   locale: "vi" | "en",
 ): NextResponse | null {
-  if (isLoop(currentPath, rule.target)) return null;
+  // A managed target is either a root-relative path or an absolute http(s) URL
+  // on this exact storefront host. Re-check here because legacy DB rows may not
+  // have passed the current admin validator.
+  if (rule.target.startsWith("//")
+      || (!rule.target.startsWith("/") && !/^https?:\/\//i.test(rule.target))) {
+    return null;
+  }
 
   const localizedTarget = rule.target.startsWith("/")
     ? translatePath(rule.target, locale)
     : rule.target;
-  const destination = localizedTarget.startsWith("/")
-    ? new URL(localizedTarget, request.url)
-    : new URL(rule.target);
+  let destination: URL;
+  try {
+    destination = localizedTarget.startsWith("/")
+      ? new URL(localizedTarget, request.url)
+      : new URL(rule.target);
+  } catch {
+    return null;
+  }
+  if (!isAllowedRedirectDestination(request, destination)) return null;
+  // Compare the final localized pathname with the real incoming pathname. This
+  // catches query/fragment self-loops and locale aliases such as /en/product/…
+  // that are not visible if only the stored Vietnamese lookup key is compared.
+  if (isLoop(request.nextUrl.pathname, destination.pathname)
+      || isLoop(currentPath, destination.pathname)) {
+    return null;
+  }
   if (!destination.search && request.nextUrl.search) {
     destination.search = request.nextUrl.search;
   }
   void recordHit(rule.redirectId);
-  return NextResponse.redirect(destination, rule.statusCode || 301);
+  return NextResponse.redirect(destination, 301);
 }
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {

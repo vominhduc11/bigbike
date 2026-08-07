@@ -16,6 +16,7 @@ const BODY =
   'Nội dung kiểm thử tự động cho module Tin tức. Bản ghi này chỉ phục vụ E2E và sẽ được xóa vĩnh viễn.'
 const BODY_EDITED =
   'Nội dung kiểm thử tự động đã được chỉnh sửa để xác nhận dữ liệu được lưu và đọc lại chính xác.'
+const COVER_FILENAME = `e2e_content_cover_${RUN_ID}.svg`
 const CAPTURE_VIEWPORTS = ['1440x900', '768x1024', '375x812']
   .map((name) => VIEWPORTS.find((viewport) => viewport.name === name)!)
 
@@ -54,6 +55,43 @@ async function fillEnglishTitle(page: Page, title: string) {
   await language.getByRole('button', { name: 'VI', exact: true }).click()
 }
 
+async function uploadCoverFromPicker(page: Page) {
+  const mediaCard = sectionCard(page, 'Hình ảnh')
+  await mediaCard.getByRole('button', { name: 'Chọn từ thư viện', exact: true }).first().click()
+  const dialog = page.getByRole('dialog', { name: 'Chọn ảnh từ thư viện' })
+  await expect(dialog).toBeVisible()
+
+  for (const viewport of CAPTURE_VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await expectNoHorizontalOverflow(page, `Picker ảnh bài viết ${viewport.name}`)
+    await expect(dialog).toBeVisible()
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><title>${COVER_FILENAME}</title><rect width="1200" height="630" fill="#ff0c09"/></svg>`
+  const [uploadResponse] = await Promise.all([
+    page.waitForResponse((candidate) => candidate.request().method() === 'POST'
+      && new URL(candidate.url()).pathname.endsWith('/api/v1/admin/media')),
+    dialog.locator('input[type="file"]').setInputFiles({
+      name: COVER_FILENAME,
+      mimeType: 'image/svg+xml',
+      buffer: Buffer.from(svg),
+    }),
+  ])
+  expect(uploadResponse.status(), 'API tải ảnh ngay trong picker bài viết phải trả 201').toBe(201)
+  const uploaded = await uploadResponse.json()
+  const confirm = dialog.getByRole('button', { name: 'Chọn ảnh này', exact: true })
+  await expect(confirm, 'Ảnh bìa 1200×630 hợp lệ phải chọn được').toBeEnabled({ timeout: 30_000 })
+  await confirm.click()
+  await expect(mediaCard.getByRole('button', { name: 'Đổi ảnh', exact: true }).first()).toBeVisible()
+
+  return {
+    id: uploaded?.data?.id as string | undefined,
+    apiOrigin: new URL(uploadResponse.url()).origin,
+    authorization: uploadResponse.request().headers().authorization || '',
+  }
+}
+
 async function savePublishStatus(page: Page, articleId: string, status: 'Nháp' | 'Đã xuất bản') {
   const publishCard = sectionCard(page, 'Hiển thị')
   await publishCard.getByRole('combobox').click()
@@ -74,7 +112,7 @@ async function filterStatus(page: Page, status: 'Nháp' | 'Đã xuất bản' | 
 }
 
 async function findArticleRow(page: Page, title: string) {
-  await page.getByPlaceholder('Tên hoặc slug').fill(title)
+  await page.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill(title)
   const row = page.locator('tbody tr').filter({ hasText: title })
   await expect(row, `Không tìm thấy bài thử nghiệm ${title}`).toHaveCount(1, { timeout: 15_000 })
   await expect(page.locator('tbody tr'), `Bộ lọc phải chỉ còn bài thử nghiệm ${title}`)
@@ -137,7 +175,7 @@ async function cleanupPrefixedArticles(page: Page) {
   for (const status of ['Nháp', 'Đã xuất bản'] as const) {
     await navigateSpa(page, '/admin/content')
     await filterStatus(page, status)
-    await page.getByPlaceholder('Tên hoặc slug').fill('E2E_CONTENT_')
+    await page.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill('E2E_CONTENT_')
     await page.waitForTimeout(450)
 
     while (await page.locator('tbody tr').filter({ hasText: 'E2E_CONTENT_' }).count()) {
@@ -152,7 +190,7 @@ async function cleanupPrefixedArticles(page: Page) {
 
   await navigateSpa(page, '/admin/content')
   await filterStatus(page, 'Thùng rác')
-  await page.getByPlaceholder('Tên hoặc slug').fill('E2E_CONTENT_')
+  await page.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill('E2E_CONTENT_')
   await page.waitForTimeout(450)
   while (await page.locator('tbody tr').filter({ hasText: 'E2E_CONTENT_' }).count()) {
     const rows = page.locator('tbody tr').filter({ hasText: 'E2E_CONTENT_' })
@@ -164,6 +202,36 @@ async function cleanupPrefixedArticles(page: Page) {
   }
 }
 
+async function cleanupPickerMedia(page: Page) {
+  const firstList = page.waitForResponse((response) => response.request().method() === 'GET'
+    && new URL(response.url()).pathname.endsWith('/api/v1/admin/media'))
+  await navigateSpa(page, '/admin/media')
+  const listResponse = await firstList
+  const authorization = listResponse.request().headers().authorization || ''
+  if (!authorization) return
+
+  const filteredResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return response.request().method() === 'GET'
+      && url.pathname.endsWith('/api/v1/admin/media')
+      && url.searchParams.get('q') === 'e2e_content_cover_'
+  })
+  await page.getByRole('searchbox').fill('e2e_content_cover_')
+  const response = await filteredResponse
+  const payload = await response.json()
+  const items = payload?.data?.items
+    ?? payload?.data?.content
+    ?? (Array.isArray(payload?.data) ? payload.data : [])
+  const headers = { Authorization: authorization }
+  const apiOrigin = new URL(response.url()).origin
+  for (const item of items) {
+    const marker = `${item.originalFilename || ''} ${item.title || ''}`.toLowerCase()
+    if (!marker.includes('e2e_content_cover_')) continue
+    await page.request.delete(`${apiOrigin}/api/v1/admin/media/${item.id}`, { headers })
+    await page.request.delete(`${apiOrigin}/api/v1/admin/media/${item.id}?permanent=true`, { headers })
+  }
+}
+
 test.describe('content-article lifecycle', () => {
   test('tạo, sửa, xuất bản, về Nháp, Thùng rác, khôi phục và xóa vĩnh viễn đúng bài E2E_CONTENT_', async ({
     adminPage,
@@ -172,13 +240,17 @@ test.describe('content-article lifecycle', () => {
     test.setTimeout(240_000)
     let articleId: string | null = null
     let permanentlyDeleted = false
+    let coverMediaId: string | null = null
+    let mediaApiOrigin = ''
+    let mediaAuthorization = ''
 
     try {
       await test.step('dọn fixture Tin tức còn sót từ lần chạy bị gián đoạn', async () => {
         await cleanupPrefixedArticles(adminPage)
+        await cleanupPickerMedia(adminPage)
       })
 
-      await test.step('tạo bài Nháp với tiêu đề VI/EN và nội dung VI', async () => {
+      await test.step('tạo bài Nháp với tiêu đề VI/EN, nội dung VI và tải ảnh trực tiếp từ picker', async () => {
         await navigateSpa(adminPage, '/admin/content/articles/new')
         await dismissDraftBannerIfAny(adminPage)
         await sectionCard(adminPage, 'Thông tin chính')
@@ -186,6 +258,11 @@ test.describe('content-article lifecycle', () => {
           .fill(TITLE)
         await addParagraphBlock(adminPage, BODY)
         await fillEnglishTitle(adminPage, TITLE_EN)
+        const uploadedCover = await uploadCoverFromPicker(adminPage)
+        coverMediaId = uploadedCover.id || null
+        mediaApiOrigin = uploadedCover.apiOrigin
+        mediaAuthorization = uploadedCover.authorization
+        expect(coverMediaId, 'Không lấy được id ảnh bìa tải từ picker').toBeTruthy()
 
         const [response] = await Promise.all([
           adminPage.waitForResponse((candidate) =>
@@ -194,6 +271,10 @@ test.describe('content-article lifecycle', () => {
           adminPage.getByRole('button', { name: 'Tạo bài viết', exact: true }).click(),
         ])
         expect(response.status(), 'API tạo bài phải trả 2xx').toBeLessThan(300)
+        const requestPayload = response.request().postDataJSON()
+        expect(requestPayload.coverImage).toMatchObject({ mimeType: 'image/svg+xml' })
+        expect(requestPayload.coverImage.url).toContain('/media/')
+        expect(requestPayload.coverImage.alt).toContain('e2e_content_cover_')
         await expect(adminPage).toHaveURL(/\/admin\/content\/articles\/[^/]+$/, { timeout: 15_000 })
         articleId = adminPage.url().match(/\/admin\/content\/articles\/([^/?#]+)/)?.[1] ?? null
         expect(articleId, 'Không lấy được id bài E2E_CONTENT_ vừa tạo').toBeTruthy()
@@ -292,7 +373,7 @@ test.describe('content-article lifecycle', () => {
         })
         await installReadOnlyIdentity(adminPage)
         await gotoAdmin(adminPage, '/admin/content')
-        await adminPage.getByPlaceholder('Tên hoặc slug').fill(TITLE_EDITED)
+        await adminPage.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill(TITLE_EDITED)
         await expect(adminPage.getByRole('status')
           .filter({ hasText: 'Bạn chỉ có quyền xem Tin tức.' })).toBeVisible()
         await expect(adminPage.getByRole('button', { name: 'Chuyển vào Thùng rác' })).toHaveCount(0)
@@ -336,6 +417,13 @@ test.describe('content-article lifecycle', () => {
       expectRuntimeClean(collect)
     } finally {
       await adminPage.unroute('**/api/v1/auth/me').catch(() => {})
+      if (coverMediaId && mediaApiOrigin && mediaAuthorization) {
+        const headers = { Authorization: mediaAuthorization }
+        await adminPage.request.delete(`${mediaApiOrigin}/api/v1/admin/media/${coverMediaId}`, { headers }).catch(() => {})
+        await adminPage.request.delete(
+          `${mediaApiOrigin}/api/v1/admin/media/${coverMediaId}?permanent=true`, { headers },
+        ).catch(() => {})
+      }
       if (articleId && !permanentlyDeleted) {
         await testInfo.attach('cleanup-required.txt', {
           body: `Bài E2E_CONTENT_ cần dọn thủ công nếu cleanup UI bị gián đoạn: ${articleId} | ${TITLE_EDITED}`,

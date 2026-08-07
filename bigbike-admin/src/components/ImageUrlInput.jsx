@@ -58,7 +58,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           type="button"
           onClick={() => { if (canReadMedia) setPickerOpen(true) }}
           disabled={disabled || !canReadMedia}
-          title={!canReadMedia ? 'Cần quyền media.read để mở Thư viện Media.' : undefined}
+          title={!canReadMedia ? t('media.permissionDeniedDesc') : undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
         >
@@ -78,7 +78,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
       </div>
       {!canReadMedia ? (
         <small className="text-xs text-muted-foreground">
-          Cần quyền media.read để chọn hoặc thay file trong Thư viện Media.
+          {t('media.permissionDeniedDesc')}
         </small>
       ) : null}
       {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
@@ -93,7 +93,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
             // 2nd arg forwarded so callers with their own decoupled alt field
             // (no onAltChange/no built-in alt UI here) can still prefill/sync it.
             onChange(url, media)
-            if (onAltChange !== undefined) onAltChange(pickAlt(alt, media))
+            if (typeof onAltChange === 'function') onAltChange(pickAlt(alt, media))
             setPickerOpen(false)
           }}
           onClose={() => setPickerOpen(false)}
