@@ -53,7 +53,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
       ref={dialogRef}
       tabIndex={-1}
       onClick={onClose}
-      className="fixed inset-0 z-modal flex flex-col items-center justify-center bg-black/90 p-8 outline-none"
+      className="fixed inset-0 z-[var(--admin-z-modal)] flex flex-col items-center justify-center bg-black/90 p-8 outline-none"
     >
       {/* Close button */}
       <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('common.close')}

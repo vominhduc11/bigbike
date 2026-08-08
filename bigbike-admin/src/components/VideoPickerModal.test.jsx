@@ -33,7 +33,15 @@ vi.mock('./MediaRequirementHint', () => ({
   MediaRequirementHint: () => null,
   MediaValidationError: () => null,
 }))
-vi.mock('./FilterSelect', () => ({ FilterSelect: () => null }))
+vi.mock('./FilterSelect', () => ({
+  FilterSelect: ({ value, onValueChange, options, ariaLabel }) => (
+    <select aria-label={ariaLabel} value={value} onChange={(e) => onValueChange(e.target.value)}>
+      {options.map((o) => (
+        <option key={String(o.value)} value={o.value}>{typeof o.label === 'string' ? o.label : String(o.value)}</option>
+      ))}
+    </select>
+  ),
+}))
 vi.mock('./media-picker/useModalBehavior', () => ({
   useModalFocusTrap: () => {},
   useBodyScrollLock: () => {},
@@ -116,6 +124,51 @@ describe('VideoPickerModal', () => {
       '/media/catalog/video-moi.mp4',
       expect.objectContaining({ id: 'video-uploaded' }),
     )
+  })
+
+  it('tải video vào đúng thư mục đang lọc và không bị reset về "Tất cả" sau khi tải xong', async () => {
+    const user = userEvent.setup()
+    mocks.fetchMediaFolders.mockResolvedValue([{ id: 'folder-1', name: 'Video trang chủ' }])
+    renderPicker()
+    await screen.findByTitle('gioi-thieu.mp4')
+
+    const folderSelect = await screen.findByLabelText('media.folders')
+    await user.selectOptions(folderSelect, 'folder-1')
+
+    const input = document.querySelector('input[type="file"]')
+    const file = new File(['video'], 'video-moi.mp4', { type: 'video/mp4' })
+    await user.upload(input, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      'folder-1',
+      false,
+    ))
+    // Không còn nhảy về "Tất cả thư mục" sau khi upload — giữ đúng ngữ cảnh admin đang lọc.
+    await waitFor(() => expect(folderSelect.value).toBe('folder-1'))
+  })
+
+  it('tải video khi đang lọc "Chưa phân loại" gửi cờ clearFolder', async () => {
+    const user = userEvent.setup()
+    renderPicker()
+    await screen.findByTitle('gioi-thieu.mp4')
+
+    const folderSelect = await screen.findByLabelText('media.folders')
+    await user.selectOptions(folderSelect, 'NONE')
+
+    const input = document.querySelector('input[type="file"]')
+    const file = new File(['video'], 'video-moi.mp4', { type: 'video/mp4' })
+    await user.upload(input, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      null,
+      true,
+    ))
   })
 
   it('chặn đúng tệp không phải MP4 và tệp vượt 200MB trước khi gọi máy chủ', async () => {

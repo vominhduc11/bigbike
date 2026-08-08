@@ -166,17 +166,29 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     setUploadError('')
     setUploading(true)
     setUploadProgress(0)
+    // Upload thẳng vào thư mục đang lọc trong picker. "Chưa phân loại" cũng là 1 đích rõ
+    // ràng (khác "Tất cả" — không đích nào) nên cần cờ riêng, xem ghi chú ở uploadMedia().
+    const targetFolderId = folderFilter && folderFilter !== 'NONE' ? folderFilter : null
+    const targetClearFolder = folderFilter === 'NONE'
     try {
-      const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct))
+      const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct), targetFolderId, targetClearFolder)
       const url = result?.item?.publicUrl
       if (url) {
         mediaCacheRef.current.set(url, result.item)
         markLoading()
         setSelectedUrl(url)
+        // Đồng bộ ô search/trang — KHÔNG reset folderFilter/tag nữa vì item mới đã được
+        // gán đúng thư mục đang lọc (nếu có), vẫn khớp filter hiện tại.
         setSearch('')
-        setFolderFilter('')
-        setTag('')
         setPage(1)
+        // Refetch ngay với search rỗng tường minh (không chờ debounce 300ms bắt kịp) để
+        // video vừa tải chắc chắn hiện ra ngay.
+        try {
+          const r = await fetchMedia({ search: '', mimeType: 'video/', page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+          const items = r.items ?? []
+          items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
+          setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })
+        } catch { /* effect bên dưới (reloadKey bump) sẽ tự thử lại */ }
         setReloadKey((value) => value + 1)
       } else {
         setUploadError(t('homeVideos.picker.uploadError'))

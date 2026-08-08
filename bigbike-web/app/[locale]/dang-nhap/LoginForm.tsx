@@ -8,6 +8,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiClientError, loginCustomer } from "@/lib/api/client-api";
 import { markCustomerAuthenticated, refreshAuth, useAuth } from "@/lib/auth/auth-store";
+import type { OAuthErrorKey } from "@/lib/auth/oauth-error";
 import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
@@ -22,9 +23,10 @@ import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
  * (.form-group label+.form-control, .form-checkbox Ghi nhớ, .forgot-password-link,
  * .form-submit button đỏ). GIỮ NGUYÊN logic auth (RHF + zod + loginCustomer + refreshAuth).
  */
-export function LoginForm({ returnTo }: { returnTo?: string }) {
+export function LoginForm({ returnTo, socialErrorKey }: { returnTo?: string; socialErrorKey?: OAuthErrorKey }) {
   const t = useTranslations("Auth.login");
   const tValidation = useTranslations("Auth.validation");
+  const tSocial = useTranslations("Auth.social");
   const locale = useLocale() as Locale;
   const resolvedReturnTo = returnTo ?? toAccountPath(locale);
   const router = useRouter();
@@ -65,7 +67,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
 
   return (
     <div>
-        <FormRootError message={errors.root?.message} />
+        <FormRootError message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)} />
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <AuthField

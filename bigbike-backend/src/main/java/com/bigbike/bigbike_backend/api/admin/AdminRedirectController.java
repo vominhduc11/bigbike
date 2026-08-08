@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.redirect.AdminRedirectResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.redirect.CreateRedirectRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.RedirectChain;
 import com.bigbike.bigbike_backend.api.admin.dto.redirect.UpdateRedirectRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -44,13 +46,28 @@ public class AdminRedirectController extends AdminControllerSupport {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) @Size(max = 200) String q,
             @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean chained,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "redirects.read");
         return apiResponseFactory.list(
-                adminRedirectService.listRedirects(page, size, q, enabled),
+                adminRedirectService.listRedirects(page, size, q, enabled, chained),
                 request
         );
+    }
+
+    /**
+     * Resolves where a target URL actually lands after following any onward redirects, so the
+     * admin form can warn before saving a rule that points at another rule's source.
+     * Declared above {@code /{id}} so "resolve" is not parsed as a UUID path variable.
+     */
+    @GetMapping("/resolve")
+    public ApiDataResponse<RedirectChain> resolveTarget(
+            @RequestParam @NotBlank @Size(max = 2048) String target,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "redirects.read");
+        return apiResponseFactory.data(adminRedirectService.resolveTarget(target), request);
     }
 
     @GetMapping("/{id}")

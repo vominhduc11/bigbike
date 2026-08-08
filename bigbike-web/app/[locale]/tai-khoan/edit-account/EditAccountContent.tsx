@@ -24,6 +24,7 @@ function AvatarEditor() {
   const profile = useAccount();
   const refreshProfile = useAccountRefresh();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const oauthManaged = !!profile?.oauthManaged;
 
   const [busy, setBusy] = useState<"uploading" | "removing" | null>(null);
   const [notice, setNotice] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
@@ -72,31 +73,33 @@ function AvatarEditor() {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-4">
       <Avatar url={profile?.avatarUrl} name={profile?.displayName ?? profile?.email ?? ""} size="lg" variant="brand" />
-      <div className="flex flex-col gap-2">
-        {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
-        <div className="flex flex-wrap gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={busy !== null}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {busy === "uploading" ? t("avatarUploading") : t("avatarUploadCta")}
-          </Button>
-          {profile?.avatarUrl && (
-            <Button type="button" variant="ghost" disabled={busy !== null} onClick={handleRemove}>
-              {busy === "removing" ? t("avatarRemoving") : t("avatarRemoveCta")}
+      {!oauthManaged && (
+        <div className="flex flex-col gap-2">
+          {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy !== null}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {busy === "uploading" ? t("avatarUploading") : t("avatarUploadCta")}
             </Button>
-          )}
+            {profile?.avatarUrl && (
+              <Button type="button" variant="ghost" disabled={busy !== null} onClick={handleRemove}>
+                {busy === "removing" ? t("avatarRemoving") : t("avatarRemoveCta")}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -106,6 +109,7 @@ export function EditAccountContent() {
   const tNav = useTranslations("Account.nav");
   const profile = useAccount();
   const refreshProfile = useAccountRefresh();
+  const oauthManaged = !!profile?.oauthManaged;
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -169,69 +173,88 @@ export function EditAccountContent() {
         {t("intro")}
       </p>
 
+      {oauthManaged && (
+        <FormNotice tone="warning" className="mb-5">{t("oauthManagedNotice")}</FormNotice>
+      )}
+
       <AvatarEditor />
 
-      {success && (
-        <FormNotice tone="success" className="mb-5">{t("successUpdated")}</FormNotice>
-      )}
-      {error && (
-        <FormNotice tone="danger" className="mb-5">{error}</FormNotice>
-      )}
-
-      <form onSubmit={handleSubmit}>
+      {oauthManaged ? (
         <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 md:grid-cols-2 xl:gap-x-8">
           <div className="flex flex-col gap-1.5">
             <label className={LEGACY_LABEL}>{t("fullNameLabel")}</label>
-            <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={t("fullNamePlaceholder")} />
+            <Input value={profile?.displayName ?? ""} disabled readOnly />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
-            <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder={t("emailPlaceholder")} />
+            <Input value={profile?.email ?? ""} disabled readOnly />
           </div>
         </div>
+      ) : (
+        <>
+          {success && (
+            <FormNotice tone="success" className="mb-5">{t("successUpdated")}</FormNotice>
+          )}
+          {error && (
+            <FormNotice tone="danger" className="mb-5">{error}</FormNotice>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 md:grid-cols-2 xl:gap-x-8">
+              <div className="flex flex-col gap-1.5">
+                <label className={LEGACY_LABEL}>{t("fullNameLabel")}</label>
+                <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={t("fullNamePlaceholder")} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
+                <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder={t("emailPlaceholder")} />
+              </div>
+            </div>
 
 
-        <fieldset className="mt-5 border-0 p-0">
-          <legend className="mb-3 text-a5-meta text-muted-foreground">{t("changePassword")}</legend>
-          <p className="mb-3 text-a4-content text-muted-foreground">
-            {t("changePasswordHint")}
-          </p>
-          <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 md:grid-cols-2 xl:gap-x-8">
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
-              <Input
-                type="password"
-                name="currentPassword"
-                placeholder={t("currentPasswordPlaceholder")}
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
-              <Input
-                type="password"
-                name="newPassword"
-                placeholder={t("newPasswordPlaceholder")}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
-              <Input
-                type="password"
-                name="confirmPassword"
-                placeholder={t("confirmPasswordPlaceholder")}
-                autoComplete="new-password"
-              />
-            </div>
-          </div>
-          {passwordError && <p className="mt-2 text-a4-content text-destructive">{passwordError}</p>}
-        </fieldset>
+            <fieldset className="mt-5 border-0 p-0">
+              <legend className="mb-3 text-a5-meta text-muted-foreground">{t("changePassword")}</legend>
+              <p className="mb-3 text-a4-content text-muted-foreground">
+                {t("changePasswordHint")}
+              </p>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 md:grid-cols-2 xl:gap-x-8">
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
+                  <Input
+                    type="password"
+                    name="currentPassword"
+                    placeholder={t("currentPasswordPlaceholder")}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
+                  <Input
+                    type="password"
+                    name="newPassword"
+                    placeholder={t("newPasswordPlaceholder")}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
+                  <Input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder={t("confirmPasswordPlaceholder")}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+              {passwordError && <p className="mt-2 text-a4-content text-destructive">{passwordError}</p>}
+            </fieldset>
 
-        <Button type="submit" variant="primary" disabled={saving} className="mt-6 w-full sm:w-auto sm:min-w-40">
-          {saving ? t("saving") : t("save")}
-        </Button>
-      </form>
+            <Button type="submit" variant="primary" disabled={saving} className="mt-6 w-full sm:w-auto sm:min-w-40">
+              {saving ? t("saving") : t("save")}
+            </Button>
+          </form>
+        </>
+      )}
     </>
   );
 }

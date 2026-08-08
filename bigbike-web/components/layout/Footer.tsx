@@ -192,7 +192,8 @@ export async function Footer({ locale }: { locale: Locale }) {
                         return (
                           <li key={key}>
                             <a
-                              rel="nofollow"
+                              rel="nofollow noopener noreferrer"
+                              target="_blank"
                               href={FOOTER_SOCIAL_LINKS[key]}
                               aria-label={`${profile.platform} - ${profile.displayName}`}
                               className="flex items-center gap-5! text-white! no-underline!"

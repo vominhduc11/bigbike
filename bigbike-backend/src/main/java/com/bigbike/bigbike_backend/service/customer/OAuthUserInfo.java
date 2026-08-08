@@ -6,5 +6,8 @@ public record OAuthUserInfo(
         String subject,
         String email,
         boolean emailVerified,
-        String displayName
+        String displayName,
+        /** Provider-hosted profile photo URL, if any. Never persisted as-is — only ever imported by
+         *  re-uploading into MinIO, see {@link CustomerOAuthService}. */
+        String avatarUrl
 ) {}

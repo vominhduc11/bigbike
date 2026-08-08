@@ -57,6 +57,35 @@ describe("legacy redirect proxy", () => {
     expect(response.headers.get("location")).toBe("https://bigbike.vn/gio-hang/?coupon=BB");
   });
 
+  it("resolves a slash-less legacy source in one 301 without a 308 hop first", async () => {
+    // sourcePattern lưu không kèm "/" cuối (489 luật legacy dạng này). Nếu proxy
+    // chuẩn hoá "/" trước khi tra bảng thì URL tốn 2 hop — phải là 1.
+    mockRedirect("/mu-bao-hiem", "/danh-muc/mu-bao-hiem");
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/mu-bao-hiem"));
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://bigbike.vn/danh-muc/mu-bao-hiem/");
+  });
+
+  it("still 308-normalizes a slash-less path that has no redirect rule", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 404 }));
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/danh-muc/mu-bao-hiem"));
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://bigbike.vn/danh-muc/mu-bao-hiem/");
+  });
+
+  it("falls back to 308 instead of looping when a rule only adds the trailing slash", async () => {
+    mockRedirect("/tin-tuc", "/tin-tuc/");
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc"));
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://bigbike.vn/tin-tuc/");
+  });
+
   it.each([
     ["/en/news/legacy-article/?ref=old", "/en/tin-tuc/legacy-article/?ref=old"],
     ["/en/products/legacy-product/?ref=old", "/en/product/legacy-product/?ref=old"],

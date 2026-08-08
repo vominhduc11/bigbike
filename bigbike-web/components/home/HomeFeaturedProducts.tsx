@@ -14,5 +14,5 @@ export function HomeFeaturedProducts({ initialProducts }: { initialProducts: Pro
   const products = initialProducts;
   if (products.length === 0) return null;
 
-  return <ProductSwiper key={locale} products={products} />;
+  return <ProductSwiper key={locale} products={products} autoplay />;
 }

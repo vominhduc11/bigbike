@@ -232,6 +232,25 @@ const nextConfig: NextConfig = {
         hostname: "img.youtube.com",
         pathname: "/vi/**",
       },
+      // Customer avatar hotlinked straight from Google/Facebook on OAuth login
+      // (owner-approved exception 2026-08-07 to the MinIO-only media rule — see
+      // BUSINESS_RULES.md MEDIA_RULE_005, CustomerOAuthService.backfillAvatar).
+      // "**." wildcard covers every CDN subdomain depth each provider actually serves from.
+      {
+        protocol: "https",
+        hostname: "**.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.fbcdn.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "platform-lookaside.fbsbx.com",
+        pathname: "/**",
+      },
       // Dynamic: MinIO on any network IP configured via BIGBIKE_LEGACY_UPLOADS_BASE
       ...(dynamicMediaPattern ? [dynamicMediaPattern] : []),
     ],
@@ -318,47 +337,12 @@ const nextConfig: NextConfig = {
         destination: "/sp/",
         statusCode: 301,
       },
-      // Category slugs renamed in migration — must precede the generic /{slug}.html→/{slug}/ CSV rule.
-      {
-        source: "/mu-bao-hiem.html",
-        destination: "/danh-muc/non-bao-hiem-moto/",
-        statusCode: 301,
-      },
-      {
-        source: "/mu-bao-hiem",
-        destination: "/danh-muc/non-bao-hiem-moto/",
-        statusCode: 301,
-      },
-      {
-        source: "/ao-quan-bao-ho.html",
-        destination: "/danh-muc/quan-ao-bao-ho-moto/",
-        statusCode: 301,
-      },
-      {
-        source: "/ao-quan-bao-ho",
-        destination: "/danh-muc/quan-ao-bao-ho-moto/",
-        statusCode: 301,
-      },
-      {
-        source: "/phu-kien-khac.html",
-        destination: "/sp/",
-        statusCode: 301,
-      },
-      {
-        source: "/phu-kien-khac",
-        destination: "/sp/",
-        statusCode: 301,
-      },
-      {
-        source: "/san-pham-khuyen-mai.html",
-        destination: "/sp/",
-        statusCode: 301,
-      },
-      {
-        source: "/san-pham-khuyen-mai",
-        destination: "/sp/",
-        statusCode: 301,
-      },
+      // Các slug danh mục đổi tên khi migration đã chuyển hẳn sang bảng `redirects`
+      // quản lý trong admin (2026-08-07) — 4 URL cũ × 2 biến thể (.html và không).
+      // Luật viết cứng ở đây chạy TRƯỚC proxy nên luôn đè bảng admin: chủ shop sửa
+      // trong admin mà không có tác dụng, hit_count đứng yên ở 0. Đừng thêm lại.
+      // Lưu ý nếu sau này khôi phục docs/legacy/SEO_REDIRECT_MAP.csv: luật CSV chung
+      // /{slug}.html→/{slug}/ sẽ lại đè bảng admin, phải xét lại thứ tự khi đó.
       // Legacy buying-guide URLs. Bộ hướng dẫn tĩnh hiện chỉ có 2 trang con
       // (size-mu, size-trang-phuc) — không có nội dung "mua hàng" riêng, nên mọi
       // biến thể mua-hàng cũ 301 về hub /huong-dan/; size-gang-tay cũ gộp vào

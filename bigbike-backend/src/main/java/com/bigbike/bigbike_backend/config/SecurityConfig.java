@@ -57,8 +57,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/verify-email").permitAll()
-                        // Social login (OAuth2) — GET browser redirects, no existing session required
-                        .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/oauth/**").permitAll()
+                        // Social login (OAuth2) — the two GET browser redirects, no existing session
+                        // required. Listed explicitly, NOT as oauth/**: the sibling /oauth/links
+                        // endpoints manage a signed-in customer's linked accounts and must stay behind
+                        // ROLE_CUSTOMER.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/oauth/*/authorize").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/oauth/*/callback").permitAll()
+                        .requestMatchers("/api/v1/customer/auth/oauth/links/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/customer/auth/oauth/links").hasRole("CUSTOMER")
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // Public review submission — no auth required, status defaults to PENDING

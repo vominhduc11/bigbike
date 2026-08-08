@@ -206,7 +206,7 @@ public class ProductImportService {
 
         resolveCategoryAndBrand(request, isCreate, errors);
         resolveSlug(request, isCreate, batchSlugsLower, errors);
-        applyPublishStatusRule(request);
+        applyPublishStatusRule(request, isCreate);
 
         if (!isCreate && existing != null) {
             backfillTranslationsFromExisting(request, existing);
@@ -544,13 +544,23 @@ public class ProductImportService {
     }
 
     /**
-     * Bulk JSON import is a draft-editing workflow. Every row is saved as DRAFT, for both new and
-     * existing products, regardless of the file's publishStatus or the entity's prior status.
-     * Publishing remains a manual Admin action so the publish-readiness gate owns image/content
-     * completeness checks.
+     * A brand-new product created via bulk import always starts as DRAFT, regardless of the
+     * file's publishStatus — a fresh listing gets a manual review/publish pass in Admin so the
+     * publish-readiness gate owns image/content completeness checks. An UPDATE row leaves
+     * publishStatus untouched (null) instead: {@code ProductMutationService#updateProduct}
+     * already treats a null publishStatus as "leave the existing value alone", the same
+     * null-is-untouched convention every other export-only field discarded in {@link
+     * #discardExportOnlyImportFields} relies on. Forcing DRAFT on update too (the previous
+     * behavior here) meant re-importing a row for an already-PUBLISHED product got rejected by
+     * {@code AdminMutationValidators.validateProductSavePublishStatus} — requested DRAFT versus
+     * current PUBLISHED reads as an unauthorized status change — instead of the silent no-op the
+     * shop-facing guide (product-template/HUONG-DAN.md, "Cập nhật nội dung cho sản phẩm ĐÃ CÓ
+     * sẵn") promises for editing a live product's price/content by file.
      */
-    private void applyPublishStatusRule(UpsertProductRequest request) {
-        request.setPublishStatus(PublishStatus.DRAFT);
+    private void applyPublishStatusRule(UpsertProductRequest request, boolean isCreate) {
+        if (isCreate) {
+            request.setPublishStatus(PublishStatus.DRAFT);
+        }
     }
 
     /**

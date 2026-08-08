@@ -125,6 +125,11 @@ services:
       # Defaults to localhost:9000 (port-mapped MinIO). Override in production with a CDN URL.
       BIGBIKE_MEDIA_PUBLIC_BASE_URL: "${BIGBIKE_MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/bigbike-media}"
       BIGBIKE_COOKIES_SECURE: "${BIGBIKE_COOKIES_SECURE:-true}"
+      # Cookie Domain for the customer cookies. Blank = host-only (correct for localhost, where
+      # web:3000 and api:8080 share a host). When the storefront and API sit on different hosts
+      # of the same site (bigbike.vn + api.bigbike.vn), set the registrable domain — otherwise
+      # bb_csrf is unreadable from the storefront and every customer mutation 403s.
+      BIGBIKE_COOKIES_DOMAIN: "${BIGBIKE_COOKIES_DOMAIN:-}"
       # Shared secret for /api/internal/** (redirect lookups from bigbike-web's proxy.ts).
       # Must equal INTERNAL_API_TOKEN on bigbike-web below. Empty in dev is fine (allow-open=true
       # in application-dev.properties); empty in prod = redirect feature silently disabled (401s, fail-open).

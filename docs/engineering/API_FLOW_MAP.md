@@ -46,7 +46,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 `login screen -> /oauth/{provider}/authorize -> provider consent -> /oauth/{provider}/callback -> CustomerOAuthService.exchangeCode + linkOrCreate -> CustomerAuthService.createSessionForCustomer -> session cookies -> 302 to storefront`
 
-`linkOrCreate`: reuse the account matching `(oauth_provider, oauth_subject)`; else link onto an existing account with a verified matching email; else create a new active customer.
+`linkOrCreate` (revised 2026-08-07, CUSTOMER_RULE_010): reuse the account matching `(provider, subject)`; else link onto an existing **passwordless** account with a verified matching email (so Google/Facebook can still merge with each other); else create a new active customer — never adopting a password account, even on a verified email match. Every pass through this also syncs `display_name`/`avatar_url` from the provider (`syncProfileFromProvider`), the only update path for a social account since self-service profile editing is locked (`CustomerAuthService.requireNotOauthManaged`).
 
 Status: `CONFIRMED_FROM_CODE`
 

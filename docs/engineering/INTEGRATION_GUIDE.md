@@ -43,6 +43,37 @@ cache entries immediately, instead of waiting for the page's time-based `revalid
   immediately clears the web proxy L1 redirect Map through the internal clear endpoint. The
   redirect cache TTL is only a fallback.
 
+### Redirect resolution order in `bigbike-web/proxy.ts`
+
+Order matters — getting it wrong costs an extra hop or silently disables the admin table.
+`CONFIRMED_FROM_CODE` (verified against live bigbike.vn 2026-08-07)
+
+1. `next.config.ts` `redirects()` — runs **before** proxy. Anything matched here never
+   reaches the admin table. Keep it to infrastructure-only rules; see BUSINESS_RULES.md
+   `REDIRECT_RULE_008`. **If `docs/legacy/SEO_REDIRECT_MAP.csv` is ever restored, its generic
+   `/{slug}.html→/{slug}/` rule will shadow the admin table again — re-check this order then.**
+   The file does not exist today, so `csvRedirectRules` is empty.
+2. `.html` lookup — legacy `.html` paths hit the redirect table before locale/trailing-slash
+   normalization, so `/vi/x.html` and `/en/x.html` stay at one hop.
+3. `/vi` prefix normalization, then old unprefixed-English roots.
+4. **Slash-less lookup, then trailing-slash `308`.** The table is queried *before* the `308`
+   is emitted. 489 of the 8.877 rules store `sourcePattern` without a trailing slash; querying
+   after the `308` made every one of them cost two hops. `isLoop` (trailing-slash-insensitive)
+   makes a `/x → /x/` rule fall through to the `308` instead of looping. See
+   `REDIRECT_RULE_009`.
+5. Auth gate, `?s=` search alias, then the general table lookup on the vi-normalized path.
+
+`lookupRedirect` tries the exact path, then the de-trailed variant; targets are normalized by
+`translatePath` (`localizeInternalPath` always ends with `withTrailingSlash`), so neither
+source nor target needs a trailing slash to resolve in one hop.
+
+**Failure mode to recognise:** if *every* redirect suddenly 404s and the web log repeats
+`[proxy] Backend returned 401 for redirect lookup on "..."`, the shared secret is mismatched —
+`INTERNAL_API_TOKEN` (web) must equal `BIGBIKE_INTERNAL_TOKEN` (backend). On the VPS this
+usually means the stack was rebuilt with the wrong env-file: use
+`docker compose --env-file .env.vps ...` (DEPLOYMENT_GUIDE.md), never the bare command, which
+silently falls back to the local-only `.env`.
+
 Tag map — catalog / commerce / home cluster (entity mutation → tags emitted):
 
 | Admin mutation | Tags emitted | Evidence |
@@ -105,8 +136,8 @@ No redirect, no provider webhook, no `paymentRedirectUrl`. The Alepay/ZaloPay on
 
 ## Social Login (OAuth2) — Google & Facebook
 
-The backend supports Google and Facebook OAuth callbacks. The legacy-parity storefront auth
-screen currently exposes the Facebook social link, matching the WordPress page.
+The backend supports Google and Facebook OAuth callbacks. The storefront login **and** register
+screens each expose **both** provider buttons (`SocialLoginButtons.tsx`).
 The backend implements the **authorization-code flow manually** (`CustomerOAuthController` +
 `CustomerOAuthService`) rather than Spring Security's auto-wired `/oauth2/*` chain — the
 custom `CustomerSessionFilter` / `CustomerCsrfFilter` and the `STATELESS` policy make the
@@ -120,18 +151,62 @@ manual flow simpler and conflict-free. No new Maven dependency is required.
   userinfo `https://openidconnect.googleapis.com/v1/userinfo`.
 - **Facebook** — create an app at developers.facebook.com → Facebook Login product.
   Valid OAuth Redirect URI: `{OAUTH_CALLBACK_BASE_URL}/api/v1/customer/auth/oauth/facebook/callback`.
-  Scope: `email,public_profile`. Token endpoint `https://graph.facebook.com/v19.0/oauth/access_token`,
-  profile `https://graph.facebook.com/me?fields=id,name,email`.
+  Scope: `email,public_profile`, plus `auth_type=rerequest` on the authorize URL. Token endpoint
+  `https://graph.facebook.com/v19.0/oauth/access_token`, profile
+  `https://graph.facebook.com/me?fields=id,name,email` — called with `appsecret_proof`
+  (HMAC-SHA256 of the access token keyed by the app secret) so a stolen token cannot be replayed.
   ⚠️ Facebook requires **App Review + Business Verification** before the `email` scope works
   for the public; in Development mode only app admins/testers/developers can log in.
   ⚠️ Facebook may return **no email** (user revoked the permission) — the callback then
   creates an account without email or fails gracefully; it cannot link to an existing account.
+  A repeat login by the same linked customer **does** backfill the email later if the provider
+  starts supplying a verified one (e.g. after App Review approval) and no other customer already
+  owns that address — see `CustomerOAuthService.backfillEmailIfMissing`.
+  ⚠️ **`auth_type=rerequest` is required, not optional.** Without it Facebook silently reuses
+  whatever the customer granted on an *earlier* authorization of this app and never shows the
+  consent screen again — so any customer who logged in before `email` had App Review approval
+  stays stuck with a `public_profile`-only grant forever, even after re-authorizing. This bit
+  bigbike itself: the app went live and got `email` approved on 2026-08-07, but a test login from
+  before that change kept coming back with no email until this parameter was added.
+
+> **The redirect URI must be registered provider-side, exactly.** Google answers
+> `Error 400: redirect_uri_mismatch` otherwise, and the customer never reaches the consent
+> screen. This is what blocked Google sign-in on production until 2026-08-07 despite correct
+> credentials — see `docs/audits/FINDING_2026-08-07_COOKIE_DOMAIN_SPLIT_HOST.md` §F-2.
 
 **Credentials** are read from environment variables — keys `OAUTH_GOOGLE_*`,
 `OAUTH_FACEBOOK_*`, `OAUTH_CALLBACK_BASE_URL`, `OAUTH_WEB_SUCCESS_URL`. See `.env.example`.
-When client id/secret are blank, the social buttons still render but the flow returns the
-`oauth` error. Account linking only links a provider identity to an existing password
-account when the provider asserts a verified email (anti-takeover).
+When client id/secret are blank, the social buttons still render and the flow lands on the login
+page with `?error=oauth_unconfigured`, which the storefront explains in words.
+
+**Account linking rules** (`CustomerOAuthService.linkOrCreate`, revised 2026-08-07 —
+CUSTOMER_RULE_010):
+
+- An existing `(provider, subject)` in `customer_oauth_links` reuses that account. Both providers
+  can be linked to one customer — a second link no longer overwrites the first.
+- A provider email that matches an existing account only adopts it when that account **has no
+  password** (`password_hash IS NULL`) — i.e. it's itself a social-only account. A password
+  account is **never** adopted, even with a matching verified email; a separate account is created
+  instead, with `email = null` to avoid the `customers_email_unique` collision. (Before 2026-08-07,
+  a *verified* password account was adopted too — only an *unverified* one was protected. Password
+  accounts and social accounts are now deliberately separate identities.)
+- A non-`ACTIVE` account is refused with `oauth_blocked` rather than being given a session that
+  `CustomerSessionFilter` will then reject — that combination looked like a silent login loop.
+- On every login (creation, first link, repeat sign-in) `display_name`/`avatar_url` are overwritten
+  with the provider's current values (`syncProfileFromProvider`) — a social account has no
+  self-service profile edit (`CustomerAuthService.requireNotOauthManaged` returns `403` on
+  `PATCH /customer/me` and the avatar endpoints), so this sync-on-login is the only update path.
+
+The "Tài khoản liên kết" link/unlink panel at `/tai-khoan/edit-account/` was **removed 2026-08-07**
+— with new logins no longer able to attach to a password account, there was nothing left for a
+self-service screen to manage. `GET`/`DELETE /api/v1/customer/auth/oauth/links` remain live on the
+backend (grandfathered pre-2026-08-07 accounts, API completeness) but are called by no `bigbike-web`
+UI.
+
+> **Cookies:** the callback issues the session cookies from the API host. On a split-host
+> deployment (`bigbike.vn` + `api.bigbike.vn`) `BIGBIKE_COOKIES_DOMAIN` must be set, or the
+> storefront cannot see the session and the post-login redirect bounces straight back to the
+> login page. See `DEPLOYMENT_GUIDE.md` §Cookie Domain.
 
 ## Not Confirmed In Active Repo
 

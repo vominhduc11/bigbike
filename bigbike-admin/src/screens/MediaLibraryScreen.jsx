@@ -176,6 +176,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     const queue = valid.map((f, i) => ({ id: `${Date.now()}-${i}`, name: f.name, file: f, progress: 0, status: 'pending' }))
     setUploadQueue((q) => [...q, ...queue])
 
+    // Upload thẳng vào thư mục đang mở. "Chưa phân loại" cũng là 1 đích rõ ràng (khác
+    // "Tất cả" — không đích nào) nên cần cờ riêng để phân biệt, xem ghi chú ở uploadMedia().
+    const targetFolderId = query.folderFilter && query.folderFilter !== 'NONE' ? query.folderFilter : null
+    const targetClearFolder = query.folderFilter === 'NONE'
+
     // Sequential upload to keep server happy and progress trackable
     let succeeded = 0
     let failed = 0
@@ -186,7 +191,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       try {
         await uploadMedia(item.file, '', (pct) => {
           setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, progress: pct } : u))
-        })
+        }, targetFolderId, targetClearFolder)
         setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'done', progress: 100 } : u))
         sendAdminWs('/app/admin/maintenance/uploads', { uploadId: item.id, status: 'DONE' })
         succeeded += 1
@@ -196,7 +201,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         failed += 1
       }
     }
-    // Refresh list once everyone done
+    // Refresh list once everyone done — về trang 1 để ảnh/video mới (luôn ở đầu theo sort
+    // mặc định createdAt desc) không bị kẹt ngoài tầm nhìn nếu admin đang ở trang khác.
+    setQuery((p) => ({ ...p, page: 1 }))
     refreshData({ foldersChanged: true })
     // Báo đúng số thành công / lỗi thay vì luôn "hoàn tất N" kể cả khi có lỗi (P1-12).
     if (failed === 0) {
@@ -334,9 +341,13 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   function clearSelection() { setSelectedIds(new Set()) }
 
   function handleMediaSaved(updated) {
+    const folderChanged = editingMedia && editingMedia.folderId !== updated.folderId
     setState((p) => ({ ...p, items: p.items.map((m) => m.id === updated.id ? updated : m) }))
     setEditingMedia(null)
-    setFolderRefreshKey((k) => k + 1)
+    // Đổi folder qua panel chi tiết: nếu đang lọc theo 1 thư mục, item có thể không còn
+    // khớp filter nữa — cần refetch để nó biến mất khỏi view, giống hành vi bulk-move.
+    if (folderChanged) refreshData({ foldersChanged: true })
+    else setFolderRefreshKey((k) => k + 1)
   }
 
   // ── Render helpers ───────────────────────────────────────────

@@ -289,6 +289,7 @@ function buildRedirectQuery(query) {
     size: query?.pageSize,
     q: query?.search,
     enabled: query?.enabled,
+    chained: query?.chained,
   }
 }
 
@@ -799,6 +800,21 @@ export async function fetchRedirects(query) {
   }
 }
 
+/**
+ * Tra xem một địa chỉ đích thực sự dẫn tới đâu sau khi đi hết chuỗi chuyển hướng.
+ * Form dùng để cảnh báo trước khi lưu luật trỏ vào nguồn của luật khác.
+ * Trả về { hops, finalTarget }; hops >= 2 nghĩa là còn chuyển tiếp.
+ */
+export async function resolveRedirectTarget(target) {
+  const payload = await requestJson('/admin/redirects/resolve', { query: { target } })
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+  const hops = Number(data.hops)
+  return {
+    hops: Number.isFinite(hops) && hops >= 1 ? hops : 1,
+    finalTarget: typeof data.finalTarget === 'string' ? data.finalTarget.trim() : '',
+  }
+}
+
 export async function createRedirect(input) {
   const payload = await requestJson('/admin/redirects', {
     method: 'POST',
@@ -1057,7 +1073,7 @@ export async function updateMedia(mediaId, body) {
   return { item: normalizeMediaItem(payload?.data || {}) }
 }
 
-export async function uploadMedia(file, altText = '', onProgress = null) {
+export async function uploadMedia(file, altText = '', onProgress = null, folderId = null, clearFolder = false) {
 
   // First attempt with current access token; if 401, refresh once and retry.
   // We must use XHR (not fetch) because XHR exposes upload progress events.
@@ -1067,6 +1083,8 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
       const formData = new FormData()
       formData.append('file', file)
       if (altText) formData.append('altText', altText)
+      if (folderId) formData.append('folderId', folderId)
+      if (clearFolder) formData.append('clearFolder', 'true')
 
       if (typeof onProgress === 'function') {
         xhr.upload.addEventListener('progress', (e) => {

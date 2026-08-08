@@ -3398,7 +3398,16 @@
     "advancedHint": "Mã tham chiếu địa chỉ cũ và ghi chú",
     "activeFiltersAria": "Bộ lọc đang áp dụng",
     "bulkEnable": "Bật",
-    "bulkDisable": "Tắt"
+    "bulkDisable": "Tắt",
+    "colChainHops": "Số bước",
+    "chainHopsValue": "{{count}} bước",
+    "chainHopsTitle": "Đi vòng — đích cuối thật sự là {{finalTarget}}",
+    "chainWarning": "Đích này còn chuyển hướng tiếp tới {{finalTarget}}. Nên trỏ thẳng tới đó để khách chỉ đi 1 bước.",
+    "chainWarningApply": "Trỏ thẳng tới đích cuối",
+    "filterChained": "Đi vòng",
+    "chainedOnly": "Chỉ luật đi vòng",
+    "chainedDirect": "Chỉ luật đi thẳng",
+    "filterChipChained": "Đi vòng: {{value}}"
   },
   "errorBoundary": {
     "title": "Đã xảy ra lỗi không mong đợi",

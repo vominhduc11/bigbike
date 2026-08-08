@@ -39,7 +39,39 @@ must never contain a retired host implicitly. `CONFIRMED_FROM_CONFIG`
 > restart keeps the old links. `CONFIRMED_FROM_CONFIG`
 
 When migrating from IP:port to a domain, swap the public values in `.env.vps` for the domain
-(e.g. `https://api.bigbike.vn`), update `BIGBIKE_CORS_ALLOWED_ORIGINS`, and rebuild.
+(e.g. `https://api.bigbike.vn`), update `BIGBIKE_CORS_ALLOWED_ORIGINS`, set
+`BIGBIKE_COOKIES_DOMAIN` (below), and rebuild.
+
+> **Always pass `--env-file .env.vps` on the VPS.** A bare `docker compose up -d --build`
+> silently falls back to `.env` (the local file), which bakes `http://<server-ip>:<port>` into
+> the web bundle: canonical/`og:url` tags advertise the raw origin IP and every browser call
+> targets a port that is firewalled off. Observed live on 2026-08-07.
+
+### Cookie Domain when the storefront and the API are different hosts
+
+`BIGBIKE_COOKIES_DOMAIN` sets the `Domain` attribute on the customer cookies
+(`bb_session`, `bb_csrf`, `bb_refresh`, `bb_guest_id`). `CONFIRMED_FROM_CODE`
+(`CustomerAuthCookies.java`, `application.properties`)
+
+| Environment | Value | Why |
+|---|---|---|
+| Local (`localhost:3000` + `localhost:8080`) | blank | Cookies ignore the port, so a host-only cookie already reaches both. |
+| VPS (`bigbike.vn` + `api.bigbike.vn`) | `.bigbike.vn` | Different hosts of the same site. |
+
+Without it on a split-host deployment the cookies are host-only and two things break, both
+silently:
+
+1. The storefront reads `bb_csrf` from `document.cookie` to build the `X-CSRF-Token` header
+   (`bigbike-web/lib/api/client-api.ts`). It cannot see a cookie scoped to `api.bigbike.vn`,
+   so **every customer mutation — add-to-cart, checkout, profile edit, review — returns
+   `403 CSRF_INVALID`.**
+2. `bigbike-web/proxy.ts` guards `/tai-khoan/**` on the presence of `bb_session`. That cookie
+   is never visible on `bigbike.vn`, so logged-in customers are bounced back to the login page,
+   and the social-login callback — which redirects to `/tai-khoan/` — looks like it silently
+   failed.
+
+This regressed with the 2026-08-06 domain cutover and was caught on 2026-08-07; see
+`docs/audits/FINDING_2026-08-07_COOKIE_DOMAIN_SPLIT_HOST.md`.
 
 ### Flyway on a database that once ran the `dev` profile
 
@@ -75,6 +107,15 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
   Set `WEB_REVALIDATE_EXPECTED_REPLICAS=N` so backend startup fails when the fan-out is
   incomplete instead of leaving one replica silently stale. `CONFIRMED_FROM_CONFIG`
 - CORS must be set explicitly through `BIGBIKE_CORS_ALLOWED_ORIGINS`. `CONFIRMED_FROM_CONFIG`
+- `BIGBIKE_COOKIES_DOMAIN` must be set on any split-host deployment — see the section above. `CONFIRMED_FROM_CODE`
+- Social login (OAuth2) needs six vars: `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`,
+  `OAUTH_FACEBOOK_CLIENT_ID`, `OAUTH_FACEBOOK_CLIENT_SECRET`, `OAUTH_CALLBACK_BASE_URL`
+  (the API origin, e.g. `https://api.bigbike.vn`) and `OAUTH_WEB_SUCCESS_URL` (the storefront
+  origin). Blank client id/secret keeps a provider disabled — the buttons still render and the
+  flow lands on the login page with an error. The exact callback URL
+  (`{OAUTH_CALLBACK_BASE_URL}/api/v1/customer/auth/oauth/{provider}/callback`) must also be
+  registered provider-side, or Google answers `redirect_uri_mismatch`. See
+  `INTEGRATION_GUIDE.md` for the provider setup. `CONFIRMED_FROM_CONFIG`
 - All service ports (Postgres, MinIO, Backend, Web, Admin) are bound to `127.0.0.1` — public traffic must arrive via the nginx reverse proxy, never directly. `CONFIRMED_FROM_CONFIG`
 - `SPRING_PROFILES_ACTIVE` for staging/production must not include `mock`; placeholder auth is explicitly limited to dev/mock behavior in `AuthController` and `DevAdminAuthService`. `CONFIRMED_FROM_CODE`
 - `bigbike-web` must call the real backend public APIs (`/api/v1/products`, `/api/v1/menus/**`, `/api/v1/settings/public`, etc.). The legacy `scripts/mock-api-server.mjs` storefront shim is not part of the deployment contract and must not be restored in runtime/dev/prod paths. `CONFIRMED_FROM_CODE`

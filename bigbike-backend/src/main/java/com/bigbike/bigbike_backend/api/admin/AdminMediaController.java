@@ -56,11 +56,13 @@ public class AdminMediaController extends AdminControllerSupport {
     public ApiDataResponse<AdminMediaDetailResponse> uploadMedia(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "altText", required = false, defaultValue = "") String altText,
+            @RequestParam(value = "folderId", required = false) UUID folderId,
+            @RequestParam(value = "clearFolder", required = false, defaultValue = "false") boolean clearFolder,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
         return apiResponseFactory.data(
-                adminMediaService.uploadMedia(file, altText, resolveAdminId()), request);
+                adminMediaService.uploadMedia(file, altText, folderId, clearFolder, resolveAdminId()), request);
     }
 
     @GetMapping

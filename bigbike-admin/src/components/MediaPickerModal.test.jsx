@@ -56,7 +56,13 @@ vi.mock('../lib/contracts', () => ({
 }))
 
 vi.mock('./FilterSelect', () => ({
-  FilterSelect: () => null,
+  FilterSelect: ({ value, onValueChange, options, ariaLabel }) => (
+    <select aria-label={ariaLabel} value={value} onChange={(e) => onValueChange(e.target.value)}>
+      {options.map((o) => (
+        <option key={String(o.value)} value={o.value}>{typeof o.label === 'string' ? o.label : String(o.value)}</option>
+      ))}
+    </select>
+  ),
 }))
 
 vi.mock('./MediaRequirementHint', () => ({
@@ -173,6 +179,8 @@ describe('MediaPickerModal', () => {
       file,
       '',
       expect.any(Function),
+      null,
+      false,
     ))
     expect(onClose).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog', { name: 'media.picker.dialogLabel' })).toBeInTheDocument()
@@ -197,7 +205,53 @@ describe('MediaPickerModal', () => {
     fireEvent.change(fileInput, { target: { files: [invalid, valid] } })
 
     expect(await screen.findByText('media.unsupportedType')).toBeInTheDocument()
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function)))
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function), null, false))
+  })
+
+  it('upload vào đúng thư mục đang lọc và không bị reset về "Tất cả" sau khi tải xong', async () => {
+    const user = userEvent.setup()
+    mocks.fetchMediaFolders.mockResolvedValue([{ id: 'folder-1', name: 'Banner' }])
+    renderPicker()
+
+    await screen.findByTitle('helmet-one.jpg')
+    const folderSelect = await screen.findByLabelText('media.folders')
+    await user.selectOptions(folderSelect, 'folder-1')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      'folder-1',
+      false,
+    ))
+    // Không còn nhảy về "Tất cả thư mục" sau khi upload — giữ đúng ngữ cảnh admin đang lọc.
+    await waitFor(() => expect(folderSelect.value).toBe('folder-1'))
+  })
+
+  it('upload khi đang lọc "Chưa phân loại" gửi cờ clearFolder — kể cả khi ảnh trùng nội dung đã nằm ở thư mục khác vẫn phải về đúng Chưa phân loại', async () => {
+    const user = userEvent.setup()
+    mocks.fetchMediaFolders.mockResolvedValue([{ id: 'folder-1', name: 'Banner' }])
+    renderPicker()
+
+    await screen.findByTitle('helmet-one.jpg')
+    const folderSelect = await screen.findByLabelText('media.folders')
+    await user.selectOptions(folderSelect, 'NONE')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      null,
+      true,
+    ))
   })
 
   it('giữ nguyên chữ ký callback chọn ảnh', async () => {

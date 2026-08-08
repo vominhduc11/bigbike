@@ -39,7 +39,7 @@ Chỉ còn **1 file duy nhất**: `mau-day-du.json`. Mỗi object trong mảng =
 4. **KHÔNG để chữ nháp lọt ra khách:** bỏ hết `[Cần ảnh: ...]`, `[gắn link]`, `[Bigbike kiểm tra bổ sung]`. Link sản phẩm khác phải là URL thật hoặc bỏ.
 5. **URL (canonical, link nội dung)** chỉ dùng `https://bigbike.vn/...` (hoặc `www.bigbike.vn`) theo file mẫu. Không dùng host ngoài khác. Từ 2026-08-06 địa chỉ IP `103.1.236.148` **không còn được chấp nhận** — file JSON dùng IP sẽ bị từ chối khi nạp.
 
-> Import **luôn lưu sản phẩm ở trạng thái Nháp**, kể cả khi tạo mới hoặc cập nhật sản phẩm đã có. Sau khi nạp xong, vào trang quản trị **bấm đăng tay** để lên web.
+> **Tạo sản phẩm MỚI qua nhập file luôn ở trạng thái Nháp.** Sau khi nạp xong, vào trang quản trị **bấm đăng tay** để lên web. **Cập nhật sản phẩm ĐÃ CÓ (kể cả đang bán) thì nạp file KHÔNG đổi trạng thái đăng bán** — sản phẩm đang bán vẫn tiếp tục hiển thị trên web sau khi nạp, chỉ nội dung/giá trong file mới được cập nhật (chi tiết ở mục "Cập nhật nội dung cho sản phẩm ĐÃ CÓ sẵn" bên dưới; sửa lỗi 2026-08-08 — bản trước có đoạn hướng dẫn sai, ép cả cập nhật về Nháp).
 
 ---
 

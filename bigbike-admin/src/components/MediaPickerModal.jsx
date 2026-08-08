@@ -186,6 +186,10 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
 
     setUploading(true)
     const uploadedUrls = []
+    // Upload thẳng vào thư mục đang lọc trong picker. "Chưa phân loại" cũng là 1 đích rõ
+    // ràng (khác "Tất cả" — không đích nào) nên cần cờ riêng, xem ghi chú ở uploadMedia().
+    const targetFolderId = folderFilter && folderFilter !== 'NONE' ? folderFilter : null
+    const targetClearFolder = folderFilter === 'NONE'
 
     for (const file of valid) {
       // Khoá theo id duy nhất, KHÔNG theo tên: hai file trùng tên sẽ không còn bị
@@ -197,7 +201,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       try {
         const result = await uploadMedia(file, '', (pct) => {
           setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: pct } : item))
-        })
+        }, targetFolderId, targetClearFolder)
         const url = result?.item?.publicUrl
         if (url) {
           uploadedUrls.push(url)
@@ -219,11 +223,23 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     }
 
     setUploading(false)
-    // Refresh grid — dùng refreshKey để force re-fetch kể cả khi page/search không đổi
+    // Đồng bộ ô search/trang — KHÔNG reset folderFilter/tag nữa vì item mới đã được gán
+    // đúng thư mục đang lọc (nếu có), nên vẫn khớp filter hiện tại, không cần né sang
+    // "Tất cả thư mục" như trước.
     setPage(1)
     setSearch('')
-    setFolderFilter('')
-    setTag('')
+    // Refetch ngay với search rỗng tường minh (không chờ debounce 300ms bắt kịp) để
+    // ảnh/video vừa tải chắc chắn hiện ra ngay, không bị lần fetch đầu vẫn lọc theo
+    // từ khoá tìm kiếm cũ.
+    if (canRead) {
+      setState((p) => ({ ...p, status: p.items.length > 0 ? 'refreshing' : 'loading', error: '', refreshError: '' }))
+      try {
+        const r = await fetchMedia({ search: '', mimeType: `${kind}/`, page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+        const items = r.items ?? []
+        items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
+        setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })
+      } catch { /* effect bên dưới (refreshKey bump) sẽ tự thử lại */ }
+    }
     setRefreshKey((k) => k + 1)
     // Auto-select uploaded image
     if (uploadedUrls.length > 0) setSelectedUrl(uploadedUrls[uploadedUrls.length - 1])

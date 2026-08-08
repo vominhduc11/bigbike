@@ -32,6 +32,17 @@ describe('MediaPreviewLightbox', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  // Regression: class `z-modal` KHÔNG phải utility Tailwind v4 (namespace --z-* không
+  // sinh utility z-index) nên overlay từng có z-index: auto → checkbox (z:2), overlay
+  // nút thao tác (z:10) và topbar (z:100) của lưới ảnh nổi đè lên lightbox.
+  it('stacks above the grid with the modal z-index token', () => {
+    render(<MediaPreviewLightbox items={items} index={0} onClose={vi.fn()} onNavigate={vi.fn()} />)
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toContain('z-[var(--admin-z-modal)]')
+    expect(dialog.className).not.toMatch(/(^|\s)z-modal(\s|$)/)
+  })
+
   it('keeps focus inside the dialog when tabbing from the last action', () => {
     const onClose = vi.fn()
     const onNavigate = vi.fn()

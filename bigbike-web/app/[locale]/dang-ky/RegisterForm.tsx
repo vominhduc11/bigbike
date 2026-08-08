@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerCustomer } from "@/lib/api/client-api";
 import { markCustomerAuthenticated, refreshAuth } from "@/lib/auth/auth-store";
+import type { OAuthErrorKey } from "@/lib/auth/oauth-error";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
@@ -20,9 +21,10 @@ import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
  * name/email + phone + password/repassword, .form-submit button đỏ).
  * GIỮ NGUYÊN logic auth (RHF + zod + registerCustomer + refreshAuth + success state).
  */
-export function RegisterForm({ returnTo }: { returnTo?: string }) {
+export function RegisterForm({ returnTo, socialErrorKey }: { returnTo?: string; socialErrorKey?: OAuthErrorKey }) {
   const t = useTranslations("Auth.register");
   const tValidation = useTranslations("Auth.validation");
+  const tSocial = useTranslations("Auth.social");
   const locale = useLocale() as Locale;
   const resolvedReturnTo = returnTo ?? toAccountPath(locale);
   const router = useRouter();
@@ -73,7 +75,7 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
 
   return (
     <div>
-        <FormRootError message={errors.root?.message} />
+        <FormRootError message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)} />
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">

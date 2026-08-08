@@ -88,7 +88,9 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `POST` | `/api/v1/customer/auth/verify-email` | Verify email token from request param | `ApiDataResponse<{verified:true}>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `POST` | `/api/v1/customer/auth/resend-verification` | Resend the email-verification message for the authenticated customer | `ApiDataResponse<Map<String,Object>>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `GET` | `/api/v1/customer/auth/oauth/{provider}/authorize` | Start social login. `provider` ∈ `google` `facebook`. Sets a short-lived `bb_oauth_state` cookie and `302`-redirects to the provider consent screen. Optional `tiep` query param is the post-login returnTo path | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
-| `GET` | `/api/v1/customer/auth/oauth/{provider}/callback` | Provider redirect target. Validates `state`, exchanges `code`, links-or-creates the customer, sets the `bb_session`/`bb_refresh`/`bb_csrf` cookies and `302`-redirects back to the storefront (`returnTo` on success, `/dang-nhap/?error=oauth` on failure) | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
+| `GET` | `/api/v1/customer/auth/oauth/{provider}/callback` | Provider redirect target. Validates `state` (provider-bound), exchanges `code`, links-or-creates the customer, sets the `bb_session`/`bb_refresh`/`bb_csrf` cookies and `302`-redirects back to the storefront (`returnTo` on success, the locale-matched login page with `?error=<code>` on failure) | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
+| `GET` | `/api/v1/customer/auth/oauth/links` | Social identities linked to the signed-in customer. Requires `ROLE_CUSTOMER`. **Not called by any `bigbike-web` UI since 2026-08-07** (the "Tài khoản liên kết" panel was removed, CUSTOMER_RULE_010 — new logins can no longer attach a link to a password account, so there is nothing left for a self-service link/unlink screen to manage) — kept live for API completeness and for grandfathered pre-2026-08-07 accounts | `ApiDataResponse<CustomerOAuthLinkResponse[]>` | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java`, `CustomerOAuthLinkResponse.java` |
+| `DELETE` | `/api/v1/customer/auth/oauth/links/{provider}` | Unlink one social identity; returns the remaining links. `404` when that provider is not linked, `409` when it is the last sign-in method of an account with no password. CSRF-protected. Same "not called by any UI" note as the `GET` above | `ApiDataResponse<CustomerOAuthLinkResponse[]>` | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java`, `CustomerOAuthService.unlink` |
 
 ### Customer login — `remember` flag
 
@@ -106,31 +108,91 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 ### Social login (OAuth2) flow
 
 1. Browser navigates to `…/oauth/{provider}/authorize?tiep=<returnTo>`.
-2. Backend stores a random `state` (carrying `tiep`) in the `bb_oauth_state` cookie (`SameSite=Lax`, HttpOnly, ~10 min) and redirects to Google/Facebook.
-3. Provider redirects back to `…/oauth/{provider}/callback?code=&state=`.
-4. Backend validates `state`, exchanges `code` for the provider profile (`subject`, `email`, `displayName`), then **links-or-creates** the customer:
-   - existing `(oauth_provider, oauth_subject)` → reuse that account;
-   - else a verified provider `email` matching an existing account → link OAuth fields onto it;
+2. Backend stores `provider|nonce|base64url(returnTo)` in the `bb_oauth_state` cookie
+   (`SameSite=Lax`, HttpOnly, ~10 min) and redirects to Google/Facebook. The provider is part of
+   the payload so a state issued for `/google/authorize` cannot be replayed at `/facebook/callback`.
+3. Provider redirects back to `…/oauth/{provider}/callback?code=&state=` — or `?error=` when the
+   customer declines on the consent screen.
+4. Backend validates `state`, exchanges `code` for the provider profile (`subject`, `email`,
+   `displayName`, `avatarUrl`), then **links-or-creates** the customer:
+   - existing `(provider, subject)` in `customer_oauth_links` → reuse that account;
+   - else a verified provider `email` matching an existing account **that has no password**
+     (`password_hash IS NULL`) → add a link to it — this is how Google and Facebook can still
+     merge into one account with each other;
    - else create a new active customer (`password_hash = null`, `email_verified_at = now()`).
-5. Backend issues a 30-day session and redirects to the storefront.
+     **A password account is never adopted here, even with a matching verified email** — updated
+     2026-08-07, CUSTOMER_RULE_010 (previously: a *verified* password account was adopted; only an
+     *unverified* one was protected). When the matched account has a password, `email` is set to
+     `null` on the new customer to avoid colliding with `customers_email_unique`; see
+     `DATA_CONTRACT.md`'s `customer_oauth_links` section for the resulting Google+Facebook
+     non-merge edge case this can create.
+   - **on every login through this step — creation, first link, and every repeat sign-in —**
+     `display_name` and `avatar_url` are overwritten with the provider's current values
+     (`CustomerOAuthService.syncProfileFromProvider`, CUSTOMER_RULE_010). The avatar is stored as a
+     direct hotlink to the Google/Facebook CDN, **not** downloaded or re-uploaded to MinIO — a
+     scoped, owner-approved exception to the project's MinIO-only media rule (`BUSINESS_RULES.md`
+     MEDIA_RULE_005; see `DATA_CONTRACT.md`'s `avatar_url` entry for the staleness trade-off). A
+     provider that stops returning a photo (Facebook's `is_silhouette` placeholder) clears
+     `avatar_url` back to `null`. This sync is the *only* way a social account's profile changes —
+     see the profile-lock note below.
+5. A non-`ACTIVE` account is refused here (`oauth_blocked`) rather than being handed a session it
+   cannot use.
+6. Backend issues a 30-day session, links any guest orders on a confirmed email, and redirects to
+   the storefront.
+
+**Profile lock (CUSTOMER_RULE_010, 2026-08-07).** A customer with ≥1 row in `customer_oauth_links`
+cannot self-edit their profile on BigBike at all — `PATCH /api/v1/customer/me` and both avatar
+endpoints below return `403 FORBIDDEN` (`CustomerAuthService.requireNotOauthManaged`), regardless
+of whether that account also happens to have a password (a pre-existing account merged before this
+rule). `GET /api/v1/customer/me`'s `CustomerSummary.oauthManaged` field tells the frontend to show
+its fields read-only. The storefront no longer offers a "Tài khoản liên kết" panel — see the
+`/oauth/links` endpoint notes above.
+
+Both endpoints are rate-limited per IP (20 requests/minute), since both are unauthenticated and the
+callback makes two outbound provider calls per request.
+
+#### Failure codes on the login page
+
+On any failure the browser lands on the login page for the locale it started in
+(`/dang-nhap/` or `/en/login/`) with `?error=<code>`:
+
+| Code | Meaning | Storefront message key |
+|---|---|---|
+| `oauth_cancelled` | Customer declined on the consent screen, or came back without a code | `Auth.social.errorCancelled` |
+| `oauth_unconfigured` | That provider has no client id/secret on this deployment | `Auth.social.errorUnconfigured` |
+| `oauth_blocked` | The account behind the identity is not `ACTIVE` | `Auth.social.errorBlocked` |
+| `oauth_failed` | State mismatch, token exchange failure, provider outage | `Auth.social.errorFailed` |
+
+`CONFIRMED_FROM_CODE` (`OAuthError.java`, `bigbike-web/lib/auth/oauth-error.ts`). Any unrecognised
+value — including the pre-2026-08-07 `error=oauth` — falls back to the generic message, so an old
+link never renders a silent page.
+
+#### `CustomerOAuthLinkResponse`
+
+```json
+{ "provider": "google", "linkedAt": "2026-08-07T03:56:28Z", "canUnlink": true }
+```
+
+`canUnlink` is `false` when removing it would leave the account with no way to sign in (no password
+and no other link) — the storefront disables the button, and `DELETE` refuses with `409`.
 
 ### Customer profile — email change resets verification
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
-| `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword` | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
+| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`). Response includes `oauthManaged` (added 2026-08-07) — `true` when the customer has ≥1 `customer_oauth_links` row; the frontend renders the profile/avatar UI read-only in that case | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+| `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword`. **Refused with `403 FORBIDDEN` outright when `oauthManaged`** (CUSTOMER_RULE_010, before any field-level checks) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
 
 - **Changing `email` through the customer's own `PATCH /api/v1/customer/me` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The admin customer endpoint does not accept email changes (`CUSTOMER_RULE_004`).
 
-### Customer avatar upload/remove (2026-07-21, owner decision)
+### Customer avatar upload/remove (2026-07-21, owner decision; locked for OAuth accounts 2026-08-07)
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
-| `POST` | `/api/v1/customer/me/avatar` | Upload/replace own avatar. `multipart/form-data`, single `file` part. Max **5 MB**, `image/jpeg`/`image/png`/`image/webp` only — both declared Content-Type and Apache Tika magic-byte detection must agree (same double-check as review photos, `ReviewPhotoStorageService`/`CustomerAvatarStorageService`). Server center-crops + downscales to **400×400** (`ImageCompressionService`, MEDIA_RULE_006) before storing to MinIO under `customers/{customerId}/...` and persisting the returned URL — replacing a previous avatar deletes the old MinIO object. | `ApiDataResponse<CustomerSummary>` with `avatarUrl` populated | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAvatarStorageService.java` |
-| `DELETE` | `/api/v1/customer/me/avatar` | Remove own avatar — deletes the MinIO object and nulls `avatar_url`. Idempotent: calling when already unset is a no-op `200`, not `404`. | `ApiDataResponse<CustomerSummary>` with `avatarUrl: null` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+| `POST` | `/api/v1/customer/me/avatar` | Upload/replace own avatar. `multipart/form-data`, single `file` part. Max **5 MB**, `image/jpeg`/`image/png`/`image/webp` only — both declared Content-Type and Apache Tika magic-byte detection must agree (same double-check as review photos, `ReviewPhotoStorageService`/`CustomerAvatarStorageService`). Server center-crops + downscales to **400×400** (`ImageCompressionService`, MEDIA_RULE_006) before storing to MinIO under `customers/{customerId}/...` and persisting the returned URL — replacing a previous avatar deletes the old MinIO object. **Refused with `403 FORBIDDEN` when `oauthManaged`** — a social account's avatar only ever comes from the provider sync (see Social login flow), never a direct upload | `ApiDataResponse<CustomerSummary>` with `avatarUrl` populated | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAvatarStorageService.java` |
+| `DELETE` | `/api/v1/customer/me/avatar` | Remove own avatar — deletes the MinIO object and nulls `avatar_url`. Idempotent: calling when already unset is a no-op `200`, not `404`. **Refused with `403 FORBIDDEN` when `oauthManaged`**, same reasoning | `ApiDataResponse<CustomerSummary>` with `avatarUrl: null` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 
-**No endpoint accepts an arbitrary avatar URL string.** The only way `avatar_url` changes is via the upload endpoint above (the server generates the URL from the stored MinIO object) or the two remove paths (this one and the admin one below) — enforcing the project-wide "no external image URLs" rule for avatars specifically. `PATCH /api/v1/customer/me` does **not** accept an `avatarUrl` field.
+**No client-facing endpoint accepts an arbitrary avatar URL string.** `avatar_url` only ever changes via: the upload endpoint above (server generates the URL from the stored MinIO object, and only reachable for a non-`oauthManaged` customer); the OAuth login callback (`GET /api/v1/customer/auth/oauth/{provider}/callback`, see Social login (OAuth2) flow below), which — on every login, not just the first — stores the provider's own `picture` URL **directly, as a hotlink** (`CustomerOAuthService.syncProfileFromProvider`, no client request body involved); or the two remove paths (this one and the admin one below). The OAuth case is a deliberate, scoped **exception** (owner-approved 2026-08-07) to the project's general "no external image URLs" rule for media — see `BUSINESS_RULES.md` MEDIA_RULE_005 — applied only to this field, only from the provider's own response, never from anything a client submits. `PATCH /api/v1/customer/me` does **not** accept an `avatarUrl` field.
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
@@ -892,7 +954,7 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 
 **Validation note:** `validateImport` resolves the ordered category list and brand, then calls `CatalogRequestValidator.validateProductRequest` with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
 
-**Publish status:** product import always saves rows as `DRAFT`, both for new products and updates to existing products, regardless of `publishStatus` in the file or the product's prior status. This keeps bulk import as a draft-editing workflow; publishing is a separate manual Admin action that runs the publish-readiness gate. Single-product JSON export includes `publishStatus` for completeness, but import ignores it.
+**Publish status:** a CREATE row (brand-new SKU/slug) always saves as `DRAFT`, regardless of `publishStatus` in the file — publishing a new listing is a separate manual Admin action that runs the publish-readiness gate. An UPDATE row (matched to an existing product) leaves `publishStatus` untouched instead — the file's `publishStatus` is ignored either way, but the product's current state (`DRAFT`/`PUBLISHED`/`TRASH`) is preserved rather than forced to `DRAFT`, since `ProductMutationService#updateProduct` treats a `null` request `publishStatus` as "leave the existing value alone", same as every other `null` field on update. (Fixed 2026-08-08: the prior behavior forced `DRAFT` on update rows too, which `AdminMutationValidators.validateProductSavePublishStatus` then rejected as an unauthorized status change — `"Product status changes must use the dedicated lifecycle endpoint"` — whenever the matched product wasn't already `DRAFT`, breaking the documented "edit an already-published product's price/content by re-importing JSON" workflow.) Single-product JSON export includes `publishStatus` for completeness, but import ignores it either way.
 
 **Export-only groups ignored on import:** bulk import accepts but discards fields that are not used while creating/updating Draft products: product `image`/`gallery`/`videos`, variant `id`/cover media/`gallery`, `publishStatus`, `relatedProductIds`, and `accessoryProductIds`. The discard happens before bean validation and before saving, so a single-product exported JSON file can be re-imported without those optional groups causing validation errors or overwriting Admin-managed media/relations. Net effect: single-product export is complete for review/backup of that product, while import remains safe for Draft data entry. Changing media, related products, accessories, or publishing status remains a direct Admin action, not a bulk-import side effect.
 
@@ -900,7 +962,7 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `AdminProductImportController.java` (`exportProduct`), `ProductImportRow.java` (bulk import/single-product export wire shape — nested VI/EN objects), `ProductImportRowMapper.java` (`toUpsertRequest`), `ProductImportService.java` (`parseJson`, `discardExportOnlyImportFields`, `preserveExistingMedia`, `exportProductAsTemplateJson`/`toExportRow`/`writeExportJson`), `ApiErrorDetail`/`ImportRowResult`/`ImportReportResponse`, `ProductJpaRepository.findAllBySkuIgnoreCase`/`findBySlug`/`findById`/`findByIdsWithVariants`, `ProductVariantJpaRepository.findBySkuIgnoreCase`/`findByIdsWithGallery`, `AdminCatalogMutationService.applyProductPatch` (image present-flag + gallery/videos null-is-untouched semantics), `V30__add_inventory_tracking.sql` (`stock_movements` cascade). See `BUSINESS_RULES.md` `PRODUCT_RULE_009`.
+Evidence: `AdminProductImportController.java` (`exportProduct`), `ProductImportRow.java` (bulk import/single-product export wire shape — nested VI/EN objects), `ProductImportRowMapper.java` (`toUpsertRequest`), `ProductImportService.java` (`parseJson`, `discardExportOnlyImportFields`, `applyPublishStatusRule`, `preserveExistingMedia`, `exportProductAsTemplateJson`/`toExportRow`/`writeExportJson`), `ApiErrorDetail`/`ImportRowResult`/`ImportReportResponse`, `ProductJpaRepository.findAllBySkuIgnoreCase`/`findBySlug`/`findById`/`findByIdsWithVariants`, `ProductVariantJpaRepository.findBySkuIgnoreCase`/`findByIdsWithGallery`, `AdminCatalogMutationService.applyProductPatch` (image present-flag + gallery/videos null-is-untouched semantics), `V30__add_inventory_tracking.sql` (`stock_movements` cascade). See `BUSINESS_RULES.md` `PRODUCT_RULE_009`.
 
 ### Product upsert — ordered categories
 
@@ -1510,13 +1572,16 @@ Admin CRUD for URL redirect rules (`redirects` table) plus an internal lookup AP
 
 | Method | Path | Permission | Body / Query | Response | Notes |
 |---|---|---|---|---|---|
-| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (case-insensitive search trên nguồn, đích và ghi chú), `enabled` (`true`/`false`) | `{data: [...], pagination}` list of `AdminRedirectResponse` | Phân trang và sắp xếp ổn định tại DB theo `updatedAt DESC`, `createdAt DESC`, `id DESC`; không tải toàn bộ bảng vào bộ nhớ. Mọi redirect quản trị là HTTP 301. |
+| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (case-insensitive search trên nguồn, đích và ghi chú), `enabled` (`true`/`false`), `chained` (`true` = chỉ luật mà đích còn chuyển tiếp, `false` = chỉ luật đi thẳng, bỏ trống = tất cả) | `{data: [...], pagination}` list of `AdminRedirectResponse` | Phân trang và sắp xếp ổn định tại DB theo `updatedAt DESC`, `createdAt DESC`, `id DESC`; không tải toàn bộ bảng vào bộ nhớ. Mọi redirect quản trị là HTTP 301. `chainHops` là giá trị tính ra chứ không phải cột, nên khi có `chained` hệ thống lọc sau truy vấn và **trước** khi phân trang — số trang vẫn khớp số dòng trả về. |
 | `GET` | `/redirects/{id}` | `redirects.read` | — | `{data: AdminRedirectResponse}` | |
+| `GET` | `/redirects/resolve` | `redirects.read` | Query: `target` (required, ≤2048) | `{data: RedirectChain}` = `{hops, finalTarget}` | Follows the chain forward from `target` and reports where it really lands. Used by the admin form to warn — not block — before saving a rule that points at another rule's source. Declared before `/{id}` so `resolve` is not parsed as a UUID. |
 | `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required exact internal path; no absolute URL/query/fragment), `targetUrl` (required), `enabled`, `notes`, `legacyId` | `{data: AdminRedirectResponse}` | Mọi redirect được phục vụ bằng HTTP 301. Rejects self-redirect (compares target pathname, including same-site absolute URLs and targets carrying query/fragment), multi-hop loop (max depth 20), duplicate `sourcePattern`, malformed source paths, and open-redirect targets (see BUSINESS_RULES.md `REDIRECT_RULE_00x`). |
 | `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest`: `sourcePattern`, `targetUrl`, `enabled`, `notes`, `legacyId` (all presence-guarded — an omitted field, including `notes`/`legacyId`, leaves the stored value unchanged; a partial PATCH like `{enabled}` no longer wipes them). To clear `notes`, send an explicit empty string `""`. `legacyId` cannot be cleared back to `null` via this endpoint once set (bare JSON `null` is indistinguishable from "field omitted") — only overwritten with a new id. | `{data: AdminRedirectResponse}` | Same validation as create. `statusCode` and `redirectType` are not accepted as redirect properties. |
 | `DELETE` | `/redirects/{id}` | `redirects.write` | — | `204 No Content` | |
 
 Every mutation writes an `AuditLogEntity` (`resourceType = REDIRECT`, see Audit Log Contract below).
+
+`AdminRedirectResponse` carries two **computed** fields alongside the stored columns, on both the list and detail responses: `chainHops` (`1` = the visitor goes straight to `targetUrl`; `≥ 2` = `targetUrl` is itself the source of another rule, so the visitor takes extra hops) and `finalTarget` (where the chain actually ends; equals `targetUrl` when `chainHops` is 1). Only **enabled** rules count toward a chain, matching what the storefront proxy actually does — a disabled rule redirects nobody. The walk stops at an external URL, an unmatched path, a repeat, or depth 20. See BUSINESS_RULES.md `REDIRECT_RULE_009`.
 
 ### Internal lookup API — `InternalRedirectController` (`/api/internal`)
 

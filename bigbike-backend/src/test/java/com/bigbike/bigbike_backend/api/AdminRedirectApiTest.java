@@ -448,4 +448,122 @@ class AdminRedirectApiTest {
         entity.setUpdatedAt(java.time.Instant.now());
         return entity;
     }
+
+    // ── Chain detection (chainHops / finalTarget) ─────────────────────────────
+
+    /**
+     * A→B plus B→C means a visitor arriving at A takes two hops before landing on C. The rule
+     * stores only "A→B", so chainHops/finalTarget are what tells admin the chain exists at all.
+     */
+    @Test
+    void shouldReportChainHopsAndFinalTargetForChainedRedirect() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String a = "/chain-a-" + suffix;
+        String b = "/chain-b-" + suffix;
+        String c = "/chain-c-" + suffix;
+
+        createRedirect(a, b);
+        createRedirect(b, c);
+
+        RedirectEntity ruleA = redirectJpaRepository.findBySourcePattern(a).orElseThrow();
+        RedirectEntity ruleB = redirectJpaRepository.findBySourcePattern(b).orElseThrow();
+
+        mockMvc.perform(get("/api/v1/admin/redirects/{id}", ruleA.getId())
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.targetUrl").value(b))
+                .andExpect(jsonPath("$.data.chainHops").value(2))
+                .andExpect(jsonPath("$.data.finalTarget").value(c));
+
+        // The last rule in the chain goes straight to its destination.
+        mockMvc.perform(get("/api/v1/admin/redirects/{id}", ruleB.getId())
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.chainHops").value(1))
+                .andExpect(jsonPath("$.data.finalTarget").value(c));
+
+        redirectJpaRepository.delete(ruleA);
+        redirectJpaRepository.delete(ruleB);
+    }
+
+    @Test
+    void shouldFilterListToChainedRedirectsOnly() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String a = "/filter-a-" + suffix;
+        String b = "/filter-b-" + suffix;
+        String c = "/filter-c-" + suffix;
+
+        createRedirect(a, b);
+        createRedirect(b, c);
+
+        // A is chained (A→B→C); B is direct (B→C). Searching by the shared suffix keeps the
+        // assertion independent of the other ~8.9k rules in the table.
+        mockMvc.perform(get("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read")
+                        .param("q", suffix)
+                        .param("chained", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].sourcePattern").value(a))
+                .andExpect(jsonPath("$.data[0].chainHops").value(2));
+
+        mockMvc.perform(get("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read")
+                        .param("q", suffix)
+                        .param("chained", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].sourcePattern").value(b));
+
+        redirectJpaRepository.findBySourcePattern(a).ifPresent(redirectJpaRepository::delete);
+        redirectJpaRepository.findBySourcePattern(b).ifPresent(redirectJpaRepository::delete);
+    }
+
+    /** Backs the admin form's "this destination redirects onward" warning. */
+    @Test
+    void shouldResolveTargetToItsFinalDestination() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String b = "/resolve-b-" + suffix;
+        String c = "/resolve-c-" + suffix;
+
+        createRedirect(b, c);
+
+        mockMvc.perform(get("/api/v1/admin/redirects/resolve")
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read")
+                        .param("target", b))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hops").value(2))
+                .andExpect(jsonPath("$.data.finalTarget").value(c));
+
+        // A target no rule matches lands in one hop — nothing to warn about.
+        mockMvc.perform(get("/api/v1/admin/redirects/resolve")
+                        .with(devAuth())
+                        .header("X-Admin-Permissions", "redirects.read")
+                        .param("target", c))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hops").value(1))
+                .andExpect(jsonPath("$.data.finalTarget").value(c));
+
+        redirectJpaRepository.findBySourcePattern(b).ifPresent(redirectJpaRepository::delete);
+    }
+
+    private void createRedirect(String sourcePattern, String targetUrl) throws Exception {
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "%s",
+                                  "enabled": true
+                                }
+                                """.formatted(sourcePattern, targetUrl)))
+                .andExpect(status().isOk());
+    }
 }

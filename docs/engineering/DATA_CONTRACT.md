@@ -1476,13 +1476,18 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogFacets.java`, `CatalogReadService.comp
 
 | Table | Column | Type | Nullable | Default | Purpose |
 |---|---|---|---|---|---|
-| `customers` | `avatar_url` | `VARCHAR(500)` | YES | `null` | MinIO object URL (`/media/customers/{customerId}/...`) for the customer's own uploaded avatar. `null` = no avatar uploaded — storefront (account sidebar, header, reviews) and admin customer detail all render a generated circular initials badge in that case. A generated default badge is never itself stored as a MinIO object. |
+| `customers` | `avatar_url` | `VARCHAR(500)` | YES | `null` | Either a MinIO object URL (`/media/customers/{customerId}/...`) for a self-uploaded avatar, **or** — OAuth-imported avatars only — a raw external hotlink to the Google/Facebook CDN (see below). `null` = no avatar — storefront (account sidebar, header, reviews) and admin customer detail all render a generated circular initials badge in that case. A generated default badge is never itself stored as a MinIO object. |
 
-Only `CustomerAvatarStorageService.store(...)` (called from `POST /api/v1/customer/me/avatar`) ever writes a non-null value — no endpoint accepts an arbitrary client-supplied URL for this column (contrast with `reviews.photos`, which does accept client-supplied MinIO URLs from a separate upload step). Removal (self-service `DELETE /api/v1/customer/me/avatar` or admin `DELETE /api/v1/admin/customers/{id}/avatar`) nulls the column and best-effort deletes the underlying MinIO object.
+Two paths ever write a non-null value:
+
+1. `CustomerAvatarStorageService.store(MultipartFile)`, called from `POST /api/v1/customer/me/avatar` (direct upload) — always a MinIO object URL, never a client-supplied string (contrast with `reviews.photos`, which does accept client-supplied MinIO URLs from a separate upload step). Refused with `403` when the customer has any `customer_oauth_links` row (CUSTOMER_RULE_010, below) — a social-account customer never reaches this path.
+2. `CustomerOAuthService.syncProfileFromProvider` (added 2026-08-07, revised same day — **owner-approved exception** to the project's MinIO-only media rule, scoped to this field only — `BUSINESS_RULES.md` MEDIA_RULE_005 / CUSTOMER_RULE_010), called on **every** OAuth login — account creation, first link, and every repeat sign-in via `touchLogin` — not just once. It sets the column to the provider's `picture` URL **as-is, a hotlink to `*.googleusercontent.com`/`*.fbcdn.net`/`platform-lookaside.fbsbx.com`, not a MinIO object**; no server-side fetch happens. Because a social account's profile has no self-service edit path (CUSTOMER_RULE_010), this sync-on-every-login IS the only update mechanism — change the photo on Google/Facebook, it lands here on next sign-in. When the provider stops returning a photo (Facebook's `is_silhouette` placeholder, or Google briefly erroring), the column is cleared back to `null`, mirroring self-removal. Known trade-off: the hotlink itself can go stale/break between logins if the provider rotates the URL or the customer changes photo visibility — nothing refreshes it until the next login. `bigbike-web`'s `next.config.ts` `images.remotePatterns` allowlists those three provider CDN hostnames so `next/image` renders the hotlink.
+
+Removal (self-service `DELETE /api/v1/customer/me/avatar` — also refused with `403` for a social account, or admin `DELETE /api/v1/admin/customers/{id}/avatar`, unaffected) nulls the column either way; the best-effort MinIO delete only ever matches (and only ever runs against) a `/media/customers/...` URL, so it silently no-ops for an OAuth hotlink.
 
 `reviews.customer_id` (pre-existing, previously always `null`) is now populated when the submitter had a valid session at submit time — see `BUSINESS_RULES.md` review rules and `API_CONTRACT.md`'s Public Reviews Contract. `authorAvatarUrl` on the public reviews read path is resolved by joining this column back to `customers.avatar_url` live at read time (no denormalized snapshot column on `reviews`).
 
-Evidence: `V346__add_customer_avatar_url.sql`, `CustomerEntity.java`, `CustomerAvatarStorageService.java`.
+Evidence: `V346__add_customer_avatar_url.sql`, `CustomerEntity.java`, `CustomerAvatarStorageService.java`, `CustomerOAuthService.java`, `next.config.ts`.
 
 ### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)
 
@@ -1543,11 +1548,65 @@ the UUID column (exact) and from `product_pk` + `variant_name` (best-effort, onl
 
 | Table | Column | Type | Nullable | Default | Purpose |
 |---|---|---|---|---|---|
-| `customers` | `oauth_provider` | `VARCHAR(20)` | YES | `null` | Social provider the account is linked to (`google` / `facebook`); `null` for password-only accounts |
-| `customers` | `oauth_subject` | `VARCHAR(255)` | YES | `null` | Stable provider-side user id (the OAuth `sub`). Unique together with `oauth_provider` |
+| `customers` | `oauth_provider` | `VARCHAR(20)` | YES | `null` | **Superseded by `customer_oauth_links` (V378)** — kept in sync as a legacy mirror of the customer's most recent link |
+| `customers` | `oauth_subject` | `VARCHAR(255)` | YES | `null` | **Superseded by `customer_oauth_links` (V378)** — legacy mirror |
 | `customer_sessions` | `remember` | `BOOLEAN` | NO | `false` | Whether the session was created with "Ghi nhớ" — drives the refresh-cookie lifetime and is preserved across refresh-token rotation |
 
 Partial unique index `ux_customers_oauth` on `(oauth_provider, oauth_subject)` where `oauth_provider IS NOT NULL` — prevents two accounts linking to the same provider identity.
+
+### customer_oauth_links — one row per linked social identity (V378)
+
+The single `(oauth_provider, oauth_subject)` pair on `customers` could hold only **one** provider,
+so linking a second one silently overwrote the first and there was no way to list or unlink an
+identity. V378 moves the identities to their own table; the V129 columns remain for backward
+compatibility and are written alongside, to be dropped in a later migration.
+
+| Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|
+| `id` | `UUID` | NO | — | PK |
+| `customer_id` | `UUID` | NO | — | FK → `customers(id)` `ON DELETE CASCADE` |
+| `provider` | `VARCHAR(20)` | NO | — | `google` / `facebook` |
+| `subject` | `VARCHAR(255)` | NO | — | Stable provider-side user id (the OAuth `sub`) |
+| `linked_at` | `TIMESTAMPTZ` | NO | `now()` | When the customer linked it |
+
+- `ux_customer_oauth_links_identity` on `(provider, subject)` — one provider identity maps to at
+  most one customer, the same guarantee `ux_customers_oauth` gave.
+- `ux_customer_oauth_links_customer_provider` on `(customer_id, provider)` — a customer links each
+  provider at most once.
+- `idx_customer_oauth_links_customer` on `(customer_id)`.
+
+The migration backfills from the V129 columns. It was a no-op on every environment at the time
+(0 rows had `oauth_provider IS NOT NULL`).
+
+**Who gets a row here (updated 2026-08-07, CUSTOMER_RULE_010):** `CustomerOAuthService.linkOrCreate`
+only ever adds a link to a customer whose `password_hash IS NULL` — either a brand-new account
+created for this OAuth login, or a pre-existing OAuth-only account matched by a verified email
+(the mechanism that still lets Google and Facebook merge into one account with each other). A
+customer that has a password is **never** given a row here by a new login, regardless of email
+match — this supersedes the pre-2026-08-07 rule, which adopted a password account when its email
+was verified. Existing rows created before this change (a password account that already picked up
+a link under the old rule) are left as-is; the new rule only governs new links going forward.
+
+**`existsByCustomerId(customer_id)` on this table is the single source of truth for
+"is this customer's profile provider-managed"** — `CustomerAuthService.requireNotOauthManaged`
+gates `PATCH /api/v1/customer/me` and both avatar endpoints on it, and `CustomerSummary.oauthManaged`
+(API response field, added 2026-08-07) mirrors it for the frontend. A customer with ≥1 row here is
+locked from self-editing regardless of whether `customers.password_hash` is also non-null (a
+grandfathered pre-2026-08-07 merge) — see CUSTOMER_RULE_010.
+
+**Known edge case — email-collision with a password account can prevent Google+Facebook from
+merging with each other.** When a verified OAuth email matches an *existing password account*,
+`linkOrCreate` creates a new OAuth-only customer with `email` set to `null` (to avoid colliding
+with `customers_email_unique`, a partial unique index that still enforces uniqueness among non-null
+emails table-wide — see `customers — avatar_url` section's sibling `V64__add_customer_email_phone_unique.sql`).
+If the *other* social provider is later used with that same real email, its `findByEmail` lookup no
+longer finds the first OAuth account (its `email` column is `null`), matches the password account
+again instead, and — since that account has a password — falls through to creating a **third**,
+still-separate customer. Net effect: a customer with a password account plus both Google and
+Facebook sharing that same address ends up with 3 distinct customer rows, not the 2 (password +
+one merged social) the rule would otherwise produce. Accepted trade-off, not a bug — narrow enough
+in practice (requires all three identities to share one exact address) that a dedicated matching
+column was judged not worth the added schema complexity.
 
 ### Dashboard KPI & Lists
 

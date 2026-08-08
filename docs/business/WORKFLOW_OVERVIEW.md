@@ -18,8 +18,10 @@
 |---|---|---|---|---|
 | 1 | Guest | Open `/dang-nhap` or `/dang-ky` as separate legacy-parity pages; registration remains a separate route, not an in-place auth tab | `CONFIRMED_FROM_CODE` | `bigbike_vn__2026_04_17/sqldump.sql`, live legacy pages `/dang-nhap.html`, `/dang-ky.html`, `page.tsx`, `LoginForm.tsx`, `RegisterForm.tsx` |
 | 2a | Guest | Sign in with email/phone + password; "Ghi nhớ" keeps the session for 30 days (vs 1 day when unchecked) | `CONFIRMED_FROM_CODE` | `CustomerAuthService.login`, `CustomerSessionService` |
-| 2b | Guest | Or sign in with the legacy-visible Facebook social link; the backend OAuth service still supports Google/Facebook provider callbacks | `CONFIRMED_FROM_CODE` | `SocialLoginButtons.tsx`, `CustomerOAuthService.linkOrCreate` |
+| 2b | Guest | Or sign in with **Google or Facebook** — both buttons appear on the login and register pages and hand off to the backend OAuth service | `CONFIRMED_FROM_CODE` | `SocialLoginButtons.tsx`, `CustomerOAuthService.linkOrCreate` |
+| 2c | System | A social sign-in that fails returns the customer to the login page **for their locale** with a reason they can read (declined / unavailable / account blocked / try again) rather than a blank page | `CONFIRMED_FROM_CODE` | `OAuthError.java`, `lib/auth/oauth-error.ts`, `LoginForm.tsx` |
 | 3 | System | Issue `bb_session` / `bb_refresh` / `bb_csrf` cookies and return the customer to the page they came from | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOAuthController` |
+| 4 | Customer | A social account's profile (name, avatar) is provider-managed — the storefront profile form is read-only when signed in via Google/Facebook, and syncs from the provider on every login instead of self-editing (CUSTOMER_RULE_010, 2026-08-07). The former "Tài khoản liên kết" link/unlink panel was removed the same day: since a password account can no longer pick up a new social link, there is nothing left for a self-service screen to manage | `CONFIRMED_FROM_CODE` | `CustomerOAuthService.linkOrCreate`/`syncProfileFromProvider`, `CustomerAuthService.requireNotOauthManaged`, `EditAccountContent.tsx` |
 
 ## POS Workflow — REMOVED (owner decision 2026-06-23, online-only)
 

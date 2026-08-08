@@ -479,9 +479,12 @@
       "errorGeneric": "Hiện chưa thể đăng nhập. Vui lòng thử lại."
     },
     "social": {
-      "prefix": "ĐĂNG NHẬP BẰNG",
       "facebook": "Đăng nhập bằng Facebook",
-      "google": "Đăng nhập bằng Google"
+      "google": "Đăng nhập bằng Google",
+      "errorCancelled": "Bạn đã huỷ đăng nhập. Hãy thử lại hoặc đăng nhập bằng email và mật khẩu.",
+      "errorUnconfigured": "Cách đăng nhập này đang tạm khoá. Vui lòng đăng nhập bằng email và mật khẩu.",
+      "errorBlocked": "Tài khoản của bạn hiện đang bị khoá. Vui lòng liên hệ shop để được hỗ trợ.",
+      "errorFailed": "Đăng nhập chưa thành công. Vui lòng thử lại sau ít phút."
     },
     "register": {
       "intro": "Tạo tài khoản mới để mua sắm nhanh hơn và theo dõi đơn hàng.",
@@ -825,6 +828,7 @@
     },
     "edit": {
       "intro": "Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.",
+      "oauthManagedNotice": "Tài khoản của bạn đăng nhập qua Google/Facebook nên thông tin (họ tên, ảnh đại diện) được lấy tự động từ đó — không thể chỉnh sửa trực tiếp trên BigBike. Muốn đổi, hãy cập nhật trên Google hoặc Facebook, thông tin sẽ tự đồng bộ vào lần đăng nhập tiếp theo.",
       "successUpdated": "Thông tin đã được cập nhật.",
       "errorGeneric": "Có lỗi xảy ra, vui lòng thử lại.",
       "avatarUploadCta": "Tải ảnh lên",

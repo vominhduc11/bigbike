@@ -190,6 +190,13 @@ class AdminMediaP0Test {
         }
     }
 
+    /** Kéo giá trị chuỗi của field top-level đầu tiên khớp {@code "<field>":"..."} trong JSON body. */
+    private static String extractStringField(String json, String field) {
+        String marker = "\"" + field + "\":\"";
+        int start = json.indexOf(marker) + marker.length();
+        return json.substring(start, json.indexOf('"', start));
+    }
+
     // ── Permission ────────────────────────────────────────────────────────────
 
     @Test
@@ -427,6 +434,42 @@ class AdminMediaP0Test {
                 .andExpect(status().isNotFound());
 
         assertThat(mediaRepo.findById(mediaId).orElseThrow().getFolderId()).isNull();
+    }
+
+    @Test
+    void uploadDedup_clearFolder_movesExistingRecordBackToUncategorized() throws Exception {
+        // Bug thực tế: admin tạo 1 thư mục, upload ảnh vào đó; sau đó đứng ở "Chưa phân
+        // loại" upload lại đúng ảnh đó (nội dung trùng) — ảnh phải quay về Chưa phân loại,
+        // không được kẹt lại ở thư mục cũ chỉ vì hệ thống dùng lại bản ghi cũ (dedup).
+        MvcResult folderResult = mockMvc.perform(post("/api/v1/admin/media-folders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"QA Dedup " + UUID.randomUUID() + "\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String folderId = extractStringField(folderResult.getResponse().getContentAsString(), "id");
+
+        byte[] uniquePng = pngBytes(5, 7);
+        MockMultipartFile firstUpload = new MockMultipartFile("file", "dedup.png", "image/png", uniquePng);
+        MvcResult uploadResult = mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(firstUpload)
+                        .param("folderId", folderId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.folderId").value(folderId))
+                .andReturn();
+        String mediaId = extractStringField(uploadResult.getResponse().getContentAsString(), "id");
+
+        MockMultipartFile secondUpload = new MockMultipartFile("file", "dedup.png", "image/png", uniquePng);
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(secondUpload)
+                        .param("clearFolder", "true")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value(mediaId))
+                .andExpect(jsonPath("$.data.folderId").doesNotExist());
+
+        assertThat(mediaRepo.findById(UUID.fromString(mediaId)).orElseThrow().getFolderId()).isNull();
     }
 
     @Test

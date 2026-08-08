@@ -212,6 +212,71 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
   })
 })
 
+describe('MediaLibraryScreen — upload', () => {
+  it('upload vào đúng thư mục đang mở thay vì luôn "Chưa phân loại"', async () => {
+    const user = userEvent.setup()
+    mocks.query = { folderFilter: 'folder-1' }
+    renderScreen()
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      'folder-1',
+      false,
+    ))
+  })
+
+  it('không gán folder cụ thể khi đang xem "Tất cả"', async () => {
+    const user = userEvent.setup()
+    mocks.query = { folderFilter: '' }
+    renderScreen()
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, false))
+  })
+
+  it('gửi cờ clearFolder khi đang xem "Chưa phân loại" — để ảnh trùng nội dung ở thư mục khác cũng phải quay về đúng Chưa phân loại', async () => {
+    const user = userEvent.setup()
+    mocks.query = { folderFilter: 'NONE' }
+    renderScreen()
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, true))
+  })
+
+  it('đưa danh sách về trang 1 sau khi upload xong dù đang đứng ở trang khác', async () => {
+    const user = userEvent.setup()
+    mocks.query = { page: 3 }
+    mocks.fetchMedia.mockResolvedValue({
+      items: [activeMedia],
+      pagination: { page: 3, pageSize: 24, totalItems: 100, totalPages: 5 },
+    })
+    renderScreen()
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })))
+  })
+})
+
 describe('MediaLibraryScreen — trạng thái', () => {
   it('hiện lỗi kèm nút thử lại khi không tải được danh sách', async () => {
     mocks.fetchMedia.mockRejectedValue(new Error('Mất kết nối'))

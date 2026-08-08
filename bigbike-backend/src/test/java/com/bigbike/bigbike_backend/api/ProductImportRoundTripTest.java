@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ImportReportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportRowResult;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductImportRow;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.ProductImportService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -319,8 +320,12 @@ class ProductImportRoundTripTest {
     }
 
     /**
-     * PRODUCT_RULE_009: bulk import always saves as DRAFT. publishStatus from the file is ignored
-     * without warning, including legacy values. Publishing is a manual Admin action after import.
+     * PRODUCT_RULE_009: a brand-new product created via bulk import always saves as DRAFT —
+     * publishStatus from the file is ignored without warning, including legacy values. An update
+     * row ignores the file's publishStatus too, but every product this loop updates started (and
+     * stays) DRAFT, so "ignored" and "forced" look identical here. {@link
+     * #updatingPublishedProductViaImportKeepsItLive} is what actually proves an update never
+     * touches a product that is already live — this loop alone missed that regression.
      */
     @Test
     void importAlwaysSavesDraftIgnoringFilePublishStatus() {
@@ -371,5 +376,68 @@ class ProductImportRoundTripTest {
                     .hasValueSatisfying(entity ->
                             assertThat(entity.getPublishStatus()).isEqualTo(PublishStatus.DRAFT));
         }
+    }
+
+    /**
+     * Regression test: HUONG-DAN.md's "Cập nhật nội dung cho sản phẩm ĐÃ CÓ sẵn" section tells
+     * shop staff they can safely reimport a JSON file to edit an already-PUBLISHED product's
+     * price/content. Before this fix, {@code ProductImportService} forced every row — update
+     * included — to request DRAFT, which {@code ProductMutationService#updateProduct} rejected
+     * with "Product status changes must use the dedicated lifecycle endpoint" as soon as the
+     * entity's real stored status was anything but DRAFT. An update row must leave the product's
+     * current live/draft/trash status alone, whatever the file's own publishStatus key says.
+     */
+    @Test
+    void updatingPublishedProductViaImportKeepsItLive() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "RT4-" + suffix;
+        String slug = "roundtrip4-" + suffix;
+
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip Four %s", "nameEN": "Round Trip Four EN %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 900000,
+                    "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đăng bán" }
+                  }
+                ]
+                """.formatted(sku, slug, suffix, suffix, MEDIA, slug);
+        ImportReportResponse createReport =
+                productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(createReport.errorCount()).isZero();
+        String productId = createReport.rows().get(0).productId();
+
+        // Import discards the image field even on create (PRODUCT_RULE_009), so this simulates
+        // the realistic prior state instead: an admin published this product for real, through
+        // the real /publish endpoint, after adding a main image — which is why that endpoint's
+        // publish-readiness gate would have required one at the time.
+        ProductEntity entity = productJpaRepository.findById(productId).orElseThrow();
+        entity.setPublishStatus(PublishStatus.PUBLISHED);
+        entity.setImageUrl(MEDIA + "/products/" + slug + ".jpg");
+        productJpaRepository.save(entity);
+
+        String updateArray = """
+                [
+                  { "sku": "%s", "categoryId": "mu-bao-hiem", "retailPrice": 950000, "publishStatus": "DRAFT" }
+                ]
+                """.formatted(sku);
+        ImportReportResponse update =
+                productImportService.commitImport(jsonFile(updateArray), Set.of(), DEV_ADMIN_ID);
+
+        assertThat(update.errorCount())
+                .as("updating a live product's price via import must not error")
+                .isZero();
+        assertThat(update.rows().get(0).status()).isEqualTo("OK");
+        assertThat(productJpaRepository.findBySlug(slug))
+                .as("import must not take a published product offline, even when the file says publishStatus DRAFT")
+                .hasValueSatisfying(p -> {
+                    assertThat(p.getPublishStatus()).isEqualTo(PublishStatus.PUBLISHED);
+                    assertThat(p.getRetailPrice()).isEqualByComparingTo("950000");
+                });
     }
 }

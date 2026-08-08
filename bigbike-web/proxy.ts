@@ -278,6 +278,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     !pathname.endsWith("/") &&
     !pathname.includes(".")
   ) {
+    // Tra bảng redirect TRƯỚC khi chuẩn hoá dấu "/" cuối. 489 luật legacy lưu
+    // sourcePattern không kèm "/" cuối; nếu 308 trước thì mỗi luật tốn 2 hop
+    // (308 thêm "/" → 301 tới đích) thay vì 1. isLoop trong redirectResponse đã
+    // bỏ qua "/" cuối khi so sánh, nên luật /x→/x/ vẫn rơi xuống nhánh 308 dưới.
+    const slashlessRule = await lookupRedirect(
+      translatePath(pathname, "vi").split(/[?#]/)[0],
+    );
+    if (slashlessRule) {
+      const response = redirectResponse(request, slashlessRule, pathname, locale);
+      if (response) return response;
+    }
+
     const destination = new URL(request.url);
     destination.pathname = `${pathname}/`;
     return NextResponse.redirect(destination.toString(), 308);

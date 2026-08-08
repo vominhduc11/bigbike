@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.cart.dto.CartResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.UpdateCartItemRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.config.CustomerAuthCookies;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.mapper.CartMapper;
@@ -17,9 +18,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,16 +34,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CartController {
 
-    public static final String GUEST_COOKIE = "bb_guest_id";
-    private static final String CSRF_COOKIE = "bb_csrf";
-    private static final int GUEST_TTL = 60 * 60 * 24 * 30; // 30 days
-
-    @Value("${bigbike.cookies.secure:false}")
-    private boolean secureCookies;
+    public static final String GUEST_COOKIE = CustomerAuthCookies.COOKIE_GUEST_ID;
+    private static final String CSRF_COOKIE = CustomerAuthCookies.COOKIE_CSRF;
 
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
     private final CartMapper cartMapper;
+    // Guest cookies go through the shared builder so they carry the same Domain/Secure/SameSite
+    // attributes as the session cookies — a host-only bb_csrf breaks the storefront's CSRF header.
+    private final CustomerAuthCookies cookies;
 
     @GetMapping
     public ApiDataResponse<CartResponse> getCart(HttpServletRequest request, HttpServletResponse response) {
@@ -135,36 +132,15 @@ public class CartController {
     // ── cookie helpers ────────────────────────────────────────────────────────
 
     private void setGuestCookie(HttpServletResponse response, String guestId) {
-        ResponseCookie cookie = ResponseCookie.from(GUEST_COOKIE, guestId)
-                .httpOnly(false)
-                .secure(secureCookies)
-                .path("/")
-                .maxAge(GUEST_TTL)
-                .sameSite("Strict")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        cookies.setGuestId(response, guestId);
     }
 
     private void clearGuestCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(GUEST_COOKIE, "")
-                .httpOnly(false)
-                .secure(secureCookies)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Strict")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        cookies.clearGuestId(response);
     }
 
     private void setCsrfCookie(HttpServletResponse response, String csrfValue) {
-        ResponseCookie cookie = ResponseCookie.from(CSRF_COOKIE, csrfValue)
-                .httpOnly(false)
-                .secure(secureCookies)
-                .path("/")
-                .maxAge(GUEST_TTL)
-                .sameSite("Strict")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        cookies.setGuestCsrf(response, csrfValue);
     }
 
     // ── mapping helpers ───────────────────────────────────────────────────────

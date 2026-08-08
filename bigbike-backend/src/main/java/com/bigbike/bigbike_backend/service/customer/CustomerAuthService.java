@@ -6,11 +6,13 @@ import com.bigbike.bigbike_backend.api.customer.dto.CustomerRegisterRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerSummary;
 import com.bigbike.bigbike_backend.api.customer.dto.UpdateCustomerProfileRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
+import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerOAuthLinkJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.ws.AdminCustomerWsService;
 import com.bigbike.bigbike_backend.service.ws.CustomerWsEvent;
@@ -38,6 +40,7 @@ public class CustomerAuthService {
     private final GuestOrderLinkingService guestOrderLinkingService;
     private final CustomerAvatarStorageService customerAvatarStorageService;
     private final AdminCustomerWsService adminCustomerWsService;
+    private final CustomerOAuthLinkJpaRepository oauthLinkRepo;
 
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
@@ -167,6 +170,7 @@ public class CustomerAuthService {
     public CustomerSummary updateProfile(UUID customerId, UpdateCustomerProfileRequest req) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+        requireNotOauthManaged(customerId);
 
         String newEmail = (req.email() != null && !req.email().isBlank())
                 ? req.email().toLowerCase(Locale.ROOT).trim() : null;
@@ -274,7 +278,21 @@ public class CustomerAuthService {
 
     private CustomerSummary toSummary(CustomerEntity c) {
         return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
-                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null, c.getAvatarUrl());
+                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null, c.getAvatarUrl(),
+                oauthLinkRepo.existsByCustomerId(c.getId()));
+    }
+
+    /**
+     * A customer with ≥1 linked Google/Facebook identity has their profile fields owned by that
+     * provider, not by BigBike — self-service edits are refused (owner decision 2026-08-07,
+     * BUSINESS_RULES.md CUSTOMER_RULE_010). The provider's values overwrite ours on every OAuth
+     * login instead ({@code CustomerOAuthService.syncProfileFromProvider}).
+     */
+    private void requireNotOauthManaged(UUID customerId) {
+        if (oauthLinkRepo.existsByCustomerId(customerId)) {
+            throw new ForbiddenException(
+                    "Tài khoản đã liên kết Google/Facebook — thông tin được đồng bộ từ đó, không thể tự sửa trên BigBike.");
+        }
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {
@@ -285,6 +303,7 @@ public class CustomerAuthService {
     public CustomerSummary updateAvatar(UUID customerId, MultipartFile file) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+        requireNotOauthManaged(customerId);
         String previousUrl = customer.getAvatarUrl();
         String newUrl = customerAvatarStorageService.store(customerId, file);
         customer.setAvatarUrl(newUrl);
@@ -300,6 +319,7 @@ public class CustomerAuthService {
     public CustomerSummary removeAvatar(UUID customerId) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+        requireNotOauthManaged(customerId);
         String previousUrl = customer.getAvatarUrl();
         if (previousUrl == null) {
             return toSummary(customer);

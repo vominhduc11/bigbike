@@ -162,6 +162,9 @@ export type CustomerProfile = {
   dob?: string | null
   emailVerified?: boolean
   avatarUrl?: string | null
+  /** True when ≥1 Google/Facebook identity is linked — profile fields are then provider-managed
+   *  (read-only on BigBike, synced from the provider on each OAuth login) rather than self-editable. */
+  oauthManaged?: boolean
 }
 
 export type CustomerAuthData = {

@@ -99,8 +99,13 @@ public class AdminMediaService {
     // ── Upload ────────────────────────────────────────────────────────────────
 
     @Transactional
-    public AdminMediaDetailResponse uploadMedia(MultipartFile file, String altText, UUID adminId) {
+    public AdminMediaDetailResponse uploadMedia(
+            MultipartFile file, String altText, UUID folderId, boolean clearFolder, UUID adminId) {
         validateMimeContent(file);
+        if (folderId != null) requireMediaFolder(folderId);
+        // Đích upload rõ ràng khi admin đang đứng trong 1 thư mục cụ thể HOẶC đang xem
+        // "Chưa phân loại" (clearFolder) — chỉ "Tất cả" (cả hai đều rỗng) là không có đích.
+        boolean hasExplicitDestination = clearFolder || folderId != null;
 
         String mimeType = file.getContentType() != null
                 ? file.getContentType().toLowerCase(Locale.ROOT) : "";
@@ -169,6 +174,13 @@ public class AdminMediaService {
                 existing.setStatus("ACTIVE");
                 changed = true;
             }
+            // Admin uploaded this content while standing in a specific folder (or
+            // explicitly in "Chưa phân loại") — honor that placement even though the
+            // bytes already exist elsewhere in the library.
+            if (hasExplicitDestination && !java.util.Objects.equals(folderId, existing.getFolderId())) {
+                existing.setFolderId(folderId);
+                changed = true;
+            }
             if (changed) {
                 existing.setUpdatedAt(Instant.now());
                 mediaRepo.save(existing);
@@ -219,6 +231,7 @@ public class AdminMediaService {
         media.setTitle(safeFilename);
         media.setSizes(sizesJson);
         media.setStatus("ACTIVE");
+        media.setFolderId(folderId);
         media.setCreatedAt(now);
         media.setUpdatedAt(now);
         MediaEntity saved = mediaRepo.save(media);

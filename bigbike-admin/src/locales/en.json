@@ -3392,7 +3392,16 @@
     "advancedHint": "Legacy ID, notes",
     "activeFiltersAria": "Active filters",
     "bulkEnable": "Enable",
-    "bulkDisable": "Disable"
+    "bulkDisable": "Disable",
+    "colChainHops": "Hops",
+    "chainHopsValue": "{{count}} hops",
+    "chainHopsTitle": "Chained — the real final destination is {{finalTarget}}",
+    "chainWarning": "This destination redirects onward to {{finalTarget}}. Point straight there so visitors take only one hop.",
+    "chainWarningApply": "Point to final destination",
+    "filterChained": "Chained",
+    "chainedOnly": "Chained only",
+    "chainedDirect": "Direct only",
+    "filterChipChained": "Chained: {{value}}"
   },
   "errorBoundary": {
     "title": "An unexpected error occurred",

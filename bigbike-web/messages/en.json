@@ -479,9 +479,12 @@
       "errorGeneric": "Unable to sign in right now. Please try again."
     },
     "social": {
-      "prefix": "SIGN IN WITH",
       "facebook": "Sign in with Facebook",
-      "google": "Sign in with Google"
+      "google": "Sign in with Google",
+      "errorCancelled": "You cancelled the sign-in. Try again, or sign in with your email and password.",
+      "errorUnconfigured": "This sign-in method is temporarily unavailable. Please use your email and password.",
+      "errorBlocked": "Your account is currently blocked. Please contact us for help.",
+      "errorFailed": "Sign-in did not go through. Please try again in a few minutes."
     },
     "register": {
       "intro": "Create a new account to shop faster and track your orders.",
@@ -825,6 +828,7 @@
     },
     "edit": {
       "intro": "From the account area you can quickly see recent purchases and update your details. Pick a section below to view or edit.",
+      "oauthManagedNotice": "Your account signs in via Google/Facebook, so your details (name, avatar) are pulled from there automatically — they can't be edited directly on BigBike. To change them, update Google or Facebook instead; it syncs here on your next sign-in.",
       "successUpdated": "Your details have been updated.",
       "errorGeneric": "Something went wrong, please try again.",
       "avatarUploadCta": "Upload photo",

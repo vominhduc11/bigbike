@@ -43,7 +43,7 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO, OAUTH }
 
     /**
      * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies
@@ -86,6 +86,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> searchBuckets              = boundedMap();
     private final Map<String, Bucket> reviewBuckets              = boundedMap();
     private final Map<String, Bucket> reviewPhotoBuckets         = boundedMap();
+    private final Map<String, Bucket> oauthBuckets               = boundedMap();
 
     private static Map<String, Bucket> boundedMap() {
         return Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
@@ -162,6 +163,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/search-suggest".equals(path)) {
                 return LimitTier.SEARCH;
             }
+            // Social login round-trip. Both are unauthenticated, and the callback makes two
+            // outbound calls to Google/Facebook per request — without a cap it is a free relay.
+            if (path.startsWith("/api/v1/customer/auth/oauth/")
+                    && (path.endsWith("/authorize") || path.endsWith("/callback"))) {
+                return LimitTier.OAUTH;
+            }
         }
         return null;
     }
@@ -191,6 +198,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             // A single review can attach up to 10 photos (one request each) — allow a generous burst.
             case REVIEW_PHOTO  -> reviewPhotoBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(30, Duration.ofMinutes(1)));
+            // Generous enough for a customer retrying a failed consent screen, tight enough that
+            // the callback cannot be used to hammer the provider APIs.
+            case OAUTH         -> oauthBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(20, Duration.ofMinutes(1)));
         };
     }
 

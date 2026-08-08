@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
+import { Autoplay, Pagination } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -24,6 +24,12 @@ type Props = {
    * không bị đẩy xuống xa khi một thẻ ngoài màn hình cao hơn. Trang chủ giữ mặc định.
    */
   autoHeight?: boolean;
+  /**
+   * Tự động chuyển sản phẩm kế tiếp mỗi 3s, mỗi lần chuyển 1 sản phẩm (không nhảy
+   * theo nhóm 2/4 như kéo tay thường). Dừng tạm khi rê chuột vào, quay lại đầu dải
+   * khi hết. Chỉ bật ở carousel "Sản phẩm nổi bật" trang chủ.
+   */
+  autoplay?: boolean;
 };
 
 // Mũi tên carousel — chevron đen lớn trong rãnh hai bên (chuẩn .product-slide của
@@ -42,7 +48,7 @@ const ARROW_BTN =
  *
  * Caller tự cung cấp tiêu đề (block-title) bên ngoài — component này chỉ là dải trượt.
  */
-export function ProductSwiper({ products, className, autoHeight = false }: Props) {
+export function ProductSwiper({ products, className, autoHeight = false, autoplay = false }: Props) {
   const t = useTranslations("Common");
   const swiperRef = useRef<SwiperType | null>(null);
   // Gắn vùng chấm bằng selector (giống ArticleCarousel — luôn bind được kể cả khi
@@ -77,7 +83,7 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           // khớp nên Swiper tự tính lại — không ảnh hưởng runtime. Mirror breakpoints
           // bên dưới (2 / md:4); desktop rộng giữ nguyên baseline 1440px.
           className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4"
-          modules={[Pagination]}
+          modules={autoplay ? [Pagination, Autoplay] : [Pagination]}
           autoHeight={autoHeight}
           onSwiper={(s) => {
             swiperRef.current = s;
@@ -86,12 +92,14 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           onBreakpoint={(s) => setIsLocked(s.isLocked)}
           speed={700}
           slidesPerView={2}
-          slidesPerGroup={2}
+          slidesPerGroup={autoplay ? 1 : 2}
           spaceBetween={20}
           watchOverflow
+          rewind={autoplay}
+          autoplay={autoplay ? { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true } : undefined}
           pagination={{ el: `#${paginationId}`, clickable: true }}
           breakpoints={{
-            [BB_BREAKPOINTS.md]: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
+            [BB_BREAKPOINTS.md]: { slidesPerView: 4, slidesPerGroup: autoplay ? 1 : 4, spaceBetween: 30 },
           }}
         >
           {products.map((p) => (
