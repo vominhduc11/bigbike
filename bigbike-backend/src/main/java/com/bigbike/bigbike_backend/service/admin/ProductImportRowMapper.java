@@ -87,9 +87,13 @@ final class ProductImportRowMapper {
         if (row.getHighlights() != null) {
             request.setHighlights(row.getHighlights());
         }
-        if (row.getVariants() != null) {
-            request.setVariants(row.getVariants());
-        }
+        // PRODUCT_RULE_009 (owner decision 2026-08-08): `variants` is deliberately NOT copied onto the
+        // upsert request. Bulk import never creates/updates/removes variants — leaving the request's
+        // variants null makes ProductMutationService.applyVariants a no-op, so an UPDATE row keeps the
+        // product's existing variants untouched and a CREATE row lands with none. Variants are managed
+        // in Admin only (ProductDetailScreen "Biến thể"). The field still exists on ProductImportRow
+        // for single-product export and so older files carrying it stay readable — ProductImportService
+        // .parseJson flags such a row with a warning instead of silently dropping it.
         if (row.getRelatedProductIds() != null) {
             request.setRelatedProductIds(row.getRelatedProductIds());
         }

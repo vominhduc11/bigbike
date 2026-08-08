@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewPhotoUploadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.service.review.ReviewModerationService;
 import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
 import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
 import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
@@ -34,6 +35,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -55,6 +58,7 @@ public class PublicReviewService {
     private final CustomerJpaRepository customerRepo;
     private final ReviewPhotoStorageService reviewPhotoStorageService;
     private final AdminReviewWsService adminReviewWsService;
+    private final ReviewModerationService reviewModerationService;
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
         return getProductReviews(productId, page, size, null, null);
@@ -185,6 +189,27 @@ public class PublicReviewService {
                 saved.getProductId(),
                 saved.getStatus(),
                 Instant.now()));
+        scheduleAutoModerationAfterCommit(saved.getId());
+    }
+
+    /**
+     * Hands the new review to the automatic moderator once it is durably stored
+     * (REVIEW_RULE_012). After commit, and off this thread, for two reasons: the customer
+     * must not wait on a third-party call, and the moderator re-reads the row it is about
+     * to judge — which only works if that row is already visible to other transactions.
+     */
+    private void scheduleAutoModerationAfterCommit(Long reviewId) {
+        Runnable moderate = () -> reviewModerationService.moderateAsync(reviewId);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    moderate.run();
+                }
+            });
+            return;
+        }
+        moderate.run();
     }
 
     /**

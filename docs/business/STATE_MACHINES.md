@@ -59,7 +59,7 @@ File này liên quan trực tiếp đến:
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
-| Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. | Backend service + optimistic version | `OWNER_CONFIRMED_2026-07-28` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`, `AdminReviewService.java` |
+| Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. An automatic moderator may additionally drive `PENDING → SPAM\|TRASH` (never `APPROVED`) — §15A "Automatic moderation actor". | Backend service + optimistic version | `OWNER_CONFIRMED_2026-08-08` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`/`012`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
@@ -743,8 +743,8 @@ submitted through the public API always starts at `PENDING`.
 | From | To | Preconditions / actor | Side effects |
 |---|---|---|---|
 | `PENDING` | `APPROVED` | `reviews.write`; current `expectedVersion` | Makes the review public and recomputes the product rating. The first approval only sets the durable first-approval marker and queues one approval email after commit. |
-| `PENDING` | `SPAM` | `reviews.write`; current `expectedVersion` | Removes the review from the moderation queue; never public. |
-| `PENDING` | `TRASH` | `reviews.write`; current `expectedVersion` | Moves the review into the restorable trash. |
+| `PENDING` | `SPAM` | `reviews.write`; current `expectedVersion` — **or** the automatic moderator (see below) | Removes the review from the moderation queue; never public. |
+| `PENDING` | `TRASH` | `reviews.write`; current `expectedVersion` — **or** the automatic moderator (see below) | Moves the review into the restorable trash. |
 | `APPROVED` | `PENDING` | `reviews.write`; current `expectedVersion` | Hides the review and recomputes the product rating. |
 | `SPAM` | `PENDING` | `reviews.write`; current `expectedVersion` | Restores the review to the moderation queue. |
 | `TRASH` | `PENDING` | `reviews.write`; current `expectedVersion` | Restores the review to the moderation queue. |
@@ -754,6 +754,26 @@ submitted through the public API always starts at `PENDING`.
 Every other status edge is forbidden. In particular, `APPROVED`, `SPAM` and
 `TRASH` cannot jump directly to each other; they must first return to `PENDING`.
 Permanent deletion from `PENDING`, `APPROVED` or `SPAM` is forbidden.
+
+### Automatic moderation actor (`REVIEW_RULE_012`)
+
+A second actor may drive `PENDING → SPAM` and `PENDING → TRASH`: the automatic
+moderator (banned-word list, then AI). It runs **once per review**, after the
+submit transaction commits, and is constrained more tightly than a human:
+
+| Constraint | Behavior |
+|---|---|
+| Reachable edges | `PENDING → SPAM` and `PENDING → TRASH` only. `PENDING → APPROVED` is **unreachable** — the automatic moderator can never publish. |
+| Entry guard | Re-reads the row and acts only if the status is still `PENDING`. A human decision that landed first wins; the verdict is then recorded as an annotation without changing state. |
+| Re-entry | Never re-runs. Restoring `SPAM`/`TRASH → PENDING` does **not** re-trigger it, so a human override is final. |
+| Optimistic concurrency | Uses the row's own current `version`; it is a server-side actor with no stale client view to guard against. A concurrent human write makes the entry guard fail, which is the intended outcome. |
+| Failure mode | Disabled, unconfigured, timed out, or malformed AI response → **no transition**; the review stays `PENDING` and is marked `moderation_source = SKIPPED`. Never fails the customer's submit request. |
+| Audit | `REVIEW_AUTO_MODERATED` with `actorType = SYSTEM`, `actorId = null` — distinct from the human `REVIEW_STATUS_CHANGED`. Payload carries safe metadata only (`REVIEW_RULE_011`). |
+| Side effects | Identical to the human path: recompute + revalidate. Neither target status is `APPROVED`, so the published rating does not move. No email is ever sent. |
+
+Status: `OWNER_CONFIRMED_2026-08-08`. Canonical rules: `BUSINESS_RULES.md`
+`REVIEW_RULE_012` (lifecycle) and `REVIEW_RULE_013` (configuration, cost, data
+sent to the AI provider).
 
 ### Concurrency and bulk behavior
 
@@ -837,7 +857,7 @@ Notes:
 | Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; shipment-tracking metadata was removed entirely (2026-07-23). |
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
-| Review moderation lifecycle | `CONFIRMED_OWNER_RULE` | Controlled graph, optimistic concurrency, trash restore and Super-Admin-only permanent deletion are specified in §15A and `REVIEW_RULE_009`/`010`. |
+| Review moderation lifecycle | `CONFIRMED_OWNER_RULE` | Controlled graph, optimistic concurrency, trash restore and Super-Admin-only permanent deletion are specified in §15A and `REVIEW_RULE_009`/`010`. The automatic (banned-word + AI) moderator actor is specified in §15A "Automatic moderation actor" and `REVIEW_RULE_012`/`013`. |
 | Admin role lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Custom role CRUD exists, but role active/inactive lifecycle not confirmed. |
 | POS order lifecycle | `REMOVED` | POS (point of sale / walk-in / `IN_STORE`) was removed platform-wide (owner decision 2026-06-23, online-only). There is no longer a POS create-order path, no auto-complete-at-counter order, and no `IN_STORE` fulfillment branch. Every order now flows through the online order + delivery state machines above. |
 

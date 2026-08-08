@@ -19,8 +19,7 @@ public final class RedirectSpecification {
                 String pattern = "%" + escapeLikePattern(q.trim().toLowerCase(Locale.ROOT)) + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("sourcePattern")), pattern, '!'),
-                        cb.like(cb.lower(root.get("targetUrl")), pattern, '!'),
-                        cb.like(cb.lower(root.get("notes")), pattern, '!')
+                        cb.like(cb.lower(root.get("targetUrl")), pattern, '!')
                 ));
             }
 

@@ -39,7 +39,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGall
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
@@ -48,15 +47,12 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.ObjectProvider;
@@ -70,8 +66,11 @@ import org.springframework.web.multipart.MultipartFile;
  * (each bilingual column nested as one VI/EN object), converts every row via {@link
  * ProductImportRowMapper} into the same {@link UpsertProductRequest} shape the single-product admin
  * API already accepts, resolves human-readable references (category/brand slug, SKU-or-slug upsert
- * matching, variant SKU-based identity), then either inspects validation errors without persisting
- * ({@link #validateImport}) or calls the real create/update per row ({@link #commitImport}).
+ * matching), then either inspects validation errors without persisting ({@link #validateImport}) or
+ * calls the real create/update per row ({@link #commitImport}).
+ *
+ * <p>Import never creates, updates or removes product variants (PRODUCT_RULE_009, owner decision
+ * 2026-08-08) — see {@link ProductImportRowMapper}. Single-product export still emits them.
  *
  * <p>{@link #commitImport} is deliberately NOT {@code @Transactional}: each row's call into
  * {@code adminCatalogMutationService.createProduct}/{@code updateProduct} (a separate Spring bean,
@@ -112,7 +111,6 @@ public class ProductImportService {
     }
 
     private final ProductJpaRepository productJpaRepository;
-    private final ProductVariantJpaRepository productVariantJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final CatalogRequestValidator catalogRequestValidator;
@@ -121,7 +119,6 @@ public class ProductImportService {
 
     public ProductImportService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
-            ObjectProvider<ProductVariantJpaRepository> productVariantJpaRepositoryProvider,
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
             CatalogRequestValidator catalogRequestValidator,
@@ -129,7 +126,6 @@ public class ProductImportService {
             Validator validator
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
-        this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.catalogRequestValidator = catalogRequestValidator;
@@ -138,8 +134,7 @@ public class ProductImportService {
     }
 
     private void requireJpaPersistenceEnabled() {
-        if (productJpaRepository == null || productVariantJpaRepository == null
-                || categoryJpaRepository == null || brandJpaRepository == null) {
+        if (productJpaRepository == null || categoryJpaRepository == null || brandJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Product import APIs require JPA persistence profile. Mock profile is read-only.");
         }
@@ -161,7 +156,6 @@ public class ProductImportService {
             MultipartFile file, boolean commit, Set<String> skipRowKeys, UUID adminId) {
         List<ParsedRow> rows = parseJson(file);
 
-        Set<String> batchSkusLower = new HashSet<>();
         Set<String> batchSlugsLower = new HashSet<>();
         List<ImportRowResult> results = new ArrayList<>();
         int ok = 0, warn = 0, err = 0, skipped = 0;
@@ -169,11 +163,11 @@ public class ProductImportService {
         for (ParsedRow row : rows) {
             if (skipRowKeys.contains(row.rowKey)) {
                 results.add(new ImportRowResult(row.rowNumber, row.rowKey, null, row.request.getName(),
-                        "SKIPPED_BY_USER", "OK", List.of(), List.of(), 0, 0, 0, 0, List.of()));
+                        "SKIPPED_BY_USER", "OK", List.of(), List.of()));
                 skipped++;
                 continue;
             }
-            ImportRowResult result = processRow(row, batchSkusLower, batchSlugsLower, commit, adminId);
+            ImportRowResult result = processRow(row, batchSlugsLower, commit, adminId);
             results.add(result);
             switch (result.status()) {
                 case "ERROR" -> err++;
@@ -189,7 +183,7 @@ public class ProductImportService {
     // ── Per-row pipeline (shared by validate + commit) ──────────────────────────
 
     private ImportRowResult processRow(
-            ParsedRow row, Set<String> batchSkusLower, Set<String> batchSlugsLower, boolean commit, UUID adminId) {
+            ParsedRow row, Set<String> batchSlugsLower, boolean commit, UUID adminId) {
         List<ApiErrorDetail> errors = new ArrayList<>(row.parseErrors);
         List<ApiErrorDetail> warnings = new ArrayList<>(row.parseWarnings);
         UpsertProductRequest request = row.request;
@@ -213,18 +207,12 @@ public class ProductImportService {
             backfillSeoFromExisting(request, existing);
         }
 
-        resolveVariantIdentities(existing, request.getVariants(), errors);
-
         if (!isCreate && existing != null) {
             preserveExistingMedia(request);
         }
 
-        checkBatchVariantSkuDuplicates(request.getVariants(), batchSkusLower, errors);
-
-        VariantDiff diff = computeVariantDiff(request, existing);
-
         if (ambiguous) {
-            return errorResult(row, existing, request, isCreate, errors, warnings, diff);
+            return errorResult(row, existing, request, isCreate, errors, warnings);
         }
 
         if (!commit) {
@@ -234,12 +222,11 @@ public class ProductImportService {
             catalogRequestValidator.validateProductRequest(request, existing, isCreate, false, errors);
             String status = !errors.isEmpty() ? "ERROR" : (warnings.isEmpty() ? "OK" : "WARNING");
             return new ImportRowResult(row.rowNumber, row.rowKey, existing != null ? existing.getId() : null,
-                    request.getName(), isCreate ? "CREATE" : "UPDATE", status, errors, warnings,
-                    diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
+                    request.getName(), isCreate ? "CREATE" : "UPDATE", status, errors, warnings);
         }
 
         if (!errors.isEmpty()) {
-            return errorResult(row, existing, request, isCreate, errors, warnings, diff);
+            return errorResult(row, existing, request, isCreate, errors, warnings);
         }
 
         try {
@@ -248,20 +235,18 @@ public class ProductImportService {
                     : productMutationService.updateProduct(existing.getId(), request, adminId);
             String status = warnings.isEmpty() ? "OK" : "WARNING";
             return new ImportRowResult(row.rowNumber, row.rowKey, saved.id(), request.getName(),
-                    isCreate ? "CREATE" : "UPDATE", status, List.of(), warnings,
-                    diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
+                    isCreate ? "CREATE" : "UPDATE", status, List.of(), warnings);
         } catch (ApiException e) {
             List<ApiErrorDetail> commitErrors = (e.details() == null || e.details().isEmpty())
                     ? List.of(new ApiErrorDetail(null, e.code(), e.getMessage()))
                     : e.details();
             return new ImportRowResult(row.rowNumber, row.rowKey, existing != null ? existing.getId() : null,
-                    request.getName(), isCreate ? "CREATE" : "UPDATE", "ERROR", commitErrors, warnings,
-                    diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
+                    request.getName(), isCreate ? "CREATE" : "UPDATE", "ERROR", commitErrors, warnings);
         } catch (RuntimeException e) {
             return new ImportRowResult(row.rowNumber, row.rowKey, existing != null ? existing.getId() : null,
                     request.getName(), isCreate ? "CREATE" : "UPDATE", "ERROR",
                     List.of(new ApiErrorDetail(null, "UNEXPECTED_ERROR", "Lỗi không xác định khi lưu dòng này.")),
-                    warnings, diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
+                    warnings);
         }
     }
 
@@ -292,20 +277,8 @@ public class ProductImportService {
         request.setVideos(null);
         request.setRelatedProductIds(null);
         request.setAccessoryProductIds(null);
-
-        List<VariantRequest> variants = request.getVariants();
-        if (variants == null) {
-            return;
-        }
-        for (VariantRequest variant : variants) {
-            variant.setId(null);
-            variant.setImageUrl(null);
-            variant.setImageAlt(null);
-            variant.setImageWidth(null);
-            variant.setImageHeight(null);
-            variant.setImageMimeType(null);
-            variant.setGallery(null);
-        }
+        // `variants` needs no clearing here — ProductImportRowMapper never copies the file's variants
+        // onto the request in the first place (PRODUCT_RULE_009, owner decision 2026-08-08).
     }
 
     private void checkImportDescriptionBlocks(UpsertProductRequest request, List<ApiErrorDetail> errors) {
@@ -564,59 +537,6 @@ public class ProductImportService {
     }
 
     /**
-     * Matches each file variant row back to its existing DB variant by SKU (never by relying on
-     * the file supplying the right opaque id) BEFORE {@code applyVariants} runs. Without this, an
-     * existing variant that the file doesn't tag with the correct id looks "new" to
-     * {@code applyVariants}'s full-replace-by-id logic — it gets a fresh id, and the old row is
-     * orphan-removed, cascade-deleting any dormant stock-movement history.
-     */
-    private void resolveVariantIdentities(ProductEntity existing, List<VariantRequest> variants, List<ApiErrorDetail> errors) {
-        if (variants == null || existing == null) {
-            return;
-        }
-        for (int i = 0; i < variants.size(); i++) {
-            VariantRequest v = variants.get(i);
-            String hintId = AdminMutationValidators.trimToNull(v.getId());
-            if (hintId != null) {
-                if (productVariantJpaRepository.findByIdAndProductId(hintId, existing.getId()).isPresent()) {
-                    continue;
-                }
-                v.setId(null);
-            }
-            String sku = AdminMutationValidators.trimToNull(v.getSku());
-            if (sku == null) {
-                continue;
-            }
-            int rowIndex = i;
-            productVariantJpaRepository.findBySkuIgnoreCase(sku).ifPresent(match -> {
-                if (match.getProduct().getId().equals(existing.getId())) {
-                    v.setId(match.getId());
-                } else {
-                    errors.add(new ApiErrorDetail("variants[" + rowIndex + "].sku", "DUPLICATE",
-                            "SKU biến thể '" + sku + "' đã thuộc về sản phẩm khác."));
-                }
-            });
-        }
-    }
-
-    private void checkBatchVariantSkuDuplicates(
-            List<VariantRequest> variants, Set<String> batchSkusLower, List<ApiErrorDetail> errors) {
-        if (variants == null) {
-            return;
-        }
-        for (int i = 0; i < variants.size(); i++) {
-            String sku = AdminMutationValidators.trimToNull(variants.get(i).getSku());
-            if (sku == null) {
-                continue;
-            }
-            if (!batchSkusLower.add(sku.toLowerCase(Locale.ROOT))) {
-                errors.add(new ApiErrorDetail("variants[" + i + "].sku", "DUPLICATE",
-                        "SKU biến thể '" + sku + "' trùng với dòng khác trong cùng file."));
-            }
-        }
-    }
-
-    /**
      * translations.en.name is only required when the row touches the VI name (create, or an update
      * that sends `name`) — see CatalogRequestValidator. A row that sends a partial `translations.en`
      * block for an unrelated reason (e.g. just fixing seoTitle) must not have that partial block
@@ -669,55 +589,23 @@ public class ProductImportService {
 
     /**
      * PRODUCT_RULE_009: bulk import is draft data entry and never writes media from the file.
-     * Product-level main image/gallery/videos are cleared by {@link #discardExportOnlyImportFields}.
-     * For matched existing variants, {@code applyVariants} would otherwise overwrite media with
-     * nulls, so their stored cover image + gallery are copied back onto the request row before save.
-     * New variants keep null media; variant images are managed directly in Admin after import.
+     * Product-level main image/gallery/videos are cleared by {@link #discardExportOnlyImportFields};
+     * this re-asserts that on the update path so an existing product's stored media survives.
      *
-     * <p>Product-level: {@code image} uses the same present-flag semantics {@code applyProductPatch}
-     * checks ({@code create || isImagePresent()}), so forcing it back to "absent" is enough to
-     * leave the column untouched. {@code gallery}/{@code videos} already treat {@code null} as
-     * "untouched" on update (only an explicit {@code []} clears them), so nulling them out here has
-     * the same effect.
+     * <p>{@code image} uses the same present-flag semantics {@code applyProductPatch} checks
+     * ({@code create || isImagePresent()}), so forcing it back to "absent" is enough to leave the
+     * column untouched. {@code gallery}/{@code videos} already treat {@code null} as "untouched" on
+     * update (only an explicit {@code []} clears them), so nulling them out here has the same effect.
      *
-     * <p>Variant-level: {@code applyVariants} has no such presence flag — the cover image/gallery
-     * it writes always comes straight from the request. So existing variants' stored media is
-     * fetched fresh (gallery is {@code LAZY} and {@link #commitImport} is not
-     * {@code @Transactional} — see {@link ProductVariantJpaRepository#findByIdsWithGallery}) and
-     * copied onto the matching request row before {@code applyVariants} runs.
+     * <p>Variant media needs no handling: since the 2026-08-08 owner decision the request never
+     * carries variants at all, so {@code applyVariants} is skipped entirely and every existing
+     * variant — cover image, gallery, options, stock history — is left exactly as Admin saved it.
      */
     private void preserveExistingMedia(UpsertProductRequest request) {
         request.setImage(null);
         request.setImagePresent(false);
         request.setGallery(null);
         request.setVideos(null);
-
-        List<VariantRequest> variants = request.getVariants();
-        if (variants == null || variants.isEmpty()) {
-            return;
-        }
-        List<String> matchedIds = variants.stream()
-                .map(v -> AdminMutationValidators.trimToNull(v.getId()))
-                .filter(id -> id != null)
-                .toList();
-        if (matchedIds.isEmpty()) {
-            return;
-        }
-        Map<String, ProductVariantEntity> existingById = productVariantJpaRepository.findByIdsWithGallery(matchedIds)
-                .stream().collect(Collectors.toMap(ProductVariantEntity::getId, v -> v));
-        for (VariantRequest v : variants) {
-            String id = AdminMutationValidators.trimToNull(v.getId());
-            ProductVariantEntity match = id == null ? null : existingById.get(id);
-            if (match == null) {
-                continue;
-            }
-            v.setImageUrl(match.getImageUrl());
-            v.setImageAlt(match.getImageAlt());
-            v.setImageWidth(match.getImageWidth());
-            v.setImageHeight(match.getImageHeight());
-            v.setImageMimeType(match.getImageMimeType());
-            v.setGallery(mapVariantGallery(match.getGallery()));
-        }
     }
 
     private static List<GalleryImageRequest> mapVariantGallery(List<ProductVariantGalleryImageEntity> gallery) {
@@ -731,48 +619,11 @@ public class ProductImportService {
                 .sortOrder(g.getSortOrder()).build()).toList();
     }
 
-    private record VariantDiff(int inFile, int added, int updated, int removed, List<String> removedSkus) {
-    }
-
-    private VariantDiff computeVariantDiff(UpsertProductRequest request, ProductEntity existing) {
-        List<VariantRequest> variants = request.getVariants();
-        int inFile = variants == null ? 0 : variants.size();
-        if (existing == null) {
-            return new VariantDiff(inFile, inFile, 0, 0, List.of());
-        }
-        Set<String> fileIds = new HashSet<>();
-        int added = 0, updated = 0;
-        if (variants != null) {
-            for (VariantRequest v : variants) {
-                String id = AdminMutationValidators.trimToNull(v.getId());
-                if (id != null) {
-                    fileIds.add(id);
-                    updated++;
-                } else {
-                    added++;
-                }
-            }
-        }
-        int removed = 0;
-        List<String> removedSkus = new ArrayList<>();
-        List<ProductVariantEntity> existingVariants = existing.getVariants();
-        if (existingVariants != null) {
-            for (ProductVariantEntity ev : existingVariants) {
-                if (!fileIds.contains(ev.getId())) {
-                    removed++;
-                    removedSkus.add(ev.getSku());
-                }
-            }
-        }
-        return new VariantDiff(inFile, added, updated, removed, removedSkus);
-    }
-
     private ImportRowResult errorResult(
             ParsedRow row, ProductEntity existing, UpsertProductRequest request, boolean isCreate,
-            List<ApiErrorDetail> errors, List<ApiErrorDetail> warnings, VariantDiff diff) {
+            List<ApiErrorDetail> errors, List<ApiErrorDetail> warnings) {
         return new ImportRowResult(row.rowNumber, row.rowKey, existing != null ? existing.getId() : null,
-                request.getName(), isCreate ? "CREATE" : "UPDATE", "ERROR", errors, warnings,
-                diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
+                request.getName(), isCreate ? "CREATE" : "UPDATE", "ERROR", errors, warnings);
     }
 
     // ── Parsed-row model (shared by JSON parse + the per-row pipeline) ─────
@@ -819,6 +670,14 @@ public class ProductImportService {
             if ((source.getCategorySlugs() != null || source.getCategoryIds() != null) && source.getCategoryId() != null) {
                 parsed.parseErrors.add(new ApiErrorDetail("categoryId", "CONFLICT",
                         "Không gửi categoryId cùng categorySlugs/categoryIds."));
+            }
+            // PRODUCT_RULE_009 (owner decision 2026-08-08): import never touches variants. Older files
+            // and single-product exports still carry them, so the row is accepted and the group is
+            // dropped — but with a visible warning, unlike the silently-discarded media groups, because
+            // a shop owner who wrote variants into the file expects them to land somewhere.
+            if (source.getVariants() != null && !source.getVariants().isEmpty()) {
+                parsed.parseWarnings.add(new ApiErrorDetail("variants", "IGNORED",
+                        "Tệp có phần biến thể — hệ thống đã bỏ qua. Thêm/sửa biến thể trực tiếp trong trang quản trị."));
             }
             rows.add(parsed);
         }

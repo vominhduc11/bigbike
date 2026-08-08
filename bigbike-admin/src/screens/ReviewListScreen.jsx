@@ -14,6 +14,7 @@ import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { PaginationControls } from '../components/PaginationControls'
+import { ReviewModerationNote } from '../components/ReviewModerationNote'
 import { ReviewStars } from '../components/ReviewStars'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { showConfirm } from '../lib/confirm'
@@ -406,7 +407,14 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
     {
       key: 'status',
       label: t('reviews.colStatus'),
-      render: (review) => <StatusBadge type="review" status={review.status} />,
+      // Kết quả kiểm duyệt tự động nằm ngay dưới trạng thái thay vì thành cột riêng:
+      // "đang ở đâu" và "vì sao ở đó" đọc cùng một chỗ, và bảng không phình thêm cột.
+      render: (review) => (
+        <div className="grid justify-items-start gap-1.5">
+          <StatusBadge type="review" status={review.status} />
+          <ReviewModerationNote review={review} compact />
+        </div>
+      ),
     },
     {
       key: 'createdAt',
@@ -443,7 +451,12 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
       title: <AuthorIdentity review={review} t={t} />,
       selectionLabel: t('common.selectNamedRow', { name: authorName }),
       subtitle: <ProductLink review={review} contentLang={contentLang} navigate={navigate} t={t} />,
-      status: <StatusBadge type="review" status={review.status} />,
+      status: (
+        <div className="grid justify-items-start gap-1.5">
+          <StatusBadge type="review" status={review.status} />
+          <ReviewModerationNote review={review} compact />
+        </div>
+      ),
       meta: [
         {
           label: t('reviews.colRating'),

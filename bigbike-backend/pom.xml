@@ -185,6 +185,10 @@
 			<version>1.17.2</version>
 		</dependency>
 
+		<!-- Automatic review moderation calls Gemini over plain RestClient (owner decision
+		     2026-08-08, REVIEW_RULE_012/013) — same approach the previous Gemini
+		     integration used, so no extra SDK dependency is needed here. -->
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

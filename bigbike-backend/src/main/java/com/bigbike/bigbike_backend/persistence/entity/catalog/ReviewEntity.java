@@ -69,6 +69,27 @@ public class ReviewEntity {
     private Instant firstApprovedAt;
 
     /**
+     * Automatic-moderation annotations (V380, REVIEW_RULE_012/013). These record what the
+     * banned-word/AI layer concluded; they never decide visibility — {@link #status} does.
+     * All null on rows submitted before V380 and on rows the moderator has not reached yet.
+     */
+    @Column(name = "moderation_source", length = 16)
+    private String moderationSource;
+
+    @Column(name = "moderation_verdict", length = 16)
+    private String moderationVerdict;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "moderation_categories", columnDefinition = "jsonb")
+    private List<String> moderationCategories;
+
+    @Column(name = "moderation_reason", length = 500)
+    private String moderationReason;
+
+    @Column(name = "moderation_checked_at")
+    private Instant moderationCheckedAt;
+
+    /**
      * Optimistic concurrency token for admin moderation. Clients echo this value
      * as expectedVersion so a stale screen cannot overwrite a newer decision.
      */

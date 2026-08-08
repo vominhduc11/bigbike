@@ -230,7 +230,27 @@ public class SettingDefinitionRegistry {
                         .description("Tiêu đề banner phân công trên màn tạo/sửa sản phẩm.").build(),
                 SettingDefinition.builder("product_assign_roles", "product_assign", SettingValueType.JSON)
                         .superAdminOnly()
-                        .description("Danh sách vai trò (tên + việc phụ trách) trên banner phân công, 1-6 vai trò.").build()
+                        .description("Danh sách vai trò (tên + việc phụ trách) trên banner phân công, 1-6 vai trò.").build(),
+
+                // ── REVIEW_MODERATION ── (kiểm duyệt đánh giá tự động — REVIEW_RULE_012/013.
+                // Không key nào publicAllowed: đây là cấu hình vận hành nội bộ, storefront
+                // không cần biết. Khoá dịch vụ AI cố tình KHÔNG nằm ở đây — chỉ ở biến môi
+                // trường GEMINI_API_KEY, không bao giờ chạm DB.)
+                SettingDefinition.builder("review_moderation_enabled", "review_moderation", SettingValueType.BOOLEAN)
+                        .description("Bật kiểm duyệt đánh giá tự động. Cần khai GEMINI_API_KEY ở môi trường trước khi bật.").build(),
+                SettingDefinition.builder("review_moderation_block_profanity", "review_moderation", SettingValueType.BOOLEAN)
+                        .description("Chặn đánh giá chửi tục, dùng từ thô tục — đưa vào Thùng rác.").build(),
+                SettingDefinition.builder("review_moderation_block_harassment", "review_moderation", SettingValueType.BOOLEAN)
+                        .description("Chặn đánh giá xúc phạm, công kích cá nhân, kỳ thị — đưa vào Thùng rác.").build(),
+                SettingDefinition.builder("review_moderation_block_advertising", "review_moderation", SettingValueType.BOOLEAN)
+                        .description("Chặn đánh giá quảng cáo, chèn link, số điện thoại, Zalo, mã giới thiệu — đưa vào Spam.").build(),
+                SettingDefinition.builder("review_moderation_block_sensitive", "review_moderation", SettingValueType.BOOLEAN)
+                        .description("Chặn nội dung 18+, chính trị, tôn giáo, hoặc rác vô nghĩa không liên quan sản phẩm — đưa vào Thùng rác.").build(),
+                SettingDefinition.builder("review_moderation_daily_limit", "review_moderation", SettingValueType.INTEGER)
+                        .min(0).max(10_000)
+                        .description("Số lượt gọi AI tối đa mỗi ngày (giờ Việt Nam). Vượt ngưỡng thì ngừng gọi AI, đánh giá nằm ở Chờ duyệt; danh sách từ cấm vẫn chạy vì không tốn phí. Đặt 0 để tắt hẳn phần gọi AI.").build(),
+                SettingDefinition.builder("review_moderation_banned_words", "review_moderation", SettingValueType.LONG_TEXT)
+                        .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build()
         );
     }
 }

@@ -62,7 +62,6 @@ public class RedirectImporter implements DomainImporter {
                 entity.setSourcePattern(mr.sourcePattern());
                 entity.setTargetUrl(mr.targetPattern());
                 entity.setEnabled(mr.enabled());
-                entity.setLegacyId(mr.sourceId());
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mr.warnings());
 

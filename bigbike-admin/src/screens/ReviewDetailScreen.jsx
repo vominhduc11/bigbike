@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { DetailSection } from '../components/DetailSection'
 import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { ReviewModerationNote } from '../components/ReviewModerationNote'
 import { ReviewStars } from '../components/ReviewStars'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -243,6 +244,13 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate, isSuperAdmin
               <DetailRow label={t('reviews.detail.updatedAt')}>{formatDateTime(review.updatedAt)}</DetailRow>
             </dl>
             {copyState === 'error' ? <p className="mt-3 mb-0 text-sm text-danger">{t('reviews.detail.emailCopyError')}</p> : null}
+          </DetailSection>
+
+          <DetailSection
+            title={t('reviews.moderation.sectionTitle')}
+            description={t('reviews.moderation.sectionDescription')}
+          >
+            <ReviewModerationNote review={review} />
           </DetailSection>
 
           <DetailSection title={t('reviews.detail.sectionProduct')}>

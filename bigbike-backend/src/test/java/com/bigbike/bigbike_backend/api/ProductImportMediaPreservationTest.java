@@ -34,6 +34,10 @@ import org.springframework.web.multipart.MultipartFile;
  * Owner decision 2026-07-06 (extends {@code PRODUCT_RULE_009}): re-importing JSON for a product
  * must never let the file write image/gallery/video data. Bulk import is a draft data-entry flow:
  * media fields may exist in an exported file, but import discards them before validation/saving.
+ *
+ * <p>Owner decision 2026-08-08 extends the same guarantee to the whole {@code variants} array —
+ * a file can no longer add, edit or delete variants, so the update below must leave the existing
+ * variant byte-for-byte alone (price included) and must not create the second variant it lists.
  */
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
@@ -167,6 +171,11 @@ class ProductImportMediaPreservationTest {
         assertThat(updateReport.errorCount()).as("update import has no errors").isZero();
         assertThat(updateReport.rows()).anyMatch(r -> "UPDATE".equals(r.action()));
 
+        // A file that still carries variants is accepted, but the group is reported as ignored.
+        assertThat(updateReport.rows().get(0).warnings())
+                .as("row warns that the file's variants were skipped")
+                .anyMatch(w -> "variants".equals(w.field()) && "IGNORED".equals(w.code()));
+
         Product after = catalogReadRepository.findProductById(updateReport.rows().get(0).productId()).orElseThrow();
         assertThat(after).as("product still present after update").isNotNull();
 
@@ -180,17 +189,16 @@ class ProductImportMediaPreservationTest {
         assertThat(after.gallery().get(0).image().url()).endsWith(slug + "-g1.jpg");
         assertThat(after.videos().get(0).title()).isEqualTo("Video goc");
 
-        // Matched existing variant (DEN): price replaced normally, but its own image/alt stayed old.
+        // Existing variant (DEN) is untouched end to end — the file's new price, image and alt were
+        // all ignored along with the rest of the variants array.
+        assertThat(after.variants()).as("variant list unchanged in size").hasSize(1);
         ProductVariant den = findVariantBySku(after, denSku);
         assertThat(den).as("DEN variant present").isNotNull();
-        assertThat(den.price().retailPrice()).isEqualByComparingTo("1200000");
+        assertThat(den.price().retailPrice()).isEqualByComparingTo("1000000");
         assertThat(den.image().url()).endsWith(slug + "-den.jpg");
         assertThat(den.image().alt()).isEqualTo("Den goc");
 
-        // Brand-new variant (VANG) is also created without file media, because import discards
-        // variant images/gallery for every row.
-        ProductVariant vang = findVariantBySku(after, vangSku);
-        assertThat(vang).as("VANG variant present").isNotNull();
-        assertThat(vang.image()).isNull();
+        // The second variant listed in the file is never created — import cannot add variants.
+        assertThat(findVariantBySku(after, vangSku)).as("VANG variant not created by import").isNull();
     }
 }

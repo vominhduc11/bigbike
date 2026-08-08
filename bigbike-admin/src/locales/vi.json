@@ -2428,6 +2428,32 @@
       "deleteSuccess": "Đã xóa vĩnh viễn đánh giá và ảnh đính kèm.",
       "readOnlyHint": "Bạn chỉ có quyền xem đánh giá. Liên hệ quản trị để được cấp quyền kiểm duyệt.",
       "noActionPermission": "Bạn không có quyền kiểm duyệt đánh giá này."
+    },
+    "moderation": {
+      "sectionTitle": "Kiểm duyệt tự động",
+      "sectionDescription": "Kết quả máy lọc trước khi tới tay bạn. Đây chỉ là ghi chú — mọi nút duyệt/chặn vẫn nằm ở cột bên phải.",
+      "blockedByAi": "AI đã chặn đánh giá này",
+      "blockedByWord": "Trúng từ cấm của shop",
+      "clean": "Đã kiểm tra, không thấy vi phạm",
+      "unchecked": "Chưa qua kiểm duyệt tự động",
+      "categoriesLabel": "Loại phát hiện:",
+      "notedButNotBlocked": "Loại này đang tắt trong Cài đặt nên chỉ được ghi chú, không dùng để chặn.",
+      "checkedAt": "Kiểm lúc {{at}}",
+      "neverApprovesHint": "Máy chỉ được chặn. Việc duyệt cho hiển thị lên web luôn do bạn bấm.",
+      "skip": {
+        "DISABLED": "Chưa bật kiểm duyệt tự động",
+        "NOT_CONFIGURED": "Chưa khai khoá dịch vụ AI trên máy chủ",
+        "EMPTY_BODY": "Khách chỉ chấm sao, không có chữ để kiểm",
+        "AI_UNAVAILABLE": "Không kết nối được dịch vụ AI — cần bạn tự xem",
+        "UNKNOWN": "Không chạy được kiểm duyệt tự động",
+        "DAILY_LIMIT_REACHED": "Đã chạm hạn mức AI trong ngày — cần bạn tự xem"
+      },
+      "category": {
+        "PROFANITY": "Chửi tục",
+        "HARASSMENT": "Xúc phạm, kỳ thị",
+        "ADVERTISING": "Quảng cáo, spam",
+        "SENSITIVE": "Nhạy cảm, lạc đề"
+      }
     }
   },
   "banners": {
@@ -2529,7 +2555,8 @@
       "payment": "Tài khoản khách nhìn thấy khi chọn chuyển khoản.",
       "publicHero": "Ảnh và tiêu đề đầu các trang danh sách.",
       "seo": "Nội dung hỗ trợ tìm kiếm của trang chủ.",
-      "productAssign": "Hướng dẫn phân công nội bộ cho sản phẩm và bài viết."
+      "productAssign": "Hướng dẫn phân công nội bộ cho sản phẩm và bài viết.",
+      "reviewModeration": "Lọc tự động đánh giá của khách trước khi bạn duyệt. Máy chỉ được chặn, không bao giờ tự đăng."
     },
     "sectionDescription": {
       "general_brand": "Thông tin nhận diện chính được dùng xuyên suốt website.",
@@ -2597,7 +2624,8 @@
     "internal": "Nội bộ",
     "panelSummary": "{{count}} mục cài đặt",
     "errValueEnRequired": "Vui lòng nhập bản tiếng Anh cho trường này.",
-    "readOnlyHint": "Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa."
+    "readOnlyHint": "Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.",
+    "group_review_moderation": "Kiểm duyệt đánh giá"
   },
   "adminUsers": {
     "eyebrow": "Hệ thống",
@@ -3130,7 +3158,6 @@
     "colProduct": "Sản phẩm",
     "colAction": "Thao tác",
     "colStatus": "Trạng thái",
-    "colVariants": "Biến thể",
     "colDetail": "Chi tiết",
     "actionCreate": "Tạo mới",
     "actionUpdate": "Cập nhật",
@@ -3138,9 +3165,6 @@
     "statusOk": "Hợp lệ",
     "statusWarning": "Cảnh báo",
     "statusError": "Lỗi",
-    "variantsAdded": "thêm mới",
-    "variantsUpdated": "cập nhật",
-    "willRemoveVariants": "sẽ bị xoá",
     "rowCheckboxLabel": "Đưa {{name}} vào lần nhập này",
     "resultSummary": "Đã nhập xong: {{ok}} hợp lệ, {{warn}} cảnh báo, {{err}} lỗi",
     "error": "Không xử lý được tệp. Vui lòng thử lại.",
@@ -3348,18 +3372,12 @@
     "errorSourceInvalid": "Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.",
     "errorSourceConflict": "Địa chỉ cũ đã tồn tại.",
     "errorTargetRequired": "Địa chỉ mới là bắt buộc.",
-    "errorLegacyIdInvalid": "Mã tham chiếu phải là số nguyên dương hợp lệ.",
-    "errorLegacyIdCannotClear": "Mã tham chiếu đã lưu không thể xóa; hãy nhập lại mã cũ hoặc một mã mới.",
     "formSource": "Địa chỉ cũ",
     "formSourceHint": "Đường dẫn nội bộ, ví dụ /san-pham-cu. Không nhập tên miền, query hoặc dấu #.",
     "formTarget": "Địa chỉ mới",
-    "formTargetHint": "Đường dẫn mới trong website. Hệ thống luôn dùng mã 301 vĩnh viễn.",
-    "formLegacyId": "Mã tham chiếu địa chỉ cũ",
-    "formLegacyIdHint": "Chỉ dùng để đối chiếu dữ liệu WordPress. Mã đã lưu có thể đổi nhưng không thể xóa.",
+    "formTargetHint": "Đường dẫn mới trong website. Hệ thống luôn dùng mã 301 vĩnh viễn; nếu địa chỉ này lại trùng nguồn của một chuyển hướng khác, hệ thống tự lưu thẳng tới đích cuối cùng.",
     "formEnabled": "Bật",
-    "formNotes": "Ghi chú",
-    "notesPlaceholder": "Ghi chú tuỳ chọn.",
-    "searchPlaceholder": "Địa chỉ cũ, địa chỉ mới, ghi chú",
+    "searchPlaceholder": "Địa chỉ cũ, địa chỉ mới",
     "filterEnabled": "Trạng thái",
     "filterEnabledAll": "Tất cả",
     "filterAria": "Bộ lọc chuyển hướng",
@@ -3394,20 +3412,9 @@
     "filterChipSearch": "Tìm: \"{{value}}\"",
     "removeFilter": "Bỏ lọc {{filter}}",
     "filterChipEnabled": "Trạng thái: {{value}}",
-    "advancedTitle": "Tùy chọn nâng cao",
-    "advancedHint": "Mã tham chiếu địa chỉ cũ và ghi chú",
     "activeFiltersAria": "Bộ lọc đang áp dụng",
     "bulkEnable": "Bật",
-    "bulkDisable": "Tắt",
-    "colChainHops": "Số bước",
-    "chainHopsValue": "{{count}} bước",
-    "chainHopsTitle": "Đi vòng — đích cuối thật sự là {{finalTarget}}",
-    "chainWarning": "Đích này còn chuyển hướng tiếp tới {{finalTarget}}. Nên trỏ thẳng tới đó để khách chỉ đi 1 bước.",
-    "chainWarningApply": "Trỏ thẳng tới đích cuối",
-    "filterChained": "Đi vòng",
-    "chainedOnly": "Chỉ luật đi vòng",
-    "chainedDirect": "Chỉ luật đi thẳng",
-    "filterChipChained": "Đi vòng: {{value}}"
+    "bulkDisable": "Tắt"
   },
   "errorBoundary": {
     "title": "Đã xảy ra lỗi không mong đợi",

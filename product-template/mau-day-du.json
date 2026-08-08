@@ -225,7 +225,7 @@
     "categorySlugs": ["tai-nghe-bluetooth-mu-bao-hiem"],
     "brandId": "scs",
     "gender": "Unisex",
-    "retailPrice": null,
+    "retailPrice": 3190000,
     "salePrice": null,
     "name": {
       "nameVI": "SCS S13",
@@ -351,34 +351,6 @@
         }
       ]
     },
-    "variants": [
-      {
-        "sku": "TNB-SCS-S13-DEN",
-        "retailPrice": 3190000,
-        "salePrice": null,
-        "isAvailable": true,
-        "sortOrder": 0,
-        "options": [
-          {
-            "optionName": "Màu",
-            "optionValue": "Đen"
-          }
-        ]
-      },
-      {
-        "sku": "TNB-SCS-S13-BAC",
-        "retailPrice": 3190000,
-        "salePrice": null,
-        "isAvailable": true,
-        "sortOrder": 1,
-        "options": [
-          {
-            "optionName": "Màu",
-            "optionValue": "Bạc"
-          }
-        ]
-      }
-    ],
     "descriptionBlocks": [
       {
         "type": "feature",

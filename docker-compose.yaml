@@ -164,6 +164,12 @@ services:
       OAUTH_FACEBOOK_CLIENT_SECRET: "${OAUTH_FACEBOOK_CLIENT_SECRET:-}"
       OAUTH_CALLBACK_BASE_URL: "${OAUTH_CALLBACK_BASE_URL:-http://localhost:8080}"
       OAUTH_WEB_SUCCESS_URL: "${OAUTH_WEB_SUCCESS_URL:-http://localhost:3000}"
+      # Automatic review moderation (REVIEW_RULE_012/013). An empty key is a supported
+      # state: the moderator reports SKIPPED and every review stays in Pending, exactly
+      # as it behaved before the feature existed.
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      BIGBIKE_REVIEW_MODERATION_MODEL: "${BIGBIKE_REVIEW_MODERATION_MODEL:-gemini-2.5-flash}"
+      BIGBIKE_REVIEW_MODERATION_TIMEOUT_SECONDS: "${BIGBIKE_REVIEW_MODERATION_TIMEOUT_SECONDS:-20}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
       interval: 30s

@@ -621,24 +621,14 @@ export function normalizeRedirect(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-redirect'
   const hitCount = Number(source.hitCount)
-  const legacyId = source.legacyId === null || source.legacyId === undefined
-    ? Number.NaN
-    : Number(source.legacyId)
-  const chainHops = Number(source.chainHops)
-  const targetUrl = toTrimmedString(source.targetUrl) || ''
 
   return {
     id,
     sourcePattern: toTrimmedString(source.sourcePattern) || '',
-    targetUrl,
-    // Bản backend cũ chưa trả 2 trường này → coi như đi thẳng, để màn hình không vỡ.
-    chainHops: Number.isFinite(chainHops) && chainHops >= 1 ? chainHops : 1,
-    finalTarget: toTrimmedString(source.finalTarget) || targetUrl,
+    targetUrl: toTrimmedString(source.targetUrl) || '',
     enabled: typeof source.enabled === 'boolean' ? source.enabled : undefined,
     hitCount: Number.isFinite(hitCount) ? hitCount : 0,
     lastHitAt: toTrimmedString(source.lastHitAt) || undefined,
-    notes: toTrimmedString(source.notes) || undefined,
-    legacyId: Number.isFinite(legacyId) ? legacyId : undefined,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

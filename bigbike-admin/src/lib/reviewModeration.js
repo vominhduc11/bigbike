@@ -28,3 +28,41 @@ export function toVersionedReviewItems(reviews) {
 export function hasReviewStatusTarget(reviews, targetStatus) {
   return (reviews || []).some((review) => getReviewStatusTargets(review?.status).includes(targetStatus))
 }
+
+// --- Kết quả kiểm duyệt tự động (REVIEW_RULE_012) ---------------------------------
+// Bốn trạng thái hiển thị, cố ý tách "chưa chạy" khỏi "chạy rồi nhưng bỏ qua": người
+// duyệt cần phân biệt được đánh giá cũ chưa từng qua máy lọc với đánh giá vừa lọt lưới
+// vì AI lỗi. Gộp hai cái này lại là che mất một sự cố vận hành.
+const AUTO_MODERATION_SKIP_REASONS = Object.freeze([
+  'DISABLED',
+  'NOT_CONFIGURED',
+  'EMPTY_BODY',
+  'AI_UNAVAILABLE',
+  'DAILY_LIMIT_REACHED',
+])
+
+export function getAutoModerationState(review) {
+  const source = String(review?.moderationSource || '')
+  if (!source) return 'unchecked'
+  if (source === 'SKIPPED') return 'skipped'
+  return review?.moderationVerdict === 'BLOCKED' ? 'blocked' : 'clean'
+}
+
+/** Tone dùng chung cho badge/alert, để danh sách và chi tiết không lệch màu nhau. */
+export function getAutoModerationTone(state) {
+  return { blocked: 'danger', skipped: 'warning', clean: 'success', unchecked: 'neutral' }[state] || 'neutral'
+}
+
+/**
+ * Khoá i18n cho lý do bỏ qua. Mã lạ (backend thêm mã mới mà admin chưa cập nhật) rơi về
+ * khoá UNKNOWN thay vì hiện mã thô cho người không phải lập trình viên.
+ */
+export function getAutoModerationSkipReasonKey(reason) {
+  const code = String(reason || '').toUpperCase()
+  return AUTO_MODERATION_SKIP_REASONS.includes(code) ? code : 'UNKNOWN'
+}
+
+export function getAutoModerationCategories(review) {
+  const categories = review?.moderationCategories
+  return Array.isArray(categories) ? categories.filter(Boolean) : []
+}

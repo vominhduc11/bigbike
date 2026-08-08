@@ -76,6 +76,15 @@ public class ProductImportRow {
     private List<FaqRequest> faqs;
     private List<CommitmentRequest> commitments;
     private HighlightsRequest highlights;
+    /**
+     * EXPORT-ONLY (owner decision 2026-08-08, PRODUCT_RULE_009). Single-product export still writes
+     * the full variant list so the file is a complete picture of the product, but import never reads
+     * it: {@link ProductImportRowMapper} does not copy it onto the upsert request, so variants stay
+     * exactly as Admin saved them and are added/edited/removed only on the product detail screen.
+     * The field must stay declared — the import ObjectMapper rejects unknown keys, so dropping it
+     * would make every previously exported or hand-written file fail to parse as a whole. A row that
+     * still carries variants is imported with a visible "ignored" warning instead.
+     */
     private List<VariantRequest> variants;
     private List<String> relatedProductIds;
     private List<String> accessoryProductIds;

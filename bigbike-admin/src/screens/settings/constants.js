@@ -4,7 +4,7 @@
 import {
   Store, Phone, Globe, Settings,
   Image as ImageIcon, Users,
-  Landmark,
+  Landmark, ShieldCheck,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -167,7 +167,7 @@ export const MAX_ASSIGNMENT_ROLES = 6
 
 export const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
-  'PRODUCT_ASSIGN',
+  'PRODUCT_ASSIGN', 'REVIEW_MODERATION',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -228,6 +228,11 @@ export const TAB_META = {
     labelKey: 'settings.group_product_assign',
     descriptionKey: 'settings.groupDescription.productAssign',
   },
+  REVIEW_MODERATION: {
+    icon: ShieldCheck,
+    labelKey: 'settings.group_review_moderation',
+    descriptionKey: 'settings.groupDescription.reviewModeration',
+  },
 }
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
@@ -246,6 +251,14 @@ export const KEY_LABELS_VI = {
   opening_hours_weekday: 'Giờ mở cửa (T2–T6)',
   opening_hours_weekend: 'Giờ mở cửa (T7/CN)',
   opening_hours_holiday: 'Lịch nghỉ (lễ/Tết)',
+  // review_moderation (kiểm duyệt đánh giá tự động — REVIEW_RULE_012/013)
+  review_moderation_enabled: 'Bật kiểm duyệt đánh giá tự động',
+  review_moderation_block_profanity: 'Chặn chửi tục, từ thô tục',
+  review_moderation_block_harassment: 'Chặn xúc phạm, công kích, kỳ thị',
+  review_moderation_block_advertising: 'Chặn quảng cáo, link, số điện thoại',
+  review_moderation_block_sensitive: 'Chặn nội dung 18+, chính trị, lạc đề',
+  review_moderation_daily_limit: 'Số lượt AI tối đa mỗi ngày',
+  review_moderation_banned_words: 'Danh sách từ cấm của shop',
   // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
   bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
   bank_account_number: 'Số tài khoản nhận chuyển khoản',
@@ -284,6 +297,12 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
+  review_moderation_enabled:
+    'Phải khai khoá dịch vụ AI ở máy chủ trước. Chưa khai thì mọi đánh giá vẫn nằm ở Chờ duyệt như hiện nay.',
+  review_moderation_daily_limit:
+    'Chặn chi phí khi bị spam. Vượt ngưỡng thì ngừng gọi AI tới hết ngày, đánh giá nằm ở Chờ duyệt. Đặt 0 để tắt hẳn phần gọi AI mà vẫn giữ danh sách từ cấm.',
+  review_moderation_banned_words:
+    'Mỗi từ một dòng, hoặc ngăn bằng dấu phẩy. Không phân biệt hoa thường và dấu tiếng Việt — gõ "lừa đảo" là bắt được cả "lua dao". Từ trong danh sách này luôn bị chặn, kể cả khi tắt hết 4 loại ở trên.',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -357,6 +376,18 @@ export const SECTION_GUIDE = {
     title: 'Nội dung SEO cuối trang chủ',
     description: 'Nội dung dài hỗ trợ tìm kiếm, hiển thị ở cuối trang chủ.',
   },
+  review_moderation_switch: {
+    title: 'Bật kiểm duyệt tự động',
+    description: 'Khi bật, đánh giá mới của khách được máy lọc trước. Máy chỉ được chặn, không bao giờ tự đăng đánh giá lên web — phần duyệt vẫn do bạn bấm.',
+  },
+  review_moderation_kinds: {
+    title: 'Loại nội dung cần chặn',
+    description: 'Tắt một loại nghĩa là không chặn vì loại đó nữa; hệ thống vẫn ghi chú lại để bạn tự xem.',
+  },
+  review_moderation_words: {
+    title: 'Danh sách từ cấm của shop',
+    description: 'Chặn ngay lập tức, không tốn phí và không phụ thuộc dịch vụ AI.',
+  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -406,6 +437,16 @@ export const KEY_GUIDE = {
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
   // product_assign: KHÔNG còn ở đây — xem ghi chú ở KEY_LABELS_VI/HIDDEN_GROUPS phía trên.
+
+  // review_moderation: tách 2 khối để công tắc tổng không nằm lẫn với 4 loại vi phạm,
+  // và danh sách từ cấm (áp dụng độc lập với 4 loại đó) đứng riêng một khối.
+  review_moderation_enabled:            ['review_moderation_switch', 'bật/tắt toàn bộ'],
+  review_moderation_block_profanity:    ['review_moderation_kinds', 'chửi tục, thô tục → Thùng rác'],
+  review_moderation_block_harassment:   ['review_moderation_kinds', 'xúc phạm, công kích, kỳ thị → Thùng rác'],
+  review_moderation_block_advertising:  ['review_moderation_kinds', 'quảng cáo, link, số điện thoại → Spam'],
+  review_moderation_block_sensitive:    ['review_moderation_kinds', '18+, chính trị, nội dung lạc đề → Thùng rác'],
+  review_moderation_daily_limit:        ['review_moderation_switch', 'trần chi phí mỗi ngày'],
+  review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
 }
 
 export function groupBySection(items) {

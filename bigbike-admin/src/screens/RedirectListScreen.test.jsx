@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
   createRedirect: vi.fn(),
   updateRedirect: vi.fn(),
   deleteRedirect: vi.fn(),
-  resolveRedirectTarget: vi.fn(),
   showConfirm: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -32,7 +31,6 @@ vi.mock('../lib/adminApi', async () => {
     createRedirect: mocks.createRedirect,
     updateRedirect: mocks.updateRedirect,
     deleteRedirect: mocks.deleteRedirect,
-    resolveRedirectTarget: mocks.resolveRedirectTarget,
   }
 })
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
@@ -74,8 +72,6 @@ beforeEach(() => {
     items: [],
     pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 1 },
   })
-  // Mặc định đích đi thẳng — test nào cần cảnh báo đi vòng thì tự ghi đè.
-  mocks.resolveRedirectTarget.mockResolvedValue({ hops: 1, finalTarget: '/new-page' })
 })
 
 async function openCreateFormAndFill(user) {
@@ -214,80 +210,5 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
       'Xóa chuyển hướng',
       { confirmLabel: 'common.delete', variant: 'danger' },
     )
-  })
-})
-
-describe('RedirectListScreen — cảnh báo đi vòng', () => {
-  async function fillTargetAndBlur(user, target = '/trung-gian') {
-    await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
-    await user.type(screen.getByPlaceholderText('/dia-chi-cu'), '/old-page')
-    await user.type(screen.getByPlaceholderText('/dia-chi-moi'), target)
-    // Rời ô đích để kích hoạt tra chuỗi.
-    await user.tab()
-  }
-
-  it('đích còn chuyển tiếp thì hiện cảnh báo kèm đích cuối', async () => {
-    const user = userEvent.setup()
-    mocks.resolveRedirectTarget.mockResolvedValue({ hops: 2, finalTarget: '/dich-cuoi' })
-    renderScreen()
-
-    await fillTargetAndBlur(user)
-
-    // t() trong test không nội suy biến, nên chỉ khớp phần tĩnh của câu cảnh báo.
-    // Việc đích cuối được truyền ra đúng đã có test "Trỏ thẳng tới đích cuối" bên dưới bảo chứng.
-    expect(await screen.findByText(/còn chuyển hướng tiếp tới/)).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Trỏ thẳng tới đích cuối' })).toBeInTheDocument()
-    expect(mocks.resolveRedirectTarget).toHaveBeenCalledWith('/trung-gian')
-  })
-
-  it('cảnh báo KHÔNG chặn lưu — vẫn tạo được với đích đang đi vòng', async () => {
-    const user = userEvent.setup()
-    mocks.resolveRedirectTarget.mockResolvedValue({ hops: 2, finalTarget: '/dich-cuoi' })
-    mocks.createRedirect.mockResolvedValue({ id: 'rd_1' })
-    renderScreen()
-
-    await fillTargetAndBlur(user)
-    await screen.findByText(/còn chuyển hướng tiếp tới/)
-    await user.click(screen.getByRole('button', { name: 'common.save' }))
-
-    await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalledWith(
-      expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/trung-gian' }),
-    ))
-  })
-
-  it('bấm "Trỏ thẳng tới đích cuối" thay ô đích và ẩn cảnh báo', async () => {
-    const user = userEvent.setup()
-    mocks.resolveRedirectTarget.mockResolvedValue({ hops: 3, finalTarget: '/dich-cuoi' })
-    renderScreen()
-
-    await fillTargetAndBlur(user)
-    await user.click(await screen.findByRole('button', { name: 'Trỏ thẳng tới đích cuối' }))
-
-    expect(screen.getByPlaceholderText('/dia-chi-moi')).toHaveValue('/dich-cuoi')
-    await waitFor(() => expect(screen.queryByText(/còn chuyển hướng tiếp tới/)).not.toBeInTheDocument())
-  })
-
-  it('đích đi thẳng thì không cảnh báo gì', async () => {
-    const user = userEvent.setup()
-    mocks.resolveRedirectTarget.mockResolvedValue({ hops: 1, finalTarget: '/trung-gian' })
-    renderScreen()
-
-    await fillTargetAndBlur(user)
-
-    await waitFor(() => expect(mocks.resolveRedirectTarget).toHaveBeenCalled())
-    expect(screen.queryByText(/còn chuyển hướng tiếp tới/)).not.toBeInTheDocument()
-  })
-
-  it('tra chuỗi lỗi mạng thì im lặng, không cản người dùng lưu', async () => {
-    const user = userEvent.setup()
-    mocks.resolveRedirectTarget.mockRejectedValue(new Error('network down'))
-    mocks.createRedirect.mockResolvedValue({ id: 'rd_1' })
-    renderScreen()
-
-    await fillTargetAndBlur(user)
-    await user.click(screen.getByRole('button', { name: 'common.save' }))
-
-    await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalled())
-    expect(screen.queryByText(/còn chuyển hướng tiếp tới/)).not.toBeInTheDocument()
   })
 })

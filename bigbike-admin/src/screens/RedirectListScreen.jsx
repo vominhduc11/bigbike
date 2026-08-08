@@ -12,14 +12,12 @@ import {
   deleteRedirect,
   fetchRedirects,
   mapValidationErrors,
-  resolveRedirectTarget,
   updateRedirect,
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
-import { CollapsibleSection } from '../components/CollapsibleSection'
 import { FormField } from '../components/layout/FormField'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -34,14 +32,12 @@ import { formatDateTime } from '../lib/formatters'
 import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useAdminList } from '../lib/useAdminList'
 
 const INITIAL_QUERY = {
   search: '',
   enabled: 'ALL',
-  chained: 'ALL',
   page: 1,
   pageSize: 20,
 }
@@ -50,8 +46,6 @@ const EMPTY_FORM = {
   sourcePattern: '',
   targetUrl: '',
   enabled: true,
-  notes: '',
-  legacyId: '',
 }
 
 const PAGE_SIZES = new Set([20, 50, 100])
@@ -74,9 +68,6 @@ export function RedirectListScreen({ canUpdate }) {
   const [searchInput, setSearchInput] = useState(() => query.search)
   const debouncedSearch = useDebounce(searchInput, 300)
   const [showForm, setShowForm] = useState(false)
-  // F10: nhóm 2 trường ít dùng (Legacy ID, Ghi chú) vào phần thu gọn — mở sẵn khi đang sửa
-  // bản ghi đã có sẵn giá trị ở các trường đó để không giấu dữ liệu.
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [editingRedirect, setEditingRedirect] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   // F6: bản chụp form lúc mở, dùng để biết có thay đổi chưa lưu — mirror SliderListScreen.
@@ -87,15 +78,10 @@ export function RedirectListScreen({ canUpdate }) {
   // O6: chọn nhiều dòng để bật/tắt/xoá hàng loạt.
   const [selected, setSelected] = useState([])
   const [bulkBusy, setBulkBusy] = useState(false)
-  // Cảnh báo "đi vòng": đích đang nhập lại là nguồn của luật khác → khách phải đi thêm bước.
-  // Chỉ cảnh báo, KHÔNG chặn lưu (việc chặn vòng lặp A→B→A vẫn do backend làm).
-  const [chainWarning, setChainWarning] = useState(null)
-  // Bỏ kết quả tra về muộn khi người dùng đã sửa tiếp ô đích.
-  const chainRequestRef = useRef(0)
 
   const queryKey = useMemo(
-    () => ['redirects', query.search, query.enabled, query.chained, query.page, query.pageSize],
-    [query.search, query.enabled, query.chained, query.page, query.pageSize],
+    () => ['redirects', query.search, query.enabled, query.page, query.pageSize],
+    [query.search, query.enabled, query.page, query.pageSize],
   )
 
   const state = useAdminList(queryKey, () => fetchRedirects(query))
@@ -130,13 +116,6 @@ export function RedirectListScreen({ canUpdate }) {
         sourcePattern: form.sourcePattern.trim(),
         targetUrl: form.targetUrl.trim(),
         enabled: form.enabled,
-        // Always send notes (even "") from the full edit form — the backend now only clears a
-        // previously-saved value on an explicit non-null field, so omitting it here would leave
-        // stale notes behind instead of clearing them.
-        notes: form.notes.trim(),
-      }
-      if (form.legacyId !== '') {
-        payload.legacyId = Number(form.legacyId)
       }
       return editingRedirect
         ? updateRedirect(editingRedirect.id, payload)
@@ -281,12 +260,6 @@ export function RedirectListScreen({ canUpdate }) {
   const targetError = !form.targetUrl.trim()
     ? t('redirects.errorTargetRequired', { defaultValue: 'Địa chỉ mới là bắt buộc.' })
     : ''
-  const legacyIdNumber = form.legacyId === '' ? null : Number(form.legacyId)
-  const legacyIdError = baseline?.legacyId && form.legacyId === ''
-    ? t('redirects.errorLegacyIdCannotClear', { defaultValue: 'Mã tham chiếu đã lưu không thể xóa; hãy nhập lại mã cũ hoặc một mã mới.' })
-    : form.legacyId !== '' && (!Number.isSafeInteger(legacyIdNumber) || legacyIdNumber < 1)
-      ? t('redirects.errorLegacyIdInvalid', { defaultValue: 'Mã tham chiếu phải là số nguyên dương hợp lệ.' })
-      : ''
 
   function updateFormField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
@@ -303,31 +276,6 @@ export function RedirectListScreen({ canUpdate }) {
     setTouched((prev) => ({ ...prev, [field]: true }))
   }
 
-  // Tra đích khi rời ô "Địa chỉ mới". Lỗi mạng thì im lặng bỏ qua — đây chỉ là gợi ý,
-  // không được cản người dùng lưu.
-  async function checkTargetChain() {
-    const target = form.targetUrl.trim()
-    const requestId = chainRequestRef.current + 1
-    chainRequestRef.current = requestId
-    if (!target) {
-      setChainWarning(null)
-      return
-    }
-    try {
-      const chain = await resolveRedirectTarget(target)
-      if (chainRequestRef.current !== requestId) return
-      setChainWarning(chain.hops >= 2 && chain.finalTarget ? chain : null)
-    } catch {
-      if (chainRequestRef.current === requestId) setChainWarning(null)
-    }
-  }
-
-  function applyFinalTarget() {
-    if (!chainWarning?.finalTarget) return
-    setForm((p) => ({ ...p, targetUrl: chainWarning.finalTarget }))
-    setChainWarning(null)
-  }
-
   function openCreateForm() {
     setEditingRedirect(null)
     const next = { ...EMPTY_FORM }
@@ -336,8 +284,6 @@ export function RedirectListScreen({ canUpdate }) {
     setTouched({})
     setFormError('')
     setValidationErrors({})
-    setChainWarning(null)
-    setAdvancedOpen(false)
     setShowForm(true)
   }
 
@@ -347,16 +293,12 @@ export function RedirectListScreen({ canUpdate }) {
       sourcePattern: redirect.sourcePattern || '',
       targetUrl: redirect.targetUrl || '',
       enabled: redirect.enabled !== false,
-      notes: redirect.notes || '',
-      legacyId: redirect.legacyId !== null && redirect.legacyId !== undefined ? String(redirect.legacyId) : '',
     }
     setForm(next)
     setBaseline(next)
     setTouched({})
     setFormError('')
     setValidationErrors({})
-    setChainWarning(null)
-    setAdvancedOpen(Boolean(next.notes) || next.legacyId !== '')
     setShowForm(true)
   }
 
@@ -368,7 +310,6 @@ export function RedirectListScreen({ canUpdate }) {
     setTouched({})
     setFormError('')
     setValidationErrors({})
-    setChainWarning(null)
   }
 
   // F6: form đang có thay đổi chưa lưu khi đang mở và khác bản chụp lúc mở (mirror SliderListScreen).
@@ -430,8 +371,8 @@ export function RedirectListScreen({ canUpdate }) {
   function handleSubmit(event) {
     event?.preventDefault?.()
     if (saveMutation.isPending) return
-    if (sourceError || targetError || legacyIdError) {
-      setTouched((prev) => ({ ...prev, sourcePattern: true, targetUrl: true, legacyId: true }))
+    if (sourceError || targetError) {
+      setTouched((prev) => ({ ...prev, sourcePattern: true, targetUrl: true }))
       setFormError('')
       return
     }
@@ -466,19 +407,6 @@ export function RedirectListScreen({ canUpdate }) {
       onRemove: () => updateQuery({ enabled: 'ALL' }, { resetPage: true }),
     })
   }
-  if (query.chained !== 'ALL') {
-    activeFilterChips.push({
-      key: 'chained',
-      label: t('redirects.filterChipChained', {
-        value: query.chained === 'true'
-          ? t('redirects.chainedOnly', { defaultValue: 'Chỉ luật đi vòng' })
-          : t('redirects.chainedDirect', { defaultValue: 'Chỉ luật đi thẳng' }),
-        defaultValue: `Đi vòng: {{value}}`,
-      }),
-      removeLabel: t('redirects.removeFilter', { filter: t('redirects.filterChained', { defaultValue: 'Đi vòng' }), defaultValue: `Bỏ lọc {{filter}}` }),
-      onRemove: () => updateQuery({ chained: 'ALL' }, { resetPage: true }),
-    })
-  }
 
   // V5: nhãn "Bật/Tắt" tiếng Việt đồng nhất với formEnabled thay vì common.on/off tiếng Anh.
   const enabledBadge = (redirect) => {
@@ -492,23 +420,6 @@ export function RedirectListScreen({ canUpdate }) {
     return (
       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${redirect.enabled ? 'bg-success-bg text-success' : 'bg-surface-muted text-muted-foreground'}`}>
         {redirect.enabled ? t('redirects.statusOn', { defaultValue: 'Bật' }) : t('redirects.statusOff', { defaultValue: 'Tắt' })}
-      </span>
-    )
-  }
-
-  // Luật đi vòng (>=2 bước) hiện nổi bật để dễ nhặt ra mà dọn; đi thẳng thì hiển thị nhạt.
-  const chainHopsBadge = (redirect) => {
-    const hops = redirect.chainHops ?? 1
-    if (hops < 2) return <span className="bb-muted">{hops}</span>
-    return (
-      <span
-        className="bb-badge bb-badge-warning"
-        title={t('redirects.chainHopsTitle', {
-          finalTarget: redirect.finalTarget || redirect.targetUrl,
-          defaultValue: 'Đi vòng — đích cuối thật sự là {{finalTarget}}',
-        })}
-      >
-        {t('redirects.chainHopsValue', { count: hops, defaultValue: '{{count}} bước' })}
       </span>
     )
   }
@@ -568,12 +479,6 @@ export function RedirectListScreen({ canUpdate }) {
       ),
     },
     {
-      key: 'chainHops',
-      label: t('redirects.colChainHops', { defaultValue: 'Số bước' }),
-      align: 'right',
-      render: (redirect) => chainHopsBadge(redirect),
-    },
-    {
       key: 'enabled',
       label: t('redirects.colEnabled', { defaultValue: 'Bật' }),
       render: enabledBadge,
@@ -606,7 +511,6 @@ export function RedirectListScreen({ canUpdate }) {
     subtitle: redirect.targetUrl,
     status: enabledBadge(redirect),
     meta: [
-      { label: t('redirects.colChainHops', { defaultValue: 'Số bước' }), value: chainHopsBadge(redirect) },
       { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
       { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
     ],
@@ -660,20 +564,14 @@ export function RedirectListScreen({ canUpdate }) {
               <FormField
                 label={t('redirects.formTarget', { defaultValue: 'Địa chỉ mới' })}
                 required
-                helper={t('redirects.formTargetHint', { defaultValue: 'Đường dẫn mới trong website. Hệ thống luôn dùng mã 301 vĩnh viễn.' })}
+                helper={t('redirects.formTargetHint', { defaultValue: 'Đường dẫn mới trong website. Hệ thống luôn dùng mã 301 vĩnh viễn; nếu địa chỉ này lại trùng nguồn của một chuyển hướng khác, hệ thống tự lưu thẳng tới đích cuối cùng.' })}
                 error={validationErrors.targetUrl || (touched.targetUrl ? targetError : '')}
               >
                 <Input
                   maxLength={2048}
                   value={form.targetUrl}
-                  onChange={(e) => {
-                    setForm((p) => ({ ...p, targetUrl: e.target.value }))
-                    setChainWarning(null)
-                  }}
-                  onBlur={() => {
-                    markTouched('targetUrl')
-                    checkTargetChain()
-                  }}
+                  onChange={(e) => updateFormField('targetUrl', e.target.value)}
+                  onBlur={() => markTouched('targetUrl')}
                   placeholder="/dia-chi-moi"
                 />
               </FormField>
@@ -684,63 +582,7 @@ export function RedirectListScreen({ canUpdate }) {
                 <Checkbox checked={form.enabled} onCheckedChange={(checked) => updateFormField('enabled', checked === true)} />
                 <span>{t('redirects.formEnabled', { defaultValue: 'Bật' })}</span>
               </label>
-              {/* Tùy chọn nâng cao — Legacy ID + Ghi chú, thu gọn sẵn để form ngắn hơn (F10). */}
-              <div className="md:col-span-2">
-                <CollapsibleSection
-                  title={t('redirects.advancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
-                  hint={t('redirects.advancedHint', { defaultValue: 'Mã tham chiếu địa chỉ cũ và ghi chú' })}
-                  open={advancedOpen}
-                  onToggle={() => setAdvancedOpen((v) => !v)}
-                  keepMounted
-                >
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      label={t('redirects.formLegacyId', { defaultValue: 'Mã tham chiếu địa chỉ cũ' })}
-                      helper={t('redirects.formLegacyIdHint', { defaultValue: 'Chỉ dùng để đối chiếu dữ liệu WordPress. Mã đã lưu có thể đổi nhưng không thể xóa.' })}
-                      error={validationErrors.legacyId || (touched.legacyId ? legacyIdError : '')}
-                    >
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={form.legacyId}
-                        onChange={(e) => updateFormField('legacyId', e.target.value)}
-                        onBlur={() => markTouched('legacyId')}
-                      />
-                    </FormField>
-                    <FormField
-                      label={t('redirects.formNotes', { defaultValue: 'Ghi chú' })}
-                      count={`${form.notes.length}/2000`}
-                      full
-                    >
-                      <Textarea
-                        rows={3}
-                        maxLength={2000}
-                        value={form.notes}
-                        onChange={(e) => updateFormField('notes', e.target.value)}
-                        placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Ghi chú tuỳ chọn.' })}
-                      />
-                    </FormField>
-                  </div>
-                </CollapsibleSection>
-              </div>
             </div>
-            {/* Cảnh báo đi vòng — chỉ nhắc, không chặn lưu. */}
-            {chainWarning && (
-              <Alert tone="warning" size="sm" className="mt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>
-                    {t('redirects.chainWarning', {
-                      finalTarget: chainWarning.finalTarget,
-                      defaultValue: 'Đích này còn chuyển hướng tiếp tới {{finalTarget}}. Nên trỏ thẳng tới đó để khách chỉ đi 1 bước.',
-                    })}
-                  </span>
-                  <Button type="button" variant="outline" size="sm" onClick={applyFinalTarget}>
-                    {t('redirects.chainWarningApply', { defaultValue: 'Trỏ thẳng tới đích cuối' })}
-                  </Button>
-                </div>
-              </Alert>
-            )}
             <p className="text-xs text-muted-foreground mt-3">
               <span className="text-danger" aria-hidden="true">*</span>{' '}
               {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
@@ -757,8 +599,8 @@ export function RedirectListScreen({ canUpdate }) {
         <FilterSearchInput
           value={searchInput}
           onChange={(value) => setSearchInput(value.slice(0, 200))}
-          placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới, ghi chú' })}
-          ariaLabel={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới, ghi chú' })}
+          placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới' })}
+          ariaLabel={t('redirects.searchPlaceholder', { defaultValue: 'Địa chỉ cũ, địa chỉ mới' })}
           wrapperClassName="min-w-48 flex-1"
           className="min-h-11"
           disabled={isActionBusy}
@@ -773,16 +615,6 @@ export function RedirectListScreen({ canUpdate }) {
             { value: 'ALL', label: t('redirects.filterEnabledAll', { defaultValue: 'Tất cả' }) },
             { value: 'true', label: t('redirects.statusOn', { defaultValue: 'Bật' }) },
             { value: 'false', label: t('redirects.statusOff', { defaultValue: 'Tắt' }) },
-          ]}
-        />
-        <FilterSelect
-          value={query.chained}
-          onValueChange={(v) => updateQuery({ chained: v }, { resetPage: true })}
-          ariaLabel={t('redirects.filterChained', { defaultValue: 'Đi vòng' })}
-          options={[
-            { value: 'ALL', label: t('redirects.filterChained', { defaultValue: 'Đi vòng' }) },
-            { value: 'true', label: t('redirects.chainedOnly', { defaultValue: 'Chỉ luật đi vòng' }) },
-            { value: 'false', label: t('redirects.chainedDirect', { defaultValue: 'Chỉ luật đi thẳng' }) },
           ]}
         />
         <PageSizeSelect

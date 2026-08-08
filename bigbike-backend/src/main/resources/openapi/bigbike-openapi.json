@@ -7858,6 +7858,50 @@
           "status": {
             "$ref": "#/components/schemas/ReviewStatus"
           },
+          "moderationSource": {
+            "type": "string",
+            "enum": [
+              "RULE",
+              "AI",
+              "SKIPPED"
+            ],
+            "nullable": true,
+            "description": "Which automatic-moderation layer produced the verdict. Null when the review has never been checked (submitted before V380, or the verdict has not landed yet). REVIEW_RULE_012."
+          },
+          "moderationVerdict": {
+            "type": "string",
+            "enum": [
+              "CLEAN",
+              "BLOCKED"
+            ],
+            "nullable": true,
+            "description": "CLEAN does not mean approved — the review still waits at PENDING for a human. The automatic moderator can never set APPROVED."
+          },
+          "moderationCategories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PROFANITY",
+                "HARASSMENT",
+                "ADVERTISING",
+                "SENSITIVE"
+              ]
+            },
+            "description": "Violations recognised. May include a category switched off in settings, which is then informational only and did not cause a block."
+          },
+          "moderationReason": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "description": "Short Vietnamese explanation for the moderator, or a machine reason code when skipped."
+          },
+          "moderationCheckedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the check finished, including when it was skipped. Null distinguishes never-ran from ran-and-skipped."
+          },
           "version": {
             "type": "integer",
             "format": "int64",
@@ -10863,25 +10907,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApiErrorDetail"
-            }
-          },
-          "variantsInFile": {
-            "type": "integer"
-          },
-          "variantsAdded": {
-            "type": "integer"
-          },
-          "variantsUpdated": {
-            "type": "integer"
-          },
-          "variantsRemoved": {
-            "type": "integer"
-          },
-          "removedVariantSkus": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            },
+            "description": "Includes a variants/IGNORED entry when the file row still carries a variants array — import never writes variants (PRODUCT_RULE_009)."
           }
         }
       },

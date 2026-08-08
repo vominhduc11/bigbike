@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -143,8 +142,7 @@ class AdminRedirectApiTest {
                                 {
                                   "sourcePattern": "%s",
                                   "targetUrl": "%s",
-                                  "enabled": true,
-                                  "notes": "SEO migration test"
+                                  "enabled": true
                                 }
                                 """.formatted(sourcePattern, targetUrl)))
                 .andExpect(status().isOk())
@@ -152,6 +150,10 @@ class AdminRedirectApiTest {
                 .andExpect(jsonPath("$.data.targetUrl").value(targetUrl))
                 .andExpect(jsonPath("$.data.statusCode").doesNotExist())
                 .andExpect(jsonPath("$.data.redirectType").doesNotExist())
+                .andExpect(jsonPath("$.data.notes").doesNotExist())
+                .andExpect(jsonPath("$.data.legacyId").doesNotExist())
+                .andExpect(jsonPath("$.data.chainHops").doesNotExist())
+                .andExpect(jsonPath("$.data.finalTarget").doesNotExist())
                 .andExpect(jsonPath("$.data.enabled").value(true));
 
         RedirectEntity created = redirectJpaRepository.findBySourcePattern(sourcePattern)
@@ -171,8 +173,7 @@ class AdminRedirectApiTest {
                         .content("""
                                 {
                                   "targetUrl": "%s-updated",
-                                  "enabled": false,
-                                  "notes": "Disabled after verification"
+                                  "enabled": false
                                 }
                                 """.formatted(targetUrl)))
                 .andExpect(status().isOk())
@@ -274,19 +275,19 @@ class AdminRedirectApiTest {
     }
 
     @Test
-    void shouldSearchNotesAndReturnDatabasePagination() throws Exception {
+    void shouldSearchSourceAndTargetAndReturnDatabasePagination() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         RedirectEntity first = redirectJpaRepository.save(redirect(
-                "/notes-search-a-" + suffix, "/notes-target-a", "campaign-needle-" + suffix));
+                "/search-needle-" + suffix + "-a", "/search-target-" + suffix + "-a"));
         RedirectEntity second = redirectJpaRepository.save(redirect(
-                "/notes-search-b-" + suffix, "/notes-target-b", "campaign-needle-" + suffix));
+                "/search-needle-" + suffix + "-b", "/search-target-" + suffix + "-b"));
 
         try {
             mockMvc.perform(get("/api/v1/admin/redirects")
                             .with(devAuth())
                             .param("page", "1")
                             .param("size", "1")
-                            .param("q", "campaign-needle-" + suffix)
+                            .param("q", "search-needle-" + suffix)
                             .header("X-Admin-Permissions", "redirects.read"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.length()").value(1))
@@ -370,54 +371,6 @@ class AdminRedirectApiTest {
     }
 
     @Test
-    void patchRedirect_clearsNotesWithEmptyString_butKeepsLegacyId() throws Exception {
-        // Contract (fix 2026-07-06, audit #8): PATCH is presence-guarded. Explicit "" clears
-        // notes; legacyId can only be OVERWRITTEN — a bare JSON null is indistinguishable
-        // from "field omitted", so it must be kept, not wiped.
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String sourcePattern = "/clear-fields-test-" + suffix;
-
-        mockMvc.perform(post("/api/v1/admin/redirects")
-                        .with(devAuth())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "redirects.write")
-                        .content("""
-                                {
-                                  "sourcePattern": "%s",
-                                  "targetUrl": "/target-clear-%s",
-                                  "notes": "Ghi chu ban dau",
-                                  "legacyId": 123
-                                }
-                                """.formatted(sourcePattern, suffix)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.notes").value("Ghi chu ban dau"))
-                .andExpect(jsonPath("$.data.legacyId").value(123));
-
-        RedirectEntity created = redirectJpaRepository.findBySourcePattern(sourcePattern)
-                .orElseThrow(() -> new IllegalStateException("Expected redirect to be created."));
-
-        mockMvc.perform(patch("/api/v1/admin/redirects/{id}", created.getId())
-                        .with(devAuth())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "redirects.write")
-                        .content("""
-                                {
-                                  "notes": "",
-                                  "legacyId": null
-                                }
-                                """))
-                .andExpect(status().isOk());
-
-        RedirectEntity updated = redirectJpaRepository.findById(created.getId())
-                .orElseThrow(() -> new IllegalStateException("Expected redirect to still exist."));
-        assertNull(updated.getNotes(), "explicit empty string must clear notes");
-        assertEquals(Long.valueOf(123), updated.getLegacyId(),
-                "a bare null must NOT wipe legacyId (presence-guarded PATCH)");
-
-        redirectJpaRepository.delete(updated);
-    }
-
-    @Test
     void shouldRejectLegacyRedirectStatusFields() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourcePattern = "/legacy-status-" + suffix;
@@ -438,118 +391,147 @@ class AdminRedirectApiTest {
                 .andExpect(jsonPath("$.error.details[0].code").value("UNSUPPORTED"));
     }
 
-    private static RedirectEntity redirect(String sourcePattern, String targetUrl, String notes) {
+    private static RedirectEntity redirect(String sourcePattern, String targetUrl) {
         RedirectEntity entity = new RedirectEntity();
         entity.setSourcePattern(sourcePattern);
         entity.setTargetUrl(targetUrl);
-        entity.setNotes(notes);
         entity.setEnabled(true);
         entity.setCreatedAt(java.time.Instant.now());
         entity.setUpdatedAt(java.time.Instant.now());
         return entity;
     }
 
-    // ── Chain detection (chainHops / finalTarget) ─────────────────────────────
+    // ── Auto-collapse to final destination on save (REDIRECT_RULE_010) ────────
 
     /**
-     * A→B plus B→C means a visitor arriving at A takes two hops before landing on C. The rule
-     * stores only "A→B", so chainHops/finalTarget are what tells admin the chain exists at all.
+     * A→B plus a NEW rule C→A: at save time, A already redirects onward to B, so C must be
+     * persisted pointing straight at B — never at the intermediate A — so every stored redirect
+     * always represents exactly one hop for a visitor.
      */
     @Test
-    void shouldReportChainHopsAndFinalTargetForChainedRedirect() throws Exception {
+    void shouldCollapseTargetToFinalDestinationOnCreate() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String a = "/chain-a-" + suffix;
-        String b = "/chain-b-" + suffix;
-        String c = "/chain-c-" + suffix;
+        String a = "/collapse-a-" + suffix;
+        String b = "/collapse-b-" + suffix;
+        String c = "/collapse-c-" + suffix;
 
         createRedirect(a, b);
-        createRedirect(b, c);
 
-        RedirectEntity ruleA = redirectJpaRepository.findBySourcePattern(a).orElseThrow();
-        RedirectEntity ruleB = redirectJpaRepository.findBySourcePattern(b).orElseThrow();
-
-        mockMvc.perform(get("/api/v1/admin/redirects/{id}", ruleA.getId())
+        mockMvc.perform(post("/api/v1/admin/redirects")
                         .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "%s",
+                                  "enabled": true
+                                }
+                                """.formatted(c, a)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.targetUrl").value(b))
-                .andExpect(jsonPath("$.data.chainHops").value(2))
-                .andExpect(jsonPath("$.data.finalTarget").value(c));
+                .andExpect(jsonPath("$.data.chainHops").doesNotExist())
+                .andExpect(jsonPath("$.data.finalTarget").doesNotExist());
 
-        // The last rule in the chain goes straight to its destination.
-        mockMvc.perform(get("/api/v1/admin/redirects/{id}", ruleB.getId())
-                        .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.chainHops").value(1))
-                .andExpect(jsonPath("$.data.finalTarget").value(c));
+        RedirectEntity ruleA = redirectJpaRepository.findBySourcePattern(a).orElseThrow();
+        RedirectEntity ruleC = redirectJpaRepository.findBySourcePattern(c).orElseThrow();
+        assertEquals(b, ruleC.getTargetUrl(), "stored targetUrl must be the final destination, not the intermediate a");
 
         redirectJpaRepository.delete(ruleA);
-        redirectJpaRepository.delete(ruleB);
+        redirectJpaRepository.delete(ruleC);
     }
 
+    /** Same collapse, but via PATCH updating an existing redirect's targetUrl. */
     @Test
-    void shouldFilterListToChainedRedirectsOnly() throws Exception {
+    void shouldCollapseTargetToFinalDestinationOnUpdate() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String a = "/filter-a-" + suffix;
-        String b = "/filter-b-" + suffix;
-        String c = "/filter-c-" + suffix;
+        String x = "/collapse-x-" + suffix;
+        String y = "/collapse-y-" + suffix;
+        String z = "/collapse-z-" + suffix;
+        String other = "/collapse-other-" + suffix;
+
+        createRedirect(y, z);
+        createRedirect(x, other);
+        RedirectEntity ruleX = redirectJpaRepository.findBySourcePattern(x).orElseThrow();
+
+        mockMvc.perform(patch("/api/v1/admin/redirects/{id}", ruleX.getId())
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {"targetUrl": "%s"}
+                                """.formatted(y)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.targetUrl").value(z));
+
+        RedirectEntity updated = redirectJpaRepository.findById(ruleX.getId()).orElseThrow();
+        assertEquals(z, updated.getTargetUrl(), "PATCH must also collapse to the final destination");
+
+        redirectJpaRepository.delete(updated);
+        redirectJpaRepository.findBySourcePattern(y).ifPresent(redirectJpaRepository::delete);
+    }
+
+    /**
+     * A disabled rule redirects nobody in production, so it must not be treated as a real chain
+     * link: creating C→A while A→B exists but A is DISABLED must persist C→A unchanged.
+     */
+    @Test
+    void shouldNotCollapseThroughADisabledRedirect() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String a = "/collapse-disabled-a-" + suffix;
+        String b = "/collapse-disabled-b-" + suffix;
+        String c = "/collapse-disabled-c-" + suffix;
 
         createRedirect(a, b);
-        createRedirect(b, c);
+        RedirectEntity ruleA = redirectJpaRepository.findBySourcePattern(a).orElseThrow();
+        ruleA.setEnabled(false);
+        redirectJpaRepository.save(ruleA);
 
-        // A is chained (A→B→C); B is direct (B→C). Searching by the shared suffix keeps the
-        // assertion independent of the other ~8.9k rules in the table.
-        mockMvc.perform(get("/api/v1/admin/redirects")
+        mockMvc.perform(post("/api/v1/admin/redirects")
                         .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read")
-                        .param("q", suffix)
-                        .param("chained", "true"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "%s",
+                                  "enabled": true
+                                }
+                                """.formatted(c, a)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].sourcePattern").value(a))
-                .andExpect(jsonPath("$.data[0].chainHops").value(2));
+                .andExpect(jsonPath("$.data.targetUrl").value(a));
 
-        mockMvc.perform(get("/api/v1/admin/redirects")
-                        .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read")
-                        .param("q", suffix)
-                        .param("chained", "false"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].sourcePattern").value(b));
+        RedirectEntity ruleC = redirectJpaRepository.findBySourcePattern(c).orElseThrow();
+        assertEquals(a, ruleC.getTargetUrl(), "must not collapse through a disabled rule");
 
-        redirectJpaRepository.findBySourcePattern(a).ifPresent(redirectJpaRepository::delete);
-        redirectJpaRepository.findBySourcePattern(b).ifPresent(redirectJpaRepository::delete);
+        redirectJpaRepository.delete(ruleA);
+        redirectJpaRepository.delete(ruleC);
     }
 
-    /** Backs the admin form's "this destination redirects onward" warning. */
+    /** A real loop (A→B→A) must still be rejected outright, never silently collapsed. */
     @Test
-    void shouldResolveTargetToItsFinalDestination() throws Exception {
+    void shouldStillRejectMultiHopLoop() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String b = "/resolve-b-" + suffix;
-        String c = "/resolve-c-" + suffix;
+        String a = "/loop-a-" + suffix;
+        String b = "/loop-b-" + suffix;
 
-        createRedirect(b, c);
+        createRedirect(a, b);
 
-        mockMvc.perform(get("/api/v1/admin/redirects/resolve")
+        mockMvc.perform(post("/api/v1/admin/redirects")
                         .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read")
-                        .param("target", b))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.hops").value(2))
-                .andExpect(jsonPath("$.data.finalTarget").value(c));
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "%s",
+                                  "enabled": true
+                                }
+                                """.formatted(b, a)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("REDIRECT_LOOP"));
 
-        // A target no rule matches lands in one hop — nothing to warn about.
-        mockMvc.perform(get("/api/v1/admin/redirects/resolve")
-                        .with(devAuth())
-                        .header("X-Admin-Permissions", "redirects.read")
-                        .param("target", c))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.hops").value(1))
-                .andExpect(jsonPath("$.data.finalTarget").value(c));
-
-        redirectJpaRepository.findBySourcePattern(b).ifPresent(redirectJpaRepository::delete);
+        redirectJpaRepository.findBySourcePattern(a).ifPresent(redirectJpaRepository::delete);
     }
 
     private void createRedirect(String sourcePattern, String targetUrl) throws Exception {

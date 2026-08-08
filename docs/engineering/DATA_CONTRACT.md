@@ -943,6 +943,12 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 - `reviews.rating` — `numeric(2,1) NOT NULL`, check giá trị thuộc tập `{1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5}` bước 0,5 (`V14` tạo `smallint 1..5`; **`V347` nới sang thập phân nửa sao** — `BUSINESS_RULES.md` `REVIEW_RULE_008`, owner decision 2026-07-22) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
 - `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng đúng namespace MinIO `/media/reviews/...`, tối đa 10. `NULL`/`[]` = không có ảnh. Chỉ phục vụ hiển thị khi review `APPROVED` (`REVIEW_RULE_005`).
 - `reviews.version` — `bigint NOT NULL DEFAULT 0` (`V355`), optimistic concurrency token. Admin list/detail trả field này; single mutation và từng item bulk phải echo `expectedVersion`.
+- **Kiểm duyệt tự động (`V380`, `REVIEW_RULE_012`/`013`)** — 5 cột nullable, tất cả `NULL` với mọi review có trước `V380` (không backfill; UI hiểu `NULL` = "chưa qua kiểm duyệt tự động"). Các cột này là **ghi chú kết quả**, không phải nguồn sự thật của trạng thái — trạng thái vẫn chỉ nằm ở `reviews.status`.
+  - `reviews.moderation_source` — `varchar(16) NULL`, check ∈ `{RULE, AI, SKIPPED}`. `RULE` = danh sách từ cấm bắt được (không gọi AI); `AI` = AI đã trả lời hợp lệ; `SKIPPED` = không chạy được (tắt công tắc, thiếu khoá dịch vụ, nhận xét rỗng, lỗi mạng, quá hạn chờ, phản hồi sai định dạng).
+  - `reviews.moderation_verdict` — `varchar(16) NULL`, check ∈ `{CLEAN, BLOCKED}`. `CLEAN` **không** đồng nghĩa đã duyệt — review vẫn ở `PENDING` chờ người bấm (`REVIEW_RULE_012`).
+  - `reviews.moderation_categories` — `jsonb NULL`. Mảng mã loại vi phạm, giá trị hợp lệ `PROFANITY`, `HARASSMENT`, `ADVERTISING`, `SENSITIVE`. Có thể chứa loại **đang tắt** trong Cài đặt — khi đó nó chỉ là ghi chú cho người duyệt, không phải lý do chặn. `NULL`/`[]` = không phát hiện gì.
+  - `reviews.moderation_reason` — `varchar(500) NULL`. Câu giải thích ngắn bằng tiếng Việt hiển thị cho admin (với `RULE` là từ cấm đã khớp; với `SKIPPED` là mã lý do máy đọc được). **Không bao giờ** được sao chép vào audit (`REVIEW_RULE_011`).
+  - `reviews.moderation_checked_at` — `timestamptz NULL`, thời điểm chạy xong. `NULL` = chưa từng chạy. Đặt cùng lúc với 4 cột trên, kể cả khi `SKIPPED`, nên `NULL` phân biệt được rõ "chưa chạy" với "chạy rồi nhưng bỏ qua".
 - `reviews.first_approved_at` — `timestamptz NULL` (`V356`), marker bền vững cho email duyệt lần đầu. `V356` backfill row đang `APPROVED`; `V358` đọc audit `REVIEW_STATUS_CHANGED` lịch sử để backfill cả review từng được duyệt rồi đã về `PENDING`/`SPAM`/`TRASH`, trước khi redaction audit. Marker không bị xóa khi review rời `APPROVED`, nên restore rồi duyệt lại không gửi email lần hai.
 
 `review_photo_uploads` (`V357`) là sổ claim ảnh bền vững, tách khỏi JSON hiển thị:
@@ -1205,11 +1211,13 @@ Stores admin-managed URL-redirect rules, independent from the `slug_en`-triggere
 | Column | Type | Notes |
 |---|---|---|
 | `source_pattern` | `VARCHAR(1024)` | The old/legacy exact internal path. **Case-sensitive, stored without trailing slashes** (except root `/`), and never contains a scheme/host, query or fragment — canonicalized by `AdminRedirectService` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
-| `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. |
+| `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. Always the fully-resolved final destination — `AdminRedirectService` auto-collapses any chain through another enabled rule at write time (`REDIRECT_RULE_010`), so this column never points at another rule's `source_pattern`. |
 | `enabled` | `BOOLEAN` | Disabled rules are skipped by the internal lookup. |
 | `hit_count` / `last_hit_at` | `INT` / `TIMESTAMP` | Incremented fire-and-forget by `bigbike-web/proxy.ts` after a served redirect. |
-| `legacy_id` | `BIGINT` nullable | Reference to the original WordPress redirect row id (migration provenance only). |
-| `notes` | `TEXT` nullable | Free-text admin note. |
+
+`legacy_id` (WordPress migration provenance) and `notes` (free-text admin note) were dropped by
+`V379__drop_redirect_notes_legacy_id.sql` (owner decision 2026-08-08) — neither was read by the
+live redirect-serving path, only by the admin screen.
 
 **Normalization policy** (`AdminRedirectService`, applied before persistence and the uniqueness/loop checks): case-sensitive (matches `bigbike-web/proxy.ts`'s pathname lookup and PostgreSQL text equality), all trailing slashes stripped except for root `/`. `/Foo` and `/foo` remain distinct; `/foo`, `/foo/` and `/foo///` are the same source. Loop comparison uses the target pathname, so `/foo?campaign=old`, `/foo#section` and an absolute same-site URL ending in `/foo` are still self-loops for source `/foo`.
 

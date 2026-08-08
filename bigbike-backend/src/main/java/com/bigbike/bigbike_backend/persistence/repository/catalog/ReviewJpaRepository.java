@@ -73,6 +73,17 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
 
     long countByStatusAndRating(String status, BigDecimal rating);
 
+    /**
+     * How many AI calls the moderator has already spent since {@code since} (REVIEW_RULE_013).
+     *
+     * <p>The annotation columns are the ledger — one row marked {@code AI} is exactly one
+     * paid call — so the daily budget needs no counter table of its own and survives a
+     * restart. Rows blocked by the banned-word layer carry {@code RULE} and are excluded
+     * here because they never cost anything.
+     */
+    long countByModerationSourceAndModerationCheckedAtGreaterThanEqual(
+            String moderationSource, Instant since);
+
     @Query("""
             SELECT r FROM ReviewEntity r
             WHERE r.productId = :productId

@@ -10,12 +10,6 @@ public record AdminRedirectResponse(
         boolean enabled,
         long hitCount,
         Instant lastHitAt,
-        String notes,
-        Long legacyId,
         Instant createdAt,
-        Instant updatedAt,
-        /** 1 = straight to the destination; >= 2 = the destination redirects onward (chained). */
-        int chainHops,
-        /** Destination after following the whole chain. Equals targetUrl when chainHops == 1. */
-        String finalTarget
+        Instant updatedAt
 ) {}

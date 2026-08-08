@@ -36,12 +36,6 @@ public class RedirectEntity {
     @Column(name = "last_hit_at")
     private Instant lastHitAt;
 
-    @Column(columnDefinition = "text")
-    private String notes;
-
-    @Column(name = "legacy_id")
-    private Long legacyId;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

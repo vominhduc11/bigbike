@@ -148,7 +148,6 @@ export function ImportProductsDialog({ file, open, onClose }) {
                   <th className="p-2">{t('import.colProduct')}</th>
                   <th className="p-2">{t('import.colAction')}</th>
                   <th className="p-2">{t('import.colStatus')}</th>
-                  <th className="p-2">{t('import.colVariants')}</th>
                   <th className="p-2">{t('import.colDetail')}</th>
                 </tr>
               </thead>
@@ -169,17 +168,6 @@ export function ImportProductsDialog({ file, open, onClose }) {
                     <td className="p-2">{row.productName || '—'}</td>
                     <td className="p-2">{actionLabel(t, row.action)}</td>
                     <td className="p-2"><StatusBadge t={t} status={row.status} /></td>
-                    <td className="p-2 whitespace-nowrap">
-                      {row.variantsAdded > 0 && <div>+{row.variantsAdded} {t('import.variantsAdded')}</div>}
-                      {row.variantsUpdated > 0 && <div>{row.variantsUpdated} {t('import.variantsUpdated')}</div>}
-                      {row.variantsRemoved > 0 && (
-                        <div className="text-danger flex items-center gap-1">
-                          <AlertTriangle size={12} aria-hidden />
-                          -{row.variantsRemoved} {t('import.willRemoveVariants')}
-                          {row.removedVariantSkus?.length ? `: ${row.removedVariantSkus.join(', ')}` : ''}
-                        </div>
-                      )}
-                    </td>
                     <td className="p-2">
                       {row.errors?.map((e, i) => (
                         <div key={`e-${i}`} className="text-danger">{e.message}</div>

@@ -22,7 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Guards JSON-only product import behavior that is easy to regress when preserving existing rows
- * and matching product/variant identity by SKU.
+ * and matching product identity by SKU — including the 2026-08-08 rule that import never writes
+ * variants (see also {@link ProductImportMediaPreservationTest} for the update side).
  */
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
@@ -439,5 +440,101 @@ class ProductImportRoundTripTest {
                     assertThat(p.getPublishStatus()).isEqualTo(PublishStatus.PUBLISHED);
                     assertThat(p.getRetailPrice()).isEqualByComparingTo("950000");
                 });
+    }
+
+    /**
+     * Owner decision 2026-08-08 (PRODUCT_RULE_009): a CREATE row never produces variants, however
+     * many the file lists. The file's variants are reported as ignored rather than dropped silently.
+     */
+    @Test
+    void createIgnoresVariantsInFileAndWarns() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "RT5-" + suffix;
+        String slug = "roundtrip5-" + suffix;
+
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip Five %s", "nameEN": "Round Trip Five EN %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 800000,
+                    "variants": [
+                      { "sku": "%s-DEN", "retailPrice": 810000, "isAvailable": true,
+                        "options": [ { "optionName": "Color", "optionValue": "Den" } ] },
+                      { "sku": "%s-TRANG", "retailPrice": 820000, "isAvailable": true,
+                        "options": [ { "optionName": "Color", "optionValue": "Trang" } ] }
+                    ]
+                  }
+                ]
+                """.formatted(sku, slug, suffix, suffix, sku, sku);
+
+        ImportReportResponse report =
+                productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(report.errorCount()).isZero();
+
+        ImportRowResult row = report.rows().get(0);
+        assertThat(row.action()).isEqualTo("CREATE");
+        assertThat(row.status()).as("an ignored variants array downgrades the row to WARNING").isEqualTo("WARNING");
+        assertThat(row.warnings())
+                .anyMatch(w -> "variants".equals(w.field()) && "IGNORED".equals(w.code()));
+
+        // findByIdsWithVariants: getVariants() is LAZY, so it must be fetch-joined to read it here.
+        ProductEntity created = productJpaRepository
+                .findByIdsWithVariants(java.util.List.of(row.productId()))
+                .get(0);
+        assertThat(created.getVariants())
+                .as("import never creates variants — admin adds them on the product screen")
+                .isEmpty();
+    }
+
+    /**
+     * Owner decision 2026-08-08 (PRODUCT_RULE_009): with no variants to carry a price, a CREATE row
+     * must supply a product-level retailPrice. The publish-readiness gate that enforces this throws
+     * an ApiException, so it must fail only that row — the rest of the file still saves.
+     */
+    @Test
+    void createWithoutRetailPriceFailsOnlyThatRow() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String badSku = "RT6-BAD-" + suffix;
+        String goodSku = "RT6-OK-" + suffix;
+        String goodSlug = "roundtrip6-ok-" + suffix;
+
+        String array = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "roundtrip6-bad-%s" },
+                    "name": { "nameVI": "Round Trip Six Bad %s", "nameEN": "Round Trip Six Bad EN %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex"
+                  },
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip Six Ok %s", "nameEN": "Round Trip Six Ok EN %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 700000
+                  }
+                ]
+                """.formatted(badSku, suffix, suffix, suffix, goodSku, goodSlug, suffix, suffix);
+
+        ImportReportResponse report =
+                productImportService.commitImport(jsonFile(array), Set.of(), DEV_ADMIN_ID);
+
+        assertThat(report.errorCount()).as("only the price-less row fails").isEqualTo(1);
+        assertThat(report.rows().get(0).status()).isEqualTo("ERROR");
+        assertThat(report.rows().get(0).errors())
+                .anyMatch(e -> "retailPrice".equals(e.field()));
+        assertThat(report.rows().get(1).status()).isEqualTo("OK");
+        assertThat(productJpaRepository.findBySlug(goodSlug))
+                .as("a failing row must not roll back rows already committed")
+                .isPresent();
     }
 }

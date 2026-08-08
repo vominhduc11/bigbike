@@ -2422,6 +2422,32 @@
       "deleteSuccess": "Review and attached photos permanently deleted.",
       "readOnlyHint": "You have view-only access to reviews. Contact an administrator for moderation access.",
       "noActionPermission": "You don't have permission to moderate this review."
+    },
+    "moderation": {
+      "sectionTitle": "Automatic moderation",
+      "sectionDescription": "What the screening layer found before this reached you. Notes only — the approve and block buttons stay on the right.",
+      "blockedByAi": "Blocked by AI",
+      "blockedByWord": "Matched a shop banned word",
+      "clean": "Checked, no violation found",
+      "unchecked": "Not screened automatically",
+      "categoriesLabel": "Detected:",
+      "notedButNotBlocked": "This category is switched off in Settings, so it was only noted and did not cause a block.",
+      "checkedAt": "Checked at {{at}}",
+      "neverApprovesHint": "The screening layer can only block. Publishing a review is always your decision.",
+      "skip": {
+        "DISABLED": "Automatic moderation is off",
+        "NOT_CONFIGURED": "No AI service key configured on the server",
+        "EMPTY_BODY": "Star rating only — no text to check",
+        "AI_UNAVAILABLE": "Could not reach the AI service — please review manually",
+        "UNKNOWN": "Automatic moderation could not run",
+        "DAILY_LIMIT_REACHED": "Daily AI limit reached — please review manually"
+      },
+      "category": {
+        "PROFANITY": "Profanity",
+        "HARASSMENT": "Insults, discrimination",
+        "ADVERTISING": "Advertising, spam",
+        "SENSITIVE": "Sensitive, off-topic"
+      }
     }
   },
   "banners": {
@@ -2523,7 +2549,8 @@
       "payment": "Bank account details shown to customers paying by transfer.",
       "publicHero": "Images and headings at the top of listing pages.",
       "seo": "Homepage content supporting organic search.",
-      "productAssign": "Internal assignment guidance for products and articles."
+      "productAssign": "Internal assignment guidance for products and articles.",
+      "reviewModeration": "Screen customer reviews before you moderate them. The screening layer can only block, never publish."
     },
     "sectionDescription": {
       "general_brand": "Core identity information used throughout the website.",
@@ -2591,7 +2618,8 @@
     "internal": "Internal",
     "panelSummary": "{{count}} settings",
     "errValueEnRequired": "Please enter the English version for this field.",
-    "readOnlyHint": "You have view-only access to settings."
+    "readOnlyHint": "You have view-only access to settings.",
+    "group_review_moderation": "Review moderation"
   },
   "adminUsers": {
     "eyebrow": "System",
@@ -3124,7 +3152,6 @@
     "colProduct": "Product",
     "colAction": "Action",
     "colStatus": "Status",
-    "colVariants": "Variants",
     "colDetail": "Detail",
     "actionCreate": "Create",
     "actionUpdate": "Update",
@@ -3132,9 +3159,6 @@
     "statusOk": "OK",
     "statusWarning": "Warning",
     "statusError": "Error",
-    "variantsAdded": "added",
-    "variantsUpdated": "updated",
-    "willRemoveVariants": "will be removed",
     "rowCheckboxLabel": "Include {{name}} in this import",
     "resultSummary": "Import finished: {{ok}} OK, {{warn}} warning, {{err}} error",
     "error": "Could not process the file. Please try again.",
@@ -3342,18 +3366,12 @@
     "errorSourceInvalid": "The source must be an internal website path without a domain, query, or # fragment.",
     "errorSourceConflict": "This source path already exists.",
     "errorTargetRequired": "Target URL is required.",
-    "errorLegacyIdInvalid": "The legacy ID must be a valid positive integer.",
-    "errorLegacyIdCannotClear": "A saved legacy ID cannot be cleared; enter the previous ID or a new one.",
     "formSource": "Source pattern",
     "formSourceHint": "Internal path, for example /old-product. Do not include a domain, query, or # fragment.",
     "formTarget": "Target URL",
-    "formTargetHint": "New website path. The system always uses permanent HTTP 301.",
-    "formLegacyId": "Legacy ID",
-    "formLegacyIdHint": "Used only to reconcile WordPress data. A saved ID may be changed but cannot be cleared.",
+    "formTargetHint": "New website path. The system always uses permanent HTTP 301; if this address matches another redirect's source, the system saves the final destination straight away.",
     "formEnabled": "Enabled",
-    "formNotes": "Notes",
-    "notesPlaceholder": "Optional notes.",
-    "searchPlaceholder": "Source, target, notes",
+    "searchPlaceholder": "Source, target",
     "filterEnabled": "Status",
     "filterEnabledAll": "All",
     "filterAria": "Redirect filters",
@@ -3388,20 +3406,9 @@
     "filterChipSearch": "Search: \"{{value}}\"",
     "removeFilter": "Remove filter {{filter}}",
     "filterChipEnabled": "Status: {{value}}",
-    "advancedTitle": "Advanced options",
-    "advancedHint": "Legacy ID, notes",
     "activeFiltersAria": "Active filters",
     "bulkEnable": "Enable",
-    "bulkDisable": "Disable",
-    "colChainHops": "Hops",
-    "chainHopsValue": "{{count}} hops",
-    "chainHopsTitle": "Chained — the real final destination is {{finalTarget}}",
-    "chainWarning": "This destination redirects onward to {{finalTarget}}. Point straight there so visitors take only one hop.",
-    "chainWarningApply": "Point to final destination",
-    "filterChained": "Chained",
-    "chainedOnly": "Chained only",
-    "chainedDirect": "Direct only",
-    "filterChipChained": "Chained: {{value}}"
+    "bulkDisable": "Disable"
   },
   "errorBoundary": {
     "title": "An unexpected error occurred",

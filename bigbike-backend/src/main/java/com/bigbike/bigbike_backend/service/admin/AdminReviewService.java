@@ -16,8 +16,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepos
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService;
+import com.bigbike.bigbike_backend.service.review.ReviewModerationOutcome;
 import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
+import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -62,6 +65,10 @@ public class AdminReviewService {
     private static final String REVIEW_RESOURCE_TYPE = "REVIEW";
     private static final String REVIEW_STATUS_CHANGED_ACTION = "REVIEW_STATUS_CHANGED";
     private static final String REVIEW_DELETED_ACTION = "REVIEW_DELETED";
+    /** Distinct from the human action so audit can tell a machine block from a moderator's. */
+    private static final String REVIEW_AUTO_MODERATED_ACTION = "REVIEW_AUTO_MODERATED";
+    private static final String SYSTEM_ACTOR_TYPE = "SYSTEM";
+    private static final int MODERATION_REASON_MAX_LENGTH = 500;
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().findAndAddModules().build();
 
     private final ReviewJpaRepository reviewRepo;
@@ -71,6 +78,7 @@ public class AdminReviewService {
     private final WebRevalidationService webRevalidationService;
     private final EmailDispatchService emailDispatchService;
     private final ReviewPhotoStorageService reviewPhotoStorageService;
+    private final AdminReviewWsService adminReviewWsService;
     private final TransactionTemplate requiresNewTransaction;
     private final String siteBaseUrl;
 
@@ -82,6 +90,7 @@ public class AdminReviewService {
             WebRevalidationService webRevalidationService,
             EmailDispatchService emailDispatchService,
             ReviewPhotoStorageService reviewPhotoStorageService,
+            AdminReviewWsService adminReviewWsService,
             PlatformTransactionManager transactionManager,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
     ) {
@@ -92,6 +101,7 @@ public class AdminReviewService {
         this.webRevalidationService = webRevalidationService;
         this.emailDispatchService = emailDispatchService;
         this.reviewPhotoStorageService = reviewPhotoStorageService;
+        this.adminReviewWsService = adminReviewWsService;
         this.requiresNewTransaction = new TransactionTemplate(transactionManager);
         this.requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.siteBaseUrl = siteBaseUrl;
@@ -253,6 +263,91 @@ public class AdminReviewService {
             sendReviewApprovedEmailAfterCommit(entity, productMetadata);
         }
         return new StatusUpdateOutcome(toMap(saved, productMetadata, false), true);
+    }
+
+    /**
+     * Persists what the automatic moderator concluded and, when it found a blocking
+     * violation, performs the `PENDING → SPAM|TRASH` transition on its behalf
+     * (REVIEW_RULE_012).
+     *
+     * <p>Three guarantees this method is responsible for:
+     * <ul>
+     *   <li><b>Never publishes.</b> Only the two blocking statuses are reachable here; there
+     *       is no branch that can set {@code APPROVED}, so no approval email can fire.</li>
+     *   <li><b>Never overrides a human.</b> The transition happens only while the row is
+     *       still {@code PENDING}. If a moderator got there first, the verdict is recorded
+     *       as an annotation and the status is left exactly as the human left it.</li>
+     *   <li><b>Annotates either way.</b> Even a skipped or clean run writes the annotation
+     *       columns, so the admin screen can distinguish "checked, nothing found" from
+     *       "never checked".</li>
+     * </ul>
+     */
+    @Transactional
+    public void applyAutoModeration(Long reviewId, ReviewModerationOutcome outcome) {
+        if (reviewId == null || outcome == null) {
+            return;
+        }
+        ReviewEntity entity = reviewRepo.findById(reviewId).orElse(null);
+        if (entity == null) {
+            // Deleted between submit and moderation — nothing left to annotate.
+            return;
+        }
+
+        String targetStatus = outcome.resolvedTargetStatus().orElse(null);
+        boolean transitions = targetStatus != null && "PENDING".equals(entity.getStatus());
+        ProductReviewMetadata productMetadata =
+                loadProductMetadata(List.of(entity)).get(entity.getProductId());
+        String before = transitions ? snapshot(entity, productMetadata) : null;
+
+        Instant now = Instant.now();
+        List<String> categoryNames = outcome.categoryNames();
+        entity.setModerationSource(outcome.source());
+        entity.setModerationVerdict(outcome.verdict());
+        entity.setModerationCategories(categoryNames.isEmpty() ? null : categoryNames);
+        entity.setModerationReason(truncateReason(outcome.reason()));
+        entity.setModerationCheckedAt(now);
+        if (transitions) {
+            entity.setStatus(targetStatus);
+            entity.setUpdatedAt(now);
+        }
+
+        ReviewEntity saved = reviewRepo.save(entity);
+        reviewRepo.flush();
+
+        if (transitions) {
+            recomputeProductReviewAggregate(saved.getProductId());
+            auditLogWriter.save(auditLogFactory.build(
+                    SYSTEM_ACTOR_TYPE,
+                    null,
+                    REVIEW_AUTO_MODERATED_ACTION,
+                    REVIEW_RESOURCE_TYPE,
+                    null,
+                    before,
+                    autoModerationSnapshot(saved, productMetadata, outcome),
+                    null,
+                    null
+            ));
+            revalidateProduct(saved.getProductId());
+        }
+
+        // Always notify: the annotation alone changes the row's version, so an open
+        // moderation screen must refetch to avoid a surprise 409 on its next action.
+        adminReviewWsService.pushEvent(new ReviewWsEvent(
+                "REVIEW_AUTO_MODERATED",
+                saved.getId(),
+                saved.getProductId(),
+                saved.getStatus(),
+                Instant.now()));
+    }
+
+    private static String truncateReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return null;
+        }
+        String trimmed = reason.trim();
+        return trimmed.length() > MODERATION_REASON_MAX_LENGTH
+                ? trimmed.substring(0, MODERATION_REASON_MAX_LENGTH)
+                : trimmed;
     }
 
     public BulkReviewResult bulkUpdateStatus(
@@ -598,11 +693,36 @@ public class AdminReviewService {
         payload.put("version", review.getVersion() != null ? review.getVersion() : 0L);
         payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
         payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");
+        // Automatic-moderation annotations (REVIEW_RULE_012). Null source means the review
+        // has never been checked, which the admin UI renders differently from a clean pass.
+        payload.put("moderationSource", review.getModerationSource());
+        payload.put("moderationVerdict", review.getModerationVerdict());
+        payload.put("moderationCategories",
+                review.getModerationCategories() != null ? review.getModerationCategories() : List.of());
+        payload.put("moderationReason", review.getModerationReason());
+        payload.put("moderationCheckedAt",
+                review.getModerationCheckedAt() != null ? review.getModerationCheckedAt().toString() : null);
         return payload;
     }
 
     private String snapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {
         return writeJson(toAuditMap(review, productMetadata));
+    }
+
+    /**
+     * Audit payload for an automatic block. Adds only the two machine-readable facts a
+     * reviewer needs — which layer blocked and which categories fired — and deliberately
+     * omits the AI's free-text reason, which can quote the comment (REVIEW_RULE_011).
+     */
+    private String autoModerationSnapshot(
+            ReviewEntity review,
+            ProductReviewMetadata productMetadata,
+            ReviewModerationOutcome outcome
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>(toAuditMap(review, productMetadata));
+        payload.put("moderationSource", outcome.source());
+        payload.put("moderationCategories", outcome.categoryNames());
+        return writeJson(payload);
     }
 
     private String deletedSnapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {

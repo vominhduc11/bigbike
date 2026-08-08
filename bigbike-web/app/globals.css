@@ -1354,8 +1354,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     linear-gradient(135deg, #1a1a1a, #2a0606);
 }
 
-/* -- Brand Carousel (WP .partner-slide parity) ---------- */
-
 /* -- SEO Content Bottom -------------------------------- */
 /* WP `page-home.php`: `.content-bottom.wyswyg > .container`. */
 .bb-seo-content {
@@ -3376,24 +3374,6 @@ html.overlay {
 
 .bb-home .videos-slide .swiper-slide {
   height: auto;
-}
-
-.bb-home .partner-slide .swiper-wrapper {
-  align-items: center;
-}
-
-.bb-home .partner-slide .swiper-slide {
-  text-align: center;
-}
-
-.bb-home .partner-slide .swiper-slide a {
-  display: inline-block;
-}
-
-.bb-home .partner-slide .swiper-slide img {
-  width: auto;
-  height: auto;
-  max-width: 100%;
 }
 
 body .banner-ads > .container > .row {

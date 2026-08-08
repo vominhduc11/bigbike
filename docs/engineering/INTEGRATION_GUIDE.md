@@ -11,14 +11,61 @@
 | WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. Each admin also subscribes to `/user/queue/admin/access`: role/permission changes cause a canonical profile refresh, while disable/suspend/password reset forces sign-in again. The admin client also reconciles `/auth/me` on reconnect, focus and every 30 seconds while visible; all data-topic deliveries recheck the current access server-side. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `auth.jsx`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
+| Google Gemini (review moderation) | Outbound-only classification call for automatic review moderation. Off by default; fail-safe (any failure leaves the review `PENDING`). **Not** a translation path — see §"Review moderation (Google Gemini)". | `OWNER_CONFIRMED_2026-08-08` | `AiReviewModerationClient.java`, `ReviewModerationService.java`, `BUSINESS_RULES.md` `REVIEW_RULE_012`/`013` |
 
-> **Gemini auto-translation — REMOVED (2026-07-03).** The VI→EN auto-translation integration (Google
-> Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
-> `TranslationBackfillService`) has been fully removed from the codebase. Bilingual content is now
-> entered manually by the admin — see `BUSINESS_RULES.md` §"Bilingual / Auto-translation Rules"
-> (`TRANSLATION_RULE_001/002`) and `API_CONTRACT.md` §"Bilingual content — nhập tay, không còn tự
-> động dịch (V312)". This section is kept only as historical context; do not reintroduce
-> `GEMINI_API_KEY`/`GEMINI_MODEL` config or re-add a translate endpoint without a new decision.
+> **Gemini auto-translation — STILL REMOVED (2026-07-03).** The VI→EN auto-translation integration
+> (Google Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
+> `TranslationBackfillService`) remains fully removed. Bilingual content is entered manually by the
+> admin — see `BUSINESS_RULES.md` §"Bilingual / Auto-translation Rules" (`TRANSLATION_RULE_001/002`)
+> and `API_CONTRACT.md` §"Bilingual content — nhập tay, không còn tự động dịch (V312)". Do not
+> re-add a translate endpoint or any auto-translation path without a new decision.
+>
+> **`GEMINI_API_KEY` is live again — for review moderation only (owner decision 2026-08-08).** The
+> variable name is back because the shop uses one Google AI Studio credential, but the only consumer
+> is `AiReviewModerationClient` (§"Review moderation (Google Gemini)"). Seeing this key configured
+> does **not** mean auto-translation is back. `GEMINI_MODEL` was **not** reinstated — the moderation
+> model is `BIGBIKE_REVIEW_MODERATION_MODEL`, deliberately scoped so a future second Gemini consumer
+> cannot silently inherit the moderator's model choice.
+
+## Review moderation (Google Gemini)
+
+Outbound classification call used by the automatic review moderator
+(`REVIEW_RULE_012`/`013`). Same provider as the removed auto-translation
+integration, but a different purpose and a separate owner decision: this path
+classifies text and **never writes model output into customer-visible content**.
+
+| Aspect | Contract |
+|---|---|
+| Client | Plain Spring `RestClient` (`AiReviewModerationClient`) — the same approach the previous `GeminiTranslationService` used, and the same one the OAuth/revalidation callers use. No SDK dependency. |
+| Endpoint | `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`, one non-streaming request per review. No retry loop. |
+| Credential transport | `x-goog-api-key` **header**, not the `?key=` query parameter Google also accepts. A connect/read failure puts the request URI into the exception message, which would otherwise write the key straight into the application log. |
+| Trigger | Once per review, after the submit transaction commits, on the `@Async` pool. Skipped entirely when the banned-word layer already matched or the comment is empty. |
+| Request payload | Comment text (truncated to 4,000 chars) + star rating **only**. No email, name, photos, `customer_id`, or order data (`REVIEW_RULE_013`). |
+| Response contract | `generationConfig.responseMimeType = application/json` plus a `responseSchema` pinning `violation` / `categories[]` / `reason`. Read from `candidates[0].content.parts[0].text`. A malformed, missing, or safety-blocked reply is treated as `SKIPPED`, never as a block. |
+| Cost control | `thinkingConfig.thinkingBudget = 0` — thinking tokens bill as output and buy nothing for a classification. `maxOutputTokens = 512`. |
+| Timeout | `BIGBIKE_REVIEW_MODERATION_TIMEOUT_SECONDS` (default 20s) as the read timeout; connect timeout is a fixed 5s. Exceeding either is `SKIPPED`. |
+| Failure policy | **Fail-open for the customer, fail-safe for the shop:** any error leaves the review `PENDING` for a human. A provider outage degrades the feature to today's manual behavior; it never blocks submissions and never auto-approves. |
+
+### Environment
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `GEMINI_API_KEY` | Yes, to enable the feature | *(empty)* | Google AI Studio credential. Empty → the moderator reports `SKIPPED` and never calls out. Never stored in `site_settings` or returned by any API. Shared name with the retired translation integration — see the note above. |
+| `BIGBIKE_REVIEW_MODERATION_MODEL` | No | `gemini-2.5-flash` | Model id, scoped to this feature on purpose (not a generic `GEMINI_MODEL`). Changing it is a cost/accuracy tradeoff for the shop owner, not a code change. |
+| `BIGBIKE_REVIEW_MODERATION_TIMEOUT_SECONDS` | No | `20` | Per-call read-timeout ceiling. |
+
+**A new variable must be declared in two places to reach the container.** The
+backend service in `docker-compose.yaml` lists its environment explicitly, so a
+line added only to the env file is silently invisible to the app. All three
+variables above are declared there.
+
+**On the VPS, always `docker compose --env-file .env.vps …`** (`DEPLOYMENT_GUIDE.md`).
+The bare command loads the local `.env` instead, which has previously shipped the
+wrong configuration to production. Keep `.env.example` and `.env.vps.example` in
+step when this contract changes; never commit a populated `.env` / `.env.vps`.
+
+The master switch and the four category toggles are **settings**, not env — see
+`API_CONTRACT.md` §"`review_moderation` group".
 
 ## Web Revalidation (ISR on-demand)
 

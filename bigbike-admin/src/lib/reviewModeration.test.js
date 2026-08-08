@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   canPermanentlyDeleteReview,
+  getAutoModerationCategories,
+  getAutoModerationSkipReasonKey,
+  getAutoModerationState,
+  getAutoModerationTone,
   getReviewStatusTargets,
   hasReviewStatusTarget,
   toVersionedReviewItems,
@@ -36,5 +40,43 @@ describe('reviewModeration', () => {
   it('detects whether a mixed selection has an eligible transition', () => {
     expect(hasReviewStatusTarget([{ status: 'PENDING' }, { status: 'TRASH' }], 'APPROVED')).toBe(true)
     expect(hasReviewStatusTarget([{ status: 'APPROVED' }, { status: 'SPAM' }], 'APPROVED')).toBe(false)
+  })
+})
+
+describe('automatic moderation annotations (REVIEW_RULE_012)', () => {
+  it('separates "never checked" from "checked and skipped"', () => {
+    // These must not collapse into one state: an old review that predates the feature and
+    // a review that slipped through because the AI was down need different responses.
+    expect(getAutoModerationState({})).toBe('unchecked')
+    expect(getAutoModerationState({ moderationSource: null })).toBe('unchecked')
+    expect(getAutoModerationState({ moderationSource: 'SKIPPED', moderationReason: 'AI_UNAVAILABLE' }))
+      .toBe('skipped')
+  })
+
+  it('reads the verdict, not the source, to decide blocked vs clean', () => {
+    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'BLOCKED' })).toBe('blocked')
+    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'CLEAN' })).toBe('clean')
+    expect(getAutoModerationState({ moderationSource: 'RULE', moderationVerdict: 'BLOCKED' })).toBe('blocked')
+  })
+
+  it('maps each state to a stable tone so list and detail never disagree', () => {
+    expect(getAutoModerationTone('blocked')).toBe('danger')
+    expect(getAutoModerationTone('skipped')).toBe('warning')
+    expect(getAutoModerationTone('clean')).toBe('success')
+    expect(getAutoModerationTone('unchecked')).toBe('neutral')
+    expect(getAutoModerationTone('something-else')).toBe('neutral')
+  })
+
+  it('falls back to a readable key when the backend sends an unknown skip reason', () => {
+    expect(getAutoModerationSkipReasonKey('DISABLED')).toBe('DISABLED')
+    expect(getAutoModerationSkipReasonKey('ai_unavailable')).toBe('AI_UNAVAILABLE')
+    expect(getAutoModerationSkipReasonKey('BRAND_NEW_CODE')).toBe('UNKNOWN')
+    expect(getAutoModerationSkipReasonKey(null)).toBe('UNKNOWN')
+  })
+
+  it('tolerates a missing or malformed category list', () => {
+    expect(getAutoModerationCategories({ moderationCategories: ['PROFANITY', null] })).toEqual(['PROFANITY'])
+    expect(getAutoModerationCategories({ moderationCategories: null })).toEqual([])
+    expect(getAutoModerationCategories({})).toEqual([])
   })
 })

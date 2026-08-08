@@ -10,7 +10,7 @@ import { Container } from "@/components/layout/Container";
 type Props = { brands: Brand[] };
 
 /**
- * Section "thương hiệu" của trang chủ (partner-slide).
+ * Section "thương hiệu" của trang chủ.
  *
  * Trước đây dải logo này là markup WP thô được khởi tạo bởi home.min.js — script
  * chỉ chạy MỘT lần lúc tải nguyên trang (DOMContentLoaded). Khi điều hướng nội bộ
@@ -19,9 +19,16 @@ type Props = { brands: Brand[] };
  * tự init mỗi lần mount, sống sót qua client navigation — giống ExperienceCarousel /
  * HomeVideoCarousel trên cùng trang.
  *
- * Class wrapper (`partner-slide` / `container` / `swiper-container`) và cấu hình
+ * Class wrapper (`container` / `swiper-container`) và cấu hình
  * (speed/slidesPerView/spaceBetween/breakpoints) giữ ĐÚNG bản WP gốc để không lệch
  * giao diện so với khi reload.
+ *
+ * Căn logo: không dựa vào CSS `.bb-home .partner-slide` cũ trong globals.css —
+ * `bb-home`/`partner-slide` không còn được gắn vào markup thật (chỉ còn ở skeleton
+ * loading) nên các rule đó đã chết; hậu quả là mỗi ảnh logo hiển thị đúng kích thước
+ * gốc của file (rất lệch nhau) và top-align trong khung cao bằng logo cao nhất, nhìn
+ * lệch dòng. Mỗi logo giờ nằm trong khung cao cố định, canh giữa cả 2 chiều ngay tại
+ * component để không phụ thuộc CSS chết.
  */
 export function BrandCarousel({ brands }: Props) {
   if (brands.length === 0) return null;
@@ -52,10 +59,10 @@ export function BrandCarousel({ brands }: Props) {
             const logo = resolveMediaUrl(b.logo?.url?.trim());
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
-                <Link href={`/brands/${b.slug}`}>
+                <Link href={`/brands/${b.slug}`} className="flex h-32 items-center justify-center">
                   {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} className="mx-auto h-auto w-auto max-w-full object-contain" loading="lazy" />
+                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                 </Link>
               </SwiperSlide>
             );

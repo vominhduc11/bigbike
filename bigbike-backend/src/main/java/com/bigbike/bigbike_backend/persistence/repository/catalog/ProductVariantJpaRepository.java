@@ -20,26 +20,9 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
             @Param("productId") String productId
     );
 
-    /**
-     * Resolves a variant's real database id by its selling SKU. Used by the bulk product
-     * importer to match a file's variant row (which only knows the SKU, never the opaque
-     * id) back to its existing DB row BEFORE calling into {@code applyVariants}'s
-     * full-replace-by-id logic — otherwise an existing variant would look "new," get a
-     * fresh id, and its old row would be orphan-removed, cascade-deleting
-     * any dormant {@code stock_movements} history.
-     */
-    Optional<ProductVariantEntity> findBySkuIgnoreCase(String sku);
-
-    /**
-     * Eager-fetches {@code gallery} (LAZY by default) for a batch of variant ids. Used by the
-     * bulk product importer to read an existing variant's stored image/gallery before
-     * overwriting the file's request with it (owner decision: import UPDATE never replaces
-     * media) — {@code ProductImportService.commitImport} is deliberately not
-     * {@code @Transactional}, so a plain lazy `getGallery()` on an entity fetched earlier would
-     * throw once the row's own short-lived transaction has closed.
-     */
-    @Query("SELECT DISTINCT v FROM ProductVariantEntity v LEFT JOIN FETCH v.gallery WHERE v.id IN :ids")
-    List<ProductVariantEntity> findByIdsWithGallery(@Param("ids") Collection<String> ids);
+    // findBySkuIgnoreCase / findByIdsWithGallery removed 2026-08-08: both existed only for the bulk
+    // importer's variant SKU matching and variant-media preservation, and import no longer touches
+    // variants at all (PRODUCT_RULE_009).
 
     /**
      * Locks every variant in {@code ids} with one round-trip instead of one

@@ -9,8 +9,6 @@ public record CreateRedirectRequest(
         @NotBlank @Size(max = 2048) String targetUrl,
         @JsonAlias("isEnabled")
         Boolean enabled,
-        @Size(max = 2000) String notes,
-        Long legacyId,
         Integer statusCode,
         String redirectType
 ) {}
