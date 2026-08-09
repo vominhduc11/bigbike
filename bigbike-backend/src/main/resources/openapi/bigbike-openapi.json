@@ -37,6 +37,14 @@
       "description": "Guest order status lookup by order number + key"
     },
     {
+      "name": "AI Assistant",
+      "description": "Bi storefront sales assistant with contact fallback"
+    },
+    {
+      "name": "Admin AI Assistant",
+      "description": "Read-only conversation history and daily AI usage; requires chat.read"
+    },
+    {
       "name": "Customer Auth",
       "description": "Customer registration, login, session refresh and logout"
     },
@@ -7534,6 +7542,75 @@
             "description": "Caller is not the DEVELOPER role (includes SUPER_ADMIN)"
           }
         }
+      }
+    },
+    "/api/v1/chat/availability": {
+      "get": {
+        "tags": ["AI Assistant"],
+        "summary": "Get Bi availability, greeting, prompts and contact fallback",
+        "operationId": "getChatAvailability",
+        "parameters": [{"name":"lang","in":"query","schema":{"type":"string","enum":["vi","en"],"default":"vi"}}],
+        "responses": {"200":{"description":"AI or contact mode; never calls Gemini"}}
+      }
+    },
+    "/api/v1/chat/messages": {
+      "post": {
+        "tags": ["AI Assistant"],
+        "summary": "Send one message to Bi",
+        "operationId": "sendChatMessage",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"type":"object","required":["message","lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","minLength":1,"maxLength":1000},"lang":{"type":"string","enum":["vi","en"]}}}}}
+        },
+        "responses": {"200":{"description":"Chat answer or CONTACT fallback"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 messages/minute/IP)"}}
+      }
+    },
+    "/api/v1/chat/leads": {
+      "post": {
+        "tags": ["AI Assistant"],
+        "summary": "Capture an explicitly consented callback lead",
+        "operationId": "captureChatLead",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"type":"object","required":["conversationId","phone","consent"],"properties":{"conversationId":{"type":"string","format":"uuid"},"name":{"type":"string","maxLength":100},"phone":{"type":"string","maxLength":32},"note":{"type":"string","maxLength":500},"consent":{"type":"boolean","enum":[true]}}}}}
+        },
+        "responses": {"200":{"description":"Lead captured and admin notified"},"400":{"$ref":"#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/admin/chat/conversations": {
+      "get": {
+        "tags": ["Admin AI Assistant"],
+        "summary": "List Bi conversations",
+        "operationId": "listChatConversations",
+        "security": [{"AdminBearerAuth":[]}],
+        "parameters": [
+          {"name":"page","in":"query","schema":{"type":"integer","minimum":1,"default":1}},
+          {"name":"size","in":"query","schema":{"type":"integer","minimum":1,"maximum":100,"default":20}},
+          {"name":"from","in":"query","schema":{"type":"string","format":"date"}},
+          {"name":"to","in":"query","schema":{"type":"string","format":"date"}},
+          {"name":"hasLead","in":"query","schema":{"type":"boolean"}}
+        ],
+        "responses": {"200":{"description":"Paginated conversation summaries"},"403":{"$ref":"#/components/responses/Forbidden"}}
+      }
+    },
+    "/api/v1/admin/chat/conversations/{id}": {
+      "get": {
+        "tags": ["Admin AI Assistant"],
+        "summary": "Get one Bi conversation with messages and consented lead",
+        "operationId": "getChatConversation",
+        "security": [{"AdminBearerAuth":[]}],
+        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
+        "responses": {"200":{"description":"Conversation detail"},"403":{"$ref":"#/components/responses/Forbidden"},"404":{"$ref":"#/components/responses/NotFound"}}
+      }
+    },
+    "/api/v1/admin/chat/stats": {
+      "get": {
+        "tags": ["Admin AI Assistant"],
+        "summary": "Get Bi daily AI usage and lead counts",
+        "operationId": "getChatStats",
+        "security": [{"AdminBearerAuth":[]}],
+        "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"}}],
+        "responses": {"200":{"description":"Daily stats in Asia/Ho_Chi_Minh"},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     }
   },

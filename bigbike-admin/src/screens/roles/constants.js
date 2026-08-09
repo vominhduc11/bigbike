@@ -59,6 +59,7 @@ export const BUILTIN_CATALOG = [
       perm('roles.read', 'roles', 'READ'),
       perm('roles.write', 'roles', 'WRITE', true, ['roles.read']),
       perm('audit-logs.read', 'audit-logs', 'READ', true),
+      perm('chat.read', 'chat', 'READ', true),
       // V375. Giữ quyền này KHÔNG đủ để bật/tắt bảo trì — endpoint còn đòi đúng vai trò
       // DEVELOPER, vì quyền '*' của Chủ hệ thống thoả mãn mọi permission. Cấp cho vai trò
       // khác sẽ không có tác dụng; nhãn hiển thị đã nói rõ điều đó.
@@ -104,6 +105,7 @@ export const PERM_LABEL_KEY_MAP = {
   'roles.read':                 'roles.permRolesRead',
   'roles.write':                'roles.permRolesWrite',
   'audit-logs.read':            'roles.permAuditLogsRead',
+  'chat.read':                  'roles.permChatRead',
   'maintenance.manage':         'roles.permMaintenanceManage',
 }
 

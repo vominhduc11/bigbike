@@ -1989,3 +1989,44 @@ Migration `V374__maintenance_admin_lock.sql` creates a dedicated single-row tabl
 V374 also creates the `DEVELOPER` role (`is_system = TRUE`) with 34 explicitly enumerated permissions. It deliberately does **not** copy `ADMIN`'s permission set: `ADMIN` holds `seo.index` (granted by V372) which is missing from `PermissionCatalog`, so copying would propagate that latent `400 UNKNOWN_PERMISSION` on the Roles screen to a third role.
 
 No customer or order data is touched by a state change. The response DTO (`state`, `staffNote`, `expectedAt`, `updatedAt`, `canToggle`, `uploadCount`) is derived, not a second persisted model — `canToggle` and `uploadCount` are computed per request. Checkout draft fields remain browser-local only and must never contain an access token, refresh token, password or payment secret.
+
+## Trợ lý Bi — conversation, message và lead (V1016)
+
+### `chat_conversations`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` PK | Sinh ở backend; client chỉ dùng để nối lượt, không có endpoint public đọc lịch sử. |
+| `customer_id` | `UUID` nullable FK `customers` | Chỉ lấy từ phiên server; `ON DELETE SET NULL`. |
+| `locale` | `VARCHAR(2)` | `CHECK IN ('vi','en')`. |
+| `turn_count` / `ai_call_count` | `INTEGER` | Không âm; turn tối đa 12, AI count dùng thống kê. |
+| `consecutive_off_topic` | `INTEGER` | Hai lần liên tiếp thì handoff. |
+| `lead_offer_status` | `VARCHAR(16)` | `NONE|OFFERED|ACCEPTED|DECLINED`; không mời lại sau lần đầu. |
+| `ended_reason` | `VARCHAR(32)` nullable | `TURN_LIMIT|OFF_TOPIC|HANDOFF|AI_UNAVAILABLE|DAILY_LIMIT_REACHED|DISABLED`. |
+| `started_at`, `last_message_at`, `expires_at`, `created_at`, `updated_at` | `TIMESTAMPTZ` | `expires_at = started_at + 90 days`; cleanup xoá conversation hết hạn và cascade messages/lead. |
+
+### `chat_messages`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `conversation_id` | `UUID` | FK conversation `ON DELETE CASCADE`. |
+| `role` | `VARCHAR(16)` | `CUSTOMER|ASSISTANT`. |
+| `content` | `TEXT` | Nội dung đã hiển thị; không được đưa vào application log. |
+| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. |
+| `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message đã tiêu một quota AI. |
+| `products_json` | `JSONB` nullable | Snapshot tối đa 3 product card đã trả cho khách, không phải catalog dump. |
+| `created_at` | `TIMESTAMPTZ` | Sắp xếp tăng dần trong detail admin. |
+
+### `chat_leads`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `conversation_id` | `UUID` | `conversation_id UNIQUE`, cascade khi hết retention. |
+| `name` | `VARCHAR(100)` nullable | Chỉ lưu sau consent. |
+| `phone` | `VARCHAR(32)` | Số điện thoại/Zalo đã chuẩn hoá khoảng trắng; PII, không log. |
+| `note` | `VARCHAR(500)` nullable | Ghi chú khách đồng ý gửi. |
+| `consented_at`, `created_at` | `TIMESTAMPTZ` | Bằng chứng consent và audit thời gian. |
+
+Index bắt buộc: conversation `last_message_at DESC`, `expires_at`, `customer_id`; message `(conversation_id, created_at)` và partial/index cho `ai_called`; lead `created_at`. Retention job chạy hằng ngày và xoá theo `expires_at < now()` trong transaction giới hạn đúng bảng chat.
+
+Không có SQL/tool động. `products_json` và nội dung model không được dùng làm câu lệnh hay tên bảng/cột. Order tool chỉ project `orderNumber/status/placedAt/totalAmount/currency`, không persist snapshot đơn vào chat ngoài câu trả lời mức gọn.

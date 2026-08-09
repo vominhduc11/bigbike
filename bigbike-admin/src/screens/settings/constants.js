@@ -4,7 +4,7 @@
 import {
   Store, Phone, Globe, Settings,
   Image as ImageIcon, Users,
-  Landmark, ShieldCheck,
+  Bot, Landmark, ShieldCheck,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -128,7 +128,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'AI_ASSISTANT'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -167,7 +167,7 @@ export const MAX_ASSIGNMENT_ROLES = 6
 
 export const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
-  'PRODUCT_ASSIGN', 'REVIEW_MODERATION',
+  'PRODUCT_ASSIGN', 'REVIEW_MODERATION', 'AI_ASSISTANT',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -233,6 +233,11 @@ export const TAB_META = {
     labelKey: 'settings.group_review_moderation',
     descriptionKey: 'settings.groupDescription.reviewModeration',
   },
+  AI_ASSISTANT: {
+    icon: Bot,
+    labelKey: 'settings.group_ai_assistant',
+    descriptionKey: 'settings.groupDescription.aiAssistant',
+  },
 }
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
@@ -259,6 +264,11 @@ export const KEY_LABELS_VI = {
   review_moderation_block_sensitive: 'Chặn nội dung 18+, chính trị, lạc đề',
   review_moderation_daily_limit: 'Số lượt AI tối đa mỗi ngày',
   review_moderation_banned_words: 'Danh sách từ cấm của shop',
+  // ai_assistant (trợ lý bán hàng Bi — CHAT_RULE_001..014)
+  ai_assistant_enabled: 'Bật trợ lý ảo Bi',
+  ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
+  ai_assistant_greeting: 'Câu chào đầu khung chat',
+  ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
   // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
   bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
   bank_account_number: 'Số tài khoản nhận chuyển khoản',
@@ -303,6 +313,14 @@ export const KEY_HINTS_VI = {
     'Chặn chi phí khi bị spam. Vượt ngưỡng thì ngừng gọi AI tới hết ngày, đánh giá nằm ở Chờ duyệt. Đặt 0 để tắt hẳn phần gọi AI mà vẫn giữ danh sách từ cấm.',
   review_moderation_banned_words:
     'Mỗi từ một dòng, hoặc ngăn bằng dấu phẩy. Không phân biệt hoa thường và dấu tiếng Việt — gõ "lừa đảo" là bắt được cả "lua dao". Từ trong danh sách này luôn bị chặn, kể cả khi tắt hết 4 loại ở trên.',
+  ai_assistant_enabled:
+    'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
+  ai_assistant_daily_limit:
+    'Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Bi tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+  ai_assistant_greeting:
+    'Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Bi là trợ lý ảo AI.',
+  ai_assistant_quick_prompts:
+    'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -388,6 +406,14 @@ export const SECTION_GUIDE = {
     title: 'Danh sách từ cấm của shop',
     description: 'Chặn ngay lập tức, không tốn phí và không phụ thuộc dịch vụ AI.',
   },
+  ai_assistant_switch: {
+    title: 'Vận hành và ngân sách của Bi',
+    description: 'Bật/tắt trợ lý và giới hạn số lượt có dùng AI trong ngày. Khi không khả dụng, widget tự quay về bảng liên hệ.',
+  },
+  ai_assistant_copy: {
+    title: 'Nội dung đầu khung chat',
+    description: 'Câu chào và các câu hỏi gợi ý có bản tiếng Việt và tiếng Anh riêng.',
+  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -447,6 +473,10 @@ export const KEY_GUIDE = {
   review_moderation_block_sensitive:    ['review_moderation_kinds', '18+, chính trị, nội dung lạc đề → Thùng rác'],
   review_moderation_daily_limit:        ['review_moderation_switch', 'trần chi phí mỗi ngày'],
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
+  ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt trợ lý Bi trên toàn website'],
+  ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
+  ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
 }
 
 export function groupBySection(items) {

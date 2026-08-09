@@ -250,7 +250,20 @@ public class SettingDefinitionRegistry {
                         .min(0).max(10_000)
                         .description("Số lượt gọi AI tối đa mỗi ngày (giờ Việt Nam). Vượt ngưỡng thì ngừng gọi AI, đánh giá nằm ở Chờ duyệt; danh sách từ cấm vẫn chạy vì không tốn phí. Đặt 0 để tắt hẳn phần gọi AI.").build(),
                 SettingDefinition.builder("review_moderation_banned_words", "review_moderation", SettingValueType.LONG_TEXT)
-                        .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build()
+                        .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build(),
+
+                // ── AI_ASSISTANT ── (trợ lý bán hàng Bi — CHAT_RULE_001..014).
+                // Admin-only operational settings. The shared Gemini credential stays in
+                // GEMINI_API_KEY and is never stored in or returned from site_settings.
+                SettingDefinition.builder("ai_assistant_enabled", "ai_assistant", SettingValueType.BOOLEAN)
+                        .description("Bật trợ lý bán hàng Bi. Khi tắt, widget trở về bảng Hotline–Zalo–Messenger.").build(),
+                SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
+                        .min(0).max(10_000)
+                        .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
+                SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)
+                        .description("Câu chào đầu khung chat của Bi; có thể nhập riêng bản tiếng Anh.").build(),
+                SettingDefinition.builder("ai_assistant_quick_prompts", "ai_assistant", SettingValueType.LONG_TEXT)
+                        .description("Mỗi dòng là một nút gợi ý nhanh; widget dùng tối đa 4 dòng và có thể nhập riêng bản tiếng Anh.").build()
         );
     }
 }

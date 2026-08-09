@@ -84,6 +84,27 @@ class RateLimitingFilterTest {
     }
 
     @Test
+    void chatAllowsTenMessagesPerClientIpPerMinute() throws Exception {
+        RateLimitingFilter filter = createFilter("127.0.0.1");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(execute(
+                    filter,
+                    "/api/v1/chat/messages",
+                    "203.0.113.55",
+                    null).chainInvoked()).isTrue();
+        }
+
+        FilterResult rejected = execute(
+                filter,
+                "/api/v1/chat/messages",
+                "203.0.113.55",
+                null);
+        assertThat(rejected.chainInvoked()).isFalse();
+        assertThat(rejected.response().getStatus()).isEqualTo(429);
+    }
+
+    @Test
     void untrustedCallerCannotSpoofReviewBucketWithForwardedHeader() throws Exception {
         RateLimitingFilter filter = createFilter("127.0.0.1");
 

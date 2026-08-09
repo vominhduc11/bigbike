@@ -11,7 +11,7 @@
 | WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. Each admin also subscribes to `/user/queue/admin/access`: role/permission changes cause a canonical profile refresh, while disable/suspend/password reset forces sign-in again. The admin client also reconciles `/auth/me` on reconnect, focus and every 30 seconds while visible; all data-topic deliveries recheck the current access server-side. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `auth.jsx`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
-| Google Gemini (review moderation) | Outbound-only classification call for automatic review moderation. Off by default; fail-safe (any failure leaves the review `PENDING`). **Not** a translation path — see §"Review moderation (Google Gemini)". | `OWNER_CONFIRMED_2026-08-08` | `AiReviewModerationClient.java`, `ReviewModerationService.java`, `BUSINESS_RULES.md` `REVIEW_RULE_012`/`013` |
+| Google Gemini (shared backend credential) | Review moderation and the Bi sales assistant share one backend-only credential but keep independent switches, quotas, models and failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-09` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_005`/`011`, `REVIEW_RULE_012`/`013` |
 
 > **Gemini auto-translation — STILL REMOVED (2026-07-03).** The VI→EN auto-translation integration
 > (Google Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
@@ -20,12 +20,12 @@
 > and `API_CONTRACT.md` §"Bilingual content — nhập tay, không còn tự động dịch (V312)". Do not
 > re-add a translate endpoint or any auto-translation path without a new decision.
 >
-> **`GEMINI_API_KEY` is live again — for review moderation only (owner decision 2026-08-08).** The
-> variable name is back because the shop uses one Google AI Studio credential, but the only consumer
-> is `AiReviewModerationClient` (§"Review moderation (Google Gemini)"). Seeing this key configured
-> does **not** mean auto-translation is back. `GEMINI_MODEL` was **not** reinstated — the moderation
-> model is `BIGBIKE_REVIEW_MODERATION_MODEL`, deliberately scoped so a future second Gemini consumer
-> cannot silently inherit the moderator's model choice.
+> **`GEMINI_API_KEY` is a shared backend AI credential (owner decisions 2026-08-08/09).**
+> `AiReviewModerationClient` and `AiChatClient` use it independently; seeing it configured does
+> **not** mean auto-translation is back. The common Spring property is
+> `bigbike.ai.gemini-api-key=${GEMINI_API_KEY:}`. The legacy
+> `bigbike.review-moderation.gemini-api-key` property remains as a compatibility alias so the live
+> review moderator is not broken. Each consumer keeps a separately named model and timeout.
 
 ## Review moderation (Google Gemini)
 
@@ -66,6 +66,22 @@ step when this contract changes; never commit a populated `.env` / `.env.vps`.
 
 The master switch and the four category toggles are **settings**, not env — see
 `API_CONTRACT.md` §"`review_moderation` group".
+
+## Trợ lý Bi (Google Gemini)
+
+| Aspect | Contract |
+|---|---|
+| Client | Plain Spring `RestClient`, `x-goog-api-key` header, fixed 5s connect / 20s read timeout, no retry, `gemini-2.5-flash`. |
+| Request | Current question plus only the relevant fixed-tool result. Never full catalog, SQL, customer id/email/address, API key or unrelated conversation history. |
+| Tool boundary | Allowlist only: product search/detail, prepared policies, shop settings, own orders from server session, and consented lead capture. Model output cannot select a repository/table or pass customer identity. |
+| Generation | `thinkingBudget: 0`, structured JSON response, `maxOutputTokens: 400`; malformed/safety-blocked/timeout responses become `CONTACT`. |
+| Cost controls | FAQ/shop-contact answers short-circuit locally; maximum 12 turns/conversation; 10 messages/min/IP; settings daily limit counted by persisted assistant messages with `ai_called=true` using `Asia/Ho_Chi_Minh`. |
+| Failure | Disabled, empty credential, exhausted daily quota or provider error returns `mode=CONTACT` with the same Hotline/Zalo/Messenger data as the old widget. Review moderation keeps using the shared credential independently. |
+| Privacy/retention | Conversation rows expire after 90 days. No chat/question/phone/key is written to application logs. |
+
+Environment: `GEMINI_API_KEY` (shared secret), `BIGBIKE_CHAT_MODEL` (default
+`gemini-2.5-flash`) and `BIGBIKE_CHAT_TIMEOUT_SECONDS` (default `20`). The latter two must also be
+declared in `docker-compose.yaml`; populated `.env`/`.env.vps` files remain uncommitted.
 
 ## Web Revalidation (ISR on-demand)
 

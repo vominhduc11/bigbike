@@ -38,12 +38,13 @@ import tools.jackson.databind.ObjectMapper;
  *   order lookup (GET)      → 20 req/min
  *   search (GET)            → 60 req/min
  *   public review submit    → 5 req/min
+ *   Bi chat messages        → 10 req/min
  */
 @Component
 @Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO, OAUTH }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO, CHAT, OAUTH }
 
     /**
      * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies
@@ -86,6 +87,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> searchBuckets              = boundedMap();
     private final Map<String, Bucket> reviewBuckets              = boundedMap();
     private final Map<String, Bucket> reviewPhotoBuckets         = boundedMap();
+    private final Map<String, Bucket> chatBuckets                = boundedMap();
     private final Map<String, Bucket> oauthBuckets               = boundedMap();
 
     private static Map<String, Bucket> boundedMap() {
@@ -144,6 +146,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/checkout".equals(path)) {
                 return LimitTier.CHECKOUT;
             }
+            if ("/api/v1/chat/messages".equals(path)) {
+                return LimitTier.CHAT;
+            }
             // Public review photo upload: POST /api/v1/products/{productId}/reviews/photos
             if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews/photos")) {
                 return LimitTier.REVIEW_PHOTO;
@@ -198,6 +203,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             // A single review can attach up to 10 photos (one request each) — allow a generous burst.
             case REVIEW_PHOTO  -> reviewPhotoBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(30, Duration.ofMinutes(1)));
+            case CHAT          -> chatBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(10, Duration.ofMinutes(1)));
             // Generous enough for a customer retrying a failed consent screen, tight enough that
             // the callback cannot be used to hammer the provider APIs.
             case OAUTH         -> oauthBuckets.computeIfAbsent(clientIp,

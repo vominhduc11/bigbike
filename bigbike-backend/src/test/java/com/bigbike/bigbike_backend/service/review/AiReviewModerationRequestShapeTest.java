@@ -18,6 +18,14 @@ import org.junit.jupiter.api.Test;
  */
 class AiReviewModerationRequestShapeTest {
 
+    @Test
+    void legacyReviewKeyStillWorksWhenSharedKeyIsBlank() {
+        AiReviewModerationClient client = new AiReviewModerationClient(
+                "", "legacy-review-key", "gemini-2.5-flash", 20L);
+
+        assertThat(client.isConfigured()).isTrue();
+    }
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static AiReviewModerationClient client() {

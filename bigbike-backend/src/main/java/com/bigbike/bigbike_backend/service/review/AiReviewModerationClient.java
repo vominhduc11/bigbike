@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -77,12 +78,14 @@ public class AiReviewModerationClient {
     // Self-contained mapper — this app does not expose an ObjectMapper bean for injection.
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
     public AiReviewModerationClient(
-            @Value("${bigbike.review-moderation.gemini-api-key:}") String apiKey,
+            @Value("${bigbike.ai.gemini-api-key:}") String sharedApiKey,
+            @Value("${bigbike.review-moderation.gemini-api-key:}") String legacyApiKey,
             @Value("${bigbike.review-moderation.model:gemini-2.5-flash}") String model,
             @Value("${bigbike.review-moderation.timeout-seconds:20}") long timeoutSeconds
     ) {
-        this.apiKey = apiKey == null ? "" : apiKey.trim();
+        this.apiKey = firstNonBlank(sharedApiKey, legacyApiKey);
         this.model = model == null || model.isBlank() ? DEFAULT_MODEL : model.trim();
         long seconds = timeoutSeconds > 0 ? timeoutSeconds : 20;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -90,6 +93,16 @@ public class AiReviewModerationClient {
         factory.setReadTimeout((int) Duration.ofSeconds(seconds).toMillis());
         this.restClient = RestClient.builder().requestFactory(factory).build();
         log.info("Review AI moderation client configured={} model={}", isConfigured(), this.model);
+    }
+
+    /** Test/backward-compatible constructor retained for callers that already pass one key. */
+    public AiReviewModerationClient(String apiKey, String model, long timeoutSeconds) {
+        this(apiKey, "", model, timeoutSeconds);
+    }
+
+    private static String firstNonBlank(String preferred, String fallback) {
+        if (preferred != null && !preferred.isBlank()) return preferred.trim();
+        return fallback == null ? "" : fallback.trim();
     }
 
     /** False when no credential is configured; the moderator then reports {@code SKIPPED}. */

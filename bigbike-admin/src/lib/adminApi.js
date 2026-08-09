@@ -1608,6 +1608,118 @@ export async function bulkDeleteReviews(items) {
   return normalizeReviewBulkResult(payload)
 }
 
+// AI assistant conversations (read-only; CHAT_RULE_012).
+
+function safeChatString(value) {
+  return typeof value === 'string' ? value : ''
+}
+
+function safeChatCount(value) {
+  const number = Number(value)
+  return Number.isInteger(number) && number >= 0 ? number : 0
+}
+
+function normalizeChatConversation(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: safeChatString(s.id),
+    locale: s.locale === 'en' ? 'en' : 'vi',
+    customerDisplayName: safeChatString(s.customerDisplayName),
+    turnCount: safeChatCount(s.turnCount),
+    aiCallCount: safeChatCount(s.aiCallCount),
+    hasLead: Boolean(s.hasLead),
+    startedAt: safeChatString(s.startedAt),
+    lastMessageAt: safeChatString(s.lastMessageAt),
+    endedReason: safeChatString(s.endedReason),
+  }
+}
+
+function normalizeChatMessage(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  let products = []
+  if (Array.isArray(s.products)) products = s.products
+  else if (typeof s.productsJson === 'string' && s.productsJson.trim()) {
+    try {
+      const parsed = JSON.parse(s.productsJson)
+      products = Array.isArray(parsed) ? parsed : []
+    } catch { products = [] }
+  }
+  return {
+    id: safeChatString(s.id),
+    role: s.role === 'USER' ? 'USER' : 'ASSISTANT',
+    content: safeChatString(s.content),
+    source: safeChatString(s.source),
+    aiCalled: Boolean(s.aiCalled),
+    products,
+    createdAt: safeChatString(s.createdAt),
+  }
+}
+
+function normalizeChatLead(input) {
+  if (!input || typeof input !== 'object') return null
+  return {
+    id: safeChatString(input.id),
+    name: safeChatString(input.name),
+    phone: safeChatString(input.phone),
+    note: safeChatString(input.note),
+    consentedAt: safeChatString(input.consentedAt),
+  }
+}
+
+function normalizeChatDetail(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    ...normalizeChatConversation(s),
+    customerId: safeChatString(s.customerId),
+    leadOfferStatus: safeChatString(s.leadOfferStatus),
+    messages: Array.isArray(s.messages) ? s.messages.map(normalizeChatMessage) : [],
+    lead: normalizeChatLead(s.lead),
+  }
+}
+
+export async function fetchChatConversations(query) {
+  try {
+    const payload = await requestJson('/admin/chat/conversations', {
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        from: query?.from,
+        to: query?.to,
+        hasLead: query?.hasLead,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeChatConversation, 20))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function fetchChatConversation(conversationId) {
+  try {
+    const payload = await requestJson(`/admin/chat/conversations/${encodeURIComponent(conversationId)}`)
+    return withLiveData(parseDetailPayload(payload, normalizeChatDetail))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function fetchChatStats(date) {
+  try {
+    const payload = await requestJson('/admin/chat/stats', { query: { date } })
+    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+    return withLiveData({
+      date: safeChatString(data.date),
+      aiCalls: safeChatCount(data.aiCalls),
+      conversations: safeChatCount(data.conversations),
+      leads: safeChatCount(data.leads),
+      dailyLimit: safeChatCount(data.dailyLimit),
+      remainingAiCalls: safeChatCount(data.remainingAiCalls),
+    })
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 // Audit Logs
 
 function normalizeAuditLog(input) {

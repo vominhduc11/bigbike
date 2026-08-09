@@ -120,6 +120,72 @@ function payloadPagination<T>(payload: unknown): T | null {
 
 // ── Cart ─────────────────────────────────────────────────────────────────────
 
+export type ChatContact = {
+  hotline?: string | null;
+  zaloUrl?: string | null;
+  messengerUrl?: string | null;
+  zaloDisplay?: string | null;
+  messengerDisplay?: string | null;
+};
+
+export type ChatAvailability = {
+  mode: "AI" | "CONTACT";
+  reason?: string | null;
+  greeting?: string | null;
+  quickPrompts: string[];
+  maxTurns: number;
+  contacts: ChatContact;
+};
+
+export type ChatProductCard = {
+  slug: string;
+  name: string;
+  imageUrl?: string | null;
+  retailPrice?: number | null;
+  salePrice?: number | null;
+  currency?: string | null;
+  stockState?: string | null;
+};
+
+export type ChatMessageResult = {
+  conversationId?: string | null;
+  mode: "AI" | "CONTACT";
+  reason?: string | null;
+  answer?: string | null;
+  turnCount: number;
+  maxTurns: number;
+  remainingTurns: number;
+  products: ChatProductCard[];
+  handoffRecommended: boolean;
+  leadPrompt: boolean;
+  contacts: ChatContact;
+};
+
+export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailability> {
+  return clientRequest("GET", `/api/v1/chat/availability?lang=${lang}`);
+}
+
+export function sendChatMessage(
+  message: string,
+  lang: "vi" | "en",
+  conversationId?: string,
+): Promise<ChatMessageResult> {
+  return clientRequest("POST", "/api/v1/chat/messages", {
+    conversationId: conversationId || null,
+    message,
+    lang,
+  });
+}
+
+export function captureChatLead(input: {
+  conversationId: string;
+  name?: string;
+  phone: string;
+  note?: string;
+}): Promise<{ captured: boolean }> {
+  return clientRequest("POST", "/api/v1/chat/leads", { ...input, consent: true });
+}
+
 export function fetchCart(): Promise<Cart> {
   return clientRequest("GET", "/api/v1/cart");
 }

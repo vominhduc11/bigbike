@@ -75,6 +75,7 @@
   --color-brand-soft: var(--bb-brand-primary-soft);
   --color-blue: var(--bb-link-text);
   --color-cyan: var(--bb-color-cyan);
+  --color-chat: var(--bb-chat-title-bg);
   --color-border-default: var(--bb-border-default);
   --color-border-control: var(--bb-border-control);
   --color-border-control-hover: var(--bb-border-control-hover);

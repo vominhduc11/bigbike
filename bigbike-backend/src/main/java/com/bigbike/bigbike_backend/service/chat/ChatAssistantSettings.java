@@ -1,0 +1,126 @@
+package com.bigbike.bigbike_backend.service.chat;
+
+import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
+import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
+import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+@RequiredArgsConstructor
+public class ChatAssistantSettings {
+
+    public static final String KEY_ENABLED = "ai_assistant_enabled";
+    public static final String KEY_DAILY_LIMIT = "ai_assistant_daily_limit";
+    public static final String KEY_GREETING = "ai_assistant_greeting";
+    public static final String KEY_QUICK_PROMPTS = "ai_assistant_quick_prompts";
+    public static final String SETTING_GROUP = "ai_assistant";
+    public static final int DEFAULT_DAILY_LIMIT = 60;
+
+    private static final String DEFAULT_GREETING_VI =
+            "Em là Bi, trợ lý ảo AI của BigBike. Em có thể giúp anh/chị chọn sản phẩm, xem chính sách hoặc kiểm tra đơn hàng đã đăng nhập.";
+    private static final String DEFAULT_GREETING_EN =
+            "I’m Bi, BigBike’s AI assistant. I can help you choose products, check store policies, or view orders on your signed-in account.";
+
+    private static final List<String> DEFAULT_PROMPTS_VI = List.of(
+            "Tìm mũ bảo hiểm theo ngân sách",
+            "Tư vấn chọn size",
+            "Chính sách đổi trả",
+            "Kiểm tra đơn hàng của tôi");
+    private static final List<String> DEFAULT_PROMPTS_EN = List.of(
+            "Find a helmet within my budget",
+            "Help me choose a size",
+            "Return policy",
+            "Check my orders");
+
+    private final SiteSettingJpaRepository settingRepo;
+
+    @Transactional(readOnly = true)
+    public Snapshot load(String lang) {
+        Map<String, SiteSettingEntity> settings = settingRepo.findAll().stream()
+                .collect(Collectors.toMap(SiteSettingEntity::getSettingKey, Function.identity()));
+        boolean english = "en".equals(lang);
+        return new Snapshot(
+                readBoolean(settings, KEY_ENABLED, true),
+                readInteger(settings, KEY_DAILY_LIMIT, DEFAULT_DAILY_LIMIT),
+                localized(settings, KEY_GREETING, english,
+                        english ? DEFAULT_GREETING_EN : DEFAULT_GREETING_VI),
+                prompts(localized(settings, KEY_QUICK_PROMPTS, english, ""), english),
+                new ChatContactResponse(
+                        value(settings, "hotline"),
+                        value(settings, "zalo_url"),
+                        value(settings, "messenger_url"),
+                        value(settings, "zalo_display"),
+                        value(settings, "messenger_display")),
+                value(settings, "contact_address"),
+                value(settings, "opening_hours_weekday"),
+                value(settings, "opening_hours_weekend"));
+    }
+
+    private static List<String> prompts(String raw, boolean english) {
+        List<String> parsed = Arrays.stream(raw.split("\\R"))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .limit(4)
+                .toList();
+        return parsed.size() >= 3
+                ? parsed
+                : english ? DEFAULT_PROMPTS_EN : DEFAULT_PROMPTS_VI;
+    }
+
+    private static boolean readBoolean(
+            Map<String, SiteSettingEntity> settings, String key, boolean fallback) {
+        String raw = value(settings, key);
+        return raw.isEmpty() ? fallback : "true".equalsIgnoreCase(raw);
+    }
+
+    private static int readInteger(
+            Map<String, SiteSettingEntity> settings, String key, int fallback) {
+        try {
+            int parsed = Integer.parseInt(value(settings, key));
+            return parsed < 0 ? fallback : parsed;
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private static String localized(
+            Map<String, SiteSettingEntity> settings,
+            String key,
+            boolean english,
+            String fallback
+    ) {
+        SiteSettingEntity setting = settings.get(key);
+        if (setting == null) return fallback;
+        String candidate = english ? setting.getSettingValueEn() : setting.getSettingValue();
+        if (candidate == null || candidate.isBlank()) candidate = setting.getSettingValue();
+        return candidate == null || candidate.isBlank() ? fallback : candidate.trim();
+    }
+
+    private static String value(Map<String, SiteSettingEntity> settings, String key) {
+        SiteSettingEntity setting = settings.get(key);
+        return setting == null || setting.getSettingValue() == null
+                ? "" : setting.getSettingValue().trim();
+    }
+
+    public record Snapshot(
+            boolean enabled,
+            int dailyLimit,
+            String greeting,
+            List<String> quickPrompts,
+            ChatContactResponse contacts,
+            String address,
+            String openingHoursWeekday,
+            String openingHoursWeekend
+    ) {
+        public Snapshot {
+            quickPrompts = List.copyOf(quickPrompts);
+        }
+    }
+}

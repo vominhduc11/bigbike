@@ -232,6 +232,7 @@
     "homeVideos": "Video trang chủ",
     "homeHighlights": "Điểm nổi bật trang chủ",
     "reviews": "Đánh giá",
+    "chat": "Hội thoại với Bi",
     "adminUsers": "Tài khoản quản trị",
     "settings": "Cài đặt",
     "maintenance": "Bảo trì hệ thống",
@@ -2520,6 +2521,67 @@
     "bannerUpcoming": "Trang quản trị sắp bảo trì.",
     "bannerUpcomingHint": "Hãy lưu lại các thay đổi đang làm dở. Hiện tại bạn vẫn lưu được bình thường."
   },
+  "chatAdmin": {
+    "eyebrow": "Trợ lý bán hàng",
+    "title": "Hội thoại với Bi",
+    "description": "Xem lại nội dung Bi đã tư vấn, lượt dùng AI và khách đã đồng ý để lại liên hệ trong 90 ngày gần nhất.",
+    "openSettings": "Mở cài đặt Bi",
+    "guest": "Khách vãng lai",
+    "loadError": "Không tải được lịch sử hội thoại",
+    "empty": "Chưa có hội thoại",
+    "emptyDescription": "Hội thoại mới với Bi sẽ xuất hiện tại đây.",
+    "emptyFiltered": "Không có hội thoại phù hợp với bộ lọc đang chọn.",
+    "tableCaption": "Danh sách hội thoại của trợ lý Bi",
+    "filters": {
+      "label": "Bộ lọc hội thoại",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "lead": "Tình trạng để lại liên hệ",
+      "allLeads": "Tất cả hội thoại",
+      "hasLead": "Có thông tin liên hệ",
+      "noLead": "Chưa có thông tin liên hệ"
+    },
+    "stats": {
+      "aiCalls": "Lượt gọi AI trong ngày",
+      "remaining": "Lượt AI còn lại",
+      "conversations": "Hội thoại trong ngày",
+      "leads": "Liên hệ mới trong ngày",
+      "limit": "Trần {{count}} lượt/ngày"
+    },
+    "columns": {
+      "startedAt": "Bắt đầu",
+      "customer": "Khách hàng",
+      "language": "Ngôn ngữ",
+      "turns": "Lượt hỏi",
+      "aiCalls": "Lượt AI",
+      "lead": "Có liên hệ",
+      "lastMessage": "Tin cuối"
+    },
+    "detail": {
+      "loading": "Đang tải hội thoại",
+      "loadingDescription": "Đang lấy nội dung trao đổi với Bi.",
+      "loadError": "Không tải được hội thoại",
+      "notFound": "Hội thoại không tồn tại hoặc đã hết thời hạn lưu 90 ngày.",
+      "title": "Chi tiết hội thoại",
+      "description": "Màn hình chỉ đọc, phản ánh đúng nội dung đã trao đổi với khách.",
+      "messages": "Nội dung trao đổi",
+      "messagesDescription": "Tin của khách và câu trả lời của Bi theo đúng thứ tự thời gian.",
+      "customer": "Khách hàng",
+      "bi": "Bi · Trợ lý ảo AI",
+      "source": "Nguồn trả lời",
+      "usedAi": "Có dùng AI",
+      "summary": "Tóm tắt hội thoại",
+      "endedReason": "Trạng thái kết thúc",
+      "active": "Đang mở",
+      "lead": "Thông tin khách đã đồng ý để lại",
+      "leadName": "Tên",
+      "phone": "Số điện thoại/Zalo",
+      "note": "Nhu cầu cần hỗ trợ",
+      "consentedAt": "Thời điểm đồng ý",
+      "noLead": "Khách chưa để lại thông tin liên hệ.",
+      "none": "Không có ghi chú"
+    }
+  },
   "settings": {
     "eyebrow": "Hệ thống",
     "title": "Cài đặt cửa hàng",
@@ -2556,7 +2618,8 @@
       "publicHero": "Ảnh và tiêu đề đầu các trang danh sách.",
       "seo": "Nội dung hỗ trợ tìm kiếm của trang chủ.",
       "productAssign": "Hướng dẫn phân công nội bộ cho sản phẩm và bài viết.",
-      "reviewModeration": "Lọc tự động đánh giá của khách trước khi bạn duyệt. Máy chỉ được chặn, không bao giờ tự đăng."
+      "reviewModeration": "Lọc tự động đánh giá của khách trước khi bạn duyệt. Máy chỉ được chặn, không bao giờ tự đăng.",
+      "aiAssistant": "Bật/tắt Bi, kiểm soát trần chi phí và nội dung mở đầu khung chat."
     },
     "sectionDescription": {
       "general_brand": "Thông tin nhận diện chính được dùng xuyên suốt website.",
@@ -2567,7 +2630,9 @@
       "hero_brands": "Hình ảnh và nội dung mở đầu trang thương hiệu.",
       "hero_news": "Hình ảnh và nội dung mở đầu trang tin tức.",
       "hero_default": "Dùng khi trang danh sách chưa có ảnh riêng.",
-      "seo_home": "Nội dung dài hỗ trợ tìm kiếm, hiển thị ở cuối trang chủ."
+      "seo_home": "Nội dung dài hỗ trợ tìm kiếm, hiển thị ở cuối trang chủ.",
+      "ai_assistant_switch": "Bật/tắt Bi và giới hạn lượt gọi AI theo ngày giờ Việt Nam.",
+      "ai_assistant_copy": "Câu chào và nút gợi ý có bản tiếng Việt và tiếng Anh riêng."
     },
     "colKey": "Khoá",
     "colValue": "Giá trị",
@@ -2585,6 +2650,29 @@
     "group_seo": "Thông tin hiển thị trên Google",
     "group_product_assign": "Phân công sản phẩm",
     "group_public_hero": "Phần đầu trang",
+    "group_ai_assistant": "Trợ lý ảo Bi",
+    "keyLabel": {
+      "ai_assistant_enabled": "Bật trợ lý ảo Bi",
+      "ai_assistant_daily_limit": "Số lượt gọi AI tối đa mỗi ngày",
+      "ai_assistant_greeting": "Câu chào đầu khung chat",
+      "ai_assistant_quick_prompts": "Các nút gợi ý nhanh"
+    },
+    "keyHint": {
+      "ai_assistant_enabled": "Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.",
+      "ai_assistant_daily_limit": "Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Bi tự chuyển về bảng liên hệ.",
+      "ai_assistant_greeting": "Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Bi là trợ lý ảo AI.",
+      "ai_assistant_quick_prompts": "Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ."
+    },
+    "keyWhere": {
+      "ai_assistant_enabled": "bật/tắt trợ lý Bi trên toàn website",
+      "ai_assistant_daily_limit": "trần lượt gọi AI mỗi ngày, giờ Việt Nam",
+      "ai_assistant_greeting": "câu chào khi khách mở khung chat",
+      "ai_assistant_quick_prompts": "3–4 nút câu hỏi nhanh trong khung chat"
+    },
+    "section": {
+      "ai_assistant_switch": "Vận hành và ngân sách của Bi",
+      "ai_assistant_copy": "Nội dung đầu khung chat"
+    },
     "unsavedDot": "Chưa lưu",
     "htmlPlaceholder": "Soạn nội dung nâng cao...",
     "htmlEmpty": "Chưa có nội dung",
@@ -3110,6 +3198,7 @@
     "permRolesRead": "Xem danh sách vai trò",
     "permRolesWrite": "Tạo & chỉnh sửa phân quyền vai trò",
     "permAuditLogsRead": "Xem nhật ký kiểm tra",
+    "permChatRead": "Xem hội thoại và thông tin liên hệ của trợ lý Bi",
     "permMaintenanceManage": "Bật/tắt bảo trì trang quản trị (chỉ vai trò Developer dùng được)",
     "permReportsRead": "Xem báo cáo doanh thu & vận hành",
     "permReportsExport": "Xuất báo cáo",

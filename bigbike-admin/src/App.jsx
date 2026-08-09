@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
-  Package, Settings, Shield, ShoppingCart, Star, Tag,
+  MessageCircle, Package, Settings, Shield, ShoppingCart, Star, Tag,
   Users, Wrench,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -47,6 +47,8 @@ const ProductDetailScreen = lazyScreen(() => import('./screens/ProductDetailScre
 const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'),  'ProductListScreen')
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
 const ReviewDetailScreen = lazyScreen(() => import('./screens/ReviewDetailScreen'), 'ReviewDetailScreen')
+const ChatConversationListScreen = lazyScreen(() => import('./screens/ChatConversationListScreen'), 'ChatConversationListScreen')
+const ChatConversationDetailScreen = lazyScreen(() => import('./screens/ChatConversationDetailScreen'), 'ChatConversationDetailScreen')
 const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'),     'SettingsScreen')
 const SliderListScreen      = lazyScreen(() => import('./screens/SliderListScreen'),      'SliderListScreen')
 const HomeVideoListScreen   = lazyScreen(() => import('./screens/HomeVideoListScreen'),   'HomeVideoListScreen')
@@ -72,6 +74,7 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/orders',     labelKey: 'nav.orders',     policyKey: 'ordersRead', icon: ShoppingCart },
       { path: '/admin/customers',  labelKey: 'nav.customers',  policyKey: 'customersRead', icon: Users },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    policyKey: 'reviewsRead', icon: Star },
+      { path: '/admin/chat',       labelKey: 'nav.chat',       policyKey: 'chatRead', icon: MessageCircle },
     ],
   },
   {
@@ -166,6 +169,9 @@ function parseRoute(pathname) {
   if (module === 'reviews' && !id) return { kind: 'screen', name: 'reviews' }
   if (module === 'reviews' && id)  return { kind: 'screen', name: 'review-detail', reviewId: id }
 
+  if (module === 'chat' && !id) return { kind: 'screen', name: 'chat-conversations' }
+  if (module === 'chat' && id)  return { kind: 'screen', name: 'chat-conversation-detail', conversationId: id }
+
   if (module === 'media')       return { kind: 'screen', name: 'media-library' }
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
   if (module === 'sliders')      return { kind: 'screen', name: 'sliders' }
@@ -240,7 +246,7 @@ function AdminApp() {
       for (const queryKey of [
         ['orders'], ['order'], ['nav-badge'], ['dashboard'],
         ['inventory-summary'], ['customers'], ['customer-summary'],
-        ['reviews'], ['review-summary'],
+        ['reviews'], ['review-summary'], ['chat-conversations'], ['chat-stats'],
       ]) {
         if (queryKey[0] === 'inventory-summary' && !canReadInventory) continue
         queryClient.invalidateQueries({ queryKey })
@@ -478,6 +484,10 @@ function AdminApp() {
       screen = <ReviewListScreen navigate={navigate} canUpdate={hasPermission('reviews.write')} isSuperAdmin={userRoles.includes('SUPER_ADMIN')} />; break
     case 'review-detail':
       screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} isSuperAdmin={userRoles.includes('SUPER_ADMIN')} />; break
+    case 'chat-conversations':
+      screen = <ChatConversationListScreen navigate={navigate} />; break
+    case 'chat-conversation-detail':
+      screen = <ChatConversationDetailScreen conversationId={route.conversationId} navigate={navigate} />; break
     case 'admin-users':
       screen = <AdminUsersScreen canUpdate={canAccess('adminUsersWrite')} canReadRoles={hasPermission('roles.read')} canAssignRoles={canAccess('adminUsersAssignRole')} isSuperAdmin={hasPermission('*')} currentUserId={authState.user?.id} />; break
     case 'settings':

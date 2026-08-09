@@ -1951,3 +1951,48 @@ While `state = ACTIVE`, `MaintenanceWriteLockFilter` rejects every `POST`/`PUT`/
 **Why 423 and not 503 — do not "simplify" this back.** `deploy/nginx/api.bigbike.vn.conf` declares `error_page 502 503 504 =503` together with `proxy_intercept_errors on`, so nginx replaces the body of any upstream 503 with its static outage JSON, which has no `error.code` field. A 503 here would reach the admin as an unrecognisable payload in production while passing every local and MockMvc test. 423 is not in the intercept list and is semantically correct ("the source resource is locked").
 
 Customer-facing endpoints are untouched in every state: `POST /api/v1/checkout` has no maintenance guard, and the `ORDERING_PAUSED` error no longer exists.
+
+## Trợ lý ảo AI “Bi” (Giai đoạn 1, owner decision 2026-08-09)
+
+Mọi response dùng envelope chuẩn `ApiDataResponse`. Ba endpoint storefront chấp nhận cả khách vãng lai và khách đã đăng nhập; nếu có phiên customer hợp lệ, backend tự gắn conversation với customer đó. Client/model không gửi `customerId` hoặc email.
+
+### `GET /api/v1/chat/availability?lang=vi|en`
+
+Response `data`: `{ mode, reason, greeting, quickPrompts, maxTurns, contacts }`.
+
+- `mode`: `AI|CONTACT`; `reason`: `AVAILABLE|DISABLED|NOT_CONFIGURED|DAILY_LIMIT_REACHED|AI_UNAVAILABLE`.
+- `contacts`: `{hotline,zaloUrl,messengerUrl,zaloDisplay,messengerDisplay}` lấy từ nhóm setting `contact` để CONTACT hiển thị đúng bảng cũ.
+- Endpoint không tạo conversation và không gọi Gemini.
+
+### `POST /api/v1/chat/messages`
+
+Body có `@Valid`: `{ "conversationId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en" }`. `conversationId` bỏ trống ở lượt đầu; response trả id để tiếp tục. Mỗi conversation tối đa 12 customer messages.
+
+Response `data`: `{ conversationId, mode, reason, answer, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, contacts }`. `products` tối đa 3 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. `leadPrompt=true` tối đa một lần/conversation. `CONTACT` luôn kèm `contacts`; quota/provider/config failure không trả 5xx cho widget.
+
+Câu hỏi FAQ/shop-info và `get_my_orders` có thể trả lời không gọi Gemini. `get_my_orders` chỉ chạy khi `SecurityContext` có `CustomerPrincipal`, dùng `OrderReadService.listCustomerOrders(customerId,1,5,null)` và project đúng `{orderNumber,status,placedAt,totalAmount,currency}`. Khách vãng lai nhận link trang tra cứu đơn, không nhận dữ liệu đơn.
+
+### `POST /api/v1/chat/leads`
+
+Body có `@Valid`: `{ "conversationId": "uuid", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true }`. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
+
+### Admin chat history (`chat.read`)
+
+| Method | Path | Query / response |
+|---|---|---|
+| `GET` | `/api/v1/admin/chat/conversations` | `page` (≥1), `size` (1–100), `from`/`to` ngày Việt Nam, `hasLead`; item gồm id, locale, customerDisplayName nullable, turnCount, aiCallCount, hasLead, startedAt, lastMessageAt, endedReason. |
+| `GET` | `/api/v1/admin/chat/conversations/{id}` | Conversation + messages theo thời gian + lead đã consent (nếu có). |
+| `GET` | `/api/v1/admin/chat/stats` | `date=YYYY-MM-DD` tùy chọn (mặc định hôm nay VN); trả `{date,aiCalls,conversations,leads,dailyLimit,remainingAiCalls}`. |
+
+Không có admin mutation trong giai đoạn 1. List/detail/stats đều gọi `requirePermission("chat.read")`.
+
+### Setting group `ai_assistant` (admin-only)
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `ai_assistant_enabled` | `BOOLEAN` | `true` | Công tắc master; false trả `CONTACT`. |
+| `ai_assistant_daily_limit` | `INTEGER` | `60` | Trần lượt trả lời có gọi Gemini/ngày giờ Việt Nam; 0 tắt phần AI. |
+| `ai_assistant_greeting` | `LONG_TEXT` | câu chào VI/EN | Câu chào đầu widget, dùng `valueEn` cho locale EN. |
+| `ai_assistant_quick_prompts` | `LONG_TEXT` | 4 dòng VI/EN | Mỗi dòng là một nút gợi ý; API chỉ trả 3–4 dòng đầu không rỗng. |
+
+Các key này không `publicAllowed`; storefront đọc qua `availability`, không qua settings public. Khoá Gemini tuyệt đối không thuộc group này.

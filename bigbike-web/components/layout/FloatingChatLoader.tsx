@@ -14,8 +14,6 @@ export async function FloatingChatLoader({ locale }: { locale: Locale }) {
   const zaloDisplay = pickSetting(settings, ["zalo_display"]);
   const messengerDisplay = pickSetting(settings, ["messenger_display"]);
 
-  if (!hotline && !zaloUrl && !messengerUrl) return null;
-
   return (
     <FloatingChat
       hotline={hotline || undefined}

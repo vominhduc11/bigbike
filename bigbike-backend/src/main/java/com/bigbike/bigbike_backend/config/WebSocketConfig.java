@@ -38,6 +38,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String REVIEWS_PERMISSION = "reviews.read";
     private static final String CUSTOMERS_PERMISSION = "customers.read";
     private static final String PRODUCTS_PERMISSION = "products.read";
+    private static final String CHAT_PERMISSION = "chat.read";
     private static final String PRESENCE_DESTINATION = "/app/admin/presence";
     private static final String ACCESS_DESTINATION = "/user/queue/admin/access";
     private static final String MAINTENANCE_TOPIC = "/topic/admin/maintenance";
@@ -169,6 +170,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
                     case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
                     case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
+                    case "/topic/admin/chat" -> CHAT_PERMISSION;
                     default -> {
                         if (destination.startsWith("/topic/admin/presence/order/")) yield ORDERS_PERMISSION;
                         if (destination.startsWith("/topic/admin/presence/product/")) yield PRODUCTS_PERMISSION;
@@ -242,6 +244,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
             case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
             case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
+            case "/topic/admin/chat" -> CHAT_PERMISSION;
             default -> {
                 if (destination.startsWith("/topic/admin/presence/order/")) yield ORDERS_PERMISSION;
                 if (destination.startsWith("/topic/admin/presence/product/")) yield PRODUCTS_PERMISSION;

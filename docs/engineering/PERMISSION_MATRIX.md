@@ -51,6 +51,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
+| Trợ lý Bi | `chat.read` | — | — | chỉ xem hội thoại/lead/thống kê; không có quyền ghi giai đoạn 1 |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
@@ -83,6 +84,14 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 | `reviews.write` **and exact built-in role `SUPER_ADMIN`** | `SUPER_ADMIN` only | `DELETE /api/v1/admin/reviews/{id}`, `POST /api/v1/admin/reviews/bulk-delete`; deletion is additionally restricted to reviews already in `TRASH` | `REVIEW_RULE_010`, `AdminReviewController.java`, `AdminReviewService.java` |
 
 (Bổ sung 2026-07-15, AUD-076 — hai quyền này đã tồn tại trong seed/catalog từ trước nhưng chưa được ghi vào matrix. Không có quyền `reviews.moderate`.)
+
+### Trợ lý Bi permissions
+
+| Permission | Granted roles (seed) | Endpoint | Evidence |
+|---|---|---|---|
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | `GET /api/v1/admin/chat/conversations`, `GET /api/v1/admin/chat/conversations/{id}`, `GET /api/v1/admin/chat/stats` | `CHAT_RULE_013`, `PermissionCatalog`, migration `V1016` |
+
+`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role qua màn Vai trò. Lead chứa số/Zalo nên API list chỉ trả bản rút gọn; detail chỉ mở sau khi backend đã kiểm tra `chat.read`.
 
 ### Catalog / Product permissions
 

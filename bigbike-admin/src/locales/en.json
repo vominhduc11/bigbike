@@ -232,6 +232,7 @@
     "homeVideos": "Home Videos",
     "homeHighlights": "Home Highlights",
     "reviews": "Reviews",
+    "chat": "Bi conversations",
     "adminUsers": "Admin Users",
     "settings": "Settings",
     "maintenance": "Maintenance",
@@ -2514,6 +2515,67 @@
     "bannerUpcoming": "The admin panel will go under maintenance soon.",
     "bannerUpcomingHint": "Please save any work in progress. You can still save normally right now."
   },
+  "chatAdmin": {
+    "eyebrow": "Sales assistant",
+    "title": "Bi conversations",
+    "description": "Review Bi's advice, AI usage and customers who consented to a follow-up within the 90-day retention window.",
+    "openSettings": "Open Bi settings",
+    "guest": "Guest customer",
+    "loadError": "Conversation history could not be loaded",
+    "empty": "No conversations yet",
+    "emptyDescription": "New conversations with Bi will appear here.",
+    "emptyFiltered": "No conversations match the selected filters.",
+    "tableCaption": "Bi assistant conversation list",
+    "filters": {
+      "label": "Conversation filters",
+      "from": "From",
+      "to": "To",
+      "lead": "Follow-up details",
+      "allLeads": "All conversations",
+      "hasLead": "Has contact details",
+      "noLead": "No contact details"
+    },
+    "stats": {
+      "aiCalls": "AI calls today",
+      "remaining": "AI calls remaining",
+      "conversations": "Conversations today",
+      "leads": "New follow-ups today",
+      "limit": "Daily limit: {{count}}"
+    },
+    "columns": {
+      "startedAt": "Started",
+      "customer": "Customer",
+      "language": "Language",
+      "turns": "Questions",
+      "aiCalls": "AI calls",
+      "lead": "Follow-up",
+      "lastMessage": "Last message"
+    },
+    "detail": {
+      "loading": "Loading conversation",
+      "loadingDescription": "Retrieving the messages exchanged with Bi.",
+      "loadError": "Conversation could not be loaded",
+      "notFound": "This conversation does not exist or has passed the 90-day retention window.",
+      "title": "Conversation details",
+      "description": "This read-only view reflects the exact conversation with the customer.",
+      "messages": "Messages",
+      "messagesDescription": "Customer messages and Bi's replies in chronological order.",
+      "customer": "Customer",
+      "bi": "Bi · AI assistant",
+      "source": "Reply source",
+      "usedAi": "AI used",
+      "summary": "Conversation summary",
+      "endedReason": "End state",
+      "active": "Active",
+      "lead": "Customer-approved follow-up details",
+      "leadName": "Name",
+      "phone": "Phone/Zalo",
+      "note": "Support needed",
+      "consentedAt": "Consent time",
+      "noLead": "The customer has not shared contact details.",
+      "none": "No note"
+    }
+  },
   "settings": {
     "eyebrow": "System",
     "title": "Website Settings",
@@ -2550,7 +2612,8 @@
       "publicHero": "Images and headings at the top of listing pages.",
       "seo": "Homepage content supporting organic search.",
       "productAssign": "Internal assignment guidance for products and articles.",
-      "reviewModeration": "Screen customer reviews before you moderate them. The screening layer can only block, never publish."
+      "reviewModeration": "Screen customer reviews before you moderate them. The screening layer can only block, never publish.",
+      "aiAssistant": "Enable or disable Bi, control the daily cost limit, greeting and quick prompts."
     },
     "sectionDescription": {
       "general_brand": "Core identity information used throughout the website.",
@@ -2561,7 +2624,9 @@
       "hero_brands": "Image and content at the top of the brand listing.",
       "hero_news": "Image and content at the top of the news listing.",
       "hero_default": "Used when a listing page has no dedicated image.",
-      "seo_home": "Long-form search content shown at the bottom of the homepage."
+      "seo_home": "Long-form search content shown at the bottom of the homepage.",
+      "ai_assistant_switch": "Enable or disable Bi and cap AI calls by Vietnam calendar day.",
+      "ai_assistant_copy": "The greeting and quick prompts have separate Vietnamese and English versions."
     },
     "colKey": "Key",
     "colValue": "Value",
@@ -2579,6 +2644,29 @@
     "group_seo": "Website SEO",
     "group_product_assign": "Product assignment",
     "group_public_hero": "Page hero",
+    "group_ai_assistant": "Bi AI assistant",
+    "keyLabel": {
+      "ai_assistant_enabled": "Enable Bi AI assistant",
+      "ai_assistant_daily_limit": "Maximum AI calls per day",
+      "ai_assistant_greeting": "Chat opening greeting",
+      "ai_assistant_quick_prompts": "Quick prompt buttons"
+    },
+    "keyHint": {
+      "ai_assistant_enabled": "When disabled, customers still see the chat button and get the Hotline, Zalo and Messenger contact panel.",
+      "ai_assistant_daily_limit": "The limit follows Vietnam time. When it is reached, Bi automatically falls back to the contact panel.",
+      "ai_assistant_greeting": "Enter Vietnamese and English separately. The first line should identify Bi as an AI assistant.",
+      "ai_assistant_quick_prompts": "Enter one button per line, with 3 to 4 lines for each language."
+    },
+    "keyWhere": {
+      "ai_assistant_enabled": "enable or disable Bi across the website",
+      "ai_assistant_daily_limit": "daily AI-call cap in Vietnam time",
+      "ai_assistant_greeting": "greeting shown when customers open chat",
+      "ai_assistant_quick_prompts": "3–4 quick-question buttons in chat"
+    },
+    "section": {
+      "ai_assistant_switch": "Bi operations and budget",
+      "ai_assistant_copy": "Chat opening content"
+    },
     "unsavedDot": "Unsaved",
     "htmlPlaceholder": "Compose HTML content...",
     "htmlEmpty": "No content yet",
@@ -3107,6 +3195,7 @@
     "permRolesRead": "View roles list",
     "permRolesWrite": "Create & edit role permissions",
     "permAuditLogsRead": "View audit log",
+    "permChatRead": "View Bi conversations and customer contact details",
     "permMaintenanceManage": "Toggle admin-panel maintenance (only the Developer role can use it)",
     "permReportsRead": "View revenue & operations reports",
     "permReportsExport": "Export reports",
