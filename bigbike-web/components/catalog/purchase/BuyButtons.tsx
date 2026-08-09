@@ -40,7 +40,7 @@ export function BuyButtons({
           type="button"
           variant="primary"
           data-purchase-add
-          className="h-13 w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action uppercase"
+          className="h-13 w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action uppercase !text-primary-foreground hover:!text-primary-foreground"
           disabled={!canBuy || adding}
           onClick={onAdd}
         >
