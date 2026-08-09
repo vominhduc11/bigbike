@@ -153,6 +153,21 @@ public class CustomerOAuthService {
                         .build().encode().toUri())
                 .retrieve()
                 .body(Map.class);
+        // TEMP DIAGNOSTIC: remove after reproducing Facebook's email behavior.
+        log.warn("TEMP DIAGNOSTIC Facebook profile fields: {}", profile == null ? Set.of() : profile.keySet());
+        try {
+            Map<?, ?> permissions = http.get()
+                    .uri(UriComponentsBuilder.fromUriString("https://graph.facebook.com/v19.0/me/permissions")
+                            .queryParam("access_token", accessToken)
+                            .queryParam("appsecret_proof", appSecretProof(cfg.getClientSecret(), accessToken))
+                            .build().encode().toUri())
+                    .retrieve()
+                    .body(Map.class);
+            log.warn("TEMP DIAGNOSTIC Facebook permissions: {}",
+                    permissions == null ? null : permissions.get("data"));
+        } catch (RuntimeException ex) {
+            log.warn("TEMP DIAGNOSTIC Facebook permissions lookup failed: {}", ex.getClass().getSimpleName());
+        }
         String subject = str(profile, "id");
         if (subject == null) throw new OAuthException("Facebook profile missing id.");
         // Facebook only returns an email when the user granted it; that email is provider-verified.
