@@ -148,7 +148,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
           {isAuthed ? (
             <Button type="button" role="menuitem" variant="dark" size="auth" onClick={() => void handleLogout()} disabled={loggingOut}>{t("logout")}</Button>
           ) : (
-            <Button asChild variant="dark" size="auth">
+            <Button asChild variant="dark" size="auth" className="hover:!bg-black/80 hover:!border-black/80 hover:!text-white">
               <Link href={toLoginPath(undefined, locale)} role="menuitem" onClick={closeMenu}>{t("login")}</Link>
             </Button>
           )}

@@ -46,7 +46,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
       <a
         href={oauthAuthorizeUrl("facebook", returnTo)}
         onClick={markCustomerAuthenticated}
-        className={`${baseClass} bg-blue text-white hover:bg-blue/90`}
+        className={`${baseClass} bg-blue !text-primary-foreground hover:bg-blue/90 hover:!text-primary-foreground`}
       >
         <FacebookIcon />
         <span>{t("facebook")}</span>
@@ -54,7 +54,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
       <a
         href={oauthAuthorizeUrl("google", returnTo)}
         onClick={markCustomerAuthenticated}
-        className={`${baseClass} border border-border-default bg-white text-black hover:border-black hover:bg-black/5`}
+        className={`${baseClass} border border-border-default bg-white !text-foreground hover:border-black hover:bg-black/5 hover:!text-foreground`}
       >
         <GoogleIcon />
         <span>{t("google")}</span>

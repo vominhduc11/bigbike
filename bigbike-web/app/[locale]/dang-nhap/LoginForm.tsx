@@ -119,7 +119,7 @@ export function LoginForm({ returnTo, socialErrorKey }: { returnTo?: string; soc
           </div>
 
           <div>
-            <Button type="submit" size="auth" disabled={isSubmitting}>
+            <Button type="submit" size="auth" disabled={isSubmitting} className="!text-primary-foreground hover:!text-primary-foreground">
               {isSubmitting ? t("submitting") : t("submit")}
             </Button>
           </div>
