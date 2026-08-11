@@ -1,7 +1,7 @@
 /**
  * BigBike-web responsive audit harness (standalone, not a Playwright test).
  *
- * Drives chromium against the dev server (http://localhost:3001), discovers all
+ * Drives chromium against the BigBike web server (http://localhost:3000), discovers all
  * routes, iterates a wide viewport matrix, and measures:
  *   - element-level horizontal overflow via getBoundingClientRect (layout-based,
  *     so it bypasses the global `overflow-x:hidden` mask that hides true bleed)
@@ -27,7 +27,7 @@ const OUT = join(__dirname, "out");
 const SHOTS = join(OUT, "shots");
 mkdirSync(SHOTS, { recursive: true });
 
-const BASE = process.env.BB_BASE || "http://localhost:3001";
+const BASE = process.env.BB_BASE || "http://localhost:3000";
 const argv = process.argv.slice(2);
 const QUICK = argv.includes("--quick");
 const ACCEPTANCE = argv.includes("--acceptance");

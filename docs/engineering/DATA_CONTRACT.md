@@ -1990,7 +1990,7 @@ V374 also creates the `DEVELOPER` role (`is_system = TRUE`) with 34 explicitly e
 
 No customer or order data is touched by a state change. The response DTO (`state`, `staffNote`, `expectedAt`, `updatedAt`, `canToggle`, `uploadCount`) is derived, not a second persisted model — `canToggle` and `uploadCount` are computed per request. Checkout draft fields remain browser-local only and must never contain an access token, refresh token, password or payment secret.
 
-## Trợ lý Bi — conversation, message và lead (V1016)
+## Trợ lý Bi — conversation, message và lead (V1016–V1017)
 
 ### `chat_conversations`
 
@@ -1999,9 +1999,10 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `id` | `UUID` PK | Sinh ở backend; client chỉ dùng để nối lượt, không có endpoint public đọc lịch sử. |
 | `customer_id` | `UUID` nullable FK `customers` | Chỉ lấy từ phiên server; `ON DELETE SET NULL`. |
 | `locale` | `VARCHAR(2)` | `CHECK IN ('vi','en')`. |
-| `turn_count` / `ai_call_count` | `INTEGER` | Không âm; turn tối đa 12, AI count dùng thống kê. |
+| `turn_count` / `ai_call_count` | `INTEGER` | Không âm; turn tối đa 12; `ai_call_count` đếm orchestration AI đã tiêu slot, gồm một retry sửa xưng hô nếu đã thử. |
 | `consecutive_off_topic` | `INTEGER` | Hai lần liên tiếp thì handoff. |
 | `lead_offer_status` | `VARCHAR(16)` | `NONE|OFFERED|ACCEPTED|DECLINED`; không mời lại sau lần đầu. |
+| `context_json` | `JSONB` nullable | Ngữ cảnh rút gọn, không PII: `category`, `brand`, dải giá, tối đa 3 slug card công khai và cờ chờ đăng nhập. Chỉ backend dùng để ràng buộc lượt sau; không chứa nội dung/historic chat và không gửi nguyên văn cho Gemini. |
 | `ended_reason` | `VARCHAR(32)` nullable | `TURN_LIMIT|OFF_TOPIC|HANDOFF|AI_UNAVAILABLE|DAILY_LIMIT_REACHED|DISABLED`. |
 | `started_at`, `last_message_at`, `expires_at`, `created_at`, `updated_at` | `TIMESTAMPTZ` | `expires_at = started_at + 90 days`; cleanup xoá conversation hết hạn và cascade messages/lead. |
 
@@ -2012,9 +2013,10 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `id`, `conversation_id` | `UUID` | FK conversation `ON DELETE CASCADE`. |
 | `role` | `VARCHAR(16)` | `CUSTOMER|ASSISTANT`. |
 | `content` | `TEXT` | Nội dung đã hiển thị; không được đưa vào application log. |
-| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. |
-| `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message đã tiêu một quota AI. |
-| `products_json` | `JSONB` nullable | Snapshot tối đa 3 product card đã trả cho khách, không phải catalog dump. |
+| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. `TOOL` chỉ dùng cho nội dung deterministic do backend tạo, gồm terminal outcome đã xác minh sau một tool call; model final không hợp lệ luôn dùng `CONTACT_FALLBACK`, không recovery bằng snapshot trung gian. |
+| `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message của một logical response đã gọi Gemini, kể cả flow đó dùng 1–3 provider requests hoặc kết thúc bằng `TOOL`/`CONTACT_FALLBACK`. |
+| `ai_retry_count` | `INTEGER`, default `0` | `0|1`: số retry sửa xưng hô đã **được thử** sau `WRONG_TONE`; mỗi retry cộng thêm một daily AI slot, kể cả retry không trả được answer dùng được. |
+| `products_json` | `JSONB` nullable | Snapshot tối đa 3 product card đã qua hậu kiểm và thực sự trả cho khách, không phải catalog dump. Product trung gian không được persist khi orchestration/final/guard thất bại. |
 | `created_at` | `TIMESTAMPTZ` | Sắp xếp tăng dần trong detail admin. |
 
 ### `chat_leads`
@@ -2029,4 +2031,8 @@ No customer or order data is touched by a state change. The response DTO (`state
 
 Index bắt buộc: conversation `last_message_at DESC`, `expires_at`, `customer_id`; message `(conversation_id, created_at)` và partial/index cho `ai_called`; lead `created_at`. Retention job chạy hằng ngày và xoá theo `expires_at < now()` trong transaction giới hạn đúng bảng chat.
 
-Không có SQL/tool động. `products_json` và nội dung model không được dùng làm câu lệnh hay tên bảng/cột. Order tool chỉ project `orderNumber/status/placedAt/totalAmount/currency`, không persist snapshot đơn vào chat ngoài câu trả lời mức gọn.
+Không có SQL/tool động. `products_json` và nội dung model không được dùng làm câu lệnh hay tên bảng/cột. Order tool chỉ project `orderNumber/status/placedAt/createdAt/totalAmount/currency`, trong đó `createdAt` chỉ dùng để tie-break khi sắp xếp và không persist snapshot đơn vào chat ngoài câu trả lời mức gọn.
+
+Function calling không tạo thêm persistence record cho từng provider request hoặc từng tool execution. Một customer turn chỉ tạo một assistant message cuối; retry sửa xưng hô vẫn không tạo message thứ hai nhưng được giữ bằng `ai_retry_count` để daily quota/admin stats cộng đúng thêm một slot và `chat_conversations.ai_call_count` tăng tương ứng. Provider-call telemetry chi tiết hơn nếu bổ sung sau này phải nằm ngoài business quota/public contract.
+
+Public chat actions are fixed route intents (`LOGIN`, `ORDER_HISTORY`, `ORDER_LOOKUP`); they never carry a model-provided URL. Customer-facing answers and product cards are persisted only after the same forbidden-term, language, product-card and formatting checks used for the API response. The order tool additionally reads `createdAt` only for deterministic tie-breaking and never persists an order snapshot.

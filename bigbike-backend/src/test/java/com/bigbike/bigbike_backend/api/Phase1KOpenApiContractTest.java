@@ -247,8 +247,21 @@ class Phase1KOpenApiContractTest {
                 .isEqualTo("#/components/schemas/ProductPublishRequest");
         assertThat(paths.path("/api/v1/admin/products/{id}/permanent").path("delete")
                 .path("responses").has("204")).isTrue();
-        assertThat(paths.path("/api/v1/admin/products/export.csv").path("get")
-                .path("responses").path("200").path("content").path("text/csv")
+        JsonNode productExport = paths.path("/api/v1/admin/products/export.csv").path("get");
+        JsonNode productExportParameters = productExport.path("parameters");
+        assertThat(productExportParameters.findValuesAsText("name")).contains(
+                "scope", "q", "categoryId", "brandId", "publishStatus", "stockState",
+                "includeDraft", "includeTrash", "ids", "preset", "columns", "columnGroups");
+        assertThat(textValues(parameterNamed(productExportParameters, "scope").path("schema").path("enum")))
+                .containsExactly("FILTERED", "SELECTED", "ALL");
+        assertThat(parameterNamed(productExportParameters, "scope").path("schema").path("default").asText())
+                .isEqualTo("FILTERED");
+        assertThat(textValues(parameterNamed(productExportParameters, "preset").path("schema").path("enum")))
+                .containsExactly("PRICING", "CONTENT_SEO", "MEDIA", "FULL");
+        assertThat(parameterNamed(productExportParameters, "ids").path("description").asText())
+                .contains("200");
+        assertThat(productExport.path("responses").has("400")).isTrue();
+        assertThat(productExport.path("responses").path("200").path("content").path("text/csv")
                 .path("schema").path("format").asText()).isEqualTo("binary");
         assertThat(paths.path("/api/v1/admin/products/import/validate").path("post")
                 .path("requestBody").path("content").has("multipart/form-data")).isTrue();

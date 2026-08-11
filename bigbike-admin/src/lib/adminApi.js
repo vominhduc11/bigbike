@@ -1650,7 +1650,7 @@ function normalizeChatMessage(input) {
     content: safeChatString(s.content),
     source: safeChatString(s.source),
     aiCalled: Boolean(s.aiCalled),
-    products,
+    products: products.filter((item) => item && typeof item === 'object').slice(0, 3),
     createdAt: safeChatString(s.createdAt),
   }
 }
@@ -1891,9 +1891,25 @@ export async function exportCustomersCsv(filters = {}) {
   }, 'customers.csv')
 }
 
-/** Full operational catalog export used only by the Product module; deliberately has no screen filters. */
-export async function exportFullProductCatalogCsv() {
-  return fetchCsvBlob('/admin/products/export.csv', {}, 'products-full.csv')
+/** CSV catalog export. The single-product JSON round-trip export is a separate flow. */
+export async function exportFullProductCatalogCsv(options = {}) {
+  const ids = options.ids
+  const columns = options.columns
+  const columnGroups = options.columnGroups
+  return fetchCsvBlob('/admin/products/export.csv', {
+    scope: options.scope || 'FILTERED',
+    q: options.q,
+    categoryId: options.categoryId,
+    brandId: options.brandId,
+    publishStatus: options.publishStatus,
+    stockState: options.stockState,
+    includeDraft: options.includeDraft ? 'true' : undefined,
+    includeTrash: options.includeTrash ? 'true' : undefined,
+    ids: Array.isArray(ids) ? ids.join(',') : ids,
+    preset: options.preset || 'PRICING',
+    columns: Array.isArray(columns) && columns.length > 0 ? columns.join(',') : columns,
+    columnGroups: Array.isArray(columnGroups) && columnGroups.length > 0 ? columnGroups.join(',') : columnGroups,
+  }, 'sanpham.csv')
 }
 
 // Inventory

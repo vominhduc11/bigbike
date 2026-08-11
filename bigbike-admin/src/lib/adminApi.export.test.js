@@ -4,7 +4,7 @@ import { exportCustomersCsv, exportFullProductCatalogCsv, exportOrdersCsv } from
 describe('exportFullProductCatalogCsv', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('calls the unfiltered full-catalog endpoint, regardless of ProductListScreen filters', async () => {
+  it('sends the default filtered scope and pricing preset', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
@@ -16,9 +16,40 @@ describe('exportFullProductCatalogCsv', () => {
     await exportFullProductCatalogCsv()
 
     expect(fetchMock).toHaveBeenCalledOnce()
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/admin/products/export.csv')
-    expect(fetchMock.mock.calls[0][0]).not.toContain('?')
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/v1/admin/products/export.csv?scope=FILTERED&preset=PRICING',
+    )
     expect(click).toHaveBeenCalledOnce()
+  })
+
+  it('sends screen filters, selected IDs, and custom columns', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['sku,name_vi\nBB-1,Sản phẩm']),
+      headers: new Headers({ 'Content-Disposition': 'attachment; filename="sanpham_dang-chon.csv"' }),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await exportFullProductCatalogCsv({
+      scope: 'SELECTED',
+      q: 'mũ',
+      categoryId: 'cat-1',
+      brandId: 'brand-1',
+      publishStatus: 'ALL',
+      stockState: 'OUT_OF_STOCK',
+      includeDraft: true,
+      includeTrash: true,
+      ids: ['p-1', 'p-2'],
+      preset: 'CONTENT_SEO',
+      columns: ['name_vi', 'sku'],
+    })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/v1/admin/products/export.csv'
+      + '?scope=SELECTED&q=m%C5%A9&categoryId=cat-1&brandId=brand-1&publishStatus=ALL&stockState=OUT_OF_STOCK'
+      + '&includeDraft=true&includeTrash=true&ids=p-1%2Cp-2&preset=CONTENT_SEO&columns=name_vi%2Csku',
+    )
   })
 })
 

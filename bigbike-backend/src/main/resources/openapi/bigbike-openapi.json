@@ -3361,12 +3361,27 @@
         "tags": [
           "Admin Catalog"
         ],
-        "summary": "Export the complete product catalog as CSV (admin)",
+        "summary": "Export the product catalog as filtered CSV (admin)",
+        "description": "Streams a UTF-8 BOM CSV in ascending product id order. FILTERED is the default scope; blank/ALL publishStatus exports PUBLISHED only unless includeDraft/includeTrash are enabled. SELECTED accepts at most 200 unique ids. ALL explicitly ignores every filter and includes every publish status. Unknown columns are ignored and sku is always included; output order follows the current HEADERS contract.",
         "operationId": "adminExportFullProductCatalogCsv",
         "security": [
           {
             "AdminBearerAuth": []
           }
+        ],
+        "parameters": [
+          { "name": "scope", "in": "query", "required": false, "description": "Export scope.", "schema": { "type": "string", "enum": ["FILTERED", "SELECTED", "ALL"], "default": "FILTERED" } },
+          { "name": "q", "in": "query", "required": false, "description": "Same unaccented product search as the admin product list.", "schema": { "type": "string", "maxLength": 100 } },
+          { "name": "categoryId", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 100 } },
+          { "name": "brandId", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 100 } },
+          { "name": "publishStatus", "in": "query", "required": false, "description": "Explicit status, or ALL/blank for the PUBLISHED default.", "schema": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "TRASH", "ALL"] } },
+          { "name": "stockState", "in": "query", "required": false, "schema": { "type": "string", "enum": ["IN_STOCK", "OUT_OF_STOCK", "ALL"] } },
+          { "name": "includeDraft", "in": "query", "required": false, "schema": { "type": "boolean", "default": false } },
+          { "name": "includeTrash", "in": "query", "required": false, "schema": { "type": "boolean", "default": false } },
+          { "name": "ids", "in": "query", "required": false, "description": "Comma-separated product ids for SELECTED; maximum 200 unique ids.", "schema": { "type": "string" } },
+          { "name": "preset", "in": "query", "required": false, "schema": { "type": "string", "enum": ["PRICING", "CONTENT_SEO", "MEDIA", "FULL"], "default": "PRICING" } },
+          { "name": "columns", "in": "query", "required": false, "description": "Optional comma-separated HEADERS names; unknown names are ignored and sku is forced. Giai đoạn 2.", "schema": { "type": "string" } },
+          { "name": "columnGroups", "in": "query", "required": false, "description": "Optional comma-separated column group keys for Giai đoạn 2; unknown groups are ignored.", "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
@@ -3400,6 +3415,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           }
         }
       }
@@ -7575,6 +7593,18 @@
           "content": {"application/json":{"schema":{"type":"object","required":["conversationId","phone","consent"],"properties":{"conversationId":{"type":"string","format":"uuid"},"name":{"type":"string","maxLength":100},"phone":{"type":"string","maxLength":32},"note":{"type":"string","maxLength":500},"consent":{"type":"boolean","enum":[true]}}}}}
         },
         "responses": {"200":{"description":"Lead captured and admin notified"},"400":{"$ref":"#/components/responses/ValidationError"}}
+      }
+    },
+    "/api/v1/chat/leads/decline": {
+      "post": {
+        "tags": ["AI Assistant"],
+        "summary": "Decline a callback invitation without sending contact details",
+        "operationId": "declineChatLead",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"type":"object","required":["conversationId"],"properties":{"conversationId":{"type":"string","format":"uuid"}}}}}
+        },
+        "responses": {"200":{"description":"Lead invitation marked as declined"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"description":"The invitation is not available or a lead was already accepted"}}
       }
     },
     "/api/v1/admin/chat/conversations": {

@@ -32,4 +32,10 @@ describe('MobileCard', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Chọn Chuyển hướng cũ' }))
     expect(onSelectChange).toHaveBeenCalledWith(true)
   })
+
+  it('không sập khi màn cha truyền meta sai kiểu', () => {
+    render(<MobileCard title="Hội thoại với Bi" meta="Lượt hỏi: 3 · Lượt gọi AI: 2" />)
+
+    expect(screen.getByText('Hội thoại với Bi')).toBeInTheDocument()
+  })
 })

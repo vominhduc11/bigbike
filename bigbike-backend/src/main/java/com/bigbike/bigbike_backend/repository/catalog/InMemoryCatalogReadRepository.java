@@ -16,8 +16,11 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -466,6 +469,75 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 }))
                 .limit(limit)
                 .toList();
+    }
+
+    @Override
+    public List<Product> searchPublishedProductsForAssistant(
+            List<String> tokens,
+            String categorySlug,
+            String brandSlug,
+            Long minPrice,
+            Long maxPrice,
+            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec,
+            String locale,
+            int limit
+    ) {
+        if (tokens == null || tokens.isEmpty() || limit <= 0) {
+            return List.of();
+        }
+        Comparator<Product> comparator = assistantComparator(sortSpec);
+        return products.stream()
+                .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(product -> categorySlug == null || categorySlug.isBlank()
+                        || safeCategories(product).stream().anyMatch(category -> categorySlug.equals(category.slug())))
+                .filter(product -> brandSlug == null || brandSlug.isBlank()
+                        || (product.brand() != null && brandSlug.equals(product.brand().slug())))
+                .filter(product -> matchesAssistantTokens(product, tokens))
+                .filter(product -> matchesRetailPrice(product, minPrice, maxPrice))
+                .sorted(comparator)
+                .limit(Math.min(limit, 100))
+                .toList();
+    }
+
+    private static boolean matchesAssistantTokens(Product product, List<String> tokens) {
+        return tokens.stream().allMatch(token -> containsAssistantToken(product.name(), token)
+                || containsAssistantToken(product.slug(), token)
+                || containsAssistantToken(product.slugEn(), token));
+    }
+
+    private static boolean containsAssistantToken(String value, String token) {
+        return value != null && normalizeDiscovery(value).contains(normalizeDiscovery(token));
+    }
+
+    private static boolean matchesRetailPrice(Product product, Long minPrice, Long maxPrice) {
+        if (minPrice == null && maxPrice == null) return true;
+        BigDecimal price = product.price() == null ? null : product.price().retailPrice();
+        if (price == null) return false;
+        return (minPrice == null || price.compareTo(BigDecimal.valueOf(minPrice)) >= 0)
+                && (maxPrice == null || price.compareTo(BigDecimal.valueOf(maxPrice)) <= 0);
+    }
+
+    private static Comparator<Product> assistantComparator(
+            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec) {
+        String field = sortSpec == null ? "createdAt" : sortSpec.field();
+        Comparator<Product> comparator = switch (field) {
+            case "name" -> Comparator.comparing(product -> normalizeDiscovery(product.name()));
+            case "price" -> Comparator.comparing(product -> product.price() == null
+                    || product.price().retailPrice() == null ? BigDecimal.ZERO : product.price().retailPrice());
+            default -> Comparator.comparing(product -> product.createdAt() == null ? Instant.EPOCH : product.createdAt());
+        };
+        return sortSpec != null
+                && sortSpec.direction() == com.bigbike.bigbike_backend.service.common.SortDirection.DESC
+                ? comparator.reversed() : comparator;
+    }
+
+    private static String normalizeDiscovery(String value) {
+        if (value == null) return "";
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toLowerCase(Locale.ROOT);
     }
 
     @Override

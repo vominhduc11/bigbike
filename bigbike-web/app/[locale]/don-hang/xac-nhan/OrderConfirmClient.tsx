@@ -70,6 +70,7 @@ export function OrderConfirmClient() {
         order={order}
         settingsRecord={settingsRecord}
         isLoading={canLookup && (orderQuery.isLoading || settingsQuery.isLoading)}
+        hasError={orderQuery.isError}
       />
     </>
   );

@@ -114,10 +114,45 @@ public class CatalogReadService {
     }
 
     /**
+     * Internal Bi discovery path. It deliberately has its own repository predicate so the
+     * public {@code q} endpoint keeps its established response and matching contract.
+     * Returned products retain listing variants because the chat service must verify sellability
+     * before it creates a product card.
+     */
+    public List<Product> searchProductsForAssistant(
+            List<String> identifierTokens,
+            String category,
+            String brand,
+            Long minPrice,
+            Long maxPrice,
+            String sort,
+            int limit,
+            String lang
+    ) {
+        if (identifierTokens == null || identifierTokens.isEmpty() || limit <= 0) {
+            return List.of();
+        }
+        SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
+        return catalogReadRepository.searchPublishedProductsForAssistant(
+                List.copyOf(identifierTokens),
+                trimToNull(category),
+                trimToNull(brand),
+                minPrice,
+                maxPrice,
+                sortSpec,
+                "en".equalsIgnoreCase(lang) ? "en" : "vi",
+                Math.min(limit, 100));
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
      * Resolves a category slug to self + every descendant slug (CATEGORY_RULE_006), for the
      * in-memory filter path (color filter present, see {@link #listProducts}) which otherwise
      * only exact-matches the product's own category slug. Mirrors
-     * {@code JpaCatalogReadRepository.resolveCategoryIdWithDescendants} but keyed on slug and
+     * {@code ProductFilterSpecifications.resolveCategoryIds} but keyed on slug and
      * operating on the small in-memory category list already loaded for facets.
      */
     private Set<String> resolveCategorySlugsWithDescendants(String categorySlug, String lang) {
@@ -212,6 +247,17 @@ public class CatalogReadService {
         return paginationService.paginate(result, page, size);
     }
 
+    /**
+     * Internal read-only vocabulary for Bi. It intentionally exposes only public category
+     * metadata to backend query recognition; nothing from this list is sent to the AI model.
+     */
+    public List<Category> listAssistantCategories(String lang) {
+        return catalogReadRepository.findAllCategories("en".equalsIgnoreCase(lang) ? "en" : "vi").stream()
+                .filter(Category::isVisible)
+                .filter(category -> !category.deleted())
+                .toList();
+    }
+
     public Category getCategoryBySlug(String slug, String lang) {
         return catalogReadRepository.findCategoryBySlug(slug, lang)
                 .filter(Category::isVisible)
@@ -238,6 +284,13 @@ public class CatalogReadService {
                 .toList();
 
         return paginationService.paginate(result, page, size);
+    }
+
+    /** Internal read-only brand vocabulary for Bi; this is not a public API surface. */
+    public List<Brand> listAssistantBrands() {
+        return catalogReadRepository.findAllBrands("vi").stream()
+                .filter(Brand::isVisible)
+                .toList();
     }
 
     public Brand getBrandBySlug(String slug, String lang) {
@@ -319,4 +372,3 @@ public class CatalogReadService {
     }
 
 }
-

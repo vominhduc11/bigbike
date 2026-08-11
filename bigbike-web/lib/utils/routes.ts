@@ -241,6 +241,10 @@ export function toOrderConfirmPath(orderNumber: string, orderKey?: string, local
   return `${translatePath("/don-hang/xac-nhan/", locale ?? getActiveLocale())}?${params}`;
 }
 
+export function toOrderLookupPath(locale?: Locale): string {
+  return translatePath("/don-hang/xac-nhan/", locale ?? getActiveLocale());
+}
+
 export function toOrderDetailPath(orderId: string, locale?: Locale): string {
   return translatePath(`/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`, locale ?? getActiveLocale());
 }

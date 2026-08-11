@@ -45,7 +45,10 @@ export function ScrollToTopFab() {
         aria-hidden={!visible}
         tabIndex={visible ? 0 : -1}
         onClick={scrollToTop}
-        className="h-11 w-11 rounded-none bg-brand-on-dark text-white shadow-[0_3px_10px_rgba(0,0,0,0.18)] hover:bg-brand-hover hover:not-disabled:scale-100"
+        // border-brand-on-dark khớp với nền đỏ sáng: border-primary của variant là đỏ sẫm hơn
+        // nên để mặc định sẽ tạo viền lệch màu quanh nút lúc nghỉ.
+        // Dùng chung --bb-shadow-lg với nút chat để cả cụm nút nổi cùng một độ cao bóng đổ.
+        className="size-11 rounded-none border-brand-on-dark bg-brand-on-dark text-white shadow-[var(--bb-shadow-lg)] hover:not-disabled:scale-100"
       >
         <ChevronUp className="h-4 w-4" aria-hidden />
       </Button>

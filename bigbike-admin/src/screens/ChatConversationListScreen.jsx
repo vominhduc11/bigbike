@@ -168,7 +168,10 @@ export function ChatConversationListScreen({ navigate }) {
             mobileCard={(item) => ({
               title: item.customerDisplayName || t('chatAdmin.guest'),
               subtitle: formatDateTime(item.startedAt),
-              meta: `${t('chatAdmin.columns.turns')}: ${item.turnCount} · ${t('chatAdmin.columns.aiCalls')}: ${item.aiCallCount}`,
+              meta: [
+                { label: t('chatAdmin.columns.turns'), value: item.turnCount },
+                { label: t('chatAdmin.columns.aiCalls'), value: item.aiCallCount },
+              ],
               onClick: () => navigate(`/admin/chat/${item.id}`),
             })}
           />

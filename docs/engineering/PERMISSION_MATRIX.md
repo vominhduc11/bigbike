@@ -102,6 +102,8 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 | `products.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/products`, `GET /api/v1/admin/products/{id}`, product presence topic; also one accepted read permission for `GET /api/v1/admin/product-assignment` | `V49__create_roles_permissions_tables.sql`, `V121__realign_inventory_warranty_permissions.sql`, `V363__restore_admin_product_read_permission.sql`, `AdminCatalogController.java`, `WebSocketConfig.java` |
 | `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/homepage-blocks`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}`; also required for editing/saving the dedicated `/admin/featured-products` workspace, which additionally requires `products.read` to load and search products | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java`, `App.jsx`, `FeaturedProductsScreen.jsx` |
 
+The single-product JSON round-trip export (`GET /api/v1/admin/products/import/export/{id}`) stays under `products.update` because its file is intended to be edited and imported back as a catalog mutation. The catalog CSV export (`GET /api/v1/admin/products/export.csv`) stays under `reports.export` because it carries catalog data out of the system and is audited as a report export; it does not grant product-write access.
+
 `EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."
 
 The bulk product import endpoints are gated by the same `products.update` permission as every other product-write endpoint — deliberately not `reports.export` (import is a catalog mutation, not a read-only report), so import and the normal admin product form share one authorization boundary.
@@ -249,7 +251,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 | Permission string | Roles | Purpose |
 |---|---|---|
 | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics dashboard |
-| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports and the full Product catalog export (audit log gate) |
+| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports and the filtered/selected/full Product catalog export (audit log gate); not required for the editable JSON round-trip file |
 
 ## Maintenance Authority
 

@@ -41,6 +41,14 @@ public class ChatAssistantSettings {
 
     private final SiteSettingJpaRepository settingRepo;
 
+    public static String defaultGreeting(String lang) {
+        return "en".equals(lang) ? DEFAULT_GREETING_EN : DEFAULT_GREETING_VI;
+    }
+
+    public static List<String> defaultQuickPrompts(String lang) {
+        return "en".equals(lang) ? DEFAULT_PROMPTS_EN : DEFAULT_PROMPTS_VI;
+    }
+
     @Transactional(readOnly = true)
     public Snapshot load(String lang) {
         Map<String, SiteSettingEntity> settings = settingRepo.findAll().stream()
@@ -49,8 +57,7 @@ public class ChatAssistantSettings {
         return new Snapshot(
                 readBoolean(settings, KEY_ENABLED, true),
                 readInteger(settings, KEY_DAILY_LIMIT, DEFAULT_DAILY_LIMIT),
-                localized(settings, KEY_GREETING, english,
-                        english ? DEFAULT_GREETING_EN : DEFAULT_GREETING_VI),
+                localized(settings, KEY_GREETING, english, defaultGreeting(lang)),
                 prompts(localized(settings, KEY_QUICK_PROMPTS, english, ""), english),
                 new ChatContactResponse(
                         value(settings, "hotline"),
@@ -58,9 +65,9 @@ public class ChatAssistantSettings {
                         value(settings, "messenger_url"),
                         value(settings, "zalo_display"),
                         value(settings, "messenger_display")),
-                value(settings, "contact_address"),
-                value(settings, "opening_hours_weekday"),
-                value(settings, "opening_hours_weekend"));
+                localized(settings, "contact_address", english, ""),
+                localized(settings, "opening_hours_weekday", english, ""),
+                localized(settings, "opening_hours_weekend", english, ""));
     }
 
     private static List<String> prompts(String raw, boolean english) {
@@ -71,7 +78,7 @@ public class ChatAssistantSettings {
                 .toList();
         return parsed.size() >= 3
                 ? parsed
-                : english ? DEFAULT_PROMPTS_EN : DEFAULT_PROMPTS_VI;
+                : defaultQuickPrompts(english ? "en" : "vi");
     }
 
     private static boolean readBoolean(
@@ -98,8 +105,9 @@ public class ChatAssistantSettings {
     ) {
         SiteSettingEntity setting = settings.get(key);
         if (setting == null) return fallback;
+        // English widget copy must remain English. A Vietnamese fallback would leak mixed
+        // language into the customer UI when an admin has not supplied the EN value yet.
         String candidate = english ? setting.getSettingValueEn() : setting.getSettingValue();
-        if (candidate == null || candidate.isBlank()) candidate = setting.getSettingValue();
         return candidate == null || candidate.isBlank() ? fallback : candidate.trim();
     }
 

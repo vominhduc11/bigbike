@@ -684,7 +684,32 @@ changes `DRAFT ↔ PUBLISHED`.
 
 ### Full product catalog CSV export
 
-`GET /api/v1/admin/products/export.csv` is the authoritative full-catalog export used by the Product module's **"Xuất CSV"** action. It requires `reports.export`, records an audit event, accepts **no filters or pagination**, and exports every product currently stored in the catalog, including `DRAFT` and `TRASH` rows. It is streamed in deterministic `id` order; there is no 10,000-row (or other silent) truncation limit.
+`GET /api/v1/admin/products/export.csv` is the Product module's CSV catalog export. It requires `reports.export`, records an audit event for every valid export stream, and never applies a row cap. The response is streamed in deterministic ascending `id` order.
+
+Query parameters:
+
+| Parameter | Values / default | Contract |
+|---|---|---|
+| `scope` | `FILTERED` (default), `SELECTED`, `ALL` | `FILTERED` applies list filters; `SELECTED` requires `ids`; `ALL` ignores every filter and includes every publish status. |
+| `q` | optional, max 100 | Same search semantics as the admin product list: unaccented name, slug, SKU and English equivalents. |
+| `categoryId` | optional | Includes products assigned to the category or one of its descendants. |
+| `brandId` | optional | Exact brand filter. |
+| `publishStatus` | optional: `DRAFT`, `PUBLISHED`, `TRASH`, `ALL` | Blank/`ALL` defaults to `PUBLISHED`; an explicit status is exact. |
+| `stockState` | optional: `IN_STOCK`, `OUT_OF_STOCK`, `ALL` | Same stock filter as the product list; blank/`ALL` leaves stock state unfiltered. |
+| `includeDraft`, `includeTrash` | boolean, default `false` | Effective only when `publishStatus` is blank/`ALL`; explicitly widens the default `PUBLISHED` scope. |
+| `ids` | comma-separated IDs | Only for `SELECTED`; at most 200 unique IDs, otherwise `400 VALIDATION_ERROR` on `ids`. |
+| `preset` | `PRICING` (default), `CONTENT_SEO`, `MEDIA`, `FULL` | Selects the standard column set. |
+| `columns` | optional comma-separated header names | Giai đoạn 2: intersects with `HEADERS`; unknown names are ignored. `sku` is always added. |
+| `columnGroups` | optional comma-separated group keys | Giai đoạn 2 alternative to `columns`: valid groups are intersected with the canonical group map; unknown groups are ignored. `sku` is always added. |
+
+`FULL` preserves all 83 current `HEADERS` in their existing order. The standard presets are:
+
+- `PRICING`: `sku, name_vi, category_names_vi, brand_name, retail_price, sale_price, currency, stock_state, stock_quantity, available, publish_status`.
+- `CONTENT_SEO`: `sku, name_vi, name_en, slug, slug_en, short_description_vi, short_description_en, seo_title_vi, seo_title_en, seo_description_vi, seo_description_en, seo_canonical_url`.
+- `MEDIA`: `sku, name_vi, image_url, image_alt, gallery_json, videos_json`.
+- `FULL`: every current header, unchanged.
+
+The output column order always follows `HEADERS`, never checkbox order. Filenames use `sanpham_<context>_<yyyyMMdd>.csv`: `dang-chon` for `SELECTED`, `toanbo` for `ALL`, and a sanitized active filter context (fallback `bo-loc`) for `FILTERED`. The response is `text/csv; charset=UTF-8` with a UTF-8 BOM and `Content-Disposition` attachment.
 
 The response is `text/csv; charset=UTF-8`, has a UTF-8 BOM for Excel, and sets a `Content-Disposition` attachment filename. One CSV row represents one product. Scalar data is emitted in these columns, in order:
 
@@ -1960,7 +1985,7 @@ Mọi response dùng envelope chuẩn `ApiDataResponse`. Ba endpoint storefront 
 
 Response `data`: `{ mode, reason, greeting, quickPrompts, maxTurns, contacts }`.
 
-- `mode`: `AI|CONTACT`; `reason`: `AVAILABLE|DISABLED|NOT_CONFIGURED|DAILY_LIMIT_REACHED|AI_UNAVAILABLE`.
+- `mode`: `AI|CONTACT`; public `reason` is `AI|CONTACT`. Internal availability/end reasons are never exposed to the storefront.
 - `contacts`: `{hotline,zaloUrl,messengerUrl,zaloDisplay,messengerDisplay}` lấy từ nhóm setting `contact` để CONTACT hiển thị đúng bảng cũ.
 - Endpoint không tạo conversation và không gọi Gemini.
 
@@ -1968,13 +1993,23 @@ Response `data`: `{ mode, reason, greeting, quickPrompts, maxTurns, contacts }`.
 
 Body có `@Valid`: `{ "conversationId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en" }`. `conversationId` bỏ trống ở lượt đầu; response trả id để tiếp tục. Mỗi conversation tối đa 12 customer messages.
 
-Response `data`: `{ conversationId, mode, reason, answer, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, contacts }`. `products` tối đa 3 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. `leadPrompt=true` tối đa một lần/conversation. `CONTACT` luôn kèm `contacts`; quota/provider/config failure không trả 5xx cho widget.
+Response `data`: `{ conversationId, mode, reason, answer, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, actions, contacts }`. `products` tối đa 3 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. Với yêu cầu tìm tên/model/slug, backend bỏ lớp dẫn nhập và câu hỏi thuộc tính theo ngữ cảnh (ví dụ “có size và màu nào” hoặc “theo ngân sách”), nhưng giữ câu hỏi gốc để lấy chi tiết/option; sau đó chuẩn hoá từ khoá không phân biệt hoa/thường, dấu, dấu câu, khoảng trắng và thứ tự từ, rồi giữ mọi từ định danh khi đối chiếu metadata catalog VI/EN. Một yêu cầu có match không bị đổi thành fallback chỉ vì cách viết câu hỏi. `leadPrompt=true` tối đa một lần/conversation. `actions` là danh sách hữu hạn `{type}` với `type` thuộc `LOGIN|ORDER_HISTORY|ORDER_LOOKUP`; client tự ánh xạ sang route cục bộ, không nhận URL từ model. `CONTACT` luôn kèm `contacts`; quota/provider/config failure không trả 5xx cho widget.
 
-Câu hỏi FAQ/shop-info và `get_my_orders` có thể trả lời không gọi Gemini. `get_my_orders` chỉ chạy khi `SecurityContext` có `CustomerPrincipal`, dùng `OrderReadService.listCustomerOrders(customerId,1,5,null)` và project đúng `{orderNumber,status,placedAt,totalAmount,currency}`. Khách vãng lai nhận link trang tra cứu đơn, không nhận dữ liệu đơn.
+Sau availability/master/quota gate, greeting/help, FAQ rõ ràng, shop-info rõ ràng, đơn của chính khách đã đăng nhập, lead decline, guest-order, handoff, off-topic xác định được và câu mơ hồ (so sánh/đổi ngân sách chưa có đủ dữ kiện) trả bằng fast-path backend, không gọi Gemini. Tin tức/bài viết không thuộc phạm vi Bi cũng là off-topic, không được đổi thành tìm sản phẩm. Các câu hỏi còn lại gửi **chỉ câu hỏi hiện tại** cùng function declarations cố định cho Gemini; model tự hiểu ý định và chọn tool, backend không phân loại trước một “expected tool” thay model mà chỉ kiểm tra call có liên quan đến câu hỏi, đúng schema/quyền/giới hạn rồi mới thực thi. Backend có thể giữ context rút gọn, không PII của phiên (`category`, `brand`, dải giá, slug card công khai và cờ chờ đăng nhập) để ràng buộc tool của lượt tiếp theo; chỉ các bộ lọc đã áp dụng và kết quả tối thiểu của tool đi trong `functionResponse`, không có lịch sử conversation hay câu khách cũ. Không gửi catalog dump, customer identity hoặc dữ liệu DB ngoài function response tối thiểu của tool vừa chạy.
+
+Function registry giai đoạn 1 chỉ expose `search_products`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`. `capture_lead` không expose cho Gemini; ghi lead vẫn chỉ qua endpoint consent bên dưới. Backend reject unknown tool, parallel calls, JSON/kiểu sai, argument ngoài allowlist, SQL/table/column, và mọi identity do model truyền. Một lượt orchestration thực thi tối đa 2 tool và tối đa 3 Gemini provider requests; lần thứ hai chỉ được dùng cho `search_products -> get_product`. Khi final bị chặn **duy nhất** vì xưng hô sai (`WRONG_TONE`), backend được chạy đúng một lượt sửa câu trả lời với chỉ dẫn xưng hô, vẫn chỉ dùng câu hỏi hiện tại và tool data của lượt đó; retry chỉ bắt đầu khi trần ngày còn một slot dự phòng sau lượt hiện tại. Sau một `search_products` đã xác minh, backend có thể kết thúc lượt bằng câu trả lời deterministic `TOOL` cho các trường hợp an toàn: không tìm thấy đúng tên/model/slug; đúng một mẫu đang bán khi khách hỏi có hàng hay size/màu; hoặc tầm giá không có hàng và đã có phương án gần nhất kèm disclosure. Trường hợp này không dùng prose cuối của model và không đổi public response shape; nếu đã gọi provider để chọn tool thì vẫn tính một logical AI call. Khi backend phải bỏ tầm giá hoặc mở rộng tìm kiếm theo `CHAT_RULE_018`, tool gắn cờ disclosure bắt buộc; `ChatResponseGuard` từ chối final không nói rõ việc này thay vì để model che mất bộ lọc đã nới. Final do model không được suy ra “tất cả”, “chỉ có N” hoặc không có toàn kho từ tối đa ba card; chỉ terminal outcome đã hậu kiểm mới được kết luận đúng tên/model. `mode="AI"` vẫn có thể kèm câu xin lỗi/fallback an toàn khi provider, công cụ hoặc guard gặp vấp kỹ thuật; trường hợp này không đóng hội thoại và không trừ lượt. `mode="CONTACT"` nghĩa là hội thoại đã đóng, client phải khoá ô nhập và nút gửi. Setting/config/quota không khả dụng, chuyển nhân viên theo `handoffRecommended`, hai lượt lệch chủ đề liên tiếp hoặc hết lượt đều trả `CONTACT`; lỗi nội bộ và end reason chi tiết không được lộ ra storefront.
+
+`get_my_orders` và fast-path đơn đã đăng nhập chỉ chạy khi server context có `CustomerPrincipal`; customer identity không được lấy từ body, nội dung chat hoặc function arguments. Scope `latest` trả đúng một đơn; `recent` trả tối đa 5 đơn, sắp xếp theo `placedAt`, rồi `createdAt`, rồi mã đơn. Backend chỉ project `{orderNumber,status,placedAt,createdAt,totalAmount,currency}` và bản địa hóa trạng thái/tổng tiền trước khi trả khách. Khách vãng lai không tra đơn trong chat, nhận action đăng nhập và trang tra cứu đơn hiện có mà không chạm `OrderReadService`.
+
+Một logical assistant response có thể dùng 1–3 provider requests nội bộ nhưng tiêu một daily AI slot. Riêng tối đa một orchestration sửa xưng hô sau `WRONG_TONE` tiêu **thêm một** slot; chỉ được bắt đầu khi slot còn lại đủ cho lượt hiện tại và lượt sửa. Vẫn chỉ có assistant message cuối (`ai_called=true`), với `ai_retry_count=1` khi đã thử sửa, và `ai_call_count` tăng theo số orchestration đã tiêu slot. Fast-path không gọi provider giữ `ai_called=false`. Public response không lộ tool name, function payload, provider-call count, retry hay lỗi kỹ thuật.
 
 ### `POST /api/v1/chat/leads`
 
 Body có `@Valid`: `{ "conversationId": "uuid", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true }`. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
+
+### `POST /api/v1/chat/leads/decline`
+
+Body: `{ "conversationId": "uuid" }`. Chỉ hội thoại thuộc caller hiện tại hoặc hội thoại guest đang tiếp tục cùng conversation id mới được cập nhật. Thao tác chuyển `leadOfferStatus` sang `DECLINED`, không lưu PII, không tạo message và không tiêu tốn lượt chat. Gọi lại khi đã `DECLINED` là idempotent; hội thoại đã `ACCEPTED` hoặc không thuộc caller bị từ chối.
 
 ### Admin chat history (`chat.read`)
 

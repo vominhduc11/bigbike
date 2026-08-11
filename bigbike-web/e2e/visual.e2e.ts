@@ -17,7 +17,7 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator(".bb-main-banner"), // hero auto-rotates
     page.locator(".bb-fp-viewport"), // featured-products carousel
     page.locator(".bb-cart-badge"), // count varies
-    page.locator(".bb-chat-float, #sudovn-btn-wrapper"), // floating chat FAB
+    page.locator("#bb-floating-chat-trigger"), // floating chat FAB
   ];
 }
 

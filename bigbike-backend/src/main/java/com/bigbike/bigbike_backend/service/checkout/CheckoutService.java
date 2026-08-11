@@ -128,7 +128,7 @@ public class CheckoutService {
         BigDecimal discount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
         // Shipping method choice removed (owner decision 2026-06-23): online orders no longer pick a
-        // shipping method and carry no shipping fee — the shop arranges/charges delivery offline (COD).
+        // shipping method and carry no shipping fee — the shop arranges delivery offline.
         BigDecimal shippingCost = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = subtotal.subtract(discount).max(BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
@@ -191,8 +191,8 @@ public class CheckoutService {
 
     // Quick-buy removed 2026-07-15 (owner decision, reverses AUD-010): the storefront has
     // no quick-buy entry point — customers order through the cart via checkoutFromCart.
-    // GET /checkout/options removed 2026-07-15 (AUD-056): COD is the only storefront
-    // payment method (PAY_RULE_001) so there is nothing to choose — no caller remained.
+    // GET /checkout/options removed 2026-07-15 (AUD-056): COD and BANK_TRANSFER are fixed
+    // storefront methods (PAY_RULE_001), so there is no dynamic options endpoint.
 
     private <T> IdempotencyReservation reserveIdempotency(
             String flowType,

@@ -36,6 +36,10 @@ export function MobileCard({
   onSelectChange,
   selectionLabel = 'Chọn hàng',
 }) {
+  // `meta` sai kiểu (chuỗi thay vì mảng) từng làm sập nguyên màn hình qua ErrorBoundary.
+  // Bỏ qua giá trị không hợp lệ: thẻ mất phần meta, phần còn lại vẫn xem được.
+  const metaRows = Array.isArray(meta) ? meta : []
+
   function valueClass(tone) {
     if (tone === 'strong') return 'mobile-card-meta-value mobile-card-meta-value--strong'
     if (tone === 'danger') return 'mobile-card-meta-value mobile-card-meta-value--danger'
@@ -55,9 +59,9 @@ export function MobileCard({
           {status ? <div className="shrink-0">{status}</div> : null}
         </div>
       )}
-      {meta.length > 0 && (
+      {metaRows.length > 0 && (
         <div className="mobile-card-meta">
-          {meta.map((m, i) => (
+          {metaRows.map((m, i) => (
             <div key={i} className="mobile-card-meta-row">
               <span className="mobile-card-meta-label">{m.label}</span>
               <span className={valueClass(m.tone)}>{m.value ?? '—'}</span>

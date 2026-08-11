@@ -2,6 +2,8 @@
 
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { sectionHeading } from "@/lib/ui-classes";
@@ -9,8 +11,10 @@ import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd, telHref, zaloHref } from "@/lib/utils/format";
 import { resolveBankTransfer } from "@/lib/utils/orders";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Locale } from "@/i18n/locale";
-import { toHomePath, toOrderHistoryPath } from "@/lib/utils/routes";
+import { toHomePath, toOrderConfirmPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
 
 type Props = {
   orderNumber?: string;
@@ -18,6 +22,7 @@ type Props = {
   order: OrderDetail | null;
   settingsRecord: Record<string, string>;
   isLoading?: boolean;
+  hasError?: boolean;
 };
 
 /**
@@ -27,7 +32,7 @@ type Props = {
  * dựng hẳn ở client để `useTranslations` đổi đúng theo `NEXT_LOCALE` — mirror pattern
  * `OrderDetailContent`/`CheckoutClient` (xem AGENTS.md §6 — client component + next-intl).
  */
-export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord, isLoading = false }: Props) {
+export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord, isLoading = false, hasError = false }: Props) {
   const locale = useLocale() as Locale;
   const t = useTranslations("OrderConfirm");
   const tCommon = useTranslations("Common");
@@ -35,7 +40,7 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
   if (!orderNumber || !orderKey) {
     return (
       <OrderShell>
-        <ThankYouHero message={t("receivedNotice")} />
+        <OrderLookupForm />
       </OrderShell>
     );
   }
@@ -68,18 +73,73 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
           <StoreFooterNote address={storeAddress} />
         </>
       ) : (
-        <>
-          <ThankYouHero message={t("receivedNotice")} />
-          {isLoading ? (
-            <p className="mx-auto mt-3 max-w-105 text-center text-a4-content leading-6 text-muted-foreground">
-              {tCommon("loading")}
-            </p>
-          ) : (
-            <OrderLoadFallback orderNumber={orderNumber} />
-          )}
-        </>
+        hasError ? (
+          <OrderLookupError />
+        ) : (
+          <>
+            <ThankYouHero message={t("receivedNotice")} />
+            {isLoading ? (
+              <p className="mx-auto mt-3 max-w-105 text-center text-a4-content leading-6 text-muted-foreground">
+                {tCommon("loading")}
+              </p>
+            ) : <OrderLoadFallback orderNumber={orderNumber} />}
+          </>
+        )
       )}
     </OrderShell>
+  );
+}
+
+function OrderLookupForm() {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("OrderConfirm");
+  const router = useRouter();
+  const [orderNumber, setOrderNumber] = useState("");
+  const [orderKey, setOrderKey] = useState("");
+  const [error, setError] = useState("");
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const number = orderNumber.trim();
+    const key = orderKey.trim();
+    if (!number || !key) {
+      setError(t("lookupRequired"));
+      return;
+    }
+    setError("");
+    router.push(toOrderConfirmPath(number, key, locale));
+  }
+
+  return (
+    <section className="mx-auto max-w-120 border border-border bg-card p-6 sm:p-8">
+      <h1 className="font-cta text-a2-heading uppercase text-foreground">{t("lookupTitle")}</h1>
+      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("lookupDescription")}</p>
+      <form onSubmit={submit} className="mt-6 grid gap-4">
+        <div className="grid gap-1.5">
+          <Label htmlFor="order-lookup-number">{t("lookupOrderNumber")}</Label>
+          <Input id="order-lookup-number" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} autoComplete="off" />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="order-lookup-key">{t("lookupVerificationCode")}</Label>
+          <Input id="order-lookup-key" value={orderKey} onChange={(event) => setOrderKey(event.target.value)} autoComplete="off" />
+        </div>
+        {error ? <p role="alert" className="text-a5-meta text-destructive">{error}</p> : null}
+        <Button type="submit" className="w-full">{t("lookupSubmit")}</Button>
+      </form>
+      <p className="mt-4 text-center text-a5-meta text-muted-foreground">{t("lookupPrivacy")}</p>
+    </section>
+  );
+}
+
+function OrderLookupError() {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("OrderConfirm");
+  return (
+    <section className="mx-auto max-w-120 border border-state-warning bg-state-warning-bg p-6 text-center sm:p-8">
+      <h1 className="font-cta text-a2-heading uppercase text-foreground">{t("lookupFailedTitle")}</h1>
+      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("lookupFailedDescription")}</p>
+      <Button asChild className="mt-6"><Link href={toOrderLookupPath(locale)}>{t("lookupSubmit")}</Link></Button>
+    </section>
   );
 }
 

@@ -100,7 +100,7 @@ public class AdminChatService {
         Instant from = date.atStartOfDay(VN_ZONE).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
         long aiCalls = messageRepo
-                .countByAiCalledTrueAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);
+                .countAiUsesBetween(from, to);
         long conversations = conversationRepo
                 .countByStartedAtGreaterThanEqualAndStartedAtLessThan(from, to);
         long leads = leadRepo.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);

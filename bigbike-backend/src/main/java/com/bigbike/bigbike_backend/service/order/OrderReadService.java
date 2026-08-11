@@ -92,6 +92,39 @@ public class OrderReadService {
         return new PageResult<>(items, normalizedPage, normalizedSize, dbPage.getTotalElements(), dbPage.getTotalPages());
     }
 
+    /**
+     * Minimal customer-owned order projection for Bi. This method must remain
+     * separate from the account order list because chat is only allowed to
+     * expose the order number, state, placed date and total.
+     */
+    public List<CustomerOrderSummary> listCustomerOrderSummaries(UUID customerId, int size) {
+        int normalizedSize = size <= 0 ? 1 : Math.min(size, 5);
+        return orderRepo.findCustomerOrderSummaries(
+                        customerId, PageRequest.of(0, normalizedSize))
+                .stream()
+                .map(OrderReadService::toCustomerOrderSummary)
+                .toList();
+    }
+
+    private static CustomerOrderSummary toCustomerOrderSummary(Object[] row) {
+        return new CustomerOrderSummary(
+                (String) row[0],
+                (String) row[1],
+                (java.time.Instant) row[2],
+                (java.time.Instant) row[3],
+                (java.math.BigDecimal) row[4],
+                (String) row[5]);
+    }
+
+    public record CustomerOrderSummary(
+            String orderNumber,
+            String status,
+            java.time.Instant placedAt,
+            java.time.Instant createdAt,
+            java.math.BigDecimal totalAmount,
+            String currency
+    ) {}
+
     // ── Customer order detail (ownership enforced) ────────────────────────────
 
     public OrderDetailResponse getCustomerOrderDetail(UUID customerId, UUID orderId) {

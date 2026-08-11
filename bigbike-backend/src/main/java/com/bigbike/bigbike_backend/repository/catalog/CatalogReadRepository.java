@@ -69,6 +69,23 @@ public interface CatalogReadRepository {
     List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit);
 
     /**
+     * Assistant-only product discovery. Every normalized identifier token must match one of
+     * the product's Vietnamese or English name/slug fields; this is intentionally separate
+     * from the public catalog search contract. Category, brand and retail-price predicates
+     * remain database filters, while the chat service applies its final sellability checks.
+     */
+    List<Product> searchPublishedProductsForAssistant(
+            java.util.List<String> tokens,
+            String categorySlug,
+            String brandSlug,
+            Long minPrice,
+            Long maxPrice,
+            SortSpec sortSpec,
+            String locale,
+            int limit
+    );
+
+    /**
      * Admin product list (all statuses). {@code locale} = {@code "vi"} or
      * {@code "en"}; the display {@code name} falls back to Vietnamese when
      * {@code name_en} is blank (see {@code PRODUCT_RULE_002}).

@@ -1,19 +1,26 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductCsvExportQuery;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.admin.FullProductCatalogCsvExportService;
+import com.bigbike.bigbike_backend.service.admin.ProductCsvExportPlan;
+import jakarta.validation.Valid;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -32,16 +39,50 @@ public class AdminProductExportController {
     private final ClientIpResolver clientIpResolver;
 
     @GetMapping(value = "/export.csv", produces = "text/csv")
-    public ResponseEntity<StreamingResponseBody> exportFullCatalog(HttpServletRequest request) {
+    public ResponseEntity<StreamingResponseBody> exportFullCatalog(
+            @Valid @ModelAttribute ProductCsvExportQuery query,
+            HttpServletRequest request
+    ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
-        adminReportService.recordFullProductCatalogExportAudit(
-                actor.id(), clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+        ProductCsvExportPlan plan = fullProductCatalogCsvExportService.plan(query);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
         headers.setContentDisposition(ContentDisposition.attachment()
-                .filename("products_full_" + LocalDate.now().format(FILE_DATE) + ".csv").build());
+                .filename(fileName(plan)).build());
         headers.set("X-Export-Streamed", "true");
-        return ResponseEntity.ok().headers(headers).body(fullProductCatalogCsvExportService::writeTo);
+        AtomicLong rowCount = new AtomicLong();
+        AtomicBoolean completed = new AtomicBoolean();
+        StreamingResponseBody body = outputStream -> {
+            try {
+                fullProductCatalogCsvExportService.writeTo(outputStream, plan, rowCount::addAndGet);
+                completed.set(true);
+            } finally {
+                adminReportService.recordProductCatalogCsvExportAudit(
+                        actor.id(), plan, rowCount.get(), completed.get(),
+                        clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+            }
+        };
+        return ResponseEntity.ok().headers(headers).body(body);
+    }
+
+    private static String fileName(ProductCsvExportPlan plan) {
+        String slug = switch (plan.scope()) {
+            case SELECTED -> "dang-chon";
+            case ALL -> "toanbo";
+            case FILTERED -> slugify(plan.q());
+        };
+        return "sanpham_" + slug + "_" + LocalDate.now().format(FILE_DATE) + ".csv";
+    }
+
+    private static String slugify(String value) {
+        if (value == null || value.isBlank()) return "bo-loc";
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-|-$", "");
+        if (normalized.isBlank()) return "bo-loc";
+        return normalized.length() > 60 ? normalized.substring(0, 60).replaceAll("-$", "") : normalized;
     }
 }

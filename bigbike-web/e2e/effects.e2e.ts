@@ -48,7 +48,7 @@ function mobileMenuTrigger(page: Page) {
 }
 
 function floatingChatTrigger(page: Page) {
-  return page.locator("#sudovn-btn-wrapper button, button.b24-widget-button-inner-block").first();
+  return page.locator("#bb-floating-chat-trigger button, button.b24-widget-button-inner-block").first();
 }
 
 function firstVideoTrigger(page: Page) {
@@ -175,12 +175,15 @@ test.describe("Effects — desktop @1440", () => {
       return;
     }
     const mainFrameBefore = await readMainFrame(page);
-    await fab.click();
-    const chatDialog = page.getByRole("dialog").filter({ hasText: /Hotline|Zalo|Messager/i }).first();
+    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bi-launcher-ready", "true");
+    await fab.focus();
+    await fab.press("Enter");
+    const chatDialog = page.locator("[data-bi-assistant]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "floating chat open");
     await page.keyboard.press("Escape");
     await expect(chatDialog).toBeHidden();
+    await expect(fab).toBeFocused();
     await page.waitForTimeout(400);
     await expectMainFrameStable(page, mainFrameBefore, "floating chat closed");
     expect(await isScrollLocked(page), "scroll lock stuck after chat close").toBeFalsy();
@@ -352,12 +355,15 @@ test.describe("Effects — mobile @390", () => {
     }
 
     const mainFrameBefore = await readMainFrame(page);
-    await fab.click();
-    const chatDialog = page.getByRole("dialog").filter({ hasText: /Hotline|Zalo|Messager/i }).first();
+    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bi-launcher-ready", "true");
+    await fab.focus();
+    await fab.press("Enter");
+    const chatDialog = page.locator("[data-bi-assistant]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "mobile floating chat open");
     await page.keyboard.press("Escape");
     await expect(chatDialog).toBeHidden();
+    await expect(fab).toBeFocused();
     await page.waitForTimeout(400);
     await expectMainFrameStable(page, mainFrameBefore, "mobile floating chat closed");
     expect(await isScrollLocked(page), "scroll lock stuck after mobile chat close").toBeFalsy();

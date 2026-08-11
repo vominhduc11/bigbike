@@ -27,6 +27,17 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     org.springframework.data.domain.Page<OrderEntity> findByCustomerIdPaged(
             @Param("customerId") UUID customerId, org.springframework.data.domain.Pageable pageable);
 
+    /**
+     * Chat-only projection. It deliberately avoids line items, addresses,
+     * payment rows and the full order entity so Bi cannot accidentally receive
+     * customer-sensitive order detail.
+     */
+    @Query("SELECT o.orderNumber, o.status, o.placedAt, o.createdAt, o.totalAmount, o.currency "
+            + "FROM OrderEntity o WHERE o.customerId = :customerId "
+            + "ORDER BY o.placedAt DESC NULLS LAST, o.createdAt DESC, o.orderNumber DESC")
+    List<Object[]> findCustomerOrderSummaries(
+            @Param("customerId") UUID customerId, org.springframework.data.domain.Pageable pageable);
+
     List<OrderEntity> findByStatus(String status);
 
     List<OrderEntity> findByCustomerPhone(String customerPhone);

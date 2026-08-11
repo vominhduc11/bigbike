@@ -18,6 +18,29 @@ function DetailValue({ label, children }) {
   )
 }
 
+function sourceLabel(source, t) {
+  const labels = {
+    AI: t('chatAdmin.detail.sources.ai'),
+    TEMPLATE: t('chatAdmin.detail.sources.template'),
+    TOOL: t('chatAdmin.detail.sources.data'),
+    CONTACT_FALLBACK: t('chatAdmin.detail.sources.staff'),
+  }
+  return labels[source] || t('common.unknown')
+}
+
+function endedReasonLabel(reason, t) {
+  if (!reason) return t('chatAdmin.detail.active')
+  const labels = {
+    TURN_LIMIT: t('chatAdmin.detail.endStates.turnLimit'),
+    OFF_TOPIC: t('chatAdmin.detail.endStates.offTopic'),
+    HANDOFF: t('chatAdmin.detail.endStates.handoff'),
+    AI_UNAVAILABLE: t('chatAdmin.detail.endStates.unavailable'),
+    DAILY_LIMIT_REACHED: t('chatAdmin.detail.endStates.dailyLimit'),
+    DISABLED: t('chatAdmin.detail.endStates.disabled'),
+  }
+  return labels[reason] || t('common.unknown')
+}
+
 export function ChatConversationDetailScreen({ conversationId, navigate }) {
   const { t } = useTranslation()
   const detailQuery = useQuery({
@@ -36,7 +59,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
         <StatePanel
           tone="danger"
           title={t('chatAdmin.detail.loadError')}
-          description={detailQuery.error?.message || t('chatAdmin.detail.notFound')}
+          description={t('chatAdmin.detail.notFound')}
           actionLabel={t('common.back')}
           onAction={() => navigate('/admin/chat')}
         />
@@ -69,7 +92,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                         <time dateTime={message.createdAt}>{formatDateTime(message.createdAt)}</time>
                       </header>
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content || t('common.unknown')}</p>
-                      {!isUser ? <p className="mt-2 text-xs text-muted-foreground">{t('chatAdmin.detail.source')}: {message.source || t('common.unknown')}{message.aiCalled ? ` · ${t('chatAdmin.detail.usedAi')}` : ''}</p> : null}
+                      {!isUser ? <p className="mt-2 text-xs text-muted-foreground">{t('chatAdmin.detail.source')}: {sourceLabel(message.source, t)}{message.aiCalled ? ` · ${t('chatAdmin.detail.usedAi')}` : ''}</p> : null}
                     </article>
                     {isUser ? <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground" aria-hidden="true"><Icon size={17} /></span> : null}
                   </li>
@@ -87,7 +110,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
               <DetailValue label={t('chatAdmin.columns.aiCalls')}>{conversation.aiCallCount}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.startedAt')}>{formatDateTime(conversation.startedAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.lastMessage')}>{formatDateTime(conversation.lastMessageAt)}</DetailValue>
-              <DetailValue label={t('chatAdmin.detail.endedReason')}>{conversation.endedReason || t('chatAdmin.detail.active')}</DetailValue>
+              <DetailValue label={t('chatAdmin.detail.endedReason')}>{endedReasonLabel(conversation.endedReason, t)}</DetailValue>
             </dl>
           </SectionCard>
 

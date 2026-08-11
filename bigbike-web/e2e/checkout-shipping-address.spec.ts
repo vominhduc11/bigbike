@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
  * bộ e2e hiện có: nếu form không render (môi trường chưa dựng đủ stack) thì SKIP nhẹ
  * nhàng thay vì fail.
  *
- * Yêu cầu môi trường: web dev server chạy ở http://localhost:3001 (xem playwright.config).
+ * Yêu cầu môi trường: BigBike web chạy ở http://localhost:3000 (xem playwright.config).
  */
 
 // Khớp cả tiếng Việt lẫn tiếng Anh để không phụ thuộc locale mặc định.

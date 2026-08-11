@@ -14,5 +14,6 @@ public record ChatMessageResponse(
         List<ChatProductCardResponse> products,
         boolean handoffRecommended,
         boolean leadPrompt,
+        List<ChatActionResponse> actions,
         ChatContactResponse contacts
 ) {}

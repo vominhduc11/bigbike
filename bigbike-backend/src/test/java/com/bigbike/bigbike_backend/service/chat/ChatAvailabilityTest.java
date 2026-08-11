@@ -28,7 +28,7 @@ class ChatAvailabilityTest {
         ChatService service = service(chatClient, 60, 0);
 
         assertThat(service.availability("vi").mode()).isEqualTo("CONTACT");
-        assertThat(service.availability("vi").reason()).isEqualTo("NOT_CONFIGURED");
+        assertThat(service.availability("vi").reason()).isEqualTo("CONTACT");
 
         AiReviewModerationClient reviewClient =
                 new AiReviewModerationClient("", "gemini-2.5-flash", 20L);
@@ -44,7 +44,19 @@ class ChatAvailabilityTest {
         ChatService service = service(chatClient, 60, 60);
 
         assertThat(service.availability("vi").mode()).isEqualTo("CONTACT");
-        assertThat(service.availability("vi").reason()).isEqualTo("DAILY_LIMIT_REACHED");
+        assertThat(service.availability("vi").reason()).isEqualTo("CONTACT");
+    }
+
+    @Test
+    @DisplayName("an unsafe Vietnamese configured greeting falls back to Bi's em–anh/chị greeting")
+    void unsafeGreetingFallsBackToTheApprovedTone() {
+        AiChatClient chatClient = mock(AiChatClient.class);
+        when(chatClient.isConfigured()).thenReturn(true);
+        ChatService service = service(chatClient, 60, 0);
+
+        assertThat(service.availability("vi").greeting())
+                .isEqualTo(ChatAssistantSettings.defaultGreeting("vi"))
+                .contains("Em", "anh/chị");
     }
 
     private static ChatService service(AiChatClient client, int limit, long spent) {
@@ -55,7 +67,7 @@ class ChatAvailabilityTest {
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
                 true, limit, "Xin chào", List.of("A", "B", "C"), CONTACTS,
                 "", "", ""));
-        when(messages.countByAiCalledTrueAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        when(messages.countAiUsesBetween(
                 org.mockito.ArgumentMatchers.any(Instant.class),
                 org.mockito.ArgumentMatchers.any(Instant.class))).thenReturn(spent);
         return new ChatService(
@@ -64,7 +76,9 @@ class ChatAvailabilityTest {
                 leads,
                 settings,
                 mock(ChatToolService.class),
+                new ChatToolRegistry(),
                 client,
+                new ChatResponseGuard(),
                 mock(AdminChatWsService.class));
     }
 }

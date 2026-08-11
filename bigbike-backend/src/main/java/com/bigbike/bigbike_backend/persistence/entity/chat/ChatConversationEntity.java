@@ -14,6 +14,8 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "chat_conversations")
@@ -43,6 +45,11 @@ public class ChatConversationEntity {
 
     @Column(name = "lead_offer_status", nullable = false, length = 16)
     private String leadOfferStatus = "NONE";
+
+    /** Server-only, non-PII catalog/order follow-up context; see DATA_CONTRACT.md. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "context_json", columnDefinition = "jsonb")
+    private String contextJson;
 
     @Column(name = "ended_reason", length = 32)
     private String endedReason;

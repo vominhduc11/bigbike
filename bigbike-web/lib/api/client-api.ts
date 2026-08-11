@@ -137,6 +137,12 @@ export type ChatAvailability = {
   contacts: ChatContact;
 };
 
+export type ChatActionType = "LOGIN" | "ORDER_HISTORY" | "ORDER_LOOKUP";
+
+export type ChatAction = {
+  type: ChatActionType;
+};
+
 export type ChatProductCard = {
   slug: string;
   name: string;
@@ -158,11 +164,123 @@ export type ChatMessageResult = {
   products: ChatProductCard[];
   handoffRecommended: boolean;
   leadPrompt: boolean;
+  actions: ChatAction[];
   contacts: ChatContact;
 };
 
+const CHAT_ACTION_TYPES = new Set<ChatActionType>(["LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP"]);
+const CHAT_FORBIDDEN_TEXT = /(?:\b(?:api|endpoint|database|session|quota|gemini|json|tool|sql|function\s*call|functioncall|stack\s*trace|exception|error(?:\s*(?:code|id|message))?)\b|\berror\s*[:#])/i;
+const CHAT_RAW_CODES = /\b(?:CANCELLED|COMPLETED|PENDING|PROCESSING|IN_STOCK|OUT_OF_STOCK|AI_UNAVAILABLE|CONTACT_FALLBACK|NO_MATCH_IN_REQUESTED_PRICE_RANGE|SEARCH_WAS_BROADENED)\b/;
+const CHAT_RAW_CURRENCY = /(?:\b\d[\d.,]*\s*(?:VND|VNĐ)\b|\b(?:VND|VNĐ)\b|\b\d[\d.,]*[.,]\d{1,2}\s*₫)/i;
+const CHAT_URL = /(?:https?:\/\/|www\.|\/(?:product|san-pham)\/)/i;
+const CHAT_VIETNAMESE_TEXT = /[à-ỹÀ-ỸđĐ]/;
+
+function isSafeChatDisplayText(value: unknown, lang: "vi" | "en"): value is string {
+  if (typeof value !== "string" || !value.trim()) return false;
+  const text = value.trim();
+  if (CHAT_FORBIDDEN_TEXT.test(text)
+    || CHAT_RAW_CODES.test(text)
+    || CHAT_RAW_CURRENCY.test(text)
+    || CHAT_URL.test(text)) return false;
+  return lang !== "en" || !CHAT_VIETNAMESE_TEXT.test(text);
+}
+
+function normalizeChatContacts(value: unknown): ChatContact {
+  const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const text = (key: string) => typeof source[key] === "string" ? source[key] as string : undefined;
+  return {
+    hotline: text("hotline"),
+    zaloUrl: text("zaloUrl"),
+    messengerUrl: text("messengerUrl"),
+    zaloDisplay: text("zaloDisplay"),
+    messengerDisplay: text("messengerDisplay"),
+  };
+}
+
+function normalizeChatActions(value: unknown): ChatAction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => item && typeof item === "object" ? (item as Record<string, unknown>).type : null)
+    .filter((type): type is ChatActionType => typeof type === "string" && CHAT_ACTION_TYPES.has(type as ChatActionType))
+    .map((type) => ({ type }))
+    .slice(0, 2);
+}
+
+function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; unsafe: boolean } {
+  if (value == null) return { products: [], unsafe: false };
+  if (!Array.isArray(value)) return { products: [], unsafe: true };
+
+  const asNumber = (raw: unknown): number | null => {
+    const parsed = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const products: ChatProductCard[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") return { products: [], unsafe: true };
+    const source = item as Record<string, unknown>;
+    const retailPrice = asNumber(source.retailPrice);
+    const saleProvided = source.salePrice !== null && source.salePrice !== undefined && source.salePrice !== "";
+    const salePrice = saleProvided ? asNumber(source.salePrice) : null;
+    const slug = typeof source.slug === "string" ? source.slug.trim() : "";
+    const name = typeof source.name === "string" ? source.name.trim() : "";
+    const valid = slug.length > 0
+      && name.length > 0
+      && retailPrice !== null && retailPrice > 0
+      && source.currency === "VND"
+      && source.stockState === "IN_STOCK"
+      && (!saleProvided || (salePrice !== null && salePrice > 0 && salePrice < retailPrice));
+    if (!valid) return { products: [], unsafe: true };
+    products.push({
+      slug,
+      name,
+      imageUrl: typeof source.imageUrl === "string" ? source.imageUrl : null,
+      retailPrice,
+      salePrice,
+      currency: "VND",
+      stockState: "IN_STOCK",
+    });
+  }
+  return { products: products.slice(0, 3), unsafe: value.length > 3 };
+}
+
+function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMessageResult {
+  const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const answer = typeof source.answer === "string" ? source.answer.trim() : "";
+  const safeAnswer = Boolean(answer && isSafeChatDisplayText(answer, lang));
+  const normalizedProducts = normalizeChatProducts(source.products);
+  const unsafe = Boolean(answer && !safeAnswer) || normalizedProducts.unsafe;
+  const mode = source.mode === "AI" && safeAnswer && !unsafe ? "AI" : "CONTACT";
+  return {
+    conversationId: typeof source.conversationId === "string" ? source.conversationId : null,
+    mode,
+    reason: mode,
+    answer: unsafe ? null : answer || null,
+    turnCount: typeof source.turnCount === "number" ? source.turnCount : 0,
+    maxTurns: typeof source.maxTurns === "number" ? source.maxTurns : 12,
+    remainingTurns: typeof source.remainingTurns === "number" ? source.remainingTurns : 0,
+    products: unsafe ? [] : normalizedProducts.products,
+    handoffRecommended: mode === "CONTACT" || source.handoffRecommended === true,
+    leadPrompt: !unsafe && source.leadPrompt === true,
+    actions: unsafe || !answer ? [] : normalizeChatActions(source.actions),
+    contacts: normalizeChatContacts(source.contacts),
+  };
+}
+
 export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailability> {
-  return clientRequest("GET", `/api/v1/chat/availability?lang=${lang}`);
+  return clientRequest<ChatAvailability>("GET", `/api/v1/chat/availability?lang=${lang}`).then((value) => {
+    const source = value && typeof value === "object" ? value : {} as ChatAvailability;
+    const quickPrompts = Array.isArray(source.quickPrompts)
+      ? source.quickPrompts.filter((prompt): prompt is string => isSafeChatDisplayText(prompt, lang)).slice(0, 4)
+      : [];
+    return {
+      ...source,
+      mode: source.mode === "AI" ? "AI" : "CONTACT",
+      greeting: isSafeChatDisplayText(source.greeting, lang) ? source.greeting : null,
+      quickPrompts,
+      maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 12,
+      contacts: normalizeChatContacts(source.contacts),
+    };
+  });
 }
 
 export function sendChatMessage(
@@ -170,11 +288,11 @@ export function sendChatMessage(
   lang: "vi" | "en",
   conversationId?: string,
 ): Promise<ChatMessageResult> {
-  return clientRequest("POST", "/api/v1/chat/messages", {
+  return clientRequest<unknown>("POST", "/api/v1/chat/messages", {
     conversationId: conversationId || null,
     message,
     lang,
-  });
+  }).then((value) => normalizeChatMessageResult(value, lang));
 }
 
 export function captureChatLead(input: {
@@ -184,6 +302,10 @@ export function captureChatLead(input: {
   note?: string;
 }): Promise<{ captured: boolean }> {
   return clientRequest("POST", "/api/v1/chat/leads", { ...input, consent: true });
+}
+
+export function declineChatLead(conversationId: string): Promise<{ declined: boolean }> {
+  return clientRequest("POST", "/api/v1/chat/leads/decline", { conversationId });
 }
 
 export function fetchCart(): Promise<Cart> {

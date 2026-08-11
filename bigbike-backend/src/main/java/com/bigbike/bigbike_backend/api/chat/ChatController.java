@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.api.chat;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatAvailabilityResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadRequest;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineRequest;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
@@ -56,6 +58,14 @@ public class ChatController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(chatService.captureLead(body, currentCustomerId()), request);
+    }
+
+    @PostMapping("/leads/decline")
+    public ApiDataResponse<ChatLeadDeclineResponse> declineLead(
+            @Valid @RequestBody ChatLeadDeclineRequest body,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(chatService.declineLead(body.conversationId(), currentCustomerId()), request);
     }
 
     private static UUID currentCustomerId() {

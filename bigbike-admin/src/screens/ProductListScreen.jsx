@@ -6,6 +6,7 @@ import { useHasPermission } from '@/lib/auth'
 import { Download, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
+import { ProductExportDialog } from '@/components/ProductExportDialog'
 import { ImportProductsDialog } from '@/components/ImportProductsDialog'
 import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
@@ -27,6 +28,7 @@ import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
+import { useProductExportPreferences } from '../lib/productExport'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { queryKeys } from '../lib/queryKeys'
 import { Alert } from '@/components/ui/alert'
@@ -41,7 +43,7 @@ import { PublishChecklistModal } from './product-detail/Modals'
 
 const CATEGORY_FILTER_INDENT_CLASSES = ['ps-0', 'ps-4', 'ps-8', 'ps-12', 'ps-16', 'ps-20', 'ps-24', 'ps-28']
 
-export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
+export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUserId }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
   const canExport = hasPermission('reports.export')
@@ -62,7 +64,9 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [importFile, setImportFile] = useState(null)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const importFileInputRef = useRef(null)
+  const { preferences: exportPreferences, updatePreferences: updateExportPreferences } = useProductExportPreferences(adminUserId)
 
   function handleImportFileChange(e) {
     const picked = e.target.files?.[0]
@@ -310,6 +314,31 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
   }, [])
 
   const totalItems = pagination?.totalItems ?? items.length
+
+  const handleProductCsvExport = useCallback(async ({ scope, preset, columns, includeDraft, includeTrash }) => {
+    const exportOptions = {
+      scope,
+      preset,
+      columns,
+      includeDraft,
+      includeTrash,
+    }
+    if (scope !== 'ALL') {
+      exportOptions.q = query.search || undefined
+      exportOptions.categoryId = query.categoryId || undefined
+      exportOptions.brandId = query.brandId || undefined
+      exportOptions.publishStatus = query.publishStatus || 'ALL'
+      exportOptions.stockState = query.stockState || 'ALL'
+      if (scope === 'SELECTED') exportOptions.ids = [...selected]
+    }
+    try {
+      await exportFullProductCatalogCsv(exportOptions)
+    } catch {
+      throw new Error(t('export.error'))
+    }
+    setExportDialogOpen(false)
+    toast.success(t('export.success'))
+  }, [query, selected, t])
 
   const runBulk = useCallback(async ({ confirmKey, titleKey, confirmLabel, variant, action, successKey }) => {
     const ids = [...selected]
@@ -776,15 +805,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
           <div className="flex flex-wrap items-center gap-2">
           <ExportButton
             disabled={!canExport}
-            title={!canExport ? t('products.requirePermission') : undefined}
-            onExport={async () => {
-              try {
-                await exportFullProductCatalogCsv()
-              } catch {
-                throw new Error(t('export.error'))
-              }
-              toast.success(t('export.success'))
-            }}
+            title={!canExport ? t('products.requireExportPermission') : undefined}
+            onExport={async () => setExportDialogOpen(true)}
           >
             {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
           </ExportButton>
@@ -814,6 +836,17 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog }) {
           </Button>
           </div>
         }
+      />
+
+      <ProductExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        query={query}
+        totalItems={totalItems}
+        selectedIds={[...selected]}
+        preferences={exportPreferences}
+        onPreferencesChange={updateExportPreferences}
+        onExport={handleProductCsvExport}
       />
 
       <ImportProductsDialog

@@ -16,7 +16,7 @@ const argv = process.argv.slice(2);
 const TAG = (argv.find((a) => a.startsWith("--tag=")) || "--tag=before").split("=")[1];
 const OUT = join(__dirname, "out", "mobile", `auth-${TAG}`);
 mkdirSync(OUT, { recursive: true });
-const BASE = process.env.BB_BASE || "http://localhost:3001";
+const BASE = process.env.BB_BASE || "http://localhost:3000";
 const [VW, VH] = (process.env.BB_VP || "390x844").split("x").map(Number);
 const EMAIL = process.env.BB_EMAIL || "duc237022@gmail.com";
 const PASS = process.env.BB_PASS || "12345678";

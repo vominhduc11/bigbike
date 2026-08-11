@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProductListScreen } from './ProductListScreen'
 
@@ -66,7 +66,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 }))
 
 vi.mock('../components/AdminTable', () => ({
-  AdminTable: ({ rows, columns, mobileCard }) => {
+  AdminTable: ({ rows, columns, mobileCard, selectable, onSelectionChange }) => {
     const row = rows[0]
     if (!row) return <div data-testid="product-table" />
     const actionColumn = columns.find((column) => column.key === 'actions')
@@ -74,6 +74,11 @@ vi.mock('../components/AdminTable', () => ({
     const card = mobileCard(row)
     return (
       <div data-testid="product-table">
+        {selectable ? (
+          <button type="button" data-testid="select-first-product" onClick={() => onSelectionChange([row.id])}>
+            select first
+          </button>
+        ) : null}
         <div data-testid="desktop-cells">
           {dataColumns.map((column) => (
             <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
@@ -115,7 +120,7 @@ function renderScreen(canUpdate = true) {
   const navigate = vi.fn()
   render(
     <QueryClientProvider client={client}>
-      <ProductListScreen navigate={navigate} canUpdate={canUpdate} />
+      <ProductListScreen navigate={navigate} canUpdate={canUpdate} adminUserId="admin-1" />
     </QueryClientProvider>,
   )
   return { navigate }
@@ -135,6 +140,50 @@ beforeEach(() => {
 })
 
 describe('ProductListScreen', () => {
+  it('mở hộp thoại và mặc định chọn xuất theo bộ lọc đang xem', async () => {
+    renderScreen()
+
+    await screen.findByTestId('desktop-actions')
+    fireEvent.click(await screen.findByRole('button', { name: 'common.exportCsv' }))
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ })).toBeChecked()
+    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeSelectedEmpty/ })).toBeDisabled()
+    expect(mocks.exportFullProductCatalogCsv).not.toHaveBeenCalled()
+  })
+
+  it('gọi API kèm bộ lọc màn hình và cho phép chọn dòng sau khi tick', async () => {
+    window.history.replaceState({}, '', '/admin/products?search=AGV&publishStatus=DRAFT&stockState=OUT_OF_STOCK')
+    renderScreen()
+
+    await screen.findByTestId('select-first-product')
+    fireEvent.click(screen.getByTestId('select-first-product'))
+    fireEvent.click(screen.getByRole('button', { name: 'common.exportCsv' }))
+    await screen.findByRole('dialog')
+    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('radio', { name: /products\.exportDialog\.scopeSelected/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'products.exportDialog.confirm' }))
+
+    await waitFor(() => expect(mocks.exportFullProductCatalogCsv).toHaveBeenCalledWith(expect.objectContaining({
+      scope: 'SELECTED',
+      q: 'AGV',
+      publishStatus: 'DRAFT',
+      stockState: 'OUT_OF_STOCK',
+      ids: ['product-1'],
+      preset: 'PRICING',
+    })))
+  })
+
+  it('vô hiệu hoá nút xuất và giải thích khi thiếu quyền reports.export', async () => {
+    mocks.canExport = false
+    renderScreen()
+
+    const exportButton = await screen.findByRole('button', { name: 'common.exportCsv' })
+    expect(exportButton).toBeDisabled()
+    expect(exportButton).toHaveAttribute('title', 'products.requireExportPermission')
+  })
+
   it('dùng hành động Xem ở chế độ chỉ đọc và hiển thị rõ dữ liệu chưa phân loại', async () => {
     renderScreen(false)
 

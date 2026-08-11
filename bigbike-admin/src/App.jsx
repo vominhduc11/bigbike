@@ -437,7 +437,7 @@ function AdminApp() {
     case 'dashboard':
       screen = <DashboardScreen navigate={navigate} />; break
     case 'products-list':
-      screen = <ProductListScreen navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
+      screen = <ProductListScreen navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} adminUserId={authState.user?.id} />; break
     case 'product-create':
       screen = <ProductDetailScreen key="product-create" productId={null} isCreate navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'product-detail':

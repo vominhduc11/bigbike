@@ -8,7 +8,13 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductCsvExportQuery;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.repository.catalog.ProductFilterSpecifications;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -24,13 +30,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.LongConsumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,26 +59,220 @@ public class FullProductCatalogCsvExportService {
             "image_id", "image_url", "image_alt", "image_width", "image_height", "image_mime_type", "retail_price", "sale_price", "currency", "stock_state", "stock_quantity", "manage_stock", "backorders", "length_cm", "width_cm", "height_cm", "available", "discount_percent_override", "publish_status", "homepage_block", "homepage_order", "rating", "rating_count", "pdp_shipping_line", "pdp_return_line", "origin_brand_country_vi", "origin_brand_country_en", "size_guide_vi", "size_guide_en", "suitability_advisory_vi", "suitability_advisory_en", "specifications_vi", "specifications_en", "spec_stats_vi", "spec_stats_en", "trust_badges_vi", "trust_badges_en", "quick_answer_summary_vi", "quick_answer_summary_en", "gender", "seo_title_vi", "seo_title_en", "seo_description_vi", "seo_description_en", "seo_canonical_url", "seo_og_image_id", "seo_og_image_url", "seo_og_image_alt", "seo_og_image_width", "seo_og_image_height", "seo_og_image_mime_type", "created_at", "updated_at", "version", "description_blocks_json", "suitability_section_json", "size_guide_section_json", "faqs_json", "commitments_json", "highlights_json", "gallery_json", "videos_json", "variants_json", "related_products_json", "accessory_products_json"
     );
 
+    private static final Set<String> PRICING_COLUMNS = Set.of(
+            "sku", "name_vi", "category_names_vi", "brand_name", "retail_price", "sale_price",
+            "currency", "stock_state", "stock_quantity", "available", "publish_status");
+    private static final Set<String> CONTENT_SEO_COLUMNS = Set.of(
+            "sku", "name_vi", "name_en", "slug", "slug_en", "short_description_vi",
+            "short_description_en", "seo_title_vi", "seo_title_en", "seo_description_vi",
+            "seo_description_en", "seo_canonical_url");
+    private static final Set<String> MEDIA_COLUMNS = Set.of(
+            "sku", "name_vi", "image_url", "image_alt", "gallery_json", "videos_json");
+    private static final List<String> COLUMN_GROUP_ORDER = List.of(
+            "BASIC", "CLASSIFICATION", "PRICING_STOCK", "CONTENT", "SEO", "MEDIA_VIDEO",
+            "VARIANTS", "RELATED_PRODUCTS", "DISPLAY_RATING");
+    private static final Map<ProductCsvExportPreset, Set<String>> PRESET_COLUMNS = Map.of(
+            ProductCsvExportPreset.PRICING, PRICING_COLUMNS,
+            ProductCsvExportPreset.CONTENT_SEO, CONTENT_SEO_COLUMNS,
+            ProductCsvExportPreset.MEDIA, MEDIA_COLUMNS,
+            ProductCsvExportPreset.FULL, Set.copyOf(HEADERS));
+    private static final Map<String, String> COLUMN_GROUPS = columnGroups();
+
     private static final ObjectMapper JSON = JsonMapper.builder().findAndAddModules().build();
     private final ProductJpaRepository productRepository;
     private final EntityManager entityManager;
+    private final CategoryJpaRepository categoryRepository;
 
     @Transactional(readOnly = true)
-    public void writeTo(OutputStream outputStream) throws IOException {
+    public ProductCsvExportPlan plan(ProductCsvExportQuery query) {
+        ProductCsvExportScope scope = parseScope(query.getScope());
+        ProductCsvExportPreset preset = parsePreset(query.getPreset());
+        List<String> columns = resolveColumns(preset, query.getColumns(), query.getColumnGroups());
+
+        if (scope == ProductCsvExportScope.ALL) {
+            return new ProductCsvExportPlan(
+                    scope, null, null, null, null,
+                    EnumSet.allOf(PublishStatus.class), Set.of(), List.of(),
+                    true, true, preset, columns, resolveGroups(columns));
+        }
+
+        List<String> selectedIds = parseIds(query.getIds(), scope);
+        String publishStatus = blankToNull(query.getPublishStatus());
+        Set<PublishStatus> statuses = resolveStatuses(publishStatus, query.isIncludeDraft(), query.isIncludeTrash());
+        ProductStockState stockState = resolveStockState(query.getStockState());
+        String categoryId = blankToNull(query.getCategoryId());
+        Set<String> categoryIds = categoryId == null
+                ? Set.of()
+                : ProductFilterSpecifications.resolveCategoryIds(categoryId, categoryRepository.findAll());
+
+        return new ProductCsvExportPlan(
+                scope,
+                blankToNull(query.getQ()),
+                categoryId,
+                blankToNull(query.getBrandId()),
+                stockState,
+                statuses,
+                categoryIds,
+                selectedIds,
+                statuses.contains(PublishStatus.DRAFT),
+                statuses.contains(PublishStatus.TRASH),
+                preset,
+                columns,
+                resolveGroups(columns));
+    }
+
+    @Transactional(readOnly = true)
+    public void writeTo(OutputStream outputStream, ProductCsvExportPlan plan, LongConsumer rowWritten)
+            throws IOException {
+        Specification<ProductEntity> specification = ProductFilterSpecifications.build(
+                plan.q(),
+                plan.publishStatuses(),
+                false,
+                plan.stockState() == null ? null : plan.stockState().name(),
+                plan.brandId(),
+                plan.categoryIds(),
+                null);
+        if (plan.scope() == ProductCsvExportScope.SELECTED) {
+            specification = specification.and((root, query, cb) -> root.get("id").in(plan.selectedIds()));
+        }
         try (Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
              CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
             writer.write('\uFEFF');
-            printer.printRecord(HEADERS);
+            printer.printRecord(plan.columns());
             String afterId = null;
             while (true) {
-                List<ProductEntity> products = productRepository.findForFullCsvExportAfterId(afterId, PageRequest.of(0, PAGE_SIZE));
+                List<ProductEntity> products = productRepository.findForCsvAfterId(
+                        specification, afterId, PageRequest.of(0, PAGE_SIZE));
                 if (products.isEmpty()) break;
-                for (ProductEntity product : products) printer.printRecord(row(product));
+                for (ProductEntity product : products) {
+                    List<String> fullRow = row(product);
+                    printer.printRecord(plan.columns().stream()
+                            .map(header -> fullRow.get(HEADERS.indexOf(header)))
+                            .toList());
+                    rowWritten.accept(1L);
+                }
                 afterId = products.get(products.size() - 1).getId();
                 entityManager.clear();
             }
             printer.flush();
         }
+    }
+
+    private static ProductCsvExportScope parseScope(String value) {
+        try {
+            return ProductCsvExportScope.valueOf(blankToDefault(value, ProductCsvExportScope.FILTERED.name()));
+        } catch (IllegalArgumentException exception) {
+            throw ValidationException.fromField("scope", "INVALID_SCOPE", "Unknown export scope: " + value);
+        }
+    }
+
+    private static ProductCsvExportPreset parsePreset(String value) {
+        try {
+            return ProductCsvExportPreset.valueOf(blankToDefault(value, ProductCsvExportPreset.PRICING.name()));
+        } catch (IllegalArgumentException exception) {
+            throw ValidationException.fromField("preset", "INVALID_PRESET", "Unknown export preset: " + value);
+        }
+    }
+
+    private static List<String> parseIds(String rawIds, ProductCsvExportScope scope) {
+        if (scope != ProductCsvExportScope.SELECTED) return List.of();
+        if (rawIds == null || rawIds.isBlank()) {
+            throw ValidationException.fromField("ids", "REQUIRED_FOR_SELECTED", "ids is required for SELECTED scope.");
+        }
+        LinkedHashSet<String> ids = Arrays.stream(rawIds.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (ids.isEmpty()) {
+            throw ValidationException.fromField("ids", "REQUIRED_FOR_SELECTED", "ids is required for SELECTED scope.");
+        }
+        if (ids.size() > 200) {
+            throw ValidationException.fromField(
+                    "ids", "MAX_SELECTED_IDS", "SELECTED scope accepts at most 200 unique product ids; use FILTERED instead.");
+        }
+        return List.copyOf(ids);
+    }
+
+    private static Set<PublishStatus> resolveStatuses(String publishStatus, boolean includeDraft, boolean includeTrash) {
+        if (publishStatus != null && !"ALL".equalsIgnoreCase(publishStatus)) {
+            try {
+                return EnumSet.of(PublishStatus.valueOf(publishStatus.toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException exception) {
+                throw ValidationException.fromField(
+                        "publishStatus", "INVALID_PUBLISH_STATUS", "Unknown publish status: " + publishStatus);
+            }
+        }
+        EnumSet<PublishStatus> statuses = EnumSet.of(PublishStatus.PUBLISHED);
+        if (includeDraft) statuses.add(PublishStatus.DRAFT);
+        if (includeTrash) statuses.add(PublishStatus.TRASH);
+        return statuses;
+    }
+
+    private static ProductStockState resolveStockState(String value) {
+        if (value == null || value.isBlank() || "ALL".equalsIgnoreCase(value)) return null;
+        try {
+            return ProductStockState.valueOf(value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw ValidationException.fromField(
+                    "stockState", "INVALID_STOCK_STATE", "Unknown stock state: " + value);
+        }
+    }
+
+    private static List<String> resolveColumns(ProductCsvExportPreset preset, String rawColumns, String rawGroups) {
+        Set<String> requested = new LinkedHashSet<>();
+        if (rawColumns == null || rawColumns.isBlank()) {
+            if (rawGroups == null || rawGroups.isBlank()) {
+                requested.addAll(PRESET_COLUMNS.get(preset));
+            } else {
+                Set<String> groups = Arrays.stream(rawGroups.split(","))
+                        .map(String::trim)
+                        .map(value -> value.toUpperCase(Locale.ROOT))
+                        .filter(COLUMN_GROUP_ORDER::contains)
+                        .collect(java.util.stream.Collectors.toSet());
+                HEADERS.stream()
+                        .filter(header -> groups.contains(COLUMN_GROUPS.get(header)))
+                        .forEach(requested::add);
+            }
+        } else {
+            for (String column : rawColumns.split(",")) {
+                String normalized = column.trim();
+                if (HEADERS.contains(normalized)) requested.add(normalized);
+            }
+        }
+        requested.add("sku");
+        return HEADERS.stream().filter(requested::contains).toList();
+    }
+
+    private static List<String> resolveGroups(Collection<String> columns) {
+        return COLUMN_GROUP_ORDER.stream()
+                .filter(group -> columns.stream().anyMatch(column -> group.equals(COLUMN_GROUPS.get(column))))
+                .toList();
+    }
+
+    private static Map<String, String> columnGroups() {
+        Map<String, String> groups = new HashMap<>();
+        addGroup(groups, "BASIC", "id", "legacy_id", "sku", "slug", "slug_en", "name_vi", "name_en", "created_at", "updated_at", "version");
+        addGroup(groups, "CLASSIFICATION", "category_ids", "category_slugs", "category_names_vi", "category_names_en", "brand_id", "brand_slug", "brand_name", "gender");
+        addGroup(groups, "PRICING_STOCK", "retail_price", "sale_price", "currency", "stock_state", "stock_quantity", "manage_stock", "backorders", "length_cm", "width_cm", "height_cm", "available", "discount_percent_override");
+        addGroup(groups, "CONTENT", "short_description_vi", "short_description_en", "description_vi", "description_en", "pdp_shipping_line", "pdp_return_line", "origin_brand_country_vi", "origin_brand_country_en", "size_guide_vi", "size_guide_en", "suitability_advisory_vi", "suitability_advisory_en", "specifications_vi", "specifications_en", "spec_stats_vi", "spec_stats_en", "trust_badges_vi", "trust_badges_en", "quick_answer_summary_vi", "quick_answer_summary_en", "description_blocks_json", "suitability_section_json", "size_guide_section_json", "faqs_json", "commitments_json", "highlights_json");
+        addGroup(groups, "SEO", "seo_title_vi", "seo_title_en", "seo_description_vi", "seo_description_en", "seo_canonical_url", "seo_og_image_id", "seo_og_image_url", "seo_og_image_alt", "seo_og_image_width", "seo_og_image_height", "seo_og_image_mime_type");
+        addGroup(groups, "MEDIA_VIDEO", "image_id", "image_url", "image_alt", "image_width", "image_height", "image_mime_type", "gallery_json", "videos_json");
+        addGroup(groups, "VARIANTS", "variants_json");
+        addGroup(groups, "RELATED_PRODUCTS", "related_products_json", "accessory_products_json");
+        addGroup(groups, "DISPLAY_RATING", "publish_status", "homepage_block", "homepage_order", "rating", "rating_count");
+        return Map.copyOf(groups);
+    }
+
+    private static void addGroup(Map<String, String> groups, String group, String... columns) {
+        for (String column : columns) groups.put(column, group);
+    }
+
+    private static String blankToDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private List<String> row(ProductEntity p) {

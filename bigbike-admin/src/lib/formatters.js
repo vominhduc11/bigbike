@@ -50,6 +50,7 @@ export function formatDateTime(value) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
   })
 }
 
@@ -118,5 +119,6 @@ export function formatDateTimeWithSeconds(value) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
   })
 }
