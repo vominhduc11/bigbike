@@ -67,7 +67,7 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybrid(
                         "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.",
                         List.of(card()))));
@@ -76,7 +76,7 @@ class ChatServiceFallbackTest {
 
         assertThat(response.mode()).isEqualTo("AI");
         assertThat(response.turnCount()).isEqualTo(1);
-        assertThat(response.answer()).contains("hiển thị 1 thẻ").doesNotContain("Chào em");
+        assertThat(response.answer()).contains("hiển thị 1 sản phẩm").doesNotContain("Chào em");
         assertThat(response.products()).extracting(ChatProductCardResponse::slug).containsExactly("safe-card");
         assertThat(fixture.conversation.getEndedReason()).isNull();
         assertThat(fixture.conversation.getAiCallCount()).isEqualTo(1);
@@ -96,14 +96,14 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybridWithVerifiedRangeTotals()));
 
         ChatMessageResponse response = fixture.service.send(request("Tai nghe trên 3tr có bao nhiêu mẫu?"), null);
 
         assertThat(response.mode()).isEqualTo("AI");
         assertThat(response.answer())
-                .contains("trong tầm giá anh/chị hỏi", "5 mẫu tai nghe", "3 thẻ tiêu biểu")
+                .contains("trong tầm giá anh/chị hỏi", "5 mẫu sản phẩm", "3 sản phẩm tiêu biểu bên dưới")
                 .doesNotContain("Gặp nhân viên");
         assertThat(response.products()).hasSize(3);
     }
@@ -117,9 +117,9 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybrid(
-                        "Dạ, shop hiện có dữ liệu phù hợp. Mời xem thẻ sản phẩm để chọn mẫu cần kiểm tra.")));
+                        "Dạ, shop hiện có dữ liệu phù hợp. Mời anh/chị xem các sản phẩm bên dưới để chọn mẫu cần kiểm tra.")));
 
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi lịch sự"), null);
 
@@ -137,7 +137,7 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybrid(
                         "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.")));
         ChatMessageEntity priorFallback = new ChatMessageEntity();
@@ -166,11 +166,11 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybridWithVerifiedTotals(12)), Optional.of(hybridWithVerifiedTotals(8)));
         ChatMessageEntity previous = new ChatMessageEntity();
         previous.setContent("Dạ, trong tầm giá anh/chị hỏi, shop có 12 mẫu tai nghe. "
-                + "Em đang hiển thị 3 thẻ tiêu biểu trong tổng 12 mẫu phù hợp.");
+                + "Em đang hiển thị 3 sản phẩm tiêu biểu bên dưới trong tổng 12 mẫu phù hợp.");
         when(fixture.messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
                 CONVERSATION_ID, "ASSISTANT"))
                 .thenReturn(Optional.empty(), Optional.of(previous));
@@ -190,7 +190,7 @@ class ChatServiceFallbackTest {
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
                 any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenThrow(new RuntimeException("provider unavailable"))
                 .thenReturn(Optional.of(hybrid(
                         "Dạ, em đã kiểm tra được thông tin này. Anh/chị có thể xem tiếp nhé?")));
@@ -206,7 +206,7 @@ class ChatServiceFallbackTest {
     }
 
     @Test
-    @DisplayName("a fast-path exception is a recoverable staff-review fallback")
+    @DisplayName("a fast-path exception is a recoverable in-chat clarification")
     void staffReviewFailureIsRecoverable() {
         Fixture fixture = fixture(true, 60, 0);
         when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
@@ -215,7 +215,7 @@ class ChatServiceFallbackTest {
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi cần kiểm tra"), null);
 
         assertRecoverable(response, fixture.conversation);
-        assertThat(response.answer()).contains("nhân viên BigBike");
+        assertThat(response.answer()).contains("vẫn có thể hỏi tiếp", "em sẽ tra lại");
     }
 
     @Test
@@ -280,7 +280,7 @@ class ChatServiceFallbackTest {
             String answer, List<ChatProductCardResponse> products) {
         return new AiChatClient.HybridAnswer(
                 new AiChatClient.Answer(answer, false, false, false),
-                products, List.of(), List.of(), 1);
+                products, List.of(), List.of(ChatToolRegistry.SEARCH_PRODUCTS), 1);
     }
 
     private static AiChatClient.HybridAnswer hybridWithVerifiedRangeTotals() {
@@ -293,7 +293,7 @@ class ChatServiceFallbackTest {
                 BigDecimal.valueOf(3_700_000), null, "VND", "IN_STOCK");
         return new AiChatClient.HybridAnswer(
                 new AiChatClient.Answer(
-                        "Dạ, shop chỉ có 5 mẫu tai nghe. Anh/chị xem các thẻ bên dưới để chọn nhé.",
+                        "Dạ, shop chỉ có 5 mẫu tai nghe. Anh/chị xem các sản phẩm bên dưới để chọn nhé.",
                         false, false, false),
                 List.of(first, second, third),
                 List.of(),
@@ -316,7 +316,8 @@ class ChatServiceFallbackTest {
         return new AiChatClient.HybridAnswer(
                 new AiChatClient.Answer(
                         "Dạ, trong tầm giá anh/chị hỏi, shop có " + count + " mẫu tai nghe. "
-                                + "Em đang hiển thị 3 thẻ tiêu biểu trong tổng " + count + " mẫu phù hợp.",
+                                + "Em đang hiển thị 3 sản phẩm tiêu biểu bên dưới trong tổng "
+                                + count + " mẫu phù hợp.",
                         false, false, false),
                 List.of(card(), second, third),
                 List.of(),

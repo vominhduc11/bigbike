@@ -9,3 +9,9 @@ CREATE TABLE IF NOT EXISTS media_tags (
 );
 
 CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag);
+
+-- Production PostgreSQL provides unaccent() through Flyway V306. Flyway is disabled in
+-- the H2 test profile, so expose the same deterministic normalization for every catalog
+-- test instead of requiring each API test to install its own alias.
+CREATE ALIAS IF NOT EXISTS UNACCENT FOR
+    "com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms.normalize";

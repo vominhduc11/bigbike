@@ -218,11 +218,30 @@ class ChatResponseGuardTest {
     void validatesDisplayedCardCountSeparatelyFromCatalogTotals() {
         ChatProductCardResponse card = new ChatProductCardResponse(
                 "helmet", "Helmet", null, BigDecimal.valueOf(2_000_000), null, "VND", "IN_STOCK");
-        String displayed = "Dạ, em đang hiển thị 1 thẻ sản phẩm phù hợp bên dưới. "
-                + "Anh/chị mở thẻ để xem thêm nhé.";
+        String displayed = "Dạ, em đang hiển thị 1 sản phẩm phù hợp bên dưới. "
+                + "Anh/chị mở sản phẩm để xem thêm nhé.";
 
         assertThat(guard.check(displayed, List.of(card), "vi")).isPresent();
-        assertThat(guard.check(displayed.replace("1 thẻ", "2 thẻ"), List.of(card), "vi")).isEmpty();
+        assertThat(guard.check(
+                displayed.replace("1 sản phẩm", "2 sản phẩm"), List.of(card), "vi")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_005/017: model facts from history require current-turn tool evidence")
+    void rejectsHistoryDerivedFactWithoutCurrentToolEvidence() {
+        ChatProductCardResponse card = new ChatProductCardResponse(
+                "tanami", "Mũ bảo hiểm Tanami", null,
+                BigDecimal.valueOf(12_000_000), null, "VND", "IN_STOCK");
+        String answer = "Dạ, Mũ bảo hiểm Tanami hiện còn hàng. "
+                + "Anh/chị mở sản phẩm để xem các lựa chọn đã xác minh nhé.";
+
+        assertThat(guard.checkModel(
+                answer, List.of(card), "vi", List.of(), Set.of(), null, List.of()))
+                .isEmpty();
+        assertThat(guard.checkModel(
+                answer, List.of(card), "vi", List.of(), Set.of(), null,
+                List.of(ChatToolRegistry.GET_PRODUCT)))
+                .isPresent();
     }
 
     @Test
@@ -234,6 +253,7 @@ class ChatResponseGuardTest {
 
         assertThat(guard.repairUnsupportedCountClauses(unsafe, List.of(card), "vi", Set.of(), null))
                 .map(ChatResponseGuard.CheckedAnswer::answer)
-                .hasValueSatisfying(answer -> assertThat(answer).contains("hiển thị 1 thẻ").doesNotContain("4 sản phẩm"));
+                .hasValueSatisfying(answer -> assertThat(answer)
+                        .contains("hiển thị 1 sản phẩm").doesNotContain("4 sản phẩm"));
     }
 }

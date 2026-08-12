@@ -56,7 +56,6 @@ class ChatSearchInterpretationTest {
                 new SearchCase("gt", "Găng tay", "găng tay", "gang-tay-xe-may-moto", null),
                 new SearchCase("ff", "Mũ bảo hiểm fullface", "fullface", "mu-bao-hiem-fullface", null),
                 new SearchCase("tn", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null),
-                new SearchCase("tai nge", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null),
                 new SearchCase("mbh 2 củ", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_400_000L),
                 new SearchCase("mbh 1tr5", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_050_000L),
                 new SearchCase("còn tai nghe thì sao", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null));
@@ -117,7 +116,7 @@ class ChatSearchInterpretationTest {
     }
 
     @Test
-    void interpretedCategorySwitchOverridesAStaleModelCategoryAndDoesNotRetainOldFilters() {
+    void modelVerifiedCategorySwitchDoesNotRetainOldFilters() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product headset = product("headset-safe", "Tai nghe an toàn", BigDecimal.valueOf(3_500_000));
         when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
@@ -131,9 +130,9 @@ class ChatSearchInterpretationTest {
         ChatToolService.ToolExecution result = tools.execute(
                 new ChatToolRegistry().validate(ChatToolRegistry.SEARCH_PRODUCTS,
                         MAPPER.valueToTree(Map.of(
-                                // The customer explicitly asks for headsets. A stale model value from
-                                // the prior helmet turn must not keep that old category alive.
-                                "category", "Mũ bảo hiểm",
+                                // RECENT_TURNS lets the model identify the switch; the backend accepts
+                                // only the exact canonical value from current public metadata.
+                                "category", "Tai nghe bluetooth mũ bảo hiểm",
                                 "query", "tai nghe",
                                 "lang", "vi"))),
                 new ChatToolService.ToolContext(

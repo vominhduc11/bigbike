@@ -172,8 +172,8 @@ public class AiChatClient {
     }
 
     /**
-     * Supplies only bare server-verified slugs for a bounded follow-up. Product names, prices,
-     * stock and raw conversation history remain outside the provider request.
+     * Supplies bare server-verified slugs plus a separately labelled, bounded and redacted
+     * recent-turn payload. Product facts still require a current-turn tool response.
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Optional<HybridAnswer> answer(

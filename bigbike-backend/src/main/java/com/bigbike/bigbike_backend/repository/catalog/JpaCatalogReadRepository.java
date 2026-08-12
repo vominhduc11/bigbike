@@ -284,11 +284,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
-    /**
-     * This predicate is intentionally not reused by the public catalog endpoint. Bi must
-     * compare identifier tokens after accent removal and across both language fields, whereas
-     * the public endpoint keeps its established single-query substring contract.
-     */
+    /** Assistant search applies the same token semantics as the shared public/admin predicate. */
     private static Specification<ProductEntity> buildAssistantProductSearchSpec(
             List<String> tokens,
             Set<String> categoryIds,
@@ -313,6 +309,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             }
             Expression<String> name = unaccentLower(cb, root.get("name"));
             Expression<String> slug = unaccentLower(cb, root.get("slug"));
+            Expression<String> sku = unaccentLower(cb, cb.coalesce(root.get("sku"), ""));
             Expression<String> nameEn = unaccentLower(cb, cb.coalesce(root.get("nameEn"), ""));
             Expression<String> slugEn = unaccentLower(cb, cb.coalesce(root.get("slugEn"), ""));
             for (String rawToken : tokens) {
@@ -325,6 +322,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 predicates.add(cb.or(
                         cb.like(name, like),
                         cb.like(slug, like),
+                        cb.like(sku, like),
                         cb.like(nameEn, like),
                         cb.like(slugEn, like)));
             }

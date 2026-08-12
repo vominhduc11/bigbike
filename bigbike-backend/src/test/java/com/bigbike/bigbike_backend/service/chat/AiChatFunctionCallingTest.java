@@ -293,14 +293,69 @@ class AiChatFunctionCallingTest {
 
     @Test
     void factualProductAnswerWithoutToolEvidenceIsRejected() {
-        AiChatClient client = client(new ScriptedTransport(finalAnswer(safeAnswer(
-                "Em có một sản phẩm phù hợp. Sản phẩm này đang còn hàng. Anh/chị có thể mua ngay."))));
+        String unsupported = finalAnswer(safeAnswer(
+                "Em có một sản phẩm phù hợp. Sản phẩm này đang còn hàng. Anh/chị có thể mua ngay."));
+        ScriptedTransport transport = new ScriptedTransport(unsupported, unsupported);
+        AiChatClient client = client(transport);
 
         Optional<AiChatClient.HybridAnswer> result = client.answer(
                 "Mũ nào đang còn hàng?", "vi", REGISTRY, true,
                 (call, session) -> { throw new AssertionError("must not execute"); });
 
         assertThat(result).isEmpty();
+        assertThat(transport.requests()).hasSize(2);
+    }
+
+    @Test
+    void directTextIsRecoveredOnceByRequiringTheCurrentTurnToolAgain() {
+        ScriptedTransport transport = new ScriptedTransport(
+                finalText("Bên em có mẫu phù hợp ạ."),
+                functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "recovered-search"),
+                finalAnswer(safeAnswer(
+                        "Dạ, em đã kiểm tra mẫu Tanami bằng dữ liệu hiện tại. "
+                                + "Anh/chị mở sản phẩm bên dưới để xem thông tin đã xác minh nhé.")));
+        AtomicInteger executions = new AtomicInteger();
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Mũ Tanami còn hàng không?", "vi", REGISTRY, true,
+                (call, session) -> {
+                    executions.incrementAndGet();
+                    return execution(call.name(),
+                            "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
+                            List.of(card()));
+                });
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(result.orElseThrow().executedTools())
+                .containsExactly(ChatToolRegistry.SEARCH_PRODUCTS);
+        assertThat(executions).hasValue(1);
+        assertThat(MAPPER.valueToTree(transport.requests().get(1)).toString())
+                .contains("Call exactly one declared function now", "\"mode\":\"ANY\"");
+    }
+
+    @Test
+    void recentTurnsAreRedactedAndSeparatedFromTheCurrentQuestion() {
+        AiChatClient client = client(new ScriptedTransport());
+        Map<String, Object> body = client.buildInitialRequestBody(
+                "Cái này giá bao nhiêu?",
+                "vi",
+                REGISTRY,
+                ChatToolService.AssistantCatalogVocabulary.empty(),
+                List.of(PRODUCT_SLUG),
+                List.of(new ChatHistorySanitizer.RecentTurn(
+                        "Gọi em qua 0912 345 678 hoặc khach@example.com",
+                        "Địa chỉ: 12 Nguyễn Trãi, quận 1.")));
+
+        String requestText = MAPPER.valueToTree(body)
+                .path("contents").path(0).path("parts").path(0).path("text").asText();
+        assertThat(requestText)
+                .contains("RECENT_TURNS:", "RECENT_VERIFIED_PRODUCTS:", "CURRENT_QUESTION:",
+                        "[SỐ ĐIỆN THOẠI ĐÃ CHE]", "[EMAIL ĐÃ CHE]", "[ĐỊA CHỈ ĐÃ CHE]",
+                        PRODUCT_SLUG)
+                .doesNotContain("0912 345 678", "khach@example.com", "Nguyễn Trãi");
+        assertThat(requestText.indexOf("RECENT_TURNS:"))
+                .isLessThan(requestText.indexOf("CURRENT_QUESTION:"));
     }
 
     @Test

@@ -139,7 +139,8 @@ public class ChatService {
                     request.getMessage(),
                     request.getLang(),
                     safe.products(),
-                    tool.actions()));
+                    tool.actions(),
+                    tool.effectiveSearchScope()));
             finishTurnIfNeeded(conversation);
             conversationRepo.save(conversation);
             return aiResponse(
@@ -470,28 +471,21 @@ public class ChatService {
             return Optional.empty();
         }
         boolean english = "en".equals(lang);
-        String group = recoveryCatalogGroup(hybridAnswer, english);
+        String group = recoveryCatalogGroup(english);
         long total = totals.currentTotalItems();
         String answer = english
                 ? "In the price range you asked about, BigBike has " + total + " matching " + group + ". "
-                + "I am showing " + products.size() + " representative products from those " + total + " matches. "
+                + "I am showing " + products.size() + " representative products below from those " + total + " matches. "
                 + "Open a product to review its current details and options."
                 : "Dạ, trong tầm giá anh/chị hỏi, shop có " + total + " mẫu " + group + ". "
-                + "Em đang hiển thị " + products.size() + " sản phẩm tiêu biểu trong tổng " + total + " mẫu phù hợp. "
+                + "Em đang hiển thị " + products.size() + " sản phẩm tiêu biểu bên dưới trong tổng " + total + " mẫu phù hợp. "
                 + "Anh/chị mở từng sản phẩm để xem thông tin và lựa chọn hiện có nhé.";
         return responseGuard.check(answer, products, lang, Set.of(), totals);
     }
 
-    private static String recoveryCatalogGroup(AiChatClient.HybridAnswer hybridAnswer, boolean english) {
-        ChatToolService.SearchScope scope = hybridAnswer.searchScope();
-        String category = scope == null || scope.category() == null ? "" : scope.category();
-        String normalized = ChatToolService.normalize(category).replace('-', ' ');
-        if (normalized.contains("tai nghe") || normalized.contains("headset")) {
-            return english ? "headset products" : "tai nghe";
-        }
-        if (normalized.contains("mu bao hiem") || normalized.contains("helmet")) {
-            return english ? "helmet products" : "mũ bảo hiểm";
-        }
+    private static String recoveryCatalogGroup(boolean english) {
+        // This emergency recovery has no category repository at hand. A neutral noun is safer
+        // than reviving the former two-item hard-coded label map or borrowing an old topic.
         return english ? "products" : "sản phẩm";
     }
 
@@ -589,29 +583,6 @@ public class ChatService {
         messageRepo.save(message);
     }
 
-    private ChatMessageResponse recoverableFallback(
-            ChatConversationEntity conversation,
-            ChatAssistantSettings.Snapshot settings,
-            String lang,
-            FallbackCause cause,
-            boolean aiCalled,
-            int aiRetryCount
-    ) {
-        conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
-        boolean repeated = messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
-                        conversation.getId(), "ASSISTANT")
-                .map(message -> "CONTACT_FALLBACK".equals(message.getSource()))
-                .orElse(false);
-        String fallback = repeated
-                ? repeatedFallbackText(lang)
-                : contactFallbackText(lang, cause);
-        log.warn("Bi fallback conversationId={} turn={} cause={} repeated={}",
-                conversation.getId(), conversation.getTurnCount(), cause, repeated);
-        saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", aiCalled, List.of(), aiRetryCount);
-        conversationRepo.save(conversation);
-        return aiResponse(conversation, settings, fallback, List.of(), false, false, List.of());
-    }
-
     /** Technical orchestration failures stay in chat and become a useful next question. */
     private ChatMessageResponse recoverableClarification(
             ChatConversationEntity conversation,
@@ -620,16 +591,29 @@ public class ChatService {
             boolean aiCalled
     ) {
         conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
-        String answer = "en".equals(lang)
+        boolean repeated = messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
+                        conversation.getId(), "ASSISTANT")
+                .map(message -> "CONTACT_FALLBACK".equals(message.getSource())
+                        || isRecoverableClarificationText(message.getContent()))
+                .orElse(false);
+        String answer = repeated
+                ? repeatedFallbackText(lang)
+                : ("en".equals(lang)
                 ? "I could not complete that lookup yet, but you can keep chatting here. "
                 + "Please tell me the product name, product type or exact detail you want checked, and I will try again."
                 : "Dạ, em chưa hoàn tất được lần tra này nhưng anh/chị vẫn có thể hỏi tiếp ngay tại đây. "
-                + "Anh/chị cho em tên mẫu, loại hàng hoặc đúng chi tiết cần kiểm tra, em sẽ tra lại nhé.";
+                + "Anh/chị cho em tên mẫu, loại hàng hoặc đúng chi tiết cần kiểm tra, em sẽ tra lại nhé.");
         log.warn("Bi recovered with clarification conversationId={} turn={}",
                 conversation.getId(), conversation.getTurnCount());
         saveAssistantMessage(conversation, answer, "TOOL", aiCalled, List.of(), 0);
         conversationRepo.save(conversation);
         return aiResponse(conversation, settings, answer, List.of(), false, false, List.of());
+    }
+
+    private static boolean isRecoverableClarificationText(String value) {
+        String normalized = ChatToolService.normalize(value == null ? "" : value);
+        return normalized.contains("chua hoan tat duoc lan tra nay")
+                || normalized.contains("could not complete that lookup yet");
     }
 
     private static String repeatedFallbackText(String lang) {
@@ -772,7 +756,7 @@ public class ChatService {
                 case SERVICE_PAUSED -> "Bi’s automated chat is temporarily paused. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
                 case DAILY_LIMIT -> "Bi has reached today’s automated-chat limit. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
                 case SERVICE_NOT_READY -> "Bi’s automated chat is not ready at the moment. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case PROVIDER_UNAVAILABLE -> "I cannot look up this detail reliably right now, so I do not want to guess. Please choose Talk to staff; Hotline, Zalo and Messenger below can help you directly.";
+                case PROVIDER_UNAVAILABLE -> "That lookup did not finish, but you can keep chatting here. Please send the product name or detail to check again; Talk to staff remains available if you need immediate help.";
                 case SAFETY_REVIEW -> "I do not have enough confirmed detail to answer this part clearly, so I do not want to guess. Please choose Talk to staff; Hotline, Zalo and Messenger below can help you directly.";
                 case STAFF_REVIEW -> "This request needs a BigBike staff review so no unsupported promise is made. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
             };

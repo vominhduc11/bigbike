@@ -359,7 +359,8 @@ public class ChatToolService {
         if (normalized == null || normalized.isBlank()) return List.of();
         String withoutProperties = normalized.replaceAll(
                 "(?iU)\\b(?:gia|price|cost|bao nhieu|how much|trong luong|can nang|nang|weight|"
-                        + "thong so ky thuat|thong so|ky thuat|technical details?|chi tiet|"
+                        + "thong so ky thuat|thong so|ky thuat|chuan an toan|safety standards?|"
+                        + "technical details?|chi tiet|"
                         + "specifications?|specs?|size|sizes|kich co|bang size|bang co|"
                         + "mau sac|color|colour|bao hanh|warranty|phu hop|suitable|nen mua|"
                         + "con hang|ton kho|available|in stock|re hon|cheaper)\\b", " ");
@@ -657,15 +658,9 @@ public class ChatToolService {
                     .toList();
             if (categories.size() == 1) category = categories.get(0);
         }
-        if (brand == null && products != null && !products.isEmpty()) {
-            List<String> brands = products.stream()
-                    .map(Product::brand)
-                    .filter(value -> value != null && value.slug() != null && !value.slug().isBlank())
-                    .map(value -> value.slug())
-                    .distinct()
-                    .toList();
-            if (brands.size() == 1) brand = brands.get(0);
-        }
+        // Never turn a coincidental common brand in the capped result page into a future
+        // customer filter. Brand scope is persisted only when the accepted current search
+        // explicitly carried that brand.
         return new SearchScope(category, brand, used.price().min(), used.price().max());
     }
 
@@ -830,11 +825,19 @@ public class ChatToolService {
 
     private ToolExecution executeSearch(
             ChatToolRegistry.ValidatedCall call, ToolContext context) {
+        String normalized = normalizeIntent(context.question());
+        // With RECENT_TURNS enabled, choosing a product-search tool for a detail/availability
+        // question is the model's reference signal. The backend does not need to recognise a
+        // closed list of Vietnamese pronouns; it only verifies whether the saved product set is
+        // uniquely resolvable. Discovery requests still flow through normal search so a request
+        // for alternatives cannot be mistaken for a reference to the previous product.
+        boolean modelSelectedReference = context.settings().recentTurnPairs() > 0
+                && (asksForProductDetail(normalized) || asksForProductAvailability(normalized));
         Optional<ToolExecution> groundedReference = recentUniqueProductExecution(
-                context, ChatToolRegistry.SEARCH_PRODUCTS);
+                context, ChatToolRegistry.SEARCH_PRODUCTS, modelSelectedReference);
         if (groundedReference.isPresent()) return groundedReference.get();
         Optional<ToolExecution> ambiguity = recentProductAmbiguityExecution(
-                context, ChatToolRegistry.SEARCH_PRODUCTS, false);
+                context, ChatToolRegistry.SEARCH_PRODUCTS, modelSelectedReference);
         if (ambiguity.isPresent()) return ambiguity.get();
         SearchIntent searchIntent = context.settings().searchAiInterpretationEnabled()
                 ? validateSearchByResult(call, context)
@@ -842,7 +845,6 @@ public class ChatToolService {
         if (!searchIntent.hasUsableConstraint()) {
             return searchClarification(context);
         }
-        String normalized = normalizeIntent(context.question());
         ToolOutcome outcome = productOutcome(
                 context.question(),
                 normalized,
@@ -930,12 +932,12 @@ public class ChatToolService {
     }
 
     private Optional<ToolExecution> recentUniqueProductExecution(
-            ToolContext context, String toolName) {
+            ToolContext context, String toolName, boolean modelSelectedReference) {
         String normalized = normalizeIntent(context.question());
         boolean english = "en".equals(context.lang());
         Optional<List<Product>> selection = recentProductSelection(
                 context.question(), normalized, context.lang(), english,
-                context.conversationContext(), false);
+                context.conversationContext(), modelSelectedReference);
         if (selection.isEmpty() || selection.get().size() != 1) return Optional.empty();
         Product product = selection.get().get(0);
         DeterministicAnswer detail = productDetailAnswer(
@@ -1045,10 +1047,10 @@ public class ChatToolService {
         }
         sentences.add(english
                 ? (totals.currentTotalItems() > displayed
-                ? "I am showing " + displayed + " representative products from those " + total + " matches."
+                ? "I am showing " + displayed + " representative products below from those " + total + " matches."
                 : "I am showing all " + displayed + " matching products below.")
                 : (totals.currentTotalItems() > displayed
-                ? "Em đang hiển thị " + displayed + " mẫu tiêu biểu trong tổng " + total + " mẫu phù hợp."
+                ? "Em đang hiển thị " + displayed + " mẫu tiêu biểu bên dưới trong tổng " + total + " mẫu phù hợp."
                 : "Em đang hiển thị đầy đủ " + displayed + " sản phẩm phù hợp bên dưới."));
         sentences.add(english
                 ? (names != null && names.size() > 1
@@ -1070,7 +1072,7 @@ public class ChatToolService {
                     .filter(name -> name != null && !name.isBlank())
                     .findFirst()
                     .map(name -> "en".equals(lang)
-                            ? name.toLowerCase(Locale.ENGLISH) + " products"
+                            ? name.toLowerCase(Locale.ENGLISH)
                             : lowerFirst(name))
                     .orElse("en".equals(lang) ? "products" : "sản phẩm");
         } catch (RuntimeException ignored) {
@@ -1372,7 +1374,7 @@ public class ChatToolService {
                     ? "Hiện chưa có tên màu đang bán có thể hiển thị an toàn cho mẫu này."
                     : "Các màu đang bán là " + String.join(", ", colors) + "."));
         }
-        if (detailIntent.price()) {
+        if (detailIntent.price() || detailIntent.technical()) {
             List<String> prices = availableVariantPriceLabels(product, english);
             sentences.add(english
                     ? (prices.isEmpty()
@@ -1432,7 +1434,7 @@ public class ChatToolService {
 
     private static ProductDetailIntent productDetailIntent(String normalized) {
         return new ProductDetailIntent(
-                hasWord(normalized, "thong so", "trong luong", "can nang", "weight", "spec", "specs",
+                hasWord(normalized, "thong so", "trong luong", "can nang", "nang", "weight", "spec", "specs",
                         "dot", "ece", "chuan an toan", "thong gio"),
                 hasWord(normalized, "size", "sizes", "kich co", "bang size", "bang co", "chon co",
                         "size guide"),
@@ -1563,7 +1565,7 @@ public class ChatToolService {
     private static BigDecimal effectivePrice(com.bigbike.bigbike_backend.domain.catalog.ProductPrice price) {
         if (price == null) return null;
         BigDecimal value = price.salePrice() != null ? price.salePrice() : price.retailPrice();
-        return value == null || value.signum() < 0 ? null : value;
+        return value == null || value.signum() <= 0 ? null : value;
     }
 
     private static String money(BigDecimal amount, boolean english) {
@@ -3681,12 +3683,9 @@ public class ChatToolService {
     }
 
     private static boolean asksForProductDetail(String value) {
-        return hasWord(value, "trong luong", "nang", "weight", "thong so", "spec", "specs",
-                "faq", "kich co", "size", "sizes", "bang size", "bang co", "chon co",
-                "mau", "mau sac", "color", "colour", "gia", "price", "cost", "how much",
-                "phu hop", "hop voi ai", "nen mua", "danh cho ai", "suitable", "should i buy",
-                "bao hanh", "warranty", "so sanh", "khac gi", "re hon", "compare",
-                "difference", "cheaper");
+        // FAQ answers stay in the rich get_product payload for the model; the structured
+        // deterministic fields above cover the common detail intents handled locally.
+        return productDetailIntent(value).hasRequestedDetail() || hasWord(value, "faq");
     }
 
     private static boolean asksForProductAvailability(String value) {

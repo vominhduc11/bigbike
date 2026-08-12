@@ -14,7 +14,8 @@ public final class ProductSearchTerms {
             "cho", "xem", "mua", "shop", "cua", "hang", "san", "pham", "cai", "chiec",
             "con", "mau", "nay", "kia", "vua", "roi", "co", "khong", "ko", "k",
             "a", "voi", "nhe", "nha", "giup", "gia", "bao", "nhieu", "gi", "nao",
-            "vay", "nhu", "tren", "dung", "phai", "ky", "thuat", "tiet",
+            "vay", "nhu", "tren", "dung", "phai", "chua", "da", "van", "la",
+            "ky", "thuat", "tiet",
             "please", "want", "find", "show", "buy", "product", "products", "item", "items",
             "have", "has", "does", "the", "an", "me", "my", "for", "price", "much",
             "is", "are", "this", "that");
