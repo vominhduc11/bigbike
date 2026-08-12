@@ -2802,6 +2802,7 @@
     "keyLabel": {
       "ai_assistant_enabled": "Bật trợ lý ảo Bi",
       "ai_assistant_daily_limit": "Số lượt gọi AI tối đa mỗi ngày",
+      "ai_assistant_recent_turn_pairs": "Số cặp hỏi–đáp gần nhất Bi được đọc",
       "ai_assistant_search_ai_interpretation_enabled": "Cho Bi hiểu cách nói tự nhiên khi tìm hàng",
       "ai_assistant_greeting": "Câu chào đầu khung chat",
       "ai_assistant_quick_prompts": "Các nút gợi ý nhanh"
@@ -2809,6 +2810,7 @@
     "keyHint": {
       "ai_assistant_enabled": "Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.",
       "ai_assistant_daily_limit": "Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Bi tự chuyển về bảng liên hệ.",
+      "ai_assistant_recent_turn_pairs": "Chọn từ 0 đến 3. Đặt 0 để không gửi lịch sử; thông tin riêng tư được che và mỗi tin được cắt gọn.",
       "ai_assistant_search_ai_interpretation_enabled": "Bật để Bi hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay.",
       "ai_assistant_greeting": "Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Bi là trợ lý ảo AI.",
       "ai_assistant_quick_prompts": "Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ."
@@ -2816,6 +2818,7 @@
     "keyWhere": {
       "ai_assistant_enabled": "bật/tắt trợ lý Bi trên toàn website",
       "ai_assistant_daily_limit": "trần lượt gọi AI mỗi ngày, giờ Việt Nam",
+      "ai_assistant_recent_turn_pairs": "0–3 cặp gần nhất để hiểu câu nối",
       "ai_assistant_search_ai_interpretation_enabled": "chuyển giữa cách hiểu tìm hàng mới và cũ",
       "ai_assistant_greeting": "câu chào khi khách mở khung chat",
       "ai_assistant_quick_prompts": "3–4 nút câu hỏi nhanh trong khung chat"

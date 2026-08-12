@@ -98,6 +98,11 @@ public class ChatService {
         }
 
         ChatToolService.ConversationContext conversationContext = readConversationContext(conversation);
+        List<ChatHistorySanitizer.RecentTurn> recentTurns = settings.recentTurnPairs() == 0
+                ? List.of()
+                : ChatHistorySanitizer.recentTurns(
+                        messageRepo.findByConversationIdOrderByCreatedAtAsc(conversation.getId()),
+                        settings.recentTurnPairs());
         saveCustomerMessage(conversation, request.getMessage());
         Optional<ToolOutcome> fastPath;
         try {
@@ -105,8 +110,7 @@ public class ChatService {
                     request.getMessage(), request.getLang(), customerId, settings, conversationContext);
         } catch (RuntimeException exception) {
             log.warn("Bi fast-path failed type={}", exception.getClass().getSimpleName());
-            return recoverableFallback(
-                    conversation, settings, request.getLang(), FallbackCause.STAFF_REVIEW, false, 0);
+            return recoverableClarification(conversation, settings, request.getLang(), false);
         }
 
         if (fastPath.isPresent()) {
@@ -114,8 +118,7 @@ public class ChatService {
             Optional<ChatResponseGuard.CheckedAnswer> checked = responseGuard.check(
                     tool.localAnswer(), tool.products(), request.getLang());
             if (checked.isEmpty()) {
-                return recoverableFallback(
-                        conversation, settings, request.getLang(), FallbackCause.SAFETY_REVIEW, false, 0);
+                return recoverableClarification(conversation, settings, request.getLang(), false);
             }
             ChatResponseGuard.CheckedAnswer safe = checked.get();
             Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
@@ -162,15 +165,15 @@ public class ChatService {
                     true,
                     (call, session) -> toolService.execute(call, toolContext, session),
                     vocabulary,
-                    conversationContext.productSlugs());
+                    conversationContext.productSlugs(),
+                    recentTurns);
         } catch (RuntimeException exception) {
             log.warn("Bi AI invocation failed type={}", exception.getClass().getSimpleName());
             ai = Optional.empty();
         }
         conversation.setAiCallCount(conversation.getAiCallCount() + 1);
         if (ai.isEmpty()) {
-            return recoverableFallback(
-                    conversation, settings, request.getLang(), FallbackCause.PROVIDER_UNAVAILABLE, true, 0);
+            return recoverableClarification(conversation, settings, request.getLang(), true);
         }
 
         AiChatClient.HybridAnswer hybridAnswer = ai.get();
@@ -217,8 +220,7 @@ public class ChatService {
             }
         }
         if (checked.isEmpty()) {
-            return recoverableFallback(
-                    conversation, settings, request.getLang(), FallbackCause.SAFETY_REVIEW, true, 0);
+            return recoverableClarification(conversation, settings, request.getLang(), true);
         }
         ChatResponseGuard.CheckedAnswer safe = checked.get();
         Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
@@ -347,7 +349,8 @@ public class ChatService {
                 lang,
                 publicShopPhoneSources(hybridAnswer, settings),
                 hybridAnswer.requiredDisclosures(),
-                hybridAnswer.catalogTotals());
+                hybridAnswer.catalogTotals(),
+                hybridAnswer.executedTools());
     }
 
     private String rejectionReason(
@@ -407,40 +410,40 @@ public class ChatService {
                 .contains(ChatToolService.RequiredDisclosure.INHERITED_FILTER_DROPPED)) {
             answer = english
                     ? "The price filter from your previous product request returned no matches, so I removed only that older filter and searched this request again. "
-                    + "The product cards below are the currently available results after that retry. "
+                    + "The products below are the currently available results after that retry. "
                     + "Tell me a new budget if you would like me to narrow the list again."
                     : "Dạ, tầm giá đã nêu ở lượt trước không có kết quả phù hợp nên em đã bỏ riêng bộ lọc cũ và tìm lại yêu cầu này. "
-                    + "Các thẻ bên dưới là kết quả đang bán sau khi em tìm lại. "
+                    + "Các sản phẩm bên dưới là kết quả đang bán sau khi em tìm lại. "
                     + "Anh/chị cho em tầm giá mới nếu muốn em lọc hẹp lại nhé.";
         } else if (hybridAnswer.requiredDisclosures()
                 .contains(ChatToolService.RequiredDisclosure.PRICE_RANGE_MISS)) {
             answer = english
                     ? "I could not find a currently sold product in the price range you requested. "
-                    + "The " + cards + " product cards below are the closest available options."
+                    + "The " + cards + " products below are the closest available options."
                     : "Dạ, em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
-                    + cards + " thẻ bên dưới là phương án gần nhất đang có.";
+                    + cards + " sản phẩm bên dưới là phương án gần nhất đang có.";
         } else if (hybridAnswer.requiredDisclosures()
                 .contains(ChatToolService.RequiredDisclosure.INHERITED_PRICE_RANGE)) {
             answer = english
                     ? "I am filtering by the price range from your previous product request. "
-                    + "I am showing " + cards + " matching product card"
+                    + "I am showing " + cards + " matching product"
                     + (cards == 1 ? " below." : "s below.")
                     : "Dạ, em đang lọc theo tầm giá anh/chị đã nêu trước đó. "
-                    + "Em đang hiển thị " + cards + " thẻ sản phẩm phù hợp bên dưới.";
+                    + "Em đang hiển thị " + cards + " sản phẩm phù hợp bên dưới.";
         } else if (hybridAnswer.requiredDisclosures()
                 .contains(ChatToolService.RequiredDisclosure.BROADENED_SEARCH)) {
             answer = english
-                    ? "The product cards below come from a broader search than your original request. "
+                    ? "The products below come from a broader search than your original request. "
                     + "Please tell me a more specific name, category or budget so I can narrow the results."
-                    : "Dạ, các thẻ bên dưới đến từ tìm kiếm rộng hơn yêu cầu ban đầu của anh/chị. "
+                    : "Dạ, các sản phẩm bên dưới đến từ tìm kiếm rộng hơn yêu cầu ban đầu của anh/chị. "
                     + "Anh/chị cho em tên mẫu, loại hàng hoặc tầm giá cụ thể hơn để em lọc lại nhé.";
         } else {
             answer = english
-                    ? "I am showing " + cards + " matching product card"
+                    ? "I am showing " + cards + " matching product"
                     + (cards == 1 ? " below." : "s below.")
-                    + " Please open a card or tell me a different budget if you want me to filter again."
-                    : "Dạ, em đang hiển thị " + cards + " thẻ sản phẩm phù hợp bên dưới. "
-                    + "Anh/chị có thể mở từng thẻ hoặc cho em biết tầm giá khác để em lọc lại nhé.";
+                    + " Please open a product or tell me a different budget if you want me to filter again."
+                    : "Dạ, em đang hiển thị " + cards + " sản phẩm phù hợp bên dưới. "
+                    + "Anh/chị có thể mở từng sản phẩm hoặc cho em biết tầm giá khác để em lọc lại nhé.";
         }
         return responseGuard.check(
                 answer, products, lang, hybridAnswer.requiredDisclosures(), hybridAnswer.catalogTotals());
@@ -471,11 +474,11 @@ public class ChatService {
         long total = totals.currentTotalItems();
         String answer = english
                 ? "In the price range you asked about, BigBike has " + total + " matching " + group + ". "
-                + "I am showing " + products.size() + " representative product cards from those " + total + " matches. "
-                + "Open a card to review its current details and options."
+                + "I am showing " + products.size() + " representative products from those " + total + " matches. "
+                + "Open a product to review its current details and options."
                 : "Dạ, trong tầm giá anh/chị hỏi, shop có " + total + " mẫu " + group + ". "
-                + "Em đang hiển thị " + products.size() + " thẻ tiêu biểu trong tổng " + total + " mẫu phù hợp. "
-                + "Anh/chị mở từng thẻ để xem thông tin và lựa chọn hiện có nhé.";
+                + "Em đang hiển thị " + products.size() + " sản phẩm tiêu biểu trong tổng " + total + " mẫu phù hợp. "
+                + "Anh/chị mở từng sản phẩm để xem thông tin và lựa chọn hiện có nhé.";
         return responseGuard.check(answer, products, lang, Set.of(), totals);
     }
 
@@ -607,6 +610,26 @@ public class ChatService {
         saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", aiCalled, List.of(), aiRetryCount);
         conversationRepo.save(conversation);
         return aiResponse(conversation, settings, fallback, List.of(), false, false, List.of());
+    }
+
+    /** Technical orchestration failures stay in chat and become a useful next question. */
+    private ChatMessageResponse recoverableClarification(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            String lang,
+            boolean aiCalled
+    ) {
+        conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
+        String answer = "en".equals(lang)
+                ? "I could not complete that lookup yet, but you can keep chatting here. "
+                + "Please tell me the product name, product type or exact detail you want checked, and I will try again."
+                : "Dạ, em chưa hoàn tất được lần tra này nhưng anh/chị vẫn có thể hỏi tiếp ngay tại đây. "
+                + "Anh/chị cho em tên mẫu, loại hàng hoặc đúng chi tiết cần kiểm tra, em sẽ tra lại nhé.";
+        log.warn("Bi recovered with clarification conversationId={} turn={}",
+                conversation.getId(), conversation.getTurnCount());
+        saveAssistantMessage(conversation, answer, "TOOL", aiCalled, List.of(), 0);
+        conversationRepo.save(conversation);
+        return aiResponse(conversation, settings, answer, List.of(), false, false, List.of());
     }
 
     private static String repeatedFallbackText(String lang) {
@@ -758,8 +781,8 @@ public class ChatService {
             case SERVICE_PAUSED -> "Dạ, em là Bi và kênh tư vấn tự động đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
             case DAILY_LIMIT -> "Dạ, em là Bi và đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
             case SERVICE_NOT_READY -> "Dạ, em là Bi và kênh tư vấn tự động hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case PROVIDER_UNAVAILABLE -> "Dạ, em đang chưa tra được thông tin này ổn định nên không muốn trả lời áng chừng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger bên dưới sẽ hỗ trợ trực tiếp ạ.";
-            case SAFETY_REVIEW -> "Dạ, phần này em chưa đủ thông tin chắc chắn để trả lời rõ cho anh/chị nên không muốn đoán. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger bên dưới sẽ hỗ trợ trực tiếp ạ.";
+            case PROVIDER_UNAVAILABLE -> "Dạ, lần tra này chưa hoàn tất nhưng anh/chị vẫn có thể hỏi tiếp trong khung chat. Anh/chị thử gửi tên mẫu hoặc chi tiết cần kiểm tra; nếu cần hỗ trợ ngay, nút Gặp nhân viên vẫn luôn có sẵn ạ.";
+            case SAFETY_REVIEW -> "Dạ, em cần anh/chị nói rõ thêm để kiểm tra đúng dữ liệu và không đoán. Anh/chị gửi tên mẫu hoặc chi tiết cần xem; nút Gặp nhân viên vẫn luôn có sẵn nếu mình cần hỗ trợ trực tiếp ạ.";
             case STAFF_REVIEW -> "Dạ, em cần nhân viên BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
         };
     }

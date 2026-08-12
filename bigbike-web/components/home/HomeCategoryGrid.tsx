@@ -33,7 +33,7 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                   <span className="block">
                     <img src={img} className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
                   </span>
-                  <span className="mt-7.5 block origin-center scale-x-[1.3] line-clamp-2 font-cta text-a4-content font-extralight normal-case leading-body text-foreground group-hover:text-white">{name}</span>
+                  <span className="mt-7.5 block line-clamp-2 font-cta text-a4-content font-semibold normal-case leading-body text-foreground group-hover:text-white">{name}</span>
                 </span>
               </LocalizedLink>
             </div>

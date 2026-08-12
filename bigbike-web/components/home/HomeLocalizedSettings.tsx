@@ -21,7 +21,7 @@ export function HomeBlockHeading({
     <div className={className}>
       {kicker ? (
         <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
-          <span className="inline-block origin-center scale-x-110">{kicker}</span>
+          <span className="inline-block">{kicker}</span>
         </p>
       ) : null}
       {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
@@ -45,7 +45,7 @@ export function HomeAboutSection({
         <div className="mb-10 text-center">
           {subtitle ? (
             <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
-              <span className="inline-block origin-center scale-x-110">{subtitle}</span>
+              <span className="inline-block">{subtitle}</span>
             </p>
           ) : null}
           {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
@@ -73,7 +73,7 @@ export function HomeExperienceHeading({
       <div className="pb-10 text-center">
         {subtitle ? (
           <p className="mb-2 font-cta text-home-kicker font-bold text-home-kicker-label">
-            <span className="inline-block origin-center scale-x-110">{subtitle}</span>
+            <span className="inline-block">{subtitle}</span>
           </p>
         ) : null}
         {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}

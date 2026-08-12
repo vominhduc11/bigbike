@@ -63,15 +63,7 @@ public final class ProductFilterSpecifications {
                         ProductStockState.valueOf(stockState.toUpperCase(Locale.ROOT))));
             }
             if (query != null && !query.isBlank()) {
-                Expression<String> term = cb.function(
-                        "unaccent", String.class,
-                        cb.literal("%" + query.toLowerCase(Locale.ROOT) + "%"));
-                Predicate nameLike = cb.like(unaccentLower(cb, root.get("name")), term);
-                Predicate slugLike = cb.like(unaccentLower(cb, root.get("slug")), term);
-                Predicate skuLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("sku"), "")), term);
-                Predicate nameEnLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("nameEn"), "")), term);
-                Predicate slugEnLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("slugEn"), "")), term);
-                predicates.add(cb.or(nameLike, slugLike, skuLike, nameEnLike, slugEnLike));
+                predicates.add(productTextSearch(root, cb, query));
             }
             if (brandId != null && !brandId.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
@@ -130,5 +122,35 @@ public final class ProductFilterSpecifications {
 
     private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
         return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
+    }
+
+    /** ANDs meaningful tokens while allowing every token to match any public identifier field. */
+    public static Predicate productTextSearch(
+            jakarta.persistence.criteria.Root<ProductEntity> root,
+            CriteriaBuilder cb,
+            String rawQuery
+    ) {
+        List<String> tokens = ProductSearchTerms.tokens(rawQuery);
+        if (tokens.isEmpty()) return cb.disjunction();
+
+        Expression<String> name = unaccentLower(cb, root.get("name"));
+        Expression<String> slug = unaccentLower(cb, root.get("slug"));
+        Expression<String> sku = unaccentLower(cb, cb.coalesce(root.get("sku"), ""));
+        Expression<String> nameEn = unaccentLower(cb, cb.coalesce(root.get("nameEn"), ""));
+        Expression<String> slugEn = unaccentLower(cb, cb.coalesce(root.get("slugEn"), ""));
+        Expression<String> shortDescription = unaccentLower(
+                cb, cb.coalesce(root.get("shortDescription"), ""));
+        List<Predicate> allTokens = new ArrayList<>();
+        for (String token : tokens) {
+            Expression<String> term = cb.literal("%" + token + "%");
+            allTokens.add(cb.or(
+                    cb.like(name, term),
+                    cb.like(slug, term),
+                    cb.like(sku, term),
+                    cb.like(nameEn, term),
+                    cb.like(slugEn, term),
+                    cb.like(shortDescription, term)));
+        }
+        return cb.and(allTokens.toArray(new Predicate[0]));
     }
 }

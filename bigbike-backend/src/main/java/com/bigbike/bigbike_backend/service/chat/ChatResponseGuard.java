@@ -74,10 +74,11 @@ public class ChatResponseGuard {
             "\\b(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+"
                     + EN_CATALOG_UNIT + "\\b");
     private static final Pattern VI_DISPLAY_CARD_COUNT_CLAIM = Pattern.compile(
-            "\\b(" + COUNT_VALUE + ")\\s+the(?:\\s+san\\s+pham)?\\b");
+            "\\b(" + COUNT_VALUE + ")\\s+(?:the(?:\\s+san\\s+pham)?"
+                    + "|(?:san\\s+pham|mau)(?:\\s+(?:phu\\s+hop|tieu\\s+bieu))?\\s+ben\\s+duoi)\\b");
     private static final Pattern EN_DISPLAY_CARD_COUNT_CLAIM = Pattern.compile(
             "\\b(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+"
-                    + "(?:product\\s+)?cards?\\b");
+                    + "(?:(?:product\\s+)?cards?|(?:matching\\s+|representative\\s+)?products?\\s+below)\\b");
     private static final Pattern VI_UNSCOPED_ABSENCE_CLAIM = Pattern.compile(
             "\\b(?:bigbike\\s+(?:hien\\s+)?(?:khong\\s+co|chua\\s+co|khong\\s+tim\\s+thay)"
                     + "|(?:khong|chua)\\s+tim\\s+thay\\s+(?:bat\\s+ky\\s+)?(?:san\\s+pham|mau|mu|hang))\\b");
@@ -227,6 +228,27 @@ public class ChatResponseGuard {
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
             ChatToolService.CatalogTotals catalogTotals
     ) {
+        return checkModel(
+                answer,
+                products,
+                lang,
+                publicShopPhoneSources,
+                requiredDisclosures,
+                catalogTotals,
+                List.of("legacy-current-turn-evidence"));
+    }
+
+    /** Model prose may use RECENT_TURNS only after a current-turn tool supplied evidence. */
+    public Optional<CheckedAnswer> checkModel(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            List<String> publicShopPhoneSources,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals,
+            List<String> currentTurnTools
+    ) {
+        if (currentTurnTools == null || currentTurnTools.isEmpty()) return Optional.empty();
         if (answer == null || EMAIL.matcher(answer).find()) return Optional.empty();
         Set<String> allowedPhones = extractPhones(publicShopPhoneSources);
         Matcher phones = PRIVATE_PHONE.matcher(answer);
@@ -278,18 +300,18 @@ public class ChatResponseGuard {
         if (!changed) return Optional.empty();
         if (repaired.size() < MIN_SENTENCES) {
             repaired.add("en".equals(lang)
-                    ? "Please open the product cards below, or tell me a different budget so I can filter again."
-                    : "Anh/chị có thể xem từng thẻ bên dưới hoặc cho em biết tầm giá khác để em lọc lại nhé.");
+                    ? "Please open the products below, or tell me a different budget so I can filter again."
+                    : "Anh/chị có thể xem từng sản phẩm bên dưới hoặc cho em biết tầm giá khác để em lọc lại nhé.");
         }
         return check(String.join(" ", repaired), products, lang, requiredDisclosures, catalogTotals);
     }
 
     private static String displayedCardSentence(int cardCount, String lang) {
         if ("en".equals(lang)) {
-            return "I am showing " + cardCount + " matching product card"
+            return "I am showing " + cardCount + " matching product"
                     + (cardCount == 1 ? " below." : "s below.");
         }
-        return "Dạ, em đang hiển thị " + cardCount + " thẻ sản phẩm phù hợp bên dưới.";
+        return "Dạ, em đang hiển thị " + cardCount + " sản phẩm phù hợp bên dưới.";
     }
 
     private static boolean containsRequiredDisclosures(

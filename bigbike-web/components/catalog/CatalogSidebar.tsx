@@ -60,9 +60,12 @@ type CatalogSidebarProps = {
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="m-0 pb-4 font-body text-a2-page font-semibold text-foreground">
-        {title}
-      </h2>
+      <div className="flex items-stretch gap-3 pb-4">
+        <span aria-hidden className="w-1 shrink-0 bg-brand" />
+        <h2 className="m-0 font-body text-a2-page font-semibold text-foreground">
+          {title}
+        </h2>
+      </div>
       {children}
     </section>
   );
@@ -150,9 +153,9 @@ function CatalogToggleList({
 }
 
 const filterListClass = "m-0 list-none p-0";
-const filterRowClass = "flex min-h-11 items-center justify-between gap-3 py-2.5";
-const filterLinkClass = "block flex-1 font-body font-semibold text-muted-foreground! no-underline! hover:text-brand!";
-const categoryLinkClass = "text-a4-content md:text-a5-meta";
+const filterRowClass = "flex min-h-11 items-center justify-between gap-3";
+const filterLinkClass = "flex min-h-11 min-w-0 flex-1 items-center font-body font-semibold text-muted-foreground! no-underline! hover:text-brand!";
+const categoryLinkClass = "gap-3 py-2 leading-title text-a4-content md:text-a5-meta";
 
 export function CatalogSidebar({
   brands,
@@ -211,7 +214,7 @@ export function CatalogSidebar({
 
   function renderFilters() {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {rootCategories.length ? (
           <FilterSection title={t("filterCategory")}>
             <ul className={filterListClass}>
@@ -222,42 +225,42 @@ export function CatalogSidebar({
                   ? visibleCategories.filter((child) => child.parentId === category.id)
                   : [];
                 return (
-                  <li key={category.id} className="py-2.5">
+                  <li key={category.id} className="min-h-11">
                     <LocalizedLink
                       kind="category"
                       viSlug={category.slug}
                       enSlug={category.slugEn}
-                      className={cn(filterLinkClass, categoryLinkClass, "relative", category.menuIconUrl && "pl-7.5", active && "text-brand!")}
+                      className={cn(filterLinkClass, categoryLinkClass, active && "text-brand!")}
                     >
                       {category.menuIconUrl ? (
                         <span
                           aria-hidden
-                          className={`${submenuIcon} absolute left-0 top-[3px]`}
+                          className={submenuIcon}
                           style={{ maskImage: `url(${category.menuIconUrl})`, WebkitMaskImage: `url(${category.menuIconUrl})` }}
                         />
                       ) : null}
-                      {category.name}
+                      <span className="min-w-0">{category.name}</span>
                     </LocalizedLink>
                     {children.length ? (
                       <ul className="ml-2 mt-2 list-none border-l border-dashed border-muted-foreground/60 pl-8">
                         {children.map((child) => {
                           const childActive = toCategoryPath(child.slug, locale) === resetHref || current.category === child.slug;
                           return (
-                            <li key={child.id} className="py-2.5">
+                            <li key={child.id} className="min-h-11">
                               <LocalizedLink
                                 kind="category"
                                 viSlug={child.slug}
                                 enSlug={child.slugEn}
-                                className={cn(filterLinkClass, categoryLinkClass, "relative", child.menuIconUrl && "pl-7.5", childActive && "text-brand!")}
+                                className={cn(filterLinkClass, categoryLinkClass, childActive && "text-brand!")}
                               >
                                 {child.menuIconUrl ? (
                                   <span
                                     aria-hidden
-                                    className={`${submenuIcon} absolute left-0 top-[3px]`}
+                                    className={submenuIcon}
                                     style={{ maskImage: `url(${child.menuIconUrl})`, WebkitMaskImage: `url(${child.menuIconUrl})` }}
                                   />
                                 ) : null}
-                                {child.name}
+                                <span className="min-w-0">{child.name}</span>
                               </LocalizedLink>
                             </li>
                           );
@@ -341,7 +344,7 @@ export function CatalogSidebar({
                 return (
                   <li className={filterRowClass} key={brand.key}>
                     <Link className={cn(filterLinkClass, "flex min-w-0 items-center gap-3", active && "text-brand!")} rel="nofollow" href={active ? queryHref({ "pwb-brand": undefined }) : queryHref({ "pwb-brand": brand.key })}>
-                      <span className="flex h-8 w-24 shrink-0 items-center justify-center" aria-hidden={!imageSrc}>
+                      <span className="flex h-7 w-24 shrink-0 items-center justify-center" aria-hidden={!imageSrc}>
                         {imageSrc ? <img src={imageSrc} alt={safeText(brand.image?.alt, brand.label)} width={92} height={32} loading="lazy" className="max-h-full max-w-full w-auto object-contain" /> : null}
                       </span>
                       <span className="min-w-0">{brand.label}</span>

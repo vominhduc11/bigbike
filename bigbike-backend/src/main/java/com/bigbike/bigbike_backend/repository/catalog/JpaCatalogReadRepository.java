@@ -182,10 +182,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
             }
             if (q != null && !q.isBlank()) {
-                String like = "%" + q.toLowerCase(Locale.ROOT) + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), like),
-                        cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like)));
+                predicates.add(ProductFilterSpecifications.productTextSearch(root, cb, q));
             }
             if (gender != null && !gender.isBlank()) {
                 predicates.add(cb.equal(cb.lower(root.get("gender")), gender.toLowerCase(Locale.ROOT)));

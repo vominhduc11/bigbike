@@ -260,6 +260,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
+                SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
+                        .min(0).max(3)
+                        .description("Số cặp hỏi–đáp gần nhất gửi cho Bi để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 3.").build(),
                 SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
                         .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build(),
                 SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)

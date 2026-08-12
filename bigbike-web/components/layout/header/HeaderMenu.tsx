@@ -104,7 +104,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 aria-haspopup={hasChildren ? "menu" : undefined}
                 aria-expanded={hasChildren ? open : undefined}
                 onClick={() => setOpenNodeId(null)}
-                className="flex h-full items-center px-7.5 font-cta text-header-nav font-black leading-body tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className="flex h-full items-center px-7.5 font-cta text-header-nav font-bold leading-body tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
               </Link>
@@ -220,7 +220,7 @@ function MobileMenuList({
                 "flex min-h-13 items-center pr-17.5 text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
                 depth === 0
-                  ? "py-[15px] font-cta text-header-nav font-black leading-body tracking-wide"
+                  ? "py-[15px] font-cta text-header-nav font-bold leading-body tracking-wide"
                   : "py-3 font-body text-a5-meta",
               )}
             >

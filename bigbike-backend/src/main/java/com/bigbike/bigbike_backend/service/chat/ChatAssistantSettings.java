@@ -18,12 +18,14 @@ public class ChatAssistantSettings {
 
     public static final String KEY_ENABLED = "ai_assistant_enabled";
     public static final String KEY_DAILY_LIMIT = "ai_assistant_daily_limit";
+    public static final String KEY_RECENT_TURN_PAIRS = "ai_assistant_recent_turn_pairs";
     public static final String KEY_SEARCH_AI_INTERPRETATION_ENABLED =
             "ai_assistant_search_ai_interpretation_enabled";
     public static final String KEY_GREETING = "ai_assistant_greeting";
     public static final String KEY_QUICK_PROMPTS = "ai_assistant_quick_prompts";
     public static final String SETTING_GROUP = "ai_assistant";
     public static final int DEFAULT_DAILY_LIMIT = 60;
+    public static final int DEFAULT_RECENT_TURN_PAIRS = 3;
 
     private static final String DEFAULT_GREETING_VI =
             "Em là Bi, trợ lý ảo AI của BigBike. Em có thể giúp anh/chị chọn sản phẩm, xem chính sách hoặc kiểm tra đơn hàng đã đăng nhập.";
@@ -70,7 +72,9 @@ public class ChatAssistantSettings {
                         value(settings, "messenger_display")),
                 localized(settings, "contact_address", english, ""),
                 localized(settings, "opening_hours_weekday", english, ""),
-                localized(settings, "opening_hours_weekend", english, ""));
+                localized(settings, "opening_hours_weekend", english, ""),
+                Math.min(3, readInteger(
+                        settings, KEY_RECENT_TURN_PAIRS, DEFAULT_RECENT_TURN_PAIRS)));
     }
 
     private static List<String> prompts(String raw, boolean english) {
@@ -129,8 +133,33 @@ public class ChatAssistantSettings {
             ChatContactResponse contacts,
             String address,
             String openingHoursWeekday,
-            String openingHoursWeekend
+            String openingHoursWeekend,
+            int recentTurnPairs
     ) {
+        public Snapshot(
+                boolean enabled,
+                int dailyLimit,
+                boolean searchAiInterpretationEnabled,
+                String greeting,
+                List<String> quickPrompts,
+                ChatContactResponse contacts,
+                String address,
+                String openingHoursWeekday,
+                String openingHoursWeekend
+        ) {
+            this(
+                    enabled,
+                    dailyLimit,
+                    searchAiInterpretationEnabled,
+                    greeting,
+                    quickPrompts,
+                    contacts,
+                    address,
+                    openingHoursWeekday,
+                    openingHoursWeekend,
+                    0);
+        }
+
         public Snapshot(
                 boolean enabled,
                 int dailyLimit,
@@ -150,11 +179,13 @@ public class ChatAssistantSettings {
                     contacts,
                     address,
                     openingHoursWeekday,
-                    openingHoursWeekend);
+                    openingHoursWeekend,
+                    0);
         }
 
         public Snapshot {
             quickPrompts = List.copyOf(quickPrompts);
+            recentTurnPairs = Math.max(0, Math.min(3, recentTurnPairs));
         }
     }
 }

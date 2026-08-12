@@ -264,9 +264,10 @@ export const KEY_LABELS_VI = {
   review_moderation_block_sensitive: 'Chặn nội dung 18+, chính trị, lạc đề',
   review_moderation_daily_limit: 'Số lượt AI tối đa mỗi ngày',
   review_moderation_banned_words: 'Danh sách từ cấm của shop',
-  // ai_assistant (trợ lý bán hàng Bi — CHAT_RULE_001..022)
+  // ai_assistant (trợ lý bán hàng Bi — CHAT_RULE_001..024)
   ai_assistant_enabled: 'Bật trợ lý ảo Bi',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
+  ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Bi được đọc',
   ai_assistant_search_ai_interpretation_enabled: 'Cho Bi hiểu cách nói tự nhiên khi tìm hàng',
   ai_assistant_greeting: 'Câu chào đầu khung chat',
   ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
@@ -318,6 +319,8 @@ export const KEY_HINTS_VI = {
     'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
   ai_assistant_daily_limit:
     'Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Bi tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+  ai_assistant_recent_turn_pairs:
+    'Từ 0 đến 3. Đặt 0 để Bi không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
     'Bật để Bi hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
   ai_assistant_greeting:
@@ -478,6 +481,7 @@ export const KEY_GUIDE = {
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt trợ lý Bi trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–3 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
   ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
   ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],

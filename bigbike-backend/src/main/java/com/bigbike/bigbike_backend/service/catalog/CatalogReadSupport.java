@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
+import com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
@@ -370,9 +371,15 @@ final class CatalogReadSupport {
         if (q == null || q.isBlank()) {
             return true;
         }
-        String term = q.toLowerCase(Locale.ROOT);
-        return product.name().toLowerCase(Locale.ROOT).contains(term)
-                || (product.shortDescription() != null && product.shortDescription().toLowerCase(Locale.ROOT).contains(term));
+        List<String> terms = ProductSearchTerms.tokens(q);
+        if (terms.isEmpty()) return false;
+        String searchable = ProductSearchTerms.normalize(String.join(" ", List.of(
+                product.name() == null ? "" : product.name(),
+                product.slug() == null ? "" : product.slug(),
+                product.slugEn() == null ? "" : product.slugEn(),
+                product.sku() == null ? "" : product.sku(),
+                product.shortDescription() == null ? "" : product.shortDescription())));
+        return terms.stream().allMatch(searchable::contains);
     }
 
     static boolean matchesColor(Product product, String filterColor) {

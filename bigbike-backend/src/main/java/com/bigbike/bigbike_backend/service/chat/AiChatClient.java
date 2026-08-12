@@ -51,6 +51,13 @@ public class AiChatClient {
             authentication data, database query language or schema identifiers. Never
             attempt to capture a lead.
 
+            RECENT_TURNS contains a few redacted question-answer pairs from this conversation.
+            Use it only to understand references and conversational intent. It is never a data
+            source. Never repeat or derive a product name, price, stock state, option, technical
+            detail, policy, order fact or number from RECENT_TURNS. Call a function in the current
+            turn and use its functionResponse before stating any such fact. CURRENT_QUESTION is
+            the customer's present request and is always separate from RECENT_TURNS.
+
             For product discovery by name, model, category, brand, option or price,
             call search_products first. Use get_product only with a slug returned by
             search_products in this turn, an exact product slug/URL supplied by the
@@ -78,7 +85,9 @@ public class AiChatClient {
             never write digits followed by "VND", "VNĐ", "đ" or "₫". The application renders
             every item price on product cards. When the functionResponse requires a price-scope
             disclosure, state that scope plainly without repeating its amount. Binding notes in a
-            functionResponse must be disclosed plainly.
+            functionResponse must be disclosed plainly. In customer-facing prose, never call the
+            visible product entries "cards" or "product cards"; say "products/models below" or
+            "sản phẩm/mẫu bên dưới" instead.
 
             Product cards are a short page, not a warehouse count. Never infer or claim that
             BigBike has "all", "only N", or no products/models in the whole catalogue from
@@ -144,6 +153,7 @@ public class AiChatClient {
                 executor,
                 ChatToolService.AssistantCatalogVocabulary.empty(),
                 List.of(),
+                List.of(),
                 "");
     }
 
@@ -157,7 +167,8 @@ public class AiChatClient {
             ToolExecutor executor,
             ChatToolService.AssistantCatalogVocabulary vocabulary
     ) {
-        return answer(question, lang, registry, toolRequired, executor, vocabulary, List.of(), "");
+        return answer(question, lang, registry, toolRequired, executor, vocabulary,
+                List.of(), List.of(), "");
     }
 
     /**
@@ -175,7 +186,23 @@ public class AiChatClient {
             List<String> recentVerifiedProducts
     ) {
         return answer(question, lang, registry, toolRequired, executor, vocabulary,
-                recentVerifiedProducts, "");
+                recentVerifiedProducts, List.of(), "");
+    }
+
+    /** Adds only bounded, redacted turns from the same conversation. */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public Optional<HybridAnswer> answer(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            boolean toolRequired,
+            ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns
+    ) {
+        return answer(question, lang, registry, toolRequired, executor, vocabulary,
+                recentVerifiedProducts, recentTurns, "");
     }
 
     private Optional<HybridAnswer> answer(
@@ -186,16 +213,18 @@ public class AiChatClient {
             ToolExecutor executor,
             ChatToolService.AssistantCatalogVocabulary vocabulary,
             List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns,
             String responseInstruction
     ) {
         if (!isConfigured() || question == null || question.isBlank()) return Optional.empty();
-        String safeQuestion = truncate(question, MAX_QUESTION_CHARS);
+        String safeQuestion = truncate(ChatHistorySanitizer.sanitize(question), MAX_QUESTION_CHARS);
         String safeLang = "en".equals(lang) ? "en" : "vi";
         List<Map<String, Object>> contents = initialContents(
                 safeQuestion,
                 safeLang,
                 vocabulary == null ? ChatToolService.AssistantCatalogVocabulary.empty() : vocabulary,
-                sanitizedRecentVerifiedProducts(recentVerifiedProducts));
+                sanitizedRecentVerifiedProducts(recentVerifiedProducts),
+                recentTurns == null ? List.of() : List.copyOf(recentTurns));
         ChatToolService.ToolSession session = new ChatToolService.ToolSession(recentVerifiedProducts);
         List<ChatProductCardResponse> products = List.of();
         List<ChatActionResponse> actions = List.of();
@@ -213,14 +242,28 @@ public class AiChatClient {
             stage = "initial_tool_validation";
             if (turn.finalText() != null) {
                 if (toolRequired) {
-                    log.warn("Bi AI orchestration rejected stage={} type=DirectText", stage);
-                    return Optional.empty();
+                    log.warn("Bi AI orchestration recovering stage={} type=DirectText", stage);
+                    if (providerCalls >= MAX_PROVIDER_CALLS) return Optional.empty();
+                    stage = "initial_tool_recovery";
+                    turn = requestTurn(buildToolRequestBody(
+                            contents,
+                            registry.functionDeclarations(),
+                            null,
+                            true,
+                            "Your previous response answered directly. Call exactly one declared function now. "
+                                    + "Do not answer with prose before receiving current-turn function data."));
+                    providerCalls++;
+                    if (turn.finalText() != null || turn.functionCall() == null) {
+                        log.warn("Bi AI orchestration rejected stage={} type=DirectText", stage);
+                        return Optional.empty();
+                    }
+                } else {
+                    Optional<Answer> directAnswer = parseFinal(turn.finalText());
+                    if (directAnswer.isEmpty()) return Optional.empty();
+                    return Optional.of(new HybridAnswer(
+                            directAnswer.get(), products, actions, executedTools,
+                            requiredDisclosures, providerCalls));
                 }
-                Optional<Answer> directAnswer = parseFinal(turn.finalText());
-                if (directAnswer.isEmpty()) return Optional.empty();
-                return Optional.of(new HybridAnswer(
-                        directAnswer.get(), products, actions, executedTools,
-                        requiredDisclosures, providerCalls));
             }
 
             stage = "first_tool_execution";
@@ -253,7 +296,8 @@ public class AiChatClient {
             appendFunctionExchange(contents, turn, firstResult);
 
             boolean canRequestDetail = ChatToolRegistry.SEARCH_PRODUCTS.equals(first.name())
-                    && !products.isEmpty();
+                    && !products.isEmpty()
+                    && providerCalls < MAX_PROVIDER_CALLS - 1;
             if (canRequestDetail && providerCalls < MAX_PROVIDER_CALLS) {
                 stage = "detail_provider";
                 // The model often answers this optional step with several parallel
@@ -357,12 +401,25 @@ public class AiChatClient {
             ChatToolService.AssistantCatalogVocabulary vocabulary,
             List<String> recentVerifiedProducts
     ) {
+        return buildInitialRequestBody(
+                question, lang, registry, vocabulary, recentVerifiedProducts, List.of());
+    }
+
+    Map<String, Object> buildInitialRequestBody(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns
+    ) {
         return buildToolRequestBody(
                 initialContents(
-                        truncate(question, MAX_QUESTION_CHARS),
+                        truncate(ChatHistorySanitizer.sanitize(question), MAX_QUESTION_CHARS),
                         "en".equals(lang) ? "en" : "vi",
                         vocabulary == null ? ChatToolService.AssistantCatalogVocabulary.empty() : vocabulary,
-                        sanitizedRecentVerifiedProducts(recentVerifiedProducts)),
+                        sanitizedRecentVerifiedProducts(recentVerifiedProducts),
+                        recentTurns == null ? List.of() : List.copyOf(recentTurns)),
                 registry.functionDeclarations(),
                 null,
                 true,
@@ -460,10 +517,14 @@ public class AiChatClient {
             String question,
             String lang,
             ChatToolService.AssistantCatalogVocabulary vocabulary,
-            List<String> recentVerifiedProducts
+            List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns
     ) {
         List<Map<String, Object>> contents = new ArrayList<>();
-        String text = "LANG=" + lang + "\nQUESTION:\n" + question;
+        String text = "LANG=" + lang;
+        if (recentTurns != null && !recentTurns.isEmpty()) {
+            text += "\nRECENT_TURNS:\n" + recentTurnsJson(recentTurns);
+        }
         if (vocabulary != null && !vocabulary.isEmpty()) {
             text += "\nPUBLIC_CATALOG_VOCABULARY:\n" + vocabularyJson(vocabulary);
         }
@@ -471,6 +532,7 @@ public class AiChatClient {
         if (!recent.isEmpty()) {
             text += "\nRECENT_VERIFIED_PRODUCTS:\n" + recentProductsJson(recent);
         }
+        text += "\nCURRENT_QUESTION:\n" + question;
         contents.add(Map.of(
                 "role", "user",
                 "parts", List.of(Map.of("text", text))));
@@ -491,6 +553,19 @@ public class AiChatClient {
     private String recentProductsJson(List<String> recentVerifiedProducts) {
         try {
             return objectMapper.writeValueAsString(recentVerifiedProducts);
+        } catch (Exception exception) {
+            return "[]";
+        }
+    }
+
+    private String recentTurnsJson(List<ChatHistorySanitizer.RecentTurn> recentTurns) {
+        try {
+            return objectMapper.writeValueAsString(recentTurns.stream()
+                    .limit(3)
+                    .map(turn -> Map.of(
+                            "customer", ChatHistorySanitizer.sanitize(turn.customer()),
+                            "assistant", ChatHistorySanitizer.sanitize(turn.assistant())))
+                    .toList());
         } catch (Exception exception) {
             return "[]";
         }

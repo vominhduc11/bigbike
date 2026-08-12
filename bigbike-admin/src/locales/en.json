@@ -2796,6 +2796,7 @@
     "keyLabel": {
       "ai_assistant_enabled": "Enable Bi AI assistant",
       "ai_assistant_daily_limit": "Maximum AI calls per day",
+      "ai_assistant_recent_turn_pairs": "Recent question-answer pairs Bi may read",
       "ai_assistant_search_ai_interpretation_enabled": "Let Bi interpret natural product requests",
       "ai_assistant_greeting": "Chat opening greeting",
       "ai_assistant_quick_prompts": "Quick prompt buttons"
@@ -2803,6 +2804,7 @@
     "keyHint": {
       "ai_assistant_enabled": "When disabled, customers still see the chat button and get the Hotline, Zalo and Messenger contact panel.",
       "ai_assistant_daily_limit": "The limit follows Vietnam time. When it is reached, Bi automatically falls back to the contact panel.",
+      "ai_assistant_recent_turn_pairs": "Choose 0 to 3. Set 0 to send no history; private details are redacted and every message is shortened.",
       "ai_assistant_search_ai_interpretation_enabled": "When enabled, Bi can understand shorthand and natural wording while the system still verifies every result. Disable it to return to the previous search behaviour immediately.",
       "ai_assistant_greeting": "Enter Vietnamese and English separately. The first line should identify Bi as an AI assistant.",
       "ai_assistant_quick_prompts": "Enter one button per line, with 3 to 4 lines for each language."
@@ -2810,6 +2812,7 @@
     "keyWhere": {
       "ai_assistant_enabled": "enable or disable Bi across the website",
       "ai_assistant_daily_limit": "daily AI-call cap in Vietnam time",
+      "ai_assistant_recent_turn_pairs": "0–3 recent pairs for follow-up context",
       "ai_assistant_search_ai_interpretation_enabled": "switch between the new and previous product-search interpretation",
       "ai_assistant_greeting": "greeting shown when customers open chat",
       "ai_assistant_quick_prompts": "3–4 quick-question buttons in chat"

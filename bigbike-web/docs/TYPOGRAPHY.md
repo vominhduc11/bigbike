@@ -70,7 +70,7 @@ Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành
 ## 5. Quy tắc sử dụng
 
 - Nhóm B dùng Arial / Helvetica; các thành phần chức năng viết IN HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn; nhóm A cũng dùng Arial/Helvetica.
-- Menu chính của header là biến thể điều chỉnh của B4: Arial / Helvetica, 15px ở cả mobile và desktop, font-weight 900, line-height 21px, không ép `text-transform: uppercase`.
+- Menu chính của header là biến thể điều chỉnh của B4: Arial / Helvetica, 18px ở cả mobile và desktop, font-weight 700, line-height 21px, không ép `text-transform: uppercase`. Không dùng weight 900 trên Arial vì trình duyệt phải giả lập độ đậm, dễ làm glyph tiếng Việt (đặc biệt dấu `ủ`) bị biến dạng so với các chữ cùng font.
 - Form input, textarea và select luôn dùng A4.
 - Không dùng `text-[Npx]`, `text-[…em]`, cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-2xl`, `text-3xl`, `text-4xl`, `text-5xl`) hoặc token số `text-ui-*`.
 - Không hardcode `font-size` bằng px trong CSS nếu vai trò đã thuộc một nhóm.

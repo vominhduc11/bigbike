@@ -138,7 +138,7 @@
   --bb-text-b4-action: 1rem;        /* 16px mobile → 18px tablet */
   --bb-text-b5-label: 0.75rem;      /* 12px mobile → 14px tablet */
   --bb-text-pdp-eyebrow: 0.875rem;  /* 14px mobile + desktop — product eyebrow */
-  --bb-text-header-nav: 0.9375rem; /* 15px mobile → 15px desktop — main header navigation */
+  --bb-text-header-nav: 1.125rem;  /* 18px mobile → 18px desktop — main header navigation */
   --bb-text-a1-title: 1.75rem;      /* 28px mobile → 32px tablet */
   --bb-text-a2-page: 1.375rem;      /* 22px mobile → 26px tablet */
   --bb-text-a3-section: 1.25rem;    /* 20px mobile → 22px tablet */
