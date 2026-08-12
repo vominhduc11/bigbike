@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductCsvExportQuery;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
@@ -37,6 +38,7 @@ public class AdminProductExportController {
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
     private final ClientIpResolver clientIpResolver;
+    private final RateLimitConcurrencyGuard rateLimitConcurrencyGuard;
 
     @GetMapping(value = "/export.csv", produces = "text/csv")
     public ResponseEntity<StreamingResponseBody> exportFullCatalog(
@@ -53,14 +55,19 @@ public class AdminProductExportController {
         headers.set("X-Export-Streamed", "true");
         AtomicLong rowCount = new AtomicLong();
         AtomicBoolean completed = new AtomicBoolean();
+        RateLimitConcurrencyGuard.Lease exportLease = rateLimitConcurrencyGuard.acquireAdminExport();
         StreamingResponseBody body = outputStream -> {
             try {
                 fullProductCatalogCsvExportService.writeTo(outputStream, plan, rowCount::addAndGet);
                 completed.set(true);
             } finally {
-                adminReportService.recordProductCatalogCsvExportAudit(
-                        actor.id(), plan, rowCount.get(), completed.get(),
-                        clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+                try {
+                    adminReportService.recordProductCatalogCsvExportAudit(
+                            actor.id(), plan, rowCount.get(), completed.get(),
+                            clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+                } finally {
+                    exportLease.close();
+                }
             }
         };
         return ResponseEntity.ok().headers(headers).body(body);

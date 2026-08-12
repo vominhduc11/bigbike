@@ -3,6 +3,9 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
@@ -59,6 +62,7 @@ public class AdminAdminUsersService {
     private final AdminRefreshTokenJpaRepository refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
     private final AuditLogFactory auditLogFactory;
+    private final RateLimitService rateLimitService;
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);
@@ -104,6 +108,10 @@ public class AdminAdminUsersService {
         if (!normalizedEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             throw new ConflictException("Invalid email format.");
         }
+        // The authenticated admin tier controls the actor; this second, HMAC-backed key protects
+        // one recipient from repeated invites sent through different admin accounts/IPs.
+        rateLimitService.checkOrThrow(
+                RateLimitTier.RESEND_VERIFICATION, RateLimitScope.IDENTITY, normalizedEmail);
         if (adminUserRepo.findByEmail(normalizedEmail).isPresent()) {
             throw new ConflictException("Email already exists: " + normalizedEmail);
         }
@@ -150,6 +158,8 @@ public class AdminAdminUsersService {
     public Map<String, Object> resendInvite(UUID actorId, String clientIp, String userAgent, UUID id) {
         AdminUserEntity user = adminUserRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
+        rateLimitService.checkOrThrow(
+                RateLimitTier.RESEND_VERIFICATION, RateLimitScope.IDENTITY, user.getEmail());
         AdminInviteService.InviteResult invite = adminInviteService.resendInvite(id);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", actorId, "ADMIN_USER_INVITE_RESENT", "ADMIN_USER", id, null,

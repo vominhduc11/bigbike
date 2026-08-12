@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminMediaService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -50,6 +51,7 @@ public class AdminMediaController extends AdminControllerSupport {
     private final ApiResponseFactory apiResponseFactory;
     private final MediaReferenceService mediaReferenceService;
     private final com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc tagJdbc;
+    private final RateLimitConcurrencyGuard rateLimitConcurrencyGuard;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
@@ -61,8 +63,11 @@ public class AdminMediaController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
-        return apiResponseFactory.data(
-                adminMediaService.uploadMedia(file, altText, folderId, clearFolder, resolveAdminId()), request);
+        UUID actorId = resolveAdminId();
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminMedia(actorId)) {
+            return apiResponseFactory.data(
+                    adminMediaService.uploadMedia(file, altText, folderId, clearFolder, actorId), request);
+        }
     }
 
     @GetMapping
@@ -230,8 +235,11 @@ public class AdminMediaController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
-        return apiResponseFactory.data(
-                adminMediaService.replaceFile(mediaId, file, resolveAdminId()), request);
+        UUID actorId = resolveAdminId();
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminMedia(actorId)) {
+            return apiResponseFactory.data(
+                    adminMediaService.replaceFile(mediaId, file, actorId), request);
+        }
     }
 
     @DeleteMapping("/{mediaId}")

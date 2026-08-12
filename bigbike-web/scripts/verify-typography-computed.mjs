@@ -31,12 +31,12 @@ const GROUPS = [
   { group: "B1", utility: "text-b1-display", family: "font-cta", mobile: 32, tablet: 40, uppercase: true },
   { group: "B2", utility: "text-b2-contact", family: "font-cta", mobile: 24, tablet: 32, uppercase: true },
   { group: "B3", utility: "text-b3-promo", family: "font-cta", mobile: 18, tablet: 20, uppercase: true },
-  { group: "B4", utility: "text-b4-action", family: "font-cta", mobile: 18, tablet: 20, uppercase: true },
+  { group: "B4", utility: "text-b4-action", family: "font-cta", mobile: 16, tablet: 18, uppercase: true },
   { group: "B5", utility: "text-b5-label", family: "font-cta", mobile: 12, tablet: 14, uppercase: true },
   { group: "A1", utility: "text-a1-title", family: "font-body", mobile: 28, tablet: 32, uppercase: false },
   { group: "A2", utility: "text-a2-page", family: "font-body", mobile: 22, tablet: 26, uppercase: false },
   { group: "A3", utility: "text-a3-section", family: "font-body", mobile: 20, tablet: 22, uppercase: false },
-  { group: "A4", utility: "text-a4-content", family: "font-body", mobile: 18, tablet: 20, uppercase: false },
+  { group: "A4", utility: "text-a4-content", family: "font-body", mobile: 16, tablet: 18, uppercase: false },
   { group: "A5", utility: "text-a5-meta", family: "font-body", mobile: 14, tablet: 16, uppercase: false },
 ];
 
@@ -91,7 +91,7 @@ async function verifyCanonicalGroups(page, viewport) {
       };
     });
     const expectedSize = viewport.width < 768 ? group.mobile : group.tablet;
-    const expectedFamily = group.family === "font-cta" ? "Barlow Condensed" : "Arial";
+    const expectedFamily = "Arial";
     const expectedTransform = group.uppercase ? "uppercase" : "none";
 
     rows.push(

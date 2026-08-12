@@ -36,7 +36,7 @@
 
 ## 1. Header desktop — bar / navigation / mega menu
 
-**Khớp WP (không cần sửa):** chiều cao header 80px ✓; font nav 16px Barlow Condensed uppercase 600 trắng ✓; padding item 26/27px dọc ✓; ngưỡng đổi mobile/desktop 1261px ✓; logo 2 ảnh (desktop/mobile) ✓.
+**Khớp WP (không cần sửa):** chiều cao header 80px ✓; font nav 16px display hẹp uppercase 600 trắng ✓; padding item 26/27px dọc ✓; ngưỡng đổi mobile/desktop 1261px ✓; logo 2 ảnh (desktop/mobile) ✓.
 
 **[135] 🟢 Kim cương ngăn cách nav: 6px đỏ-đậm vs WP 5px đỏ tươi**
 `≥1261` · low — WP `.navigation--item:after #ff0c09 5×5px` → Next `h-1.5 w-1.5 (6px) bg-[--bb-action-primary]` (red-700, AA-tối). **Sửa:** đổi về 5px + dùng `--bb-brand-primary` (#ff0c09) cho dấu trang trí (không cần AA).
@@ -397,7 +397,7 @@
 > Next `/don-hang/xac-nhan` đã bám đúng cấu trúc WooCommerce `thankyou.php` (thông báo + overview + bảng đơn + địa chỉ). Tuy nhiên WP còn 1 màn thành công riêng cần làm rõ.
 
 **[139] 🔶/❓ WP có màn thành công CĂN GIỮA (ảnh + lời cảm ơn) — Next chỉ hiển thị bảng chi tiết**
-`mọi` · med · HỎI — WP `payment-success.css .payment-success{max-width:370px;text-align:center}` + ảnh `payment-success.png` + `.desc h3 24px Barlow Condensed`. Next chỉ render kiểu bảng (thông báo+overview+bảng+địa chỉ). **Cần bạn xác nhận:** màn thành công khách thấy thật là (a) bảng chi tiết như Next, (b) màn ảnh+cảm ơn căn giữa của WP, hay (c) ảnh+cảm ơn rồi mới tới chi tiết. Không tự quyết.
+`mọi` · med · HỎI — WP `payment-success.css .payment-success{max-width:370px;text-align:center}` + ảnh `payment-success.png` + `.desc h3 24px display hẹp cũ`. Next chỉ render kiểu bảng (thông báo+overview+bảng+địa chỉ). **Cần bạn xác nhận:** màn thành công khách thấy thật là (a) bảng chi tiết như Next, (b) màn ảnh+cảm ơn căn giữa của WP, hay (c) ảnh+cảm ơn rồi mới tới chi tiết. Không tự quyết.
 
 **[140] 🟢 Bảng chi tiết đơn dựa vào cuộn ngang trên mobile (overflow-x-auto)**
 `≤480` · low — WP shop_table_responsive xếp dọc ≤768; Next cuộn ngang (2 cột nên nhẹ). Đồng bộ pattern với #43/#44.

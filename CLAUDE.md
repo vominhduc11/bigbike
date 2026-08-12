@@ -85,7 +85,7 @@ Mọi trang/screen phải lấy màu/font/spacing/radius từ **design system c�
 
 **bigbike-web** (cascade: `STYLEGUIDE.md` → `brand-tokens.css` → `globals.css @theme inline` → Tailwind token):
 - Màu: palette `STYLEGUIDE.md`, qua token — không hardcode hex.
-- Font: Barlow/Arial (body), Barlow Condensed (heading/CTA/nav/display, UPPERCASE). **Oswald đã gỡ bỏ.**
+- Font: Chỉ Arial cho toàn bộ `bigbike-web`, gồm body, heading, CTA, nav và display; các fallback lấy từ token. **Oswald và các font display riêng đã gỡ bỏ.**
 - Spacing thang 4px. Radius `rounded-none` mặc định (`rounded-full` chỉ cho phần tử thật sự tròn).
 
 **bigbike-admin** (cascade: `admin-tokens.css` → `index.css` → Tailwind/CSS var):

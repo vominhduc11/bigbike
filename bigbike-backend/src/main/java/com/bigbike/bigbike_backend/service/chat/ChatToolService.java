@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Fixed, read-only tool allowlist for Bi. No tool accepts SQL, table names or customer identity. */
@@ -49,6 +50,14 @@ public class ChatToolService {
             "\\b(?:mau sac|mau|color|colour)\\s+([a-z0-9]+)\\b");
     private static final Pattern SIZE_REQUEST = Pattern.compile(
             "\\b(?:size|kich co)\\s*[:：-]?\\s*([a-z0-9]+)\\b");
+    private static final Pattern RAW_OPTION_SLUG = Pattern.compile(
+            "^[a-z0-9]+(?:[-_][a-z0-9]+)+$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern UNSAFE_OPTION_VALUE = Pattern.compile(
+            "[<>\\\\/]|\\b(?:sku|variant|option|code|id)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SIZE_GUIDE_RANGE = Pattern.compile(
+            "(?i)\\b(XXL|XL|XS|S|M|L)\\b[^0-9]{0,18}(\\d{2})\\s*(?:-|–|—|den|toi|to)\\s*(\\d{2})\\s*cm\\b");
+    private static final Pattern TECHNICAL_MEASUREMENT = Pattern.compile(
+            "(?i)\\b(?:dot|ece|pinlock|\\d+(?:[.,]\\d+)?\\s*(?:g|kg|mm|cm))\\b");
     /**
      * CHAT_RULE_017: variant questions are request framing, not product identifiers. The
      * pattern is deliberately contextual: a concrete option such as "size M" is left for the
@@ -66,16 +75,30 @@ public class ChatToolService {
 
     // CHAT_RULE_015 — price is read on the diacritic-stripped question, so an unaccented
     // customer ("tu 5 trieu") parses exactly like an accented one.
+    private static final String PRICE_WORD_TOKEN = "(?:mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)";
+    private static final String PRICE_NUMBER_TOKEN = "(?:\\d+(?:[.,]\\d+)?|" + PRICE_WORD_TOKEN + ")";
     /** "3 - 5 triệu", "300 đến 500k": the leading number borrows the trailing unit. */
     private static final Pattern SHARED_UNIT_RANGE = Pattern.compile(
-            "(\\d+(?:[.,]\\d+)?)\\s*(?:-|–|—|~|den|toi|to|and)\\s*(\\d+(?:[.,]\\d+)?)"
-                    + "\\s*(trieu|tr|million|nghin|ngan|k)(?![a-z0-9])");
-    /** "5 triệu", "5tr", "500k", "500 nghìn". */
+            "(?<![a-z0-9])(" + PRICE_NUMBER_TOKEN + ")\\s*(?:-|–|—|~|den|toi|to|and)\\s*("
+                    + PRICE_NUMBER_TOKEN + ")\\s*(trieu|tr|million|nghin|ngan|k|cu|lit)(?![a-z0-9])");
+    /** "5 triệu", "5tr", "500k", "500 nghìn", "hai triệu", "2 củ". */
     private static final Pattern UNIT_AMOUNT = Pattern.compile(
-            "(\\d+(?:[.,]\\d+)?)\\s*(trieu|tr|million|nghin|ngan|k)(?![a-z0-9])");
+            "(?<![a-z0-9])(" + PRICE_NUMBER_TOKEN + ")\\s*(trieu|tr|million|nghin|ngan|k|cu|lit)(?![a-z0-9])");
+    /**
+     * Approved compact million forms from CHAT_RULE_015. The fractional part is deliberately
+     * limited to one through three digits: 1tr5 / 1tr50 / 1tr500 are decimal-million forms
+     * explicitly approved by CHAT_RULE_015.
+     */
+    private static final Pattern COMPACT_MILLION_AMOUNT = Pattern.compile(
+            "(?<![a-z0-9])(\\d+)\\s*(?:trieu|tr)\\s*(\\d{1,3})(?![a-z0-9])");
     /** "5.000.000", "500,000đ" — grouped plain đồng amounts. */
     private static final Pattern PLAIN_AMOUNT = Pattern.compile(
             "(\\d{1,3}(?:[.,]\\d{3})+)\\s*(?:vnd|dong|d)?(?![a-z0-9])");
+    /** A customer can deliberately remove a carried price constraint on a later product turn. */
+    private static final Pattern PRICE_SCOPE_RESET = Pattern.compile(
+            "\\b(?:bo\\s+(?:gioi\\s+han|loc)(?:\\s+gia)?|xem\\s+het(?:\\s+di)?|"
+                    + "gia\\s+nao\\s+cung\\s+duoc|khong\\s+gioi\\s+han|"
+                    + "no\\s+(?:price\\s+)?limit|show\\s+all|any\\s+price)\\b");
 
     private static final List<String> MAX_MARKERS_BEFORE = List.of(
             "duoi", "khong qua", "khong hon", "khong toi", "toi da", "it hon", "thap hon",
@@ -99,7 +122,26 @@ public class ChatToolService {
 
     private static final Map<String, String> CATEGORY_KEYWORDS = categoryKeywords();
     private static final Map<String, String> BRAND_KEYWORDS = brandKeywords();
+    /**
+     * CHAT_RULE_017: approved chat abbreviations are expanded by exact whole word/phrase only,
+     * before category and brand recognition. Insertion order is deliberate: specific phrases
+     * such as "mu bh" take priority over their shorter components.
+     */
+    private static final Map<String, String> APPROVED_ABBREVIATIONS = approvedAbbreviations();
+    /**
+     * An approved product-type text filter prevents a product merely co-categorized with
+     * headsets (for example a camera) from being counted or shown as a headset. This is an
+     * explicit whitelist, never an inferred keyword.
+     */
+    private static final Map<String, String> CATEGORY_TYPE_QUERIES = categoryTypeQueries();
     private static final Set<String> GENERIC_PRODUCT_TOKENS = genericProductTokens();
+    /**
+     * CHAT_RULE_017: approved conversational fillers are not product identifiers. This is an
+     * exact, reviewable whitelist rather than a heuristic, so a model code is never discarded
+     * merely because it looks like ordinary Vietnamese or English.
+     */
+    private static final Set<String> CONVERSATIONAL_FILLER_TOKENS = conversationalFillerTokens();
+    private static final Map<String, Long> PRICE_WORD_VALUES = priceWordValues();
 
     private final CatalogReadService catalogReadService;
     private final OrderReadService orderReadService;
@@ -126,7 +168,7 @@ public class ChatToolService {
             ChatAssistantSettings.Snapshot settings,
             ConversationContext conversationContext
     ) {
-        String normalized = normalize(question);
+        String normalized = normalizeIntent(question);
         boolean english = "en".equals(lang);
 
         Optional<ToolOutcome> fastPath = resolveFastPath(
@@ -161,7 +203,7 @@ public class ChatToolService {
             ChatAssistantSettings.Snapshot settings,
             ConversationContext conversationContext
     ) {
-        String normalized = normalize(question);
+        String normalized = normalizeIntent(question);
         boolean english = "en".equals(lang);
 
         if (isLoginAcknowledgement(normalized)
@@ -169,6 +211,10 @@ public class ChatToolService {
                 && customerId != null) {
             return Optional.of(orderOutcome(customerId, english, OrderScope.LATEST));
         }
+
+        Optional<ToolOutcome> referencedProduct = referencedProductOutcome(
+                question, normalized, lang, english, conversationContext);
+        if (referencedProduct.isPresent()) return referencedProduct;
 
         if (isGreetingOrHelp(normalized)) {
             return Optional.of(ToolOutcome.local(
@@ -214,7 +260,8 @@ public class ChatToolService {
         if (isShopInfoQuestion(normalized)) {
             return Optional.of(shopInfoOutcome(settings, english));
         }
-        if (isPolicyQuestion(normalized)) {
+        // A named model asking about size is product detail, not the generic shop size policy.
+        if (isPolicyQuestion(normalized) && !extractProductQuery(question).hasSpecificIdentifier()) {
             return Optional.of(policyOutcome(normalized, english));
         }
         if (isKnownOffTopic(normalized)) {
@@ -227,6 +274,107 @@ public class ChatToolService {
         return Optional.empty();
     }
 
+    /**
+     * Resolves a demonstrative follow-up from the bounded, server-persisted card allowlist. It
+     * intentionally runs before Gemini so “mẫu này/cái này/nó” cannot be turned into a guessed
+     * product search or a generic fallback.
+     */
+    private Optional<ToolOutcome> referencedProductOutcome(
+            String question,
+            String normalized,
+            String lang,
+            boolean english,
+            ConversationContext conversationContext
+    ) {
+        boolean asksDetail = asksForProductDetail(normalized);
+        if ((!hasProductReference(question, normalized, english)
+                && !(asksDetail && isDetailConfirmation(normalized)))
+                || (!asksDetail && !asksForProductAvailability(normalized))) {
+            return Optional.empty();
+        }
+        ConversationContext context = conversationContext == null
+                ? ConversationContext.empty() : conversationContext;
+        List<String> slugs = context.productSlugs();
+        if (slugs.isEmpty()) return Optional.empty();
+
+        if (slugs.size() > 1) {
+            List<String> names = slugs.stream()
+                    .map(slug -> referencedProductName(slug, lang))
+                    .filter(name -> name != null && !name.isBlank())
+                    .distinct()
+                    .limit(3)
+                    .toList();
+            String choices = names.isEmpty()
+                    ? (english ? "the product card" : "tên mẫu trên thẻ sản phẩm")
+                    : String.join(", ", names);
+            String answer = english
+                    ? "I have more than one recent product card: " + choices + ". "
+                    + "Which model would you like me to check for size, specifications or availability?"
+                    : "Dạ, em đang có nhiều mẫu vừa xem: " + choices + ". "
+                    + "Anh/chị cho em đúng tên mẫu muốn kiểm tra size, thông số hoặc tình trạng còn hàng nhé?";
+            return Optional.of(ToolOutcome.local(answer, "TOOL", false, false, false));
+        }
+
+        Product product;
+        try {
+            product = catalogReadService.getProductBySlug(slugs.get(0), lang);
+        } catch (RuntimeException ignored) {
+            return Optional.of(ToolOutcome.local(
+                    english
+                            ? "I cannot load the recent product detail right now, so I will not guess its options. Please try again shortly or choose Talk to staff for help."
+                            : "Dạ, em chưa tải được chi tiết mẫu vừa xem nên không đoán lựa chọn của sản phẩm. Anh/chị thử lại sau hoặc bấm Gặp nhân viên để được hỗ trợ nhé.",
+                    "TOOL", false, false, false));
+        }
+        if (product == null || sellable(List.of(product)).isEmpty()) {
+            String answer = english
+                    ? "That recent product is no longer available for me to check. Please choose another current product card and I will check its details for you."
+                    : "Dạ, mẫu vừa xem hiện không còn đủ điều kiện để em kiểm tra chắc chắn. Anh/chị chọn một thẻ sản phẩm đang bán khác, em sẽ tra chi tiết giúp mình nhé.";
+            return Optional.of(ToolOutcome.local(answer, "TOOL", false, false, false));
+        }
+
+        DeterministicAnswer detail = productDetailAnswer(question, normalized, english, product);
+        String answer = detail == null
+                ? referencedAvailabilityAnswer(product, english)
+                : detail.answer();
+        return Optional.of(ToolOutcome.local(
+                answer,
+                "TOOL",
+                false,
+                false,
+                false,
+                List.of(),
+                List.of(toCard(product))));
+    }
+
+    private String referencedProductName(String slug, String lang) {
+        try {
+            Product product = catalogReadService.getProductBySlug(slug, lang);
+            return product == null || sellable(List.of(product)).isEmpty()
+                    ? null : plain(product.name(), 160);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static boolean hasProductReference(String question, String normalized, boolean english) {
+        if (hasWord(normalized, "san pham nay", "mau nay", "cai nay", "this one", "this model", "it")) {
+            return true;
+        }
+        if (english) return false;
+        return question != null && Pattern.compile("(?iu)(?:^|[^\\p{L}])nó(?:$|[^\\p{L}])")
+                .matcher(question).find()
+                || hasWord(normalized, "no");
+    }
+
+    private static String referencedAvailabilityAnswer(Product product, boolean english) {
+        String name = plain(product.name(), 160);
+        return english
+                ? "I found " + name + " and it is currently available at BigBike. "
+                + "Please open the product card to review its current options and details."
+                : "Dạ, em đã tìm thấy " + name + " và mẫu này hiện còn hàng tại BigBike. "
+                + "Anh/chị mở thẻ sản phẩm để xem lựa chọn và thông tin hiện có nhé.";
+    }
+
     private ToolOutcome productOutcome(
             String question,
             String normalized,
@@ -235,18 +383,42 @@ public class ChatToolService {
             boolean includeDetail,
             ConversationContext conversationContext
     ) {
-        PriceIntent requested = extractPriceIntent(normalized);
-        CatalogIntent catalogIntent = effectiveCatalogIntent(question, lang, conversationContext);
+        return productOutcome(
+                question,
+                normalized,
+                lang,
+                english,
+                includeDetail,
+                effectiveSearchIntent(question, lang, conversationContext),
+                conversationContext);
+    }
+
+    private ToolOutcome productOutcome(
+            String question,
+            String normalized,
+            String lang,
+            boolean english,
+            boolean includeDetail,
+            SearchIntent searchIntent,
+            ConversationContext conversationContext
+    ) {
+        PriceIntent requested = searchIntent.appliedPrice();
+        CatalogIntent catalogIntent = searchIntent.catalogIntent();
         String category = catalogIntent.category();
         String brand = catalogIntent.brand();
-        String color = extractRequestedOption(normalized, COLOR_REQUEST);
-        String size = extractRequestedOption(normalized, SIZE_REQUEST);
-        ProductQuery query = extractProductQuery(question, catalogIntent.metadataTokens());
+        String color = searchIntent.color();
+        String size = searchIntent.size();
+        ProductQuery query = searchIntent.query();
 
+        List<Attempt> attempts = buildAttempts(
+                query, normalized, category, brand, color, requested, catalogIntent.typeQuery());
         Attempt used = null;
-        List<Product> products = List.of();
-        for (Attempt attempt : buildAttempts(query, normalized, category, brand, color, requested)) {
-            List<Product> candidates = searchAttempt(attempt, lang);
+        AttemptSearchResult usedSearch = null;
+        List<Product> matchingProducts = List.of();
+        boolean inheritedBrandDropped = false;
+        for (Attempt attempt : attempts) {
+            AttemptSearchResult search = searchAttempt(attempt, lang);
+            List<Product> candidates = search.products();
             if (attempt.price().hasBounds() && !attempt.priceDropped()) {
                 // Catalog filtering is based on retail price, while the customer sees the
                 // effective sale price. Merge a broad, still allow-listed page so a discounted
@@ -260,22 +432,89 @@ public class ChatToolService {
                     .toList();
             if (!items.isEmpty()) {
                 used = attempt;
-                products = items.stream().limit(3).toList();
+                usedSearch = search;
+                matchingProducts = items;
                 break;
+            }
+        }
+
+        // A range has two meaningful nearest directions. The normal MIN/MAX fallback remains
+        // unchanged; only RANGE avoids the old price:asc path that surfaced merely the cheapest
+        // products instead of one model just below and one just above the requested interval.
+        if (used == null && requested.kind() == PriceKind.RANGE) {
+            Attempt closestScope = attempts.stream()
+                    .filter(attempt -> !attempt.broadened() && !attempt.priceDropped())
+                    .findFirst()
+                    .orElse(null);
+            if (closestScope != null) {
+                List<Product> candidates = sellable(searchAttemptWide(closestScope, lang)).stream()
+                        .filter(product -> matchesRequestedVariant(product, color, size, lang))
+                        .toList();
+                List<Product> nearest = nearestRangeAlternatives(candidates, requested);
+                if (!nearest.isEmpty()) {
+                    used = new Attempt(
+                            closestScope.query(),
+                            closestScope.category(),
+                            closestScope.brand(),
+                            closestScope.color(),
+                            PriceIntent.none(),
+                            closestScope.sort(),
+                            false,
+                            true,
+                            closestScope.identifierTokens());
+                    usedSearch = new AttemptSearchResult(candidates, null);
+                    matchingProducts = nearest;
+                }
+            }
+        }
+
+        // CHAT_RULE_018: a brand that came only from the previous turn is a reversible
+        // constraint, not a customer choice for this turn. If it is the reason an otherwise
+        // scoped follow-up has no result, retry once without that inherited brand. Never remove
+        // a brand the customer/model grounded in the current turn, and never broaden beyond the
+        // current category.
+        if (used == null && searchIntent.inheritedBrand() && category != null) {
+            List<Attempt> withoutInheritedBrand = buildAttempts(
+                    query, normalized, category, null, color, requested, catalogIntent.typeQuery());
+            for (Attempt attempt : withoutInheritedBrand) {
+                AttemptSearchResult search = searchAttempt(attempt, lang);
+                List<Product> candidates = search.products();
+                if (attempt.price().hasBounds() && !attempt.priceDropped()) {
+                    candidates = mergeProducts(candidates, searchAttemptWide(attempt, lang));
+                }
+                List<Product> items = sellable(candidates)
+                        .stream()
+                        .filter(product -> matchesSellingPrice(product, attempt.price()))
+                        .filter(product -> matchesRequestedVariant(product, color, size, lang))
+                        .toList();
+                if (!items.isEmpty()) {
+                    used = attempt;
+                    usedSearch = search;
+                    matchingProducts = items;
+                    inheritedBrandDropped = true;
+                    break;
+                }
             }
         }
 
         if (used == null) {
             return ToolOutcome.local(
-                    query.hasSpecificIdentifier()
+                    searchIntent.inheritedPrice()
+                            ? inheritedPriceNoMatchAnswer(requested, english)
+                            : query.hasSpecificIdentifier()
                             ? (english
-                            ? "I couldn’t find that exact currently sold BigBike model. I won’t replace it with a different product, price or stock status. Please check the spelling or choose Talk to staff for a verified alternative."
-                            : "Em chưa tìm thấy đúng mẫu đang bán mà anh/chị hỏi trên BigBike. Em không đổi sang sản phẩm khác hoặc đoán giá, tình trạng kho. Anh/chị kiểm tra lại tên mẫu hoặc bấm Gặp nhân viên để được gợi ý thay thế đã xác minh nhé.")
+                            ? "I couldn’t find that exact currently sold BigBike model. I won’t replace it with a different product, price or stock status. Please check the spelling or choose Talk to staff for help finding a suitable alternative."
+                            : "Em chưa tìm thấy đúng mẫu đang bán mà anh/chị hỏi trên BigBike. Em không đổi sang sản phẩm khác hoặc đoán giá, tình trạng kho. Anh/chị kiểm tra lại tên mẫu hoặc bấm Gặp nhân viên để được gợi ý thay thế phù hợp nhé.")
                             : (english
                             ? "I couldn’t find a currently published BigBike product matching that request. I won’t guess a product, price or stock status. Please try a shorter product name or choose Talk to staff."
                             : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này trên BigBike. Em không đoán tên hàng, giá hoặc tình trạng kho. Anh/chị thử nhập tên sản phẩm ngắn hơn hoặc bấm Gặp nhân viên giúp em nhé."),
                     "TOOL", false, false, false);
         }
+
+        List<Product> orderedProducts = used.priceDropped()
+                ? matchingProducts
+                : prioritizePreviouslyShown(matchingProducts, conversationContext);
+        List<Product> products = orderedProducts.stream().limit(3).toList();
 
         List<ChatProductCardResponse> cards = products.stream()
                 .map(ChatToolService::toCard)
@@ -297,9 +536,23 @@ public class ChatToolService {
         payload.put("arguments", arguments);
         payload.put("requestedMinPrice", requested.min() == null ? "" : requested.min());
         payload.put("requestedMaxPrice", requested.max() == null ? "" : requested.max());
-        List<String> notes = searchNotes(used, requested, english);
-        Set<RequiredDisclosure> requiredDisclosures = searchDisclosures(used, requested);
+        boolean inheritedPriceApplied = searchIntent.inheritedPrice() && !used.priceDropped();
+        payload.put("inheritedPrice", inheritedPriceApplied);
+        payload.put("displayedCardCount", products.size());
+        List<String> notes = searchNotes(
+                used, requested, searchIntent.inheritedPrice(), inheritedBrandDropped, english);
+        Set<RequiredDisclosure> requiredDisclosures = searchDisclosures(
+                used, requested, searchIntent.inheritedPrice(), inheritedBrandDropped);
+        CatalogTotals catalogTotals = catalogTotalsFor(
+                searchIntent, query, used, usedSearch, color, lang);
         if (!notes.isEmpty()) payload.put("notes", notes);
+        if (catalogTotals != null) {
+            payload.put("totalItems", catalogTotals.currentTotalItems());
+            payload.put("scopeTotalItems", catalogTotals.scopeTotalItems());
+            if (catalogTotals.priceRangeTotalItems() != null) {
+                payload.put("priceRangeTotalItems", catalogTotals.priceRangeTotalItems());
+            }
+        }
         payload.put("results", products.stream().map(ChatToolService::productSummary).toList());
 
         if (includeDetail && asksForProductDetail(normalized)) {
@@ -324,7 +577,21 @@ public class ChatToolService {
             payload.put("detail", productDetail(detail));
         }
 
-        return ToolOutcome.ai(toJson(payload), cards, requiredDisclosures);
+        List<String> matchingNames = catalogTotals != null
+                && catalogTotals.currentTotalItems() <= 4
+                && matchingProducts.size() == catalogTotals.currentTotalItems()
+                ? orderedProducts.stream()
+                        .map(product -> plain(product.name(), 160))
+                        .filter(name -> !name.isBlank())
+                        .distinct()
+                        .limit(3)
+                        .toList()
+                : List.of();
+
+        return ToolOutcome.ai(
+                toJson(payload), cards, requiredDisclosures, inheritedPriceApplied, catalogTotals,
+                matchingNames,
+                new SearchScope(used.category(), used.brand(), used.price().min(), used.price().max()));
     }
 
     /** Execute one already validated call. This is the only function-calling path to DB reads. */
@@ -337,6 +604,7 @@ public class ChatToolService {
         session.begin(call.name());
         ToolExecution result = switch (call.name()) {
             case ChatToolRegistry.SEARCH_PRODUCTS -> executeSearch(call, context);
+            case ChatToolRegistry.LIST_CATEGORIES -> executeListCategories(context);
             case ChatToolRegistry.GET_PRODUCT -> executeGetProduct(call, context, session);
             case ChatToolRegistry.GET_POLICY -> executePolicy(call, context);
             case ChatToolRegistry.GET_SHOP_INFO -> executeShopInfo(context);
@@ -347,16 +615,39 @@ public class ChatToolService {
         return result;
     }
 
+    private ToolExecution executeListCategories(ToolContext context) {
+        List<Map<String, Object>> categories = catalogReadService
+                .listAssistantCategorySummaries(context.lang()).stream()
+                .map(category -> Map.<String, Object>of(
+                        "name", category.name(),
+                        "sellableProductCount", category.sellableProductCount()))
+                .toList();
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("tool", ChatToolRegistry.LIST_CATEGORIES);
+        response.put("categories", categories);
+        return new ToolExecution(
+                ChatToolRegistry.LIST_CATEGORIES,
+                toJson(response),
+                List.of(),
+                List.of());
+    }
+
     private ToolExecution executeSearch(
             ChatToolRegistry.ValidatedCall call, ToolContext context) {
-        validateSearchAgainstQuestion(call, context);
-        String normalized = normalize(context.question());
+        SearchIntent searchIntent = context.settings().searchAiInterpretationEnabled()
+                ? validateSearchByResult(call, context)
+                : validateSearchAgainstQuestion(call, context);
+        if (!searchIntent.hasUsableConstraint()) {
+            return searchClarification(context);
+        }
+        String normalized = normalizeIntent(context.question());
         ToolOutcome outcome = productOutcome(
                 context.question(),
                 normalized,
                 context.lang(),
                 "en".equals(context.lang()),
                 false,
+                searchIntent,
                 context.conversationContext());
         if (outcome.aiRequired()) {
             DeterministicAnswer terminal = verifiedSearchAnswer(context, outcome);
@@ -366,7 +657,9 @@ public class ChatToolService {
                     outcome.products(),
                     List.of(),
                     outcome.requiredDisclosures(),
-                    terminal);
+                    terminal,
+                    outcome.catalogTotals(),
+                    outcome.effectiveSearchScope());
         }
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("tool", ChatToolRegistry.SEARCH_PRODUCTS);
@@ -378,7 +671,34 @@ public class ChatToolService {
                 List.of(),
                 outcome.actions(),
                 outcome.requiredDisclosures(),
-                DeterministicAnswer.from(outcome));
+                DeterministicAnswer.from(outcome),
+                null,
+                searchIntent.searchScope());
+    }
+
+    /**
+     * The new interpretation path never turns a removed model filter into a broad catalogue
+     * scan. A deterministic clarification keeps the customer turn recoverable while avoiding a
+     * provider answer that might otherwise guess what an empty search meant.
+     */
+    private ToolExecution searchClarification(ToolContext context) {
+        boolean english = "en".equals(context.lang());
+        String answer = english
+                ? "I need one product type, brand, model, colour, size or price range before I search BigBike. Please tell me which item you want so I can check currently sold products without guessing."
+                : "Dạ, em cần anh/chị cho em biết loại hàng, thương hiệu, mẫu, màu, size hoặc tầm giá trước khi tìm. Anh/chị nói rõ món cần xem để em chỉ kiểm tra các sản phẩm BigBike đang bán, không đoán thay mình nhé.";
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("tool", ChatToolRegistry.SEARCH_PRODUCTS);
+        response.put("results", List.of());
+        response.put("notes", List.of(answer));
+        return new ToolExecution(
+                ChatToolRegistry.SEARCH_PRODUCTS,
+                toJson(response),
+                List.of(),
+                List.of(),
+                Set.of(),
+                new DeterministicAnswer(answer, false, false, false),
+                null,
+                null);
     }
 
     /**
@@ -388,13 +708,114 @@ public class ChatToolService {
      */
     private DeterministicAnswer verifiedSearchAnswer(
             ToolContext context, ToolOutcome outcome) {
+        DeterministicAnswer inheritedFilterDropped = verifiedInheritedFilterDroppedAnswer(context, outcome);
+        if (inheritedFilterDropped != null) return inheritedFilterDropped;
+
+        DeterministicAnswer closest = verifiedClosestAlternativeAnswer(context, outcome);
+        if (closest != null) return closest;
+
         DeterministicAnswer variant = verifiedVariantAnswer(context, outcome.products());
         if (variant != null) return variant;
 
         DeterministicAnswer availability = verifiedAvailabilityAnswer(context, outcome.products());
         if (availability != null) return availability;
 
-        return verifiedClosestAlternativeAnswer(context, outcome);
+        DeterministicAnswer inheritedPrice = verifiedInheritedPriceAnswer(context, outcome);
+        if (inheritedPrice != null) return inheritedPrice;
+
+        DeterministicAnswer catalogCount = verifiedCatalogCountAnswer(context, outcome);
+        if (catalogCount != null) return catalogCount;
+        return null;
+    }
+
+    private static DeterministicAnswer verifiedInheritedFilterDroppedAnswer(
+            ToolContext context, ToolOutcome outcome) {
+        if (outcome.products() == null || outcome.products().isEmpty()
+                || !outcome.requiredDisclosures().contains(RequiredDisclosure.INHERITED_FILTER_DROPPED)) {
+            return null;
+        }
+        boolean english = "en".equals(context.lang());
+        String retainedPriceScope = outcome.inheritedPrice()
+                ? (english
+                ? " I am still using the price range from your previous product request."
+                : " Em vẫn lọc theo tầm giá anh/chị đã nêu trước đó.")
+                : "";
+        String answer = english
+                ? "The inherited filter from your previous product request returned no matches, so I removed only that older filter and searched this request again."
+                + retainedPriceScope + " The product cards below are the currently available results after that retry. "
+                + "Tell me a new budget if you would like me to narrow the list again."
+                : "Dạ, bộ lọc đã nêu ở lượt trước không có kết quả phù hợp nên em đã bỏ riêng bộ lọc cũ và tìm lại yêu cầu này."
+                + retainedPriceScope + " Các thẻ bên dưới là kết quả đang bán sau lần tìm lại. "
+                + "Anh/chị có thể gửi tầm giá mới để em lọc hẹp lại nhé.";
+        return new DeterministicAnswer(answer, false, false, false);
+    }
+
+    /**
+     * CHAT_RULE_007/020: the server knows both the exact matching total and the capped card
+     * count, so it writes the sentence instead of asking the model to reconcile them. This keeps
+     * the visible-card count honest while allowing a verified catalog total when one exists.
+     */
+    private static DeterministicAnswer verifiedCatalogCountAnswer(
+            ToolContext context, ToolOutcome outcome) {
+        CatalogTotals totals = outcome.catalogTotals();
+        List<ChatProductCardResponse> products = outcome.products();
+        if (totals == null || products == null || products.isEmpty() || totals.currentTotalItems() <= 0) {
+            return null;
+        }
+        int displayed = products.size();
+        if (displayed != Math.min(totals.currentTotalItems(), 3)) return null;
+
+        boolean english = "en".equals(context.lang());
+        boolean priceScoped = totals.priceRangeTotalItems() != null;
+        String group = catalogGroupLabel(context.question(), context.conversationContext(), english);
+        String total = Long.toString(totals.currentTotalItems());
+        String first = english
+                ? (priceScoped
+                ? "In the price range you asked about, BigBike has " + total + " matching " + group + "."
+                : "BigBike currently has " + total + " matching " + group + ".")
+                : (priceScoped
+                ? "Dạ, trong tầm giá anh/chị hỏi, shop có " + total + " mẫu " + group + "."
+                : "Dạ, shop hiện có " + total + " mẫu " + group + " phù hợp.");
+
+        List<String> names = outcome.matchingProductNames();
+        List<String> sentences = new ArrayList<>();
+        sentences.add(first);
+        if (names != null && !names.isEmpty() && totals.currentTotalItems() > displayed) {
+            sentences.add(english
+                    ? "Representative models include " + String.join(", ", names.stream().limit(3).toList()) + "."
+                    : "Một số mẫu tiêu biểu gồm " + String.join(", ", names.stream().limit(3).toList()) + ".");
+        }
+        sentences.add(english
+                ? (totals.currentTotalItems() > displayed
+                ? "I am showing " + displayed + " representative product cards from those " + total + " matches."
+                : "I am showing all " + displayed + " matching product cards.")
+                : (totals.currentTotalItems() > displayed
+                ? "Em đang hiển thị " + displayed + " thẻ tiêu biểu trong tổng " + total + " mẫu phù hợp."
+                : "Em đang hiển thị đầy đủ " + displayed + " thẻ sản phẩm phù hợp."));
+        sentences.add(english
+                ? "Open a product card to review its current details and options."
+                : "Anh/chị có thể mở từng thẻ để xem thông tin và lựa chọn hiện có nhé.");
+        return new DeterministicAnswer(String.join(" ", sentences), false, false, false);
+    }
+
+    private static String catalogGroupLabel(
+            String question,
+            ConversationContext conversationContext,
+            boolean english
+    ) {
+        String normalized = normalizeIntent(question);
+        String priorCategory = conversationContext == null ? "" : nullToEmpty(conversationContext.category());
+        if (hasWord(normalized, "tai nghe", "headset", "headsets")
+                || priorCategory.contains("tai-nghe")
+                || priorCategory.contains("headset")) {
+            return english ? "headset products" : "tai nghe";
+        }
+        if (hasWord(normalized, "mu bao hiem", "non bao hiem", "helmet", "helmets")
+                || priorCategory.contains("mu-bao-hiem")
+                || priorCategory.contains("helmet")) {
+            return english ? "helmet products" : "mũ bảo hiểm";
+        }
+        return english ? "products" : "sản phẩm";
     }
 
     /**
@@ -404,7 +825,7 @@ public class ChatToolService {
      */
     private DeterministicAnswer verifiedAvailabilityAnswer(
             ToolContext context, List<ChatProductCardResponse> products) {
-        String normalized = normalize(context.question());
+        String normalized = normalizeIntent(context.question());
         CatalogIntent intent = effectiveCatalogIntent(
                 context.question(), context.lang(), context.conversationContext());
         ProductQuery query = extractProductQuery(context.question(), intent.metadataTokens());
@@ -435,22 +856,41 @@ public class ChatToolService {
         if (outcome.products() == null || outcome.products().isEmpty()) return null;
         boolean english = "en".equals(context.lang());
         if (outcome.requiredDisclosures().contains(RequiredDisclosure.PRICE_RANGE_MISS)) {
+            PriceIntent price = effectivePriceForTerminal(context, outcome);
+            String inheritedScope = outcome.inheritedPrice()
+                    ? inheritedPriceScopeLead(price, english) : null;
+            boolean broadened = outcome.requiredDisclosures().contains(RequiredDisclosure.BROADENED_SEARCH);
             return new DeterministicAnswer(
                     english
+                            ? (inheritedScope == null
                             ? "I could not find a currently sold product in the price range you requested. "
+                            : inheritedScope + " but I could not find a currently sold product in that range. ")
                                     + "The product cards below are the closest available options; please tell me if you want a different range."
-                            : "Dạ, em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
-                                    + "Các thẻ bên dưới là phương án gần nhất đang có; anh/chị cho em biết tầm giá khác nếu muốn em lọc tiếp nhé.",
+                                    + (broadened
+                                    ? " This list is broader than your original wording; share a more specific name or category if you want to narrow it."
+                                    : "")
+                            : (inheritedScope == null
+                            ? "Dạ, em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
+                            : inheritedScope + " nhưng chưa tìm thấy sản phẩm đang bán phù hợp. ")
+                                    + "Các thẻ bên dưới là phương án gần nhất đang có; anh/chị cho em biết tầm giá khác nếu muốn em lọc tiếp nhé."
+                                    + (broadened
+                                    ? " Danh sách này cũng rộng hơn cách hỏi ban đầu; anh/chị cho em tên hoặc loại hàng cụ thể hơn để em thu hẹp lại nhé."
+                                    : ""),
                     false,
                     false,
                     false);
         }
         if (outcome.requiredDisclosures().contains(RequiredDisclosure.BROADENED_SEARCH)) {
+            PriceIntent price = effectivePriceForTerminal(context, outcome);
+            String inheritedScope = outcome.inheritedPrice()
+                    ? inheritedPriceScopeLead(price, english) : null;
             return new DeterministicAnswer(
                     english
-                            ? "The product cards below come from a broader search than your original wording. "
+                            ? (inheritedScope == null ? "" : inheritedScope + ". ")
+                                    + "The product cards below come from a broader search than your original wording. "
                                     + "Please tell me a more specific name, category or budget so I can narrow the results."
-                            : "Dạ, danh sách thẻ bên dưới đang rộng hơn yêu cầu ban đầu của anh/chị. "
+                            : (inheritedScope == null ? "Dạ, " : inheritedScope + ". ")
+                                    + "Danh sách thẻ bên dưới đang rộng hơn yêu cầu ban đầu của anh/chị. "
                                     + "Anh/chị cho em tên mẫu, loại hàng hoặc tầm giá cụ thể hơn để em lọc lại nhé.",
                     false,
                     false,
@@ -459,14 +899,112 @@ public class ChatToolService {
         return null;
     }
 
+    /**
+     * A carried price range is a constraint the customer did not repeat verbatim. Return a
+     * backend-written terminal answer so the scope can never be hidden by model prose.
+     */
+    private static DeterministicAnswer verifiedInheritedPriceAnswer(
+            ToolContext context, ToolOutcome outcome) {
+        if (!outcome.inheritedPrice() || outcome.products() == null || outcome.products().isEmpty()) {
+            return null;
+        }
+        boolean english = "en".equals(context.lang());
+        PriceIntent price = effectivePriceForTerminal(context, outcome);
+        String scopeLead = inheritedPriceScopeLead(price, english);
+        if (scopeLead == null) return null;
+        String countSentence = inheritedCatalogCountSentence(
+                outcome.catalogTotals(), context.question(), english);
+        String answer = english
+                ? scopeLead + ". " + countSentence
+                        + " The product cards below are currently sold and available within that range; "
+                        + "please open them to choose the model that suits you."
+                : scopeLead + ". " + countSentence
+                        + " Các thẻ bên dưới là sản phẩm đang bán, còn hàng trong phạm vi này; "
+                        + "anh/chị có thể xem thêm để chọn mẫu phù hợp nhé.";
+        return new DeterministicAnswer(answer, false, false, false);
+    }
+
+    /** Uses only current-turn count evidence; no count is invented when the search has none. */
+    private static String inheritedCatalogCountSentence(
+            CatalogTotals totals, String question, boolean english) {
+        if (totals == null || totals.priceRangeTotalItems() == null) return "";
+        String normalizedQuestion = normalizeIntent(question);
+        boolean headsetScope = hasWord(normalizedQuestion, "tai nghe");
+        if (english) {
+            String scope = headsetScope ? "headset" : "this product group";
+            return "BigBike currently has " + totals.scopeTotalItems() + " " + scope
+                    + " products, including " + totals.priceRangeTotalItems() + " in that range.";
+        }
+        String scope = headsetScope ? "tai nghe" : "trong nhóm này";
+        return "Shop hiện có " + totals.scopeTotalItems() + " mẫu " + scope
+                + ", trong tầm giá này có " + totals.priceRangeTotalItems() + " mẫu.";
+    }
+
+    private static PriceIntent effectivePriceForTerminal(ToolContext context, ToolOutcome outcome) {
+        ConversationContext conversationContext = context.conversationContext() == null
+                ? ConversationContext.empty() : context.conversationContext();
+        return outcome.inheritedPrice()
+                ? priceIntentFromContext(conversationContext)
+                : extractPriceIntent(normalizeIntent(context.question()));
+    }
+
+    private static String inheritedPriceNoMatchAnswer(PriceIntent price, boolean english) {
+        String scopeLead = inheritedPriceScopeLead(price, english);
+        if (scopeLead == null) {
+            return english
+                    ? "I could not find a currently sold product matching this request. Please try a different price range or choose Talk to staff for help choosing another option."
+                    : "Dạ, em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Anh/chị thử đổi tầm giá hoặc bấm Gặp nhân viên để BigBike kiểm tra thêm nhé.";
+        }
+        return english
+                ? scopeLead + " but I could not find a currently sold product that matches it. "
+                        + "Please try a different range or choose Talk to staff for help choosing another option."
+                : scopeLead + " nhưng chưa tìm thấy sản phẩm đang bán phù hợp. "
+                        + "Anh/chị thử đổi tầm giá hoặc bấm Gặp nhân viên để BigBike kiểm tra thêm nhé.";
+    }
+
+    private static String inheritedPriceScopeLead(PriceIntent price, boolean english) {
+        if (price == null || !price.hasBounds()) return null;
+        String scope = priceScopeLabel(price, english);
+        return english
+                ? "I am filtering by " + scope + " from your previous product request"
+                : "Dạ, em đang lọc theo " + scope + " mà anh/chị đã nêu trước đó";
+    }
+
+    private static String priceScopeLabel(PriceIntent price, boolean english) {
+        if (price.min() != null && price.max() != null) {
+            return english
+                    ? "the range from " + millionLabel(price.min(), true) + " to " + millionLabel(price.max(), true)
+                    : "tầm giá từ " + millionLabel(price.min(), false) + " đến " + millionLabel(price.max(), false);
+        }
+        if (price.min() != null) {
+            return english
+                    ? "prices from " + millionLabel(price.min(), true) + " upward"
+                    : "tầm giá từ " + millionLabel(price.min(), false) + " trở lên";
+        }
+        return english
+                ? "prices under " + millionLabel(price.max(), true)
+                : "tầm giá dưới " + millionLabel(price.max(), false);
+    }
+
+    private static String millionLabel(long amount, boolean english) {
+        String millions = BigDecimal.valueOf(amount)
+                .divide(BigDecimal.valueOf(1_000_000L))
+                .stripTrailingZeros()
+                .toPlainString();
+        return english
+                ? millions + " million"
+                : millions.replace('.', ',') + " triệu";
+    }
+
     private DeterministicAnswer verifiedVariantAnswer(
             ToolContext context, List<ChatProductCardResponse> products) {
-        String normalized = normalize(context.question());
+        String normalized = normalizeIntent(context.question());
         CatalogIntent intent = effectiveCatalogIntent(
                 context.question(), context.lang(), context.conversationContext());
         ProductQuery query = extractProductQuery(context.question(), intent.metadataTokens());
+        ProductDetailIntent detailIntent = productDetailIntent(normalized);
         if (!asksForProductDetail(normalized) || !query.hasSpecificIdentifier()
-                || products == null || products.size() != 1) {
+                || !detailIntent.hasRequestedDetail() || products == null || products.size() != 1) {
             return null;
         }
 
@@ -475,74 +1013,392 @@ public class ChatToolService {
         try {
             product = catalogReadService.getProductBySlug(products.get(0).slug(), context.lang());
         } catch (RuntimeException ignored) {
-            return detailUnavailableAnswer(english);
+            return detailUnavailableAnswer(english, detailIntent);
         }
         if (product == null || sellable(List.of(product)).isEmpty()) {
-            return detailUnavailableAnswer(english);
+            return detailUnavailableAnswer(english, detailIntent);
         }
 
+        return productDetailAnswer(context.question(), normalized, english, product);
+    }
+
+    private static DeterministicAnswer productDetailAnswer(
+            String question,
+            String normalized,
+            boolean english,
+            Product product
+    ) {
+        ProductDetailIntent detailIntent = productDetailIntent(normalized);
+        if (!detailIntent.hasRequestedDetail()) return null;
         Map<String, List<String>> options = normalizedAvailableOptions(product.variants());
         List<String> colors = options.getOrDefault("color", List.of()).stream().limit(8).toList();
-        List<String> sizes = options.getOrDefault("size", List.of()).stream().limit(8).toList();
-        if (colors.isEmpty() && sizes.isEmpty()) return detailUnavailableAnswer(english);
-
-        String optionText = optionText(colors, sizes, english);
+        List<String> sizes = sortSizes(options.getOrDefault("size", List.of())).stream().limit(8).toList();
         String name = plain(product.name(), 160);
-        String answer = english
-                ? "I checked " + name + " and its currently sellable options are " + optionText
-                        + ". These are only variants that can currently be sold. Open the product page to choose the valid colour-and-size combination, or choose Talk to staff if you need confirmation."
-                : "Dạ, em đã kiểm tra " + name + " và các lựa chọn đang bán là " + optionText
-                        + ". Đây chỉ là các biến thể hiện còn có thể bán. Anh/chị mở trang sản phẩm để chọn đúng tổ hợp màu và size, hoặc bấm Gặp nhân viên nếu cần xác nhận thêm nhé.";
-        return new DeterministicAnswer(answer, false, false, false);
+        List<String> sentences = new ArrayList<>();
+        if (detailIntent.technical()) {
+            List<String> facts = technicalFacts(product);
+            sentences.add(english
+                    ? (facts.isEmpty()
+                    ? "BigBike does not have technical specifications saved for " + name + "."
+                    : "The saved technical details for " + name + " are " + String.join("; ", facts) + ".")
+                    : (facts.isEmpty()
+                    ? "Dạ, shop chưa có thông số kỹ thuật được lưu cho " + name + "."
+                    : "Dạ, thông số kỹ thuật đã lưu cho " + name + ": " + String.join("; ", facts) + "."));
+        }
+        if (detailIntent.size()) {
+            List<String> guideRows = sizeGuideRows(product);
+            String sellableSizes = sizes.isEmpty()
+                    ? (english ? "no currently available size is listed" : "chưa có size đang bán được ghi nhận")
+                    : String.join(", ", sizes);
+            if (isDetailConfirmation(normalized)) {
+                sentences.add(english
+                        ? "Yes, " + name + " currently has these sellable sizes: " + sellableSizes + "."
+                        : "Dạ, đúng rồi: " + name + " hiện có các size đang bán là " + sellableSizes + ".");
+                sentences.add(english
+                        ? (guideRows.isEmpty()
+                        ? "BigBike does not have a saved measurement size chart for this model."
+                        : "The saved size guide is " + String.join("; ", guideRows) + ".")
+                        : (guideRows.isEmpty()
+                        ? "Shop chưa có bảng size theo số đo được lưu cho mẫu này."
+                        : "Bảng size đã lưu: " + String.join("; ", guideRows) + "."));
+            } else if (english) {
+                sentences.add("The currently sellable sizes are " + sellableSizes + "."
+                        + (guideRows.isEmpty()
+                        ? ""
+                        : " The saved size guide is " + String.join("; ", guideRows) + "."));
+                if (guideRows.isEmpty()) {
+                    sentences.add("BigBike does not have a saved measurement size chart for this model.");
+                }
+            } else {
+                sentences.add("Các size đang bán là " + sellableSizes + "."
+                        + (guideRows.isEmpty()
+                        ? ""
+                        : " Bảng size đã lưu: " + String.join("; ", guideRows) + "."));
+                if (guideRows.isEmpty()) {
+                    sentences.add("Shop chưa có bảng size theo số đo được lưu cho mẫu này.");
+                }
+            }
+        }
+        if (detailIntent.color()) {
+            sentences.add(english
+                    ? (colors.isEmpty()
+                    ? "There is no safely displayable current colour name for this model."
+                    : "The currently sellable colours are " + String.join(", ", colors) + ".")
+                    : (colors.isEmpty()
+                    ? "Hiện chưa có tên màu đang bán có thể hiển thị an toàn cho mẫu này."
+                    : "Các màu đang bán là " + String.join(", ", colors) + "."));
+        }
+        sentences.add(english
+                ? (detailIntent.size()
+                ? "Measure your head circumference first, then choose Talk to staff if you would like size advice."
+                : "Open the product page for the complete saved information, or choose Talk to staff if you need confirmation.")
+                : (detailIntent.size()
+                ? "Anh/chị nên đo vòng đầu trước, rồi bấm Gặp nhân viên nếu cần tư vấn chọn cỡ nhé."
+                : "Anh/chị có thể mở trang sản phẩm để xem đầy đủ thông tin đã lưu, hoặc bấm Gặp nhân viên nếu cần xác nhận thêm nhé."));
+        return new DeterministicAnswer(String.join(" ", sentences), false, false, false);
     }
 
-    private static String optionText(List<String> colors, List<String> sizes, boolean english) {
-        List<String> parts = new ArrayList<>();
-        if (!colors.isEmpty()) {
-            parts.add((english ? "colours " : "màu ") + String.join(", ", colors));
-        }
-        if (!sizes.isEmpty()) {
-            parts.add((english ? "sizes " : "size ") + String.join(", ", sizes));
-        }
-        return String.join(english ? "; " : "; ", parts);
+    private static boolean isDetailConfirmation(String normalized) {
+        return hasWord(normalized, "dung khong", "dung ko", "phai khong", "right");
     }
 
-    private static DeterministicAnswer detailUnavailableAnswer(boolean english) {
+    private static ProductDetailIntent productDetailIntent(String normalized) {
+        return new ProductDetailIntent(
+                hasWord(normalized, "thong so", "trong luong", "can nang", "weight", "spec", "specs",
+                        "dot", "ece", "chuan an toan", "thong gio"),
+                hasWord(normalized, "size", "sizes", "kich co", "bang size", "bang co", "chon co",
+                        "size guide"),
+                hasWord(normalized, "mau", "mau sac", "color", "colour"));
+    }
+
+    /** Only facts physically present in stored product text are eligible for the chat summary. */
+    private static List<String> technicalFacts(Product product) {
+        Map<String, RankedTechnicalFact> facts = new LinkedHashMap<>();
+        List<String> storedSpecificationSources = List.of(
+                nullToEmpty(product.specifications()),
+                nullToEmpty(product.specStats()));
+        // Product descriptions are sales copy, not a second specification source.  Only fall
+        // back to them when both dedicated fields are empty, preserving the documented source
+        // order and preventing a marketing sentence from displacing saved specifications.
+        List<String> sources = storedSpecificationSources.stream().anyMatch(source -> !source.isBlank())
+                ? storedSpecificationSources
+                : List.of(nullToEmpty(product.description()), nullToEmpty(product.shortDescription()));
+        for (int sourceOrder = 0; sourceOrder < sources.size(); sourceOrder++) {
+            int position = 0;
+            for (String sentence : readableTechnicalProductText(sources.get(sourceOrder))
+                    .split("(?<=[.!?;])\\s+")) {
+                String fact = sentence.replaceAll("[.!?;]+$", "").trim();
+                int score = technicalFactScore(fact);
+                if (score <= 0) {
+                    position++;
+                    continue;
+                }
+                String normalizedFact = normalize(fact);
+                facts.putIfAbsent(normalizedFact,
+                        new RankedTechnicalFact(plain(fact, 320), score, sourceOrder, position));
+                position++;
+            }
+        }
+        return facts.values().stream()
+                .sorted(Comparator.comparingInt(RankedTechnicalFact::score).reversed()
+                        .thenComparingInt(RankedTechnicalFact::sourceOrder)
+                        .thenComparingInt(RankedTechnicalFact::position))
+                .map(RankedTechnicalFact::fact)
+                .limit(3)
+                .toList();
+    }
+
+    private static int technicalFactScore(String fact) {
+        if (fact == null || fact.isBlank()) return 0;
+        String normalized = normalize(fact);
+        if (isTechnicalHeadingFragment(fact, normalized)) return 0;
+        boolean safety = hasWord(normalized, "dot", "ece", "fmvss", "tieu chuan an toan",
+                "chuan an toan", "safety standard");
+        boolean material = hasWord(normalized, "abs", "eps", "polycarbonate", "carbon", "composite");
+        boolean measurement = TECHNICAL_MEASUREMENT.matcher(fact).find()
+                || hasWord(normalized, "trong luong", "can nang", "weight", "kich thuoc", "dimensions");
+        boolean technical = hasWord(normalized, "thong gio", "khe lay gio", "khe thoat gio", "pinlock",
+                "visor", "chin curtain");
+        if (!(safety || material || measurement || technical)) return 0;
+        return safety ? 400 : material ? 300 : measurement ? 200 : 100;
+    }
+
+    private static boolean isTechnicalHeadingFragment(String fact, String normalized) {
+        String compact = fact.replaceAll("[^\\p{L}]", "");
+        boolean upperCase = !compact.isBlank() && compact.equals(compact.toUpperCase(Locale.ROOT));
+        return upperCase && !fact.matches(".*\\d.*") && hasWord(normalized,
+                "tieu chuan an toan", "thong so ky thuat", "tinh nang", "chat lieu", "kich thuoc");
+    }
+
+    /** Heading-only fragments are not technical evidence; keep only their body content. */
+    private static String readableTechnicalProductText(String value) {
+        if (value == null || value.isBlank()) return "";
+        String withoutHeadings = value.replaceAll("(?is)<h[1-6][^>]*>.*?</h[1-6]>", " ");
+        return readableProductText(withoutHeadings);
+    }
+
+    private record RankedTechnicalFact(String fact, int score, int sourceOrder, int position) {}
+
+    private static List<String> sizeGuideRows(Product product) {
+        String guide = product.sizeGuideSection() == null
+                ? product.sizeGuide() : product.sizeGuideSection().getHtml();
+        if (guide == null || guide.isBlank()) return List.of();
+        Map<String, String> rows = new LinkedHashMap<>();
+        Matcher matcher = SIZE_GUIDE_RANGE.matcher(readableProductText(guide));
+        while (matcher.find()) {
+            String size = matcher.group(1).toUpperCase(Locale.ROOT);
+            rows.putIfAbsent(size, size + " " + matcher.group(2) + "–" + matcher.group(3) + " cm");
+        }
+        return sortSizes(new ArrayList<>(rows.keySet())).stream().map(rows::get).toList();
+    }
+
+    private static List<String> sortSizes(List<String> values) {
+        if (values == null || values.isEmpty()) return List.of();
+        List<String> order = List.of("XS", "S", "M", "L", "XL", "XXL");
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .distinct()
+                .sorted(Comparator.<String>comparingInt(value -> {
+                    int index = order.indexOf(value);
+                    return index < 0 ? Integer.MAX_VALUE : index;
+                }).thenComparing(String::compareTo))
+                .toList();
+    }
+
+    private static String readableProductText(String value) {
+        if (value == null || value.isBlank()) return "";
+        return plain(value.replaceAll("(?i)</(?:p|li|h[1-6])>|<br\\s*/?>", ". "), 4_000);
+    }
+
+    private static DeterministicAnswer detailUnavailableAnswer(
+            boolean english, ProductDetailIntent detailIntent) {
+        String requested = detailIntent.technical()
+                ? (english ? "technical details" : "thông số kỹ thuật")
+                : detailIntent.size()
+                ? (english ? "size information" : "thông tin size")
+                : (english ? "colour information" : "thông tin màu");
         return new DeterministicAnswer(
                 english
-                        ? "I found the matching product, but I can’t verify its currently sellable size or colour options right now. I won’t guess the options. Please choose Talk to staff so BigBike can check it directly."
-                        : "Dạ, em đã tìm thấy sản phẩm phù hợp nhưng chưa xác minh được lựa chọn size hoặc màu đang bán. Em không đoán các lựa chọn này. Anh/chị bấm Gặp nhân viên để BigBike kiểm tra trực tiếp giúp mình nhé.",
+                        ? "I found the matching product, but its " + requested + " is not available right now. I will not guess. Please open the product page later or choose Talk to staff so BigBike can check it directly."
+                        : "Dạ, em đã tìm thấy sản phẩm phù hợp nhưng hiện chưa có đủ thông tin về " + requested + ". Em không đoán thông tin này. Anh/chị mở trang sản phẩm sau hoặc bấm Gặp nhân viên để BigBike kiểm tra trực tiếp giúp mình nhé.",
                 false,
                 true,
                 false);
     }
 
-    private void validateSearchAgainstQuestion(
+    private SearchIntent validateSearchAgainstQuestion(
             ChatToolRegistry.ValidatedCall call, ToolContext context) {
         Map<String, Object> arguments = call.arguments();
         if (!context.lang().equals(arguments.get("lang"))) {
             throw new IllegalArgumentException("Tool language does not match request");
         }
-        String normalized = normalize(context.question());
-        PriceIntent price = extractPriceIntent(normalized);
-        assertOptionalBound(arguments, "minPrice", price.min());
-        assertOptionalBound(arguments, "maxPrice", price.max());
-
-        CatalogIntent catalogIntent = effectiveCatalogIntent(
+        String normalized = normalizeIntent(context.question());
+        SearchIntent derived = effectiveSearchIntent(
                 context.question(), context.lang(), context.conversationContext());
-        assertOptionalCatalogFilter(arguments, "category", catalogIntent.category(), normalized);
-        assertOptionalCatalogFilter(arguments, "brand", catalogIntent.brand(), normalized);
+        assertOptionalBound(arguments, "minPrice", derived.appliedPrice().min());
+        assertOptionalBound(arguments, "maxPrice", derived.appliedPrice().max());
+
+        CatalogIntent catalogIntent = applyVerifiedModelCatalogFilters(
+                arguments, derived.catalogIntent());
 
         for (String field : List.of("query", "color", "size")) {
             Object raw = arguments.get(field);
-            if (raw instanceof String text && !allTokensAppear(normalized, text)) {
+            boolean verifiedCatalogMeaning = "query".equals(field)
+                    && raw instanceof String text
+                    && isVerifiedCatalogSemanticProposal(text, catalogIntent);
+            if (raw instanceof String text
+                    && !allTokensAppear(normalized, text)
+                    && !verifiedCatalogMeaning) {
                 throw new IllegalArgumentException("Tool filter is not grounded in the question");
             }
         }
         Object sort = arguments.get("sort");
-        if (sort != null && !sortFor(price, normalized).equals(sort)) {
+        if (sort != null && !sortFor(derived.appliedPrice(), normalized).equals(sort)) {
             throw new IllegalArgumentException("Tool sort conflicts with the question");
         }
+        // The accepted category/brand values came from the model call, but the phrase tokens
+        // remain the deterministic evidence parsed from the current question. This lets model
+        // interpretation help only inside the public-catalogue boundary selected by the owner.
+        ProductQuery query = extractProductQuery(context.question(), catalogIntent.metadataTokens());
+        return new SearchIntent(
+                catalogIntent,
+                query,
+                derived.appliedPrice(),
+                derived.inheritedPrice(),
+                derived.inheritedBrand(),
+                derived.color(),
+                derived.size());
+    }
+
+    /**
+     * Đợt 2: Gemini chooses a useful interpretation; the backend independently compares each
+     * proposed filter with the customer input, persisted safe scope and current public metadata.
+     * A bad semantic field is discarded rather than becoming an exception that loses the turn.
+     */
+    private SearchIntent validateSearchByResult(
+            ChatToolRegistry.ValidatedCall call, ToolContext context) {
+        Map<String, Object> arguments = call.arguments();
+        String normalized = normalizeIntent(context.question());
+        ConversationContext previous = context.conversationContext() == null
+                ? ConversationContext.empty() : context.conversationContext();
+        CatalogVocabulary vocabulary = publicCatalogVocabulary();
+
+        boolean categorySupplied = arguments.get("category") instanceof String value && !value.isBlank();
+        boolean brandSupplied = arguments.get("brand") instanceof String value && !value.isBlank();
+        String category = acceptedPublicCatalogTarget(
+                arguments.get("category"), vocabulary.categoryAliases());
+        String brand = acceptedPublicCatalogTarget(
+                arguments.get("brand"), vocabulary.brandAliases());
+        // A category/brand explicitly recognized from the current customer turn is safe
+        // evidence that takes precedence only when the model is retaining the previous product
+        // family. A broad current phrase such as “mũ” must not erase a more specific
+        // current-turn model category such as fullface.
+        CatalogIntent directCatalog = resolveCatalogIntent(context.question(), context.lang());
+        if (directCatalog.category() != null && ((!categorySupplied && category == null)
+                || category != null
+                && categoryChangedProductFamily(directCatalog.category(), previous.category())
+                && sameCategoryProductFamily(category, previous.category()))) {
+            category = directCatalog.category();
+        }
+        if (directCatalog.brand() != null) {
+            brand = directCatalog.brand();
+        }
+        CatalogIntent catalogIntent = catalogIntentForTargets(category, brand);
+        ProductQuery query = sanitizeModelProductQuery(
+                arguments.get("query"), catalogIntent, context.question());
+
+        // Only a short product follow-up can inherit a previously verified scope. Explicit
+        // model/name wording never inherits it, so an unrelated product cannot silently be
+        // constrained by a prior conversation.
+        boolean categoryChanged = categoryChanged(category, previous);
+        boolean inheritedBrand = false;
+        if (!categoryChanged
+                && !query.hasSpecificIdentifier()
+                && isProductFollowUp(normalized)
+                && previous.hasCatalogScope()) {
+            category = category == null ? previous.category() : category;
+            if (brand == null && !brandSupplied && previous.brand() != null) {
+                brand = previous.brand();
+                inheritedBrand = true;
+            }
+            catalogIntent = catalogIntentForTargets(category, brand);
+            query = sanitizeModelProductQuery(
+                    arguments.get("query"), catalogIntent, context.question());
+        }
+
+        PriceIntent directPrice = extractPriceIntent(normalized);
+        boolean inheritedPrice = !directPrice.hasBounds()
+                && !isPriceScopeReset(normalized)
+                && hasConversationPrice(previous)
+                && shouldApplyConversationPriceScope(normalized, catalogIntent, query, previous);
+        // minPrice/maxPrice supplied by Gemini are deliberately not used. The price scope is
+        // always the parser result from this customer turn or an already verified prior scope.
+        PriceIntent appliedPrice = inheritedPrice ? priceIntentFromContext(previous) : directPrice;
+        String color = verifiedCustomerOption(arguments.get("color"), normalized);
+        String size = verifiedCustomerOption(arguments.get("size"), normalized);
+        return new SearchIntent(
+                catalogIntent, query, appliedPrice, inheritedPrice, inheritedBrand, color, size);
+    }
+
+    private static CatalogIntent catalogIntentForTargets(String category, String brand) {
+        Set<String> metadataTokens = new LinkedHashSet<>();
+        if (category != null) addPhraseTokens(metadataTokens, category);
+        if (brand != null) addPhraseTokens(metadataTokens, brand);
+        return new CatalogIntent(
+                category,
+                brand,
+                Set.copyOf(metadataTokens),
+                approvedTypeQuery(category));
+    }
+
+    /** A model field can use only one exact canonical alias from live public metadata. */
+    private static String acceptedPublicCatalogTarget(
+            Object supplied, List<CatalogAlias> publicAliases) {
+        if (!(supplied instanceof String text) || publicAliases == null) return null;
+        String normalizedValue = catalogSemanticPhrase(text);
+        if (normalizedValue.isBlank()) return null;
+        List<String> targets = publicAliases.stream()
+                .filter(CatalogAlias::canonical)
+                .filter(alias -> normalizedValue.equals(alias.phrase()))
+                .map(CatalogAlias::target)
+                .distinct()
+                .toList();
+        return targets.size() == 1 ? targets.get(0) : null;
+    }
+
+    /**
+     * Generic wording may be normalised by Gemini, but every model/name/code token must already
+     * exist in the customer's own message. This retains semantic product-type interpretation
+     * without letting a hallucinated concrete model create a card or a fallback search.
+     */
+    private ProductQuery sanitizeModelProductQuery(
+            Object supplied,
+            CatalogIntent catalogIntent,
+            String customerQuestion
+    ) {
+        if (!(supplied instanceof String text) || text.isBlank()) return ProductQuery.empty();
+        ProductQuery proposed = extractProductQuery(text, catalogIntent.metadataTokens());
+        if (!proposed.hasSpecificIdentifier()) return proposed;
+        ProductQuery customer = extractProductQuery(customerQuestion, catalogIntent.metadataTokens());
+        Set<String> customerIdentifiers = new LinkedHashSet<>(customer.identifiers());
+        List<String> tokens = proposed.tokens().stream()
+                .filter(token -> !proposed.identifiers().contains(token)
+                        || customerIdentifiers.contains(token))
+                .toList();
+        List<String> identifiers = tokens.stream()
+                .filter(customerIdentifiers::contains)
+                .toList();
+        return new ProductQuery(String.join(" ", tokens), List.copyOf(tokens), List.copyOf(identifiers));
+    }
+
+    /** Colour and size remain literal customer constraints, never semantic expansion fields. */
+    private static String verifiedCustomerOption(Object supplied, String normalizedQuestion) {
+        if (!(supplied instanceof String text) || !allTokensAppear(normalizedQuestion, text)) {
+            return null;
+        }
+        String value = normalize(text).replaceAll("[^\\p{Alnum}]+", " ").trim();
+        return value.isBlank() ? null : value;
     }
 
     private static void assertOptionalBound(
@@ -554,20 +1410,79 @@ public class ChatToolService {
         }
     }
 
-    private static void assertOptionalCatalogFilter(
+    private CatalogIntent applyVerifiedModelCatalogFilters(
             Map<String, Object> arguments,
-            String field,
-            String protectedValue,
-            String normalizedQuestion
+            CatalogIntent deterministicIntent
     ) {
-        Object supplied = arguments.get(field);
-        if (!(supplied instanceof String text)) return;
-        String normalizedValue = normalize(text).replace('-', ' ');
-        boolean matchesProtected = protectedValue != null
-                && normalize(protectedValue).replace('-', ' ').equals(normalizedValue);
-        if (!matchesProtected && !allTokensAppear(normalizedQuestion, normalizedValue)) {
+        CatalogVocabulary vocabulary = publicCatalogVocabulary();
+        String category = verifiedModelCatalogTarget(
+                arguments.get("category"), deterministicIntent.category(), vocabulary.categoryAliases());
+        String brand = verifiedModelCatalogTarget(
+                arguments.get("brand"), deterministicIntent.brand(), vocabulary.brandAliases());
+        return new CatalogIntent(
+                category,
+                brand,
+                deterministicIntent.metadataTokens(),
+                deterministicIntent.typeQuery());
+    }
+
+    /**
+     * Model catalogue fields become usable only after both checks pass: the current question
+     * has already resolved the same target deterministically, and the model value names that
+     * target through live public metadata. This intentionally does not loosen name/model,
+     * price, colour or size validation.
+     */
+    private static String verifiedModelCatalogTarget(
+            Object supplied,
+            String deterministicTarget,
+            List<CatalogAlias> publicAliases
+    ) {
+        if (supplied == null) return deterministicTarget;
+        if (!(supplied instanceof String text) || deterministicTarget == null) {
             throw new IllegalArgumentException("Tool catalog filter is not grounded in the question");
         }
+        List<String> mappedTargets = publicAliases.stream()
+                .filter(CatalogAlias::canonical)
+                .filter(alias -> catalogSemanticPhrase(text).equals(alias.phrase()))
+                .map(CatalogAlias::target)
+                .distinct()
+                .toList();
+        if (mappedTargets.size() != 1 || !deterministicTarget.equals(mappedTargets.get(0))) {
+            throw new IllegalArgumentException("Tool catalog filter is not grounded in the question");
+        }
+        return deterministicTarget;
+    }
+
+    /**
+     * Some providers put a category phrase in the generic query field. It is accepted only as
+     * a category/brand meaning already proven by the current question and live public metadata;
+     * it never becomes an expanded model/name query.
+     */
+    private boolean isVerifiedCatalogSemanticProposal(String supplied, CatalogIntent deterministicIntent) {
+        if (supplied == null || deterministicIntent == null) return false;
+        CatalogVocabulary vocabulary = publicCatalogVocabulary();
+        String normalizedValue = catalogSemanticPhrase(supplied);
+        return mapsPublicCanonicalAliasToTarget(
+                normalizedValue, deterministicIntent.category(), vocabulary.categoryAliases())
+                || mapsPublicCanonicalAliasToTarget(
+                normalizedValue, deterministicIntent.brand(), vocabulary.brandAliases());
+    }
+
+    private static boolean mapsPublicCanonicalAliasToTarget(
+            String normalizedValue, String target, List<CatalogAlias> aliases) {
+        if (target == null) return false;
+        List<String> mappedTargets = aliases.stream()
+                .filter(CatalogAlias::canonical)
+                .filter(alias -> normalizedValue.equals(alias.phrase()))
+                .map(CatalogAlias::target)
+                .distinct()
+                .toList();
+        return mappedTargets.size() == 1 && target.equals(mappedTargets.get(0));
+    }
+
+    /** Normalizes a model-supplied public category/brand phrase without granting fuzzy matching. */
+    private static String catalogSemanticPhrase(String value) {
+        return normalize(value).replaceAll("[^\\p{Alnum}]+", " ").trim();
     }
 
     private static boolean allTokensAppear(String normalizedQuestion, String candidate) {
@@ -588,22 +1503,11 @@ public class ChatToolService {
      * the model prompt (CHAT_RULE_003–005 and CHAT_RULE_017).
      */
     private CatalogIntent resolveCatalogIntent(String question, String lang) {
-        String normalized = normalize(question);
+        String normalized = normalizeIntent(question);
         if (normalized.isBlank()) return CatalogIntent.empty();
 
-        List<CatalogAlias> categoryAliases = new ArrayList<>();
-        Set<String> categorySlugs = new LinkedHashSet<>();
-        try {
-            // Load both public localizations: an English storefront must still understand a
-            // Vietnamese category word and vice versa, but we never send either list to Gemini.
-            addCategoryAliases(categoryAliases, categorySlugs, catalogReadService.listAssistantCategories("vi"));
-            addCategoryAliases(categoryAliases, categorySlugs, catalogReadService.listAssistantCategories("en"));
-        } catch (RuntimeException ignored) {
-            // A temporary metadata-read failure must not turn into an invented category. The
-            // later allow-listed search will either verify a product or give the safe fallback.
-        }
-
-        Optional<CatalogAlias> categoryMatch = bestCatalogAlias(normalized, categoryAliases);
+        CatalogVocabulary vocabulary = publicCatalogVocabulary();
+        Optional<CatalogAlias> categoryMatch = bestCatalogAlias(normalized, vocabulary.categoryAliases());
         String category = categoryMatch.map(CatalogAlias::target).orElse(null);
         Set<String> metadataTokens = new LinkedHashSet<>();
         categoryMatch.ifPresent(match -> addPhraseTokens(metadataTokens, match.phrase()));
@@ -616,7 +1520,8 @@ public class ChatToolService {
         if (category == null) {
             String legacyCategory = matchKeyword(normalized, CATEGORY_KEYWORDS);
             if (legacyCategory != null
-                    && (categorySlugs.isEmpty() || categorySlugs.contains(legacyCategory))) {
+                    && (vocabulary.categorySlugs().isEmpty()
+                    || vocabulary.categorySlugs().contains(legacyCategory))) {
                 category = legacyCategory;
                 CATEGORY_KEYWORDS.entrySet().stream()
                         .filter(entry -> legacyCategory.equals(entry.getValue()))
@@ -625,7 +1530,52 @@ public class ChatToolService {
                         .ifPresent(entry -> addPhraseTokens(metadataTokens, entry.getKey()));
             }
         }
+        Optional<FuzzyCatalogMatch> categoryCorrection = bestUniqueOneCharacterCorrection(
+                normalized, vocabulary.categoryAliases(), 1);
+        boolean directAliasIsShort = categoryMatch.map(match -> match.wordCount() < 2).orElse(false);
+        if (categoryCorrection.isPresent()
+                && (category == null || (directAliasIsShort
+                && category.equals(categoryCorrection.get().target())))) {
+            category = categoryCorrection.get().target();
+            // Keep the customer's misspelled phrase out of model/name discovery. It is already
+            // proven to be a unique public category alias, rather than an identifier to search.
+            addPhraseTokens(metadataTokens, categoryCorrection.get().customerPhrase());
+        }
         if (category != null) addPhraseTokens(metadataTokens, category);
+
+        Optional<CatalogAlias> brandMatch = bestCatalogAlias(normalized, vocabulary.brandAliases());
+        String brand = brandMatch.map(CatalogAlias::target).orElse(null);
+        brandMatch.ifPresent(match -> addPhraseTokens(metadataTokens, match.phrase()));
+        if (brand == null) {
+            Optional<FuzzyCatalogMatch> correction = bestUniqueOneCharacterCorrection(
+                    normalized, vocabulary.brandAliases(), 1);
+            if (correction.isPresent()) {
+                brand = correction.get().target();
+                addPhraseTokens(metadataTokens, correction.get().customerPhrase());
+            }
+        }
+        if (brand != null) addPhraseTokens(metadataTokens, brand);
+
+        return new CatalogIntent(
+                category, brand, Set.copyOf(metadataTokens), approvedTypeQuery(category));
+    }
+
+    /**
+     * Reads the current public vocabulary once per intent resolution. Normalized aliases remain
+     * backend-only; the small canonical display vocabulary is exposed separately below.
+     */
+    private CatalogVocabulary publicCatalogVocabulary() {
+        List<CatalogAlias> categoryAliases = new ArrayList<>();
+        Set<String> categorySlugs = new LinkedHashSet<>();
+        try {
+            // Load both public localizations: an English storefront must still understand a
+            // Vietnamese category word and vice versa, but we never send either list to Gemini.
+            addCategoryAliases(categoryAliases, categorySlugs, catalogReadService.listAssistantCategories("vi"));
+            addCategoryAliases(categoryAliases, categorySlugs, catalogReadService.listAssistantCategories("en"));
+        } catch (RuntimeException ignored) {
+            // A temporary metadata-read failure must not turn into an invented category. The
+            // later allow-listed search will either verify a product or give the safe fallback.
+        }
 
         List<CatalogAlias> brandAliases = new ArrayList<>();
         try {
@@ -637,12 +1587,75 @@ public class ChatToolService {
         } catch (RuntimeException ignored) {
             // See category handling above. No static brand table is used as a fallback.
         }
-        Optional<CatalogAlias> brandMatch = bestCatalogAlias(normalized, brandAliases);
-        String brand = brandMatch.map(CatalogAlias::target).orElse(null);
-        brandMatch.ifPresent(match -> addPhraseTokens(metadataTokens, match.phrase()));
-        if (brand != null) addPhraseTokens(metadataTokens, brand);
+        return new CatalogVocabulary(
+                List.copyOf(categoryAliases), Set.copyOf(categorySlugs), List.copyOf(brandAliases));
+    }
 
-        return new CatalogIntent(category, brand, Set.copyOf(metadataTokens));
+    /**
+     * Public, metadata-only vocabulary supplied to Gemini at the start of a turn. It is rebuilt
+     * from the current visible catalogue so the model is never asked to guess group or brand
+     * names. Product names, prices, stock and counts are intentionally absent.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true, timeout = 5)
+    public AssistantCatalogVocabulary assistantCatalogVocabulary() {
+        Map<String, AssistantCategoryVocabulary> categories = new LinkedHashMap<>();
+        try {
+            addAssistantCategories(categories, catalogReadService.listAssistantCategories("vi"), false);
+            addAssistantCategories(categories, catalogReadService.listAssistantCategories("en"), true);
+        } catch (RuntimeException ignored) {
+            // A vocabulary refresh failure must not turn into an invented list. Keep any public
+            // entries already read and let the normal tool validator decide later.
+        }
+
+        List<AssistantBrandVocabulary> brands = new ArrayList<>();
+        try {
+            for (Brand brand : catalogReadService.listAssistantBrands()) {
+                if (brand == null || !brand.isVisible()) continue;
+                String slug = blankToNull(brand.slug());
+                String name = assistantVocabularyText(brand.name());
+                if (slug != null && name != null) {
+                    brands.add(new AssistantBrandVocabulary(slug, name));
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // See category handling above; do not substitute a static brand list.
+        }
+        return new AssistantCatalogVocabulary(
+                categories.values().stream()
+                        .sorted(Comparator.comparing(AssistantCategoryVocabulary::slug))
+                        .toList(),
+                brands.stream()
+                        .sorted(Comparator.comparing(AssistantBrandVocabulary::slug))
+                        .toList());
+    }
+
+    private static void addAssistantCategories(
+            Map<String, AssistantCategoryVocabulary> target,
+            List<Category> source,
+            boolean english
+    ) {
+        if (source == null) return;
+        for (Category category : source) {
+            if (category == null || !category.isVisible() || category.deleted()) continue;
+            String slug = blankToNull(category.slug());
+            String name = assistantVocabularyText(category.name());
+            if (slug == null || name == null) continue;
+            AssistantCategoryVocabulary current = target.get(slug);
+            String nameVi = current == null ? null : current.nameVi();
+            String nameEn = current == null ? null : current.nameEn();
+            if (english) nameEn = name;
+            else nameVi = name;
+            target.put(slug, new AssistantCategoryVocabulary(
+                    slug,
+                    nameVi == null ? name : nameVi,
+                    nameEn == null ? name : nameEn));
+        }
+    }
+
+    private static String assistantVocabularyText(String value) {
+        String clean = blankToNull(value);
+        if (clean == null) return null;
+        return clean.length() <= 120 ? clean : clean.substring(0, 120);
     }
 
     /**
@@ -664,10 +1677,113 @@ public class ChatToolService {
         Set<String> tokens = new LinkedHashSet<>(direct.metadataTokens());
         if (context.category() != null) addPhraseTokens(tokens, context.category());
         if (context.brand() != null) addPhraseTokens(tokens, context.brand());
+        String category = direct.category() == null ? context.category() : direct.category();
         return new CatalogIntent(
-                direct.category() == null ? context.category() : direct.category(),
+                category,
                 direct.brand() == null ? context.brand() : direct.brand(),
-                Set.copyOf(tokens));
+                Set.copyOf(tokens),
+                direct.typeQuery() == null ? approvedTypeQuery(category) : direct.typeQuery());
+    }
+
+    /**
+     * Applies only server-derived context to a product follow-up. A price stated in the current
+     * message always wins; otherwise a previously saved price range can constrain a clear
+     * follow-up without sending the conversation text to Gemini (CHAT_RULE_005/018).
+     */
+    private SearchIntent effectiveSearchIntent(
+            String question,
+            String lang,
+            ConversationContext conversationContext
+    ) {
+        ConversationContext context = conversationContext == null
+                ? ConversationContext.empty() : conversationContext;
+        String normalized = normalizeIntent(question);
+        CatalogIntent directCatalog = resolveCatalogIntent(question, lang);
+        CatalogIntent catalogIntent = effectiveCatalogIntent(question, lang, context);
+        ProductQuery query = extractProductQuery(question, catalogIntent.metadataTokens());
+        PriceIntent directPrice = extractPriceIntent(normalized);
+        boolean inheritedPrice = !directPrice.hasBounds()
+                && !isPriceScopeReset(normalized)
+                && hasConversationPrice(context)
+                && shouldApplyConversationPriceScope(normalized, catalogIntent, query, context);
+        boolean inheritedBrand = directCatalog.brand() == null
+                && context.brand() != null
+                && catalogIntent.brand() != null
+                && catalogIntent.brand().equalsIgnoreCase(context.brand())
+                && shouldApplyConversationCatalogScope(question, directCatalog, context);
+        PriceIntent appliedPrice = inheritedPrice ? priceIntentFromContext(context) : directPrice;
+        return new SearchIntent(
+                catalogIntent,
+                query,
+                appliedPrice,
+                inheritedPrice,
+                inheritedBrand,
+                extractRequestedOption(normalized, COLOR_REQUEST),
+                extractRequestedOption(normalized, SIZE_REQUEST));
+    }
+
+    private static boolean hasConversationPrice(ConversationContext context) {
+        return context.minPrice() != null || context.maxPrice() != null;
+    }
+
+    private static PriceIntent priceIntentFromContext(ConversationContext context) {
+        if (context.minPrice() != null && context.maxPrice() != null) {
+            return new PriceIntent(context.minPrice(), context.maxPrice(), PriceKind.RANGE);
+        }
+        if (context.minPrice() != null) {
+            return new PriceIntent(context.minPrice(), null, PriceKind.MIN);
+        }
+        if (context.maxPrice() != null) {
+            return new PriceIntent(null, context.maxPrice(), PriceKind.MAX);
+        }
+        return PriceIntent.none();
+    }
+
+    private static boolean shouldApplyConversationPriceScope(
+            String normalized,
+            CatalogIntent catalogIntent,
+            ProductQuery query,
+            ConversationContext context
+    ) {
+        if (query.hasSpecificIdentifier()) return false;
+        if (categoryChanged(catalogIntent.category(), context)) return false;
+        // A category/brand explicitly named now, or inherited by a recognised follow-up, makes
+        // the scope product-specific. Never carry price into an unrelated conversational turn.
+        return catalogIntent.category() != null
+                || catalogIntent.brand() != null
+                || (context.hasCatalogScope() && isProductFollowUp(normalized));
+    }
+
+    private static boolean categoryChanged(String candidate, ConversationContext context) {
+        return candidate != null
+                && context != null
+                && context.category() != null
+                && !candidate.equalsIgnoreCase(context.category());
+    }
+
+    /** A generic helmet alias must not override a more specific helmet category from this turn. */
+    private static boolean categoryChangedProductFamily(String candidate, String previous) {
+        if (candidate == null || previous == null) return false;
+        return !categoryProductFamily(candidate).equals(categoryProductFamily(previous));
+    }
+
+    private static boolean sameCategoryProductFamily(String left, String right) {
+        return left != null && right != null
+                && categoryProductFamily(left).equals(categoryProductFamily(right));
+    }
+
+    private static String categoryProductFamily(String category) {
+        String normalized = normalize(category).replace('-', ' ');
+        // The public headset slug contains the words "mũ bảo hiểm" as part of its path. Test
+        // the specific product family first so a headset turn cannot be mistaken for a helmet
+        // turn and inherit the old helmet scope.
+        if (hasWord(normalized, "tai nghe", "headset", "headsets")) {
+            return "headset";
+        }
+        if (hasWord(normalized, "mu bao hiem", "non bao hiem", "helmet", "helmets")) {
+            return "helmet";
+        }
+        return normalized;
     }
 
     private boolean shouldApplyConversationCatalogScope(
@@ -682,16 +1798,20 @@ public class ChatToolService {
         }
         ProductQuery query = extractProductQuery(question, direct.metadataTokens());
         if (query.hasSpecificIdentifier()) return false;
-        String normalized = normalize(question);
+        String normalized = normalizeIntent(question);
         return isProductFollowUp(normalized);
     }
 
     /** A generic price/count request is meaningful only after a product scope was established. */
     private static boolean isProductFollowUp(String normalized) {
-        return extractPriceIntent(normalized).hasBounds()
+        return isPriceScopeReset(normalized)
+                || extractPriceIntent(normalized).hasBounds()
                 || hasWord(normalized,
                         "san pham", "hang", "product", "products", "item", "items",
-                        "tim", "show", "xem", "cho toi", "cho minh", "them", "tiep");
+                        "tim", "show", "xem", "cho toi", "cho minh", "them", "tiep",
+                        "con", "thi sao", "tuong tu", "giong", "cai nao", "loai nao",
+                        "khac", "nua", "re hon", "dat hon", "another", "other", "same",
+                        "similar", "cheaper", "more");
     }
 
     /**
@@ -705,31 +1825,64 @@ public class ChatToolService {
             List<ChatProductCardResponse> products,
             List<ChatActionResponse> actions
     ) {
+        return recordConversationContext(previous, question, lang, products, actions, null);
+    }
+
+    /**
+     * Persists the accepted semantic scope from a successful model-selected search. This is the
+     * only path by which an AI interpretation can influence a later customer follow-up.
+     */
+    public ConversationContext recordConversationContext(
+            ConversationContext previous,
+            String question,
+            String lang,
+            List<ChatProductCardResponse> products,
+            List<ChatActionResponse> actions,
+            SearchScope acceptedSearchScope
+    ) {
         ConversationContext prior = previous == null ? ConversationContext.empty() : previous;
         CatalogIntent direct = resolveCatalogIntent(question, lang);
-        String normalized = normalize(question);
+        String normalized = normalizeIntent(question);
         PriceIntent price = extractPriceIntent(normalized);
         ProductQuery query = extractProductQuery(question, direct.metadataTokens());
-        boolean productScopeMentioned = direct.category() != null
+        boolean hasAcceptedScope = acceptedSearchScope != null && acceptedSearchScope.hasAnyScope();
+        boolean productScopeMentioned = hasAcceptedScope
+                || direct.category() != null
                 || direct.brand() != null
                 || query.hasSpecificIdentifier()
                 || isProductFollowUp(normalized);
 
-        String category = direct.category() != null ? direct.category() : prior.category();
-        String brand = direct.brand() != null ? direct.brand() : prior.brand();
-        Long minPrice = price.hasBounds() ? price.min() : prior.minPrice();
-        Long maxPrice = price.hasBounds() ? price.max() : prior.maxPrice();
+        String currentCategory = hasAcceptedScope ? acceptedSearchScope.category() : direct.category();
+        String currentBrand = hasAcceptedScope ? acceptedSearchScope.brand() : direct.brand();
+        boolean switchedCategory = categoryChanged(currentCategory, prior);
+        String category = currentCategory == null ? prior.category() : currentCategory;
+        String brand = hasAcceptedScope
+                ? currentBrand
+                : currentBrand == null && !switchedCategory ? prior.brand() : currentBrand;
+        // A newly stated price is always the newest customer decision. Reset wording matters
+        // only when the current message does not replace it with another explicit price.
+        boolean clearPriceScope = isPriceScopeReset(normalized) && !price.hasBounds();
+        // A category switch clears only price inherited from an earlier category. A budget
+        // stated in this same message is the customer's newest decision and must be retained.
+        Long minPrice = clearPriceScope ? null
+                : price.hasBounds() ? price.min() : switchedCategory ? null : prior.minPrice();
+        Long maxPrice = clearPriceScope ? null
+                : price.hasBounds() ? price.max() : switchedCategory ? null : prior.maxPrice();
+        if (hasAcceptedScope) {
+            minPrice = acceptedSearchScope.minPrice();
+            maxPrice = acceptedSearchScope.maxPrice();
+        }
         if (!productScopeMentioned) {
             // Keep the last verified catalog scope for a later short follow-up, but do not use
             // it unless shouldApplyConversationCatalogScope() says the new message is product-related.
             category = prior.category();
             brand = prior.brand();
-            minPrice = prior.minPrice();
-            maxPrice = prior.maxPrice();
+            minPrice = clearPriceScope ? null : prior.minPrice();
+            maxPrice = clearPriceScope ? null : prior.maxPrice();
         }
 
         List<String> slugs = products == null || products.isEmpty()
-                ? prior.productSlugs()
+                ? switchedCategory ? List.of() : prior.productSlugs()
                 : products.stream()
                         .filter(product -> product != null && product.slug() != null)
                         .map(ChatProductCardResponse::slug)
@@ -767,11 +1920,16 @@ public class ChatToolService {
         String phrase = normalize(source).replaceAll("[^\\p{Alnum}]+", " ").trim();
         if (blankToNull(target) == null || phrase.isBlank()) return;
         String[] tokens = phrase.split("\\s+");
+        // Full public names/slugs are the only aliases a model may propose. Shorter fragments
+        // remain deterministic customer-side matching aids and cannot authorize a model filter.
+        aliases.add(new CatalogAlias(target, phrase, tokens.length, true));
         int maxLength = Math.min(tokens.length, 4);
         for (int size = 1; size <= maxLength; size++) {
             for (int start = 0; start + size <= tokens.length; start++) {
                 String alias = String.join(" ", List.of(tokens).subList(start, start + size));
-                if (!alias.isBlank()) aliases.add(new CatalogAlias(target, alias, size));
+                if (!alias.isBlank() && !alias.equals(phrase)) {
+                    aliases.add(new CatalogAlias(target, alias, size, false));
+                }
             }
         }
     }
@@ -793,6 +1951,67 @@ public class ChatToolService {
                 .distinct()
                 .count() > 1;
         return ambiguous ? Optional.empty() : Optional.of(best);
+    }
+
+    /**
+     * CHAT_RULE_017 permits one-character correction only for public category/brand aliases.
+     * The input window and candidate must be alphabetic and at least four characters after
+     * normalization; product models, SKU-like values, colours, sizes and prices never reach
+     * this method. A tie between different public targets is intentionally left unresolved.
+     */
+    private static Optional<FuzzyCatalogMatch> bestUniqueOneCharacterCorrection(
+            String normalizedQuestion, List<CatalogAlias> aliases, int minimumWordCount) {
+        if (aliases == null || aliases.isEmpty()) return Optional.empty();
+        String words = normalizedQuestion.replaceAll("[^\\p{Alnum}]+", " ").trim();
+        if (words.isBlank()) return Optional.empty();
+        String[] questionTokens = words.split("\\s+");
+        Map<String, String> matchedTargets = new LinkedHashMap<>();
+        for (CatalogAlias alias : aliases) {
+            if (alias.wordCount() < minimumWordCount) continue;
+            String normalizedAlias = alias.phrase().replace(" ", "");
+            if (normalizedAlias.length() < 4 || !normalizedAlias.matches("[a-z]+")) continue;
+            for (int start = 0; start + alias.wordCount() <= questionTokens.length; start++) {
+                String customerPhrase = String.join(
+                        " ", List.of(questionTokens).subList(start, start + alias.wordCount()));
+                String compactCustomerPhrase = customerPhrase.replace(" ", "");
+                if (compactCustomerPhrase.length() < 4 || !compactCustomerPhrase.matches("[a-z]+")) continue;
+                if (oneCharacterAway(compactCustomerPhrase, normalizedAlias)) {
+                    matchedTargets.putIfAbsent(alias.target(), customerPhrase);
+                }
+            }
+        }
+        if (matchedTargets.size() != 1) return Optional.empty();
+        Map.Entry<String, String> match = matchedTargets.entrySet().iterator().next();
+        return Optional.of(new FuzzyCatalogMatch(match.getKey(), match.getValue()));
+    }
+
+    /** Returns true only for one insertion, deletion or replacement; no broader fuzzy score. */
+    private static boolean oneCharacterAway(String first, String second) {
+        if (first.equals(second) || Math.abs(first.length() - second.length()) > 1) return false;
+        if (first.length() == second.length()) {
+            int differences = 0;
+            for (int index = 0; index < first.length(); index++) {
+                if (first.charAt(index) != second.charAt(index) && ++differences > 1) return false;
+            }
+            return differences == 1;
+        }
+        String shorter = first.length() < second.length() ? first : second;
+        String longer = first.length() < second.length() ? second : first;
+        int shortIndex = 0;
+        int longIndex = 0;
+        boolean skipped = false;
+        while (shortIndex < shorter.length() && longIndex < longer.length()) {
+            if (shorter.charAt(shortIndex) == longer.charAt(longIndex)) {
+                shortIndex++;
+                longIndex++;
+            } else if (skipped) {
+                return false;
+            } else {
+                skipped = true;
+                longIndex++;
+            }
+        }
+        return true;
     }
 
     private static boolean phraseMatches(String normalizedQuestion, String normalizedAlias) {
@@ -931,17 +2150,33 @@ public class ChatToolService {
             String category,
             String brand,
             String color,
-            PriceIntent price
+            PriceIntent price,
+            String typeQuery
     ) {
         if (productQuery.hasSpecificIdentifier()) {
-            return buildIdentifierAttempts(productQuery, normalized, category, brand, color, price);
+            return buildIdentifierAttempts(
+                    productQuery, normalized, category, brand, color, price, typeQuery);
         }
-        return buildGenericAttempts(productQuery.text(), normalized, category, brand, color, price);
+        // A short follow-up such as "Từ 3tr đến 5tr đi" may leave only a conversational
+        // word after price parsing. It is not a catalogue keyword: keeping it would make the
+        // first scoped attempt empty, then label the valid retry as a broadened search. Use
+        // only meaningful residual tokens when a category has no approved type query.
+        String genericQuery = typeQuery == null ? meaningfulGenericQuery(productQuery) : typeQuery;
+        return buildGenericAttempts(genericQuery, normalized, category, brand, color, price);
+    }
+
+    private static String meaningfulGenericQuery(ProductQuery productQuery) {
+        if (productQuery == null || productQuery.tokens() == null) return "";
+        return productQuery.tokens().stream()
+                .filter(token -> !CONVERSATIONAL_FILLER_TOKENS.contains(token))
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 
     /**
-     * Keep every model/name identifier on every retry. This prevents a named request from
-     * degrading into a generic category sweep when the exact catalogue match is absent.
+     * Try the exact model/name first. CHAT_RULE_018 then permits one explicitly labelled,
+     * still-scoped alternative only when the same customer sentence also resolved a category or
+     * brand. It never becomes an unbounded catalogue sweep, and the BROADENED_SEARCH disclosure
+     * is mandatory on that last resort.
      */
     private static List<Attempt> buildIdentifierAttempts(
             ProductQuery query,
@@ -949,16 +2184,25 @@ public class ChatToolService {
             String category,
             String brand,
             String color,
-            PriceIntent price
+            PriceIntent price,
+            String typeQuery
     ) {
         String sort = sortFor(price, normalized);
         List<Attempt> attempts = new ArrayList<>();
         attempts.add(new Attempt(query.text(), category, brand, color, price, sort, false, false,
                 query.identifiers()));
-        if (price.hasBounds()) {
+        boolean scopedAlternative = category != null || brand != null;
+        if (scopedAlternative) {
+            attempts.add(new Attempt(typeQuery, category, brand, color, price, sort, true, false, List.of()));
+        }
+        if (price.hasBounds() && price.kind() != PriceKind.RANGE) {
             String nearest = price.kind() == PriceKind.MIN ? "price:desc" : "price:asc";
             attempts.add(new Attempt(query.text(), category, brand, color, PriceIntent.none(), nearest,
                     false, true, query.identifiers()));
+            if (scopedAlternative) {
+                attempts.add(new Attempt(typeQuery, category, brand, color, PriceIntent.none(), nearest,
+                        true, true, List.of()));
+            }
         }
         return attempts;
     }
@@ -982,7 +2226,7 @@ public class ChatToolService {
                 && !widerKeyword.equalsIgnoreCase(freeText)) {
             attempts.add(new Attempt(widerKeyword, null, null, color, price, sort, true, false, List.of()));
         }
-        if (price.hasBounds()) {
+        if (price.hasBounds() && price.kind() != PriceKind.RANGE) {
             // Nothing in the asked range: show the closest side of it, never the cheapest junk.
             String nearest = price.kind() == PriceKind.MIN ? "price:desc" : "price:asc";
             PriceIntent unpriced = PriceIntent.none();
@@ -1001,9 +2245,26 @@ public class ChatToolService {
     }
 
     private static List<String> searchNotes(
-            Attempt used, PriceIntent requested, boolean english) {
+            Attempt used,
+            PriceIntent requested,
+            boolean inheritedPrice,
+            boolean inheritedBrandDropped,
+            boolean english) {
         List<String> notes = new ArrayList<>();
-        if (used.priceDropped() && requested.hasBounds()) {
+        if (requested.hasBounds()) {
+            // The separate inherited flag in the payload tells the model whether this is a
+            // carried constraint; the fixed disclosure is enforced independently by the guard.
+            notes.add(english
+                    ? "If inheritedPrice is true, plainly state that the displayed products are filtered by the price range from the customer's previous product request."
+                    : "Nếu inheritedPrice là true, phải nói rõ danh sách đang được lọc theo tầm giá khách đã nêu ở lượt hỏi sản phẩm trước.");
+        }
+        boolean inheritedFilterDropped = inheritedBrandDropped
+                || used.priceDropped() && requested.hasBounds() && inheritedPrice;
+        if (inheritedFilterDropped) {
+            notes.add(english
+                    ? "One inherited filter produced no match and was removed only for this retry. State that clearly and invite the customer to refine the request."
+                    : "Một bộ lọc kế thừa không có kết quả và đã được bỏ riêng cho lần tìm lại này. Phải nói rõ điều đó và mời khách nêu lại nhu cầu.");
+        } else if (used.priceDropped() && requested.hasBounds()) {
             notes.add(english
                     ? "BigBike currently sells nothing in the price range the customer asked for. Say that plainly first, then present these as the closest available options. Never imply they match the range."
                     : "BigBike hiện không có sản phẩm nào trong tầm giá khách hỏi. Phải nói rõ điều đó trước, rồi mới giới thiệu đây là phương án gần nhất. Không được để khách hiểu nhầm là đúng tầm giá.");
@@ -1017,9 +2278,17 @@ public class ChatToolService {
     }
 
     private static Set<RequiredDisclosure> searchDisclosures(
-            Attempt used, PriceIntent requested) {
+            Attempt used,
+            PriceIntent requested,
+            boolean inheritedPrice,
+            boolean inheritedBrandDropped) {
         Set<RequiredDisclosure> disclosures = new LinkedHashSet<>();
-        if (used.priceDropped() && requested.hasBounds()) {
+        if (inheritedPrice && requested.hasBounds() && !used.priceDropped()) {
+            disclosures.add(RequiredDisclosure.INHERITED_PRICE_RANGE);
+        }
+        if (inheritedBrandDropped || used.priceDropped() && requested.hasBounds() && inheritedPrice) {
+            disclosures.add(RequiredDisclosure.INHERITED_FILTER_DROPPED);
+        } else if (used.priceDropped() && requested.hasBounds()) {
             disclosures.add(RequiredDisclosure.PRICE_RANGE_MISS);
         }
         if (used.broadened()) {
@@ -1096,6 +2365,52 @@ public class ChatToolService {
         return retail;
     }
 
+    /** One closest model on each side is more honest than a lowest-price sort for a price range. */
+    private static List<Product> nearestRangeAlternatives(
+            List<Product> candidates, PriceIntent requested) {
+        if (candidates == null || requested.min() == null || requested.max() == null) return List.of();
+        BigDecimal minimum = BigDecimal.valueOf(requested.min());
+        BigDecimal maximum = BigDecimal.valueOf(requested.max());
+        Comparator<Product> byPrice = Comparator.comparing(
+                ChatToolService::effectiveSellingPrice,
+                Comparator.nullsLast(Comparator.naturalOrder()));
+        Product below = candidates.stream()
+                .filter(product -> {
+                    BigDecimal price = effectiveSellingPrice(product);
+                    return price != null && price.compareTo(minimum) < 0;
+                })
+                .max(byPrice)
+                .orElse(null);
+        Product above = candidates.stream()
+                .filter(product -> {
+                    BigDecimal price = effectiveSellingPrice(product);
+                    return price != null && price.compareTo(maximum) > 0;
+                })
+                .min(byPrice)
+                .orElse(null);
+        List<Product> nearest = new ArrayList<>();
+        if (below != null) nearest.add(below);
+        if (above != null) nearest.add(above);
+        return List.copyOf(nearest);
+    }
+
+    /** Keep a model already discussed visible when it still belongs to the current verified set. */
+    private static List<Product> prioritizePreviouslyShown(
+            List<Product> products, ConversationContext conversationContext) {
+        if (products == null || products.isEmpty()
+                || conversationContext == null || conversationContext.productSlugs().isEmpty()) {
+            return products == null ? List.of() : List.copyOf(products);
+        }
+        Map<String, Integer> previousOrder = new LinkedHashMap<>();
+        for (int index = 0; index < conversationContext.productSlugs().size(); index++) {
+            previousOrder.put(conversationContext.productSlugs().get(index), index);
+        }
+        return products.stream()
+                .sorted(Comparator.comparingInt(product -> previousOrder.getOrDefault(
+                        product.slug(), Integer.MAX_VALUE)))
+                .toList();
+    }
+
     private boolean matchesRequestedVariant(Product product, String color, String size, String lang) {
         if (color == null && size == null) return true;
         Product source = product;
@@ -1125,9 +2440,9 @@ public class ChatToolService {
                 }) && hasRequestedOption(variant, color, size));
     }
 
-    private List<Product> searchAttempt(Attempt attempt, String lang) {
+    private AttemptSearchResult searchAttempt(Attempt attempt, String lang) {
         if (!attempt.identifierTokens().isEmpty()) {
-            return catalogReadService.searchProductsForAssistant(
+            List<Product> products = catalogReadService.searchProductsForAssistant(
                     attempt.identifierTokens(),
                     attempt.category(),
                     attempt.brand(),
@@ -1136,8 +2451,9 @@ public class ChatToolService {
                     attempt.sort(),
                     DISCOVERY_CANDIDATE_LIMIT,
                     lang);
+            return new AttemptSearchResult(products, null);
         }
-        return searchProducts(
+        PageResult<Product> page = searchProducts(
                 attempt.query(),
                 attempt.category(),
                 attempt.brand(),
@@ -1146,7 +2462,8 @@ public class ChatToolService {
                 attempt.color(),
                 null,
                 attempt.sort(),
-                lang).items();
+                lang);
+        return new AttemptSearchResult(page == null ? List.of() : page.items(), page);
     }
 
     private List<Product> searchAttemptWide(Attempt attempt, String lang) {
@@ -1161,7 +2478,7 @@ public class ChatToolService {
                     DISCOVERY_CANDIDATE_LIMIT,
                     lang);
         }
-        return searchProductsWide(
+        PageResult<Product> page = searchProductsWide(
                 attempt.query(),
                 attempt.category(),
                 attempt.brand(),
@@ -1170,7 +2487,70 @@ public class ChatToolService {
                 attempt.color(),
                 null,
                 attempt.sort(),
-                lang).items();
+                lang);
+        return page == null ? List.of() : page.items();
+    }
+
+    /**
+     * CHAT_RULE_020: catalog counts are exposed only for an initial, non-identifier search that
+     * remains inside a verified category/brand scope. A fallback or model-name lookup has no
+     * count evidence, so the response guard keeps numerical catalogue claims forbidden there.
+     */
+    private CatalogTotals catalogTotalsFor(
+            SearchIntent searchIntent,
+            ProductQuery query,
+            Attempt used,
+            AttemptSearchResult selectedSearch,
+            String color,
+            String lang
+    ) {
+        if (used == null
+                || query.hasSpecificIdentifier()
+                || used.broadened()
+                || used.priceDropped()
+                || (used.category() == null && used.brand() == null)) {
+            return null;
+        }
+
+        String typeQuery = searchIntent.catalogIntent().typeQuery();
+        PageResult<Product> scopePage = null;
+        boolean selectedAlreadyIsScope = !used.price().hasBounds()
+                && color == null
+                && nullToEmpty(used.query()).equals(nullToEmpty(typeQuery));
+        if (selectedAlreadyIsScope) {
+            scopePage = selectedSearch == null ? null : selectedSearch.page();
+        }
+        if (scopePage == null) {
+            scopePage = searchProducts(
+                    typeQuery,
+                    used.category(),
+                    used.brand(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    sortFor(PriceIntent.none(), ""),
+                    lang);
+        }
+        if (scopePage == null) return null;
+
+        if (!used.price().hasBounds()) {
+            return new CatalogTotals(scopePage.totalItems(), scopePage.totalItems(), null);
+        }
+
+        PageResult<Product> pricePage = searchProducts(
+                typeQuery,
+                used.category(),
+                used.brand(),
+                used.price().min(),
+                used.price().max(),
+                null,
+                null,
+                used.sort(),
+                lang);
+        if (pricePage == null) return null;
+        return new CatalogTotals(
+                pricePage.totalItems(), scopePage.totalItems(), pricePage.totalItems());
     }
 
     private static boolean hasRequestedOption(ProductVariant variant, String color, String size) {
@@ -1373,7 +2753,10 @@ public class ChatToolService {
         detail.put("shortDescription", plain(product.shortDescription(), 800));
         detail.put("description", plain(product.description(), 1800));
         detail.put("specifications", plain(product.specifications(), 1800));
+        detail.put("specStats", plain(product.specStats(), 1800));
         detail.put("sizeGuide", plain(product.sizeGuide(), 1200));
+        detail.put("sizeGuideSection", product.sizeGuideSection() == null
+                ? "" : plain(product.sizeGuideSection().getHtml(), 1200));
         detail.put("pros", highlights(product, true));
         detail.put("cons", highlights(product, false));
         detail.put("faqs", product.faqs() == null ? List.of() : product.faqs().stream()
@@ -1413,7 +2796,9 @@ public class ChatToolService {
             for (ProductVariantOption option : variant.options()) {
                 if (option == null || option.value() == null || option.value().isBlank()) continue;
                 String key = canonicalAttribute(option.name());
-                grouped.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(option.value());
+                String value = displayableOptionValue(key, option.value());
+                if (key.isBlank() || value == null) continue;
+                grouped.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(value);
             }
         });
         Map<String, List<String>> result = new LinkedHashMap<>();
@@ -1434,14 +2819,71 @@ public class ChatToolService {
                     for (ProductVariantOption option : variant.options()) {
                         if (option == null) continue;
                         String key = canonicalAttribute(option.name());
-                        String value = option.value() == null ? "" : option.value().trim();
-                        if (!key.isBlank() && !value.isBlank()) combination.put(key, value);
+                        String value = displayableOptionValue(key, option.value());
+                        if (!key.isBlank() && value != null && !value.isBlank()) combination.put(key, value);
                     }
                     return Map.copyOf(combination);
                 })
                 .filter(combination -> !combination.isEmpty())
                 .distinct()
                 .toList();
+    }
+
+    /**
+     * Variant options are admin data, not display copy. Colour values are humanized here so a
+     * raw slug can never enter a chat tool payload; a value that cannot be transformed safely is
+     * omitted instead of being shown verbatim.
+     */
+    private static String displayableOptionValue(String key, String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String value = raw.trim();
+        if (!"color".equals(key)) return value;
+        return normalizeColorForDisplay(value);
+    }
+
+    static String normalizeColorForDisplay(String raw) {
+        if (raw == null || raw.isBlank() || raw.length() > 80) return null;
+        String value = raw.trim();
+        if (UNSAFE_OPTION_VALUE.matcher(value).find()) return null;
+        String separated = value
+                .replaceAll("[_-]+", " ")
+                .replaceAll("(?<=[\\p{L}])(?=\\d)", " ")
+                .replaceAll("(?<=\\d)(?=[\\p{L}])", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (separated.isBlank()) return null;
+        List<String> words = new ArrayList<>();
+        for (String token : separated.split(" ")) {
+            if (!token.matches("[\\p{L}\\p{N}]{1,20}")) return null;
+            words.add(displayColorWord(token));
+        }
+        if (words.isEmpty() || words.size() > 6) return null;
+        String result = String.join(" ", words);
+        // This closes the path even if a later edit changes the token transformation above.
+        return RAW_OPTION_SLUG.matcher(result).matches() ? null : result;
+    }
+
+    private static String displayColorWord(String token) {
+        return switch (normalize(token)) {
+            case "den" -> "Đen";
+            case "trang" -> "Trắng";
+            case "xam" -> "Xám";
+            case "do" -> "Đỏ";
+            case "xanh" -> "Xanh";
+            case "vang" -> "Vàng";
+            case "nham" -> "Nhám";
+            case "bong" -> "Bóng";
+            case "dam" -> "Đậm";
+            case "nhat" -> "Nhạt";
+            case "la" -> "Lá";
+            case "bac" -> "Bạc";
+            case "cam" -> "Cam";
+            case "tim" -> "Tím";
+            case "hong" -> "Hồng";
+            case "nau" -> "Nâu";
+            default -> token.substring(0, 1).toUpperCase(Locale.forLanguageTag("vi-VN"))
+                    + token.substring(1).toLowerCase(Locale.forLanguageTag("vi-VN"));
+        };
     }
 
     private static String canonicalAttribute(String raw) {
@@ -1494,12 +2936,17 @@ public class ChatToolService {
         if (question == null || question.isBlank()) return ProductQuery.empty();
         Matcher slug = PRODUCT_URL.matcher(question);
         if (slug.find()) return productQuery(slug.group(1));
-        boolean hasPriceIntent = extractPriceIntent(normalize(question)).hasBounds();
-        String cleaned = normalize(question)
+        String normalizedQuestion = normalizeIntent(question);
+        boolean hasPriceIntent = extractPriceIntent(normalizedQuestion).hasBounds();
+        String cleaned = normalizedQuestion
                 // These phrases describe the request, not a product name/model. Keep the
                 // original question unchanged for asksForProductDetail and option parsing.
                 .replaceAll(VARIANT_INQUIRY.pattern(), " ")
                 .replaceAll(BUDGET_FRAMING.pattern(), " ")
+                // A concrete option is a product constraint, not a model code. Option extraction
+                // still reads the unmodified normalized question in productOutcome().
+                .replaceAll(SIZE_REQUEST.pattern(), " ")
+                .replaceAll(COLOR_REQUEST.pattern(), " ")
                 .replaceAll("(?iU)(toi muon|minh muon|toi can|cho toi|cho em|giup em|tim|tu van|tham khao"
                         + "|please|find|find me|search|show me|i want|i need|looking for|can you|could you)", " ")
                 .replaceAll("(?iU)\\b(thuong hieu|brand|danh muc|category)\\b", " ")
@@ -1507,7 +2954,9 @@ public class ChatToolService {
                 // Price wording belongs to min/max filters, not to the product-name search.
                 // Grouped đồng amounts go first so "2.500.000đ" is not chopped into "2." + "500.000đ".
                 .replaceAll("(?iU)\\d{1,3}(?:[.,]\\d{3})+\\s*(?:d|vnd|dong)?", " ")
-                .replaceAll("(?iU)\\d+(?:[.,]\\d+)?\\s*(?:trieu|tr|million|nghin|ngan|k|d|vnd|dong)\\b", " ")
+                .replaceAll("(?iU)\\d+\\s*(?:trieu|tr)\\s*(?:\\d{1,3})(?![a-z0-9])", " ")
+                .replaceAll("(?iU)(?:\\d+(?:[.,]\\d+)?|" + PRICE_WORD_TOKEN
+                        + ")\\s*(?:trieu|tr|million|nghin|ngan|k|cu|lit|d|vnd|dong)\\b", " ")
                 .replaceAll("(?iU)\\b(tu|den|toi|tren|duoi|hon|khoang|tam|to|between|about|around"
                         + "|ruoi|tro len|tro xuong|do lai|khong qua"
                         + "|toi da|toi thieu|it nhat"
@@ -1517,7 +2966,7 @@ public class ChatToolService {
                 .replaceAll("(?U)(^|\\s)[.,;:\\-–—/]+(?=\\s|$)", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
-        return productQuery(cleaned, hasPriceIntent);
+        return productQuery(cleaned, hasPriceIntent, true);
     }
 
     /**
@@ -1533,29 +2982,36 @@ public class ChatToolService {
                 .toList();
         List<String> identifiers = tokens.stream()
                 .filter(token -> !GENERIC_PRODUCT_TOKENS.contains(token))
-                .filter(token -> !extractPriceIntent(normalize(question)).hasBounds() || !token.matches("\\d+"))
+                .filter(token -> !extractPriceIntent(normalizeIntent(question)).hasBounds() || !token.matches("\\d+"))
                 .toList();
         return new ProductQuery(String.join(" ", tokens), tokens, identifiers);
     }
 
     private static ProductQuery productQuery(String value) {
-        return productQuery(value, false);
+        return productQuery(value, false, false);
     }
 
     private static ProductQuery productQuery(String value, boolean hasPriceIntent) {
-        String normalized = normalize(value)
+        return productQuery(value, hasPriceIntent, false);
+    }
+
+    private static ProductQuery productQuery(
+            String value, boolean hasPriceIntent, boolean removeConversationalFillers) {
+        String normalized = normalizeIntent(value)
                 .replaceAll("[^\\p{Alnum}/]+", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
         if (normalized.isBlank()) return ProductQuery.empty();
         LinkedHashSet<String> distinct = new LinkedHashSet<>();
         for (String token : normalized.split("\\s+")) {
+            if (removeConversationalFillers && CONVERSATIONAL_FILLER_TOKENS.contains(token)) continue;
             if (!token.isBlank() && token.length() <= 64) distinct.add(token);
             if (distinct.size() == 12) break;
         }
         List<String> tokens = List.copyOf(distinct);
         List<String> identifiers = tokens.stream()
                 .filter(token -> !GENERIC_PRODUCT_TOKENS.contains(token))
+                .filter(token -> !CONVERSATIONAL_FILLER_TOKENS.contains(token))
                 // The price parser may leave the leading number of a shared-unit range
                 // ("3 đến 5 triệu") in the product wording. It is not a model token there.
                 .filter(token -> !hasPriceIntent || !token.matches("\\d+"))
@@ -1581,41 +3037,51 @@ public class ChatToolService {
      * forcing every number into a ceiling.
      */
     static PriceIntent extractPriceIntent(String normalized) {
+        normalized = normalizeIntent(normalized);
         Matcher shared = SHARED_UNIT_RANGE.matcher(normalized);
         if (shared.find()) {
             long unit = unitMultiplier(shared.group(3));
             return range(amount(shared.group(1), unit), amount(shared.group(2), unit));
         }
 
-        List<Long> values = new ArrayList<>();
-        List<int[]> spans = new ArrayList<>();
+        List<ParsedAmount> parsedAmounts = new ArrayList<>();
+        Matcher compactMillion = COMPACT_MILLION_AMOUNT.matcher(normalized);
+        while (compactMillion.find()) {
+            parsedAmounts.add(new ParsedAmount(
+                    compactMillionAmount(compactMillion.group(1), compactMillion.group(2)),
+                    compactMillion.start(), compactMillion.end()));
+        }
         Matcher unitAmount = UNIT_AMOUNT.matcher(normalized);
         while (unitAmount.find()) {
+            if (overlapsKnownAmount(unitAmount.start(), unitAmount.end(), parsedAmounts)) continue;
             long unit = unitMultiplier(unitAmount.group(2));
             long value = amount(unitAmount.group(1), unit);
             if (unit >= 1_000_000L && normalized.startsWith(" ruoi", unitAmount.end())) {
                 value += 500_000L;
             }
-            values.add(value);
-            spans.add(new int[]{unitAmount.start(), unitAmount.end()});
+            parsedAmounts.add(new ParsedAmount(value, unitAmount.start(), unitAmount.end()));
         }
-        if (values.isEmpty()) {
+        if (parsedAmounts.isEmpty()) {
             Matcher plain = PLAIN_AMOUNT.matcher(normalized);
             while (plain.find()) {
-                values.add(amount(plain.group(1).replace(".", "").replace(",", ""), 1L));
-                spans.add(new int[]{plain.start(), plain.end()});
+                parsedAmounts.add(new ParsedAmount(
+                        amount(plain.group(1).replace(".", "").replace(",", ""), 1L),
+                        plain.start(), plain.end()));
             }
         }
-        if (values.isEmpty()) return PriceIntent.none();
+        if (parsedAmounts.isEmpty()) return PriceIntent.none();
+        parsedAmounts.sort(Comparator.comparingInt(ParsedAmount::start));
 
-        if (values.size() >= 2
-                && isRangeConnector(normalized.substring(spans.get(0)[1], spans.get(1)[0]))) {
-            return range(values.get(0), values.get(1));
+        if (parsedAmounts.size() >= 2
+                && isRangeConnector(normalized.substring(
+                parsedAmounts.get(0).end(), parsedAmounts.get(1).start()))) {
+            return range(parsedAmounts.get(0).value(), parsedAmounts.get(1).value());
         }
 
-        long value = values.get(0);
-        String before = lastWords(normalized.substring(0, spans.get(0)[0]));
-        String after = firstWords(normalized.substring(spans.get(0)[1]));
+        ParsedAmount first = parsedAmounts.get(0);
+        long value = first.value();
+        String before = lastWords(normalized.substring(0, first.start()));
+        String after = firstWords(normalized.substring(first.end()));
         if (hasWord(before, MAX_MARKERS_BEFORE) || hasWord(after, MAX_MARKERS_AFTER)) {
             return new PriceIntent(null, value, PriceKind.MAX);
         }
@@ -1645,16 +3111,34 @@ public class ChatToolService {
 
     private static long unitMultiplier(String unit) {
         return switch (unit) {
-            case "trieu", "tr", "million" -> 1_000_000L;
+            case "trieu", "tr", "million", "cu", "lit" -> 1_000_000L;
             case "nghin", "ngan", "k" -> 1_000L;
             default -> 1L;
         };
     }
 
     private static long amount(String raw, long unit) {
+        Long wordValue = PRICE_WORD_VALUES.get(raw);
+        if (wordValue != null) return wordValue * unit;
         return new BigDecimal(raw.replace(',', '.'))
                 .multiply(BigDecimal.valueOf(unit))
                 .longValue();
+    }
+
+    private static long compactMillionAmount(String whole, String fraction) {
+        long base = Long.parseLong(whole) * 1_000_000L;
+        long suffix = Long.parseLong(fraction);
+        long scale = switch (fraction.length()) {
+            case 1 -> 100_000L;
+            case 2 -> 10_000L;
+            case 3 -> 1_000L;
+            default -> throw new IllegalArgumentException("Unsupported compact million precision");
+        };
+        return base + suffix * scale;
+    }
+
+    private static boolean overlapsKnownAmount(int start, int end, List<ParsedAmount> knownAmounts) {
+        return knownAmounts.stream().anyMatch(known -> start < known.end() && end > known.start());
     }
 
     private static String lastWords(String value) {
@@ -1708,9 +3192,37 @@ public class ChatToolService {
                 .trim();
     }
 
+    /**
+     * Keeps normalization pure for catalogue/model comparisons while applying the small approved
+     * shorthand table at customer-intent boundaries. The boundaries are exact alphanumeric word
+     * boundaries, so the approved one-letter forms never alter a price such as {@code 500k} or a
+     * model such as {@code V2}.
+     */
+    private static String normalizeIntent(String value) {
+        String normalized = normalize(value)
+                // Preserve price separators for CHAT_RULE_015; product tokenization performs
+                // its own punctuation cleanup after price/option extraction.
+                .replaceAll("[^\\p{Alnum}/.,~\\-–—]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (normalized.isBlank()) return normalized;
+        String expanded = " " + normalized + " ";
+        for (Map.Entry<String, String> entry : APPROVED_ABBREVIATIONS.entrySet()) {
+            String expression = "(?<![\\p{Alnum}])" + Pattern.quote(entry.getKey())
+                    + "(?![\\p{Alnum}])";
+            expanded = expanded.replaceAll(expression, entry.getValue());
+        }
+        return expanded.replaceAll("\\s+", " ").trim();
+    }
+
+    private static boolean isPriceScopeReset(String normalized) {
+        return normalized != null && PRICE_SCOPE_RESET.matcher(normalized).find();
+    }
+
     private static boolean asksForProductDetail(String value) {
         return hasWord(value, "trong luong", "nang", "weight", "thong so", "spec", "specs",
-                "faq", "kich co", "size", "sizes", "mau", "mau sac", "color", "colour");
+                "faq", "kich co", "size", "sizes", "bang size", "bang co", "chon co",
+                "mau", "mau sac", "color", "colour");
     }
 
     private static boolean asksForProductAvailability(String value) {
@@ -1923,6 +3435,61 @@ public class ChatToolService {
         return map;
     }
 
+    /**
+     * CHAT_RULE_017 approved shorthand table. The loop order is part of the contract: a specific
+     * phrase must be expanded before a shorter constituent token can be considered. Matching is
+     * implemented with explicit word boundaries in {@link #normalizeIntent(String)}.
+     */
+    private static Map<String, String> approvedAbbreviations() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("mu bh", "mu bao hiem");
+        map.put("mbh", "mu bao hiem");
+        map.put("gt", "gang tay");
+        map.put("ff", "fullface");
+        map.put("tn", "tai nghe");
+        map.put("sp", "san pham");
+        map.put("bh", "bao hanh");
+        map.put("bnhieu", "bao nhieu");
+        map.put("bn", "bao nhieu");
+        map.put("hok", "khong");
+        map.put("hong", "khong");
+        map.put("khong", "khong");
+        map.put("ko", "khong");
+        map.put("k", "khong");
+        map.put("ntn", "nhu the nao");
+        map.put("dc", "duoc");
+        map.put("ae", "anh em");
+        map.put("ad", "admin");
+        map.put("z", "vay");
+        map.put("v", "vay");
+        map.put("j", "gi");
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
+    /** Product-type free-text filters approved for a category with intentionally broad membership. */
+    private static Map<String, String> categoryTypeQueries() {
+        return Map.of("tai-nghe-bluetooth-mu-bao-hiem", "tai nghe");
+    }
+
+    private static String approvedTypeQuery(String category) {
+        return category == null ? null : CATEGORY_TYPE_QUERIES.get(category);
+    }
+
+    private static Map<String, Long> priceWordValues() {
+        Map<String, Long> values = new LinkedHashMap<>();
+        values.put("mot", 1L);
+        values.put("hai", 2L);
+        values.put("ba", 3L);
+        values.put("bon", 4L);
+        values.put("nam", 5L);
+        values.put("sau", 6L);
+        values.put("bay", 7L);
+        values.put("tam", 8L);
+        values.put("chin", 9L);
+        values.put("muoi", 10L);
+        return Map.copyOf(values);
+    }
+
     private static Map<String, String> brandKeywords() {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("rs taichi", "taichi");
@@ -1961,6 +3528,7 @@ public class ChatToolService {
                 "toi", "minh", "em", "anh", "chi", "ban", "muon", "can", "dang", "xin",
                 "tim", "find", "show", "please", "giup", "gium", "tu", "van",
                 "cho", "voi", "duoc", "and", "or", "the", "a", "an",
+                "size", "mau", "sac",
                 "cao", "cap", "premium", "xin", "tot", "nhat", "re", "tiet", "kiem",
                 "binh", "dan", "cheap", "cheapest", "new", "newest", "best",
                 "di", "phuot",
@@ -1972,6 +3540,22 @@ public class ChatToolService {
         return Set.copyOf(tokens);
     }
 
+    /**
+     * Exact conversational-filler whitelist used before model/name matching. These are words
+     * that do not identify an item by themselves in this shopping dialogue; keeping it explicit
+     * is the safety boundary required by CHAT_RULE_017.
+     */
+    private static Set<String> conversationalFillerTokens() {
+        return Set.of(
+                "thi", "sao", "y", "la", "vay", "the", "a", "u", "nhe", "nha", "nua", "di",
+                "khac", "loai", "cai", "xem", "kia", "nay", "do", "o", "tren", "duoi",
+                "nhu", "tuong", "tu", "da", "trao", "doi", "noi", "hoi", "con", "ma",
+                "thoi", "luon", "size", "mau", "ok",
+                "then", "so", "what", "about", "also", "else", "another", "other", "same",
+                "similar", "previous", "earlier", "please", "thanks", "thank", "okay", "show",
+                "see");
+    }
+
     private static void addPhraseTokens(Set<String> target, String phrase) {
         String normalized = normalize(phrase).replaceAll("[^\\p{Alnum}/]+", " ");
         for (String token : normalized.split("\\s+")) {
@@ -1980,6 +3564,8 @@ public class ChatToolService {
     }
 
     enum PriceKind { NONE, MIN, MAX, BAND, RANGE }
+
+    private record ParsedAmount(long value, int start, int end) {}
 
     record PriceIntent(Long min, Long max, PriceKind kind) {
         static PriceIntent none() {
@@ -2004,6 +3590,19 @@ public class ChatToolService {
             List<String> identifierTokens
     ) {}
 
+    private record AttemptSearchResult(List<Product> products, PageResult<Product> page) {
+        private AttemptSearchResult {
+            products = products == null ? List.of() : List.copyOf(products);
+        }
+    }
+
+    /** Exact count evidence created from the current non-identifier catalog search only. */
+    public record CatalogTotals(
+            long currentTotalItems,
+            long scopeTotalItems,
+            Long priceRangeTotalItems
+    ) {}
+
     record ProductQuery(String text, List<String> tokens, List<String> identifiers) {
         static ProductQuery empty() {
             return new ProductQuery("", List.of(), List.of());
@@ -2014,19 +3613,103 @@ public class ChatToolService {
         }
     }
 
-    private record CatalogAlias(String target, String phrase, int wordCount) {}
+    private record CatalogAlias(String target, String phrase, int wordCount, boolean canonical) {}
 
-    private record CatalogIntent(String category, String brand, Set<String> metadataTokens) {
+    private record CatalogVocabulary(
+            List<CatalogAlias> categoryAliases,
+            Set<String> categorySlugs,
+            List<CatalogAlias> brandAliases
+    ) {}
+
+    /** Public metadata only; safe to include in the initial Gemini request. */
+    public record AssistantCatalogVocabulary(
+            List<AssistantCategoryVocabulary> categories,
+            List<AssistantBrandVocabulary> brands
+    ) {
+        public AssistantCatalogVocabulary {
+            categories = categories == null ? List.of() : List.copyOf(categories);
+            brands = brands == null ? List.of() : List.copyOf(brands);
+        }
+
+        public static AssistantCatalogVocabulary empty() {
+            return new AssistantCatalogVocabulary(List.of(), List.of());
+        }
+
+        public boolean isEmpty() {
+            return categories.isEmpty() && brands.isEmpty();
+        }
+    }
+
+    public record AssistantCategoryVocabulary(String slug, String nameVi, String nameEn) {}
+
+    public record AssistantBrandVocabulary(String slug, String name) {}
+
+    private record FuzzyCatalogMatch(String target, String customerPhrase) {}
+
+    private record CatalogIntent(
+            String category,
+            String brand,
+            Set<String> metadataTokens,
+            String typeQuery
+    ) {
         static CatalogIntent empty() {
-            return new CatalogIntent(null, null, Set.of());
+            return new CatalogIntent(null, null, Set.of(), null);
+        }
+    }
+
+    private record ProductDetailIntent(boolean technical, boolean size, boolean color) {
+        boolean hasRequestedDetail() {
+            return technical || size || color;
+        }
+    }
+
+    /** Effective server-side search scope; it contains no customer prose or identity. */
+    private record SearchIntent(
+            CatalogIntent catalogIntent,
+            ProductQuery query,
+            PriceIntent appliedPrice,
+            boolean inheritedPrice,
+            boolean inheritedBrand,
+            String color,
+            String size
+    ) {
+        boolean hasUsableConstraint() {
+            return catalogIntent.category() != null
+                    || catalogIntent.brand() != null
+                    || appliedPrice.hasBounds()
+                    || query.text() != null && !query.text().isBlank()
+                    || color != null
+                    || size != null;
+        }
+
+        SearchScope searchScope() {
+            return new SearchScope(
+                    catalogIntent.category(),
+                    catalogIntent.brand(),
+                    appliedPrice.min(),
+                    appliedPrice.max());
         }
     }
 
     private enum OrderScope { LATEST, RECENT }
 
     public enum RequiredDisclosure {
+        INHERITED_PRICE_RANGE,
+        INHERITED_FILTER_DROPPED,
         PRICE_RANGE_MISS,
         BROADENED_SEARCH
+    }
+
+    /** Safe, server-accepted search scope that may be persisted for a short follow-up. */
+    public record SearchScope(String category, String brand, Long minPrice, Long maxPrice) {
+        public SearchScope {
+            category = ConversationContext.trimScope(category);
+            brand = ConversationContext.trimScope(brand);
+        }
+
+        boolean hasAnyScope() {
+            return category != null || brand != null || minPrice != null || maxPrice != null;
+        }
     }
 
     /**
@@ -2091,6 +3774,23 @@ public class ChatToolService {
         private final List<String> executed = new ArrayList<>();
         private final Set<String> allowedSlugs = new LinkedHashSet<>();
 
+        public ToolSession() {
+            this(List.of());
+        }
+
+        /**
+         * A prior card grants a one-turn, server-verified detail lookup only. The provider never
+         * controls this seed and every value is reduced to the public-slug form before use.
+         */
+        public ToolSession(List<String> recentVerifiedProducts) {
+            if (recentVerifiedProducts == null) return;
+            recentVerifiedProducts.stream()
+                    .filter(slug -> slug != null && slug.matches("[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"))
+                    .map(ChatToolService::normalizedSlug)
+                    .limit(3)
+                    .forEach(allowedSlugs::add);
+        }
+
         void begin(String name) {
             if (executed.size() >= 2 || executed.contains(name)) {
                 throw new IllegalStateException("Chat tool execution limit exceeded");
@@ -2108,16 +3808,21 @@ public class ChatToolService {
             products.stream()
                     .map(ChatProductCardResponse::slug)
                     .filter(slug -> slug != null && !slug.isBlank())
+                    .map(ChatToolService::normalizedSlug)
                     .forEach(allowedSlugs::add);
         }
 
         public boolean isAllowedSlug(String slug) {
-            return allowedSlugs.contains(slug);
+            return slug != null && allowedSlugs.contains(normalizedSlug(slug));
         }
 
         public int executionCount() {
             return executed.size();
         }
+    }
+
+    private static String normalizedSlug(String slug) {
+        return slug.trim().toLowerCase(Locale.ROOT);
     }
 
     public record ToolExecution(
@@ -2126,8 +3831,33 @@ public class ChatToolService {
             List<ChatProductCardResponse> products,
             List<ChatActionResponse> actions,
             Set<RequiredDisclosure> requiredDisclosures,
-            DeterministicAnswer terminalAnswer
+            DeterministicAnswer terminalAnswer,
+            CatalogTotals catalogTotals,
+            SearchScope searchScope
     ) {
+        public ToolExecution(
+                String name,
+                String responseJson,
+                List<ChatProductCardResponse> products,
+                List<ChatActionResponse> actions,
+                Set<RequiredDisclosure> requiredDisclosures,
+                DeterministicAnswer terminalAnswer,
+                CatalogTotals catalogTotals
+        ) {
+            this(name, responseJson, products, actions, requiredDisclosures, terminalAnswer, catalogTotals, null);
+        }
+
+        public ToolExecution(
+                String name,
+                String responseJson,
+                List<ChatProductCardResponse> products,
+                List<ChatActionResponse> actions,
+                Set<RequiredDisclosure> requiredDisclosures,
+                DeterministicAnswer terminalAnswer
+        ) {
+            this(name, responseJson, products, actions, requiredDisclosures, terminalAnswer, null, null);
+        }
+
         public ToolExecution(
                 String name,
                 String responseJson,
@@ -2135,7 +3865,7 @@ public class ChatToolService {
                 List<ChatActionResponse> actions,
                 Set<RequiredDisclosure> requiredDisclosures
         ) {
-            this(name, responseJson, products, actions, requiredDisclosures, null);
+            this(name, responseJson, products, actions, requiredDisclosures, null, null, null);
         }
 
         public ToolExecution(
@@ -2144,7 +3874,7 @@ public class ChatToolService {
                 List<ChatProductCardResponse> products,
                 List<ChatActionResponse> actions
         ) {
-            this(name, responseJson, products, actions, Set.of(), null);
+            this(name, responseJson, products, actions, Set.of(), null, null, null);
         }
 
         public ToolExecution {
@@ -2181,10 +3911,14 @@ public class ChatToolService {
             boolean handoffRecommended,
             boolean leadDeclined,
             List<ChatActionResponse> actions,
-            Set<RequiredDisclosure> requiredDisclosures
+            Set<RequiredDisclosure> requiredDisclosures,
+            boolean inheritedPrice,
+            CatalogTotals catalogTotals,
+            List<String> matchingProductNames,
+            SearchScope effectiveSearchScope
     ) {
         static ToolOutcome ai(String toolJson, List<ChatProductCardResponse> products) {
-            return ai(toolJson, products, Set.of());
+            return ai(toolJson, products, Set.of(), false, null, List.of(), null);
         }
 
         static ToolOutcome ai(
@@ -2192,9 +3926,54 @@ public class ChatToolService {
                 List<ChatProductCardResponse> products,
                 Set<RequiredDisclosure> requiredDisclosures
         ) {
+            return ai(toolJson, products, requiredDisclosures, false, null, List.of(), null);
+        }
+
+        static ToolOutcome ai(
+                String toolJson,
+                List<ChatProductCardResponse> products,
+                Set<RequiredDisclosure> requiredDisclosures,
+                boolean inheritedPrice
+        ) {
+            return ai(toolJson, products, requiredDisclosures, inheritedPrice, null, List.of(), null);
+        }
+
+        static ToolOutcome ai(
+                String toolJson,
+                List<ChatProductCardResponse> products,
+                Set<RequiredDisclosure> requiredDisclosures,
+                boolean inheritedPrice,
+                CatalogTotals catalogTotals
+        ) {
+            return ai(toolJson, products, requiredDisclosures, inheritedPrice, catalogTotals, List.of(), null);
+        }
+
+        static ToolOutcome ai(
+                String toolJson,
+                List<ChatProductCardResponse> products,
+                Set<RequiredDisclosure> requiredDisclosures,
+                boolean inheritedPrice,
+                CatalogTotals catalogTotals,
+                List<String> matchingProductNames
+        ) {
+            return ai(toolJson, products, requiredDisclosures, inheritedPrice, catalogTotals,
+                    matchingProductNames, null);
+        }
+
+        static ToolOutcome ai(
+                String toolJson,
+                List<ChatProductCardResponse> products,
+                Set<RequiredDisclosure> requiredDisclosures,
+                boolean inheritedPrice,
+                CatalogTotals catalogTotals,
+                List<String> matchingProductNames,
+                SearchScope effectiveSearchScope
+        ) {
             return new ToolOutcome(
                     true, null, "AI", toolJson, List.copyOf(products), false, false, false,
-                    List.of(), Set.copyOf(requiredDisclosures));
+                    List.of(), Set.copyOf(requiredDisclosures), inheritedPrice, catalogTotals,
+                    matchingProductNames == null ? List.of() : List.copyOf(matchingProductNames),
+                    effectiveSearchScope);
         }
 
         static ToolOutcome local(
@@ -2209,8 +3988,20 @@ public class ChatToolService {
                 boolean handoff,
                 boolean leadDeclined,
                 List<ChatActionResponse> actions) {
-            return new ToolOutcome(false, answer, source, "{}", List.of(), offTopic, handoff, leadDeclined,
-                    List.copyOf(actions), Set.of());
+            return local(answer, source, offTopic, handoff, leadDeclined, actions, List.of());
+        }
+
+        static ToolOutcome local(
+                String answer,
+                String source,
+                boolean offTopic,
+                boolean handoff,
+                boolean leadDeclined,
+                List<ChatActionResponse> actions,
+                List<ChatProductCardResponse> products) {
+            return new ToolOutcome(false, answer, source, "{}",
+                    products == null ? List.of() : List.copyOf(products), offTopic, handoff, leadDeclined,
+                    List.copyOf(actions), Set.of(), false, null, List.of(), null);
         }
     }
 }

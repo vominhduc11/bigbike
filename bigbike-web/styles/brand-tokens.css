@@ -123,11 +123,11 @@
   --bb-color-success: #2e7d32;
 
   /* Typography — source of truth: docs/TYPOGRAPHY.md
-     Chỉ 2 font thực: Arial (body/UI) và Barlow Condensed (CTA/nav desktop).
-     font-cta = Barlow Condensed (injected by next/font via layout.tsx). */
-  --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
-  --bb-font-barlow: var(--font-brand-barlow), Arial, Helvetica, "Helvetica Neue", sans-serif;
-  --bb-font-cta:  var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
+     Toàn bộ web dùng Arial; Liberation Sans là fallback cho môi trường Linux.
+     Các alias font-barlow/font-cta giữ nguyên để không sửa call site. */
+  --bb-font-body: Arial, Helvetica, "Liberation Sans", sans-serif;
+  --bb-font-barlow: var(--bb-font-body);
+  --bb-font-cta: var(--bb-font-body);
 
   /* Canonical 11-group typography — mobile values. Every readable/functional
      text size maps to exactly one A/B token. The ten tokens switch once at 768px;

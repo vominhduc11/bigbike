@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { ApiClientError, mapValidationErrors } from './adminApi'
 
 describe('mapValidationErrors', () => {
+  it('giữ Retry-After để UI có thể hướng dẫn thử lại thay vì tự lặp vô hạn', () => {
+    const error = new ApiClientError('Bạn thao tác quá nhanh.', 429, 'RATE_LIMIT_EXCEEDED', [], 12)
+
+    expect(error.status).toBe(429)
+    expect(error.retryAfterSeconds).toBe(12)
+  })
+
   it('dịch lỗi slug trùng sang tiếng Việt dễ hiểu', () => {
     const error = new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
       { field: 'slug', code: 'DUPLICATE', message: 'Slug is already in use.' },

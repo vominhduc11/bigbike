@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.bigbike.bigbike_backend.service.auth.AdminAccountStatusService;
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
 import io.jsonwebtoken.Claims;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +33,7 @@ class WebSocketConfigAccessTest {
     private JwtService jwtService;
     private AdminAccountStatusService accountStatusService;
     private AdminPermissionService permissionService;
+    private RateLimitService rateLimitService;
     private ChannelInterceptor inbound;
     private ChannelInterceptor outbound;
 
@@ -40,8 +42,9 @@ class WebSocketConfigAccessTest {
         jwtService = mock(JwtService.class);
         accountStatusService = mock(AdminAccountStatusService.class);
         permissionService = mock(AdminPermissionService.class);
+        rateLimitService = mock(RateLimitService.class);
         WebSocketConfig config = new WebSocketConfig(
-                jwtService, accountStatusService, permissionService, "http://localhost:4000");
+                jwtService, accountStatusService, permissionService, rateLimitService, "http://localhost:4000");
 
         inbound = captureInboundInterceptor(config);
         outbound = captureOutboundInterceptor(config);

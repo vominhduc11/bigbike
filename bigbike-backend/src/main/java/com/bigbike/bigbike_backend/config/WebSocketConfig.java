@@ -3,9 +3,15 @@ package com.bigbike.bigbike_backend.config;
 import com.bigbike.bigbike_backend.service.auth.AdminAccountStatusService;
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
+import com.bigbike.bigbike_backend.api.error.RateLimitExceededException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -46,22 +52,28 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
     private static final String SESSION_ATTR_ACCESS_VERSION = "accessVersion";
+    /** The built-in simple broker is per JVM, so this is a per-broker hard ceiling. */
+    private static final int MAX_CONNECTIONS_PER_ADMIN_PER_BROKER = 3;
 
     private final JwtService jwtService;
     private final AdminAccountStatusService adminAccountStatusService;
     private final AdminPermissionService adminPermissionService;
+    private final RateLimitService rateLimitService;
     private final List<String> allowedOrigins;
     private final Map<String, SessionAccess> sessions = new ConcurrentHashMap<>();
+    private final Map<UUID, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
 
     public WebSocketConfig(
             JwtService jwtService,
             AdminAccountStatusService adminAccountStatusService,
             AdminPermissionService adminPermissionService,
+            RateLimitService rateLimitService,
             @Value("${bigbike.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:4000,http://localhost:4001}") String allowedOriginsRaw
     ) {
         this.jwtService = jwtService;
         this.adminAccountStatusService = adminAccountStatusService;
         this.adminPermissionService = adminPermissionService;
+        this.rateLimitService = rateLimitService;
         this.allowedOrigins = Arrays.stream(allowedOriginsRaw.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -109,12 +121,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         if (snapshot == null
                                 || !STATUS_ACTIVE.equals(snapshot.status())
                                 || snapshot.accessVersion() != accessVersion) {
-                            log.warn("WS CONNECT rejected: account not active for {}", claims.getSubject());
+                            log.warn("WS CONNECT rejected: account is not active");
                             throw new IllegalArgumentException("Admin account is not active.");
                         }
                         String sessionId = accessor.getSessionId();
                         if (sessionId == null) {
                             throw new IllegalArgumentException("WebSocket session is required.");
+                        }
+                        try {
+                            rateLimitService.checkOrThrow(
+                                    RateLimitTier.WEBSOCKET_HANDSHAKE,
+                                    RateLimitScope.ADMIN_ACCOUNT,
+                                    userId.toString());
+                        } catch (RateLimitExceededException ex) {
+                            log.warn("WS CONNECT rejected by rate limit");
+                            throw new IllegalArgumentException("RATE_LIMIT_EXCEEDED");
+                        }
+                        if (!reserveConnection(userId, sessionId)) {
+                            log.warn("WS CONNECT rejected: per-admin connection ceiling reached");
+                            throw new IllegalArgumentException("Too many active WebSocket connections.");
                         }
                         sessions.put(sessionId, new SessionAccess(userId, accessVersion));
                         if (accessor.getSessionAttributes() != null) {
@@ -124,9 +149,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         // A stable admin-id principal lets Spring resolve /user destinations to every
                         // open session of exactly this account. The JWT role is never trusted here.
                         accessor.setUser(new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of()));
-                        log.debug("WS CONNECT accepted for admin {}", claims.getSubject());
+                        log.debug("WS CONNECT accepted");
                     } catch (JwtException | IllegalArgumentException e) {
-                        log.warn("WS CONNECT rejected: invalid token — {}", e.getMessage());
+                        log.warn("WS CONNECT rejected: invalid authentication or session state");
                         throw new IllegalArgumentException("Invalid or expired token.");
                     }
                     return message;
@@ -139,7 +164,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     boolean allowedMaintenanceTopic = MAINTENANCE_TOPIC.equals(destination) && isCurrentAccess(session);
                     if (!allowedAccessQueue && !allowedMaintenanceTopic
                             && (session == null || !hasPermissionForDestination(session, destination))) {
-                        log.warn("WS SUBSCRIBE rejected for {} to {}", session, destination);
+                        log.warn("WS SUBSCRIBE rejected: permission or session check failed");
                         throw new IllegalArgumentException("Not permitted to subscribe to " + destination + ".");
                     }
                 }
@@ -149,13 +174,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     boolean validPresence = PRESENCE_DESTINATION.equals(accessor.getDestination());
                     boolean validUploadLease = MAINTENANCE_UPLOAD_DESTINATION.equals(accessor.getDestination());
                     if (session == null || (!validPresence && !validUploadLease) || !isCurrentAccess(session)) {
-                        log.warn("WS SEND rejected for {} to {}", session, accessor.getDestination());
+                        log.warn("WS SEND rejected: destination or session check failed");
                         throw new IllegalArgumentException("Invalid admin realtime destination.");
+                    }
+                    try {
+                        rateLimitService.checkOrThrow(
+                                RateLimitTier.WEBSOCKET_COMMAND,
+                                RateLimitScope.ADMIN_ACCOUNT,
+                                session.userId().toString());
+                    } catch (RateLimitExceededException ex) {
+                        log.warn("WS SEND rejected by rate limit");
+                        throw new IllegalArgumentException("RATE_LIMIT_EXCEEDED");
                     }
                 }
 
                 if (StompCommand.DISCONNECT.equals(accessor.getCommand()) && accessor.getSessionId() != null) {
-                    sessions.remove(accessor.getSessionId());
+                    removeSession(accessor.getSessionId());
                 }
 
                 return message;
@@ -185,7 +219,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @EventListener
     public void handleSessionDisconnect(SessionDisconnectEvent event) {
         if (event.getSessionId() != null) {
-            sessions.remove(event.getSessionId());
+            removeSession(event.getSessionId());
         }
     }
 
@@ -204,7 +238,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     SessionAccess session = accessor.getSessionId() == null
                             ? null : sessions.get(accessor.getSessionId());
                     if (!isCurrentAccess(session)) {
-                        log.debug("WS maintenance outbound blocked for {}", session);
+                        log.debug("WS maintenance outbound blocked by access check");
                         return null;
                     }
                     return message;
@@ -216,7 +250,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     // Returning null prevents a pre-existing subscription from receiving an event
                     // after the account becomes inactive, its token version is revoked, or the
                     // current role no longer carries this topic's permission.
-                    log.debug("WS outbound message blocked for {} to {}", session, accessor.getDestination());
+                    log.debug("WS outbound message blocked by access check");
                     return null;
                 }
                 return message;
@@ -226,6 +260,31 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private SessionAccess sessionAccess(StompHeaderAccessor accessor) {
         return accessor.getSessionId() == null ? null : sessions.get(accessor.getSessionId());
+    }
+
+    private boolean reserveConnection(UUID userId, String sessionId) {
+        if (sessions.containsKey(sessionId)) {
+            return true;
+        }
+        AtomicBoolean reserved = new AtomicBoolean();
+        connectionCounts.compute(userId, (ignored, current) -> {
+            AtomicInteger count = current == null ? new AtomicInteger() : current;
+            if (count.get() < MAX_CONNECTIONS_PER_ADMIN_PER_BROKER) {
+                count.incrementAndGet();
+                reserved.set(true);
+            }
+            return count;
+        });
+        return reserved.get();
+    }
+
+    private void removeSession(String sessionId) {
+        SessionAccess removed = sessions.remove(sessionId);
+        if (removed == null) {
+            return;
+        }
+        connectionCounts.computeIfPresent(removed.userId(), (ignored, count) ->
+                count.decrementAndGet() <= 0 ? null : count);
     }
 
     private boolean hasPermissionForDestination(SessionAccess session, String destination) {

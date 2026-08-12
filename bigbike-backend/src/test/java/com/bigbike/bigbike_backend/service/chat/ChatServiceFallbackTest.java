@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
@@ -21,6 +22,7 @@ import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.AdminChatWsService;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,82 +59,126 @@ class ChatServiceFallbackTest {
     }
 
     @Test
-    @DisplayName("a model tone rejection is retried once with corrected form of address")
-    void modelToneRejectionRetriesOnceBeforeFallback() {
+    @DisplayName("a model tone rejection with verified cards is recovered locally without another provider call")
+    void modelToneRejectionUsesLocalCardRecovery() {
         Fixture fixture = fixture(true, 60, 0);
         when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
                 .thenReturn(Optional.empty());
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenReturn(Optional.of(hybrid(
-                        "Dạ, em đã kiểm tra câu hỏi này. Em có thể hỗ trợ thêm ngay.")));
-        when(fixture.aiClient.answerWithToneCorrection(
-                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
-                .thenReturn(Optional.of(hybrid(
-                        "Dạ, em có thể hỗ trợ tìm sản phẩm. Anh/chị cho em biết nhu cầu cần xem nhé?")));
+                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.",
+                        List.of(card()))));
 
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi bị guard chặn"), null);
 
         assertThat(response.mode()).isEqualTo("AI");
         assertThat(response.turnCount()).isEqualTo(1);
-        assertThat(response.answer()).contains("Anh/chị");
+        assertThat(response.answer()).contains("hiển thị 1 thẻ").doesNotContain("Chào em");
+        assertThat(response.products()).extracting(ChatProductCardResponse::slug).containsExactly("safe-card");
         assertThat(fixture.conversation.getEndedReason()).isNull();
-        assertThat(fixture.conversation.getAiCallCount()).isEqualTo(2);
+        assertThat(fixture.conversation.getAiCallCount()).isEqualTo(1);
         ArgumentCaptor<ChatMessageEntity> savedMessages = ArgumentCaptor.forClass(ChatMessageEntity.class);
         verify(fixture.messageRepo, atLeast(2)).save(savedMessages.capture());
         assertThat(savedMessages.getAllValues()).filteredOn(message -> "ASSISTANT".equals(message.getRole()))
                 .extracting(ChatMessageEntity::getAiRetryCount)
-                .containsExactly(1);
-        verify(fixture.aiClient).answerWithToneCorrection(
-                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class));
+                .containsExactly(0);
     }
 
     @Test
-    @DisplayName("a model that calls the customer em is rejected and corrected once")
-    void customerAddressedAsEmAlsoUsesTheBoundedToneRetry() {
+    @DisplayName("an unsafe one-sided price count is rebuilt from verified search totals before fallback")
+    void verifiedPriceRangeRecoveryWinsBeforeContactFallback() {
         Fixture fixture = fixture(true, 60, 0);
         when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
                 .thenReturn(Optional.empty());
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
-                .thenReturn(Optional.of(hybrid(
-                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.")));
-        when(fixture.aiClient.answerWithToneCorrection(
-                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
-                .thenReturn(Optional.of(hybrid(
-                        "Dạ, em đã kiểm tra yêu cầu của anh/chị. Anh/chị cho em biết thêm loại hàng cần xem nhé?")));
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                .thenReturn(Optional.of(hybridWithVerifiedRangeTotals()));
 
-        ChatMessageResponse response = fixture.service.send(request("Câu hỏi gọi khách sai"), null);
+        ChatMessageResponse response = fixture.service.send(request("Tai nghe trên 3tr có bao nhiêu mẫu?"), null);
 
         assertThat(response.mode()).isEqualTo("AI");
-        assertThat(response.answer()).contains("anh/chị").doesNotContain("Chào em");
-        verify(fixture.aiClient).answerWithToneCorrection(
-                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class));
+        assertThat(response.answer())
+                .contains("trong tầm giá anh/chị hỏi", "5 mẫu tai nghe", "3 thẻ tiêu biểu")
+                .doesNotContain("Gặp nhân viên");
+        assertThat(response.products()).hasSize(3);
     }
 
     @Test
-    @DisplayName("a tone retry is skipped at the daily reserve and remains a recoverable fallback")
-    void modelToneRejectionSkipsRetryAtDailyReserve() {
-        Fixture fixture = fixture(true, 60, 59);
+    @DisplayName("a polite Vietnamese answer without both pronoun keywords is accepted")
+    void politeAnswerWithoutMandatoryPronounsDoesNotFallBack() {
+        Fixture fixture = fixture(true, 60, 0);
         when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
                 .thenReturn(Optional.empty());
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenReturn(Optional.of(hybrid(
-                        "Dạ, em đã kiểm tra câu hỏi này. Em có thể hỗ trợ thêm ngay.")));
+                        "Dạ, shop hiện có dữ liệu phù hợp. Mời xem thẻ sản phẩm để chọn mẫu cần kiểm tra.")));
 
-        ChatMessageResponse response = fixture.service.send(request("Câu hỏi sát trần ngày"), null);
+        ChatMessageResponse response = fixture.service.send(request("Câu hỏi lịch sự"), null);
 
-        assertRecoverable(response, fixture.conversation);
-        verify(fixture.aiClient, never()).answerWithToneCorrection(
-                anyString(), anyString(), any(ChatToolRegistry.class), eq(true), any(AiChatClient.ToolExecutor.class));
+        assertThat(response.mode()).isEqualTo("AI");
+        assertThat(response.answer()).contains("shop hiện có");
+        assertThat(fixture.conversation.getAiCallCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("a repeated recoverable fallback changes its customer wording")
+    void repeatedFallbackDoesNotRepeatTheSameText() {
+        Fixture fixture = fixture(true, 60, 0);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(fixture.aiClient.answer(
+                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                .thenReturn(Optional.of(hybrid(
+                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.")));
+        ChatMessageEntity priorFallback = new ChatMessageEntity();
+        priorFallback.setSource("CONTACT_FALLBACK");
+        when(fixture.messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
+                CONVERSATION_ID, "ASSISTANT"))
+                .thenReturn(Optional.empty(), Optional.of(priorFallback));
+
+        ChatMessageResponse first = fixture.service.send(request("Câu hỏi bị chặn lần một"), null);
+        ChatMessageResponse second = fixture.service.send(request("Câu hỏi bị chặn lần hai"), null);
+
+        assertRecoverable(first, fixture.conversation);
+        assertRecoverable(second, fixture.conversation);
+        assertThat(second.answer())
+                .isNotEqualTo(first.answer())
+                .contains("cho em biết rõ")
+                .doesNotContain("kết quả đã xác minh", "nội dung trả lời an toàn");
+    }
+
+    @Test
+    @DisplayName("a newly verified count is not mistaken for a duplicate reply")
+    void changedVerifiedCatalogCountIsNotReplacedByDuplicateClarification() {
+        Fixture fixture = fixture(true, 60, 0);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(fixture.aiClient.answer(
+                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                .thenReturn(Optional.of(hybridWithVerifiedTotals(12)), Optional.of(hybridWithVerifiedTotals(8)));
+        ChatMessageEntity previous = new ChatMessageEntity();
+        previous.setContent("Dạ, trong tầm giá anh/chị hỏi, shop có 12 mẫu tai nghe. "
+                + "Em đang hiển thị 3 thẻ tiêu biểu trong tổng 12 mẫu phù hợp.");
+        when(fixture.messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
+                CONVERSATION_ID, "ASSISTANT"))
+                .thenReturn(Optional.empty(), Optional.of(previous));
+
+        fixture.service.send(request("Tôi muốn xem tai nghe"), null);
+        ChatMessageResponse second = fixture.service.send(request("Từ 3tr đến 5tr đi"), null);
+
+        assertThat(second.answer()).contains("8 mẫu tai nghe").doesNotContain("để em kiểm tra đúng ý");
     }
 
     @Test
@@ -143,7 +189,8 @@ class ChatServiceFallbackTest {
                 .thenReturn(Optional.empty());
         when(fixture.aiClient.answer(
                 anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
-                any(AiChatClient.ToolExecutor.class)))
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenThrow(new RuntimeException("provider unavailable"))
                 .thenReturn(Optional.of(hybrid(
                         "Dạ, em đã kiểm tra được thông tin này. Anh/chị có thể xem tiếp nhé?")));
@@ -151,6 +198,7 @@ class ChatServiceFallbackTest {
         ChatMessageResponse fallback = fixture.service.send(request("Câu hỏi lúc AI lỗi"), null);
 
         assertRecoverable(fallback, fixture.conversation);
+        assertThat(fallback.answer()).doesNotContain("kết quả đã xác minh", "nội dung trả lời an toàn");
         ChatMessageResponse next = fixture.service.send(request("Câu hỏi tiếp theo"), null);
         assertThat(next.mode()).isEqualTo("AI");
         assertThat(next.turnCount()).isEqualTo(1);
@@ -225,9 +273,71 @@ class ChatServiceFallbackTest {
     }
 
     private static AiChatClient.HybridAnswer hybrid(String answer) {
+        return hybrid(answer, List.of());
+    }
+
+    private static AiChatClient.HybridAnswer hybrid(
+            String answer, List<ChatProductCardResponse> products) {
         return new AiChatClient.HybridAnswer(
                 new AiChatClient.Answer(answer, false, false, false),
-                List.of(), List.of(), List.of(), 1);
+                products, List.of(), List.of(), 1);
+    }
+
+    private static AiChatClient.HybridAnswer hybridWithVerifiedRangeTotals() {
+        ChatProductCardResponse first = card();
+        ChatProductCardResponse second = new ChatProductCardResponse(
+                "safe-card-2", "Sản phẩm an toàn 2", null,
+                BigDecimal.valueOf(3_600_000), null, "VND", "IN_STOCK");
+        ChatProductCardResponse third = new ChatProductCardResponse(
+                "safe-card-3", "Sản phẩm an toàn 3", null,
+                BigDecimal.valueOf(3_700_000), null, "VND", "IN_STOCK");
+        return new AiChatClient.HybridAnswer(
+                new AiChatClient.Answer(
+                        "Dạ, shop chỉ có 5 mẫu tai nghe. Anh/chị xem các thẻ bên dưới để chọn nhé.",
+                        false, false, false),
+                List.of(first, second, third),
+                List.of(),
+                List.of(ChatToolRegistry.SEARCH_PRODUCTS),
+                java.util.Set.of(),
+                1,
+                "AI",
+                new ChatToolService.CatalogTotals(5, 9, 5L),
+                new ChatToolService.SearchScope(
+                        "tai-nghe-bluetooth-mu-bao-hiem", null, 3_000_000L, null));
+    }
+
+    private static AiChatClient.HybridAnswer hybridWithVerifiedTotals(long count) {
+        ChatProductCardResponse second = new ChatProductCardResponse(
+                "safe-card-2", "Sản phẩm an toàn 2", null,
+                BigDecimal.valueOf(3_600_000), null, "VND", "IN_STOCK");
+        ChatProductCardResponse third = new ChatProductCardResponse(
+                "safe-card-3", "Sản phẩm an toàn 3", null,
+                BigDecimal.valueOf(3_700_000), null, "VND", "IN_STOCK");
+        return new AiChatClient.HybridAnswer(
+                new AiChatClient.Answer(
+                        "Dạ, trong tầm giá anh/chị hỏi, shop có " + count + " mẫu tai nghe. "
+                                + "Em đang hiển thị 3 thẻ tiêu biểu trong tổng " + count + " mẫu phù hợp.",
+                        false, false, false),
+                List.of(card(), second, third),
+                List.of(),
+                List.of(ChatToolRegistry.SEARCH_PRODUCTS),
+                java.util.Set.of(),
+                1,
+                "AI",
+                new ChatToolService.CatalogTotals(count, count, count),
+                new ChatToolService.SearchScope(
+                        "tai-nghe-bluetooth-mu-bao-hiem", null, 3_000_000L, 5_000_000L));
+    }
+
+    private static ChatProductCardResponse card() {
+        return new ChatProductCardResponse(
+                "safe-card",
+                "Sản phẩm an toàn",
+                null,
+                BigDecimal.valueOf(1_000_000),
+                null,
+                "VND",
+                "IN_STOCK");
     }
 
     private static ChatMessageRequest request(String message) {
@@ -262,6 +372,8 @@ class ChatServiceFallbackTest {
         when(messages.countAiUsesBetween(
                 any(Instant.class), any(Instant.class))).thenReturn(spent);
         when(aiClient.isConfigured()).thenReturn(true);
+        when(toolService.assistantCatalogVocabulary())
+                .thenReturn(ChatToolService.AssistantCatalogVocabulary.empty());
 
         ChatService service = new ChatService(
                 conversations,

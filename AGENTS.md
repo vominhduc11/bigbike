@@ -346,7 +346,7 @@ Tailwind utility classes in JSX      ← text-primary, bg-brand, border-border, 
 
 **Quy tắc:**
 - **Màu**: chỉ palette `STYLEGUIDE.md` (`#FF0C09` brand red, `#007BFF` blue, `#00BFFF` chat cyan, neutral tokens). Tham chiếu qua CSS variable / Tailwind token. Không hardcode hex.
-- **Font**: `Barlow` / Arial (body/UI/content), `Barlow Condensed` (heading/display/hero/CTA/badge/nav). **Oswald đã gỡ bỏ — không dùng.** Heading/nav/CTA/badge → uppercase; body → sentence case. Source of truth: `STYLEGUIDE.md` + `docs/TYPOGRAPHY.md`.
+- **Font**: Chỉ Arial cho toàn bộ web (body/UI/content, heading/display/hero/CTA/badge/nav); fallback theo token của `STYLEGUIDE.md`. **Oswald và các font display riêng đã gỡ bỏ — không dùng.** Heading/nav/CTA/badge → uppercase; body → sentence case. Source of truth: `STYLEGUIDE.md` + `docs/TYPOGRAPHY.md`.
 - **Scale**: Tailwind `text-xs`–`text-5xl` hoặc size explicit từ `STYLEGUIDE.md`. Không arbitrary `text-[13px]`.
 - **Spacing**: thang 4px (`p-4`=16px, `gap-6`=24px, `mt-8`=32px). Container `max-w-[1200px]`. Section spacing desktop 72px / tablet 52px / mobile 32px. Touch target ≥ 44px.
 - **Border radius**: `rounded-none` mặc định; `rounded-full` chỉ cho avatar / badge dot / chat button.

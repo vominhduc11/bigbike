@@ -5,6 +5,9 @@ import com.bigbike.bigbike_backend.api.auth.dto.TokenResponse;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.config.JwtProperties;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRefreshTokenEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
@@ -15,6 +18,7 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,26 +39,31 @@ public class AdminAuthService {
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
     private final ClientIpResolver clientIpResolver;
+    private final RateLimitService rateLimitService;
 
     @Transactional
     public TokenResponse login(String email, String rawPassword, HttpServletRequest request) {
+        String normalizedEmail = normalizeEmail(email);
+        // Per-IP limiting happens before authentication in the filter. This opaque identity key
+        // is the second credential-stuffing control when an attacker fans requests across IPs.
+        rateLimitService.checkOrThrow(RateLimitTier.LOGIN, RateLimitScope.IDENTITY, normalizedEmail);
         String clientIp = request != null ? clientIpResolver.resolve(request) : null;
         String userAgent = request != null ? request.getHeader("User-Agent") : null;
 
-        AdminUserEntity user = adminUserRepo.findByEmail(email).orElse(null);
+        AdminUserEntity user = adminUserRepo.findByEmail(normalizedEmail).orElse(null);
 
         // Unknown account, or an INVITED account with no password yet: keep timing flat
         // (constant-time dummy verify) and return the same generic error to avoid enumeration.
         if (user == null || user.getPasswordHash() == null) {
             passwordService.dummyVerify(rawPassword);
-            auditLogin(null, "ADMIN_LOGIN_FAILED", email, user == null ? "USER_NOT_FOUND" : "NO_PASSWORD",
+            auditLogin(null, "ADMIN_LOGIN_FAILED", user == null ? "USER_NOT_FOUND" : "NO_PASSWORD",
                     clientIp, userAgent);
             throw new UnauthorizedException("Invalid email or password.");
         }
 
         // Account lockout: refuse while the cool-down window is active, without touching the password.
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(Instant.now())) {
-            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "ACCOUNT_LOCKED", clientIp, userAgent);
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", "ACCOUNT_LOCKED", clientIp, userAgent);
             throw new UnauthorizedException("ACCOUNT_LOCKED",
                     "Account is temporarily locked due to too many failed login attempts. Please try again later.");
         }
@@ -62,9 +71,9 @@ public class AdminAuthService {
         if (!passwordService.verify(rawPassword, user.getPasswordHash())) {
             // Counter write runs in its own transaction so it survives this method throwing.
             boolean lockedNow = loginAttemptService.recordFailure(user.getId());
-            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "BAD_PASSWORD", clientIp, userAgent);
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", "BAD_PASSWORD", clientIp, userAgent);
             if (lockedNow) {
-                auditLogin(user.getId(), "ADMIN_ACCOUNT_LOCKED", email, "TOO_MANY_FAILED_ATTEMPTS",
+                auditLogin(user.getId(), "ADMIN_ACCOUNT_LOCKED", "TOO_MANY_FAILED_ATTEMPTS",
                         clientIp, userAgent);
             }
             throw new UnauthorizedException("Invalid email or password.");
@@ -72,7 +81,7 @@ public class AdminAuthService {
 
         // Password correct but account not usable — same generic error, do not count as a brute-force miss.
         if (!"ACTIVE".equals(user.getStatus())) {
-            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "INACTIVE", clientIp, userAgent);
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", "INACTIVE", clientIp, userAgent);
             throw new UnauthorizedException("Invalid email or password.");
         }
 
@@ -82,7 +91,7 @@ public class AdminAuthService {
         user.setLastLoginAt(Instant.now());
         adminUserRepo.save(user);
 
-        auditLogin(user.getId(), "ADMIN_LOGIN_SUCCESS", user.getEmail(), null, clientIp, userAgent);
+        auditLogin(user.getId(), "ADMIN_LOGIN_SUCCESS", null, clientIp, userAgent);
 
         String accessToken = jwtService.generateAccessToken(
                 user.getId().toString(), user.getEmail(), user.getRole(), user.getAccessVersion());
@@ -98,6 +107,9 @@ public class AdminAuthService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new UnauthorizedException("Missing refresh token.");
         }
+        // The token is converted to an HMAC-backed key inside the rate-limit service; it is
+        // never emitted in a log, metric label or Redis key as plaintext.
+        rateLimitService.checkOrThrow(RateLimitTier.REFRESH, RateLimitScope.IDENTITY, rawRefreshToken);
         String tokenHash = jwtService.hashToken(rawRefreshToken);
         AdminRefreshTokenEntity stored = refreshTokenRepo.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token."));
@@ -137,11 +149,11 @@ public class AdminAuthService {
         refreshTokenRepo.findByTokenHash(tokenHash).ifPresent(token -> {
             token.setRevokedAt(Instant.now());
             refreshTokenRepo.save(token);
-            auditLogin(token.getAdminUserId(), "ADMIN_LOGOUT", null, null, clientIp, userAgent);
+            auditLogin(token.getAdminUserId(), "ADMIN_LOGOUT", null, clientIp, userAgent);
         });
     }
 
-    private void auditLogin(UUID actorId, String action, String email, String reason,
+    private void auditLogin(UUID actorId, String action, String reason,
             String clientIp, String userAgent) {
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
@@ -150,29 +162,22 @@ public class AdminAuthService {
                 "ADMIN_AUTH",
                 null,
                 null,
-                authDetailJson(email, reason),
+                authDetailJson(reason),
                 clientIp,
                 userAgent
         ));
     }
 
-    private static String authDetailJson(String email, String reason) {
+    private static String authDetailJson(String reason) {
         StringBuilder sb = new StringBuilder("{");
-        boolean hasEmail = email != null && !email.isBlank();
-        if (hasEmail) {
-            sb.append("\"email\":\"").append(jsonEscape(email)).append("\"");
-        }
         if (reason != null) {
-            if (hasEmail) {
-                sb.append(",");
-            }
             sb.append("\"reason\":\"").append(reason).append("\"");
         }
         return sb.append("}").toString();
     }
 
-    private static String jsonEscape(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    private static String normalizeEmail(String email) {
+        return email == null ? "anonymous" : email.trim().toLowerCase(Locale.ROOT);
     }
 
     public AdminUserProfile getProfile(UUID userId) {

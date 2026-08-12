@@ -32,7 +32,7 @@ class AiChatRequestShapeTest {
         assertThat(config.get("maxOutputTokens")).isEqualTo(400);
         assertThat(config).doesNotContainKey("responseMimeType");
         assertThat(MAPPER.valueToTree(body).path("tools").toString())
-                .contains("search_products", "get_product", "get_policy", "get_shop_info", "get_my_orders")
+                .contains("search_products", "list_categories", "get_product", "get_policy", "get_shop_info", "get_my_orders")
                 .doesNotContain("capture_lead", "additionalProperties", "parametersJsonSchema");
     }
 
@@ -57,35 +57,49 @@ class AiChatRequestShapeTest {
     }
 
     @Test
-    @DisplayName("initial request carries only the current question and fixed declarations")
-    void sendsOnlyCurrentQuestion() throws Exception {
+    @DisplayName("initial request carries the current question and public category-brand vocabulary only")
+    void sendsOnlyCurrentQuestionAndApprovedVocabulary() throws Exception {
         Map<String, Object> body = client().buildInitialRequestBody(
-                "Tìm mũ 3/4 dưới 2 triệu.", "vi", new ChatToolRegistry());
+                "Tìm mũ 3/4 dưới 2 triệu.",
+                "vi",
+                new ChatToolRegistry(),
+                new ChatToolService.AssistantCatalogVocabulary(
+                        List.of(new ChatToolService.AssistantCategoryVocabulary(
+                                "mu-bao-hiem", "Mũ bảo hiểm", "Helmets")),
+                        List.of(new ChatToolService.AssistantBrandVocabulary("agv", "AGV"))),
+                List.of("mu-bao-hiem-fullface-retro-ilm-z503"));
 
         assertThat((List<?>) body.get("contents")).hasSize(1);
         String json = MAPPER.writeValueAsString(body);
         assertThat(json).contains("Tìm mũ 3/4 dưới 2 triệu")
                 .contains("search_products")
+                .contains("PUBLIC_CATALOG_VOCABULARY", "mu-bao-hiem", "Mũ bảo hiểm", "AGV")
+                .contains("RECENT_VERIFIED_PRODUCTS", "mu-bao-hiem-fullface-retro-ilm-z503")
                 .doesNotContain("test-key")
                 .doesNotContain("TOOL_RESULT")
                 .doesNotContain("customerId")
                 .doesNotContain("customerEmail")
                 .doesNotContain("shippingAddress")
+                .doesNotContain("ILM Z503")
+                .doesNotContain("retailPrice")
+                .doesNotContain("salePrice")
+                .doesNotContain("stockState")
                 .doesNotContain("SELECT *");
     }
 
     @Test
-    @DisplayName("system prompt fixes Vietnamese address form and bans warehouse-wide inferences")
+    @DisplayName("system prompt bans wrong Vietnamese address and distinguishes cards from catalogue totals")
     void systemPromptPinsToneAndCatalogueClaimRules() throws Exception {
         Map<String, Object> body = client().buildInitialRequestBody(
                 "Tìm mũ bảo hiểm", "vi", new ChatToolRegistry());
         String prompt = MAPPER.writeValueAsString(body.get("systemInstruction"));
 
         assertThat(prompt)
-                .contains("For EVERY Vietnamese answer", "address the customer as")
-                .contains("Never open with", "Never use")
+                .contains("do not add either merely to satisfy a keyword rule", "Never call the", "customer")
+                .contains("PUBLIC_CATALOG_VOCABULARY", "interpret customer shorthand")
+                .contains("RECENT_VERIFIED_PRODUCTS", "server-verified public slugs")
                 .contains("Product cards are a short page, not a warehouse count")
-                .contains("whole-catalogue conclusion");
+                .contains("displayedCardCount", "whole-catalogue", "conclusion");
     }
 
     @Test

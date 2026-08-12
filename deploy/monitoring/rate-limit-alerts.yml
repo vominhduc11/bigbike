@@ -1,0 +1,56 @@
+groups:
+  - name: bigbike-rate-limiting
+    rules:
+      - alert: BigBikeRateLimitStoreFailure
+        expr: sum(rate(bigbike_rate_limit_store_errors_total[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: bigbike-backend
+        annotations:
+          summary: "BigBike rate-limit shared store is failing"
+          runbook: "docs/engineering/RATE_LIMITING.md#redis-failure"
+
+      - alert: BigBikeRateLimitFallbackActive
+        expr: sum(rate(bigbike_rate_limit_fallback_activations_total[5m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+          service: bigbike-backend
+        annotations:
+          summary: "BigBike is using per-instance rate-limit fallback"
+          runbook: "docs/engineering/RATE_LIMITING.md#redis-failure"
+
+      - alert: BigBikeRateLimitRejectSpike
+        expr: |
+          sum(rate(bigbike_rate_limit_requests_total{outcome="rejected"}[5m]))
+          /
+          clamp_min(sum(rate(bigbike_rate_limit_requests_total[5m])), 0.1) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          service: bigbike-backend
+        annotations:
+          summary: "More than 10% of BigBike rate-limit decisions are rejected"
+          runbook: "docs/engineering/RATE_LIMITING.md#429-spike"
+
+      - alert: BigBikeRateLimitConcurrencySaturation
+        expr: sum(rate(bigbike_rate_limit_concurrency_rejections_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: bigbike-backend
+        annotations:
+          summary: "BigBike upload, import, or export concurrency ceiling is saturated"
+          runbook: "docs/engineering/RATE_LIMITING.md#false-positive"
+
+      # Requires the log pipeline to expose the privacy-safe Nginx access log as this metric.
+      - alert: BigBikeNginxRateLimitSpike
+        expr: sum(rate(nginx_rate_limit_responses_total{status="429"}[5m])) > 20
+        for: 10m
+        labels:
+          severity: warning
+          service: bigbike-nginx
+        annotations:
+          summary: "Nginx is returning sustained 429 responses for BigBike"
+          runbook: "docs/engineering/RATE_LIMITING.md#429-spike"

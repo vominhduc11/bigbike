@@ -190,6 +190,15 @@ Enforced in `AdminAuthService.login` (public endpoint `POST /api/v1/auth/login`)
 
 Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptService.java`, `V283__admin_login_lockout.sql`
 
+## Rate-limit authority
+
+Rate limiting does not grant, remove or replace a permission. It applies after the existing admin
+authentication/permission rules for account-keyed admin controls and before expensive side effects
+for public controls. Admin account lockout above remains admin-only; customer login uses an IP plus
+HMAC identity limiter rather than a new account-lock state. Admin mutations use the
+`ADMIN_MUTATION` tier and privileged media/import/export actions use their dedicated tiers in
+`RATE_LIMITING.md`. `OWNER_CONFIRMED_2026-08-12`
+
 ## Critical Endpoint Permissions
 
 | Endpoint / surface | Required role/permission | Status | Evidence |

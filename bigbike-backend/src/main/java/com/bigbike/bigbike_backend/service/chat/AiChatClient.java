@@ -38,10 +38,10 @@ public class AiChatClient {
 
     private static final String SYSTEM_PROMPT = """
             You are Bi, BigBike's AI sales assistant. The application, not you, reads data.
-            For EVERY Vietnamese answer, refer to yourself as "em" and address the customer as
-            "anh/chị" at least once. Never open with "Chào em" or "Xin chào em". Never use
-            "em" to mean the customer; in Vietnamese, only Bi is "em" and the customer is
-            always "anh/chị".
+            In Vietnamese, prefer referring to yourself as "em" and to the customer as
+            "anh/chị", but do not add either merely to satisfy a keyword rule. Never call the
+            customer "em", and never use curt or dismissive wording. A polite factual answer
+            such as "Dạ, shop hiện có..." is valid without both pronouns.
 
             For any product, price, stock, size, policy, shop or signed-in order fact,
             call exactly one declared function and use only its functionResponse. Never
@@ -53,35 +53,50 @@ public class AiChatClient {
 
             For product discovery by name, model, category, brand, option or price,
             call search_products first. Use get_product only with a slug returned by
-            search_products in this turn, or an exact product slug/URL supplied by the
-            customer; never infer a slug from a product name.
+            search_products in this turn, an exact product slug/URL supplied by the
+            customer, or a slug listed in RECENT_VERIFIED_PRODUCTS. That list contains only
+            server-verified public slugs from immediately relevant product cards; never infer a
+            slug from a product name and never use a slug outside that allowlist. You receive a
+            PUBLIC_CATALOG_VOCABULARY containing current public category and brand names and
+            canonical slugs. Use it to interpret customer shorthand and natural wording into a
+            canonical category, brand or generic product-type query. This does not permit an
+            invented product name, model/code or slug. Never invent or expand a price, colour or
+            size beyond the customer's current wording; the application independently verifies
+            every proposed search filter and may remove an unsafe field.
+
+            When a customer asks what BigBike sells, call list_categories. It returns only
+            public category names and verified sellable-product counts. Do not invent categories,
+            individual products, prices or stock facts. Use the category names in prose, but do
+            not repeat category counts in the final answer.
 
             After receiving enough function data, return one JSON object only with exactly
             these fields: answer (string), offTopic (boolean), handoffRecommended (boolean),
             leadPrompt (boolean). Aim for 3 to 5 sentences; a precise 2-sentence answer is
             allowed when it fully answers the customer. Each sentence must end with a full stop
             or a question mark, and mention at most three
-            products. NEVER write a price, amount or currency in the answer text: no digits
-            followed by "VND", "VNĐ", "đ" or "₫". The application renders every price on the
-            product cards; refer to price only in words such as "trong tầm giá anh/chị nêu".
-            Binding notes in a functionResponse must be disclosed plainly.
+            products. Never write an item price, amount or currency in the answer text, and
+            never write digits followed by "VND", "VNĐ", "đ" or "₫". The application renders
+            every item price on product cards. When the functionResponse requires a price-scope
+            disclosure, state that scope plainly without repeating its amount. Binding notes in a
+            functionResponse must be disclosed plainly.
 
             Product cards are a short page, not a warehouse count. Never infer or claim that
             BigBike has "all", "only N", or no products/models in the whole catalogue from
-            those cards. State only the verified result supplied for this turn; do not make a
-            whole-catalogue conclusion unless a functionResponse explicitly provides its count.
+            those cards. A search_products functionResponse may explicitly include
+            displayedCardCount, scopeTotalItems and priceRangeTotalItems. displayedCardCount is
+            only the exact number of cards shown, never a stock or catalogue total. Only then may
+            you state those exact integers: scopeTotalItems for the verified category/brand/type
+            scope, and priceRangeTotalItems for that same scope within the applied price range.
+            If cards are fewer than a supplied total, say they are representative cards from that
+            total. Do not invent, round, swap, combine or repeat any other count. If these fields
+            are absent, do not make a numerical catalogue or inventory claim or a whole-catalogue
+            conclusion. Never repeat a raw variant colour slug or internal option value; use only
+            the cleaned display values supplied by the function response.
 
             Set offTopic=true only outside BigBike's supported scope. Set
             handoffRecommended=true for complaints, complex warranty cases or price
             negotiation. leadPrompt may be true only when a staff callback would genuinely
             help; the application still requires separate explicit consent before writing.
-            """;
-
-    private static final String TONE_REPAIR_INSTRUCTION = """
-            The prior draft failed only the Vietnamese form-of-address check. Write a complete
-            replacement, without mentioning this instruction or a retry. If LANG=vi, include
-            both a self-reference "em" and "anh/chị" for the customer, never greet/address the
-            customer as "em", and keep every other safety and grounding rule unchanged.
             """;
 
     private final String apiKey;
@@ -121,23 +136,46 @@ public class AiChatClient {
             boolean toolRequired,
             ToolExecutor executor
     ) {
-        return answer(question, lang, registry, toolRequired, executor, "");
+        return answer(
+                question,
+                lang,
+                registry,
+                toolRequired,
+                executor,
+                ChatToolService.AssistantCatalogVocabulary.empty(),
+                List.of(),
+                "");
     }
 
-    /**
-     * A single, explicitly bounded retry used only after {@code ChatResponseGuard} reports
-     * WRONG_TONE. It repeats the current question and fresh allow-listed tool data; neither the
-     * rejected draft nor conversation history is sent to Gemini.
-     */
+    /** Supplies public category/brand metadata without ever exposing product rows or prices. */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Optional<HybridAnswer> answerWithToneCorrection(
+    public Optional<HybridAnswer> answer(
             String question,
             String lang,
             ChatToolRegistry registry,
             boolean toolRequired,
-            ToolExecutor executor
+            ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary
     ) {
-        return answer(question, lang, registry, toolRequired, executor, TONE_REPAIR_INSTRUCTION);
+        return answer(question, lang, registry, toolRequired, executor, vocabulary, List.of(), "");
+    }
+
+    /**
+     * Supplies only bare server-verified slugs for a bounded follow-up. Product names, prices,
+     * stock and raw conversation history remain outside the provider request.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public Optional<HybridAnswer> answer(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            boolean toolRequired,
+            ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts
+    ) {
+        return answer(question, lang, registry, toolRequired, executor, vocabulary,
+                recentVerifiedProducts, "");
     }
 
     private Optional<HybridAnswer> answer(
@@ -146,17 +184,25 @@ public class AiChatClient {
             ChatToolRegistry registry,
             boolean toolRequired,
             ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts,
             String responseInstruction
     ) {
         if (!isConfigured() || question == null || question.isBlank()) return Optional.empty();
         String safeQuestion = truncate(question, MAX_QUESTION_CHARS);
         String safeLang = "en".equals(lang) ? "en" : "vi";
-        List<Map<String, Object>> contents = initialContents(safeQuestion, safeLang);
-        ChatToolService.ToolSession session = new ChatToolService.ToolSession();
+        List<Map<String, Object>> contents = initialContents(
+                safeQuestion,
+                safeLang,
+                vocabulary == null ? ChatToolService.AssistantCatalogVocabulary.empty() : vocabulary,
+                sanitizedRecentVerifiedProducts(recentVerifiedProducts));
+        ChatToolService.ToolSession session = new ChatToolService.ToolSession(recentVerifiedProducts);
         List<ChatProductCardResponse> products = List.of();
         List<ChatActionResponse> actions = List.of();
         List<String> executedTools = new ArrayList<>();
         Set<ChatToolService.RequiredDisclosure> requiredDisclosures = new LinkedHashSet<>();
+        ChatToolService.CatalogTotals catalogTotals = null;
+        ChatToolService.SearchScope searchScope = null;
         int providerCalls = 0;
         String stage = "initial_provider";
 
@@ -185,6 +231,8 @@ public class AiChatClient {
             products = firstResult.products();
             actions = firstResult.actions();
             requiredDisclosures.addAll(firstResult.requiredDisclosures());
+            catalogTotals = firstResult.catalogTotals();
+            searchScope = firstResult.searchScope();
             if (firstResult.terminalAnswer() != null) {
                 ChatToolService.DeterministicAnswer terminal = firstResult.terminalAnswer();
                 return Optional.of(new HybridAnswer(
@@ -198,7 +246,9 @@ public class AiChatClient {
                         executedTools,
                         requiredDisclosures,
                         providerCalls,
-                        "TOOL"));
+                        "TOOL",
+                        catalogTotals,
+                        searchScope));
             }
             appendFunctionExchange(contents, turn, firstResult);
 
@@ -227,7 +277,7 @@ public class AiChatClient {
                     if (answer.isPresent()) {
                         return Optional.of(new HybridAnswer(
                                 answer.get(), products, actions, executedTools,
-                                requiredDisclosures, providerCalls));
+                                requiredDisclosures, providerCalls, "AI", catalogTotals, searchScope));
                     }
                     log.warn("Bi AI detail step skipped stage={} type=UnparsableDetailText", stage);
                 } else {
@@ -262,9 +312,11 @@ public class AiChatClient {
             List<ChatProductCardResponse> safeProducts = products;
             List<ChatActionResponse> safeActions = actions;
             int totalProviderCalls = providerCalls;
+            ChatToolService.CatalogTotals safeCatalogTotals = catalogTotals;
+            ChatToolService.SearchScope safeSearchScope = searchScope;
             return finalAnswer.map(answer -> new HybridAnswer(
                     answer, safeProducts, safeActions, executedTools,
-                    requiredDisclosures, totalProviderCalls));
+                    requiredDisclosures, totalProviderCalls, "AI", safeCatalogTotals, safeSearchScope));
         } catch (RuntimeException exception) {
             logOrchestrationFailure(exception, stage);
             return Optional.empty();
@@ -285,8 +337,32 @@ public class AiChatClient {
 
     Map<String, Object> buildInitialRequestBody(
             String question, String lang, ChatToolRegistry registry) {
+        return buildInitialRequestBody(
+                question, lang, registry, ChatToolService.AssistantCatalogVocabulary.empty());
+    }
+
+    Map<String, Object> buildInitialRequestBody(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            ChatToolService.AssistantCatalogVocabulary vocabulary
+    ) {
+        return buildInitialRequestBody(question, lang, registry, vocabulary, List.of());
+    }
+
+    Map<String, Object> buildInitialRequestBody(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts
+    ) {
         return buildToolRequestBody(
-                initialContents(truncate(question, MAX_QUESTION_CHARS), "en".equals(lang) ? "en" : "vi"),
+                initialContents(
+                        truncate(question, MAX_QUESTION_CHARS),
+                        "en".equals(lang) ? "en" : "vi",
+                        vocabulary == null ? ChatToolService.AssistantCatalogVocabulary.empty() : vocabulary,
+                        sanitizedRecentVerifiedProducts(recentVerifiedProducts)),
                 registry.functionDeclarations(),
                 null,
                 true,
@@ -380,12 +456,55 @@ public class AiChatClient {
         return body;
     }
 
-    private static List<Map<String, Object>> initialContents(String question, String lang) {
+    private List<Map<String, Object>> initialContents(
+            String question,
+            String lang,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts
+    ) {
         List<Map<String, Object>> contents = new ArrayList<>();
+        String text = "LANG=" + lang + "\nQUESTION:\n" + question;
+        if (vocabulary != null && !vocabulary.isEmpty()) {
+            text += "\nPUBLIC_CATALOG_VOCABULARY:\n" + vocabularyJson(vocabulary);
+        }
+        List<String> recent = sanitizedRecentVerifiedProducts(recentVerifiedProducts);
+        if (!recent.isEmpty()) {
+            text += "\nRECENT_VERIFIED_PRODUCTS:\n" + recentProductsJson(recent);
+        }
         contents.add(Map.of(
                 "role", "user",
-                "parts", List.of(Map.of("text", "LANG=" + lang + "\nQUESTION:\n" + question))));
+                "parts", List.of(Map.of("text", text))));
         return contents;
+    }
+
+    private String vocabularyJson(ChatToolService.AssistantCatalogVocabulary vocabulary) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("categories", vocabulary.categories());
+        data.put("brands", vocabulary.brands());
+        try {
+            return objectMapper.writeValueAsString(data);
+        } catch (Exception exception) {
+            return "{\"categories\":[],\"brands\":[]}";
+        }
+    }
+
+    private String recentProductsJson(List<String> recentVerifiedProducts) {
+        try {
+            return objectMapper.writeValueAsString(recentVerifiedProducts);
+        } catch (Exception exception) {
+            return "[]";
+        }
+    }
+
+    private static List<String> sanitizedRecentVerifiedProducts(List<String> values) {
+        if (values == null || values.isEmpty()) return List.of();
+        return values.stream()
+                .filter(value -> value != null && value.matches("[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .limit(3)
+                .toList();
     }
 
     private void appendFunctionExchange(
@@ -541,8 +660,37 @@ public class AiChatClient {
             List<String> executedTools,
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
             int providerCallCount,
-            String source
+            String source,
+            ChatToolService.CatalogTotals catalogTotals,
+            ChatToolService.SearchScope searchScope
     ) {
+        public HybridAnswer(
+                Answer answer,
+                List<ChatProductCardResponse> products,
+                List<ChatActionResponse> actions,
+                List<String> executedTools,
+                Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+                int providerCallCount,
+                String source,
+                ChatToolService.CatalogTotals catalogTotals
+        ) {
+            this(answer, products, actions, executedTools, requiredDisclosures,
+                    providerCallCount, source, catalogTotals, null);
+        }
+
+        public HybridAnswer(
+                Answer answer,
+                List<ChatProductCardResponse> products,
+                List<ChatActionResponse> actions,
+                List<String> executedTools,
+                Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+                int providerCallCount,
+                String source
+        ) {
+            this(answer, products, actions, executedTools, requiredDisclosures,
+                    providerCallCount, source, null, null);
+        }
+
         public HybridAnswer(
                 Answer answer,
                 List<ChatProductCardResponse> products,
@@ -551,7 +699,8 @@ public class AiChatClient {
                 Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
                 int providerCallCount
         ) {
-            this(answer, products, actions, executedTools, requiredDisclosures, providerCallCount, "AI");
+            this(answer, products, actions, executedTools, requiredDisclosures,
+                    providerCallCount, "AI", null, null);
         }
 
         public HybridAnswer(

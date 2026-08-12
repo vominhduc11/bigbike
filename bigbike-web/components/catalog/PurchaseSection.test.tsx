@@ -77,7 +77,8 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
     expect(star).not.toBeNull();
     const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
     expect(aggregate).not.toBeNull();
-    expect(aggregate!.querySelector('[itemprop="reviewCount"]')!.textContent).toBe("3");
+    // reviewCount đi bằng <meta> để không in số lượt 2 lần cạnh nhãn "3 đánh giá".
+    expect(aggregate!.querySelector('meta[itemprop="reviewCount"]')!.getAttribute("content")).toBe("3");
     expect(aggregate!.querySelector('[itemprop="ratingValue"]')!.textContent).toContain("4");
   });
 

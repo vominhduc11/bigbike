@@ -17,11 +17,12 @@
 | Chat / hỗ trợ | Cyan riêng (`--bb-chat-title-bg`), nút tròn cố định góc phải dưới |
 | Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
 | Font body / link | Arial |
-| Font display / nav / CTA / nhãn chức năng (nhóm B) | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
+| Font display / CTA / nhãn chức năng (nhóm B) | Arial / Helvetica (UPPERCASE) — **Oswald và font display riêng đã gỡ bỏ** |
+| Font menu chính | Arial / Helvetica, giữ nguyên kiểu chữ của nhãn dữ liệu — **Oswald và font display riêng đã gỡ bỏ** |
 | Font tiêu đề trang / tiêu đề nội dung / body / link (nhóm A) | Arial / Helvetica |
 | Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
 | Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
-| Copy | Tiếng Việt đầy đủ dấu; nhóm B luôn viết HOA, nhóm A dùng sentence case |
+| Copy | Tiếng Việt đầy đủ dấu; nhóm B luôn viết HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn; nhóm A dùng sentence case |
 | Emoji | Không dùng |
 
 ---
@@ -84,15 +85,15 @@ Accessibility mappings:
 
 > Source of truth chi tiết: [`docs/TYPOGRAPHY.md`](docs/TYPOGRAPHY.md). Hệ chữ chỉ có **11 nhóm**: 10 nhóm chữ đọc/chức năng và 1 nhóm trang trí nền. Mỗi nhóm có đúng một phông cố định, một cỡ mobile và một cỡ desktop.
 
-Hai phông được giữ nguyên: **Arial / Helvetica** cho tiêu đề trang và nội dung; **Barlow Condensed** cho chữ chức năng/nhấn, luôn viết IN HOA. **Oswald không được dùng.**
+Toàn bộ typography dùng **Arial / Helvetica** cho tiêu đề, nội dung và chữ chức năng/nhấn; nhóm B mặc định viết IN HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn. **Oswald và font display riêng không được dùng.**
 
 | Nhóm | Vai trò | Phông cố định | Mobile `<768px` | Desktop `≥768px` | Ví dụ |
 |---|---|---|---:|---:|---|
-| B1 | Trang trí / Display | Barlow Condensed, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
-| B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 30px | Hotline/email lớn, “Thông tin cửa hàng” |
-| B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 16px | 18px | “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 18px | Nút, menu chính, tab, nhãn Còn/Hết hàng |
-| B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
+| B1 | Trang trí / Display | Arial / Helvetica, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
+| B2 | Liên hệ lớn | Arial / Helvetica, IN HOA | 24px | 30px | Hotline/email lớn, “Thông tin cửa hàng” |
+| B3 | Badge nhấn / % giảm | Arial / Helvetica, IN HOA | 16px | 18px | “-20%”, nhãn giảm giá nổi bật |
+| B4 | Nút · Menu · Tab | Arial / Helvetica | 16px | 18px | Nút/tab/nhãn Còn-Hết hàng viết HOA; menu chính giữ nguyên kiểu chữ của nhãn |
+| B5 | Nhãn nhỏ / Eyebrow / Badge | Arial / Helvetica, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
 | A1 | Tiêu đề lớn H1 | Arial / Helvetica | 26px | 32px | Tiêu đề khối lớn, tên và giá lớn trên trang sản phẩm |
 | A2 | Tiêu đề trang H2 | Arial / Helvetica | 20px | 24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
 | A3 | Tiêu đề khối H3 | Arial / Helvetica | 18px | 20px | Tiêu đề khối, hộp thoại, sidebar |
@@ -105,10 +106,10 @@ Quy tắc:
 - Mọi đoạn chữ phải thuộc đúng một nhóm A1–A5, B1–B5 hoặc D.
 - Chỉ có một breakpoint cỡ chữ: `768px`. Mobile dùng `<768px`; desktop dùng `≥768px`.
 - Sang mobile chỉ đổi cỡ, không đổi phông. Breakpoint siêu rộng chỉ được đổi bố cục/lưới, không đổi cỡ chữ.
-- Nhóm B dùng Barlow Condensed và IN HOA; nhóm A dùng Arial/Helvetica. Body dùng sentence case.
+- Nhóm B dùng Arial/Helvetica và mặc định IN HOA; riêng menu chính giữ nguyên kiểu chữ của nhãn. Nhóm A dùng Arial/Helvetica. Body dùng sentence case.
 - Giá theo cấp độ nơi hiển thị: giá lớn PDP = A1; tổng tiền = A2/A3; giá dòng = A4; giá card = A5.
 - Không dùng letter-spacing âm.
-- Letter-spacing chuẩn hóa về 3 token: `tracking-normal` (0) mặc định, `tracking-wide` (0.04em) cho uppercase nav/button/kicker, `tracking-display` (0.08em) cho eyebrow nổi bật. KHÔNG dùng arbitrary `tracking-[…]` hay thêm bậc mới (`tracking-wider/widest`).
+- Letter-spacing chuẩn hóa về 3 token: `tracking-normal` (0) mặc định, `tracking-wide` (0.04em) cho nav/button/kicker, `tracking-display` (0.08em) cho eyebrow nổi bật. KHÔNG dùng arbitrary `tracking-[…]` hay thêm bậc mới (`tracking-wider/widest`).
 - Không render chữ trắng nhỏ hơn 16px trên nền tối, trừ meta phụ có màu `#CECECE`.
 - Form input dùng A4, luôn ≥16px để tránh iOS tự phóng to.
 

@@ -24,6 +24,8 @@ class ChatResponseGuardTest {
                 .isEmpty();
         assertThat(guard.check("Em vừa nhận một functionCall. Backend đã xử lý xong. Anh/chị thử lại nhé.", List.of(), "vi"))
                 .isEmpty();
+        assertThat(guard.check("Màu ronin-red đang được lưu nội bộ. Anh/chị chọn màu khác giúp em nhé.", List.of(), "vi"))
+                .isEmpty();
     }
 
     @Test
@@ -117,7 +119,7 @@ class ChatResponseGuardTest {
     }
 
     @Test
-    @DisplayName("Vietnamese assistant copy uses em for Bi and anh/chị for the customer")
+    @DisplayName("Vietnamese assistant copy forbids customer-as-em and curt language without mandatory pronouns")
     void enforcesVietnameseAssistantTone() {
         assertThat(guard.check(
                 "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ giúp Bi nhé.", List.of(), "vi"))
@@ -137,9 +139,14 @@ class ChatResponseGuardTest {
         assertThat(guard.check(
                 "Dạ, em có thể hỗ trợ tìm sản phẩm. Anh/chị cho em biết loại hàng cần xem nhé?", List.of(), "vi"))
                 .isPresent();
+        assertThat(guard.check(
+                "Dạ, shop hiện có dữ liệu phù hợp. Mời xem thẻ sản phẩm để chọn mẫu cần kiểm tra.",
+                List.of(), "vi")).isPresent();
+        assertThat(guard.check(
+                "Tự xem đi. Dừng hỏi nữa.", List.of(), "vi")).isEmpty();
         assertThat(guard.rejectionReason(
                 "Dạ, em đã kiểm tra yêu cầu này. Em có thể hỗ trợ thêm ngay.",
-                List.of(), "vi", List.of(), Set.of())).isEqualTo("WRONG_TONE");
+                List.of(), "vi", List.of(), Set.of())).isEqualTo("NONE");
         assertThat(guard.check(
                 "I can help you find a product. Please tell me what you are looking for.", List.of(), "en"))
                 .isPresent();
@@ -170,5 +177,63 @@ class ChatResponseGuardTest {
                 "vi",
                 List.of(),
                 Set.of(ChatToolService.RequiredDisclosure.PRICE_RANGE_MISS))).isPresent();
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_020: only the exact current scope and range totals may be stated")
+    void acceptsOnlyBackendSuppliedCatalogTotals() {
+        ChatToolService.CatalogTotals totals = new ChatToolService.CatalogTotals(1, 8, 1L);
+        String supported = "Dạ, em đã kiểm tra: shop hiện có 8 mẫu tai nghe. "
+                + "Trong tầm giá đang áp dụng, shop có 1 mẫu. "
+                + "Anh/chị mở thẻ sản phẩm để xem thêm nhé.";
+
+        assertThat(guard.checkModel(supported, List.of(), "vi", List.of(), Set.of(), totals)).isPresent();
+        assertThat(guard.checkModel(
+                supported.replace("có 1 mẫu", "có 2 mẫu"),
+                List.of(), "vi", List.of(), Set.of(), totals)).isEmpty();
+        assertThat(guard.checkModel(
+                "Dạ, em đã kiểm tra: shop hiện có 8 mẫu tai nghe trong 1–2 triệu. "
+                        + "Anh/chị mở thẻ sản phẩm để xem thêm nhé.",
+                List.of(), "vi", List.of(), Set.of(), totals)).isEmpty();
+        assertThat(guard.checkModel(supported, List.of(), "vi", List.of())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a one-sided price range keeps its verified count instead of becoming a warehouse claim")
+    void acceptsVerifiedAbovePriceRangeCount() {
+        ChatProductCardResponse card = new ChatProductCardResponse(
+                "headset", "Tai nghe", null, BigDecimal.valueOf(3_500_000), null, "VND", "IN_STOCK");
+        ChatToolService.CatalogTotals totals = new ChatToolService.CatalogTotals(5, 9, 5L);
+        String answer = "Dạ, trong tầm giá từ 3 triệu trở lên, shop có 5 mẫu tai nghe. "
+                + "Em đang hiển thị 3 thẻ tiêu biểu trong tổng 5 mẫu phù hợp. "
+                + "Anh/chị mở từng thẻ để xem thông tin và lựa chọn hiện có nhé.";
+
+        assertThat(guard.check(answer, List.of(card, card, card), "vi", Set.of(), totals)).isPresent();
+        assertThat(guard.rejectionDiagnostic(answer, List.of(card, card, card), "vi", List.of(), Set.of(), totals)
+                .reason()).isEqualTo("NONE");
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_020: an explicit displayed-card count is allowed only when it equals attached cards")
+    void validatesDisplayedCardCountSeparatelyFromCatalogTotals() {
+        ChatProductCardResponse card = new ChatProductCardResponse(
+                "helmet", "Helmet", null, BigDecimal.valueOf(2_000_000), null, "VND", "IN_STOCK");
+        String displayed = "Dạ, em đang hiển thị 1 thẻ sản phẩm phù hợp bên dưới. "
+                + "Anh/chị mở thẻ để xem thêm nhé.";
+
+        assertThat(guard.check(displayed, List.of(card), "vi")).isPresent();
+        assertThat(guard.check(displayed.replace("1 thẻ", "2 thẻ"), List.of(card), "vi")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("unsupported count clauses are replaced by the exact displayed-card count")
+    void repairsOnlyUnsupportedNumericCountClause() {
+        ChatProductCardResponse card = new ChatProductCardResponse(
+                "helmet", "Helmet", null, BigDecimal.valueOf(2_000_000), null, "VND", "IN_STOCK");
+        String unsafe = "Dạ, shop có 4 sản phẩm phù hợp. Anh/chị mở thẻ để xem thêm nhé.";
+
+        assertThat(guard.repairUnsupportedCountClauses(unsafe, List.of(card), "vi", Set.of(), null))
+                .map(ChatResponseGuard.CheckedAnswer::answer)
+                .hasValueSatisfying(answer -> assertThat(answer).contains("hiển thị 1 thẻ").doesNotContain("4 sản phẩm"));
     }
 }

@@ -62,6 +62,33 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
+    void publicCategoryListingIsAnAllowlistedReadOnlyFunction() {
+        ScriptedTransport transport = new ScriptedTransport(
+                functionCall("list_categories", Map.of(), "categories-1"),
+                finalAnswer(safeAnswer(
+                        "Dạ, BigBike có các nhóm hàng công khai để anh/chị chọn. Em có thể tìm tiếp theo nhóm hàng hoặc thương hiệu anh/chị quan tâm. Anh/chị cho em biết món cần xem nhé.")));
+        AtomicInteger executions = new AtomicInteger();
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Shop bán những gì?", "vi", REGISTRY, true,
+                (call, session) -> {
+                    executions.incrementAndGet();
+                    assertThat(call.name()).isEqualTo(ChatToolRegistry.LIST_CATEGORIES);
+                    assertThat(call.arguments()).isEmpty();
+                    return execution(call.name(),
+                            "{\"categories\":[{\"name\":\"Mũ bảo hiểm\",\"sellableProductCount\":3}]}",
+                            List.of());
+                });
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().executedTools())
+                .containsExactly(ChatToolRegistry.LIST_CATEGORIES);
+        assertThat(executions).hasValue(1);
+        assertThat(MAPPER.valueToTree(transport.requests().get(1)).toString())
+                .contains("functionResponse", "categories-1", "list_categories");
+    }
+
+    @Test
     void verifiedTerminalToolResultDoesNotNeedAFinalProviderParaphrase() {
         ScriptedTransport transport = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "xqz", "lang", "vi"), "call-1"));
@@ -86,27 +113,6 @@ class AiChatFunctionCallingTest {
         assertThat(result.orElseThrow().providerCallCount()).isEqualTo(1);
         assertThat(result.orElseThrow().answer().answer()).contains("đúng mẫu");
         assertThat(transport.requests()).hasSize(1);
-    }
-
-    @Test
-    void toneCorrectionUsesOneFreshToolGroundedOrchestrationWithoutTheRejectedDraft() {
-        ScriptedTransport transport = new ScriptedTransport(
-                functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "retry-1"),
-                finalAnswer(safeAnswer(
-                        "Dạ, em đã kiểm tra dữ liệu phù hợp. Anh/chị mở thẻ sản phẩm để xem thêm nhé.")));
-        AiChatClient client = client(transport);
-
-        Optional<AiChatClient.HybridAnswer> result = client.answerWithToneCorrection(
-                "Tìm mũ Tanami", "vi", REGISTRY, true,
-                (call, session) -> execution(call.name(), "{\"results\":[]}", List.of()));
-
-        assertThat(result).isPresent();
-        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(2);
-        assertThat(transport.requests()).hasSize(2);
-        String requestJson = MAPPER.valueToTree(transport.requests().get(0)).toString();
-        assertThat(requestJson)
-                .contains("prior draft failed only the Vietnamese form-of-address check", "Tìm mũ Tanami")
-                .doesNotContain("REJECTED-DRAFT-MUST-NOT-LEAK");
     }
 
     @Test
@@ -156,6 +162,36 @@ class AiChatFunctionCallingTest {
         assertThat(MAPPER.valueToTree(detailBody).path("tools").path(0)
                 .path("functionDeclarations").findValuesAsText("name"))
                 .containsExactly("get_product");
+    }
+
+    @Test
+    void recentVerifiedSlugMayBeReadDirectlyButOnlyThroughTheSeededAllowlist() {
+        ScriptedTransport transport = new ScriptedTransport(
+                functionCall("get_product", Map.of("slug", PRODUCT_SLUG), "recent-detail"),
+                finalAnswer(safeAnswer("Dạ, em đã kiểm tra mẫu vừa xem. Sản phẩm hiện có thông tin chi tiết đã lưu. Anh/chị mở thẻ sản phẩm để xem thêm nhé.")));
+        AtomicInteger executions = new AtomicInteger();
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Mẫu này có thông số gì?",
+                "vi",
+                REGISTRY,
+                true,
+                (call, session) -> {
+                    executions.incrementAndGet();
+                    assertThat(call.name()).isEqualTo(ChatToolRegistry.GET_PRODUCT);
+                    assertThat(session.isAllowedSlug(PRODUCT_SLUG)).isTrue();
+                    assertThat(session.isAllowedSlug("mu-bao-hiem-khac")).isFalse();
+                    return execution(call.name(), "{\"result\":{\"slug\":\"" + PRODUCT_SLUG + "\"}}", List.of(card()));
+                },
+                ChatToolService.AssistantCatalogVocabulary.empty(),
+                List.of(PRODUCT_SLUG));
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().executedTools()).containsExactly(ChatToolRegistry.GET_PRODUCT);
+        assertThat(executions).hasValue(1);
+        assertThat(MAPPER.valueToTree(transport.requests().get(0)).toString())
+                .contains("RECENT_VERIFIED_PRODUCTS", PRODUCT_SLUG)
+                .doesNotContain("Mũ bảo hiểm Tanami", "12000000", "IN_STOCK");
     }
 
     @Test

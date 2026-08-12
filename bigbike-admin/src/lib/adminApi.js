@@ -18,16 +18,22 @@ import { getContentLang } from './contentLang'
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 
 export class ApiClientError extends Error {
-  constructor(message, status, code, details = []) {
+  constructor(message, status, code, details = [], retryAfterSeconds = null) {
     super(message)
     this.name = 'ApiClientError'
     this.status = status
     this.code = code
     this.details = Array.isArray(details) ? details : []
+    this.retryAfterSeconds = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+      ? retryAfterSeconds
+      : null
   }
 }
 
 function normalizeApiErrorMessage(error, status) {
+  if (error?.code === 'RATE_LIMIT_EXCEEDED' || status === 429) {
+    return 'Bạn thao tác quá nhanh. Vui lòng chờ một lúc rồi thử lại.'
+  }
   if (error?.code === 'VALIDATION_ERROR') {
     return 'Dữ liệu chưa hợp lệ. Vui lòng kiểm tra các ô đang báo lỗi.'
   }
@@ -35,6 +41,11 @@ function normalizeApiErrorMessage(error, status) {
     return error.message
   }
   return `Yêu cầu thất bại (mã ${status}). Vui lòng thử lại.`
+}
+
+function parseRetryAfter(headerValue) {
+  const value = Number(headerValue)
+  return Number.isFinite(value) && value > 0 ? Math.ceil(value) : null
 }
 
 // Auth interceptor state
@@ -167,6 +178,7 @@ async function requestJson(endpoint, options = {}) {
       response.status,
       error.code || 'REQUEST_FAILED',
       error.details || [],
+      parseRetryAfter(response.headers.get('Retry-After')),
     )
   }
 
@@ -1095,6 +1107,7 @@ export async function uploadMedia(file, altText = '', onProgress = null, folderI
             xhr.status,
             error.code || 'UPLOAD_FAILED',
             error.details || [],
+            parseRetryAfter(xhr.getResponseHeader('Retry-After')),
           ))
         }
       }
@@ -1861,7 +1874,15 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
   }
 
   if (!response.ok) {
-    throw new ApiClientError(`Export failed with status ${response.status}`, response.status, 'EXPORT_FAILED')
+    const payload = await response.json().catch(() => null)
+    const error = payload?.error || {}
+    throw new ApiClientError(
+      normalizeApiErrorMessage(error, response.status),
+      response.status,
+      error.code || 'EXPORT_FAILED',
+      error.details || [],
+      parseRetryAfter(response.headers.get('Retry-After')),
+    )
   }
   const blob = await response.blob()
   const filename = filenameFromDisposition(response.headers.get('Content-Disposition'), fallbackName)

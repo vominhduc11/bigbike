@@ -18,13 +18,14 @@ import org.springframework.stereotype.Component;
 public class ChatToolRegistry {
 
     public static final String SEARCH_PRODUCTS = "search_products";
+    public static final String LIST_CATEGORIES = "list_categories";
     public static final String GET_PRODUCT = "get_product";
     public static final String GET_POLICY = "get_policy";
     public static final String GET_SHOP_INFO = "get_shop_info";
     public static final String GET_MY_ORDERS = "get_my_orders";
 
     private static final List<String> TOOL_ORDER = List.of(
-            SEARCH_PRODUCTS, GET_PRODUCT, GET_POLICY, GET_SHOP_INFO, GET_MY_ORDERS);
+            SEARCH_PRODUCTS, LIST_CATEGORIES, GET_PRODUCT, GET_POLICY, GET_SHOP_INFO, GET_MY_ORDERS);
     private static final Set<String> SEARCH_FIELDS = Set.of(
             "query", "category", "brand", "color", "size",
             "minPrice", "maxPrice", "sort", "lang");
@@ -64,6 +65,7 @@ public class ChatToolRegistry {
         }
         return switch (name) {
             case SEARCH_PRODUCTS -> validateSearch(arguments);
+            case LIST_CATEGORIES -> validateNoArguments(name, arguments);
             case GET_PRODUCT -> validateGetProduct(arguments);
             case GET_POLICY -> validateEnumCall(name, arguments, "topic", POLICY_TOPICS);
             case GET_SHOP_INFO -> validateNoArguments(name, arguments);
@@ -153,8 +155,11 @@ public class ChatToolRegistry {
     private static Map<String, Object> declaration(String name) {
         return switch (name) {
             case SEARCH_PRODUCTS -> function(name,
-                    "Find products currently sold by BigBike for name, model, category, brand, option or price discovery. The backend enforces publication, availability, effective price and result limits.",
+                    "Find products currently sold by BigBike for name, model, category, brand, option or price discovery. Use the supplied public catalog vocabulary to interpret shorthand and natural wording into a canonical category, brand or generic product-type query. Never invent a product name, model/code or slug, and never invent or expand price, colour or size. The backend verifies every filter and enforces publication, availability, effective price and result limits. It may return exact current-scope totals only for a verified non-model search; never infer a count when that evidence is absent.",
                     objectSchema(searchProperties(), List.of("lang")));
+            case LIST_CATEGORIES -> function(name,
+                    "List public BigBike product categories and the verified number of currently sellable products in each category. This tool has no arguments and never returns individual products, prices or detailed stock.",
+                    null);
             case GET_PRODUCT -> function(name,
                     "Read public details for one exact product slug returned by search_products in this turn, or supplied exactly by the customer.",
                     objectSchema(Map.of("slug", stringSchema(255, null)), List.of("slug")));

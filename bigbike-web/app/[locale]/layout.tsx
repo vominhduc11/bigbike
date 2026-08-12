@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Script from "next/script";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
-import { fontBarlow, fontBarlowCondensed } from "../fonts";
 import "../globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -108,7 +107,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`h-full antialiased ${fontBarlow.variable} ${fontBarlowCondensed.variable}`}
+      className="h-full antialiased"
     >
       <body className="bb-theme min-h-full flex flex-col pt-0!">
         {GTM_ID && (

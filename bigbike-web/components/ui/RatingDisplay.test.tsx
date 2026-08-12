@@ -30,7 +30,8 @@ describe("RatingDisplay", () => {
     const { rerender, container } = render(<RatingDisplay rating={null} ratingCount={0} />);
 
     expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
-    expect(screen.getByText("0 đánh giá")).toBeInTheDocument();
+    // REVIEW_RULE_003: trạng thái rỗng chỉ có nhãn "Chưa có đánh giá", không in "0 đánh giá".
+    expect(screen.queryByText("0 đánh giá")).toBeNull();
     expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
     expect(screen.queryByText("0.0")).toBeNull();
 

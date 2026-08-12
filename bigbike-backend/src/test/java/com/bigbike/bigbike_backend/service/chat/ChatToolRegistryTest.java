@@ -21,12 +21,12 @@ class ChatToolRegistryTest {
     private final ChatToolRegistry registry = new ChatToolRegistry();
 
     @Test
-    void declarationsExposeOnlyTheFiveReadOnlyTools() {
+    void declarationsExposeOnlyTheSixReadOnlyTools() {
         List<Map<String, Object>> declarations = registry.functionDeclarations();
 
         assertThat(declarations).extracting(value -> value.get("name"))
                 .containsExactly(
-                        "search_products", "get_product", "get_policy",
+                        "search_products", "list_categories", "get_product", "get_policy",
                         "get_shop_info", "get_my_orders")
                 .doesNotContain("capture_lead");
         assertThat(MAPPER.valueToTree(declarations).toString())
@@ -39,7 +39,8 @@ class ChatToolRegistryTest {
         List<Map<String, Object>> declarations = registry.functionDeclarations();
 
         for (Map<String, Object> declaration : declarations) {
-            if (ChatToolRegistry.GET_SHOP_INFO.equals(declaration.get("name"))) {
+            if (ChatToolRegistry.GET_SHOP_INFO.equals(declaration.get("name"))
+                    || ChatToolRegistry.LIST_CATEGORIES.equals(declaration.get("name"))) {
                 assertThat(declaration).containsOnlyKeys("name", "description");
             } else {
                 assertThat(declaration).containsOnlyKeys("name", "description", "parameters");
@@ -53,6 +54,11 @@ class ChatToolRegistryTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(shopInfo).doesNotContainKey("parameters");
+        Map<String, Object> categories = declarations.stream()
+                .filter(declaration -> ChatToolRegistry.LIST_CATEGORIES.equals(declaration.get("name")))
+                .findFirst()
+                .orElseThrow();
+        assertThat(categories).doesNotContainKey("parameters");
     }
 
     @Test
@@ -93,6 +99,13 @@ class ChatToolRegistryTest {
                 Map.of("query", "mũ", "history", "nội dung chat cũ", "lang", "vi"));
         assertRejected(ChatToolRegistry.SEARCH_PRODUCTS,
                 Map.of("query", "mũ", "productSlugs", List.of("mu-truoc"), "lang", "vi"));
+    }
+
+    @Test
+    void listCategoriesHasNoArgumentsAndRejectsDynamicQuerying() {
+        assertThat(registry.validate(ChatToolRegistry.LIST_CATEGORIES, json(Map.of())).arguments()).isEmpty();
+        assertRejected(ChatToolRegistry.LIST_CATEGORIES, Map.of("lang", "vi"));
+        assertRejected(ChatToolRegistry.LIST_CATEGORIES, Map.of("query", "SELECT * FROM products"));
     }
 
     @Test

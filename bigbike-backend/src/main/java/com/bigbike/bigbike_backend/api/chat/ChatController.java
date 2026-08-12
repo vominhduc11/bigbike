@@ -9,6 +9,9 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.chat.ChatService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +37,7 @@ public class ChatController {
 
     private final ChatService chatService;
     private final ApiResponseFactory apiResponseFactory;
+    private final RateLimitService rateLimitService;
 
     @GetMapping("/availability")
     public ApiDataResponse<ChatAvailabilityResponse> availability(
@@ -49,6 +53,10 @@ public class ChatController {
             @Valid @RequestBody ChatMessageRequest body,
             HttpServletRequest request
     ) {
+        if (body.getConversationId() != null) {
+            rateLimitService.checkOrThrow(
+                    RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.getConversationId().toString());
+        }
         return apiResponseFactory.data(chatService.send(body, currentCustomerId()), request);
     }
 
@@ -57,6 +65,8 @@ public class ChatController {
             @Valid @RequestBody ChatLeadRequest body,
             HttpServletRequest request
     ) {
+        rateLimitService.checkOrThrow(
+                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.getConversationId().toString());
         return apiResponseFactory.data(chatService.captureLead(body, currentCustomerId()), request);
     }
 
@@ -65,6 +75,8 @@ public class ChatController {
             @Valid @RequestBody ChatLeadDeclineRequest body,
             HttpServletRequest request
     ) {
+        rateLimitService.checkOrThrow(
+                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.conversationId().toString());
         return apiResponseFactory.data(chatService.declineLead(body.conversationId(), currentCustomerId()), request);
     }
 

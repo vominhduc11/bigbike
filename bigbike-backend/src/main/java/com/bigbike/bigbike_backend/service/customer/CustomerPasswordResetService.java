@@ -2,6 +2,9 @@ package com.bigbike.bigbike_backend.service.customer;
 
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerPasswordResetTokenEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
@@ -33,6 +36,7 @@ public class CustomerPasswordResetService {
     private final PasswordService passwordService;
     private final CustomerSessionService sessionService;
     private final EmailDispatchService emailDispatch;
+    private final RateLimitService rateLimitService;
     private final String resetBaseUrl;
 
     public CustomerPasswordResetService(
@@ -41,12 +45,14 @@ public class CustomerPasswordResetService {
             PasswordService passwordService,
             CustomerSessionService sessionService,
             EmailDispatchService emailDispatch,
+            RateLimitService rateLimitService,
             @Value("${bigbike.mail.reset-base-url:https://bigbike.vn/quen-mat-khau}") String resetBaseUrl) {
         this.customerRepo = customerRepo;
         this.tokenRepo = tokenRepo;
         this.passwordService = passwordService;
         this.sessionService = sessionService;
         this.emailDispatch = emailDispatch;
+        this.rateLimitService = rateLimitService;
         this.resetBaseUrl = resetBaseUrl;
     }
 
@@ -55,14 +61,16 @@ public class CustomerPasswordResetService {
         if (login == null || login.isBlank()) {
             throw ValidationException.fromField("login", "REQUIRED", "Login is required.");
         }
+        String normalizedLogin = normalizeLogin(login);
+        rateLimitService.checkOrThrow(RateLimitTier.PASSWORD_RESET, RateLimitScope.IDENTITY, normalizedLogin);
 
         // Keep the request timing flatter even when the account does not exist.
         passwordService.dummyVerify(login);
 
-        CustomerEntity customer = findByLogin(login.trim());
+        CustomerEntity customer = findByLogin(normalizedLogin);
         if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) {
             // Do not log the login identifier — it is PII (email/phone).
-            log.info("Password reset requested for an unknown/email-less account from {}. No mail was sent.", ipAddress);
+            log.info("Password reset requested for an unknown or email-less account. No mail was sent.");
             return;
         }
 
@@ -79,7 +87,7 @@ public class CustomerPasswordResetService {
         tokenRepo.save(token);
 
         if (!emailDispatch.isEnabled()) {
-            log.info("Mail not configured — password reset email skipped for customer {}", customer.getId());
+            log.info("Mail not configured — password reset email skipped.");
             return;
         }
 
@@ -99,6 +107,7 @@ public class CustomerPasswordResetService {
         if (rawToken == null || rawToken.isBlank()) {
             throw ValidationException.fromField("token", "REQUIRED", "Reset token is required.");
         }
+        rateLimitService.checkOrThrow(RateLimitTier.PASSWORD_RESET, RateLimitScope.IDENTITY, rawToken);
         if (newPassword == null || newPassword.length() < 8) {
             throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
         }
@@ -125,7 +134,7 @@ public class CustomerPasswordResetService {
         tokenRepo.save(token);
         sessionService.revokeAllSessions(customer.getId());
 
-        log.info("Password reset completed for customer {} from {}", customer.getId(), ipAddress);
+        log.info("Password reset completed.");
 
         sendPasswordChangeAlert(customer);
     }
@@ -163,6 +172,15 @@ public class CustomerPasswordResetService {
         String normalized = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(login);
         if (normalized == null) return null;
         return customerRepo.findFirstByNormalizedPhone(normalized).orElse(null);
+    }
+
+    private static String normalizeLogin(String login) {
+        String trimmed = login.trim();
+        if (trimmed.contains("@")) {
+            return trimmed.toLowerCase(java.util.Locale.ROOT);
+        }
+        String normalizedPhone = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(trimmed);
+        return normalizedPhone == null ? trimmed : normalizedPhone;
     }
 
     private static String safeDisplayName(CustomerEntity customer) {

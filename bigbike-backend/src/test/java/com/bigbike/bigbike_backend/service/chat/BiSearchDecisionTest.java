@@ -61,6 +61,28 @@ class BiSearchDecisionTest {
     }
 
     @Test
+    @DisplayName("CHAT_RULE_015: approved compact million forms keep their exact value")
+    void compactMillionFormsKeepTheirExactValue() {
+        for (String question : List.of("mũ 1tr5", "mũ 1tr50", "mũ 1tr500", "mũ 1 triệu 5")) {
+            ChatToolService.PriceIntent intent = ChatToolService.extractPriceIntent(question);
+            assertThat(intent).as(question)
+                    .returns(ChatToolService.PriceKind.BAND, ChatToolService.PriceIntent::kind)
+                    .returns(1_050_000L, ChatToolService.PriceIntent::min)
+                    .returns(1_800_000L, ChatToolService.PriceIntent::max);
+        }
+        assertThat(ChatToolService.extractPriceIntent("mũ dưới 1tr5"))
+                .returns(ChatToolService.PriceKind.MAX, ChatToolService.PriceIntent::kind)
+                .returns(1_500_000L, ChatToolService.PriceIntent::max);
+        assertThat(ChatToolService.extractPriceIntent("mũ từ 1tr5 đến 2tr"))
+                .returns(ChatToolService.PriceKind.RANGE, ChatToolService.PriceIntent::kind)
+                .returns(1_500_000L, ChatToolService.PriceIntent::min)
+                .returns(2_000_000L, ChatToolService.PriceIntent::max);
+        assertThat(ChatToolService.extractPriceIntent("mũ 2tr3"))
+                .returns(1_610_000L, ChatToolService.PriceIntent::min)
+                .returns(2_760_000L, ChatToolService.PriceIntent::max);
+    }
+
+    @Test
     @DisplayName("CHAT_RULE_017: an unaccented customer lands on the same category")
     void unaccentedQuestionsResolveTheSameWay() {
         Search accented = firstSearch("tìm mũ fullface dưới 3 triệu");
@@ -131,6 +153,59 @@ class BiSearchDecisionTest {
                 "Carbon — Tanami / Caberg")) {
             ChatToolService.ProductQuery query = ChatToolService.extractProductQuery(question);
             assertThat(query.identifiers()).as(question).containsExactlyInAnyOrder("tanami", "carbon");
+        }
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_017: approved conversational fillers never become model identifiers")
+    void approvedConversationalFillersAreNotProductIdentifiers() {
+        for (String question : List.of(
+                "còn tai nghe thì sao",
+                "ý là tôi muốn tìm sản phẩm tai nghe từ 1tr đến 2tr",
+                "tìm cho tôi sản phẩm tai nghe với khoảng giá tương tự như đã trao đổi ở mũ bảo hiểm ở trên",
+                "cho mình xem tai nghe bluetooth",
+                "cái nào rẻ hơn",
+                "có mẫu nào khác không",
+                "còn loại nào tầm 2 triệu nữa không",
+                "găng tay size L màu đen")) {
+            ChatToolService.ProductQuery query = ChatToolService.extractProductQuery(question);
+            assertThat(query.identifiers()).as(question).isEmpty();
+        }
+        assertThat(ChatToolService.extractProductQuery("còn mũ Tanami Carbon thì sao").identifiers())
+                .containsExactlyInAnyOrder("tanami", "carbon");
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_017: approved chat abbreviations expand by exact word before catalog matching")
+    void approvedAbbreviationsResolveOnlyAtWordBoundaries() {
+        assertThat(firstSearch("mbh giá bao nhiêu").category()).isEqualTo("mu-bao-hiem");
+        assertThat(firstSearch("shop có gt ko").category()).isEqualTo("gang-tay-xe-may-moto");
+        assertThat(firstSearch("mu ff gia bn z").category()).isEqualTo("mu-bao-hiem-fullface");
+        assertThat(firstSearch("tn khoảng 2 triệu").category())
+                .isEqualTo("tai-nghe-bluetooth-mu-bao-hiem");
+
+        assertThat(ChatToolService.extractProductQuery("LS2 V2").identifiers())
+                .containsExactly("v2");
+        assertThat(ChatToolService.extractPriceIntent("găng tay 500k"))
+                .returns(350_000L, ChatToolService.PriceIntent::min)
+                .returns(600_000L, ChatToolService.PriceIntent::max);
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_015: written and slang million prices retain their direction and amount")
+    void writtenAndSlangMillionPricesAreParsed() {
+        for (String question : List.of(
+                "tai nghe 1tr5",
+                "mũ bảo hiểm hai triệu",
+                "mbh tầm 2 củ",
+                "tai nghe khoảng 2 lít")) {
+            assertThat(ChatToolService.extractPriceIntent(question))
+                    .as(question)
+                    .returns(ChatToolService.PriceKind.BAND, ChatToolService.PriceIntent::kind)
+                    .returns(question.contains("1tr5") ? 1_050_000L : 1_400_000L,
+                            ChatToolService.PriceIntent::min)
+                    .returns(question.contains("1tr5") ? 1_800_000L : 2_400_000L,
+                            ChatToolService.PriceIntent::max);
         }
     }
 

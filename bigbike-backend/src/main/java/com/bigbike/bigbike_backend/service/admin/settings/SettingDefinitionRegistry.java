@@ -252,7 +252,7 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("review_moderation_banned_words", "review_moderation", SettingValueType.LONG_TEXT)
                         .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build(),
 
-                // ── AI_ASSISTANT ── (trợ lý bán hàng Bi — CHAT_RULE_001..014).
+                // ── AI_ASSISTANT ── (trợ lý bán hàng Bi — CHAT_RULE_001..022).
                 // Admin-only operational settings. The shared Gemini credential stays in
                 // GEMINI_API_KEY and is never stored in or returned from site_settings.
                 SettingDefinition.builder("ai_assistant_enabled", "ai_assistant", SettingValueType.BOOLEAN)
@@ -260,6 +260,8 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
+                SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
+                        .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build(),
                 SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)
                         .description("Câu chào đầu khung chat của Bi; có thể nhập riêng bản tiếng Anh.").build(),
                 SettingDefinition.builder("ai_assistant_quick_prompts", "ai_assistant", SettingValueType.LONG_TEXT)

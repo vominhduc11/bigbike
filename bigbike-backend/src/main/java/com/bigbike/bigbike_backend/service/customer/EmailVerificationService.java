@@ -3,6 +3,9 @@ package com.bigbike.bigbike_backend.service.customer;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEmailVerificationTokenEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerEmailVerificationTokenJpaRepository;
@@ -15,6 +18,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +42,7 @@ public class EmailVerificationService {
     private final CustomerJpaRepository customerRepo;
     private final EmailDispatchService emailDispatch;
     private final GuestOrderLinkingService guestOrderLinkingService;
+    private final RateLimitService rateLimitService;
     private final String verifyBaseUrl;
 
     public EmailVerificationService(
@@ -45,11 +50,13 @@ public class EmailVerificationService {
             CustomerJpaRepository customerRepo,
             EmailDispatchService emailDispatch,
             GuestOrderLinkingService guestOrderLinkingService,
+            RateLimitService rateLimitService,
             @Value("${bigbike.mail.verify-base-url:https://bigbike.vn/xac-nhan-email}") String verifyBaseUrl) {
         this.tokenRepo = tokenRepo;
         this.customerRepo = customerRepo;
         this.emailDispatch = emailDispatch;
         this.guestOrderLinkingService = guestOrderLinkingService;
+        this.rateLimitService = rateLimitService;
         this.verifyBaseUrl = verifyBaseUrl;
     }
 
@@ -73,7 +80,7 @@ public class EmailVerificationService {
         tokenRepo.save(entity);
 
         if (!emailDispatch.isEnabled()) {
-            log.info("Mail not configured — verification email skipped for customer {}", customer.getId());
+            log.info("Mail not configured — verification email skipped.");
             return;
         }
 
@@ -108,6 +115,10 @@ public class EmailVerificationService {
             throw ValidationException.fromField("email", "MISSING", "Tài khoản này không có email để xác minh.");
         }
 
+        rateLimitService.checkOrThrow(
+                RateLimitTier.RESEND_VERIFICATION, RateLimitScope.IDENTITY,
+                customer.getEmail().trim().toLowerCase(Locale.ROOT));
+
         issueAndSend(customer);
     }
 
@@ -121,6 +132,7 @@ public class EmailVerificationService {
         if (rawToken == null || rawToken.isBlank()) {
             throw ValidationException.fromField("token", "REQUIRED", "Verification token is required.");
         }
+        rateLimitService.checkOrThrow(RateLimitTier.PASSWORD_RESET, RateLimitScope.IDENTITY, rawToken);
         CustomerEmailVerificationTokenEntity token = tokenRepo.findByTokenHash(sha256Hex(rawToken))
                 .orElseThrow(() -> ValidationException.fromField("token", "INVALID", "Invalid verification token."));
 

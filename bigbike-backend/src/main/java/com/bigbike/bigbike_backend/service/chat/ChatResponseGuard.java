@@ -26,6 +26,9 @@ public class ChatResponseGuard {
                     "\\b(?:CANCELLED|COMPLETED|PENDING|PROCESSING|IN_STOCK|OUT_OF_STOCK"
                     + "|AI_UNAVAILABLE|CONTACT_FALLBACK|NO_MATCH_IN_REQUESTED_PRICE_RANGE"
                     + "|SEARCH_WAS_BROADENED)\\b");
+    /** Lowercase hyphenated values are catalog/admin slugs, never customer-facing colour names. */
+    private static final Pattern RAW_INTERNAL_SLUG = Pattern.compile(
+            "(?<![\\p{L}\\p{N}])(?:[a-z0-9]{2,}(?:-[a-z0-9]{2,})+)(?![\\p{L}\\p{N}])");
     private static final Pattern RAW_CURRENCY = Pattern.compile(
             "(?i)(?:\\b\\d[\\d.,]*\\s*(?:VND|VNĐ)\\b|\\b(?:VND|VNĐ)\\b"
                     + "|\\b\\d[\\d.,]*[.,]\\d{1,2}\\s*₫)");
@@ -44,14 +47,42 @@ public class ChatResponseGuard {
                     // This is a customer-directed recommendation form. Keep the list narrow
                     // so valid self-references such as “em có thể hỗ trợ anh/chị” stay valid.
                     + "|(?:^|\\s)em\\s+co\\s+the\\s+(?:tham\\s+khao|chon|bam|xem)(?:\\s|$)");
-    private static final Pattern VI_WAREHOUSE_WIDE_CLAIM = Pattern.compile(
-            "\\b(?:tat\\s+ca|toan\\s+bo|duy\\s+nhat|chi\\s+co\\s+(?:\\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)"
-                    + "|bigbike\\s+(?:hien\\s+)?(?:khong\\s+co|chua\\s+co|khong\\s+tim\\s+thay)"
-                    + "|(?:khong|chua)\\s+tim\\s+thay\\s+(?:bat\\s+ky\\s+)?(?:san\\s+pham|mau|mu|hang)"
-                    + "|bigbike\\s+co\\s+(?:\\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)\\s+(?:san\\s+pham|mau|mu|hang))\\b");
-    private static final Pattern EN_WAREHOUSE_WIDE_CLAIM = Pattern.compile(
-            "\\b(?:all\\s+(?:products|items|helmets|models)|only\\s+\\d+|the\\s+only|"
-                    + "bigbike\\s+(?:does\\s+not|doesn't|has\\s+no)|"
+    /** Keep this deliberately narrow: factual short answers must not be mistaken for rude copy. */
+    private static final Pattern DISMISSIVE_TONE = Pattern.compile(
+            "(?:^|\\s)(?:tu\\s+(?:xem|tim)(?:\\s+di)?|dung\\s+hoi(?:\\s+nua)?|"
+                    + "ke\\s+di|bo\\s+qua\\s+di|khong\\s+lien\\s+quan)(?:\\s|$)");
+    private static final String COUNT_WORD = "(?:mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)";
+    private static final String COUNT_VALUE = "(?:\\d+|" + COUNT_WORD + ")";
+    private static final String VI_CATALOG_UNIT =
+            "(?:mau|san\\s+pham|mat\\s+hang|loai|tai\\s+nghe|mu|hang)";
+    private static final String EN_CATALOG_UNIT =
+            "(?:models?|products?|items?|helmets?|headsets?)";
+    /** A written numeric price scope also binds a nearby catalogue count to the range total. */
+    private static final Pattern PRICE_AMOUNT_REFERENCE = Pattern.compile(
+            "(?<![a-z0-9])(?:\\d+(?:[.,]\\d+)?|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi|"
+                    + "one|two|three|four|five|six|seven|eight|nine|ten)\\s*"
+                    + "(?:trieu|tr|million|nghin|ngan|k|cu|lit)(?![a-z0-9])");
+    /** Assertions of completeness remain unsupported even when one count was supplied. */
+    private static final Pattern VI_ABSOLUTE_CATALOG_CLAIM = Pattern.compile(
+            "\\b(?:tat\\s+ca|toan\\s+bo|duy\\s+nhat)\\b");
+    private static final Pattern EN_ABSOLUTE_CATALOG_CLAIM = Pattern.compile(
+            "\\b(?:all\\s+(?:products|items|helmets|models|headsets)|the\\s+only)\\b");
+    /** A number plus a product unit is a catalogue statement unless it is explicitly a card count. */
+    private static final Pattern VI_CATALOG_COUNT_CLAIM = Pattern.compile(
+            "\\b(" + COUNT_VALUE + ")\\s+" + VI_CATALOG_UNIT + "\\b");
+    private static final Pattern EN_CATALOG_COUNT_CLAIM = Pattern.compile(
+            "\\b(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+"
+                    + EN_CATALOG_UNIT + "\\b");
+    private static final Pattern VI_DISPLAY_CARD_COUNT_CLAIM = Pattern.compile(
+            "\\b(" + COUNT_VALUE + ")\\s+the(?:\\s+san\\s+pham)?\\b");
+    private static final Pattern EN_DISPLAY_CARD_COUNT_CLAIM = Pattern.compile(
+            "\\b(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+"
+                    + "(?:product\\s+)?cards?\\b");
+    private static final Pattern VI_UNSCOPED_ABSENCE_CLAIM = Pattern.compile(
+            "\\b(?:bigbike\\s+(?:hien\\s+)?(?:khong\\s+co|chua\\s+co|khong\\s+tim\\s+thay)"
+                    + "|(?:khong|chua)\\s+tim\\s+thay\\s+(?:bat\\s+ky\\s+)?(?:san\\s+pham|mau|mu|hang))\\b");
+    private static final Pattern EN_UNSCOPED_ABSENCE_CLAIM = Pattern.compile(
+            "\\b(?:bigbike\\s+(?:does\\s+not|doesn't|has\\s+no)|"
                     + "(?:could\\s+not|cannot|can't)\\s+find\\s+(?:any\\s+)?(?:product|item|helmet|model))\\b");
     private static final Pattern SENTENCE_END = Pattern.compile("[.!?。！？]+(?=\\s|$)");
     private static final int MIN_SENTENCES = 2;
@@ -62,9 +93,25 @@ public class ChatResponseGuard {
             List<ChatProductCardResponse> products,
             String lang
     ) {
+        return check(answer, products, lang, Set.of(), null);
+    }
+
+    /**
+     * Used by backend-written terminal answers as well as model answers. Required disclosures
+     * and count evidence must survive both paths; otherwise a deterministic response could
+     * silently hide a carried price range or assert an unsupported catalogue total.
+     */
+    public Optional<CheckedAnswer> check(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals
+    ) {
         if (!isSafeCustomerText(answer, lang)
                 || !hasSafeAssistantTone(answer, lang)
-                || hasUnsupportedWarehouseWideClaim(answer, lang)) {
+                || !containsRequiredDisclosures(answer, lang, requiredDisclosures)
+                || hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products)) {
             return Optional.empty();
         }
         String content = answer.trim();
@@ -88,6 +135,18 @@ public class ChatResponseGuard {
             List<String> publicShopPhoneSources,
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures
     ) {
+        return rejectionReason(
+                answer, products, lang, publicShopPhoneSources, requiredDisclosures, null);
+    }
+
+    public String rejectionReason(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            List<String> publicShopPhoneSources,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals
+    ) {
         if (answer == null || answer.isBlank()) return "EMPTY_ANSWER";
         if (EMAIL.matcher(answer).find()) return "EMAIL_ECHO";
         Set<String> allowedPhones = extractPhones(publicShopPhoneSources);
@@ -100,11 +159,15 @@ public class ChatResponseGuard {
         }
         String content = answer.trim();
         if (TECHNICAL_TERMS.matcher(content).find()) return "TECHNICAL_TERM";
-        if (RAW_INTERNAL_CODES.matcher(content).find()) return "INTERNAL_CODE";
+        if (RAW_INTERNAL_CODES.matcher(content).find() || RAW_INTERNAL_SLUG.matcher(content).find()) {
+            return "INTERNAL_CODE";
+        }
         if (RAW_CURRENCY.matcher(content).find()) return "RAW_CURRENCY";
         if (URL.matcher(content).find()) return "URL";
         if (!isSafeCustomerText(content, lang)) return "WRONG_LANGUAGE";
-        if (hasUnsupportedWarehouseWideClaim(content, lang)) return "UNSUPPORTED_CATALOG_CLAIM";
+        if (hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
+            return "UNSUPPORTED_CATALOG_CLAIM";
+        }
         if (!hasSafeAssistantTone(content, lang)) return "WRONG_TONE";
         int sentences = sentenceCount(content);
         if (sentences < MIN_SENTENCES || sentences > MAX_SENTENCES) {
@@ -115,6 +178,27 @@ public class ChatResponseGuard {
         return "NONE";
     }
 
+    /**
+     * Structured diagnostics for operational logs. Deliberately excludes customer/assistant
+     * content, product names, slugs, prices and any identity data.
+     */
+    public GuardDiagnostic rejectionDiagnostic(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            List<String> publicShopPhoneSources,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals
+    ) {
+        return new GuardDiagnostic(
+                rejectionReason(answer, products, lang, publicShopPhoneSources,
+                        requiredDisclosures, catalogTotals),
+                products == null ? 0 : products.size(),
+                catalogTotals != null,
+                catalogTotals != null && catalogTotals.priceRangeTotalItems() != null,
+                requiredDisclosures == null ? 0 : requiredDisclosures.size());
+    }
+
     /** Model-only boundary: do not let it echo customer PII from the current question. */
     public Optional<CheckedAnswer> checkModel(
             String answer,
@@ -122,7 +206,7 @@ public class ChatResponseGuard {
             String lang,
             List<String> publicShopPhoneSources
     ) {
-        return checkModel(answer, products, lang, publicShopPhoneSources, Set.of());
+        return checkModel(answer, products, lang, publicShopPhoneSources, Set.of(), null);
     }
 
     public Optional<CheckedAnswer> checkModel(
@@ -131,6 +215,17 @@ public class ChatResponseGuard {
             String lang,
             List<String> publicShopPhoneSources,
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures
+    ) {
+        return checkModel(answer, products, lang, publicShopPhoneSources, requiredDisclosures, null);
+    }
+
+    public Optional<CheckedAnswer> checkModel(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            List<String> publicShopPhoneSources,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals
     ) {
         if (answer == null || EMAIL.matcher(answer).find()) return Optional.empty();
         Set<String> allowedPhones = extractPhones(publicShopPhoneSources);
@@ -141,8 +236,60 @@ public class ChatResponseGuard {
         if (!containsRequiredDisclosures(answer, lang, requiredDisclosures)) {
             return Optional.empty();
         }
-        if (hasUnsupportedWarehouseWideClaim(answer, lang)) return Optional.empty();
-        return check(answer, products, lang);
+        if (hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products)) return Optional.empty();
+        return check(answer, products, lang, requiredDisclosures, catalogTotals);
+    }
+
+    /**
+     * Drops only unsupported numeric catalogue clauses and replaces them with an explicit card
+     * display statement. It is intentionally unavailable for unsupported absence/absolute claims:
+     * those have no safe local interpretation. The repaired prose must pass the full guard again.
+     */
+    public Optional<CheckedAnswer> repairUnsupportedCountClauses(
+            String answer,
+            List<ChatProductCardResponse> products,
+            String lang,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals
+    ) {
+        if (answer == null || answer.isBlank() || products == null || products.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products)) {
+            return Optional.empty();
+        }
+
+        List<String> repaired = new java.util.ArrayList<>();
+        Matcher sentences = Pattern.compile("[^.!?。！？]+[.!?。！？]+|[^.!?。！？]+$").matcher(answer.trim());
+        boolean changed = false;
+        while (sentences.find()) {
+            String sentence = sentences.group().trim();
+            if (sentence.isBlank()) continue;
+            if (hasUnsupportedWarehouseWideClaim(sentence, lang, catalogTotals, products)) {
+                String normalized = ChatToolService.normalize(sentence);
+                Pattern countPattern = "en".equals(lang) ? EN_CATALOG_COUNT_CLAIM : VI_CATALOG_COUNT_CLAIM;
+                if (!countPattern.matcher(normalized).find()) return Optional.empty();
+                repaired.add(displayedCardSentence(products.size(), lang));
+                changed = true;
+            } else {
+                repaired.add(sentence);
+            }
+        }
+        if (!changed) return Optional.empty();
+        if (repaired.size() < MIN_SENTENCES) {
+            repaired.add("en".equals(lang)
+                    ? "Please open the product cards below, or tell me a different budget so I can filter again."
+                    : "Anh/chị có thể xem từng thẻ bên dưới hoặc cho em biết tầm giá khác để em lọc lại nhé.");
+        }
+        return check(String.join(" ", repaired), products, lang, requiredDisclosures, catalogTotals);
+    }
+
+    private static String displayedCardSentence(int cardCount, String lang) {
+        if ("en".equals(lang)) {
+            return "I am showing " + cardCount + " matching product card"
+                    + (cardCount == 1 ? " below." : "s below.");
+        }
+        return "Dạ, em đang hiển thị " + cardCount + " thẻ sản phẩm phù hợp bên dưới.";
     }
 
     private static boolean containsRequiredDisclosures(
@@ -155,12 +302,34 @@ public class ChatResponseGuard {
         boolean english = "en".equals(lang);
         for (ChatToolService.RequiredDisclosure disclosure : requiredDisclosures) {
             boolean present = switch (disclosure) {
+                case INHERITED_PRICE_RANGE -> hasInheritedPriceRangeDisclosure(normalized, english);
+                case INHERITED_FILTER_DROPPED -> hasInheritedFilterDroppedDisclosure(normalized, english);
                 case PRICE_RANGE_MISS -> hasPriceRangeMissDisclosure(normalized, english);
                 case BROADENED_SEARCH -> hasBroadenedSearchDisclosure(normalized, english);
             };
             if (!present) return false;
         }
         return true;
+    }
+
+    private static boolean hasInheritedPriceRangeDisclosure(String value, boolean english) {
+        if (english) {
+            return containsAny(value, "previous product request", "previous price range", "previous range")
+                    && containsAny(value, "filter", "range", "price");
+        }
+        return containsAny(value, "truoc do", "luot truoc", "da neu truoc")
+                && containsAny(value, "dang loc", "loc theo", "tam gia");
+    }
+
+    private static boolean hasInheritedFilterDroppedDisclosure(String value, boolean english) {
+        if (english) {
+            return containsAny(value, "previous product request", "previous price filter", "older filter")
+                    && containsAny(value, "removed", "remove")
+                    && containsAny(value, "searched", "search", "retry");
+        }
+        return containsAny(value, "luot truoc", "da neu truoc", "bo loc cu", "ke thua")
+                && containsAny(value, "bo rieng", "bo loc", "da bo")
+                && containsAny(value, "tim lai", "loc lai");
     }
 
     private static boolean hasPriceRangeMissDisclosure(String value, boolean english) {
@@ -224,6 +393,7 @@ public class ChatResponseGuard {
         String content = value.trim();
         if (TECHNICAL_TERMS.matcher(content).find()
                 || RAW_INTERNAL_CODES.matcher(content).find()
+                || RAW_INTERNAL_SLUG.matcher(content).find()
                 || RAW_CURRENCY.matcher(content).find()
                 || URL.matcher(content).find()) {
             return false;
@@ -241,31 +411,171 @@ public class ChatResponseGuard {
                 .replaceAll("[^\\p{Alnum}]+", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
-        return hasWholeWord(normalized, "em")
-                && normalized.contains("anh chi")
-                && !CUSTOMER_ADDRESSED_AS_EM.matcher(normalized).find();
+        return !CUSTOMER_ADDRESSED_AS_EM.matcher(normalized).find()
+                && !DISMISSIVE_TONE.matcher(normalized).find();
     }
 
     /**
-     * Product cards are intentionally limited to three, so a model must not turn that page into
-     * a claim about the whole warehouse. A price-range disclosure remains valid because it is
-     * explicitly scoped by backend-controlled tool data.
+     * Product cards are intentionally limited to three, so a response must not turn them into a
+     * catalogue conclusion. CHAT_RULE_020 opens one narrow exception: a current search may carry
+     * exact backend totals for its verified scope and, separately, its applied price range.
      */
-    private static boolean hasUnsupportedWarehouseWideClaim(String value, String lang) {
-        String normalized = ChatToolService.normalize(value)
-                .replaceAll("[^\\p{Alnum}]+", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
-        if (normalized.isBlank() || isPriceScoped(normalized, lang)) return false;
-        return "en".equals(lang)
-                ? EN_WAREHOUSE_WIDE_CLAIM.matcher(normalized).find()
-                : VI_WAREHOUSE_WIDE_CLAIM.matcher(normalized).find();
+    private static boolean hasUnsupportedWarehouseWideClaim(
+            String value,
+            String lang,
+            ChatToolService.CatalogTotals catalogTotals,
+            List<ChatProductCardResponse> products
+    ) {
+        String normalized = ChatToolService.normalize(value).replaceAll("\\s+", " ").trim();
+        if (normalized.isBlank()) return false;
+        boolean english = "en".equals(lang);
+        if ((english ? EN_ABSOLUTE_CATALOG_CLAIM : VI_ABSOLUTE_CATALOG_CLAIM)
+                .matcher(normalized).find()) {
+            return true;
+        }
+        boolean priceScoped = isPriceScoped(normalized, lang);
+        if ((english ? EN_UNSCOPED_ABSENCE_CLAIM : VI_UNSCOPED_ABSENCE_CLAIM)
+                .matcher(normalized).find() && !priceScoped) {
+            return true;
+        }
+
+        List<CatalogCountClaim> claims = catalogCountClaims(normalized, english);
+        if (claims.isEmpty()) return false;
+        for (CatalogCountClaim claim : claims) {
+            if (claim.displayedCards()) {
+                if (products == null || products.size() != claim.value()) return true;
+                continue;
+            }
+            if (catalogTotals == null) return true;
+            Long expected = claim.priceScoped()
+                    ? catalogTotals.priceRangeTotalItems()
+                    : Long.valueOf(catalogTotals.scopeTotalItems());
+            if (expected == null || expected.longValue() != claim.value()) return true;
+        }
+        return false;
+    }
+
+    private static List<CatalogCountClaim> catalogCountClaims(String normalized, boolean english) {
+        Pattern pattern = english ? EN_CATALOG_COUNT_CLAIM : VI_CATALOG_COUNT_CLAIM;
+        Matcher matcher = pattern.matcher(normalized);
+        List<CatalogCountCandidate> candidates = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            Long value = catalogCountValue(matcher.group(1), english);
+            if (value == null) continue;
+            candidates.add(new CatalogCountCandidate(value, matcher.start(), matcher.end(), false));
+        }
+        Pattern displayPattern = english ? EN_DISPLAY_CARD_COUNT_CLAIM : VI_DISPLAY_CARD_COUNT_CLAIM;
+        Matcher displays = displayPattern.matcher(normalized);
+        while (displays.find()) {
+            Long value = catalogCountValue(displays.group(1), english);
+            if (value == null) continue;
+            candidates.removeIf(candidate -> candidate.start() == displays.start()
+                    && candidate.value() == value.longValue());
+            candidates.add(new CatalogCountCandidate(value, displays.start(), displays.end(), true));
+        }
+        candidates.sort(java.util.Comparator.comparingInt(CatalogCountCandidate::start)
+                .thenComparing(java.util.Comparator.comparing(
+                        CatalogCountCandidate::explicitDisplay).reversed()));
+        List<CatalogCountClaim> claims = new java.util.ArrayList<>();
+        for (int index = 0; index < candidates.size(); index++) {
+            CatalogCountCandidate candidate = candidates.get(index);
+            int sentenceStart = Math.max(
+                    Math.max(normalized.lastIndexOf('.', candidate.start()), normalized.lastIndexOf('!', candidate.start())),
+                    normalized.lastIndexOf('?', candidate.start())) + 1;
+            int sentenceEnd = sentenceEnd(normalized, candidate.end());
+            int nextCountStart = index + 1 < candidates.size()
+                    && candidates.get(index + 1).start() < sentenceEnd
+                    ? candidates.get(index + 1).start() : sentenceEnd;
+            int clauseEnd = firstClauseEnd(normalized, candidate.end(), nextCountStart);
+            String beforeClaim = normalized.substring(sentenceStart, candidate.end());
+            String afterClaim = normalized.substring(candidate.end(), clauseEnd);
+            String sentence = normalized.substring(sentenceStart, sentenceEnd);
+            boolean priceScoped = isPriceScoped(beforeClaim, english ? "en" : "vi")
+                    || isPriceScoped(afterClaim, english ? "en" : "vi")
+                    // A one-sided phrase such as “trên 3tr … có 5 mẫu” may have punctuation
+                    // between its range and count. The entire sentence still binds the count to
+                    // the verified price-range total; it is not a warehouse-wide claim.
+                    || isPriceScoped(sentence, english ? "en" : "vi")
+                    // “... trong tầm giá ... có 5 mẫu. Em đang hiển thị 3 thẻ trong tổng
+                    // 5 mẫu ...” refers to the immediately preceding verified range total.
+                    // It must stay a catalogue count, not be mistaken for the three cards.
+                    || referencesPreviousPriceScope(normalized, sentenceStart, beforeClaim,
+                    english ? "en" : "vi");
+            // The explicit card-count grammar is the only safe way to treat a number as a
+            // visible-card claim. A nearby word such as “thẻ” must not turn “tổng 5 mẫu” into
+            // an assertion that five cards were rendered.
+            boolean displayedCards = candidate.explicitDisplay();
+            claims.add(new CatalogCountClaim(candidate.value(), priceScoped, displayedCards));
+        }
+        return List.copyOf(claims);
+    }
+
+    private static boolean referencesPreviousPriceScope(
+            String normalized,
+            int sentenceStart,
+            String beforeClaim,
+            String lang
+    ) {
+        if (sentenceStart <= 0 || !containsAny(beforeClaim, "tong", "total")) return false;
+        int previousEnd = sentenceStart - 1;
+        while (previousEnd >= 0 && (Character.isWhitespace(normalized.charAt(previousEnd))
+                || normalized.charAt(previousEnd) == '.'
+                || normalized.charAt(previousEnd) == '!'
+                || normalized.charAt(previousEnd) == '?')) {
+            previousEnd--;
+        }
+        if (previousEnd < 0) return false;
+        int previousStart = Math.max(
+                Math.max(normalized.lastIndexOf('.', previousEnd), normalized.lastIndexOf('!', previousEnd)),
+                normalized.lastIndexOf('?', previousEnd)) + 1;
+        return isPriceScoped(normalized.substring(previousStart, previousEnd + 1), lang);
+    }
+
+    private static int sentenceEnd(String value, int from) {
+        Matcher matcher = SENTENCE_END.matcher(value);
+        return matcher.find(from) ? matcher.start() : value.length();
+    }
+
+    /** A following range belongs to this count only before the next clause or count begins. */
+    private static int firstClauseEnd(String value, int from, int limit) {
+        int end = limit;
+        for (char delimiter : new char[]{',', ';', ':'}) {
+            int found = value.indexOf(delimiter, from);
+            if (found >= 0 && found < end) end = found;
+        }
+        return end;
+    }
+
+    private static Long catalogCountValue(String raw, boolean english) {
+        if (raw == null || raw.isBlank()) return null;
+        if (raw.matches("\\d+")) {
+            try {
+                return Long.parseLong(raw);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return switch (raw) {
+            case "mot", "one" -> 1L;
+            case "hai", "two" -> 2L;
+            case "ba", "three" -> 3L;
+            case "bon", "four" -> 4L;
+            case "nam", "five" -> 5L;
+            case "sau", "six" -> 6L;
+            case "bay", "seven" -> 7L;
+            case "tam", "eight" -> 8L;
+            case "chin", "nine" -> 9L;
+            case "muoi", "ten" -> 10L;
+            default -> null;
+        };
     }
 
     private static boolean isPriceScoped(String normalized, String lang) {
         return "en".equals(lang)
-                ? containsAny(normalized, "price range", "requested range", "your range")
-                : containsAny(normalized, "tam gia", "muc gia", "khoang gia");
+                ? containsAny(normalized, "price range", "requested range", "your range", "within the range")
+                        || PRICE_AMOUNT_REFERENCE.matcher(normalized).find()
+                : containsAny(normalized, "tam gia", "muc gia", "khoang gia", "trong tam", "trong khoang")
+                        || PRICE_AMOUNT_REFERENCE.matcher(normalized).find();
     }
 
     /** Settings greeting is assistant output too; quick prompts intentionally are not. */
@@ -298,5 +608,17 @@ public class ChatResponseGuard {
         return value == null || value.isBlank();
     }
 
+    private record CatalogCountCandidate(long value, int start, int end, boolean explicitDisplay) {}
+
+    private record CatalogCountClaim(long value, boolean priceScoped, boolean displayedCards) {}
+
     public record CheckedAnswer(String answer, List<ChatProductCardResponse> products) {}
+
+    public record GuardDiagnostic(
+            String reason,
+            int productCount,
+            boolean hasScopeTotal,
+            boolean hasPriceRangeTotal,
+            int requiredDisclosureCount
+    ) {}
 }

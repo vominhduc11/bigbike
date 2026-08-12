@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -257,6 +258,104 @@ public class CatalogReadService {
                 .filter(category -> !category.deleted())
                 .toList();
     }
+
+    /**
+     * Read-only source for Bi's category-listing tool. A category remains visible even with zero
+     * current products, while the count itself includes only the same sellable product shape Bi
+     * is allowed to show in a product card.
+     */
+    public List<AssistantCategorySummary> listAssistantCategorySummaries(String lang) {
+        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
+        List<Category> categories = new ArrayList<>(listAssistantCategories(locale));
+        categories.sort(Comparator
+                .comparing(Category::sortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(category -> category.name() == null ? "" : category.name(),
+                        String.CASE_INSENSITIVE_ORDER));
+
+        Map<String, List<String>> childrenByParentId = new HashMap<>();
+        Map<String, String> slugById = new HashMap<>();
+        for (Category category : categories) {
+            if (category.id() == null || category.slug() == null) continue;
+            slugById.put(category.id(), category.slug());
+            if (category.parentId() != null) {
+                childrenByParentId.computeIfAbsent(category.parentId(), ignored -> new ArrayList<>())
+                        .add(category.id());
+            }
+        }
+        Map<String, Set<String>> slugsByRoot = new HashMap<>();
+        for (Category category : categories) {
+            if (category.id() == null || category.slug() == null) continue;
+            slugsByRoot.put(category.slug(), categoryAndDescendantSlugs(
+                    category.id(), childrenByParentId, slugById));
+        }
+
+        List<Product> sellableProducts = catalogReadRepository
+                .findAllPublishedProductsForListing(locale).stream()
+                .filter(CatalogReadService::assistantSellable)
+                .toList();
+        return categories.stream()
+                .filter(category -> category.slug() != null && category.name() != null)
+                .map(category -> new AssistantCategorySummary(
+                        category.slug(),
+                        category.name(),
+                        sellableProducts.stream()
+                                .filter(product -> belongsToAnyCategory(
+                                        product, slugsByRoot.getOrDefault(category.slug(), Set.of())))
+                                .count()))
+                .toList();
+    }
+
+    private static Set<String> categoryAndDescendantSlugs(
+            String rootId,
+            Map<String, List<String>> childrenByParentId,
+            Map<String, String> slugById
+    ) {
+        Set<String> visited = new HashSet<>();
+        Deque<String> queue = new ArrayDeque<>(List.of(rootId));
+        while (!queue.isEmpty()) {
+            String current = queue.removeFirst();
+            if (!visited.add(current)) continue;
+            queue.addAll(childrenByParentId.getOrDefault(current, List.of()));
+        }
+        return visited.stream()
+                .map(slugById::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static boolean belongsToAnyCategory(Product product, Set<String> categorySlugs) {
+        return product != null
+                && product.categories() != null
+                && product.categories().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(category -> categorySlugs.contains(category.slug()));
+    }
+
+    /** Mirrors Bi card eligibility: published, in-stock, VND and a positive effective price. */
+    private static boolean assistantSellable(Product product) {
+        if (product == null
+                || product.publishStatus() != PublishStatus.PUBLISHED
+                || !Boolean.TRUE.equals(product.available())
+                || product.stockState()
+                != com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK
+                || product.price() == null
+                || !"VND".equalsIgnoreCase(product.price().currency())) {
+            return false;
+        }
+        BigDecimal retail = product.price().retailPrice();
+        BigDecimal sale = product.price().salePrice();
+        BigDecimal effective = sale != null && sale.signum() > 0
+                && retail != null && retail.signum() > 0 && sale.compareTo(retail) < 0
+                ? sale : retail;
+        if (effective == null || effective.signum() <= 0) return false;
+        if (product.variants() == null || product.variants().isEmpty()) return true;
+        return product.variants().stream().anyMatch(variant -> variant != null
+                && variant.isAvailable()
+                && variant.stockState()
+                == com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK);
+    }
+
+    public record AssistantCategorySummary(String slug, String name, long sellableProductCount) {}
 
     public Category getCategoryBySlug(String slug, String lang) {
         return catalogReadRepository.findCategoryBySlug(slug, lang)

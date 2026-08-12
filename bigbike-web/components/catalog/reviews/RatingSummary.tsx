@@ -41,7 +41,10 @@ export function RatingSummary({
         <RatingStars value={state.rating} iconClassName="h-5 w-5" ariaLabel={ariaLabel} />
         {state.kind === "empty" ? <span className="text-a5-meta text-muted-foreground">{t("ratingEmpty")}</span> : null}
         {state.kind === "inconsistent" ? <span className="text-a5-meta text-muted-foreground">{t("ratingUnavailable")}</span> : null}
-        <span className="text-a5-meta text-muted-foreground">{t("ratingCount", { count: state.count })}</span>
+        {/* Rỗng thì nhãn "Chưa có đánh giá" đã đủ nghĩa, không kèm "(0 đánh giá)" (REVIEW_RULE_003). */}
+        {state.kind !== "empty" ? (
+          <span className="text-a5-meta text-muted-foreground">{t("ratingCount", { count: state.count })}</span>
+        ) : null}
       </div>
 
       {state.kind !== "empty" ? (

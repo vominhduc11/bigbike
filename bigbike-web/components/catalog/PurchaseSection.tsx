@@ -184,7 +184,7 @@ export function PurchaseSection({
     ? sanitizeRichHtml(product.shortDescription, { allowInlineStyles: true })
     : "";
 
-  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — badge PDP dùng Barlow,
+  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — badge PDP dùng Arial,
   // mobile và desktop đều 14px theo mockup.
   // category.name/brand.name/originBrandCountry resolve theo locale ở backend
   // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/

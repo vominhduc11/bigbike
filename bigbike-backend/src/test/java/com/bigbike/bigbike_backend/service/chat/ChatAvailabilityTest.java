@@ -48,15 +48,14 @@ class ChatAvailabilityTest {
     }
 
     @Test
-    @DisplayName("an unsafe Vietnamese configured greeting falls back to Bi's em–anh/chị greeting")
-    void unsafeGreetingFallsBackToTheApprovedTone() {
+    @DisplayName("a polite Vietnamese configured greeting is valid without mandatory pronoun keywords")
+    void politeGreetingDoesNotNeedBothPronouns() {
         AiChatClient chatClient = mock(AiChatClient.class);
         when(chatClient.isConfigured()).thenReturn(true);
         ChatService service = service(chatClient, 60, 0);
 
         assertThat(service.availability("vi").greeting())
-                .isEqualTo(ChatAssistantSettings.defaultGreeting("vi"))
-                .contains("Em", "anh/chị");
+                .isEqualTo("Xin chào");
     }
 
     private static ChatService service(AiChatClient client, int limit, long spent) {

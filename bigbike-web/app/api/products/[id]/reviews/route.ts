@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { BACKEND, readBackendError, type ProductRouteParams } from "@/lib/api/backend-proxy";
+import {
+  BACKEND,
+  backendRequestHeaders,
+  passthroughBackendError,
+  readBackendError,
+  type ProductRouteParams,
+} from "@/lib/api/backend-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -61,12 +67,16 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
   try {
     const res = await fetch(`${BACKEND}/api/v1/products/${id}/reviews${query}`, {
       cache: "no-store",
-      headers: { Accept: "application/json" },
+      headers: backendRequestHeaders(req),
     });
 
     if (res.status === 404) {
       // PDP should stay stable when the product lookup behind reviews returns not found.
       return NextResponse.json(EMPTY);
+    }
+
+    if (res.status === 429) {
+      return passthroughBackendError(res);
     }
 
     if (res.status >= 400 && res.status < 500) {
@@ -119,4 +129,3 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
     );
   }
 }
-

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { fontBarlow, fontBarlowCondensed } from "./fonts";
 import "./globals.css";
 
 /**
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootNotFound() {
   return (
-    <html lang="vi" className={`h-full antialiased ${fontBarlow.variable} ${fontBarlowCondensed.variable}`}>
+    <html lang="vi" className="h-full antialiased">
       <body className="bb-theme bg-background text-foreground min-h-full flex flex-col">
         <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-20 text-center">
           <div className="relative select-none" aria-hidden="true">

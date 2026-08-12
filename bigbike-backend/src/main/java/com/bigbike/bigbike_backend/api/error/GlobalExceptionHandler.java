@@ -11,6 +11,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,6 +40,10 @@ public class GlobalExceptionHandler {
             log.warn("API error [{}] {}: {} {}", request.getMethod(), request.getRequestURI(), ex.code(), ex.details());
         } else {
             log.error("API error [{}] {}: {} {}", request.getMethod(), request.getRequestURI(), ex.code(), ex.details());
+        }
+        if (ex instanceof RateLimitExceededException rateLimitExceeded) {
+            return build(ex.status(), ex.code(), ex.getMessage(), ex.details(), request,
+                    rateLimitExceeded.retryAfterSeconds());
         }
         return build(ex.status(), ex.code(), ex.getMessage(), ex.details(), request);
     }
@@ -182,8 +187,24 @@ public class GlobalExceptionHandler {
             List<ApiErrorDetail> details,
             HttpServletRequest request
     ) {
+        return build(status, code, message, details, request, null);
+    }
+
+    private ResponseEntity<ApiErrorResponse> build(
+            HttpStatus status,
+            String code,
+            String message,
+            List<ApiErrorDetail> details,
+            HttpServletRequest request,
+            Long retryAfterSeconds
+    ) {
         ApiMeta meta = apiMetaFactory.from(request);
         ApiErrorResponse payload = new ApiErrorResponse(new ApiError(code, message, details), meta);
-        return ResponseEntity.status(status).body(payload);
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(status);
+        if (retryAfterSeconds != null) {
+            response.header(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, retryAfterSeconds)));
+            response.header(HttpHeaders.CACHE_CONTROL, "no-store");
+        }
+        return response.body(payload);
     }
 }

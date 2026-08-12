@@ -4,8 +4,8 @@ Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbik
 
 ## 1. Nguyên tắc nền
 
-- Giữ đúng hai phông đang có: **Arial / Helvetica** và **Barlow Condensed**. Không dùng Oswald hoặc thêm phông khác.
-- Nhóm A dùng Arial/Helvetica cho tiêu đề trang và nội dung. Nhóm B dùng Barlow Condensed cho chức năng/nhấn và luôn viết IN HOA.
+- Toàn bộ typography dùng **Arial / Helvetica**. Không dùng Oswald hoặc thêm phông display khác.
+- Nhóm A và B dùng Arial/Helvetica; nhóm B mặc định viết IN HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn dữ liệu.
 - Mỗi nhóm có đúng một cỡ mobile và một cỡ desktop. Sang mobile chỉ đổi cỡ, không đổi phông.
 - Breakpoint cỡ chữ duy nhất là `768px`: `<768px` dùng cỡ mobile, `≥768px` dùng cỡ desktop.
 - Các breakpoint 375px, 600px, 991px, 1920px, 2560px và màn siêu rộng không được thay đổi cỡ chữ. Chúng chỉ được thay đổi bố cục hoặc lưới.
@@ -16,11 +16,11 @@ Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbik
 
 | Nhóm | Vai trò | Phông cố định | Mobile `<768px` | Desktop `≥768px` | Dùng cho |
 |---|---|---|---:|---:|---|
-| B1 | Trang trí / Display | Barlow Condensed, IN HOA | 32px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
-| B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 32px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
-| B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 18px | 20px | Nhãn “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 18px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
-| B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 12px | 14px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
+| B1 | Trang trí / Display | Arial / Helvetica, IN HOA | 32px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
+| B2 | Liên hệ lớn | Arial / Helvetica, IN HOA | 24px | 32px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
+| B3 | Badge nhấn / % giảm | Arial / Helvetica, IN HOA | 18px | 20px | Nhãn “-20%”, nhãn giảm giá nổi bật |
+| B4 | Nút · Menu · Tab | Arial / Helvetica | 16px | 18px | Nút/tab/nhãn Còn-Hết hàng viết HOA; menu chính giữ nguyên kiểu chữ của nhãn |
+| B5 | Nhãn nhỏ / Eyebrow / Badge | Arial / Helvetica, IN HOA | 12px | 14px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
 | A1 | Tiêu đề lớn H1 | Arial / Helvetica | 28px | 32px | Tiêu đề khối lớn; tên và giá lớn trên trang sản phẩm |
 | A2 | Tiêu đề trang H2 | Arial / Helvetica | 22px | 26px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
 | A3 | Tiêu đề khối H3 | Arial / Helvetica | 20px | 22px | Tiêu đề khối trong trang, hộp thoại, sidebar |
@@ -30,7 +30,7 @@ Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbik
 
 Giá được phân nhóm theo cấp độ nơi hiển thị: giá lớn trên trang sản phẩm = A1; tổng tiền giỏ hàng = A2 hoặc A3; giá trong một dòng = A4; giá trên card = A5.
 
-Nhãn phụ (kicker) của các khối trang chủ là biến thể cố định dùng Barlow Condensed, 16px ở cả mobile và desktop, in đậm, màu `#CECECE`. Utility tương ứng là `text-home-kicker`.
+Nhãn phụ (kicker) của các khối trang chủ là biến thể cố định dùng Arial / Helvetica, 16px ở cả mobile và desktop, in đậm, màu `#CECECE`. Utility tương ứng là `text-home-kicker`.
 
 Tiêu đề product card là biến thể cố định của A4: Arial / Helvetica, 16px ở cả mobile và desktop, font-weight 600. Utility tương ứng là `text-product-card`.
 
@@ -69,8 +69,8 @@ Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành
 
 ## 5. Quy tắc sử dụng
 
-- Nhóm B phải đi với phông Barlow Condensed và chữ IN HOA; nhóm A đi với Arial/Helvetica.
-- Menu chính của header là biến thể điều chỉnh của B4: Barlow Condensed, 15px ở cả mobile và desktop, font-weight 900, line-height 21px.
+- Nhóm B dùng Arial / Helvetica; các thành phần chức năng viết IN HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn; nhóm A cũng dùng Arial/Helvetica.
+- Menu chính của header là biến thể điều chỉnh của B4: Arial / Helvetica, 15px ở cả mobile và desktop, font-weight 900, line-height 21px, không ép `text-transform: uppercase`.
 - Form input, textarea và select luôn dùng A4.
 - Không dùng `text-[Npx]`, `text-[…em]`, cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-2xl`, `text-3xl`, `text-4xl`, `text-5xl`) hoặc token số `text-ui-*`.
 - Không hardcode `font-size` bằng px trong CSS nếu vai trò đã thuộc một nhóm.
@@ -81,14 +81,15 @@ Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành
 
 ## 6. Phông chữ
 
-Barlow Condensed được self-host bằng `next/font` trong `app/fonts.ts`. Arial/Helvetica dùng font hệ thống. Cả hai hỗ trợ tiếng Việt.
+Arial/Helvetica dùng font hệ thống; môi trường Linux có thể dùng `Liberation Sans` theo fallback token. Font web không còn tải thêm từ `next/font`.
 
 ```css
---bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
---bb-font-cta: var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
+--bb-font-body: Arial, Helvetica, "Liberation Sans", sans-serif;
+--bb-font-barlow: var(--bb-font-body);
+--bb-font-cta: var(--bb-font-body);
 ```
 
-`font-body` là alias bắt buộc cho nhóm A; `font-cta` là alias bắt buộc cho nhóm B. Khi chuẩn hoá một thành phần, phải sửa cả cỡ chữ và phông để khớp nhóm ngữ nghĩa; không giữ alias phông cũ nếu alias đó làm sai bảng canonical.
+`font-body` là alias bắt buộc cho nhóm A; `font-barlow` và `font-cta` là alias tương thích cho nhóm B. Tất cả alias đều trỏ về cùng stack Arial để không làm sai bảng canonical.
 
 ## 7. Kiểm tra trước khi hoàn thành
 

@@ -17,6 +17,8 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
@@ -89,6 +91,7 @@ public class ChatProductDiscoveryApiTest {
 
     private MockMvc mockMvc;
     private Fixture fixture;
+    private AcceptanceFixture acceptanceFixture;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Set<String> createdProductIds = new LinkedHashSet<>();
     private final Set<String> createdBrandIds = new LinkedHashSet<>();
@@ -118,7 +121,8 @@ public class ChatProductDiscoveryApiTest {
         when(aiChatClient.isConfigured()).thenReturn(true);
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenAnswer(this::executeSearchAnswer);
     }
 
@@ -143,7 +147,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void repeatedExactAvailabilityQuestionKeepsTheSameVerifiedTanamiConclusion() throws Exception {
+    void repeatedExactAvailabilityQuestionAsksForTheNextDetailInsteadOfRepeatingIt() throws Exception {
         JsonNode first = send(null, "có mũ Tanami Carbon không", "vi");
         UUID conversationId = UUID.fromString(first.path("conversationId").asText());
         JsonNode second = send(conversationId, "có mũ Tanami Carbon không", "vi");
@@ -152,12 +156,63 @@ public class ChatProductDiscoveryApiTest {
         assertTanamiResult(first, "vi");
         assertTanamiResult(second, "vi");
         assertTanamiResult(third, "vi");
-        assertThat(List.of(
-                first.path("answer").asText(),
-                second.path("answer").asText(),
-                third.path("answer").asText()))
-                .containsOnly(first.path("answer").asText());
+        assertThat(second.path("answer").asText())
+                .isNotEqualTo(first.path("answer").asText())
+                .contains("thay vì lặp lại");
         assertThat(first.path("answer").asText()).contains("còn hàng");
+    }
+
+    @Test
+    void replayOfReportedBiConversationKeepsCountsResolvesPronounsAndClearsOldScope() throws Exception {
+        AcceptanceFixture acceptance = acceptanceFixture();
+        when(aiChatClient.answer(
+                anyString(), anyString(), any(ChatToolRegistry.class),
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
+                .thenAnswer(this::executeAcceptanceSearchAnswer);
+
+        JsonNode underFive = send(null, "Tôi muốn tìm mũ dưới 5tr", "vi");
+        UUID conversationId = UUID.fromString(underFive.path("conversationId").asText());
+        JsonNode fromThreeToFive = send(conversationId, "Từ 3tr đến 5tr đi", "vi");
+        JsonNode fromFourToFive = send(conversationId, "Từ 4tr đến 5tr có không", "vi");
+        JsonNode z503 = send(conversationId, "Có mũ ILM Z503 không", "vi");
+        JsonNode sizes = send(conversationId, "Sản phẩm này có bảng size như nào", "vi");
+        JsonNode confirmation = send(conversationId, "Vậy sản phẩm này chưa có bảng size đúng ko", "vi");
+        JsonNode technical = send(conversationId, "Còn thông số kỹ thuật của sản phẩm này thì sao", "vi");
+        JsonNode headsets = send(conversationId, "Tôi muốn tìm sản phẩm tai nghe", "vi");
+        ChatToolService.ConversationContext contextAfterCategoryChange = objectMapper.readValue(
+                conversationRepository.findById(conversationId).orElseThrow().getContextJson(),
+                ChatToolService.ConversationContext.class);
+        JsonNode aboveThree = send(conversationId, "Trên 3tr", "vi");
+
+        for (JsonNode response : List.of(underFive, fromThreeToFive, fromFourToFive, z503,
+                sizes, confirmation, technical, headsets, aboveThree)) {
+            assertThat(response.path("mode").asText()).isEqualTo("AI");
+            assertThat(response.path("reason").asText()).isEqualTo("AI");
+        }
+        assertThat(underFive.path("answer").asText()).contains("12 mẫu");
+        assertThat(fromThreeToFive.path("answer").asText()).contains("8 mẫu");
+        assertThat(fromFourToFive.path("answer").asText()).contains("1 mẫu");
+        assertThat(findProduct(fromFourToFive.path("products"), acceptance.mf510().getSlug()))
+                .isNotNull();
+        assertThat(findProduct(z503.path("products"), acceptance.z503().getSlug())).isNotNull();
+        assertThat(z503.path("answer").asText()).contains("còn hàng");
+        assertThat(sizes.path("answer").asText())
+                .contains("S, M, L, XL, XXL", "chưa có bảng size theo số đo");
+        assertThat(confirmation.path("answer").asText())
+                .contains("Dạ, đúng rồi", "chưa có bảng size theo số đo")
+                .isNotEqualTo(sizes.path("answer").asText());
+        assertThat(technical.path("answer").asText())
+                .contains("DOT", "FMVSS 218", "ABS", "EPS")
+                .doesNotContain("TIÊU CHUẨN AN TOÀN")
+                .doesNotEndWith("TIÊU CHUẨN AN TOÀN.");
+        assertThat(headsets.path("answer").asText()).contains("9 mẫu tai nghe");
+        assertThat(contextAfterCategoryChange.category()).isEqualTo(acceptance.headsets().getSlug());
+        assertThat(contextAfterCategoryChange.brand()).isNull();
+        assertThat(contextAfterCategoryChange.minPrice()).isNull();
+        assertThat(contextAfterCategoryChange.maxPrice()).isNull();
+        assertThat(aboveThree.path("answer").asText()).contains("5 mẫu tai nghe");
+        assertThat(aboveThree.path("products").size()).isEqualTo(3);
     }
 
     @Test
@@ -258,24 +313,28 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void noMatchingModelReturnsVerifiedNoMatchWithoutInventingProducts() throws Exception {
+    void noMatchingModelReturnsDisclosedScopedAlternative() throws Exception {
         JsonNode data = send(null, "tôi muốn tìm mũ xqz-no-such-model", "vi");
 
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
-        assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("đúng mẫu", "không đổi sang sản phẩm khác");
+        // CHAT_RULE_018 requires nearest verified cards inside the recognised helmet scope,
+        // with a clear notice that the exact model wording was broadened.
+        assertThat(data.path("products").size()).isBetween(1, 3);
+        assertThat(data.path("answer").asText()).contains("rộng hơn yêu cầu", "Anh/chị");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         verify(aiChatClient).answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class));
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any());
     }
 
     @Test
-    void invalidModelTextWithVerifiedCardsUsesRecoverableFallback() throws Exception {
+    void invalidModelTextWithVerifiedCardsUsesLocalCardRecovery() throws Exception {
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenAnswer(invocation -> {
                     AiChatClient.HybridAnswer base = executeSearchAnswer(invocation).orElseThrow();
                     return Optional.of(new AiChatClient.HybridAnswer(
@@ -287,28 +346,29 @@ public class ChatProductDiscoveryApiTest {
 
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
-        assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("chưa xác nhận được nội dung trả lời an toàn");
+        assertThat(data.path("products").size()).isBetween(1, 3);
+        assertThat(data.path("answer").asText()).contains("hiển thị").doesNotContain("12.000.000");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(conversationRepository.findById(conversationId).orElseThrow().getEndedReason())
                 .isNull();
         assertThat(conversationRepository.findById(conversationId).orElseThrow().getTurnCount())
-                .isZero();
+                .isEqualTo(1);
         ChatMessageEntity assistantMessage = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId)
                 .stream()
                 .filter(message -> "ASSISTANT".equals(message.getRole()))
                 .reduce((first, second) -> second)
                 .orElseThrow();
-        assertThat(assistantMessage.getSource()).isEqualTo("CONTACT_FALLBACK");
+        assertThat(assistantMessage.getSource()).isEqualTo("TOOL");
         assertThat(assistantMessage.isAiCalled()).isTrue();
-        assertThat(assistantMessage.getProductsJson()).isNull();
+        assertThat(assistantMessage.getProductsJson()).isNotBlank();
     }
 
     @Test
-    void modelThatHidesRequiredPriceWideningUsesRecoverableFallback() throws Exception {
+    void modelThatHidesRequiredPriceWideningUsesVerifiedPriceMissRecovery() throws Exception {
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenAnswer(invocation -> {
                     AiChatClient.HybridAnswer base = executeSearchAnswer(invocation).orElseThrow();
                     return Optional.of(new AiChatClient.HybridAnswer(
@@ -330,15 +390,16 @@ public class ChatProductDiscoveryApiTest {
 
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
-        assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("chưa xác nhận được nội dung trả lời an toàn");
+        assertThat(data.path("products").size()).isBetween(1, 3);
+        assertThat(data.path("answer").asText()).contains("chưa tìm thấy", "phương án gần nhất");
     }
 
     @Test
     void unparseableProviderResultStillUsesRecoverableFallback() throws Exception {
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenReturn(Optional.empty());
 
         JsonNode data = send(null, "mũ tanami", "vi");
@@ -346,7 +407,8 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("chưa nhận được kết quả đã xác minh");
+        assertThat(data.path("answer").asText()).contains("chưa tra được thông tin này ổn định")
+                .doesNotContain("kết quả đã xác minh");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         assertThat(data.path("contacts").path("zaloUrl").asText()).isEqualTo("https://zalo.example");
         assertThat(data.path("contacts").path("messengerUrl").asText()).isEqualTo("https://messenger.example");
@@ -362,7 +424,8 @@ public class ChatProductDiscoveryApiTest {
                 StandardCharsets.UTF_8);
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenThrow(badRequest);
 
         JsonNode data = send(null, "mũ tanami", "vi");
@@ -370,7 +433,8 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("chưa nhận được kết quả đã xác minh");
+        assertThat(data.path("answer").asText()).contains("chưa tra được thông tin này ổn định")
+                .doesNotContain("kết quả đã xác minh");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
                 .filteredOn(ChatMessageEntity::isAiCalled)
@@ -381,7 +445,8 @@ public class ChatProductDiscoveryApiTest {
     void multipleProviderRequestsStillConsumeOneLogicalAiCall() throws Exception {
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class)))
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any()))
                 .thenAnswer(invocation -> {
                     AiChatClient.HybridAnswer base = executeSearchAnswer(invocation).orElseThrow();
                     return Optional.of(new AiChatClient.HybridAnswer(
@@ -402,11 +467,42 @@ public class ChatProductDiscoveryApiTest {
             org.mockito.invocation.InvocationOnMock invocation) {
         String question = invocation.getArgument(0);
         String lang = invocation.getArgument(1);
+        Map<String, Object> argumentValues = new LinkedHashMap<>();
+        argumentValues.put("query", question.length() <= 200 ? question : question.substring(0, 200));
+        argumentValues.put("lang", lang);
+        // This mock represents the new provider behaviour: an obvious helmet phrase is
+        // interpreted through the public category vocabulary, while any concrete model text
+        // remains exactly as the customer supplied it.
+        if (unaccent(question).matches("(?s).*\\bmu\\b.*")) {
+            argumentValues.put("category", "mu-bao-hiem");
+        }
+        return executeSearchAnswer(invocation, argumentValues);
+    }
+
+    private Optional<AiChatClient.HybridAnswer> executeAcceptanceSearchAnswer(
+            org.mockito.invocation.InvocationOnMock invocation) {
+        AcceptanceFixture acceptance = acceptanceFixture();
+        String question = invocation.getArgument(0);
+        String lang = invocation.getArgument(1);
+        String normalized = unaccent(question);
+        Map<String, Object> argumentValues = new LinkedHashMap<>();
+        argumentValues.put("query", question.length() <= 200 ? question : question.substring(0, 200));
+        argumentValues.put("lang", lang);
+        if (normalized.contains("tai nghe")) {
+            argumentValues.put("category", acceptance.headsets().getSlug());
+        } else if (normalized.contains("mu") || normalized.contains("z503")) {
+            argumentValues.put("category", acceptance.helmets().getSlug());
+        }
+        return executeSearchAnswer(invocation, argumentValues);
+    }
+
+    private Optional<AiChatClient.HybridAnswer> executeSearchAnswer(
+            org.mockito.invocation.InvocationOnMock invocation,
+            Map<String, Object> argumentValues) {
+        String lang = invocation.getArgument(1);
         ChatToolRegistry registry = invocation.getArgument(2);
         AiChatClient.ToolExecutor executor = invocation.getArgument(4);
-        JsonNode arguments = objectMapper.valueToTree(Map.of(
-                "query", question.length() <= 200 ? question : question.substring(0, 200),
-                "lang", lang));
+        JsonNode arguments = objectMapper.valueToTree(argumentValues);
         ChatToolService.ToolExecution execution = executor.execute(
                 registry.validate(ChatToolRegistry.SEARCH_PRODUCTS, arguments),
                 new ChatToolService.ToolSession());
@@ -423,7 +519,9 @@ public class ChatProductDiscoveryApiTest {
                     List.of(ChatToolRegistry.SEARCH_PRODUCTS),
                     execution.requiredDisclosures(),
                     1,
-                    "TOOL"));
+                    "TOOL",
+                    execution.catalogTotals(),
+                    execution.searchScope()));
         }
         if (execution.products().isEmpty()) {
             String answer = "en".equals(lang)
@@ -432,12 +530,14 @@ public class ChatProductDiscoveryApiTest {
             return Optional.of(new AiChatClient.HybridAnswer(
                     new AiChatClient.Answer(answer, false, true, false),
                     List.of(), List.of(), List.of(ChatToolRegistry.SEARCH_PRODUCTS),
-                    execution.requiredDisclosures(), 2));
+                    execution.requiredDisclosures(), 2, "AI",
+                    execution.catalogTotals(), execution.searchScope()));
         }
         return Optional.of(new AiChatClient.HybridAnswer(
                 new AiChatClient.Answer(safeModelAnswer(lang), false, false, false),
                 execution.products(), execution.actions(),
-                List.of(ChatToolRegistry.SEARCH_PRODUCTS), execution.requiredDisclosures(), 2));
+                List.of(ChatToolRegistry.SEARCH_PRODUCTS), execution.requiredDisclosures(), 2, "AI",
+                execution.catalogTotals(), execution.searchScope()));
     }
 
     static Stream<Arguments> tanamiQueries() {
@@ -534,6 +634,176 @@ public class ChatProductDiscoveryApiTest {
         return new Fixture(tanami, other);
     }
 
+    /**
+     * Isolated catalogue data for the real incident replay. Its category slugs are unique so
+     * count assertions stay stable even as unrelated discovery fixtures are added to this class.
+     */
+    private AcceptanceFixture acceptanceFixture() {
+        if (acceptanceFixture != null) return acceptanceFixture;
+
+        String marker = "bi-acceptance-" + UUID.randomUUID().toString().replace("-", "");
+        Instant now = Instant.now();
+        CategoryEntity helmets = category(
+                marker + "-helmets",
+                "mu-bao-hiem-bi-acceptance-" + marker,
+                "Mũ bảo hiểm nghiệm thu Bi " + marker,
+                null,
+                now);
+        CategoryEntity headsets = category(
+                marker + "-headsets",
+                "tai-nghe-bi-acceptance-" + marker,
+                "Tai nghe nghiệm thu Bi " + marker,
+                null,
+                now);
+        createdCategoryIds.addAll(List.of(helmets.getId(), headsets.getId()));
+        categoryRepository.saveAllAndFlush(List.of(helmets, headsets));
+
+        BrandEntity ilm = brandRepository.findBySlug("ilm").orElseGet(() -> {
+            BrandEntity created = brand(marker + "-ilm", "ilm", "ILM", now);
+            createdBrandIds.add(created.getId());
+            return brandRepository.saveAndFlush(created);
+        });
+
+        ProductEntity z503 = product(
+                marker + "-z503",
+                "mu-bao-hiem-fullface-retro-ilm-z503-" + marker,
+                null,
+                "Mũ bảo hiểm fullface retro ILM Z503",
+                null,
+                new BigDecimal("2500000"),
+                PublishStatus.PUBLISHED,
+                ProductStockState.IN_STOCK,
+                true,
+                helmets,
+                ilm,
+                now);
+        z503.setDescription("<p>ILM Z503 mang phong cách cổ điển cho nhu cầu chạy phố.</p>"
+                + "<h3>TIÊU CHUẨN AN TOÀN</h3><p>Đạt chuẩn DOT và FMVSS 218.</p>"
+                + "<p>Vỏ ngoài ABS bền chắc.</p><p>Lớp xốp EPS đa mật độ hỗ trợ hấp thụ lực.</p>");
+        z503.setSpecifications("");
+        z503.setSpecStats("");
+        z503.setSizeGuide(null);
+        z503.setSizeGuideSection(null);
+        z503.setVariants(sellableSizeVariants(z503, marker));
+
+        List<ProductEntity> products = new java.util.ArrayList<>();
+        products.add(z503);
+        ProductEntity mf510 = product(
+                marker + "-mf510",
+                "mu-bao-hiem-ilm-mf510-racing-" + marker,
+                null,
+                "ILM MF510 Racing",
+                null,
+                new BigDecimal("4500000"),
+                PublishStatus.PUBLISHED,
+                ProductStockState.IN_STOCK,
+                true,
+                helmets,
+                ilm,
+                now.plusSeconds(1));
+        products.add(mf510);
+        for (int index = 1; index <= 7; index++) {
+            products.add(product(
+                    marker + "-helmet-mid-" + index,
+                    "mu-bao-hiem-nghiem-thu-mid-" + index + "-" + marker,
+                    null,
+                    "Mũ bảo hiểm nghiệm thu tầm trung " + index,
+                    null,
+                    BigDecimal.valueOf(3_000_000L + index * 100_000L),
+                    PublishStatus.PUBLISHED,
+                    ProductStockState.IN_STOCK,
+                    true,
+                    helmets,
+                    ilm,
+                    now.plusSeconds(2L + index)));
+        }
+        for (int index = 1; index <= 3; index++) {
+            products.add(product(
+                    marker + "-helmet-low-" + index,
+                    "mu-bao-hiem-nghiem-thu-low-" + index + "-" + marker,
+                    null,
+                    "Mũ bảo hiểm nghiệm thu phổ thông " + index,
+                    null,
+                    BigDecimal.valueOf(1_200_000L + index * 250_000L),
+                    PublishStatus.PUBLISHED,
+                    ProductStockState.IN_STOCK,
+                    true,
+                    helmets,
+                    ilm,
+                    now.plusSeconds(10L + index)));
+        }
+
+        List<String> expensiveHeadsetNames = List.of(
+                "SCS S12", "SCS T2 Plus", "SCS G7+", "SCS Cam-S", "SCS S13");
+        List<BigDecimal> expensiveHeadsetPrices = List.of(
+                new BigDecimal("5890000"),
+                new BigDecimal("3390000"),
+                new BigDecimal("3290000"),
+                new BigDecimal("3290000"),
+                new BigDecimal("3190000"));
+        for (int index = 0; index < expensiveHeadsetNames.size(); index++) {
+            products.add(product(
+                    marker + "-headset-high-" + index,
+                    "tai-nghe-" + (index + 1) + "-" + marker,
+                    null,
+                    expensiveHeadsetNames.get(index),
+                    null,
+                    expensiveHeadsetPrices.get(index),
+                    PublishStatus.PUBLISHED,
+                    ProductStockState.IN_STOCK,
+                    true,
+                    headsets,
+                    ilm,
+                    now.plusSeconds(20L + index)));
+        }
+        for (int index = 1; index <= 4; index++) {
+            products.add(product(
+                    marker + "-headset-low-" + index,
+                    "tai-nghe-pho-thong-" + index + "-" + marker,
+                    null,
+                    "Tai nghe mũ bảo hiểm phổ thông " + index,
+                    null,
+                    BigDecimal.valueOf(1_000_000L + index * 250_000L),
+                    PublishStatus.PUBLISHED,
+                    ProductStockState.IN_STOCK,
+                    true,
+                    headsets,
+                    ilm,
+                    now.plusSeconds(30L + index)));
+        }
+        products.forEach(product -> createdProductIds.add(product.getId()));
+        productRepository.saveAllAndFlush(products);
+        acceptanceFixture = new AcceptanceFixture(helmets, headsets, z503, mf510);
+        return acceptanceFixture;
+    }
+
+    private static List<ProductVariantEntity> sellableSizeVariants(ProductEntity product, String marker) {
+        List<ProductVariantEntity> variants = new java.util.ArrayList<>();
+        int order = 0;
+        for (String size : List.of("S", "M", "L", "XL", "XXL")) {
+            ProductVariantEntity variant = new ProductVariantEntity();
+            variant.setId(product.getId() + "-" + size.toLowerCase(Locale.ROOT));
+            variant.setProduct(product);
+            variant.setSku("SKU-" + marker + "-" + size);
+            variant.setName("Size " + size);
+            variant.setRetailPrice(product.getRetailPrice());
+            variant.setCurrency("VND");
+            variant.setStockState(ProductStockState.IN_STOCK);
+            variant.setQuantityOnHand(1);
+            variant.setAvailable(true);
+            variant.setSortOrder(order++);
+            ProductVariantOptionEntity option = new ProductVariantOptionEntity();
+            option.setVariant(variant);
+            option.setSortOrder(0);
+            option.setOptionName("Size");
+            option.setOptionValue(size);
+            variant.setOptions(List.of(option));
+            variant.setGallery(List.of());
+            variants.add(variant);
+        }
+        return variants;
+    }
+
     private static CategoryEntity category(
             String id, String slug, String name, CategoryEntity parent, Instant now) {
         CategoryEntity category = new CategoryEntity();
@@ -623,6 +893,12 @@ public class ChatProductDiscoveryApiTest {
                 .toLowerCase(Locale.ROOT);
     }
 
-    private record Fixture(ProductEntity tanami, ProductEntity otherProduct) {
-    }
+    private record Fixture(ProductEntity tanami, ProductEntity otherProduct) {}
+
+    private record AcceptanceFixture(
+            CategoryEntity helmets,
+            CategoryEntity headsets,
+            ProductEntity z503,
+            ProductEntity mf510
+    ) {}
 }

@@ -23,6 +23,7 @@ public class SecurityConfig {
     private final CustomerSessionFilter customerSessionFilter;
     private final CustomerCsrfFilter customerCsrfFilter;
     private final RateLimitingFilter rateLimitingFilter;
+    private final AuthenticatedRateLimitingFilter authenticatedRateLimitingFilter;
     private final SecurityHeadersFilter securityHeadersFilter;
     private final PublicCacheHeaderFilter publicCacheHeaderFilter;
     private final MaintenanceWriteLockFilter maintenanceWriteLockFilter;
@@ -140,10 +141,13 @@ public class SecurityConfig {
                 .addFilterAfter(customerSessionFilter, JwtAuthFilter.class)
                 // CSRF validation runs after session is resolved
                 .addFilterAfter(customerCsrfFilter, CustomerSessionFilter.class)
+                // Identity/session buckets run only after a customer/admin identity has been resolved
+                // and after a rejected CSRF request has avoided consuming its own valid-session quota.
+                .addFilterAfter(authenticatedRateLimitingFilter, CustomerCsrfFilter.class)
                 // Public catalog/content GETs: relax Cache-Control so browsers/CDN
                 // may cache briefly. Runs last — after Spring Security's default
                 // header writer — so the overwrite sticks before the controller runs.
-                .addFilterAfter(publicCacheHeaderFilter, CustomerCsrfFilter.class)
+                .addFilterAfter(publicCacheHeaderFilter, AuthenticatedRateLimitingFilter.class)
                 // Admin maintenance lock runs last: it needs the AdminPrincipal that JwtAuthFilter
                 // put in the SecurityContext, and it deliberately passes unauthenticated requests
                 // through so AuthorizationFilter can still answer 401/403 rather than 423.

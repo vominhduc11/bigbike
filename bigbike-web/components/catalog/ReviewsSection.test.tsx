@@ -165,7 +165,8 @@ describe("ReviewsSection", () => {
     expect(await screen.findByText("beFirst")).toBeInTheDocument();
     expect(summaryRatingRow(container)).not.toBeNull();
     expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
-    expect(screen.getByText("(0 đánh giá)")).toBeInTheDocument();
+    // REVIEW_RULE_003: trạng thái rỗng không kèm "(0 đánh giá)" (lặp ý).
+    expect(screen.queryByText("(0 đánh giá)")).toBeNull();
     expect(container.querySelector('[role="group"]')).toBeNull();
     expect(screen.queryByText("0.0")).not.toBeInTheDocument();
   });

@@ -9,7 +9,7 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
     ? { IN_STOCK: "In stock", OUT_OF_STOCK: "Out of stock" }
     : { IN_STOCK: "Còn hàng", OUT_OF_STOCK: "Hết hàng" };
 
-  return proxyBackendJson(`/api/v1/products/${id}`, {
+  return proxyBackendJson(req, `/api/v1/products/${id}`, {
     errorMessage: isEnglish ? "Couldn't load stock status." : "Không thể tải trạng thái kho.",
     transform: (json) => {
       const product =

@@ -9,7 +9,7 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
   const isEnglish = lang === "en";
   const query = lang === "en" || lang === "vi" ? `?lang=${lang}` : "";
 
-  return proxyBackendJson(`/api/v1/products/${id}/snapshot${query}`, {
+  return proxyBackendJson(req, `/api/v1/products/${id}/snapshot${query}`, {
     errorMessage: isEnglish ? "Couldn't load product information." : "Không thể tải thông tin sản phẩm.",
     transform: (json) => (json as { data?: unknown }).data ?? {},
   });

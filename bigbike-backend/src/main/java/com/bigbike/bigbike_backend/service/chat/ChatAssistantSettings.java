@@ -18,6 +18,8 @@ public class ChatAssistantSettings {
 
     public static final String KEY_ENABLED = "ai_assistant_enabled";
     public static final String KEY_DAILY_LIMIT = "ai_assistant_daily_limit";
+    public static final String KEY_SEARCH_AI_INTERPRETATION_ENABLED =
+            "ai_assistant_search_ai_interpretation_enabled";
     public static final String KEY_GREETING = "ai_assistant_greeting";
     public static final String KEY_QUICK_PROMPTS = "ai_assistant_quick_prompts";
     public static final String SETTING_GROUP = "ai_assistant";
@@ -57,6 +59,7 @@ public class ChatAssistantSettings {
         return new Snapshot(
                 readBoolean(settings, KEY_ENABLED, true),
                 readInteger(settings, KEY_DAILY_LIMIT, DEFAULT_DAILY_LIMIT),
+                readBoolean(settings, KEY_SEARCH_AI_INTERPRETATION_ENABLED, true),
                 localized(settings, KEY_GREETING, english, defaultGreeting(lang)),
                 prompts(localized(settings, KEY_QUICK_PROMPTS, english, ""), english),
                 new ChatContactResponse(
@@ -120,6 +123,7 @@ public class ChatAssistantSettings {
     public record Snapshot(
             boolean enabled,
             int dailyLimit,
+            boolean searchAiInterpretationEnabled,
             String greeting,
             List<String> quickPrompts,
             ChatContactResponse contacts,
@@ -127,6 +131,28 @@ public class ChatAssistantSettings {
             String openingHoursWeekday,
             String openingHoursWeekend
     ) {
+        public Snapshot(
+                boolean enabled,
+                int dailyLimit,
+                String greeting,
+                List<String> quickPrompts,
+                ChatContactResponse contacts,
+                String address,
+                String openingHoursWeekday,
+                String openingHoursWeekend
+        ) {
+            this(
+                    enabled,
+                    dailyLimit,
+                    true,
+                    greeting,
+                    quickPrompts,
+                    contacts,
+                    address,
+                    openingHoursWeekday,
+                    openingHoursWeekend);
+        }
+
         public Snapshot {
             quickPrompts = List.copyOf(quickPrompts);
         }

@@ -3,6 +3,9 @@ package com.bigbike.bigbike_backend.service.auth;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminInviteTokenEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminInviteTokenJpaRepository;
@@ -37,6 +40,7 @@ public class AdminInviteService {
     private final AdminInviteTokenJpaRepository tokenRepo;
     private final PasswordService passwordService;
     private final EmailDispatchService emailDispatch;
+    private final RateLimitService rateLimitService;
     private final String inviteBaseUrl;
 
     public AdminInviteService(
@@ -44,11 +48,13 @@ public class AdminInviteService {
             AdminInviteTokenJpaRepository tokenRepo,
             PasswordService passwordService,
             EmailDispatchService emailDispatch,
+            RateLimitService rateLimitService,
             @Value("${bigbike.mail.admin-invite-base-url:http://localhost:4000/accept-invite}") String inviteBaseUrl) {
         this.adminUserRepo = adminUserRepo;
         this.tokenRepo = tokenRepo;
         this.passwordService = passwordService;
         this.emailDispatch = emailDispatch;
+        this.rateLimitService = rateLimitService;
         this.inviteBaseUrl = inviteBaseUrl;
     }
 
@@ -88,7 +94,7 @@ public class AdminInviteService {
             emailDispatch.send(user.getEmail(), "Lời mời quản trị BigBike — đặt mật khẩu", "admin-invite", ctx);
             emailSent = true;
         } else {
-            log.info("Mail not configured — admin invite email skipped for {}; link must be delivered manually.", user.getEmail());
+            log.info("Mail not configured — admin invite email skipped; link must be delivered manually.");
         }
 
         return new InviteResult(user.getEmail(), inviteUrl, emailSent, expiresAt);
@@ -108,6 +114,7 @@ public class AdminInviteService {
     /** Validates a raw token and returns the invitee info for the set-password page. */
     @Transactional(readOnly = true)
     public InviteInfo validateToken(String rawToken) {
+        rateLimitService.checkOrThrow(RateLimitTier.PASSWORD_RESET, RateLimitScope.IDENTITY, rawToken);
         AdminInviteTokenEntity token = requireValidToken(rawToken);
         AdminUserEntity user = adminUserRepo.findById(token.getAdminUserId())
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
@@ -117,6 +124,7 @@ public class AdminInviteService {
     /** Accepts an invite: sets the password and flips the account to ACTIVE, consuming the token. */
     @Transactional
     public void acceptInvite(String rawToken, String newPassword) {
+        rateLimitService.checkOrThrow(RateLimitTier.PASSWORD_RESET, RateLimitScope.IDENTITY, rawToken);
         if (newPassword == null || newPassword.length() < 8) {
             throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
         }
@@ -134,7 +142,7 @@ public class AdminInviteService {
         token.setUsedAt(now);
         tokenRepo.save(token);
 
-        log.info("Admin invite accepted; account {} is now ACTIVE.", user.getId());
+        log.info("Admin invite accepted; account is now ACTIVE.");
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────

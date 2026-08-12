@@ -57,6 +57,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<!-- Shared, atomic rate-limit state for horizontally scaled backend instances. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-flyway</artifactId>
@@ -157,10 +162,15 @@
 			<version>0.4.20</version>
 		</dependency>
 
-		<!-- Bucket4j: in-process rate limiting per IP -->
+		<!-- Bucket4j: local fallback plus Redis-backed distributed rate limiting. -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>
 			<artifactId>bucket4j-core</artifactId>
+			<version>8.10.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-redis</artifactId>
 			<version>8.10.1</version>
 		</dependency>
 

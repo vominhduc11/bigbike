@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { env } from "@/env";
+import { backendRequestHeaders, passthroughBackendError } from "@/lib/api/backend-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +43,11 @@ export async function GET(req: Request) {
     if (lang) url.searchParams.set("lang", lang);
 
     const res = await fetch(url.toString(), {
-      next: { revalidate: 30 },
-      headers: { Accept: "application/json" },
+      cache: "no-store",
+      headers: backendRequestHeaders(req),
     });
 
-    if (!res.ok) return NextResponse.json(EMPTY);
+    if (!res.ok) return passthroughBackendError(res);
 
     const json = (await res.json()) as {
       data?: {

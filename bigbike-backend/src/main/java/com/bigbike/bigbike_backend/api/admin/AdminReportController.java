@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
@@ -50,6 +51,7 @@ public class AdminReportController {
     private final AdminCustomerCsvExportService adminCustomerCsvExportService;
     private final DevAdminAuthService devAdminAuthService;
     private final ClientIpResolver clientIpResolver;
+    private final RateLimitConcurrencyGuard rateLimitConcurrencyGuard;
 
     @GetMapping("/analytics")
     public AdminAnalyticsResponse getAnalytics(
@@ -77,26 +79,36 @@ public class AdminReportController {
             throw ValidationException.fromField("status", "INVALID_ORDER_STATUS",
                     "Unknown order status: " + status);
         }
-        adminReportService.recordExportAudit(
-                actor.id(),
-                "ORDERS",
-                filters(
-                        "searchApplied", q != null && !q.isBlank(),
-                        "status", blankToNull(status),
-                        "from", blankToNull(from),
-                        "to", blankToNull(to)
-                ),
-                null,
-                true,
-                clientIpResolver.resolve(request),
-                request.getHeader("User-Agent")
-        );
-        return completeOrderCsvResponse(
-                outputStream -> adminOrderCsvExportService.writeTo(
-                        outputStream, status, q, from, to
-                ),
-                "orders_" + LocalDate.now().format(FILE_DATE) + ".csv"
-        );
+        RateLimitConcurrencyGuard.Lease exportLease = rateLimitConcurrencyGuard.acquireAdminExport();
+        try {
+            adminReportService.recordExportAudit(
+                    actor.id(),
+                    "ORDERS",
+                    filters(
+                            "searchApplied", q != null && !q.isBlank(),
+                            "status", blankToNull(status),
+                            "from", blankToNull(from),
+                            "to", blankToNull(to)
+                    ),
+                    null,
+                    true,
+                    clientIpResolver.resolve(request),
+                    request.getHeader("User-Agent")
+            );
+            return completeOrderCsvResponse(
+                    outputStream -> {
+                        try {
+                            adminOrderCsvExportService.writeTo(outputStream, status, q, from, to);
+                        } finally {
+                            exportLease.close();
+                        }
+                    },
+                    "orders_" + LocalDate.now().format(FILE_DATE) + ".csv"
+            );
+        } catch (RuntimeException | Error ex) {
+            exportLease.close();
+            throw ex;
+        }
     }
 
     @GetMapping("/customers/export")
@@ -113,26 +125,36 @@ public class AdminReportController {
             throw ValidationException.fromField("status", "INVALID_CUSTOMER_STATUS",
                     "Unknown customer status: " + status);
         }
-        adminReportService.recordExportAudit(
-                actor.id(),
-                "CUSTOMERS",
-                filters(
-                        "searchApplied", q != null && !q.isBlank(),
-                        "status", blankToNull(status),
-                        "synthetic", synthetic,
-                        "emailVerified", emailVerified
-                ),
-                null,
-                true,
-                clientIpResolver.resolve(request),
-                request.getHeader("User-Agent")
-        );
-        return completeCustomerCsvResponse(
-                outputStream -> adminCustomerCsvExportService.writeTo(
-                        outputStream, q, status, synthetic, emailVerified
-                ),
-                "customers_" + LocalDate.now().format(FILE_DATE) + ".csv"
-        );
+        RateLimitConcurrencyGuard.Lease exportLease = rateLimitConcurrencyGuard.acquireAdminExport();
+        try {
+            adminReportService.recordExportAudit(
+                    actor.id(),
+                    "CUSTOMERS",
+                    filters(
+                            "searchApplied", q != null && !q.isBlank(),
+                            "status", blankToNull(status),
+                            "synthetic", synthetic,
+                            "emailVerified", emailVerified
+                    ),
+                    null,
+                    true,
+                    clientIpResolver.resolve(request),
+                    request.getHeader("User-Agent")
+            );
+            return completeCustomerCsvResponse(
+                    outputStream -> {
+                        try {
+                            adminCustomerCsvExportService.writeTo(outputStream, q, status, synthetic, emailVerified);
+                        } finally {
+                            exportLease.close();
+                        }
+                    },
+                    "customers_" + LocalDate.now().format(FILE_DATE) + ".csv"
+            );
+        } catch (RuntimeException | Error ex) {
+            exportLease.close();
+            throw ex;
+        }
     }
 
     private void validateDateRange(String from, String to) {

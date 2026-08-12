@@ -797,8 +797,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
      `.sub-menu{display:none}` của stylesheet cũ (load sau globals).
      Màu/viền dùng token khớp đúng WP live: chữ nghỉ gray-500 (#6f6f6f) =
      --bb-text-secondary, hover đỏ tươi (#ff0c09) = --bb-brand-primary, viền
-     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav
-     (Barlow Condensed). */
+     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav. */
   body .container .navigation ul .navigation--item > .sub-menu,
   body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
     display: block;

@@ -50,7 +50,8 @@ describe("ProductCard - hiển thị đánh giá", () => {
     );
     expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
     expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
-    expect(screen.getByText("0 đánh giá")).toBeInTheDocument();
+    // REVIEW_RULE_003: trạng thái rỗng không kèm "0 đánh giá" (lặp ý).
+    expect(screen.queryByText("0 đánh giá")).toBeNull();
   });
 
   it("không hiển thị điểm giả khi thiếu số lượt đánh giá", () => {

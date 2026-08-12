@@ -44,7 +44,9 @@ export function RatingDisplay({
         <span className="tabular-nums">{state.rating.toFixed(1)}</span>
       ) : null}
       {state.kind !== "rated" && showEmptyLabel ? <span>{statusLabel}</span> : null}
-      <span>{countLabel}</span>
+      {/* Trạng thái rỗng chỉ nói "Chưa có đánh giá" — thêm "0 đánh giá" là lặp ý
+          (REVIEW_RULE_003). Count vẫn hiện ở trạng thái rated/inconsistent. */}
+      {state.kind !== "empty" ? <span>{countLabel}</span> : null}
     </span>
   );
 }

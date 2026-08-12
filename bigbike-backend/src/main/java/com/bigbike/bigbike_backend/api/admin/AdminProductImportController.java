@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.ProductImportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +36,7 @@ public class AdminProductImportController extends AdminControllerSupport {
     private final ProductImportService productImportService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final RateLimitConcurrencyGuard rateLimitConcurrencyGuard;
 
     @PostMapping(value = "/validate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiDataResponse<ImportReportResponse> validateImport(
@@ -42,7 +44,9 @@ public class AdminProductImportController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(productImportService.validateImport(file), request);
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminImport()) {
+            return apiResponseFactory.data(productImportService.validateImport(file), request);
+        }
     }
 
     @PostMapping(value = "/commit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -53,19 +57,23 @@ public class AdminProductImportController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         Set<String> skip = parseSkipRowKeys(skipRowKeys);
-        return apiResponseFactory.data(
-                productImportService.commitImport(file, skip, resolveAdminId()), request);
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminImport()) {
+            return apiResponseFactory.data(
+                    productImportService.commitImport(file, skip, resolveAdminId()), request);
+        }
     }
 
     /** Full JSON export shape, scoped to one product (array of one). */
     @GetMapping("/export/{id}")
     public ResponseEntity<byte[]> exportProduct(@PathVariable String id, HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        ProductImportService.ProductExportFile file = productImportService.exportProductAsTemplateJson(id);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.filename() + "\"")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(file.content());
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminExport()) {
+            ProductImportService.ProductExportFile file = productImportService.exportProductAsTemplateJson(id);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.filename() + "\"")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(file.content());
+        }
     }
 
     private static Set<String> parseSkipRowKeys(String raw) {

@@ -6,7 +6,7 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
   const isEnglish = new URL(req.url).searchParams.get("lang") === "en";
 
-  return proxyBackendJson(`/api/v1/products/${id}`, {
+  return proxyBackendJson(req, `/api/v1/products/${id}`, {
     errorMessage: isEnglish ? "Couldn't load product variants." : "Không thể tải biến thể sản phẩm.",
     transform: (json) => {
       const product =

@@ -1,103 +1,31 @@
 package com.bigbike.bigbike_backend.config;
 
-import com.bigbike.bigbike_backend.api.common.ApiError;
-import com.bigbike.bigbike_backend.api.common.ApiErrorResponse;
-import com.bigbike.bigbike_backend.api.common.ApiMetaFactory;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitDecision;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitPolicyCatalog;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitResponseWriter;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tools.jackson.databind.ObjectMapper;
 
-/**
- * Per-IP rate limiting for sensitive endpoints using Bucket4j.
- *
- * Limits (per IP, refill per minute):
- *   login endpoints         → 5 req/min
- *   register endpoint       → 3 req/min
- *   token refresh           → 30 req/min
- *   cart mutations          → 30 req/min
- *   checkout                → 5 req/min
- *   order lookup (GET)      → 20 req/min
- *   search (GET)            → 60 req/min
- *   public review submit    → 5 req/min
- *   Bi chat messages        → 10 req/min
- */
+/** First limiter pass: canonical client IP plus public opaque identifiers, before auth work. */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO, CHAT, OAUTH }
-
-    /**
-     * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies
-     * (comma-separated). Each entry is either an exact IP (e.g. {@code 127.0.0.1}) or a
-     * CIDR range (e.g. {@code 172.16.0.0/12}) — the latter is needed when the backend
-     * runs behind a reverse proxy on a Docker bridge / private subnet whose gateway IP
-     * is not fixed.
-     */
-    private final List<ProxyMatcher> trustedProxies;
-    private final ApiMetaFactory apiMetaFactory;
-    private final ObjectMapper objectMapper;
-
-    public RateLimitingFilter(
-            @Value("${bigbike.trusted-proxies:127.0.0.1,::1}") String trustedProxiesConfig,
-            ApiMetaFactory apiMetaFactory,
-            ObjectMapper objectMapper
-    ) {
-        this.apiMetaFactory = apiMetaFactory;
-        this.objectMapper = objectMapper;
-        this.trustedProxies = Arrays.stream(trustedProxiesConfig.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(ProxyMatcher::parse)
-                .filter(m -> m != null)
-                .toList();
-    }
-
-    // Bounded LRU maps: evict oldest entry when size > MAX_BUCKET_ENTRIES.
-    // Prevents unbounded memory growth under DDoS with unique source IPs.
-    private static final int MAX_BUCKET_ENTRIES = 50_000;
-
-    private final Map<String, Bucket> loginBuckets               = boundedMap();
-    private final Map<String, Bucket> registerBuckets            = boundedMap();
-    private final Map<String, Bucket> passwordResetBuckets       = boundedMap();
-    private final Map<String, Bucket> resendVerificationBuckets  = boundedMap();
-    private final Map<String, Bucket> refreshBuckets             = boundedMap();
-    private final Map<String, Bucket> cartBuckets                = boundedMap();
-    private final Map<String, Bucket> checkoutBuckets            = boundedMap();
-    private final Map<String, Bucket> orderLookupBuckets         = boundedMap();
-    private final Map<String, Bucket> searchBuckets              = boundedMap();
-    private final Map<String, Bucket> reviewBuckets              = boundedMap();
-    private final Map<String, Bucket> reviewPhotoBuckets         = boundedMap();
-    private final Map<String, Bucket> chatBuckets                = boundedMap();
-    private final Map<String, Bucket> oauthBuckets               = boundedMap();
-
-    private static Map<String, Bucket> boundedMap() {
-        return Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
-                return size() > MAX_BUCKET_ENTRIES;
-            }
-        });
-    }
+    private final ClientIpResolver clientIpResolver;
+    private final RateLimitPolicyCatalog policyCatalog;
+    private final RateLimitService rateLimitService;
+    private final RateLimitResponseWriter responseWriter;
 
     @Override
     protected void doFilterInternal(
@@ -105,228 +33,51 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain
     ) throws ServletException, IOException {
-
-        LimitTier tier = resolveTier(request);
+        RateLimitTier tier = policyCatalog.resolve(request).orElse(null);
         if (tier == null) {
             chain.doFilter(request, response);
             return;
         }
 
-        String clientIp = resolveClientIp(request);
-        Bucket bucket = bucketFor(tier, clientIp);
-
-        if (bucket.tryConsume(1)) {
-            chain.doFilter(request, response);
-        } else {
-            sendRateLimitResponse(request, response);
+        if (!consumeOrRespond(request, response, tier, RateLimitScope.IP, clientIpResolver.resolve(request))) {
+            return;
         }
-    }
-
-    private LimitTier resolveTier(HttpServletRequest request) {
-        String path   = request.getServletPath();
-        String method = request.getMethod();
-
-        if ("POST".equalsIgnoreCase(method)) {
-            if ("/api/v1/auth/login".equals(path) || "/api/v1/customer/auth/login".equals(path)) {
-                return LimitTier.LOGIN;
-            }
-            if ("/api/v1/customer/auth/register".equals(path)) {
-                return LimitTier.REGISTER;
-            }
-            if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)
-                    || "/api/v1/auth/admin/accept-invite".equals(path)) {
-                return LimitTier.PASSWORD_RESET;
-            }
-            if ("/api/v1/customer/auth/resend-verification".equals(path)) {
-                return LimitTier.RESEND_VERIFICATION;
-            }
-            if ("/api/v1/auth/refresh".equals(path) || "/api/v1/customer/auth/refresh".equals(path)) {
-                return LimitTier.REFRESH;
-            }
-            if ("/api/v1/checkout".equals(path)) {
-                return LimitTier.CHECKOUT;
-            }
-            if ("/api/v1/chat/messages".equals(path)) {
-                return LimitTier.CHAT;
-            }
-            // Public review photo upload: POST /api/v1/products/{productId}/reviews/photos
-            if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews/photos")) {
-                return LimitTier.REVIEW_PHOTO;
-            }
-            // Public review submit: POST /api/v1/products/{productId}/reviews
-            if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews")) {
-                return LimitTier.REVIEW;
+        if (tier == RateLimitTier.INTERNAL) {
+            if (!consumeOrRespond(request, response, tier, RateLimitScope.INTERNAL_TOKEN,
+                    request.getHeader("X-Internal-Token"))) {
+                return;
             }
         }
-        if (path.startsWith("/api/v1/cart") && ("POST".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method))) {
-            return LimitTier.CART;
-        }
-        if ("GET".equalsIgnoreCase(method)) {
-            if ("/api/v1/orders/lookup".equals(path)) {
-                return LimitTier.ORDER_LOOKUP;
-            }
-            if ("/api/v1/search-suggest".equals(path)) {
-                return LimitTier.SEARCH;
-            }
-            // Social login round-trip. Both are unauthenticated, and the callback makes two
-            // outbound calls to Google/Facebook per request — without a cap it is a free relay.
-            if (path.startsWith("/api/v1/customer/auth/oauth/")
-                    && (path.endsWith("/authorize") || path.endsWith("/callback"))) {
-                return LimitTier.OAUTH;
+        if (tier == RateLimitTier.ORDER_LOOKUP) {
+            String lookup = request.getParameter("orderNumber") + "\n" + request.getParameter("orderKey");
+            if (!consumeOrRespond(request, response, tier, RateLimitScope.IDENTITY, lookup)) {
+                return;
             }
         }
-        return null;
-    }
-
-    private Bucket bucketFor(LimitTier tier, String clientIp) {
-        return switch (tier) {
-            case LOGIN         -> loginBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(5, Duration.ofMinutes(1)));
-            case REGISTER      -> registerBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(3, Duration.ofMinutes(1)));
-            case PASSWORD_RESET -> passwordResetBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(5, Duration.ofMinutes(1)));
-            case RESEND_VERIFICATION -> resendVerificationBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(3, Duration.ofHours(1)));
-            case REFRESH       -> refreshBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(30, Duration.ofMinutes(1)));
-            case CART          -> cartBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(30, Duration.ofMinutes(1)));
-            case CHECKOUT      -> checkoutBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(5, Duration.ofMinutes(1)));
-            case ORDER_LOOKUP  -> orderLookupBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(20, Duration.ofMinutes(1)));
-            case SEARCH        -> searchBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(60, Duration.ofMinutes(1)));
-            case REVIEW        -> reviewBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(5, Duration.ofMinutes(1)));
-            // A single review can attach up to 10 photos (one request each) — allow a generous burst.
-            case REVIEW_PHOTO  -> reviewPhotoBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(30, Duration.ofMinutes(1)));
-            case CHAT          -> chatBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(10, Duration.ofMinutes(1)));
-            // Generous enough for a customer retrying a failed consent screen, tight enough that
-            // the callback cannot be used to hammer the provider APIs.
-            case OAUTH         -> oauthBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(20, Duration.ofMinutes(1)));
-        };
-    }
-
-    private static Bucket newBucket(long capacity, Duration period) {
-        return Bucket.builder()
-                .addLimit(Bandwidth.builder()
-                        .capacity(capacity)
-                        .refillIntervally(capacity, period)
-                        .build())
-                .build();
-    }
-
-    private String resolveClientIp(HttpServletRequest request) {
-        String remoteAddr = request.getRemoteAddr();
-        if (isTrustedProxy(remoteAddr)) {
-            String forwarded = request.getHeader("X-Forwarded-For");
-            if (forwarded != null && !forwarded.isBlank()) {
-                String candidate = forwarded.split(",")[0].trim();
-                if (!candidate.isEmpty() && isValidIp(candidate)) {
-                    return candidate;
-                }
+        if (tier == RateLimitTier.OAUTH) {
+            String state = request.getParameter("state");
+            if (state != null && !state.isBlank()
+                    && !consumeOrRespond(request, response, tier, RateLimitScope.IDENTITY, state)) {
+                return;
             }
         }
-        return remoteAddr;
+        chain.doFilter(request, response);
     }
 
-    private static boolean isValidIp(String ip) {
-        try {
-            InetAddress.getByName(ip);
+    private boolean consumeOrRespond(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            RateLimitTier tier,
+            RateLimitScope scope,
+            String subject
+    ) throws IOException {
+        RateLimitDecision decision = rateLimitService.check(tier, scope, subject);
+        if (decision.allowed()) {
             return true;
-        } catch (UnknownHostException e) {
-            return false;
         }
-    }
-
-    private boolean isTrustedProxy(String ip) {
-        if (ip == null) {
-            return false;
-        }
-        for (ProxyMatcher matcher : trustedProxies) {
-            if (matcher.matches(ip)) {
-                return true;
-            }
-        }
+        log.warn("Rate limit rejected route={} tier={} scope={} store={}",
+                policyCatalog.routeGroup(tier), tier.key(), scope.key(), decision.storeMode());
+        responseWriter.write(request, response, decision);
         return false;
-    }
-
-    /**
-     * Matches a remote address against a trusted-proxy config entry — either an exact
-     * IP or a CIDR range. Comparison is done on raw {@link InetAddress} bytes so IPv4
-     * and IPv6 (and forms like {@code ::1} vs {@code 0:0:0:0:0:0:0:1}) compare correctly.
-     */
-    private static final class ProxyMatcher {
-        private final byte[] network;
-        private final int prefixBits;       // -1 → exact-IP match
-
-        private ProxyMatcher(byte[] network, int prefixBits) {
-            this.network = network;
-            this.prefixBits = prefixBits;
-        }
-
-        /** Parses one config entry; returns null (and logs) when the entry is malformed. */
-        static ProxyMatcher parse(String entry) {
-            try {
-                int slash = entry.indexOf('/');
-                if (slash < 0) {
-                    return new ProxyMatcher(InetAddress.getByName(entry).getAddress(), -1);
-                }
-                byte[] network = InetAddress.getByName(entry.substring(0, slash)).getAddress();
-                int prefix = Integer.parseInt(entry.substring(slash + 1).trim());
-                if (prefix < 0 || prefix > network.length * 8) {
-                    log.warn("Ignoring trusted-proxy entry with invalid CIDR prefix: {}", entry);
-                    return null;
-                }
-                return new ProxyMatcher(network, prefix);
-            } catch (UnknownHostException | NumberFormatException e) {
-                log.warn("Ignoring malformed trusted-proxy entry '{}': {}", entry, e.getMessage());
-                return null;
-            }
-        }
-
-        boolean matches(String ip) {
-            byte[] addr;
-            try {
-                addr = InetAddress.getByName(ip).getAddress();
-            } catch (UnknownHostException e) {
-                return false;
-            }
-            if (addr.length != network.length) {
-                return false; // IPv4 vs IPv6 mismatch
-            }
-            if (prefixBits < 0) {
-                return Arrays.equals(addr, network);
-            }
-            int fullBytes = prefixBits / 8;
-            for (int i = 0; i < fullBytes; i++) {
-                if (addr[i] != network[i]) {
-                    return false;
-                }
-            }
-            int remainingBits = prefixBits % 8;
-            if (remainingBits == 0) {
-                return true;
-            }
-            int mask = 0xFF << (8 - remainingBits);
-            return (addr[fullBytes] & mask) == (network[fullBytes] & mask);
-        }
-    }
-
-    private void sendRateLimitResponse(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        ApiErrorResponse body = new ApiErrorResponse(
-                new ApiError(
-                        "RATE_LIMIT_EXCEEDED",
-                        "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
-                        List.of()),
-                apiMetaFactory.from(request));
-        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

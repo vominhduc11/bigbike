@@ -9,6 +9,9 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitScope;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
@@ -41,6 +44,7 @@ public class CustomerAuthService {
     private final CustomerAvatarStorageService customerAvatarStorageService;
     private final AdminCustomerWsService adminCustomerWsService;
     private final CustomerOAuthLinkJpaRepository oauthLinkRepo;
+    private final RateLimitService rateLimitService;
 
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
@@ -54,6 +58,12 @@ public class CustomerAuthService {
         }
         if (req.password() == null || req.password().length() < 8) {
             throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
+        }
+        if (normalizedEmail != null) {
+            rateLimitService.checkOrThrow(RateLimitTier.REGISTER, RateLimitScope.IDENTITY, normalizedEmail);
+        }
+        if (normalizedPhone != null) {
+            rateLimitService.checkOrThrow(RateLimitTier.REGISTER, RateLimitScope.IDENTITY, normalizedPhone);
         }
         // Generic message prevents account enumeration via register endpoint.
         if (normalizedEmail != null && customerRepo.findByEmail(normalizedEmail).isPresent()) {
@@ -100,7 +110,8 @@ public class CustomerAuthService {
 
     @Transactional
     public CustomerAuthResult login(CustomerLoginRequest req, String ipAddress, String userAgent) {
-        String login = req.login();
+        String login = normalizeLogin(req.login());
+        rateLimitService.checkOrThrow(RateLimitTier.LOGIN, RateLimitScope.IDENTITY, login);
         CustomerEntity customer = findByEmailOrPhone(login);
 
         if (customer == null) {
@@ -254,6 +265,18 @@ public class CustomerAuthService {
             return customerRepo.findByEmail(login.toLowerCase(Locale.ROOT).trim()).orElse(null);
         }
         return findByPhoneFlexible(PhoneNumbers.normalize(login)).orElse(null);
+    }
+
+    private static String normalizeLogin(String login) {
+        if (login == null) {
+            return "";
+        }
+        String trimmed = login.trim();
+        if (trimmed.contains("@")) {
+            return trimmed.toLowerCase(Locale.ROOT);
+        }
+        String normalizedPhone = PhoneNumbers.normalize(trimmed);
+        return normalizedPhone == null ? trimmed : normalizedPhone;
     }
 
     /**
