@@ -87,7 +87,7 @@ describe("FloatingChat", () => {
     expect(screen.getByText("0901234567")).toBeInTheDocument();
   });
 
-  it("shows branded onboarding tiles, a local Bi avatar, and a safe avatar fallback", async () => {
+  it("shows branded onboarding tiles, the Cloudinary Bi avatar, and a safe avatar fallback", async () => {
     api.fetchChatAvailability.mockResolvedValue({
       mode: "AI",
       greeting: "Xin chào từ Bi",
@@ -104,10 +104,10 @@ describe("FloatingChat", () => {
     expect(document.body.querySelectorAll("[data-bi-onboarding] button")).toHaveLength(4);
     expect(screen.getByRole("button", { name: "talkToStaff" })).toBeInTheDocument();
 
-    const avatar = document.body.querySelector('[data-bi-avatar] img[src="/brand/bi-assistant.png"]');
+    const avatar = document.body.querySelector('[data-bi-avatar] img[src="https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png"]');
     expect(avatar).toBeInTheDocument();
     fireEvent.error(avatar!);
-    expect(document.body.querySelector('[data-bi-avatar] img[src="/brand/bi-assistant.png"]')).not.toBeInTheDocument();
+    expect(document.body.querySelector('[data-bi-avatar] img[src="https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png"]')).not.toBeInTheDocument();
   });
 
   it("locks the composer for CONTACT and opens the inline contact card on demand", async () => {

@@ -153,7 +153,7 @@ test("Bi loads availability once, shows AI onboarding, and sends a quick reply t
   const onboarding = biDialog(page).locator("[data-bi-onboarding]");
   await expect(onboarding).toBeVisible();
   await expect(onboarding.getByText("Anh/chị đang tìm loại sản phẩm nào?")).toBeVisible();
-  await expect(biDialog(page).locator('[data-bi-avatar] img[src*="bi-assistant.png"]')).toHaveCount(2);
+  await expect(biDialog(page).locator('[data-bi-avatar] img[src*="res.cloudinary.com"]')).toHaveCount(2);
   expect(cloudinaryRequests).toEqual([]);
   const panelBox = await biDialog(page).boundingBox();
   const viewport = page.viewportSize();

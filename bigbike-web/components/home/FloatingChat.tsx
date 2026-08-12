@@ -73,7 +73,7 @@ type ComposerAction = {
 };
 
 const DEFAULT_MAX_TURNS = 12;
-const BI_AVATAR_SRC = "/brand/bi-assistant.png";
+const BI_AVATAR_SRC = "https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png";
 
 type BiAvatarSize = "launcher" | "header" | "message" | "minimized";
 
@@ -102,7 +102,7 @@ function BiAvatar({
     <span
       data-bi-avatar
       aria-hidden="true"
-      className={`relative inline-flex shrink-0 overflow-hidden rounded-full! bg-chat ${avatar.className}`}
+      className={`relative inline-flex shrink-0 overflow-hidden rounded-full! ${failed ? "bg-chat" : "bg-transparent"} ${avatar.className}`}
     >
       {failed ? (
         <span className="flex size-full items-center justify-center text-primary-foreground">

@@ -251,6 +251,12 @@ const nextConfig: NextConfig = {
         hostname: "platform-lookaside.fbsbx.com",
         pathname: "/**",
       },
+      // BI assistant avatar hosted on the owner-provided Cloudinary asset.
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/daohufjec/image/upload/**",
+      },
       // Dynamic: MinIO on any network IP configured via BIGBIKE_LEGACY_UPLOADS_BASE
       ...(dynamicMediaPattern ? [dynamicMediaPattern] : []),
     ],
