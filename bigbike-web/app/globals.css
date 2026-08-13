@@ -373,7 +373,7 @@ body {
   flex-grow: 1;
 }
 
-.bb-main:has(.bb-home) {
+.bb-main:has([data-bb-focus="seo_home"]) {
   padding-bottom: 0;
 }
 
@@ -3462,7 +3462,7 @@ body .banner-ads > .container > .row {
    desktop mode and CSS desktop mode activate at the same viewport width. */
 @media (min-width: 768px) {
   /* slide-content padding-bottom + carousel padding-bottom migrated to inline
-     (md:pb-14 / pb-16). swiper-wrapper height reset stays — it clears Swiper's
+     (md:pb-8 / pb-8). swiper-wrapper height reset stays — it clears Swiper's
      stale inline autoHeight value on resize to desktop (mechanism). */
   .bb-home .bb-exp-carousel .swiper-wrapper {
     height: auto !important;

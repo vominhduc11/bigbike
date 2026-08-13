@@ -34,15 +34,14 @@ export function RatingBlock({
     : state.kind === "empty"
       ? tb("emptyRatingAria")
       : tb("unavailableRatingAria", { count: state.count });
+  const countLabel = tb("ratingCount", { count: state.count });
 
   if (!hasRatedReview) {
     return (
       <div className="mt-5 font-body text-a4-content text-muted-foreground">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label={ratingAriaLabel}>
           <RatingStars value={state.rating} empty ariaLabel={ratingAriaLabel} />
-          <span>{state.kind === "empty" ? tb("noReviews") : tb("ratingUnavailable")}</span>
-          {/* Rỗng: "Chưa có đánh giá" đã đủ, thêm "0 đánh giá" là lặp ý (REVIEW_RULE_003). */}
-          {state.kind !== "empty" ? <span>{tb("ratingCount", { count: state.count })}</span> : null}
+          <span>{countLabel}</span>
         </div>
         <p className="m-0 mt-2">
           {previewMode ? (
@@ -64,11 +63,11 @@ export function RatingBlock({
           mất sao. text-a4-content = 18px khớp starSize cũ và thẻ sản phẩm. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label={ratingAriaLabel}>
         <RatingStars value={state.rating} ariaLabel={ratingAriaLabel} />
-        <span itemProp="ratingValue" className="tabular-nums">{state.rating.toFixed(1)}/5</span>
+        <meta itemProp="ratingValue" content={state.rating.toFixed(1)} />
         {/* reviewCount đi bằng <meta> để microdata vẫn đủ mà không in số lượt 2 lần
-            cạnh nhãn "{n} đánh giá" ngay bên phải. */}
+            cạnh số lượt hiển thị ngay bên phải. */}
         <meta itemProp="reviewCount" content={String(state.count)} />
-        <span>{tb("ratingCount", { count: state.count })}</span>
+        <span>{countLabel}</span>
       </div>
       <p className="mb-0 mt-2">
         {" — "}

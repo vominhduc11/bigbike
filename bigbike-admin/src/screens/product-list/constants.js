@@ -11,6 +11,7 @@ export const INITIAL_QUERY = {
   stockState: 'ALL',
   brandId: '',
   categoryId: '',
+  gender: '',
   homepageBlock: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,

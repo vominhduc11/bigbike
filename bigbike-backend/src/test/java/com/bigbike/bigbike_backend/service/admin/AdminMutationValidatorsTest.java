@@ -367,7 +367,7 @@ class AdminMutationValidatorsTest {
         AdminMutationValidators.validateProductFieldsRequired(entity, false, errors);
 
         assertThat(fields(errors)).containsExactlyInAnyOrder(
-                "name", "slug", "categoryIds", "brandId", "gender", "sku", "retailPrice");
+                "name", "slug", "categoryIds", "brandId", "sku", "retailPrice");
     }
 
     @Test
@@ -378,7 +378,7 @@ class AdminMutationValidatorsTest {
         AdminMutationValidators.validateProductFieldsRequired(entity, true, errors);
 
         assertThat(fields(errors)).containsExactlyInAnyOrder(
-                "name", "slug", "categoryIds", "brandId", "gender", "sku", "retailPrice", "imageUrl");
+                "name", "slug", "categoryIds", "brandId", "sku", "retailPrice", "imageUrl");
     }
 
     @Test
@@ -553,7 +553,7 @@ class AdminMutationValidatorsTest {
         entity.setSlug("mu-bao-hiem-ls2-ff800");
         entity.setCategories(List.of(new CategoryEntity()));
         entity.setBrand(new BrandEntity());
-        entity.setGender("Unisex");
+        entity.setGender("Nam");
         entity.setSku("LS2-FF800");
         entity.setRetailPrice(BigDecimal.valueOf(3690000));
         return entity;

@@ -64,7 +64,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Two %s", "nameEN": "%s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 1000000
                   }
                 ]
@@ -111,7 +111,7 @@ class ProductImportRoundTripTest {
                     "sku": "%s",
                     "categoryId": "uncategorized",
                     "brandId": "uncategorized-brand",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 1680000,
                     "name": { "nameVI": "Tui binh xang %s", "nameEN": "Tank bag %s" },
                     "slug": { "slugVI": "%s" }
@@ -146,7 +146,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Nhiều danh mục %s", "nameEN": "Multi category %s" },
                     "categorySlugs": ["ao-giap-bao-ho", "mu-bao-hiem", "ao-giap-bao-ho"],
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 1000000
                   }
                 ]
@@ -189,7 +189,7 @@ class ProductImportRoundTripTest {
                     "sku": "%s",
                     "slug": { "slugVI": "%s" },
                     "name": { "nameVI": "Không danh mục %s", "nameEN": "No category %s" },
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 500000
                   }
                 ]
@@ -228,7 +228,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Giữ danh mục %s", "nameEN": "Keep category %s" },
                     "categorySlugs": ["mu-bao-hiem"],
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 700000
                   }
                 ]
@@ -342,7 +342,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Three %s", "nameEN": "Round Trip Three EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 900000,
                     "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đăng bán" }
                   }
@@ -402,7 +402,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Four %s", "nameEN": "Round Trip Four EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 900000,
                     "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đăng bán" }
                   }
@@ -460,7 +460,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Five %s", "nameEN": "Round Trip Five EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 800000,
                     "variants": [
                       { "sku": "%s-DEN", "retailPrice": 810000, "isAvailable": true,
@@ -511,7 +511,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Six Bad %s", "nameEN": "Round Trip Six Bad EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex"
+                    "gender": "Nam"
                   },
                   {
                     "sku": "%s",
@@ -519,7 +519,7 @@ class ProductImportRoundTripTest {
                     "name": { "nameVI": "Round Trip Six Ok %s", "nameEN": "Round Trip Six Ok EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
-                    "gender": "Unisex",
+                    "gender": "Nam",
                     "retailPrice": 700000
                   }
                 ]

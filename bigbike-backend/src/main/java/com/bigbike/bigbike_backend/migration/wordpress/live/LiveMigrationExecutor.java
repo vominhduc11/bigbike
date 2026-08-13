@@ -841,7 +841,7 @@ final class LiveMigrationExecutor {
             statement.setTimestamp(i++, Timestamp.from(createdAt));
             statement.setBigDecimal(i++, mapped.weightKg());
             statement.setString(i++, "NONE");
-            statement.setString(i++, required(plan.targetGender(), "product gender"));
+            statement.setString(i++, trimToNull(plan.targetGender()));
             statement.setString(i++, gallery);
             statement.setString(i++, videos);
             statement.setBoolean(i++, available);
@@ -911,7 +911,7 @@ final class LiveMigrationExecutor {
                             "/product/" + plan.targetSlug() + "/"), plan.targetId());
             case "brandId" -> updateNullValue(connection, "products", "brand_id",
                     requiredBrandId(connection, plan.targetBrandSlug()), plan.targetId());
-            case "gender" -> updateBlankString(
+            case "gender" -> updateBlankNullableString(
                     connection, "products", "gender", plan.targetGender(), plan.targetId());
             case "image" -> updateProductAsset(connection, plan.targetId(), "image",
                     requiredMedia(media.byAttachment().get(mapped.thumbnailId()), "product image"));
@@ -1515,6 +1515,24 @@ final class LiveMigrationExecutor {
             statement.setString(1, source);
             statement.setString(2, id);
             assertOne(statement.executeUpdate(), safeTable + " blank fill " + safeColumn, id);
+        }
+    }
+
+    private void updateBlankNullableString(
+            Connection connection, String table, String column, String value, String id) throws SQLException {
+        String safeTable = identifier(table);
+        String safeColumn = identifier(column);
+        String sql = "update " + safeTable + " set " + safeColumn + "=?,updated_at=now() "
+                + "where id=? and (" + safeColumn + " is null or btrim(" + safeColumn + ")='')";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            String normalized = trimToNull(value);
+            if (normalized == null) {
+                statement.setNull(1, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(1, normalized);
+            }
+            statement.setString(2, id);
+            assertOne(statement.executeUpdate(), safeTable + " nullable blank fill " + safeColumn, id);
         }
     }
 

@@ -298,7 +298,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
-        <section className="py-15">
+        <section className="pb-15 pt-10 max-md:pt-8">
           <Container>
             <HomeBlockHeading
               className="pb-10 text-center"

@@ -5,21 +5,20 @@ import { describe, expect, it } from "vitest";
 const requiredKeys = {
   Common: [
     "ratingEmptyStars",
-    "ratingEmpty",
-    "ratingUnavailable",
     "ratingCount",
     "ratingSummaryAria",
     "ratingEmptyAria",
     "ratingUnavailableAria",
   ],
-  PdpBuyBox: ["ratingCount", "ratingAria", "emptyRatingAria", "unavailableRatingAria", "ratingUnavailable"],
+  PdpBuyBox: ["ratingCount", "ratingAria", "emptyRatingAria", "unavailableRatingAria"],
   ProductReviews: [
+    "ratingCount",
     "ratingSummaryAria",
     "ratingEmptyAria",
     "ratingUnavailableAria",
-    "ratingEmpty",
     "ratingUnavailable",
     "reviewStarsAria",
+    "writeReviewAria",
   ],
 } as const;
 

@@ -1,10 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogGrabber,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  dialogMobileBottomSheet,
+} from "@/components/ui/dialog";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { WriteReviewForm } from "@/components/catalog/reviews/WriteReviewForm";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -23,9 +35,13 @@ type ProductCardProps = {
 
 export function ProductCard({ product, className, layout = "grid" }: ProductCardProps) {
   const t = useTranslations("Product");
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const { current, retail, isSale, discountPercent } = derivePricing(product.price);
   const imageUrl = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
   const name = safeText(product.name, "");
+  const reviewActionAriaLabel = t("reviews.writeReviewAria", {
+    name: name || t("fallbackShortName"),
+  });
 
   return (
     <article
@@ -115,7 +131,36 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
         </div>
 
         <div className="mt-2 font-body text-a5-meta text-muted-foreground">
-          <RatingDisplay rating={product.rating} ratingCount={product.ratingCount} />
+          <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label={reviewActionAriaLabel}
+                className="h-auto min-h-0 rounded-none border-transparent bg-transparent px-0 py-0 font-body text-a5-meta font-normal normal-case tracking-normal text-muted-foreground hover:bg-transparent hover:text-brand! hover:not-disabled:scale-100"
+              >
+                <RatingDisplay
+                  rating={product.rating}
+                  ratingCount={product.ratingCount}
+                  ariaHidden
+                />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className={dialogMobileBottomSheet}>
+              <DialogGrabber />
+              <DialogHeader>
+                <DialogTitle>{t("reviews.formTitle")}</DialogTitle>
+                <DialogDescription>{t("reviews.formIntro")}</DialogDescription>
+              </DialogHeader>
+              {reviewDialogOpen && (
+                <WriteReviewForm
+                  productId={product.id}
+                  variant="dialog"
+                  onSuccess={() => undefined}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </article>

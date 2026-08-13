@@ -73,7 +73,11 @@ public final class ProductFilterSpecifications {
                 criteriaQuery.distinct(true);
             }
             if (gender != null && !gender.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("gender")), gender.toLowerCase(Locale.ROOT)));
+                if ("NULL".equalsIgnoreCase(gender)) {
+                    predicates.add(cb.isNull(root.get("gender")));
+                } else {
+                    predicates.add(cb.equal(cb.lower(root.get("gender")), gender.trim().toLowerCase(Locale.ROOT)));
+                }
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

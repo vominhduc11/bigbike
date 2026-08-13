@@ -739,7 +739,7 @@ class VariantGalleryRoundtripTest {
         req.setName(name);
         req.setCategoryId(category.getId());
         req.setBrandId(brand.getId());
-        req.setGender("Unisex");
+        req.setGender("Nam");
         req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
         req.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);

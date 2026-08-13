@@ -73,7 +73,7 @@ class ProductBilingualRoundtripTest {
         req.setName(name);
         req.setCategoryId(category.getId());
         req.setBrandId(brand.getId());
-        req.setGender("Unisex");
+        req.setGender("Nam");
         req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
         req.setPublishStatus(PublishStatus.DRAFT);

@@ -198,9 +198,8 @@ export function createProductSchema(t, isCreate = false) {
       // (đã đặt tên qua thuộc tính). Xác định 1 lần, dùng cho mọi nhánh bên dưới.
       const hasVariants = (data.variants ?? []).some((v) => (v?.name ?? '').trim())
 
-      // Bắt buộc mọi lần lưu — nháp lẫn xuất bản, tạo mới lẫn sửa (không còn phân biệt isCreate).
+      // Các trường còn lại vẫn bắt buộc theo PRODUCT_RULE_005; gender là tùy chọn.
       req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
-      req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
       // SKU cấp sản phẩm luôn bắt buộc (bắt buộc cả nháp lẫn xuất bản).
       req(data.sku, t('products.detail.errSkuRequired', { defaultValue: 'Vui lòng nhập mã sản phẩm.' }), ['sku'])
       // Ảnh đại diện sản phẩm chỉ bắt buộc lúc XUẤT BẢN (không bắt buộc lúc lưu nháp).

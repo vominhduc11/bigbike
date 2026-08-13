@@ -15,11 +15,11 @@ class LiveMigrationPreflightRulesTest {
     void mapsOnlyDirectGenderTermsToCanonicalTargetValues() {
         assertThat(LiveMigrationPreflightService.mapDirectGender("nam")).isEqualTo("Nam");
         assertThat(LiveMigrationPreflightService.mapDirectGender("nu")).isEqualTo("Nữ");
-        assertThat(LiveMigrationPreflightService.mapDirectGender("unisex")).isEqualTo("Unisex");
+        assertThat(LiveMigrationPreflightService.mapDirectGender("unisex")).isNull();
         assertThat(LiveMigrationPreflightService.mapDirectGender("ao-khoac-nu")).isNull();
         assertThat(LiveMigrationPreflightService.mapDirectGender(null)).isNull();
         assertThat(LiveMigrationPreflightService.resolveDirectGender(
-                java.util.List.of("nam", "nu"))).isEqualTo("Unisex");
+                java.util.List.of("nam", "nu"))).isNull();
         assertThat(LiveMigrationPreflightService.resolveDirectGender(
                 java.util.List.of("nam", "unknown"))).isNull();
     }

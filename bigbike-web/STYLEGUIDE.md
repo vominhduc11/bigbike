@@ -147,10 +147,10 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 
 ### Rating display
 
-- Public product ratings always show five stars and the approved-review count.
-- No approved reviews: use five neutral outline stars, `Chưa có đánh giá`/`No reviews yet`, and `0 đánh giá`/`0 reviews`; never show `0/5` or a default score.
-- Approved reviews: show the one-decimal average, partial star fill when needed, and the review count.
-- Inconsistent count/score data: keep neutral stars and the safe count; do not invent a score. Use existing brand, muted-text and spacing tokens.
+- Public aggregate ratings always show exactly five stars followed by the approved-review count as `({n})`.
+- No approved reviews: use five neutral outline stars and `(0)`; never show a status label, `0/5`, or a default score.
+- Approved reviews: keep the one-decimal partial star fill when needed and show `(n)`; do not show the average as visible text.
+- Inconsistent count/score data: keep neutral stars and the safe count as `(n)`; do not invent a score. Preserve the full state-specific aria-label.
 
 ### Category Tiles (lưới danh mục trang chủ)
 
@@ -250,7 +250,7 @@ Content canvas max-width: `--bb-desktop-canvas = 90rem` (1440px). Inner content 
 | `767px` / `768px` | Bootstrap 3 mobile boundary từ WP theme — trùng Tailwind `md:` nhưng off-by-one |
 | `900px` / `991px` / `992px` | WP two-column layout threshold — đổi sang `lg: 1024px` cần review layout |
 | `600px` | Homepage legacy selector — đổi sang 640px risk regression trên phone 360-600px |
-| `1260px` | Nav flyout clamp threshold — specific to nav overflow fix |
+| `1439px` / `1440px` | Header nav fit threshold — below this width the primary menu uses the hamburger drawer |
 
 Các breakpoint legacy được annotate trong globals.css với comment `/* BP note: ... */`.
 

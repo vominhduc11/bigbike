@@ -69,7 +69,7 @@ public record Product(
         /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
          *  Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Detail-only; null in list. */
         String quickAnswerSummary,
-        /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
+        /** Giới tính mục tiêu: "Nam" | "Nữ". Null = Không chọn. */
         String gender,
         /**
          * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.

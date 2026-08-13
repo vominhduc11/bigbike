@@ -1,5 +1,4 @@
 # Data Contract
-
 ## Canonical Data Notes
 
 ### Money
@@ -7,8 +6,6 @@
 - Business intent is VND pricing.
 - Current backend DTOs commonly serialize Java `BigDecimal` amounts with scale `2`, which appears in JSON and tests as values like `50000.00`.
 - Do not document fractional business meaning for VND; document the current serialized shape instead.
-
-Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -809,15 +806,15 @@ Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `Vide
 |---|---|
 | `Nam` | Dành cho nam |
 | `Nữ` | Dành cho nữ |
-| `Unisex` | Unisex — phù hợp cả hai |
-| `NULL` | Chưa gắn giới tính (mặc định) |
+| `NULL` | Không chọn |
 
 Field-level attributes:
 - **DB column:** `products.gender VARCHAR(20)`, nullable, no default, no enum constraint.
 - **Domain:** `Product.gender()` — exposed on **both list and detail** responses.
-- **Admin mutation:** `UpsertProductRequest.gender` (`@Size(max=20)`, presence-flag pattern — omitting the key on PATCH leaves the column untouched).
-- **Filter param:** `filter_gender` on `GET /api/v1/products` and `GET /api/v1/admin/products` — case-insensitive exact match on `product.gender`; blank/absent = no filter.
-- **Facet:** `CatalogFacets.genders[]` — fixed set `[Nam, Nữ, Unisex]` with live counts; buckets with `count = 0` are omitted.
+- **Admin mutation:** `UpsertProductRequest.gender` (`@Size(max=20)`, optional presence-flag pattern — omitting the key on PATCH leaves the column untouched; nonblank values are limited to Nam/Nữ).
+- **Public filter param:** `filter_gender` on `GET /api/v1/products` accepts repeated values (`?filter_gender=Nam&filter_gender=Nữ`) and matches any selected value; absent/blank means no filter, while an active filter excludes NULL-gender products.
+- **Admin filter param:** `filter_gender` on `GET /api/v1/admin/products` is single-valued: Nam, Nữ, or the special value `NULL` for `gender IS NULL`; blank/absent = no filter.
+- **Facet:** `CatalogFacets.genders[]` — fixed set `[Nam, Nữ]` with live counts; at most two buckets are returned and buckets with `count = 0` are omitted.
 
 Status: `CONFIRMED_FROM_CODE`
 

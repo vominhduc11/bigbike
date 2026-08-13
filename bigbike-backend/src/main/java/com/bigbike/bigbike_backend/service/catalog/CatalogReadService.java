@@ -52,7 +52,7 @@ public class CatalogReadService {
             String brand,
             String q,
             String filterColor,
-            String filterGender,
+            List<String> filterGenders,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -70,7 +70,7 @@ public class CatalogReadService {
                 && !"homepageOrder".equals(sortSpec.field());
         if (sqlPaginationEligible) {
             CatalogReadRepository.ProductListingPage sqlPage = catalogReadRepository.findPublishedProductsPaged(
-                    category, brand, q, filterGender, minPrice, maxPrice, homepageBlock, sortSpec, page, size, lang);
+                    category, brand, q, filterGenders, minPrice, maxPrice, homepageBlock, sortSpec, page, size, lang);
             long totalItems = sqlPage.totalItems();
             int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / size);
             return new PageResult<>(
@@ -94,7 +94,7 @@ public class CatalogReadService {
                 .filter(product -> matchesBrand(product, brand))
                 .filter(product -> matchesQuery(product, q))
                 .filter(product -> matchesColor(product, filterColor))
-                .filter(product -> matchesGender(product, filterGender))
+                .filter(product -> matchesGender(product, filterGenders))
                 .filter(product -> matchesPrice(product, minPrice, maxPrice))
                 .filter(product -> homepageBlock == null || product.homepageBlock() == homepageBlock)
                 .sorted(productComparator(sortSpec))

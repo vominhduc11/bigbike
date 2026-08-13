@@ -47,24 +47,24 @@
       {
         "sourceId": 35222,
         "field": "gender",
-        "value": "Unisex",
-        "evidence": "Owner confirmed Unisex because the exact source title states NAM/NỮ.",
+        "value": null,
+        "evidence": "Owner confirmed NULL because the exact source title states NAM/NỮ.",
         "ruleId": "OWNER_MANUAL_GENDER_V2",
         "confidence": "OWNER_CONFIRMED"
       },
       {
         "sourceId": 38995,
         "field": "gender",
-        "value": "Unisex",
-        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "value": null,
+        "evidence": "Owner confirmed NULL because the exact source title states CHO NAM VÀ NỮ.",
         "ruleId": "OWNER_MANUAL_GENDER_V2",
         "confidence": "OWNER_CONFIRMED"
       },
       {
         "sourceId": 39004,
         "field": "gender",
-        "value": "Unisex",
-        "evidence": "Owner confirmed Unisex because the exact source title states CHO NAM VÀ NỮ.",
+        "value": null,
+        "evidence": "Owner confirmed NULL because the exact source title states CHO NAM VÀ NỮ.",
         "ruleId": "OWNER_MANUAL_GENDER_V2",
         "confidence": "OWNER_CONFIRMED"
       }

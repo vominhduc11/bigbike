@@ -231,7 +231,7 @@ Response shape: `ApiDataResponse<CatalogFacets>`:
 - `categories`: `[{ key, label, image: null, count }]` — one bucket per visible category, ordered by `sortOrder`.
 - `brands`: `[{ key, label, image, count }]` — one bucket per visible brand with `count > 0`; `image` is the brand logo `ImageAsset`. Buckets with `count = 0` are omitted so the sidebar matches the legacy WordPress brand widget.
 - `colors`: `[{ key, label, image: null, count }]` — **dynamic** buckets derived from every product variant color option (grouped by base slug, e.g. `den-2` → `den`). Buckets with `count = 0` are omitted; ordered by `count` descending. Labels resolve known slugs to friendly names (Vietnamese/English), otherwise echo the raw value. The set is open-ended (model-specific colors like `cyborg-blue`, `mythology-gold` appear) — this mirrors the legacy WordPress layered-nav color widget.
-- `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ, Unisex]`; buckets with `count = 0` are omitted (V184).
+- `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ]`; at most two buckets are returned and buckets with `count = 0` are omitted (V184).
 - `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 7 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-10tr`, "Trên 10.000.000 VND").
 
 **v1 counting semantics:** counts use a base context of `PUBLISHED + q`. Brand/color/price buckets additionally honor `category`; the `categories` bucket intentionally ignores the `category` param so every category keeps a navigable count. Counts are not cross-excluded per dimension — this matches the legacy WordPress filter widget. Status: `CONFIRMED_FROM_CODE` — `CatalogController.getCatalogFacets`, `CatalogReadService.computeFacets`.
@@ -251,7 +251,7 @@ Query params (all optional):
 - `sort` — ordering of the list: `newest` (default — `createdAt` desc), `highest` (`rating` desc, then `createdAt` desc), `lowest` (`rating` asc, then `createdAt` desc). Unknown values fall back to `newest`.
 
 Response `data` shape:
-- `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (sentinel transport, không phải điểm hiển thị) và `totalReviews = 0`. FE phải hiển thị sao rỗng/trung tính + nhãn `Chưa có đánh giá` (**không** in thêm `0 đánh giá` — lặp ý), gate rated state bằng `totalReviews ≥ 1` và score hợp lệ, không bằng `avgRating > 0` đơn lẻ (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`). Payload có count dương nhưng score null/không hợp lệ phải giữ count và không tạo điểm giả.
+- `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (sentinel transport, không phải điểm hiển thị) và `totalReviews = 0`. FE phải hiển thị 5 sao rỗng/trung tính + `(0)`, không hiển thị nhãn trạng thái hay điểm dạng chữ; gate rated state bằng `totalReviews ≥ 1` và score hợp lệ, không bằng `avgRating > 0` đơn lẻ (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`). Payload có count dương nhưng score null/không hợp lệ phải giữ count và hiển thị sao trung tính + `(n)`, không tạo điểm giả.
 - `ratingBreakdown` — **9 keys** (changed 2026-07-22, `REVIEW_RULE_008`): `{ "5": n, "4.5": n, "4": n, "3.5": n, "3": n, "2.5": n, "2": n, "1.5": n, "1": n }`, every key present (no trailing `.0` — whole levels are `"5"` not `"5.0"`), global counts. Each review's `rating` contributes to exactly one of these 9 buckets (no rounding/merging into an adjacent whole-star bucket).
 - `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `rating` is a decimal (one of the 9 half-star levels above), not always a whole integer. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
@@ -705,6 +705,7 @@ Query parameters:
 | `q` | optional, max 100 | Same search semantics as the admin product list: unaccented name, slug, SKU and English equivalents. |
 | `categoryId` | optional | Includes products assigned to the category or one of its descendants. |
 | `brandId` | optional | Exact brand filter. |
+| `filter_gender` | optional: `Nam`, `Nữ`, `NULL` | Single-value gender filter; `NULL` selects products whose gender is SQL `NULL` (Không chọn). `Unisex` and other values are rejected. |
 | `publishStatus` | optional: `DRAFT`, `PUBLISHED`, `TRASH`, `ALL` | Blank/`ALL` defaults to `PUBLISHED`; an explicit status is exact. |
 | `stockState` | optional: `IN_STOCK`, `OUT_OF_STOCK`, `ALL` | Same stock filter as the product list; blank/`ALL` leaves stock state unfiltered. |
 | `includeDraft`, `includeTrash` | boolean, default `false` | Effective only when `publishStatus` is blank/`ALL`; explicitly widens the default `PUBLISHED` scope. |
@@ -778,10 +779,10 @@ Status: `CONFIRMED_FROM_CODE` — no remaining endpoint.
 
 | Param | Type | Validation | Purpose |
 |---|---|---|---|
-| `filter_gender` | `string` (optional) | `@Size(max=20)` | Filter products by gender field. Case-insensitive exact match. Values: `Nam` \| `Nữ` \| `Unisex`. Omit or blank = no filter. |
+| `filter_gender` | repeated `string` (public), scalar `string` (admin) | each value `@Size(max=20)`; public values Nam/Nữ, admin values Nam/Nữ/`NULL` | Public filter accepts repeated parameters such as `?filter_gender=Nam&filter_gender=Nữ` and matches the union. Without a public value, all products remain eligible including NULL gender; with at least one value, NULL gender is excluded. Admin `NULL` means `gender IS NULL`. |
 
 - Filtering is product-level (not variant-level).
-- The same `filter_gender` value is accepted by `GET /api/v1/catalog/facets` so facet counts can be scoped accordingly (future — currently facets do not re-scope on gender param).
+- `GET /api/v1/catalog/facets` returns only the Nam/Nữ buckets; it does not accept or re-scope on `filter_gender`.
 - `@Pattern(SLUG_REGEX)` is intentionally **not** used because `Nữ` contains Vietnamese characters incompatible with the slug regex; `@Size(max=20)` is used instead.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService.matchesGender`.

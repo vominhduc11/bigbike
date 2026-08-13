@@ -115,7 +115,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             String categorySlug,
             String brandSlug,
             String q,
-            String gender,
+            List<String> genders,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -126,7 +126,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     ) {
         Set<String> categoryIds = resolveCategorySlugWithDescendants(categorySlug);
         Specification<ProductEntity> spec = buildPublicListingSpec(
-                categoryIds, brandSlug, q, gender, minPrice, maxPrice, homepageBlock, sortSpec);
+                categoryIds, brandSlug, q, genders, minPrice, maxPrice, homepageBlock, sortSpec);
         org.springframework.data.domain.PageRequest pageRequest =
                 org.springframework.data.domain.PageRequest.of(Math.max(0, page - 1), Math.max(1, size));
         org.springframework.data.domain.Page<ProductEntity> result =
@@ -161,7 +161,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             Set<String> categoryIds,
             String brandSlug,
             String q,
-            String gender,
+            List<String> genders,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -184,8 +184,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             if (q != null && !q.isBlank()) {
                 predicates.add(ProductFilterSpecifications.productTextSearch(root, cb, q));
             }
-            if (gender != null && !gender.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("gender")), gender.toLowerCase(Locale.ROOT)));
+            List<String> activeGenders = genders == null ? List.of() : genders.stream()
+                    .filter(value -> value != null && !value.isBlank())
+                    .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                    .distinct()
+                    .toList();
+            if (!activeGenders.isEmpty()) {
+                predicates.add(cb.lower(root.get("gender")).in(activeGenders));
             }
             if (minPrice != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("retailPrice"), java.math.BigDecimal.valueOf(minPrice)));

@@ -238,7 +238,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
   // Đăng bán (DRAFT→PUBLISHED) giờ chỉ làm được từ đây (trang sửa đã bỏ nút Lưu &
   // Đăng bán) — nên bảng kiểm chất lượng PRODUCT_RULE_005 chuyển hẳn từ trang sửa
   // sang đây: tải đủ dữ liệu sản phẩm rồi chạy đúng getPublishReadiness/PublishChecklistModal
-  // cũ (Tên/Tên EN/Đường dẫn/Danh mục/Thương hiệu/Giới tính/SKU/Giá/Ảnh/Ảnh biến thể màu),
+  // cũ (Tên/Tên EN/Đường dẫn/Danh mục/Thương hiệu/SKU/Giá/Ảnh/Ảnh biến thể màu),
   // không chỉ 5 trường tóm tắt sẵn có ở dòng bảng. Ẩn sản phẩm (PUBLISHED→DRAFT) không cần kiểm.
   const handleTogglePublish = useCallback(async (product) => {
     if (!canUpdate) return
@@ -329,6 +329,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       exportOptions.brandId = query.brandId || undefined
       exportOptions.publishStatus = query.publishStatus || 'ALL'
       exportOptions.stockState = query.stockState || 'ALL'
+      exportOptions.filterGender = query.gender || undefined
       if (scope === 'SELECTED') exportOptions.ids = [...selected]
     }
     try {
@@ -425,6 +426,16 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
         onRemove: () => updateQuery({ brandId: '' }, { resetPage: true }),
       })
     }
+    if (query.gender) {
+      const genderLabel = query.gender === 'NULL'
+        ? t('products.genderNone')
+        : query.gender
+      chips.push({
+        key: 'gender',
+        label: `${t('products.filterGender')}: ${genderLabel}`,
+        onRemove: () => updateQuery({ gender: '' }, { resetPage: true }),
+      })
+    }
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
@@ -440,7 +451,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       })
     }
     return chips
-  }, [query.search, query.categoryId, query.brandId, query.publishStatus, query.stockState, categories, brands, t])
+  }, [query.search, query.categoryId, query.brandId, query.gender, query.publishStatus, query.stockState, categories, brands, t])
 
   const allColumns = [
     {
@@ -937,6 +948,17 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
           options={[
             { value: 'ALL', label: t('products.filterBrand') },
             ...brands.map((b) => ({ value: b.id, label: b.name })),
+          ]}
+        />
+        <FilterSelect
+          value={query.gender || 'ALL'}
+          onValueChange={(v) => updateQuery({ gender: v === 'ALL' ? '' : v }, { resetPage: true })}
+          ariaLabel={t('products.filterGender')}
+          options={[
+            { value: 'ALL', label: t('products.filterGender') },
+            { value: 'Nam', label: t('products.genderMale') },
+            { value: 'Nữ', label: t('products.genderFemale') },
+            { value: 'NULL', label: t('products.genderNone') },
           ]}
         />
         <FilterSelect

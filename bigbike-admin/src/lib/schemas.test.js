@@ -11,7 +11,7 @@ function baseForm(overrides = {}) {
     name: 'Test Product',
     categoryIds: ['cat-1'],
     brandId: 'brand-1',
-    gender: 'Unisex',
+    gender: 'Nam',
     sku: 'TEST-SKU',
     retailPrice: '100000',
     publishStatus: 'DRAFT',
@@ -80,7 +80,7 @@ describe('MEDIA_RULE_004 — writable video sources', () => {
 })
 
 describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () => {
-  it('no variants / draft: name-slug-category-brand-gender-sku-retailPrice always required, isCreate not needed', () => {
+  it('no variants / draft: name-slug-category-brand-sku-retailPrice always required, isCreate not needed', () => {
     const schema = createProductSchema(t, false)
     const result = schema.safeParse(baseForm({
       slug: '', name: '', categoryIds: [], brandId: '', gender: '', sku: '', retailPrice: '',
@@ -88,8 +88,9 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     expect(result.success).toBe(false)
     const paths = pathsOf(result)
     expect(paths).toEqual(expect.arrayContaining([
-      'slug', 'name', 'categoryIds', 'brandId', 'gender', 'sku', 'retailPrice',
+      'slug', 'name', 'categoryIds', 'brandId', 'sku', 'retailPrice',
     ]))
+    expect(paths).not.toContain('gender')
     // Draft must NOT require the main image.
     expect(paths).not.toContain('imageUrl')
   })

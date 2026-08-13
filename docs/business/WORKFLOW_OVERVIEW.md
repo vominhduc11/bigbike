@@ -58,13 +58,13 @@ Khung xem trước chỉ để **xem giao diện**, nên các thao tác/điều 
 
 **Lý do:** Menu thực tế sâu 4 cấp (L1 → 9 nhóm L2 → 17 danh mục L3 → 4 mục L4). Flyout dọc cho cấu trúc này đẩy cột cấp 4 ra ~1200px chiều ngang, gây overflow viewport, scrollbar ngang, và mất hover khi rê chéo — không khắc phục được triệt để bằng collision detection.
 
-**Layout mới (desktop ≥1261px):**
+**Layout mới (desktop ≥1440px):**
 - Hover "Tất cả sản phẩm" → mega panel rộng container (75rem) hiện ngay dưới header.
 - **Sidebar trái:** 9 nhóm L2 dạng danh sách dọc. Nhóm có con → hover/focus đổi nội dung panel phải, **và bấm vào tên nhóm cũng điều hướng tới trang category của chính nhóm đó** (cập nhật 2026-06-16 — trước đó nhóm có con render bằng `<button>` không có `href`/`onClick`, bấm vào không có gì xảy ra, user phản ánh nhầm là lỗi). Nhóm leaf → link điều hướng trực tiếp.
 - **Panel phải:** L3 dạng grid nhiều cột. L4 hiện dạng sub-list thụt lề dưới L3 cha (không dùng flyout thêm cấp).
 - Default-active: nhóm L2 đầu tiên có con.
 
-**Mobile (≤1260px):** Giữ nguyên accordion (`MobileHeaderMenu`), không thay đổi.
+**Mobile/tablet/desktop hẹp (<1440px):** Giữ nguyên accordion (`MobileHeaderMenu`) qua nút hamburger, không thay đổi.
 
 **Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
 

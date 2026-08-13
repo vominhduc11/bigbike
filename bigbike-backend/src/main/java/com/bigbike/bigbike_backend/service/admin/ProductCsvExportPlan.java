@@ -13,6 +13,7 @@ public record ProductCsvExportPlan(
         String q,
         String categoryId,
         String brandId,
+        String gender,
         ProductStockState stockState,
         Set<PublishStatus> publishStatuses,
         Set<String> categoryIds,
@@ -29,6 +30,7 @@ public record ProductCsvExportPlan(
         if (q != null && !q.isBlank()) filters.put("q", q);
         if (categoryId != null && !categoryId.isBlank()) filters.put("categoryId", categoryId);
         if (brandId != null && !brandId.isBlank()) filters.put("brandId", brandId);
+        if (gender != null && !gender.isBlank()) filters.put("filter_gender", gender);
         if (stockState != null) filters.put("stockState", stockState.name());
         if (scope == ProductCsvExportScope.SELECTED) filters.put("ids", selectedIds);
         filters.put("publishStatuses", publishStatuses.stream().map(Enum::name).toList());

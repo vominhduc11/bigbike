@@ -431,7 +431,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
             String categorySlug,
             String brandSlug,
             String q,
-            String gender,
+            List<String> genders,
             Long minPrice,
             Long maxPrice,
             com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock,
@@ -450,7 +450,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 .filter(p -> q == null || q.isBlank()
                         || (p.name() != null && p.name().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT)))
                         || (p.shortDescription() != null && p.shortDescription().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT))))
-                .filter(p -> gender == null || gender.isBlank() || gender.equalsIgnoreCase(p.gender()))
+                .filter(p -> matchesGender(p, genders))
                 .filter(p -> homepageBlock == null || p.homepageBlock() == homepageBlock)
                 .toList();
         int fromIndex = Math.min((Math.max(1, page) - 1) * size, filtered.size());
@@ -567,9 +567,24 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         || (p.brand() != null && p.brand().id().equals(brandId)))
                 .filter(p -> categoryId == null || categoryId.isBlank()
                         || safeCategories(p).stream().anyMatch(category -> categoryId.equals(category.id())))
-                .filter(p -> gender == null || gender.isBlank()
-                        || (p.gender() != null && p.gender().equalsIgnoreCase(gender)))
+                .filter(p -> genderMatchesAdminFilter(p, gender))
                 .toList();
+    }
+
+    private static boolean matchesGender(Product product, List<String> genders) {
+        if (genders == null || genders.stream().allMatch(value -> value == null || value.isBlank())) {
+            return true;
+        }
+        return product.gender() != null
+                && genders.stream().filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .anyMatch(value -> value.equalsIgnoreCase(product.gender()));
+    }
+
+    private static boolean genderMatchesAdminFilter(Product product, String gender) {
+        if (gender == null || gender.isBlank()) return true;
+        if ("NULL".equalsIgnoreCase(gender)) return product.gender() == null;
+        return product.gender() != null && product.gender().equalsIgnoreCase(gender);
     }
 
     @Override

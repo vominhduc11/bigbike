@@ -439,8 +439,8 @@ public final class LiveMigrationPreflightService {
                     .map(LiveMigrationPreflightService::mapDirectGender)
                     .filter(java.util.Objects::nonNull).distinct().toList();
             String sourceGender = resolveDirectGender(sourceGenderSlugs);
-            boolean directUnisex = "Unisex".equals(sourceGender) && mappedGenders.size() == 2;
-            boolean ambiguousGender = mappedGenders.size() > 1 && !directUnisex;
+            boolean combinedGender = new HashSet<>(mappedGenders).equals(Set.of("Nam", "Nữ"));
+            boolean ambiguousGender = mappedGenders.size() > 1 && !combinedGender;
             String targetGender = existing != null && hasText(existing.gender())
                     ? existing.gender().trim() : sourceGender;
             String effectiveSku = trimToNull(mapped.sku());
@@ -547,7 +547,6 @@ public final class LiveMigrationPreflightService {
                 if (!"VND".equalsIgnoreCase(sourceCurrency)) missing.add("currency");
                 if (plannedCategories.isEmpty()) missing.add("categoryIds");
                 if (!hasText(effectiveBrandSlug)) missing.add("brandId");
-                if (!hasText(effectiveGender)) missing.add("gender");
                 action = missing.isEmpty() ? Action.INSERT : Action.MANUAL_REVIEW;
                 if (action == Action.MANUAL_REVIEW) manualReview = true;
                 if (action == Action.INSERT) {
@@ -1627,7 +1626,7 @@ public final class LiveMigrationPreflightService {
         return switch (normalized) {
             case "nam", "male", "men" -> "Nam";
             case "nu", "nữ", "female", "women" -> "Nữ";
-            case "unisex" -> "Unisex";
+            case "unisex" -> null;
             default -> null;
         };
     }
@@ -1641,7 +1640,7 @@ public final class LiveMigrationPreflightService {
             return null;
         }
         if (mapped.size() == 1) return mapped.get(0);
-        return new HashSet<>(mapped).equals(Set.of("Nam", "Nữ")) ? "Unisex" : null;
+        return null;
     }
 
     private static boolean isPositive(BigDecimal value) {

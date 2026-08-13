@@ -87,7 +87,7 @@ public class CatalogRequestValidator {
         if (create) {
             AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
             AdminMutationValidators.validateRequiredText(request.getName(), "name", "Name", errors);
-            // retailPrice/sku/categoryId/brandId/gender requiredness (conditional on
+            // retailPrice/sku/categoryId/brandId requiredness (conditional on
             // hasVariants and draft-vs-publish, PRODUCT_RULE_005) is enforced post-merge by
             // AdminMutationValidators.validateProductFieldsRequired, not here — this request-level
             // check only runs on create/update wholesale and can't see the merged entity/variants.

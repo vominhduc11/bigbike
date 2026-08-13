@@ -52,7 +52,7 @@ class LiveOwnerDecisionPlannerTest {
         assertThat(loaded.config().productInference().manualFieldOverrides())
                 .allSatisfy(value -> {
                     assertThat(value.field()).isEqualTo("gender");
-                    assertThat(value.value()).isEqualTo("Unisex");
+                    assertThat(value.value()).isNull();
                     assertThat(value.confidence()).isEqualTo("OWNER_CONFIRMED");
                 });
         assertThat(loaded.config().sourceMediaRecovery().variantAttachmentOverrides())
@@ -65,7 +65,7 @@ class LiveOwnerDecisionPlannerTest {
     }
 
     @Test
-    void appliesOwnerConfirmedUnisexWithoutGuessingOtherManualRows() throws Exception {
+    void appliesOwnerConfirmedNullWithoutGuessingOtherManualRows() throws Exception {
         Path path = Path.of(System.getProperty("user.dir"))
                 .resolve("../deploy/migration/live-migration-owner-overrides-v2.json")
                 .normalize();
@@ -81,7 +81,7 @@ class LiveOwnerDecisionPlannerTest {
         var result = planner.infer(
                 post, "KNOWN-SKU", List.of(), List.of("ls2"), null, List.of(), List.of());
 
-        assertThat(result.gender()).isEqualTo("Unisex");
+        assertThat(result.gender()).isNull();
         assertThat(result.manualFields()).doesNotContain("gender");
         assertThat(result.plans()).filteredOn(plan -> "gender".equals(plan.field()))
                 .singleElement().satisfies(plan -> {
@@ -184,7 +184,7 @@ class LiveOwnerDecisionPlannerTest {
 
         assertThat(result.sku()).isEqualTo("Q30");
         assertThat(result.brandSlug()).isEqualTo("uncategorized-brand");
-        assertThat(result.gender()).isEqualTo("Unisex");
+        assertThat(result.gender()).isNull();
         assertThat(result.plans()).anySatisfy(plan -> {
             assertThat(plan.field()).isEqualTo("brandId");
             assertThat(plan.decision()).isEqualTo("FALLBACK_APPLIED");
@@ -212,7 +212,7 @@ class LiveOwnerDecisionPlannerTest {
                 policy, source, target(List.of(), List.of()), List.of(post));
 
         var result = planner.infer(
-                post, "KNOWN-SKU", List.of(), List.of(), "Unisex", List.of(), List.of());
+                post, "KNOWN-SKU", List.of(), List.of(), null, List.of("unisex"), List.of());
 
         assertThat(result.plans()).filteredOn(plan -> "brandId".equals(plan.field()))
                 .singleElement().satisfies(plan -> assertThat(plan.evidence())
@@ -231,11 +231,11 @@ class LiveOwnerDecisionPlannerTest {
                 .gender()).isEqualTo("Nam");
         assertThat(inferencePlanner(List.of(unisex), target(List.of(), List.of()))
                 .infer(unisex, "U200", List.of(), List.of(), null, List.of(), List.of())
-                .gender()).isEqualTo("Unisex");
+                .gender()).isNull();
         var helmetResult = inferencePlanner(List.of(helmet), target(List.of(), List.of()))
                 .infer(helmet, "H300", List.of(), List.of(), null, List.of(),
                         List.of("mu-bao-hiem-fullface"));
-        assertThat(helmetResult.gender()).isEqualTo("Unisex");
+        assertThat(helmetResult.gender()).isNull();
         assertThat(helmetResult.plans()).filteredOn(plan -> "gender".equals(plan.field()))
                 .singleElement().satisfies(plan -> {
                     assertThat(plan.ruleId()).isEqualTo(
@@ -246,7 +246,7 @@ class LiveOwnerDecisionPlannerTest {
         assertThat(inferencePlanner(List.of(armor), target(List.of(), List.of()))
                 .infer(armor, "A400", List.of(), List.of(), null, List.of(),
                         List.of("giap-bao-ho-tay-chan-dai-lung-phu-kien-giap"))
-                .gender()).isEqualTo("Unisex");
+                .gender()).isNull();
     }
 
     @Test

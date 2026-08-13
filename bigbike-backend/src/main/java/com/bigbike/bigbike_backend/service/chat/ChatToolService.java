@@ -3031,7 +3031,7 @@ public class ChatToolService {
         return catalogReadService.listProducts(
                 1, SEARCH_PAGE_SIZE, blankToNull(sort) == null ? "price:asc" : sort,
                 blankToNull(category), blankToNull(brand), blankToNull(query),
-                blankToNull(color), blankToNull(gender), minPrice, maxPrice, null, lang);
+                blankToNull(color), productGenderFilters(gender), minPrice, maxPrice, null, lang);
     }
 
     /**
@@ -3054,7 +3054,17 @@ public class ChatToolService {
         return catalogReadService.listProducts(
                 1, 100, blankToNull(sort) == null ? "price:asc" : sort,
                 blankToNull(category), blankToNull(brand), blankToNull(query),
-                blankToNull(color), blankToNull(gender), minPrice, maxPrice, null, lang);
+                blankToNull(color), productGenderFilters(gender), minPrice, maxPrice, null, lang);
+    }
+
+    private static List<String> productGenderFilters(String raw) {
+        String value = blankToNull(raw);
+        if (value == null) return List.of();
+        return switch (value.toLowerCase(Locale.ROOT)) {
+            case "nam" -> List.of("Nam");
+            case "nữ" -> List.of("Nữ");
+            default -> List.of();
+        };
     }
 
     private ToolOutcome orderOutcome(UUID customerId, boolean english, OrderScope scope) {

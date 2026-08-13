@@ -50,7 +50,7 @@ public interface CatalogReadRepository {
             String categorySlug,
             String brandSlug,
             String q,
-            String gender,
+            List<String> genders,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,

@@ -139,8 +139,8 @@ export function clearFormFromStorage(key) {
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
 export function getPublishReadiness(form, t) {
-  // Publish gate (PRODUCT_RULE_005, viết lại 2026-07-07): name/slug/category/brand/gender/ảnh
-  // bắt buộc ở mọi lần đăng, tạo mới lẫn sửa như nhau (không còn phân biệt isCreate). SKU/giá
+  // Publish gate (PRODUCT_RULE_005, cập nhật 2026-08-13): name/slug/category/brand/ảnh
+  // bắt buộc ở mọi lần đăng. Gender là tùy chọn; SKU/giá
   // niêm yết cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể; khi có biến thể, mỗi biến thể
   // CÓ MÀU phải có ảnh đại diện màu riêng (biến thể không màu, vd chỉ có Size, không cần —
   // sửa 2026-07-11). Mô tả ngắn/mô tả chi tiết/FAQ/ô số liệu/dải tin cậy
@@ -168,7 +168,7 @@ export function getPublishReadiness(form, t) {
       ok: Boolean(form.brandId) && form.brandId !== SYSTEM_BRAND_ID,
       required: true,
     },
-    { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
+    { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: true,                                                    required: false },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     // SKU cấp sản phẩm: luôn luôn bắt buộc.
     { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã sản phẩm' }), ok: Boolean(form.sku?.trim()),          required: true },

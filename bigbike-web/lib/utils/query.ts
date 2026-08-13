@@ -10,6 +10,11 @@ export function readSingleSearchParam(value: SearchParamValue): string | undefin
   return value;
 }
 
+export function readSearchParamValues(value: SearchParamValue): string[] {
+  if (Array.isArray(value)) return value;
+  return value ? [value] : [];
+}
+
 export function readSearchParamAlias(
   params: RouteSearchParams,
   ...keys: string[]
@@ -129,7 +134,7 @@ export function collectErrors(...errors: Array<string | null>): string[] {
 }
 
 export function buildQueryString(
-  params: Record<string, string | number | null | undefined>,
+  params: Record<string, string | string[] | number | null | undefined>,
 ): string {
   const query = new URLSearchParams();
 
@@ -137,7 +142,11 @@ export function buildQueryString(
     if (value === null || value === undefined || value === "") {
       continue;
     }
-    query.set(key, String(value));
+    if (Array.isArray(value)) {
+      value.filter((item) => item !== "").forEach((item) => query.append(key, String(item)));
+    } else {
+      query.set(key, String(value));
+    }
   }
 
   const encoded = query.toString();

@@ -145,7 +145,7 @@ const product = {
   price: { retailPrice: 5900000, salePrice: 5500000 },
   available: true,
   publishStatus: 'DRAFT',
-  gender: 'Unisex',
+  gender: 'Nam',
   image: {
     rawUrl: '/media/product-main.jpg',
     alt: 'Mũ AGV K1S màu đen',

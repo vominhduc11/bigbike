@@ -12,8 +12,7 @@ vi.mock("next-intl", () => ({
     if (key === "ratingAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
     if (key === "emptyRatingAria") return "Chưa có đánh giá, 0 đánh giá";
     if (key === "unavailableRatingAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
-    if (key === "ratingCount") return `${values?.count} đánh giá`;
-    if (key === "ratingUnavailable") return "Chưa có điểm trung bình";
+    if (key === "ratingCount") return `(${values?.count})`;
     return key;
   },
   useLocale: () => localeState.value,
@@ -77,9 +76,11 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
     expect(star).not.toBeNull();
     const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
     expect(aggregate).not.toBeNull();
-    // reviewCount đi bằng <meta> để không in số lượt 2 lần cạnh nhãn "3 đánh giá".
+    // reviewCount đi bằng <meta> để không in số lượt 2 lần cạnh nhãn "(3)".
     expect(aggregate!.querySelector('meta[itemprop="reviewCount"]')!.getAttribute("content")).toBe("3");
-    expect(aggregate!.querySelector('[itemprop="ratingValue"]')!.textContent).toContain("4");
+    expect(aggregate!.querySelector('meta[itemprop="ratingValue"]')!.getAttribute("content")).toBe("4.0");
+    expect(screen.queryByText("4.0")).toBeNull();
+    expect(screen.getByText("(3)")).toBeInTheDocument();
   });
 
   it("0 review → hiển thị sao trung tính và không xuất microdata", () => {
@@ -88,19 +89,22 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
     expect(
       container.querySelector('[itemtype="https://schema.org/AggregateRating"]'),
     ).toBeNull();
-    expect(screen.getByText(/noReviews/)).toBeInTheDocument();
+    expect(screen.getByText("(0)")).toBeInTheDocument();
+    expect(screen.queryByText(/noReviews/)).toBeNull();
   });
 
   it("rating ảo 4.5 + ratingCount 0 → vẫn hiển thị trạng thái trung tính", () => {
     const { container } = renderSection(4.5, 0);
     expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
-    expect(screen.getByText(/noReviews/)).toBeInTheDocument();
+    expect(screen.getByText("(0)")).toBeInTheDocument();
+    expect(screen.queryByText(/noReviews/)).toBeNull();
   });
 
   it("count dương nhưng rating lỗi → giữ count và không xuất aggregateRating", () => {
     const { container } = renderSection(null, 3);
     expect(container.querySelector('[aria-label="Chưa có điểm trung bình, 3 đánh giá"]')).not.toBeNull();
-    expect(screen.getByText("3 đánh giá")).toBeInTheDocument();
+    expect(screen.getByText("(3)")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa có điểm trung bình")).toBeNull();
     expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
   });
 });

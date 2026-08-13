@@ -385,7 +385,7 @@ describe('publish readiness — mục phân loại hệ thống', () => {
       sku: 'AGV-K1S',
       categoryIds: ['helmet'],
       brandId: 'brand-agv',
-      gender: 'Unisex',
+      gender: 'Nam',
       imageUrl: '/media/main.jpg',
       retailPrice: '5900000',
       variants: [],

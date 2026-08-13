@@ -1,6 +1,7 @@
 "use client";
 
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
 import Link from "@/i18n/StorefrontLink";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
@@ -32,6 +33,7 @@ type Props = { brands: Brand[] };
  */
 export function BrandCarousel({ brands }: Props) {
   if (brands.length === 0) return null;
+  const hasMultipleBrands = brands.length > 1;
 
   return (
     <section className="py-30">
@@ -46,9 +48,13 @@ export function BrandCarousel({ brands }: Props) {
           // width:100% → 1 logo phình bằng cả khung rồi nhảy thành dải khi JS chạy.
           // Khoá bề rộng slide khớp slidesPerView (2 / 767:5) tới khi init.
           className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 min-[767px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5"
+          // Tự chuyển logo mỗi 3 giây và quay lại logo đầu khi đi hết danh sách.
+          modules={hasMultipleBrands ? [Autoplay] : []}
           speed={1000}
           slidesPerView={2}
           spaceBetween={13}
+          rewind={hasMultipleBrands}
+          autoplay={hasMultipleBrands ? { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true } : undefined}
           watchOverflow
           breakpoints={{
             767: { slidesPerView: 5, spaceBetween: 40 },

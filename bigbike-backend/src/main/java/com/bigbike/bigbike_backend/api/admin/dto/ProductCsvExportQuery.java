@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.bind.annotation.BindParam;
 
 /** Query parameters for the streamed admin product CSV export. */
 @Getter
@@ -23,6 +24,10 @@ public class ProductCsvExportQuery {
 
     @Size(max = 100, message = "Brand id must not exceed 100 characters.")
     private String brandId;
+
+    @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ|NULL)?\\s*$", message = "Invalid filter_gender.")
+    @BindParam("filter_gender")
+    private String filterGender;
 
     @Pattern(regexp = "^(DRAFT|PUBLISHED|TRASH|ALL)$", message = "Invalid publishStatus.")
     private String publishStatus;

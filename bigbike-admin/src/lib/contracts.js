@@ -51,13 +51,12 @@ function toTrimmedString(value) {
 export function normalizeGender(value) {
   const normalized = toTrimmedString(value)
   if (!normalized) {
-    return undefined
+    return null
   }
   const lower = normalized.toLowerCase()
   if (lower === 'nam') return 'Nam'
   if (lower === 'nu' || lower === 'nư' || lower === 'nữ') return 'Nữ'
-  if (lower === 'unisex') return 'Unisex'
-  return normalized
+  return null
 }
 
 

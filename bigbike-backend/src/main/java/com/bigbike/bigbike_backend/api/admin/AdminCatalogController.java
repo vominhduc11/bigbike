@@ -52,6 +52,8 @@ public class AdminCatalogController extends AdminControllerSupport {
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
     private static final String HOMEPAGE_BLOCK_REGEX =
             "^(NONE|FEATURED_GRID)$";
+    private static final String GENDER_FILTER_REGEX =
+            "(?iu)^\\s*(Nam|Nữ|NULL)?\\s*$";
     private static final String LANG_REGEX = "^(vi|en)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
@@ -75,7 +77,9 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Pattern(regexp = STOCK_STATE_REGEX, message = "Invalid stockState.") String stockState,
             @RequestParam(required = false) @Size(max = 100) String brandId,
             @RequestParam(required = false) @Size(max = 100) String categoryId,
-            @RequestParam(name = "filter_gender", required = false) @Size(max = 20) String filterGender,
+            @RequestParam(name = "filter_gender", required = false)
+                @Size(max = 20) @Pattern(regexp = GENDER_FILTER_REGEX, message = "Invalid filter_gender.")
+                String filterGender,
             @RequestParam(required = false) @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepageBlock.") String homepageBlock,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request

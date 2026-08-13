@@ -20,6 +20,7 @@ import {
   parseSlugParam,
   parseSortParam,
   parseTextParam,
+  readSearchParamValues,
   readSearchParamAlias,
   readSingleSearchParam,
   type RouteSearchParams,
@@ -44,7 +45,7 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
   category: string | undefined;
   brand: string | undefined;
   color: string | undefined;
-  gender: string | undefined;
+  gender: string[];
   minPrice: number | undefined;
   maxPrice: number | undefined;
 };
@@ -91,7 +92,11 @@ export function parseCatalogListParams(
   const categoryParsed = parseSlugParam(params.category, "category");
   const brandParsed = parseSlugParam(readSearchParamAlias(params, "pwb-brand", "brand"), "pwb-brand");
   const colorParsed = parseSlugParam(params.filter_color, "filter_color");
-  const genderParsed = parseTextParam(params.filter_gender, 20);
+  const genderValues = readSearchParamValues(params.filter_gender)
+    .map((value) => value.trim().toLowerCase())
+    .map((value) => value === "nam" ? "Nam" : value === "nu" || value === "nữ" ? "Nữ" : null)
+    .filter((value): value is "Nam" | "Nữ" => value !== null);
+  const genderParsed = { value: [...new Set(genderValues)], error: null as string | null };
   const minPriceParsed = parseOptionalPositiveIntParam(params.min_price, {
     min: 0,
     max: PRICE_PARAM_MAX,

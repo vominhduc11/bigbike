@@ -232,7 +232,7 @@ class Phase1KOpenApiContractTest {
                         "publishStatus", "stockState", "brandId", "categoryId",
                         "filter_gender", "homepageBlock", "lang");
         assertThat(textValues(parameterNamed(listParameters, "filter_gender").path("schema").path("enum")))
-                .containsExactly("Nam", "Nữ", "Unisex");
+                .containsExactly("Nam", "Nữ", "NULL");
 
         JsonNode preview = paths.path("/api/v1/admin/products/preview").path("post");
         assertThat(textValues(parameterNamed(preview.path("parameters"), "lang").path("schema").path("enum")))
@@ -283,6 +283,20 @@ class Phase1KOpenApiContractTest {
                 "slugEn", "brand", "categories", "price", "stockState", "available",
                 "publishStatus", "gallery", "videos", "variants", "seo", "translations");
         assertThat(productProperties.has("contentBottom")).isFalse();
+    }
+
+    @Test
+    void openApi_publicProductGenderFilterIsRepeatedMultiValue() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode parameters = document.path("paths").path("/api/v1/products").path("get")
+                .path("parameters");
+        JsonNode gender = parameterNamed(parameters, "filter_gender");
+
+        assertThat(gender.path("schema").path("type").asText()).isEqualTo("array");
+        assertThat(textValues(gender.path("schema").path("items").path("enum")))
+                .containsExactly("Nam", "Nữ");
+        assertThat(gender.path("schema").path("style").asText()).isEqualTo("form");
+        assertThat(gender.path("schema").path("explode").asBoolean()).isTrue();
     }
 
     @Test

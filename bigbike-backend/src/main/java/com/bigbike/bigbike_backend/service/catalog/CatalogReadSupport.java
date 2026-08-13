@@ -170,8 +170,7 @@ final class CatalogReadSupport {
 
     private static final List<GenderFacet> GENDER_FACETS = List.of(
             new GenderFacet("Nam",    "Nam",    "Male"),
-            new GenderFacet("Nữ",    "Nữ",    "Female"),
-            new GenderFacet("Unisex","Unisex", "Unisex")
+            new GenderFacet("Nữ",    "Nữ",    "Female")
     );
 
     private record GenderFacet(String slug, String labelVi, String labelEn) {
@@ -322,9 +321,20 @@ final class CatalogReadSupport {
                 .toList();
     }
 
+    static boolean matchesGender(Product product, List<String> filterGenders) {
+        List<String> active = filterGenders == null
+                ? List.of()
+                : filterGenders.stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(String::trim)
+                        .toList();
+        if (active.isEmpty()) return true;
+        if (product.gender() == null) return false;
+        return active.stream().anyMatch(value -> value.equalsIgnoreCase(product.gender()));
+    }
+
     static boolean matchesGender(Product product, String filterGender) {
-        if (filterGender == null || filterGender.isBlank()) return true;
-        return filterGender.equalsIgnoreCase(product.gender());
+        return matchesGender(product, filterGender == null ? List.of() : List.of(filterGender));
     }
 
     static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products, String locale) {

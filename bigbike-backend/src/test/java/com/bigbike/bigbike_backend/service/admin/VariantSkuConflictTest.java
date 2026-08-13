@@ -180,7 +180,7 @@ class VariantSkuConflictTest {
         request.setName(name);
         request.setCategoryId(category.getId());
         request.setBrandId(brand.getId());
-        request.setGender("Unisex");
+        request.setGender("Nam");
         request.setSku("SKU-" + slug);
         request.setRetailPrice(new BigDecimal("1000000"));
         request.setPublishStatus(PublishStatus.DRAFT);

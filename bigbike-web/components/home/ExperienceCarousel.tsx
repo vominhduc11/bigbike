@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -68,7 +69,7 @@ function ExperienceSlide({
       </div>
 
       <div
-        className="bb-exp-slide-content mt-[-32%] max-[768px]:mt-[-18%] max-[375px]:mt-[-14%] md:pb-14"
+        className="bb-exp-slide-content mt-[-32%] max-[768px]:mt-[-18%] max-[375px]:mt-[-14%] md:pb-8"
         aria-hidden={!isActive}
       >
         {media.productSrc ? (
@@ -120,12 +121,15 @@ export function ExperienceCarousel({ articles }: Props) {
       // (mobile 83% / desktop tối đa 590px) để chặn cú phình. Desktop dùng slide
       // width cố định theo baseline 1440px nên surface có thể full-bleed mà card
       // không bị kéo giãn ở viewport 1920/2560.
-      className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer max-md:[&_.swiper-slide]:!w-[83%] md:[&_.swiper-slide]:!w-[min(41vw,590px)]"
+      className="bb-exp-carousel w-full touch-pan-y !pb-8 max-md:!pb-4 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer max-md:[&_.swiper-slide]:!w-[83%] md:[&_.swiper-slide]:!w-[min(41vw,590px)]"
+      // Khu vực trải nghiệm tự chuyển mỗi 3 giây khi có nhiều hơn một bài viết.
+      modules={hasSideSlides ? [Autoplay] : []}
       speed={1000}
       slidesPerView="auto"
       spaceBetween={13}
       centeredSlides
       loop={hasSideSlides}
+      autoplay={hasSideSlides ? { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true } : undefined}
       initialSlide={hasSideSlides ? articles.length - 1 : 0}
       slideToClickedSlide={hasSideSlides}
       autoHeight

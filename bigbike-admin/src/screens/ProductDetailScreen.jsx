@@ -1544,7 +1544,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} required error={validationErrors.gender}>
+                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} error={validationErrors.gender}>
                     {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
                         mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
                         rõ ràng cho SelectValue để trigger hiện đúng giá trị. */}
@@ -1558,11 +1558,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       </SelectTrigger>
                       <SelectContent>
                         {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu. Value lưu DB
-                            luôn là "Nam"/"Nữ"/"Unisex" (DATA_CONTRACT.md) — chỉ nhãn hiển thị đổi theo contentLang. */}
+                            luôn là "Nam"/"Nữ"/NULL (DATA_CONTRACT.md) — chỉ nhãn hiển thị đổi theo contentLang. */}
                         <SelectItem value="NONE">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
                         <SelectItem value="Nam">{isEn ? 'Male' : 'Nam'}</SelectItem>
                         <SelectItem value="Nữ">{isEn ? 'Female' : 'Nữ'}</SelectItem>
-                        <SelectItem value="Unisex">Unisex</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>

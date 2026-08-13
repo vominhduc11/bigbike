@@ -37,14 +37,13 @@ class Phase1KInventoryP0FixApiTest {
                 .build();
     }
 
-    // ── filter_gender removed from handler — Spring ignores unknown query params ──
+    // ── filter_gender is now a public product-gender filter ──
 
     @Test
-    void publicProductList_filterGender_isIgnoredReturns200() throws Exception {
-        // filter_gender was removed from CatalogController (no product gender field exists).
-        // Spring MVC does not reject unknown query params, so old bookmarked URLs return 200.
+    void publicProductList_filterGenderRejectsUnknownValue() throws Exception {
+        // The public contract accepts only Nam/Nữ, repeated for multi-select filtering.
         mockMvc.perform(get("/api/v1/products")
                         .param("filter_gender", "male"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
     }
 }

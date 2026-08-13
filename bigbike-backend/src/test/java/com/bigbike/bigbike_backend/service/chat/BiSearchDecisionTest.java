@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
@@ -263,7 +264,7 @@ class BiSearchDecisionTest {
     void resolvesBrandFromPublicCatalogVocabulary() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         when(catalog.listAssistantBrands()).thenReturn(List.of(brand("roadfox", "RoadFox")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 1, 10, 0, 0));
 
@@ -283,7 +284,7 @@ class BiSearchDecisionTest {
     void resolvesCategoryFromPublicCatalogVocabulary() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(category("neck-guard", "Neck Guard")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 1, 10, 0, 0));
 
@@ -305,7 +306,7 @@ class BiSearchDecisionTest {
     private static List<Search> allSearches(String question) {
         CatalogReadService catalog = mock(CatalogReadService.class);
         when(catalog.listAssistantBrands()).thenReturn(List.of(brand("ls2", "LS2")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 1, 10, 0, 0));
         new ChatToolService(catalog, mock(OrderReadService.class))

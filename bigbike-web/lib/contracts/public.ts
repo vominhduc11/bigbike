@@ -323,8 +323,8 @@ export type Product = {
   /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40–60 từ, hiển thị blockquote ngay
    *  sau Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Locale-resolved. Detail-only. */
   quickAnswerSummary?: string | null;
-  /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
-  gender?: string | null;
+  /** Giới tính mục tiêu: "Nam" | "Nữ". Null = Không chọn. */
+  gender?: ProductGender | null;
   /**
    * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
    * List-view shape. Detail-only; empty hides the section (no category fallback).
@@ -393,6 +393,9 @@ export type Brand = {
   count: number;
 };
 
+export type ProductGender = "Nam" | "Nữ";
+export type GenderFacet = FacetBucket & { key: ProductGender };
+
 /** A fixed price band + the count of products priced within it. */
  type PriceBucket = {
   key: string;
@@ -408,7 +411,7 @@ export type CatalogFacets = {
   categories: FacetBucket[];
   brands: FacetBucket[];
   colors: FacetBucket[];
-  genders: FacetBucket[];
+  genders: GenderFacet[];
   priceBands: PriceBucket[];
 };
 

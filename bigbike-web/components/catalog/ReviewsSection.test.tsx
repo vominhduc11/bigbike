@@ -14,12 +14,10 @@ vi.mock("next-intl", () => ({
       writeButton: "Viết đánh giá",
       submit: "Gửi đánh giá",
       submitting: "Đang gửi...",
-      ratingEmpty: "Chưa có đánh giá",
-      ratingUnavailable: "Chưa có điểm trung bình",
       ratingEmptyAria: "Chưa có đánh giá, 0 đánh giá",
     };
     if (key === "ratingSummaryAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
-    if (key === "ratingCount") return `(${values?.count} đánh giá)`;
+    if (key === "ratingCount") return `(${values?.count})`;
     if (key === "ratingUnavailableAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
     return messages[key] ?? key;
   },
@@ -150,9 +148,8 @@ describe("ReviewsSection", () => {
   }
 
   /**
-   * Số điểm trung bình lớn (VD "3.5") — query theo class riêng thay vì
-   * screen.findByText, vì từ REVIEW_RULE_008 bảng phân bố có 9 dòng nửa sao
-   * (5, 4.5, 4, 3.5...) nên "3.5"/"4.5" có thể trùng chữ với nhãn dòng breakdown.
+   * Điểm trung bình dạng chữ không còn được render; query theo class riêng để
+   * đảm bảo widget không vô tình quay lại hiển thị score lớn.
    */
   function avgScoreText(container: HTMLElement) {
     return container.querySelector(".text-a1-title")?.textContent ?? null;
@@ -164,14 +161,14 @@ describe("ReviewsSection", () => {
 
     expect(await screen.findByText("beFirst")).toBeInTheDocument();
     expect(summaryRatingRow(container)).not.toBeNull();
-    expect(screen.getByText("Chưa có đánh giá")).toBeInTheDocument();
-    // REVIEW_RULE_003: trạng thái rỗng không kèm "(0 đánh giá)" (lặp ý).
+    expect(screen.getByText("(0)")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa có đánh giá")).toBeNull();
     expect(screen.queryByText("(0 đánh giá)")).toBeNull();
     expect(container.querySelector('[role="group"]')).toBeNull();
     expect(screen.queryByText("0.0")).not.toBeInTheDocument();
   });
 
-  it("review [5,4,3] → trung bình 4.0: hiện '4.0', 4 sao đầy + sao 5 rỗng (không Math.round)", async () => {
+  it("review [5,4,3] → không hiện score chữ, 4 sao đầy + sao 5 rỗng", async () => {
     stubReviewsResponse({
       avgRating: 4.0,
       totalReviews: 3,
@@ -179,7 +176,8 @@ describe("ReviewsSection", () => {
     });
     const { container } = renderReviewsSection();
 
-    expect(await screen.findByText("4.0")).toBeInTheDocument();
+    expect(await screen.findByText("(3)")).toBeInTheDocument();
+    expect(avgScoreText(container)).toBeNull();
     const starRow = summaryRatingRow(container);
     expect(starRow).not.toBeNull();
     const overlay = starRow!.querySelector<HTMLElement>("span.absolute");
@@ -187,7 +185,7 @@ describe("ReviewsSection", () => {
     expect(overlay!.style.width).toBe("80%");
   });
 
-  it("review [5,2] → trung bình 3.5: hiện '3.5', sao thứ 4 tô đúng 50% (nửa sao, khớp RatingStars)", async () => {
+  it("review [5,2] → không hiện score chữ, sao tô đúng 50% (nửa sao)", async () => {
     stubReviewsResponse({
       avgRating: 3.5,
       totalReviews: 2,
@@ -195,7 +193,8 @@ describe("ReviewsSection", () => {
     });
     const { container } = renderReviewsSection();
 
-    await waitFor(() => expect(avgScoreText(container)).toBe("3.5"));
+    await waitFor(() => expect(screen.getByText("(2)")).toBeInTheDocument());
+    expect(avgScoreText(container)).toBeNull();
     const starRow = summaryRatingRow(container);
     expect(starRow).not.toBeNull();
     const overlay = starRow!.querySelector<HTMLElement>("span.absolute");

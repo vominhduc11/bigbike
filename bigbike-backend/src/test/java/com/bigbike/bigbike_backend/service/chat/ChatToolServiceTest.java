@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
@@ -75,7 +76,7 @@ class ChatToolServiceTest {
                 .contains("tìm sản phẩm");
         verifyNoInteractions(catalog, orders);
 
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 1, 10, 0, 0));
         assertThat(tools.resolve("Tôi muốn được tư vấn mũ", "vi", null, settings()).aiRequired())
@@ -691,7 +692,7 @@ class ChatToolServiceTest {
                 "tai-nghe-roadfox", "Tai nghe Bluetooth RoadFox", BigDecimal.valueOf(2_000_000), List.of());
         Product camera = product(
                 "camera-roadfox", "Camera hành trình RoadFox", BigDecimal.valueOf(2_000_000), List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         "tai-nghe-bluetooth-mu-bao-hiem".equals(invocation.getArgument(3))
@@ -717,7 +718,7 @@ class ChatToolServiceTest {
                 "mu-fullface-safe", "Mũ bảo hiểm fullface Safe", BigDecimal.valueOf(1_590_000), List.of());
         Product accessory = product(
                 "khan-trum-dau", "Khăn trùm nửa đầu đội mũ bảo hiểm", BigDecimal.valueOf(300_000), List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         "mu-bao-hiem".equals(invocation.getArgument(3))
@@ -748,7 +749,7 @@ class ChatToolServiceTest {
                 product("mu-follow-3", "Mũ fullface Follow 3", BigDecimal.valueOf(2_500_000), List.of()));
         Product accessory = product(
                 "gia-camera", "Giá gắn camera mũ bảo hiểm", BigDecimal.valueOf(1_000_000), List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         "mu-bao-hiem".equals(invocation.getArgument(3)) ? helmets : List.of(accessory),
@@ -782,7 +783,7 @@ class ChatToolServiceTest {
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("mu-bao-hiem", "Mũ bảo hiểm"),
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         "tai-nghe-bluetooth-mu-bao-hiem".equals(invocation.getArgument(3))
@@ -863,7 +864,7 @@ class ChatToolServiceTest {
                 category("mu-bao-hiem", "Mũ bảo hiểm"),
                 category("gang-tay-xe-may-moto", "Găng tay"),
                 category("giay-bao-ho", "Giày bảo hộ")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> switch ((String) invocation.getArgument(3)) {
                     case "gang-tay-xe-may-moto" -> new PageResult<>(gloves, 1, 10, 20, 2);
@@ -913,7 +914,7 @@ class ChatToolServiceTest {
         Product headset = product("tai-nghe-s12", "Tai nghe S12", BigDecimal.valueOf(3_500_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> {
                     Long minPrice = invocation.getArgument(8);
@@ -952,7 +953,7 @@ class ChatToolServiceTest {
         Product headset = product("tai-nghe-s12", "Tai nghe S12", BigDecimal.valueOf(3_500_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         invocation.getArgument(4) == null ? List.of(headset) : List.of(),
@@ -997,7 +998,7 @@ class ChatToolServiceTest {
                 BigDecimal.valueOf(900_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(headset), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1036,7 +1037,7 @@ class ChatToolServiceTest {
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("mu-bao-hiem", "Mũ bảo hiểm"),
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(switch ((String) invocation.getArgument(3)) {
                     case "mu-bao-hiem" -> List.of(helmet);
@@ -1088,7 +1089,7 @@ class ChatToolServiceTest {
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("mu-bao-hiem", "Mũ bảo hiểm"),
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1143,7 +1144,7 @@ class ChatToolServiceTest {
         CatalogReadService catalog = mock(CatalogReadService.class);
         Product helmet = product(
                 "mu-nearest", "Mũ bảo hiểm nearest", BigDecimal.valueOf(1_590_000), List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1167,7 +1168,7 @@ class ChatToolServiceTest {
         CatalogReadService catalog = mock(CatalogReadService.class);
         Product ls2 = product("ls2-of616", "Mũ bảo hiểm LS2 OF616", BigDecimal.valueOf(1_590_000), List.of());
         when(catalog.listAssistantBrands()).thenReturn(List.of(brand("ls2", "LS2")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> "ls2".equals(invocation.getArgument(4))
                         ? new PageResult<>(List.of(ls2), 1, 10, 1, 1)
@@ -1201,7 +1202,7 @@ class ChatToolServiceTest {
                 product("mu-under", "Mũ bảo hiểm dưới ngưỡng", BigDecimal.valueOf(1_590_000), List.of()),
                 product("mu-around", "Mũ bảo hiểm quanh năm triệu", BigDecimal.valueOf(5_000_000), List.of()),
                 product("mu-over", "Mũ bảo hiểm trên ngưỡng", BigDecimal.valueOf(6_500_000), List.of()));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(helmets, 1, 10, helmets.size(), 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1233,7 +1234,7 @@ class ChatToolServiceTest {
                 product("from-five-2", "Sản phẩm từ năm triệu 2", BigDecimal.valueOf(6_000_000), List.of()),
                 product("from-five-3", "Sản phẩm từ năm triệu 3", BigDecimal.valueOf(7_000_000), List.of()),
                 product("from-five-4", "Sản phẩm từ năm triệu 4", BigDecimal.valueOf(8_000_000), List.of()));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(candidates, 1, 10, candidates.size(), 1));
 
@@ -1252,7 +1253,7 @@ class ChatToolServiceTest {
         List<Product> headsets = List.of(
                 product("headset-low", "Tai nghe Bluetooth dưới một triệu", BigDecimal.valueOf(500_000), List.of()),
                 product("headset-high", "Tai nghe Bluetooth trên hai triệu", BigDecimal.valueOf(2_500_000), List.of()));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(headsets, 1, 10, headsets.size(), 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1276,7 +1277,7 @@ class ChatToolServiceTest {
                 product("s10x", "SCS S10X", BigDecimal.valueOf(1_550_000), List.of()),
                 product("s13", "SCS S13", BigDecimal.valueOf(3_190_000), List.of()),
                 product("t2-plus", "SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(candidates, 1, 10, candidates.size(), 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1299,7 +1300,7 @@ class ChatToolServiceTest {
                 product("g7-plus", "SCS G7+", BigDecimal.valueOf(3_290_000), List.of()),
                 product("t2-plus", "SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()),
                 product("scs-s12", "SCS S12", BigDecimal.valueOf(5_890_000), List.of()));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(headsets, 1, 10, headsets.size(), 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1329,7 +1330,7 @@ class ChatToolServiceTest {
         CatalogReadService catalog = mock(CatalogReadService.class);
         Product helmet = product(
                 "mu-broad", "Mũ bảo hiểm fullface Broad", BigDecimal.valueOf(2_000_000), List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> new PageResult<>(
                         invocation.getArgument(5) == null ? List.of(helmet) : List.of(),
@@ -1358,7 +1359,7 @@ class ChatToolServiceTest {
         Product glove = product(
                 "gang-tay-den-l", "Găng tay touring đen", BigDecimal.valueOf(850_000),
                 List.of(variant(true, "Màu sắc", "Đen", "Size", "L")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(glove), 1, 10, 1, 1));
         when(catalog.getProductBySlug("gang-tay-den-l", "vi")).thenReturn(glove);
@@ -1387,7 +1388,7 @@ class ChatToolServiceTest {
                 BigDecimal.valueOf(1_550_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(headset), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1418,7 +1419,7 @@ class ChatToolServiceTest {
                 BigDecimal.valueOf(1_550_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(headset), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1449,7 +1450,7 @@ class ChatToolServiceTest {
                 BigDecimal.valueOf(1_550_000), List.of());
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("tai-nghe-bluetooth-mu-bao-hiem", "Tai nghe bluetooth mũ bảo hiểm")));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenAnswer(invocation -> {
                     String query = invocation.getArgument(5);
@@ -1495,7 +1496,7 @@ class ChatToolServiceTest {
                 "mu-safe", "Mũ bảo hiểm Safe", BigDecimal.valueOf(1_500_000), List.of());
         when(catalog.searchProductsForAssistant(any(), any(), any(), any(), any(), any(), anyInt(), any()))
                 .thenReturn(List.of());
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -1555,12 +1556,12 @@ class ChatToolServiceTest {
     }
 
     @Test
-    @DisplayName("search_products forwards only the fixed filters")
+    @DisplayName("search_products drops unsupported product gender filters")
     void productSearchUsesFixedAllowlistedArguments() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         OrderReadService orders = mock(OrderReadService.class);
         when(catalog.listProducts(
-                1, 10, "price:asc", "mu-bao-hiem", "ls2", "3/4", "Đen", "UNISEX",
+                1, 10, "price:asc", "mu-bao-hiem", "ls2", "3/4", "Đen", List.of(),
                 1_000_000L, 2_500_000L, null, "vi"))
                 .thenReturn(new PageResult<>(List.of(), 1, 10, 0, 0));
         ChatToolService tools = new ChatToolService(catalog, orders);
@@ -1570,7 +1571,7 @@ class ChatToolServiceTest {
                 "Đen", "UNISEX", "price:asc", "vi");
 
         verify(catalog).listProducts(
-                1, 10, "price:asc", "mu-bao-hiem", "ls2", "3/4", "Đen", "UNISEX",
+                1, 10, "price:asc", "mu-bao-hiem", "ls2", "3/4", "Đen", List.of(),
                 1_000_000L, 2_500_000L, null, "vi");
         verifyNoInteractions(orders);
     }

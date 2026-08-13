@@ -37,7 +37,7 @@ class LiveOwnerOverrideV3Test {
         assertThat(inference.manualFieldOverrides()).hasSize(25)
                 .allSatisfy(row -> {
                     assertThat(row.field()).isEqualTo("gender");
-                    assertThat(row.value()).isEqualTo("Unisex");
+                    assertThat(row.value()).isNull();
                     assertThat(row.ruleId()).isEqualTo("OWNER_MANUAL_GENDER_V3");
                 });
         assertThat(inference.productCategoryOverrides()).hasSize(25)

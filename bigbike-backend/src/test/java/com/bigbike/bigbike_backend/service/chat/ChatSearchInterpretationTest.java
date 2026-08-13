@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,7 +65,7 @@ class ChatSearchInterpretationTest {
             CatalogReadService catalog = catalogWithPublicVocabulary();
             Product expected = product("safe-" + searchCase.expectedCategory(), "Sản phẩm an toàn",
                     BigDecimal.valueOf(1_500_000));
-            when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                     any(), any(), any(), any()))
                     .thenReturn(new PageResult<>(List.of(expected), 1, 10, 1, 1));
             ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -97,7 +98,7 @@ class ChatSearchInterpretationTest {
     void shortFollowUpUsesThePreviouslyAcceptedSemanticScope() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product headset = product("headset-safe", "Tai nghe an toàn", BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(headset), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -119,7 +120,7 @@ class ChatSearchInterpretationTest {
     void modelVerifiedCategorySwitchDoesNotRetainOldFilters() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product headset = product("headset-safe", "Tai nghe an toàn", BigDecimal.valueOf(3_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(headset), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -154,7 +155,7 @@ class ChatSearchInterpretationTest {
     void modelPriceWithoutCustomerPriceIsDroppedButSearchContinues() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product helmet = product("helmet-safe", "Mũ bảo hiểm an toàn", BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -178,7 +179,7 @@ class ChatSearchInterpretationTest {
     void modelPriceConflictWithAnInheritedCustomerRangeIsDroppedButTheSafeRangeRemains() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product helmet = product("helmet-safe", "Mũ bảo hiểm an toàn", BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -205,7 +206,7 @@ class ChatSearchInterpretationTest {
     void nonexistentCategoryIsDroppedInsteadOfFailingTheWholeTurn() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product helmet = product("helmet-safe", "Mũ bảo hiểm an toàn", BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -227,7 +228,7 @@ class ChatSearchInterpretationTest {
     void inventedProductModelCannotCreateAnInventedCard() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product helmet = product("helmet-safe", "Mũ bảo hiểm an toàn", BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(helmet), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -251,7 +252,7 @@ class ChatSearchInterpretationTest {
     void priceRangeMissCarriesTheMandatoryDisclosureForTheResponseGuard() {
         CatalogReadService catalog = catalogWithPublicVocabulary();
         Product outsideRange = product("helmet-319", "Mũ bảo hiểm ngoài tầm", BigDecimal.valueOf(3_190_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), any(),
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(outsideRange), 1, 10, 1, 1));
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));

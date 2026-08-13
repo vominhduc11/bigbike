@@ -172,6 +172,35 @@ class PublicReadApiTest {
     }
 
     @Test
+    void publicProductList_multiGenderFilterReturnsUnionAndExcludesNull() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String category = "pub-gender-cat-" + suffix;
+        CategoryEntity cat = seedCategory(category, "Pub Gender Cat " + suffix);
+        seedProduct("pub-gender-men-" + suffix, "Pub Gender Men " + suffix,
+                cat, PublishStatus.PUBLISHED, 1_000_000L, "Nam");
+        seedProduct("pub-gender-women-" + suffix, "Pub Gender Women " + suffix,
+                cat, PublishStatus.PUBLISHED, 1_100_000L, "Nữ");
+        seedProduct("pub-gender-none-" + suffix, "Pub Gender None " + suffix,
+                cat, PublishStatus.PUBLISHED, 1_200_000L, null);
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("category", category)
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("category", category)
+                        .param("size", "10")
+                        .param("filter_gender", "Nam", "Nữ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data[*].slug")
+                        .value(org.hamcrest.Matchers.containsInAnyOrder(
+                                "pub-gender-men-" + suffix, "pub-gender-women-" + suffix)));
+    }
+
+    @Test
     void shouldReturnNotFoundForUnknownProductSlug() throws Exception {
         mockMvc.perform(get("/api/v1/products/not-exist"))
                 .andExpect(status().isNotFound())
@@ -258,6 +287,11 @@ class PublicReadApiTest {
 
     private void seedProduct(String slug, String name, CategoryEntity cat,
                              PublishStatus status, long retailPriceLong) {
+        seedProduct(slug, name, cat, status, retailPriceLong, null);
+    }
+
+    private void seedProduct(String slug, String name, CategoryEntity cat,
+                             PublishStatus status, long retailPriceLong, String gender) {
         if (productRepo.findBySlug(slug).isPresent()) return;
         ProductEntity p = new ProductEntity();
         p.setId(UUID.randomUUID().toString());
@@ -266,6 +300,7 @@ class PublicReadApiTest {
         p.setRetailPrice(BigDecimal.valueOf(retailPriceLong));
         p.setCurrency("VND");
         p.setPublishStatus(status);
+        p.setGender(gender);
         p.setStockState(ProductStockState.IN_STOCK);
         p.setCategory(cat);
         Instant now = Instant.now();

@@ -204,6 +204,16 @@ final class LiveProductInferencePlanner {
         if (manual != null) return manualOverrideResult(post, manual, false);
 
         if (!safe(sourceGenderSlugs).isEmpty()) {
+            boolean allKnown = sourceGenderSlugs.stream().allMatch(slug -> {
+                String normalized = LiveMigrationPreflightService.normalizeSlug(slug);
+                return LiveMigrationPreflightService.mapDirectGender(normalized) != null
+                        || "unisex".equals(normalized);
+            });
+            if (allKnown) {
+                return applied(post.id(), "gender", String.join(",", sourceGenderSlugs), null,
+                        "Structured source gender is a legacy neutral or combined value; resolved gender=NULL",
+                        policy.genderTokenRuleId(), "MEDIUM", null, false);
+            }
             return manual(post.id(), "gender", String.join(",", sourceGenderSlugs),
                     "Structured source gender exists but has no unique direct target mapping: "
                             + sourceGenderSlugs,
@@ -216,9 +226,9 @@ final class LiveProductInferencePlanner {
         boolean unisex = intersects(tokens, policy.unisexTokens());
         int groups = (female ? 1 : 0) + (male ? 1 : 0) + (unisex ? 1 : 0);
         if (groups == 1) {
-            String value = unisex ? "Unisex" : female ? "Nữ" : "Nam";
+            String value = unisex ? null : female ? "Nữ" : "Nam";
             return applied(post.id(), "gender", post.postTitle(), value,
-                    "Title contains one approved exact gender-token group: " + value
+                    "Title contains one approved exact gender-token group; resolved gender=" + value
                             + "; sourceCategories=" + safe(sourceCategorySlugs),
                     policy.genderTokenRuleId(), "HIGH", null, false);
         }
@@ -236,7 +246,7 @@ final class LiveProductInferencePlanner {
                 .map(LiveMigrationPreflightService::normalizeSlug)
                 .filter(whitelist::contains).distinct().toList();
         if (!evidence.isEmpty()) {
-            return applied(post.id(), "gender", post.postTitle(), "Unisex",
+            return applied(post.id(), "gender", post.postTitle(), null,
                     "Source category is in the exact neutral equipment/accessory whitelist: "
                             + evidence + "; allSourceCategories=" + safe(sourceCategorySlugs),
                     policy.neutralCategoryRuleId(), "MEDIUM", null, false);
@@ -262,6 +272,10 @@ final class LiveProductInferencePlanner {
             }
         }
         if (value == null) {
+            if ("gender".equals(override.field())) {
+                return applied(post.id(), override.field(), post.postTitle(), null,
+                        override.evidence(), override.ruleId(), override.confidence(), uniqueness, false);
+            }
             return manual(post.id(), override.field(), post.postTitle(),
                     "Owner manual override không có value", override.ruleId(), uniqueness);
         }

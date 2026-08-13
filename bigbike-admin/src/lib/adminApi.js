@@ -255,6 +255,7 @@ function buildProductQuery(query) {
     stockState: query?.stockState,
     brandId: query?.brandId || undefined,
     categoryId: query?.categoryId || undefined,
+    filter_gender: query?.gender || undefined,
     homepageBlock: query?.homepageBlock,
     lang: getContentLang(),
   }
@@ -1922,6 +1923,7 @@ export async function exportFullProductCatalogCsv(options = {}) {
     q: options.q,
     categoryId: options.categoryId,
     brandId: options.brandId,
+    filter_gender: options.filterGender,
     publishStatus: options.publishStatus,
     stockState: options.stockState,
     includeDraft: options.includeDraft ? 'true' : undefined,

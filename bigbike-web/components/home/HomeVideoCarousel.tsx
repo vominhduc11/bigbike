@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import type { HomeVideo } from "@/lib/contracts/public";
@@ -159,10 +160,14 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
             onResize={(s) => {
               updateSnap(s);
             }}
+            // Trang chủ tự chuyển mỗi 3 giây; carousel gọn ở PDP giữ thao tác thủ công.
+            modules={compact ? [] : [Autoplay]}
             loop={false}
+            rewind={!compact}
             speed={1000}
             slidesPerView={1}
             spaceBetween={12}
+            autoplay={compact ? undefined : { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true }}
             breakpoints={cols.breakpoints}
           >
             {videos.map((video, idx) => (

@@ -551,10 +551,6 @@ final class AdminMutationValidators {
         if (entity.getBrand() == null) {
             errors.add(new ApiErrorDetail("brandId", REQUIRED, "Brand is required."));
         }
-        if (trimToNull(entity.getGender()) == null) {
-            errors.add(new ApiErrorDetail("gender", REQUIRED, "Gender is required."));
-        }
-
         if (trimToNull(entity.getSku()) == null) {
             errors.add(new ApiErrorDetail("sku", REQUIRED, "SKU is required."));
         }

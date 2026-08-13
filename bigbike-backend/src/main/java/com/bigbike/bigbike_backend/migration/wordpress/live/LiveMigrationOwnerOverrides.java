@@ -406,7 +406,7 @@ final class LiveMigrationOwnerOverrides {
             require(ids.add(override.sourceId()),
                     "Duplicate owner gender decision for source " + override.sourceId());
             require("gender".equals(override.field())
-                            && "Unisex".equals(override.value())
+                            && !hasText(override.value())
                             && expectedRuleId.equals(override.ruleId())
                             && "OWNER_CONFIRMED".equals(override.confidence())
                             && hasText(override.evidence()),

@@ -97,7 +97,7 @@ class ProductImportMediaPreservationTest {
                         .build()));
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
-        create.setGender("Unisex");
+        create.setGender("Nam");
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setCurrency("VND");
         create.setPublishStatus(PublishStatus.DRAFT);

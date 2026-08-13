@@ -91,7 +91,7 @@ public class FullProductCatalogCsvExportService {
 
         if (scope == ProductCsvExportScope.ALL) {
             return new ProductCsvExportPlan(
-                    scope, null, null, null, null,
+                    scope, null, null, null, null, null,
                     EnumSet.allOf(PublishStatus.class), Set.of(), List.of(),
                     true, true, preset, columns, resolveGroups(columns));
         }
@@ -110,6 +110,7 @@ public class FullProductCatalogCsvExportService {
                 blankToNull(query.getQ()),
                 categoryId,
                 blankToNull(query.getBrandId()),
+                blankToNull(query.getFilterGender()),
                 stockState,
                 statuses,
                 categoryIds,
@@ -131,7 +132,7 @@ public class FullProductCatalogCsvExportService {
                 plan.stockState() == null ? null : plan.stockState().name(),
                 plan.brandId(),
                 plan.categoryIds(),
-                null);
+                plan.gender());
         if (plan.scope() == ProductCsvExportScope.SELECTED) {
             specification = specification.and((root, query, cb) -> root.get("id").in(plan.selectedIds()));
         }

@@ -69,3 +69,47 @@ for (const route of KEY_ROUTES) {
     }
   });
 }
+
+const HEADER_NAV_VIEWPORTS = [1280, 1366, 1439, 1440, 1536, 1920];
+
+test.describe("Header primary navigation responsive mode", () => {
+  for (const width of HEADER_NAV_VIEWPORTS) {
+    test(`${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await gotoAndSettle(page, "/");
+
+      const desktopMenu = page.locator("[data-header-desktop-menu]").first();
+      const mobileMenuTrigger = page.locator("[data-header-mobile-trigger]").first();
+
+      if (width < 1440) {
+        await expect(desktopMenu, `desktop menu should be hidden @ ${width}px`).toBeHidden();
+        await expect(mobileMenuTrigger, `hamburger should be visible @ ${width}px`).toBeVisible();
+        return;
+      }
+
+      await expect(desktopMenu, `desktop menu should be visible @ ${width}px`).toBeVisible();
+      await expect(mobileMenuTrigger, `hamburger should be hidden @ ${width}px`).toBeHidden();
+
+      const links = desktopMenu.locator(":scope > ul > li > a");
+      await expect(links.first()).toBeVisible();
+      const measurements = await links.evaluateAll((nodes) => nodes.map((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const lineRects = Array.from(range.getClientRects());
+        const style = getComputedStyle(node);
+        return {
+          clientWidth: node.clientWidth,
+          scrollWidth: node.scrollWidth,
+          lineCount: lineRects.length,
+          whiteSpace: style.whiteSpace,
+        };
+      }));
+
+      for (const measurement of measurements) {
+        expect(measurement.whiteSpace, `menu label should not wrap @ ${width}px`).toBe("nowrap");
+        expect(measurement.lineCount, `menu label should stay on one line @ ${width}px`).toBe(1);
+        expect(measurement.scrollWidth, `menu label should not overflow its link @ ${width}px`).toBeLessThanOrEqual(measurement.clientWidth);
+      }
+    });
+  }
+});

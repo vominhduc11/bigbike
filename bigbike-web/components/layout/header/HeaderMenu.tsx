@@ -70,7 +70,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
     <nav
       aria-label={t("menu")}
       data-header-desktop-menu
-      className="h-full"
+      className="h-full shrink-0"
       onPointerLeave={() => setOpenNodeId(null)}
       onBlur={(event) => {
         const nextTarget = event.relatedTarget;
@@ -82,7 +82,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
         if (event.key === "Escape") setOpenNodeId(null);
       }}
     >
-      <ul className="m-0 flex h-full list-none items-center p-0">
+      <ul className="m-0 flex h-full w-max list-none items-center p-0">
         {nodes.map((node) => {
           const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
           const hasChildren = node.children.length > 0;
@@ -94,7 +94,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
               onPointerEnter={() => setOpenNodeId(hasChildren ? node.id : null)}
               onFocus={() => setOpenNodeId(hasChildren ? node.id : null)}
               className={cn(
-                "relative flex h-full list-none items-center after:absolute after:right-[-3px] after:top-1/2 after:h-[5px] after:w-[5px] after:-translate-y-1/2 after:rotate-45 after:bg-brand-on-dark after:content-[''] last:after:hidden",
+                "relative flex h-full shrink-0 list-none items-center after:absolute after:right-[-3px] after:top-1/2 after:h-[5px] after:w-[5px] after:-translate-y-1/2 after:rotate-45 after:bg-brand-on-dark after:content-[''] last:after:hidden",
               )}
             >
               <Link
@@ -104,7 +104,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 aria-haspopup={hasChildren ? "menu" : undefined}
                 aria-expanded={hasChildren ? open : undefined}
                 onClick={() => setOpenNodeId(null)}
-                className="flex h-full items-center px-7.5 font-cta text-header-nav font-bold leading-body tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className="flex h-full shrink-0 items-center whitespace-nowrap px-7.5 font-cta text-header-nav font-bold leading-body tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
               </Link>
@@ -217,7 +217,7 @@ function MobileMenuList({
               rel={node.openInNewTab ? "noopener" : undefined}
               onClick={onNavigate}
               className={cn(
-                "flex min-h-13 items-center pr-17.5 text-white! no-underline!",
+                "flex min-h-13 items-center whitespace-nowrap pr-17.5 text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
                 depth === 0
                   ? "py-[15px] font-cta text-header-nav font-bold leading-body tracking-wide"

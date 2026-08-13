@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -134,6 +135,19 @@ class AdminReadApiTest {
 
         productMutationService.createProduct(men, DEV_ADMIN_ID);
         productMutationService.createProduct(women, DEV_ADMIN_ID);
+        UpsertProductRequest noGender = new UpsertProductRequest();
+        noGender.setSlug("gender-none-" + suffix);
+        noGender.setName("Gender None Product " + suffix);
+        noGender.setCategoryId("cat_helmet");
+        noGender.setBrandId("brand_ls2");
+        noGender.setSku("GENDER-NONE-" + suffix);
+        noGender.setRetailPrice(new BigDecimal("1500000"));
+        noGender.setPublishStatus(PublishStatus.DRAFT);
+        noGender.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Gender None Product EN " + suffix)
+                        .build()));
+        productMutationService.createProduct(noGender, DEV_ADMIN_ID);
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .param("filter_gender", "nam")
@@ -150,6 +164,14 @@ class AdminReadApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].gender", everyItem(is("Nữ"))))
                 .andExpect(jsonPath("$.data[*].slug", hasItem(women.getSlug())));
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("filter_gender", "NULL")
+                        .param("size", "100")
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].gender", everyItem(nullValue())))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(noGender.getSlug())));
     }
 
     @Test
@@ -164,7 +186,7 @@ class AdminReadApiTest {
         create.setName("Phase 3 Read SEO Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
-        create.setGender("Unisex");
+        create.setGender("Nam");
         create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setPublishStatus(PublishStatus.DRAFT);
@@ -209,7 +231,7 @@ class AdminReadApiTest {
         create.setName("Trash List Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
-        create.setGender("Unisex");
+        create.setGender("Nam");
         create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("1250000"));
         create.setPublishStatus(PublishStatus.DRAFT);
@@ -247,7 +269,7 @@ class AdminReadApiTest {
         create.setName("Publish Then Trash Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
-        create.setGender("Unisex");
+        create.setGender("Nam");
         create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("1250000"));
         create.setPublishStatus(PublishStatus.DRAFT);

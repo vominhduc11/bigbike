@@ -164,16 +164,16 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
           </div>
 
           <div className="flex h-full min-w-0 flex-1 items-center justify-end">
-            <div className="hidden h-full min-[1261px]:block!">
+            <div className="hidden h-full shrink-0 min-[1440px]:block!">
               <HeaderMenu initialNodes={menuNodes} variant="desktop" />
             </div>
-            <div className="flex h-full shrink-0 items-center min-[1261px]:ml-3.5 min-[1261px]:border-l min-[1261px]:border-white/25 min-[1261px]:pl-3.5">
+            <div className="flex h-full shrink-0 items-center min-[1440px]:ml-3.5 min-[1440px]:border-l min-[1440px]:border-white/25 min-[1440px]:pl-3.5">
               <LanguageSwitch />
               <HeaderSearchButton />
               <div className="hidden h-full md:block!">
                 <HeaderCartLink ariaLabel={t("cart")} />
               </div>
-              <div className="hidden h-full min-[1261px]:block!">
+              <div className="hidden h-full min-[1440px]:block!">
                 <HeaderUser variant="desktop" />
               </div>
               <Button
@@ -184,7 +184,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                 aria-label={mobileMenuOpen ? t("mobileMenuCollapseAriaLabel", { label: t("menu") }) : t("mobileMenuOpenAriaLabel")}
                 aria-expanded={mobileMenuOpen}
                 onClick={() => togglePanel("mobile-menu")}
-                className={cn(iconBtn, "h-15! min-h-15! px-2.5! hover:not-disabled:scale-100 md:h-20! md:min-h-20! min-[1261px]:hidden!")}
+                className={cn(iconBtn, "h-15! min-h-15! px-2.5! hover:not-disabled:scale-100 md:h-20! md:min-h-20! min-[1440px]:hidden!")}
               >
                 <HamburgerIcon open={mobileMenuOpen} />
               </Button>
@@ -196,7 +196,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                 aria-label={t("shopInfoAriaLabel", { siteName: "BigBike" })}
                 aria-expanded={desktopInfoOpen}
                 onClick={() => togglePanel("desktop-info")}
-                className={cn(iconBtn, "ml-2.5 hidden h-20! min-h-20! px-2.5! hover:not-disabled:scale-100 min-[1261px]:inline-flex!")}
+                className={cn(iconBtn, "ml-2.5 hidden h-20! min-h-20! px-2.5! hover:not-disabled:scale-100 min-[1440px]:inline-flex!")}
               >
                 <HamburgerIcon open={desktopInfoOpen} />
               </Button>

@@ -116,6 +116,10 @@ public class UpsertProductRequest {
     private boolean quickAnswerSummaryPresent = false;
 
     @Size(max = 20, message = "Gender is too long.")
+    @Pattern(
+            regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$",
+            message = "Gender must be Nam, Nữ, or blank."
+    )
     private String gender;
     private boolean genderPresent = false;
 

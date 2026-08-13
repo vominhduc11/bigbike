@@ -481,7 +481,7 @@ public class ProductMutationService {
             entity.setQuickAnswerSummary(AdminMutationValidators.trimToNull(request.getQuickAnswerSummary()));
         }
         if (create || request.isGenderPresent()) {
-            entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
+            entity.setGender(normalizeGender(request.getGender()));
         }
 
         if (request.isDescriptionBlocksPresent()) {
@@ -576,6 +576,14 @@ public class ProductMutationService {
         } else if (create) {
             entity.setAccessoryProducts(new ArrayList<>());
         }
+    }
+
+    private static String normalizeGender(String raw) {
+        String value = AdminMutationValidators.trimToNull(raw);
+        if (value == null) return null;
+        if (value.equalsIgnoreCase("Nam")) return "Nam";
+        if (value.equalsIgnoreCase("Nữ")) return "Nữ";
+        return value;
     }
 
     private List<ProductEntity> resolveProductRefs(List<String> ids, String selfId) {

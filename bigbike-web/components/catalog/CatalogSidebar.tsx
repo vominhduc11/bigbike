@@ -4,12 +4,14 @@
 
 import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "@/i18n/StorefrontLink";
+import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { CATALOG_FILTER_OPEN_EVENT } from "@/components/catalog/catalog-events";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -43,7 +45,7 @@ export type CatalogFilterState = {
   category?: string;
   brand?: string;
   color?: string;
-  gender?: string;
+  gender?: string[];
   minPrice?: number;
   maxPrice?: number;
 };
@@ -54,7 +56,7 @@ type CatalogSidebarProps = {
   facets?: CatalogFacets | null;
   current: CatalogFilterState;
   resetHref: string;
-  hiddenParams?: Record<string, string | undefined>;
+  hiddenParams?: Record<string, string | string[] | number | undefined>;
 };
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -167,6 +169,7 @@ export function CatalogSidebar({
 }: CatalogSidebarProps) {
   const t = useTranslations("Catalog");
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -175,8 +178,8 @@ export function CatalogSidebar({
     return () => window.removeEventListener(CATALOG_FILTER_OPEN_EVENT, open);
   }, []);
 
-  function queryHref(override: Record<string, string | number | undefined>): string {
-    const params: Record<string, string | number | undefined> = {
+  function queryHref(override: Record<string, string | string[] | number | undefined>): string {
+    const params: Record<string, string | string[] | number | undefined> = {
       ...hiddenParams,
       "pwb-brand": current.brand,
       filter_color: current.color,
@@ -211,6 +214,10 @@ export function CatalogSidebar({
       }))
     : PRICE_FALLBACK.map((band) => ({ ...band, label: t(`priceFallback.${band.key}`) }));
   const noPrice = current.minPrice == null && current.maxPrice == null;
+  const genderRows = (facets?.genders ?? []).filter(
+    (gender): gender is CatalogFacets["genders"][number] => gender.key === "Nam" || gender.key === "Nữ",
+  );
+  const selectedGenders = current.gender ?? [];
 
   function renderFilters() {
     return (
@@ -301,16 +308,26 @@ export function CatalogSidebar({
           </ul>
         </FilterSection>
 
-        {facets?.genders?.length ? (
+        {genderRows.length ? (
           <FilterSection title={t("filterGender")}>
             <ul className={filterListClass}>
-              {facets.genders.map((gender) => {
-                const active = current.gender === gender.key;
+              {genderRows.map((gender) => {
+                const active = selectedGenders.includes(gender.key);
+                const nextGenders = active
+                  ? selectedGenders.filter((value) => value !== gender.key)
+                  : [...selectedGenders, gender.key];
                 return (
                   <li className={filterRowClass} key={gender.key}>
-                    <Link className={cn(filterLinkClass, active && "text-brand!")} rel="nofollow" href={active ? queryHref({ filter_gender: undefined }) : queryHref({ filter_gender: gender.key })}>
-                      {gender.label}
-                    </Link>
+                    <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 font-body font-semibold text-muted-foreground">
+                      <Checkbox
+                        checked={active}
+                        onCheckedChange={() => {
+                          router.push(queryHref({ filter_gender: nextGenders.length ? nextGenders : undefined }));
+                        }}
+                        aria-label={gender.label}
+                      />
+                      <span className={cn(active && "text-brand!")}>{gender.label}</span>
+                    </label>
                     {gender.count != null ? <span className="text-a5-meta text-muted-foreground">({gender.count})</span> : null}
                   </li>
                 );

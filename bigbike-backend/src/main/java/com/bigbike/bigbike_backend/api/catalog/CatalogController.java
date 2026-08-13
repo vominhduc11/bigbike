@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
@@ -62,7 +63,8 @@ public class CatalogController {
             @RequestParam(name = "pwb-brand", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String brand,
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(name = "filter_color", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String filterColor,
-            @RequestParam(name = "filter_gender", required = false) @Size(max = 20) String filterGender,
+            @RequestParam(name = "filter_gender", required = false)
+                List<@Size(max = 20) @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.") String> filterGender,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
             @RequestParam(name = "homepage_block", required = false)

@@ -80,7 +80,15 @@ export function CatalogClient({
   const locale = useLocale();
 
   const catalog = useMemo(() => {
-    const params = Object.fromEntries(searchParams.entries());
+    const params: Record<string, string | string[]> = {};
+    searchParams.forEach((value, key) => {
+      const previous = params[key];
+      params[key] = previous === undefined
+        ? value
+        : Array.isArray(previous)
+          ? [...previous, value]
+          : [previous, value];
+    });
     return parseCatalogListParams(params, { includeCategoryParam, queryParamKeys });
   }, [searchParams, includeCategoryParam, queryParamKeys]);
 
@@ -120,7 +128,7 @@ export function CatalogClient({
     !catalog.filters.category &&
     !catalog.filters.brand &&
     !catalog.filters.color &&
-    !catalog.filters.gender &&
+    catalog.filters.gender.length === 0 &&
     catalog.filters.minPrice === undefined &&
     catalog.filters.maxPrice === undefined;
   const initialData =

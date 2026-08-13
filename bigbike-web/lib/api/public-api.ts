@@ -39,7 +39,7 @@ const DEFAULT_META_ERROR = {
   details: [] as ApiErrorDetail[],
 } satisfies ClientError;
 
-type RequestQuery = Record<string, string | number | undefined>;
+type RequestQuery = Record<string, string | string[] | number | undefined>;
 
 class ApiRequestError extends Error {
   clientError: ClientError;
@@ -58,7 +58,11 @@ function toUrl(path: string, query?: RequestQuery): string {
       if (value === undefined || value === "") {
         continue;
       }
-      url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) {
+        value.forEach((item) => url.searchParams.append(key, String(item)));
+      } else {
+        url.searchParams.set(key, String(value));
+      }
     }
   }
   return url.toString();
@@ -270,7 +274,7 @@ export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
   brand?: string;
   q?: string;
   filterColor?: string;
-  filterGender?: string;
+  filterGender?: string[];
   minPrice?: number;
   maxPrice?: number;
   /** Filter to a single homepage placement slot. */

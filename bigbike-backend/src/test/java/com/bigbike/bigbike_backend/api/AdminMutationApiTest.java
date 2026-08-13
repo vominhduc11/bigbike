@@ -88,7 +88,6 @@ class AdminMutationApiTest {
                   "name": "Phase 4G Product %s",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
                   "sku": "PHASE4G-%s",
                   "retailPrice": 2500000,
                   "salePrice": 2300000,
@@ -122,6 +121,7 @@ class AdminMutationApiTest {
 
         ProductEntity created = productJpaRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalStateException("Expected created product."));
+        assertThat(created.getGender()).isNull();
 
         String updatePayload = """
                 {
@@ -155,6 +155,32 @@ class AdminMutationApiTest {
                         .content(publishPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
+        assertThat(productJpaRepository.findById(created.getId()).orElseThrow().getGender()).isNull();
+    }
+
+    @Test
+    void shouldRejectLegacyUnisexProductGender() throws Exception {
+        String slug = "reject-unisex-gender-" + System.currentTimeMillis();
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "slug": "%s",
+                                  "name": "Reject legacy gender",
+                                  "categoryId": "cat_helmet",
+                                  "brandId": "brand_ls2",
+                                  "gender": "  uNiSeX  ",
+                                  "sku": "REJECT-UNISEX-%s",
+                                  "retailPrice": 1500000,
+                                  "publishStatus": "DRAFT"
+                                }
+                                """.formatted(slug, System.currentTimeMillis())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("gender"))
+                .andExpect(jsonPath("$.error.details[0].message").value("Gender must be Nam, Nữ, or blank."));
     }
 
     @Test
@@ -167,7 +193,7 @@ class AdminMutationApiTest {
                   "name": "Product Save Status %s",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "SAVE-STATUS-%s",
                   "retailPrice": 1500000,
                   "publishStatus": "%s",
@@ -248,7 +274,7 @@ class AdminMutationApiTest {
                   "name": "System Bucket Publish Gate %s",
                   "categoryId": "uncategorized",
                   "brandId": "uncategorized-brand",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "SYSTEM-BUCKET-%s",
                   "retailPrice": 1500000,
                   "publishStatus": "DRAFT",
@@ -333,7 +359,7 @@ class AdminMutationApiTest {
                                   "name": "Preview Invalid Language",
                                   "categoryId": "cat_helmet",
                                   "brandId": "brand_ls2",
-                                  "gender": "Unisex",
+                  "gender": "Nam",
                                   "sku": "PREVIEW-INVALID-LANG",
                                   "retailPrice": 1500000,
                                   "publishStatus": "DRAFT"
@@ -358,7 +384,7 @@ class AdminMutationApiTest {
                   "name": "Preview Existing Slug Product",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "PREVIEW-%s",
                   "retailPrice": 1990000,
                   "currency": "VND",
@@ -424,7 +450,7 @@ class AdminMutationApiTest {
                   "name": "Invalid Sale Product",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "INVALID-SALE",
                   "retailPrice": 1000000,
                   "salePrice": 1000000,
@@ -447,7 +473,7 @@ class AdminMutationApiTest {
                   "name": "Invalid Media Product",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "INVALID-MEDIA",
                   "retailPrice": 1000000,
                   "stockState": "IN_STOCK",
@@ -479,7 +505,7 @@ class AdminMutationApiTest {
                   "name": "Phase 3 SEO Content Product %s",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
-                  "gender": "Unisex",
+                  "gender": "Nam",
                   "sku": "SEO-%s",
                   "retailPrice": 2500000,
                   "stockState": "IN_STOCK",
@@ -609,7 +635,7 @@ class AdminMutationApiTest {
         create.setName("Phase 1 Variant Price Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
-        create.setGender("Unisex");
+        create.setGender("Nam");
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
@@ -689,7 +715,7 @@ class AdminMutationApiTest {
                     "name": "Phase 2 Trash Product %s",
                     "categoryId": "cat_helmet",
                     "brandId": "brand_ls2",
-                    "gender": "Unisex",
+                  "gender": "Nam",
                     "sku": "TRASH-%s",
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
@@ -743,7 +769,7 @@ class AdminMutationApiTest {
                     "name": "Phase 2 Restore Permission Product %s",
                     "categoryId": "cat_helmet",
                     "brandId": "brand_ls2",
-                    "gender": "Unisex",
+                  "gender": "Nam",
                     "sku": "RESTORE-%s",
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
@@ -999,7 +1025,7 @@ class AdminMutationApiTest {
                                   "sku": "CAT-SOFT-%s",
                                   "categoryId": "%s",
                                   "brandId": "brand_ls2",
-                                  "gender": "MEN",
+                                  "gender": "Nam",
                                   "retailPrice": 1000000,
                                   "stockState": "IN_STOCK",
                                   "publishStatus": "DRAFT",
@@ -1430,7 +1456,7 @@ class AdminMutationApiTest {
                                   "name": "Sản phẩm nổi bật %s",
                                   "categoryId": "cat_helmet",
                                   "brandId": "brand_ls2",
-                                  "gender": "Unisex",
+                  "gender": "Nam",
                                   "sku": "FEATURED-%s",
                                   "retailPrice": 2500000,
                                   "currency": "VND",
@@ -1949,7 +1975,7 @@ class AdminMutationApiTest {
                                   "name":"Product Hidden Brand %s",
                                   "categoryId":"cat_helmet",
                                   "brandId":"%s",
-                                  "gender":"Unisex",
+                                  "gender":"Nam",
                                   "sku":"HIDDEN-BRAND-%s",
                                   "retailPrice":1500000,
                                   "stockState":"IN_STOCK",

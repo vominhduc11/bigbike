@@ -400,7 +400,7 @@ export function fetchPublicCategory(slug: string, lang?: string): Promise<Catego
   brand?: string;
   q?: string;
   filterColor?: string;
-  filterGender?: string;
+  filterGender?: string[];
   minPrice?: number;
   maxPrice?: number;
   homepageBlock?: "NONE" | "FEATURED_GRID";
@@ -413,7 +413,7 @@ export type PublicProductListResult = {
 };
 
 /** Append a query param only when the value is meaningful (skips undefined/null/empty string). */
-function appendParam(qs: URLSearchParams, key: string, value: string | number | undefined) {
+function appendParam(qs: URLSearchParams, key: string, value: string | string[] | number | undefined) {
   if (value !== undefined && value !== null && `${value}` !== "") qs.set(key, `${value}`);
 }
 
@@ -427,7 +427,15 @@ export async function fetchPublicProductList(
   query: PublicProductListQuery,
 ): Promise<PublicProductListResult> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
+  const put = (k: string, v: string | string[] | number | undefined) => {
+    if (Array.isArray(v)) {
+      v.forEach((item) => {
+        if (item !== "") qs.append(k, item);
+      });
+    } else {
+      appendParam(qs, k, v);
+    }
+  };
   put("page", query.page);
   put("size", query.size);
   put("sort", query.sort ?? "createdAt:desc");
