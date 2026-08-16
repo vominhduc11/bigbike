@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Container } from "@/components/layout/Container";
+import { cn } from "@/lib/utils";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -26,6 +27,7 @@ export function PageHero({
   illustrationUrl,
   illustrationAlt,
   focusId,
+  className,
 }: {
   title: string;
   titleNode?: ReactNode;
@@ -34,6 +36,7 @@ export function PageHero({
   illustrationUrl?: string | null;
   illustrationAlt?: string | null;
   focusId?: string;
+  className?: string;
 }) {
   const tBreadcrumb = useTranslations("Breadcrumb");
   const background = bgUrl?.trim() || DEFAULT_BG;
@@ -41,7 +44,7 @@ export function PageHero({
 
   return (
     <section
-      className="relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5"
+      className={cn("relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5", className)}
       style={{ backgroundImage: `url('${background}')` }}
       data-page-hero
       data-bb-full-bleed

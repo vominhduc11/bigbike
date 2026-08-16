@@ -114,7 +114,7 @@ class Phase1KOpenApiContractTest {
     }
 
     @Test
-    void openApi_redirectContractUsesOnlyPermanent301Shape() throws Exception {
+    void openApi_redirectContractSupportsPermanent301AndTerminal410() throws Exception {
         JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
         JsonNode paths = document.path("paths");
         JsonNode listParameters = paths.path("/api/v1/admin/redirects").path("get").path("parameters");
@@ -128,12 +128,16 @@ class Phase1KOpenApiContractTest {
                 .isEqualTo("boolean");
 
         assertThat(fieldNames(schemas.path("CreateRedirectRequest").path("properties")))
-                .contains("sourcePattern", "targetUrl", "enabled", "notes", "legacyId")
-                .doesNotContain("statusCode", "redirectType");
+                .containsExactly("sourcePattern", "targetUrl", "statusCode", "enabled")
+                .doesNotContain("redirectType", "notes", "legacyId");
         assertThat(fieldNames(schemas.path("UpdateRedirectRequest").path("properties")))
-                .doesNotContain("statusCode", "redirectType");
+                .containsExactly("sourcePattern", "targetUrl", "statusCode", "enabled")
+                .doesNotContain("redirectType", "notes", "legacyId");
         assertThat(fieldNames(schemas.path("AdminRedirectResponse").path("properties")))
-                .doesNotContain("statusCode", "redirectType");
+                .contains("statusCode")
+                .doesNotContain("redirectType", "notes", "legacyId");
+        assertThat(textValues(schemas.path("CreateRedirectRequest").path("properties")
+                .path("statusCode").path("enum"))).containsExactly("301", "410");
 
         assertThat(fieldNames(paths)).contains(
                 "/api/internal/redirect",
@@ -232,7 +236,7 @@ class Phase1KOpenApiContractTest {
                         "publishStatus", "stockState", "brandId", "categoryId",
                         "filter_gender", "homepageBlock", "lang");
         assertThat(textValues(parameterNamed(listParameters, "filter_gender").path("schema").path("enum")))
-                .containsExactly("Nam", "Nữ", "NULL");
+                .containsExactly("Nam", "Nữ");
 
         JsonNode preview = paths.path("/api/v1/admin/products/preview").path("post");
         assertThat(textValues(parameterNamed(preview.path("parameters"), "lang").path("schema").path("enum")))
@@ -273,30 +277,30 @@ class Phase1KOpenApiContractTest {
         JsonNode upsertProperties = schemas.path("UpsertProductRequest").path("properties");
         assertThat(fieldNames(upsertProperties)).contains(
                 "sku", "slug", "name", "brandId", "categoryIds", "image",
-                "retailPrice", "salePrice", "available", "publishStatus", "gender",
+                "retailPrice", "salePrice", "available", "publishStatus", "genders", "gender",
                 "seo", "translations", "gallery", "videos", "variants",
-                "descriptionBlocks", "suitabilitySection", "sizeGuideSection");
+                "descriptionBlocks", "suitabilitySection", "sizeGuideSection", "discontinued");
         assertThat(upsertProperties.has("contentBottom")).isFalse();
 
         JsonNode productProperties = schemas.path("ProductResponse").path("properties");
         assertThat(fieldNames(productProperties)).contains(
                 "slugEn", "brand", "categories", "price", "stockState", "available",
-                "publishStatus", "gallery", "videos", "variants", "seo", "translations");
+                "publishStatus", "discontinued", "gallery", "videos", "variants", "seo", "translations");
+        assertThat(productProperties.has("genders")).isTrue();
+        assertThat(productProperties.has("gender")).isFalse();
         assertThat(productProperties.has("contentBottom")).isFalse();
     }
 
     @Test
-    void openApi_publicProductGenderFilterIsRepeatedMultiValue() throws Exception {
+    void openApi_publicProductGenderFilterIsSingleValueWithLegacyRepeatedCompatibility() throws Exception {
         JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
         JsonNode parameters = document.path("paths").path("/api/v1/products").path("get")
                 .path("parameters");
         JsonNode gender = parameterNamed(parameters, "filter_gender");
 
-        assertThat(gender.path("schema").path("type").asText()).isEqualTo("array");
-        assertThat(textValues(gender.path("schema").path("items").path("enum")))
+        assertThat(gender.path("schema").path("type").asText()).isEqualTo("string");
+        assertThat(textValues(gender.path("schema").path("enum")))
                 .containsExactly("Nam", "Nữ");
-        assertThat(gender.path("schema").path("style").asText()).isEqualTo("form");
-        assertThat(gender.path("schema").path("explode").asBoolean()).isTrue();
     }
 
     @Test

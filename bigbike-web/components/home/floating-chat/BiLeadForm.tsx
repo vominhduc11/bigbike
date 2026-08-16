@@ -17,13 +17,26 @@ export type BiLeadDraft = {
   consented: boolean;
 };
 
+export type BiAccountContact = {
+  name: string;
+  phone: string;
+};
+
 type BiLeadFormProps = {
   conversationId: string;
   draft: BiLeadDraft;
   onDraftChange: (draft: BiLeadDraft) => void;
   onCaptured: () => void;
   onDeclined: () => Promise<void>;
+  accountContact?: BiAccountContact;
 };
+
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 5) return "••••";
+  const hiddenCount = Math.max(4, digits.length - 5);
+  return `${digits.slice(0, 3)} ${"•".repeat(hiddenCount)} ${digits.slice(-2)}`;
+}
 
 export function BiLeadForm({
   conversationId,
@@ -31,15 +44,46 @@ export function BiLeadForm({
   onDraftChange,
   onCaptured,
   onDeclined,
+  accountContact,
 }: BiLeadFormProps) {
   const t = useTranslations("Support");
   const [pendingAction, setPendingAction] = useState<"submit" | "decline" | null>(null);
   const [error, setError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [consentError, setConsentError] = useState("");
+  const [useManualForm, setUseManualForm] = useState(false);
 
   function update(patch: Partial<BiLeadDraft>) {
     onDraftChange({ ...draft, ...patch });
+  }
+
+  async function submitAccountContact() {
+    if (pendingAction || !accountContact) return;
+    setError("");
+    setPendingAction("submit");
+    try {
+      await captureChatLead({
+        conversationId,
+        contactSource: "ACCOUNT",
+      });
+      onCaptured();
+    } catch {
+      setError(t("leadError"));
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  function useOtherContact() {
+    if (!accountContact || pendingAction) return;
+    onDraftChange({
+      ...draft,
+      name: accountContact.name,
+      phone: accountContact.phone,
+      consented: false,
+    });
+    setUseManualForm(true);
+    setError("");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -60,6 +104,7 @@ export function BiLeadForm({
         name: draft.name.trim() || undefined,
         phone: draft.phone.trim(),
         note: draft.note.trim() || undefined,
+        contactSource: "FORM",
       });
       onCaptured();
     } catch {
@@ -80,6 +125,69 @@ export function BiLeadForm({
     } finally {
       setPendingAction(null);
     }
+  }
+
+  if (accountContact && !useManualForm) {
+    return (
+      <div data-bi-lead-quick data-testid="bi-lead-quick" className="grid gap-3 border border-chat bg-background p-4">
+        <div>
+          <h3 className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
+            {t("leadTitle")}
+          </h3>
+          <p className="mt-1 font-body text-a5-meta leading-relaxed text-muted-foreground">
+            {t("leadAccountDescription")}
+          </p>
+        </div>
+
+        <dl className="grid gap-2 border border-border bg-muted/30 p-3 font-body text-a5-meta">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <dt className="text-muted-foreground">{t("leadAccountName")}</dt>
+            <dd className="font-semibold text-foreground">{accountContact.name}</dd>
+          </div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <dt className="text-muted-foreground">{t("leadAccountPhone")}</dt>
+            <dd className="font-semibold text-foreground">{maskPhone(accountContact.phone)}</dd>
+          </div>
+        </dl>
+
+        {error ? <p role="alert" className="border border-destructive bg-accent p-3 text-a5-meta text-destructive">{error}</p> : null}
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={pendingAction !== null}
+            className="min-h-11 px-4 sm:col-span-2"
+            onClick={() => void submitAccountContact()}
+          >
+            {pendingAction === "submit" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+            {pendingAction === "submit" ? t("leadSubmitting") : t("leadUseAccount")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pendingAction !== null}
+            className="min-h-11 px-4"
+            onClick={useOtherContact}
+          >
+            {t("leadUseOther")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pendingAction !== null}
+            className="min-h-11 px-4 sm:col-span-3"
+            onClick={() => void decline()}
+          >
+            {pendingAction === "decline" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+            {pendingAction === "decline" ? t("leadDeclining") : t("leadDecline")}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -75,6 +75,7 @@ class CatalogRequestValidatorTest {
                 brandJpaRepositoryProvider,
                 mediaUrlProperties,
                 homeVideoUrlPolicy,
+                null,
                 null
         );
     }

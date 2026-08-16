@@ -57,12 +57,13 @@ public class InternalRedirectController {
     private boolean allowOpen;
 
     /** redirectId lets the caller fire the hit-counter without a second lookup. */
-    public record RedirectLookupResponse(String redirectId, String target) {}
+    public record RedirectLookupResponse(String redirectId, String target, int statusCode) {}
 
     public record ActiveRedirectItem(
             String id,
             String sourcePattern,
-            String targetUrl
+            String targetUrl,
+            int statusCode
     ) {}
 
     /** Single exact-match lookup — used by per-request fallback. */
@@ -78,7 +79,7 @@ public class InternalRedirectController {
                 .filter(RedirectEntity::isEnabled);
         return match
                 .map(r -> ResponseEntity.ok(
-                        new RedirectLookupResponse(r.getId().toString(), r.getTargetUrl())))
+                        new RedirectLookupResponse(r.getId().toString(), r.getTargetUrl(), r.getStatusCode())))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -90,7 +91,8 @@ public class InternalRedirectController {
                 .map(r -> new ActiveRedirectItem(
                         r.getId().toString(),
                         r.getSourcePattern(),
-                        r.getTargetUrl()))
+                        r.getTargetUrl(),
+                        r.getStatusCode()))
                 .toList();
         return ResponseEntity.ok(items);
     }

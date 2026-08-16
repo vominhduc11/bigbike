@@ -48,23 +48,23 @@ describe('admin chat read contract', () => {
           content: 'Gợi ý thật',
           productsJson: '[{"slug":"mu-34","price":1590000}]',
         }],
-        lead: { id: 'lead-1', name: 'An', phone: '0900000000' },
+        lead: { id: 'lead-1', name: 'An', phone: '0900000000', source: 'ACCOUNT' },
       },
     }))
 
     const result = await fetchChatConversation('chat-1')
 
     expect(result.item.messages[0].products).toEqual([{ slug: 'mu-34', price: 1590000 }])
-    expect(result.item.lead).toMatchObject({ name: 'An', phone: '0900000000' })
+    expect(result.item.lead).toMatchObject({ name: 'An', phone: '0900000000', source: 'ACCOUNT' })
   })
 
   it('clamps malformed daily statistics to safe non-negative integers', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: { date: '2026-08-09', aiCalls: -1, conversations: 2, leads: '3', dailyLimit: 60, remainingAiCalls: 57 },
+      data: { date: '2026-08-09', aiCalls: -1, conversations: 2, leads: '3', unanswered: '4', dailyLimit: 60, remainingAiCalls: 57 },
     }))
 
     const result = await fetchChatStats('2026-08-09')
 
-    expect(result).toMatchObject({ aiCalls: 0, conversations: 2, leads: 3, dailyLimit: 60, remainingAiCalls: 57 })
+    expect(result).toMatchObject({ aiCalls: 0, conversations: 2, leads: 3, unanswered: 4, dailyLimit: 60, remainingAiCalls: 57 })
   })
 })

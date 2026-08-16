@@ -65,6 +65,20 @@ public class UpsertProductRequest {
     // stockState is derived from boolean availability. Removed from input — backend ignores it.
     private PublishStatus publishStatus;
 
+    /** Independent published-history flag; presence-guarded on PATCH. */
+    private Boolean discontinued;
+    private boolean discontinuedPresent = false;
+
+    /** Explicit catalog size scale for products whose variants expose size options. */
+    @Size(max = 64, message = "Size scale id is too long.")
+    private String sizeScaleId;
+    private boolean sizeScaleIdPresent = false;
+
+    public void setSizeScaleId(String sizeScaleId) {
+        this.sizeScaleId = sizeScaleId;
+        this.sizeScaleIdPresent = true;
+    }
+
     /** Product-level "còn/hết" toggle for products WITHOUT variants; ignored when variants exist. */
     private Boolean available;
     private HomepageBlock homepageBlock;
@@ -115,6 +129,13 @@ public class UpsertProductRequest {
     private String quickAnswerSummary;
     private boolean quickAnswerSummaryPresent = false;
 
+    /** Canonical optional gender flags. An explicit empty list clears both flags on PATCH. */
+    @Size(max = 2, message = "A product may have at most two genders.")
+    private List<String> genders;
+    private boolean gendersPresent = false;
+
+    /** Legacy scalar input adapter; responses and new clients use {@link #genders}. */
+    @Deprecated
     @Size(max = 20, message = "Gender is too long.")
     @Pattern(
             regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$",
@@ -273,9 +294,21 @@ public class UpsertProductRequest {
         this.quickAnswerSummaryPresent = true;
     }
 
+    public void setGenders(List<String> genders) {
+        this.genders = genders;
+        this.gendersPresent = true;
+    }
+
+    /** Legacy scalar setter retained for old admin/test payloads during the wire transition. */
+    @Deprecated
     public void setGender(String gender) {
         this.gender = gender;
         this.genderPresent = true;
+    }
+
+    public void setDiscontinued(Boolean discontinued) {
+        this.discontinued = discontinued;
+        this.discontinuedPresent = true;
     }
 
     public void setSeo(SeoMetaRequest seo) {
@@ -304,4 +337,3 @@ public class UpsertProductRequest {
     }
 
 }
-

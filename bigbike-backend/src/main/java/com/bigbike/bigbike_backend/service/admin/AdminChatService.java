@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJ
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
+import com.bigbike.bigbike_backend.service.chat.ChatAiQuotaService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
@@ -40,6 +41,7 @@ public class AdminChatService {
     private final ChatMessageJpaRepository messageRepo;
     private final ChatLeadJpaRepository leadRepo;
     private final ChatAssistantSettings assistantSettings;
+    private final ChatAiQuotaService chatAiQuotaService;
     private final ChatMapper chatMapper;
 
     public PageResult<AdminChatConversationResponse> list(
@@ -99,13 +101,13 @@ public class AdminChatService {
         LocalDate date = requestedDate == null ? LocalDate.now(VN_ZONE) : requestedDate;
         Instant from = date.atStartOfDay(VN_ZONE).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
-        long aiCalls = messageRepo
-                .countAiUsesBetween(from, to);
+        long aiCalls = chatAiQuotaService.usedOn(date);
         long conversations = conversationRepo
                 .countByStartedAtGreaterThanEqualAndStartedAtLessThan(from, to);
         long leads = leadRepo.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);
+        long unanswered = messageRepo.countFallbackMessagesBetween(from, to);
         int limit = assistantSettings.load("vi").dailyLimit();
         return new AdminChatStatsResponse(
-                date, aiCalls, conversations, leads, limit, Math.max(0, limit - aiCalls));
+                date, aiCalls, conversations, leads, unanswered, limit, Math.max(0, limit - aiCalls));
     }
 }

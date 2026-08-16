@@ -7,6 +7,7 @@ import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { extractAllowedYouTubeId, isAllowedMediaVideoUrl } from '../../lib/urlPolicies'
 import { generateId } from '@/lib/utils'
+import { normalizeGenders } from '../../lib/contracts'
 
 // Editable "Phân công" guide text (role names + task lists), fetched from
 // GET /admin/product-assignment. SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
@@ -306,6 +307,8 @@ export function buildEmptyForm() {
     salePrice: '',
     available: true,
     publishStatus: 'DRAFT',
+    discontinued: false,
+    sizeScaleId: '',
     imageUrl: '',
     imageAlt: '',
     imageWidth: null,
@@ -342,7 +345,7 @@ export function buildEmptyForm() {
     // riêng, object đơn (null khi chưa nhập). Xem SuitabilityBlockEditor/SizeGuideBlockEditor.
     suitabilitySection: null,
     sizeGuideSection: null,
-    gender: '',
+    genders: [],
     variants: [],
     relatedProductIds: [],
     relatedProductChips: [],
@@ -599,6 +602,8 @@ export function buildFormFromItem(item) {
         : '',
     available: item.available !== false,
     publishStatus: item.publishStatus,
+    discontinued: item.discontinued === true,
+    sizeScaleId: item.sizeScaleId || '',
     imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
     imageWidth: item.image?.width ?? null,
@@ -660,7 +665,7 @@ export function buildFormFromItem(item) {
       contentEn: h.contentEn || '',
     })),
     originBrandCountry: item.originBrandCountry || '',
-    gender: item.gender || '',
+    genders: normalizeGenders(item.genders, item.gender),
     variants,
     relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
     relatedProductChips: (item.relatedProducts || [])
@@ -859,7 +864,9 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
-    gender: form.gender.trim() ? form.gender.trim() : null,
+    // Canonical gender shape (DATA_CONTRACT.md): an empty array is valid and
+    // intentionally clears both flags on the backend.
+    genders: normalizeGenders(form.genders),
     brandId: form.brandId.trim() || undefined,
     // Send null when cleared so backend (presence-flag logic) can distinguish
     // "user erased this" from "field not part of this request".
@@ -868,6 +875,8 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     currency: 'VND',
     available: Boolean(form.available),
     publishStatus: form.publishStatus,
+    discontinued: Boolean(form.discontinued),
+    sizeScaleId: form.sizeScaleId?.trim() || null,
     seo: hasSeo
       ? {
           title: form.seoTitle.trim() || null,
@@ -1186,7 +1195,7 @@ export function computeAttrSetWarning(items, t) {
 // Field-prefix groups by section key — single source of truth used by both the
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 export const SECTION_FIELD_PREFIXES = {
-  basic:         ['name','slug','sku','gender','shortDescription','brandId','categoryIds','publishStatus'],
+  basic:         ['name','slug','sku','genders','shortDescription','brandId','categoryIds','publishStatus'],
   description:   ['description'],
   pricing:       ['retailPrice','salePrice'],
   media:         ['imageUrl'],

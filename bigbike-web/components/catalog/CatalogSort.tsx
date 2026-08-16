@@ -10,9 +10,8 @@ import { isCatalogOrderbyValue, productSortToOrderby } from "@/lib/utils/catalog
 import { cn } from "@/lib/utils";
 
 const SORT_OPTIONS = [
-  { value: "menu_order", labelKey: "default" },
-  { value: "popularity", labelKey: "popularity" },
-  { value: "date", labelKey: "date" },
+  { value: "menu_order", labelKey: "newest" },
+  { value: "popularity", labelKey: "bestSelling" },
   { value: "price", labelKey: "priceAsc" },
   { value: "price-desc", labelKey: "priceDesc" },
 ] as const;

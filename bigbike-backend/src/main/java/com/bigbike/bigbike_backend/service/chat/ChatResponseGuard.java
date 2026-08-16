@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -29,6 +30,17 @@ public class ChatResponseGuard {
     /** Lowercase hyphenated values are catalog/admin slugs, never customer-facing colour names. */
     private static final Pattern RAW_INTERNAL_SLUG = Pattern.compile(
             "(?<![\\p{L}\\p{N}])(?:[a-z0-9]{2,}(?:-[a-z0-9]{2,})+)(?![\\p{L}\\p{N}])");
+    /**
+     * Customer copy legitimately uses a small number of standard English compounds. Keep the
+     * allow-list exact so catalogue values such as {@code ronin-red} remain blocked.
+     */
+    private static final Set<String> SAFE_ENGLISH_HYPHENATED_TERMS = Set.of(
+            "12-question",
+            "automated-chat",
+            "destination-specific",
+            "product-condition",
+            "shipping-method",
+            "signed-in");
     private static final Pattern RAW_CURRENCY = Pattern.compile(
             "(?i)(?:\\b\\d[\\d.,]*\\s*(?:VND|VNĐ)\\b|\\b(?:VND|VNĐ)\\b"
                     + "|\\b\\d[\\d.,]*[.,]\\d{1,2}\\s*₫)");
@@ -42,15 +54,16 @@ public class ChatResponseGuard {
     private static final Pattern CUSTOMER_ADDRESSED_AS_EM = Pattern.compile(
             "(?:^|\\s)(?:xin\\s+)?chao\\s+em(?:\\s|$)"
                     + "|(?:^|\\s)thua\\s+em(?:\\s|$)"
-                    + "|(?:^|\\s)em\\s+(?:dang\\s+)?(?:tim|can|muon|hay|vui\\s+long|"
-                    + "cho\\s+em\\s+biet|noi\\s+(?:ro|them)|tham\\s+khao|chon|bam|mo)(?:\\s|$)"
+                    + "|(?:^|\\s)em\\s+(?:hay|vui\\s+long|cho\\s+em\\s+biet|"
+                    + "noi\\s+(?:ro|them)|tham\\s+khao|chon|bam|mo|xem)(?:\\s|$)"
                     // This is a customer-directed recommendation form. Keep the list narrow
                     // so valid self-references such as “em có thể hỗ trợ anh/chị” stay valid.
                     + "|(?:^|\\s)em\\s+co\\s+the\\s+(?:tham\\s+khao|chon|bam|xem)(?:\\s|$)");
     /** Keep this deliberately narrow: factual short answers must not be mistaken for rude copy. */
     private static final Pattern DISMISSIVE_TONE = Pattern.compile(
-            "(?:^|\\s)(?:tu\\s+(?:xem|tim)(?:\\s+di)?|dung\\s+hoi(?:\\s+nua)?|"
-                    + "ke\\s+di|bo\\s+qua\\s+di|khong\\s+lien\\s+quan)(?:\\s|$)");
+            "(?:^|\\s)tu\\s+(?:xem|tim)(?:\\s+di)?(?:\\s+(?:nhe|thoi))?$"
+                    + "|(?:^|\\s)(?:dung\\s+hoi(?:\\s+nua)?|ke\\s+di|bo\\s+qua\\s+di|"
+                    + "khong\\s+lien\\s+quan)(?:\\s|$)");
     private static final String COUNT_WORD = "(?:mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)";
     private static final String COUNT_VALUE = "(?:\\d+|" + COUNT_WORD + ")";
     private static final String VI_CATALOG_UNIT =
@@ -80,11 +93,14 @@ public class ChatResponseGuard {
             "\\b(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+"
                     + "(?:(?:product\\s+)?cards?|(?:matching\\s+|representative\\s+)?products?\\s+below)\\b");
     private static final Pattern VI_UNSCOPED_ABSENCE_CLAIM = Pattern.compile(
-            "\\b(?:bigbike\\s+(?:hien\\s+)?(?:khong\\s+co|chua\\s+co|khong\\s+tim\\s+thay)"
+            "\\b(?:bigbike\\s+(?:hien\\s+)?(?:khong\\s+co|chua\\s+co|khong\\s+tim\\s+thay)\\s+"
+                    + "(?:bat\\s+ky\\s+)?(?:san\\s+pham|mau|mu|mat\\s+hang|hang)"
+                    + "|bigbike\\s+(?:hien\\s+)?(?:khong|chua)\\s+(?:ban|kinh\\s+doanh)"
                     + "|(?:khong|chua)\\s+tim\\s+thay\\s+(?:bat\\s+ky\\s+)?(?:san\\s+pham|mau|mu|hang))\\b");
     private static final Pattern EN_UNSCOPED_ABSENCE_CLAIM = Pattern.compile(
-            "\\b(?:bigbike\\s+(?:does\\s+not|doesn't|has\\s+no)|"
-                    + "(?:could\\s+not|cannot|can't)\\s+find\\s+(?:any\\s+)?(?:product|item|helmet|model))\\b");
+            "\\b(?:bigbike\\s+(?:does\\s+not|doesn't)\\s+(?:have|stock|sell|carry|offer|show)"
+                    + "|bigbike\\s+has\\s+no\\s+(?:products?|items?|helmets?|models?|headsets?|stock)"
+                    + "|(?:could\\s+not|cannot|can't)\\s+find\\s+(?:any\\s+)?(?:product|item|helmet|model))\\b");
     private static final Pattern SENTENCE_END = Pattern.compile("[.!?。！？]+(?=\\s|$)");
     private static final int MIN_SENTENCES = 2;
     private static final int MAX_SENTENCES = 5;
@@ -109,17 +125,17 @@ public class ChatResponseGuard {
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
             ChatToolService.CatalogTotals catalogTotals
     ) {
-        if (!isSafeCustomerText(answer, lang)
-                || !hasSafeAssistantTone(answer, lang)
-                || !containsRequiredDisclosures(answer, lang, requiredDisclosures)
-                || hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products)) {
+        String content = trimToSentenceLimit(answer);
+        if (!isSafeCustomerText(content, lang)
+                || !hasSafeAssistantTone(content, lang)
+                || !containsRequiredDisclosures(content, lang, requiredDisclosures)
+                || hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
             return Optional.empty();
         }
-        String content = answer.trim();
         // CHAT_RULE_007: floor lowered to 2 on 2026-08-10. The prompt still aims for 3-5,
         // but a correct short answer must reach the customer instead of becoming fallback.
         int sentences = sentenceCount(content);
-        if (sentences < MIN_SENTENCES || sentences > MAX_SENTENCES) return Optional.empty();
+        if (sentences < MIN_SENTENCES) return Optional.empty();
         if (products == null || products.size() > 3) return Optional.empty();
         if (products.stream().anyMatch(product -> !isSafeProduct(product))) return Optional.empty();
         return Optional.of(new CheckedAnswer(content, List.copyOf(products)));
@@ -158,9 +174,9 @@ public class ChatResponseGuard {
         if (!containsRequiredDisclosures(answer, lang, requiredDisclosures)) {
             return "DISCLOSURE_MISSING";
         }
-        String content = answer.trim();
+        String content = trimToSentenceLimit(answer);
         if (TECHNICAL_TERMS.matcher(content).find()) return "TECHNICAL_TERM";
-        if (RAW_INTERNAL_CODES.matcher(content).find() || RAW_INTERNAL_SLUG.matcher(content).find()) {
+        if (RAW_INTERNAL_CODES.matcher(content).find() || containsRawInternalSlug(content, lang)) {
             return "INTERNAL_CODE";
         }
         if (RAW_CURRENCY.matcher(content).find()) return "RAW_CURRENCY";
@@ -171,7 +187,7 @@ public class ChatResponseGuard {
         }
         if (!hasSafeAssistantTone(content, lang)) return "WRONG_TONE";
         int sentences = sentenceCount(content);
-        if (sentences < MIN_SENTENCES || sentences > MAX_SENTENCES) {
+        if (sentences < MIN_SENTENCES) {
             return "SENTENCE_COUNT_" + sentences;
         }
         if (products == null || products.size() > 3) return "TOO_MANY_PRODUCTS";
@@ -415,7 +431,7 @@ public class ChatResponseGuard {
         String content = value.trim();
         if (TECHNICAL_TERMS.matcher(content).find()
                 || RAW_INTERNAL_CODES.matcher(content).find()
-                || RAW_INTERNAL_SLUG.matcher(content).find()
+                || containsRawInternalSlug(content, lang)
                 || RAW_CURRENCY.matcher(content).find()
                 || URL.matcher(content).find()) {
             return false;
@@ -433,8 +449,15 @@ public class ChatResponseGuard {
                 .replaceAll("[^\\p{Alnum}]+", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
-        return !CUSTOMER_ADDRESSED_AS_EM.matcher(normalized).find()
-                && !DISMISSIVE_TONE.matcher(normalized).find();
+        if (CUSTOMER_ADDRESSED_AS_EM.matcher(normalized).find()) return false;
+        for (String sentence : value.split("[.!?。！？]+")) {
+            String normalizedSentence = ChatToolService.normalize(sentence)
+                    .replaceAll("[^\\p{Alnum}]+", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (DISMISSIVE_TONE.matcher(normalizedSentence).find()) return false;
+        }
+        return true;
     }
 
     /**
@@ -512,6 +535,7 @@ public class ChatResponseGuard {
             String beforeClaim = normalized.substring(sentenceStart, candidate.end());
             String afterClaim = normalized.substring(candidate.end(), clauseEnd);
             String sentence = normalized.substring(sentenceStart, sentenceEnd);
+            if (isSelectionCountQuestion(sentence, english)) continue;
             boolean priceScoped = isPriceScoped(beforeClaim, english ? "en" : "vi")
                     || isPriceScoped(afterClaim, english ? "en" : "vi")
                     // A one-sided phrase such as “trên 3tr … có 5 mẫu” may have punctuation
@@ -592,6 +616,17 @@ public class ChatResponseGuard {
         };
     }
 
+    /** Numbers in a choice/clarification question are not catalogue-total assertions. */
+    private static boolean isSelectionCountQuestion(String sentence, boolean english) {
+        if (english) {
+            return hasWholeWord(sentence, "which")
+                    && containsAny(sentence, "model", "models", "product", "products", "item", "items")
+                    && containsAny(sentence, "compare", "choose", "want", "select");
+        }
+        return containsAny(sentence, "mau nao", "san pham nao", "mat hang nao", "loai nao")
+                && containsAny(sentence, "so sanh", "chon", "muon", "can xem", "can tim");
+    }
+
     private static boolean isPriceScoped(String normalized, String lang) {
         return "en".equals(lang)
                 ? containsAny(normalized, "price range", "requested range", "your range", "within the range")
@@ -610,6 +645,16 @@ public class ChatResponseGuard {
                 .contains(" " + word + " ");
     }
 
+    private static boolean containsRawInternalSlug(String content, String lang) {
+        Matcher matcher = RAW_INTERNAL_SLUG.matcher(content);
+        while (matcher.find()) {
+            String candidate = matcher.group().toLowerCase(Locale.ROOT);
+            if ("en".equals(lang) && SAFE_ENGLISH_HYPHENATED_TERMS.contains(candidate)) continue;
+            return true;
+        }
+        return false;
+    }
+
     private static boolean isSafeProduct(ChatProductCardResponse product) {
         if (product == null || blank(product.slug()) || blank(product.name())) return false;
         if (!"IN_STOCK".equals(product.stockState())) return false;
@@ -621,9 +666,35 @@ public class ChatResponseGuard {
         return effective != null && effective.signum() > 0;
     }
 
+    /** Retains only cards that are independently safe to expose, capped by CHAT_RULE_007. */
+    public List<ChatProductCardResponse> retainSafeProducts(List<ChatProductCardResponse> products) {
+        if (products == null || products.isEmpty()) return List.of();
+        return products.stream()
+                .filter(ChatResponseGuard::isSafeProduct)
+                .limit(3)
+                .toList();
+    }
+
     private static int sentenceCount(String value) {
         if (value.isBlank()) return 0;
         return (int) SENTENCE_END.matcher(value).results().count();
+    }
+
+    /** Keep the first five complete sentences; every remaining guard runs on the returned text. */
+    private static String trimToSentenceLimit(String value) {
+        if (value == null) return null;
+        String content = value.trim();
+        Matcher matcher = SENTENCE_END.matcher(content);
+        int count = 0;
+        int fifthEnd = -1;
+        while (matcher.find()) {
+            count++;
+            if (count == MAX_SENTENCES) fifthEnd = matcher.end();
+            if (count > MAX_SENTENCES) {
+                return content.substring(0, fifthEnd).trim();
+            }
+        }
+        return content;
     }
 
     private static boolean blank(String value) {

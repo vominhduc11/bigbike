@@ -36,6 +36,20 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     Optional<ProductEntity> findByLegacyId(String legacyId);
     long countByPublishStatus(PublishStatus publishStatus);
     long countByCategories_Id(String categoryId);
+    long countBySizeScaleId(String sizeScaleId);
+
+    /** Raw size labels currently used by products assigned to one configured scale. */
+    @Query(value = """
+            SELECT DISTINCT pvo.option_value
+            FROM products p
+            JOIN product_variants pv ON pv.product_id = p.id
+            JOIN product_variant_options pvo ON pvo.variant_id = pv.id
+            WHERE p.size_scale_id = :sizeScaleId
+              AND pvo.option_value IS NOT NULL
+              AND lower(regexp_replace(unaccent(trim(pvo.option_name)), '[[:space:]_-]+', '', 'g'))
+                    IN ('size', 'kichco', 'kichthuoc')
+            """, nativeQuery = true)
+    List<String> findSizeOptionValuesBySizeScaleId(@Param("sizeScaleId") String sizeScaleId);
 
     /** Every product linked to one or more categories in the supplied set. */
     @Query("SELECT DISTINCT p FROM ProductEntity p JOIN p.categories c WHERE c.id IN :categoryIds")
@@ -66,6 +80,8 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
      * to discard it in a downstream Java filter.
      */
     List<ProductEntity> findByPublishStatus(PublishStatus publishStatus);
+
+    List<ProductEntity> findByPublishStatusAndDiscontinuedFalse(PublishStatus publishStatus);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")
@@ -125,19 +141,6 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
         ORDER BY p.name ASC
         """)
     List<ProductEntity> findByIdsWithVariants(@Param("ids") List<String> ids);
-
-    /** Public search: DB-level filter on name + shortDescription to avoid full-table scan. */
-    @Query("""
-        SELECT p FROM ProductEntity p
-        WHERE p.publishStatus = :status
-          AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :term, '%'))
-            OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :term, '%')))
-        ORDER BY p.name ASC
-        """)
-    List<ProductEntity> searchPublished(
-            @Param("term") String term,
-            @Param("status") PublishStatus status,
-            org.springframework.data.domain.Pageable pageable);
 
     List<ProductEntity> findByHomepageBlockIn(Collection<HomepageBlock> blocks);
 

@@ -67,7 +67,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.client.HttpClientErrorException;
 
 /**
- * Regression coverage for Bi's public product-discovery response. The catalog fixture uses the
+ * Regression coverage for BigBike Assistant's public product-discovery response. The catalog fixture uses the
  * same Tanami title/slug/price/availability shape observed in the running BigBike catalog.
  */
 @SpringBootTest
@@ -724,13 +724,13 @@ public class ChatProductDiscoveryApiTest {
         CategoryEntity helmets = category(
                 marker + "-helmets",
                 "mu-bao-hiem-bi-acceptance-" + marker,
-                "Mũ bảo hiểm nghiệm thu Bi",
+                "Mũ bảo hiểm nghiệm thu trợ lý",
                 null,
                 now);
         CategoryEntity headsets = category(
                 marker + "-headsets",
                 "tai-nghe-bi-acceptance-" + marker,
-                "Tai nghe nghiệm thu Bi",
+                "Tai nghe nghiệm thu trợ lý",
                 null,
                 now);
         createdCategoryIds.addAll(List.of(helmets.getId(), headsets.getId()));

@@ -34,8 +34,8 @@ describe('MobileCard', () => {
   })
 
   it('không sập khi màn cha truyền meta sai kiểu', () => {
-    render(<MobileCard title="Hội thoại với Bi" meta="Lượt hỏi: 3 · Lượt gọi AI: 2" />)
+    render(<MobileCard title="Hội thoại với Trợ lý BigBike" meta="Lượt hỏi: 3 · Lượt gọi AI: 2" />)
 
-    expect(screen.getByText('Hội thoại với Bi')).toBeInTheDocument()
+    expect(screen.getByText('Hội thoại với Trợ lý BigBike')).toBeInTheDocument()
   })
 })

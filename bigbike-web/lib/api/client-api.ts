@@ -10,7 +10,7 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
-import type { Article, Brand, Category, Product, PublicMenu } from "@/lib/contracts/public";
+import type { Article, Brand, CatalogFacets, Category, Product, PublicMenu } from "@/lib/contracts/public";
 import { withFlatHighlights } from "@/lib/contracts/public";
 import { env } from "@/env";
 
@@ -45,6 +45,7 @@ async function clientRequest<T>(
   path: string,
   body?: unknown,
   extraHeaders?: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json", ...extraHeaders };
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -58,6 +59,7 @@ async function clientRequest<T>(
     credentials: "include",
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (res.status === 204) return undefined as T;
@@ -216,7 +218,7 @@ function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; u
   };
   const products: ChatProductCard[] = [];
   for (const item of value) {
-    if (!item || typeof item !== "object") return { products: [], unsafe: true };
+    if (!item || typeof item !== "object") continue;
     const source = item as Record<string, unknown>;
     const retailPrice = asNumber(source.retailPrice);
     const saleProvided = source.salePrice !== null && source.salePrice !== undefined && source.salePrice !== "";
@@ -229,7 +231,7 @@ function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; u
       && source.currency === "VND"
       && source.stockState === "IN_STOCK"
       && (!saleProvided || (salePrice !== null && salePrice > 0 && salePrice < retailPrice));
-    if (!valid) return { products: [], unsafe: true };
+    if (!valid) continue;
     products.push({
       slug,
       name,
@@ -240,7 +242,7 @@ function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; u
       stockState: "IN_STOCK",
     });
   }
-  return { products: products.slice(0, 3), unsafe: value.length > 3 };
+  return { products: products.slice(0, 3), unsafe: false };
 }
 
 function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMessageResult {
@@ -287,19 +289,21 @@ export function sendChatMessage(
   message: string,
   lang: "vi" | "en",
   conversationId?: string,
+  signal?: AbortSignal,
 ): Promise<ChatMessageResult> {
   return clientRequest<unknown>("POST", "/api/v1/chat/messages", {
     conversationId: conversationId || null,
     message,
     lang,
-  }).then((value) => normalizeChatMessageResult(value, lang));
+  }, undefined, signal).then((value) => normalizeChatMessageResult(value, lang));
 }
 
 export function captureChatLead(input: {
   conversationId: string;
   name?: string;
-  phone: string;
+  phone?: string;
   note?: string;
+  contactSource?: "FORM" | "ACCOUNT";
 }): Promise<{ captured: boolean }> {
   return clientRequest("POST", "/api/v1/chat/leads", { ...input, consent: true });
 }
@@ -397,12 +401,15 @@ export function fetchPublicCategory(slug: string, lang?: string): Promise<Catego
   size?: number;
   sort?: string;
   category?: string;
-  brand?: string;
+  brand?: string | string[];
   q?: string;
-  filterColor?: string;
-  filterGender?: string[];
+  filterColor?: string | string[];
+  filterFinish?: string | string[];
+  filterGender?: string;
+  sizeFilter?: string | string[];
   minPrice?: number;
   maxPrice?: number;
+  inStock?: boolean;
   homepageBlock?: "NONE" | "FEATURED_GRID";
   lang?: string;
 };
@@ -413,7 +420,7 @@ export type PublicProductListResult = {
 };
 
 /** Append a query param only when the value is meaningful (skips undefined/null/empty string). */
-function appendParam(qs: URLSearchParams, key: string, value: string | string[] | number | undefined) {
+function appendParam(qs: URLSearchParams, key: string, value: string | string[] | number | boolean | undefined) {
   if (value !== undefined && value !== null && `${value}` !== "") qs.set(key, `${value}`);
 }
 
@@ -425,9 +432,10 @@ function appendParam(qs: URLSearchParams, key: string, value: string | string[] 
  */
 export async function fetchPublicProductList(
   query: PublicProductListQuery,
+  signal?: AbortSignal,
 ): Promise<PublicProductListResult> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | string[] | number | undefined) => {
+  const put = (k: string, v: string | string[] | number | boolean | undefined) => {
     if (Array.isArray(v)) {
       v.forEach((item) => {
         if (item !== "") qs.append(k, item);
@@ -443,9 +451,12 @@ export async function fetchPublicProductList(
   put("pwb-brand", query.brand);
   put("q", query.q);
   put("filter_color", query.filterColor);
+  put("filter_finish", query.filterFinish);
   put("filter_gender", query.filterGender);
+  put("kich-co", query.sizeFilter);
   put("min_price", query.minPrice);
   put("max_price", query.maxPrice);
+  put("in_stock", query.inStock ? true : undefined);
   put("homepage_block", query.homepageBlock);
   put("lang", query.lang);
 
@@ -453,6 +464,7 @@ export async function fetchPublicProductList(
     method: "GET",
     credentials: "include",
     headers: { Accept: "application/json" },
+    signal,
   });
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
@@ -463,6 +475,52 @@ export async function fetchPublicProductList(
     data: asArray<Product>(payloadData(payload)),
     pagination: payloadPagination<PublicProductListResult["pagination"]>(payload),
   };
+}
+
+export type PublicCatalogFacetsQuery = {
+  category?: string;
+  brand?: string | string[];
+  q?: string;
+  filterColor?: string | string[];
+  filterFinish?: string | string[];
+  filterGender?: string;
+  sizeFilter?: string | string[];
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  lang?: string;
+};
+
+/** Refetches facet counts for the current catalog context; price bounds are omitted so the axis stays stable. */
+export async function fetchPublicCatalogFacets(
+  query: PublicCatalogFacetsQuery,
+  signal?: AbortSignal,
+): Promise<{ data: CatalogFacets }> {
+  const qs = new URLSearchParams();
+  const put = (key: string, value: string | string[] | number | boolean | undefined) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item) qs.append(key, item);
+      });
+    } else if (value !== undefined && value !== "") {
+      qs.set(key, String(value));
+    }
+  };
+  put("category", query.category);
+  put("pwb-brand", query.brand);
+  put("q", query.q);
+  put("filter_color", query.filterColor);
+  put("filter_finish", query.filterFinish);
+  put("filter_gender", query.filterGender);
+  put("kich-co", query.sizeFilter);
+  put("min_price", query.minPrice);
+  put("max_price", query.maxPrice);
+  put("in_stock", query.inStock ? true : undefined);
+  put("lang", query.lang);
+
+  const payload = await clientRequest<unknown>("GET", `/api/v1/catalog/facets?${qs.toString()}`, undefined, undefined, signal);
+  const data = payloadData(payload) as CatalogFacets;
+  return { data };
 }
 
  type PublicArticleListQuery = {

@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.migration.wordpress.live;
 
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -82,7 +83,7 @@ final class LiveTargetSnapshotReader {
             Map<String, TargetProductAudit> productAudits) throws SQLException {
         String sql = """
                 select id, legacy_id, sku, slug, name, short_description, description,
-                       brand_id, gender, image_id, image_url, retail_price, sale_price,
+                       brand_id, gender_male, gender_female, image_id, image_url, retail_price, sale_price,
                        stock_quantity, manage_stock, backorders, weight_kg, length_cm,
                        width_cm, height_cm, seo_title, seo_description, seo_canonical_url,
                        seo_og_image_id, seo_og_image_url, publish_status,
@@ -102,7 +103,7 @@ final class LiveTargetSnapshotReader {
                         id, rs.getString("legacy_id"), rs.getString("sku"), rs.getString("slug"),
                         rs.getString("name"), rs.getString("short_description"),
                         rs.getString("description"), rs.getString("brand_id"),
-                        rs.getString("gender"),
+                        targetGender(rs),
                         rs.getString("image_id"), rs.getString("image_url"),
                         rs.getBigDecimal("retail_price"), rs.getBigDecimal("sale_price"),
                         nullableInteger(rs, "stock_quantity"), nullableBoolean(rs, "manage_stock"),
@@ -122,6 +123,11 @@ final class LiveTargetSnapshotReader {
             }
         }
         return result;
+    }
+
+    private static String targetGender(ResultSet rs) throws SQLException {
+        return String.join("|", ProductGenderSupport.fromFlags(
+                rs.getBoolean("gender_male"), rs.getBoolean("gender_female")));
     }
 
     private Map<String, TargetProductAudit> readProductAudits(Connection connection) throws SQLException {

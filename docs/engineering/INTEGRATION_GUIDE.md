@@ -11,7 +11,7 @@
 | WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. Each admin also subscribes to `/user/queue/admin/access`: role/permission changes cause a canonical profile refresh, while disable/suspend/password reset forces sign-in again. The admin client also reconciles `/auth/me` on reconnect, focus and every 30 seconds while visible; all data-topic deliveries recheck the current access server-side. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `auth.jsx`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
-| Google Gemini (shared backend credential) | Review moderation and the Bi sales assistant share one backend-only credential but keep independent switches, quotas, models and failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-09` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_005`/`011`, `REVIEW_RULE_012`/`013` |
+| Google Gemini (shared backend credential) | Review moderation and the Trợ lý BigBike sales assistant share one backend-only credential but keep independent switches, quotas, models and failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-09` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_005`/`011`, `REVIEW_RULE_012`/`013` |
 
 > **Gemini auto-translation — STILL REMOVED (2026-07-03).** The VI→EN auto-translation integration
 > (Google Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
@@ -67,18 +67,18 @@ step when this contract changes; never commit a populated `.env` / `.env.vps`.
 The master switch and the four category toggles are **settings**, not env — see
 `API_CONTRACT.md` §"`review_moderation` group".
 
-## Trợ lý Bi (Google Gemini)
+## Trợ lý BigBike (Google Gemini)
 
 | Aspect | Contract |
 |---|---|
-| Client | Plain Spring `RestClient`, `x-goog-api-key` header, fixed 5s connect / 20s read timeout, `gemini-2.5-flash`. Không có network retry hoặc provider retry chỉ để sửa xưng hô; guard sửa cục bộ phần có căn cứ hoặc dùng câu trả lời đã xác minh. |
+| Client | Plain Spring `RestClient`, `x-goog-api-key` header, fixed 5s connect / 20s read timeout, `gemini-2.5-flash`. Một logical response retry đúng một lần sau 2 giây cho `429`, `5xx`, connect/read timeout, vẫn nằm trong trần 3 provider requests và cùng một daily slot; không retry `4xx` khác, schema, safety hoặc guard. Guard sửa cục bộ phần có căn cứ hoặc dùng câu trả lời đã xác minh. |
 | Request | Request đầu có current question, sáu function declarations cố định và danh sách nhỏ tên/mã chuẩn của nhóm hàng, thương hiệu công khai hiện hành. Request tiếp theo chỉ nối exact model function call cùng function response tối thiểu của backend trong cùng logical turn. Never full catalog, sản phẩm riêng lẻ, giá, tồn kho, SQL, customer id/email/address, API key hoặc unrelated conversation history. |
 | Function schema | `parameters` dùng đúng subset `Schema` của Generate Content API (`type`, `properties`, `required`, `enum`, giới hạn kiểu dữ liệu); không đặt các field JSON Schema như `additionalProperties` vào đây. Hàm không có argument sẽ bỏ qua `parameters`; không dùng `parametersJsonSchema` trong contract hiện tại. |
 | Tool boundary | Gemini chỉ chọn `search_products|list_categories|get_product|get_policy|get_shop_info|get_my_orders`; registry backend validate schema/sequence/quyền rồi mới gọi service/repository cố định. `list_categories` không có argument và chỉ trả nhóm hàng công khai cùng tổng hàng đang bán. `capture_lead` không expose; customer identity chỉ lấy từ server session. Khi công tắc tìm hàng mới bật, Gemini được diễn giải cách nói tự nhiên thành danh mục/thương hiệu/từ khoá loại hàng từ vocabulary công khai; backend đối chiếu từng tham số, giữ giá parser/context và định danh khách đã nêu, bỏ riêng tham số không đúng thay vì bỏ cả lượt. Sắp xếp vẫn do backend; thiếu điều kiện an toàn thì hỏi rõ hơn. Khi công tắc tắt, giữ nguyên kiểm chứng tìm hàng cũ. Unknown/extra/identity/SQL arguments và parallel calls vẫn fail closed — không call nào chạy khi chưa qua validate. Ở request đầu, fail closed nghĩa là bỏ cả turn; ở detail hop (tùy chọn) nghĩa là bỏ qua hop đó rồi trả lời bằng search results đã grounded. |
-| Generation | `thinkingBudget: 0`, `maxOutputTokens: 400`; request đầu dùng function-calling mode `ANY` để câu hỏi đã qua fast-path luôn nhận một function call trong allowlist, request detail dùng `ANY` với `allowedFunctionNames=[get_product]`, final request giữ declarations để nối đúng stateless history nhưng đặt mode `NONE`. Final request **bắt buộc** kèm `responseMimeType: application/json` + `responseSchema` bốn field (`answer`/`offTopic`/`handoffRecommended`/`leadPrompt`, có `propertyOrdering`); backend vẫn parse/validate schema nghiêm ngặt sau đó. System prompt ưu tiên Bi xưng “em”, gọi khách “anh/chị”, cấm gọi khách là “em” và cấm giọng cộc lốc; không đặt điều kiện phải có đủ hai từ khoá. Function response cho tìm hàng có thể kèm `scopeTotalItems`, `priceRangeTotalItems` và `displayedCardCount`; model chỉ dùng số tổng đúng phạm vi, còn card count phải nói rõ là card hiển thị. Prompt vẫn cấm ghi giá/tiền tệ trong `answer`. Tối đa 2 tool executions/3 provider requests cho một orchestration, chỉ cho chuỗi thứ hai `search_products -> get_product`. Detail hop là **tùy chọn**: turn detail không dùng được (parallel `get_product` calls, prose, nhiều part) chỉ bị **bỏ qua** kèm log `detail step skipped` rồi đi thẳng final bằng search results đã grounded — không có call chưa validate nào được chạy và turn không rơi về `CONTACT`. Sau `search_products`, một terminal outcome deterministic đã hậu kiểm (tổng/card, detail một mẫu, đúng mẫu không có kết quả, hoặc phương án gần nhất sau khi hụt tầm giá) có thể bỏ final provider và trả `TOOL`; màu/option trong payload đã được chuẩn hoá để không lộ mã thô. |
+| Generation | `thinkingBudget: 0`, `maxOutputTokens: 400`; request đầu dùng function-calling mode `ANY`, final request giữ declarations để nối đúng stateless history nhưng đặt mode `NONE`. Final request **bắt buộc** kèm `responseMimeType: application/json` + `responseSchema` bốn field (`answer`/`offTopic`/`handoffRecommended`/`leadPrompt`, có `propertyOrdering`); backend vẫn parse/validate schema nghiêm ngặt. System prompt ưu tiên Trợ lý BigBike xưng “em”, gọi khách “anh/chị”, cấm gọi khách là “em” và giọng cộc lốc. Khi khách yêu cầu so sánh ngay sau 2–3 thẻ đã xác minh, backend nối đúng các slug đó và dựng câu trả lời từ catalog đã kiểm tra. Function response tìm hàng có thể kèm `scopeTotalItems`, `priceRangeTotalItems` và `displayedCardCount`; model chỉ dùng đúng bằng chứng, prompt vẫn cấm ghi giá/tiền tệ trong `answer`. Tối đa 2 tool executions/3 provider requests; bỏ detail provider hop tùy chọn để giữ ngân sách request cho final/retry, còn chi tiết sản phẩm do tool/backend deterministic cung cấp. `MAX_TOKENS` chỉ cứu câu hoàn chỉnh của final grounded text; mọi nội dung cứu được và câu đã rút còn tối đa 5 đều phải qua guard đầy đủ. |
 | Cost controls | FAQ/shop-contact/order summary đã đăng nhập/guest-order/clarification fast-path locally; maximum 12 turns/conversation; 10 messages/min/IP. Một logical turn có 1–3 provider requests nội bộ vẫn dùng một daily slot theo `Asia/Ho_Chi_Minh`; không tiêu thêm slot cho retry xưng hô. Trường `ai_retry_count` giữ để đọc lịch sử các hàng cũ. |
 | Failure | Disabled, empty credential, exhausted daily quota or provider error returns `mode=CONTACT` with the same Hotline/Zalo/Messenger data as the old widget. Review moderation keeps using the shared credential independently. |
-| Privacy/retention | Conversation rows expire after 90 days. No chat/question/phone/key is written to application logs. |
+| Privacy/retention | Conversation rows expire after 90 days. The storefront may keep only a minimal local chat snapshot for at most 24 hours, with a fixed expiry from the first save; it is cleared by delete or logout and contains no lead draft, customer profile, session secret or API key. No chat/question/phone/key is written to application logs. A consented lead records `source=FORM` or `source=ACCOUNT`; the latter is resolved from the authenticated customer record, not from the browser payload. |
 
 Environment: `GEMINI_API_KEY` (shared secret), `BIGBIKE_CHAT_MODEL` (default
 `gemini-2.5-flash`) and `BIGBIKE_CHAT_TIMEOUT_SECONDS` (default `20`). The latter two must also be
@@ -105,7 +105,8 @@ cache entries immediately, instead of waiting for the page's time-based `revalid
   otherwise that content only refreshes on its time-based TTL, never on edit.
 - Redirect admin mutations call `revalidateRedirects()`: this emits the `redirects` tag and
   immediately clears the web proxy L1 redirect Map through the internal clear endpoint. The
-  redirect cache TTL is only a fallback.
+  redirect cache TTL is only a fallback. Clear also drops the active bulk snapshot; the next
+  request starts one single-flight refresh.
 
 ### Redirect resolution order in `bigbike-web/proxy.ts`
 
@@ -127,9 +128,14 @@ Order matters — getting it wrong costs an extra hop or silently disables the a
    `REDIRECT_RULE_009`.
 5. Auth gate, `?s=` search alias, then the general table lookup on the vi-normalized path.
 
-`lookupRedirect` tries the exact path, then the de-trailed variant; targets are normalized by
-`translatePath` (`localizeInternalPath` always ends with `withTrailingSlash`), so neither
-source nor target needs a trailing slash to resolve in one hop.
+On a healthy backend, `proxy.ts` first uses the enabled-rule snapshot from `/redirects/active`
+(single-flight, 30-second TTL), then stores only positive per-path hits in L1. A snapshot
+miss is a real miss and is not sent to the backend again until the TTL expires. If the bulk
+request times out, fails at the network layer, or returns a non-2xx response, the proxy does
+not cache an empty snapshot and falls back to the exact single lookup path. `lookupRedirect`
+tries the exact path, then the de-trailed variant; targets are normalized by `translatePath`
+(`localizeInternalPath` always ends with `withTrailingSlash`), so neither source nor target
+needs a trailing slash to resolve in one hop.
 
 **Failure mode to recognise:** if *every* redirect suddenly 404s and the web log repeats
 `[proxy] Backend returned 401 for redirect lookup on "..."`, the shared secret is mismatched —

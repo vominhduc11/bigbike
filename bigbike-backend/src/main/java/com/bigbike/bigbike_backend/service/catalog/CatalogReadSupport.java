@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms;
@@ -12,7 +13,9 @@ import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
 import java.text.Collator;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
@@ -24,7 +27,7 @@ import java.util.Set;
 /**
  * Pure, stateless catalog read-side helpers extracted from {@code CatalogReadService}.
  *
- * <p>Mapping (domain → list-view DTO), facet/price-band/gender building, query/color/
+ * <p>Mapping (domain → list-view DTO), facet/price-range/gender building, query/color/
  * price predicates, slug normalization and comparator construction. Every method here
  * takes plain arguments and touches no Spring beans, repositories or instance state, so
  * the service keeps only caching/orchestration and repository access. Imported via
@@ -49,124 +52,8 @@ final class CatalogReadSupport {
         return collator;
     }
 
-    /**
-     * Display name lookup for color base slugs (output of {@link #colorBaseSlug}).
-     * Covers all 86 distinct color slugs currently in product_variant_options.
-     * Slugs that merge via suffix stripping (e.g. "xam-2" → "xam") share one entry.
-     */
-    private static final Map<String, String> COLOR_SLUG_LABELS_VI = Map.ofEntries(
-            Map.entry("cam",               "Cam"),
-            Map.entry("cam-den-trang",     "Cam đen trắng"),
-            Map.entry("camo",              "Camo"),
-            Map.entry("camo-nhat",         "Camo nhạt"),
-            Map.entry("carbon",            "Carbon"),
-            Map.entry("carbon-3k-bong",    "Carbon 3K bóng"),
-            Map.entry("carbon-3k-nham",    "Carbon 3K nhám"),
-            Map.entry("carbon-9k-bong",    "Carbon 9K bóng"),
-            Map.entry("carbon-forged-bong","Carbon Forged bóng"),
-            Map.entry("carbon-forged-nham","Carbon Forged nhám"),
-            Map.entry("carbon-tem-bac",    "Carbon tem bạc"),
-            Map.entry("carbon-tem-do",     "Carbon tem đỏ"),
-            Map.entry("cyborg-blue",       "CYBORG BLUE"),
-            Map.entry("cyborg-gray",       "CYBORG GRAY"),
-            Map.entry("day1-green",        "DAY1 GREEN"),
-            Map.entry("day1-orange",       "DAY1 ORANGE"),
-            Map.entry("den",               "Đen"),
-            Map.entry("den-bong",          "Đen bóng"),
-            Map.entry("den-cam",           "Đen cam"),
-            Map.entry("den-camo",          "Đen CAMO"),
-            Map.entry("den-camo-do",       "ĐEN CAMO ĐỎ"),
-            Map.entry("den-camo-trang",    "ĐEN CAMO TRẮNG"),
-            Map.entry("den-do",            "Đen đỏ"),
-            Map.entry("den-do-trang",      "Đen đỏ trắng"),
-            Map.entry("den-hong",          "Đen hồng"),
-            Map.entry("den-nau",           "Đen nâu"),
-            Map.entry("den-nham",          "Đen nhám"),
-            Map.entry("den-phan-quang",    "Đen Phản Quang"),
-            Map.entry("den-trang",         "Đen trắng"),
-            Map.entry("den-trang-do",      "Đen trắng đỏ"),
-            Map.entry("den-xam",           "Đen xám"),
-            Map.entry("den-xanh-duong",    "Đen xanh dương"),
-            Map.entry("den-xanh-la",       "Đen xanh lá"),
-            Map.entry("do",                "Đỏ"),
-            Map.entry("do-trang-xanh",     "Đỏ trắng xanh"),
-            Map.entry("forged-cacbon-nham","Forged carbon nhám"),
-            Map.entry("guong",             "Gương"),
-            Map.entry("khaki",             "KHAKI"),
-            Map.entry("mcphee",            "McPhee"),
-            Map.entry("mythology-gold",    "MYTHOLOGY GOLD"),
-            Map.entry("mythology-red",     "MYTHOLOGY RED"),
-            Map.entry("mythology-silver",  "MYTHOLOGY SILVER"),
-            Map.entry("nau",               "Nâu"),
-            Map.entry("nerve",             "Nerve"),
-            Map.entry("ronin-blue",        "RONIN BLUE"),
-            Map.entry("ronin-red",         "RONIN RED"),
-            Map.entry("soc",               "Sọc"),
-            Map.entry("sprinter",          "Sprinter"),
-            Map.entry("super-mecha-gold",  "SUPER MECHA GOLD"),
-            Map.entry("super-mecha-red",   "SUPER MECHA RED"),
-            Map.entry("tem-do",            "Tem đỏ"),
-            Map.entry("tem-trang",         "Tem trắng"),
-            Map.entry("tem-xam",           "Tem xám"),
-            Map.entry("trang",             "Trắng"),
-            Map.entry("trang-bong",        "Trắng bóng"),
-            Map.entry("trang-vang",        "Trắng/Vàng"),
-            Map.entry("trang-xam",         "Trắng xám"),
-            Map.entry("trang-xanh-la",     "Trắng/Xanh lá"),
-            Map.entry("vang",              "Vàng"),
-            Map.entry("vang-neon",         "Vàng NEON"),
-            Map.entry("war-damaged-gray",  "WAR DAMAGED GRAY"),
-            Map.entry("xam",               "Xám"),
-            Map.entry("xam-bong",          "Xám bóng"),
-            Map.entry("xam-do",            "Xám/Đỏ"),
-            Map.entry("xam-vang",          "Xám vàng"),
-            Map.entry("xanh",              "Xanh"),
-            Map.entry("xanh-duong",       "Xanh Dương"),
-            Map.entry("xanh-army",         "Xanh army"),
-            Map.entry("xanh-dam",          "Xanh đậm"),
-            Map.entry("xanh-dam-om",       "Xanh đậm ôm"),
-            Map.entry("xanh-dam-suong",    "Xanh đậm suông"),
-            Map.entry("xanh-duong-cam",    "Xanh dương/Cam"),
-            Map.entry("xanh-la",           "Xanh lá"),
-            Map.entry("xanh-la-xam",       "Xanh lá/Xám"),
-            Map.entry("xanh-mecha",        "Xanh Mecha"),
-            Map.entry("xanh-nhat",         "Xanh nhạt"),
-            Map.entry("xanh-nhat-om",      "Xanh nhạt ôm"),
-            Map.entry("xanh-nhat-suong",   "Xanh nhạt suông"),
-            Map.entry("xanh-om",           "Xanh ôm"),
-            Map.entry("xanh-reu",          "Xanh rêu"),
-            Map.entry("xanh-reu-den",      "Xanh rêu/Đen"),
-            Map.entry("xanh-vang",         "Xanh vàng")
-    );
-
-    private static final Map<String, String> COLOR_SLUG_LABELS_EN = Map.ofEntries(
-            Map.entry("cam",        "Orange"),
-            Map.entry("den",        "Black"),
-            Map.entry("den-bong",   "Black gloss"),
-            Map.entry("den-nham",   "Black matte"),
-            Map.entry("do",         "Red"),
-            Map.entry("nau",        "Brown"),
-            Map.entry("soc",        "Striped"),
-            Map.entry("trang",      "White"),
-            Map.entry("trang-bong", "White gloss"),
-            Map.entry("vang",       "Yellow"),
-            Map.entry("xam",        "Gray"),
-            Map.entry("xam-bong",   "Gray gloss"),
-            Map.entry("xanh",       "Blue"),
-            Map.entry("xanh-la",    "Green"),
-            Map.entry("xanh-reu",   "Olive")
-    );
-
-    /** Fixed price bands — 7 dải chuẩn WP, đơn vị VND, khớp với legacy widget. */
-    private static final List<PriceBand> PRICE_BANDS = List.of(
-            new PriceBand("0-500k",   "0 - 500.000 VND",           "0 - 500.000 VND",            0L,         500_000L),
-            new PriceBand("500k-1tr", "500.000 - 1.000.000 VND",   "500.000 - 1.000.000 VND",    500_000L,   1_000_000L),
-            new PriceBand("1-2tr",    "1.000.000 - 2.000.000 VND", "1.000.000 - 2.000.000 VND",  1_000_000L, 2_000_000L),
-            new PriceBand("2-3tr",    "2.000.000 - 3.000.000 VND", "2.000.000 - 3.000.000 VND",  2_000_000L, 3_000_000L),
-            new PriceBand("3-5tr",    "3.000.000 - 5.000.000 VND", "3.000.000 - 5.000.000 VND",  3_000_000L, 5_000_000L),
-            new PriceBand("5-10tr",   "5.000.000 - 10.000.000 VND","5.000.000 - 10.000.000 VND", 5_000_000L, 10_000_000L),
-            new PriceBand("tren-10tr","Trên 10.000.000 VND",        "Over 10.000.000 VND",        10_000_000L, null)
-    );
+    static final long PRICE_FILTER_STEP = 50_000L;
+    private static final int MAX_PRICE_HISTOGRAM_BUCKETS = 24;
 
     private static final List<GenderFacet> GENDER_FACETS = List.of(
             new GenderFacet("Nam",    "Nam",    "Male"),
@@ -174,9 +61,6 @@ final class CatalogReadSupport {
     );
 
     private record GenderFacet(String slug, String labelVi, String labelEn) {
-    }
-
-    private record PriceBand(String key, String label, String labelEn, Long min, Long max) {
     }
 
     /**
@@ -212,6 +96,8 @@ final class CatalogReadSupport {
                 p.stockState(),
                 p.available(),
                 p.publishStatus(),
+                p.discontinued(),
+                p.sizeScaleId(),
                 p.homepageBlock(),
                 p.homepageOrder(),
                 p.rating(),
@@ -226,7 +112,7 @@ final class CatalogReadSupport {
                 null,                       // specStats — detail only
                 null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
-                p.gender(),
+                p.genders(),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
@@ -280,35 +166,6 @@ final class CatalogReadSupport {
         return "en".equalsIgnoreCase(locale) && en != null && !en.isBlank() ? en : base;
     }
 
-    static List<CatalogFacets.FacetBucket> buildColorBuckets(List<Product> products, String locale) {
-        // Scan all variant color options; group by base slug (strips -2/-3 suffixes).
-        Map<String, Set<String>> baseToProductIds = new HashMap<>();
-        for (Product product : products) {
-            if (product.variants() == null) continue;
-            product.variants().stream()
-                    .filter(Objects::nonNull)
-                    .filter(v -> v.options() != null)
-                    .flatMap(v -> v.options().stream())
-                    .filter(Objects::nonNull)
-                    .filter(opt -> isColorOption(opt.name())
-                            && opt.value() != null && !opt.value().isBlank())
-                    .map(opt -> colorBaseSlug(opt.value()))
-                    .filter(slug -> !slug.isBlank())
-                    .forEach(slug ->
-                            baseToProductIds.computeIfAbsent(slug, k -> new HashSet<>())
-                                    .add(product.id()));
-        }
-        return baseToProductIds.entrySet().stream()
-                .map(e -> new CatalogFacets.FacetBucket(
-                        e.getKey(),
-                        resolveColorLabel(e.getKey(), locale),
-                        null,
-                        e.getValue().size()))
-                .filter(b -> b.count() > 0)
-                .sorted(Comparator.comparingLong(CatalogFacets.FacetBucket::count).reversed())
-                .toList();
-    }
-
     static List<CatalogFacets.FacetBucket> buildGenderBuckets(List<Product> products, String locale) {
         return GENDER_FACETS.stream()
                 .map(g -> new CatalogFacets.FacetBucket(
@@ -321,32 +178,179 @@ final class CatalogReadSupport {
                 .toList();
     }
 
+    /**
+     * Legacy flat size facet retained for old clients. New clients should render
+     * {@link #buildSizeGroups(List, SizeScaleCatalog, String)} so equal values from
+     * different scale families do not become ambiguous links.
+     */
+    static List<CatalogFacets.FacetBucket> buildSizeBuckets(List<Product> products) {
+        return buildLegacySizeBuckets(products, new SizeScaleCatalog(List.of()), "vi");
+    }
+
+    static List<CatalogFacets.FacetBucket> buildLegacySizeBuckets(
+            List<Product> products,
+            SizeScaleCatalog catalog,
+            String locale
+    ) {
+        Map<String, Set<String>> productIdsByValue = new HashMap<>();
+        Map<String, SizeBucketMeta> metadata = new HashMap<>();
+        for (Product product : products == null ? List.<Product>of() : products) {
+            if (product == null || product.id() == null) continue;
+            for (SizeScaleCatalog.ResolvedSize resolved : catalog.resolve(product)) {
+                if (resolved == null || resolved.value() == null) continue;
+                String valueKey = SizeScaleCatalog.normalizeValue(resolved.value().key());
+                if (valueKey.isBlank()) continue;
+                productIdsByValue.computeIfAbsent(valueKey, ignored -> new HashSet<>()).add(product.id());
+                metadata.putIfAbsent(valueKey, new SizeBucketMeta(
+                        resolved.value().localizedLabel(locale), resolved.value().sortOrder()));
+            }
+        }
+        return productIdsByValue.entrySet().stream()
+                .map(entry -> {
+                    SizeBucketMeta meta = metadata.get(entry.getKey());
+                    return new CatalogFacets.FacetBucket(
+                            entry.getKey(),
+                            meta == null ? entry.getKey() : meta.label(),
+                            null,
+                            entry.getValue().size());
+                })
+                .sorted(Comparator.comparingInt((CatalogFacets.FacetBucket bucket) ->
+                                metadata.getOrDefault(bucket.key(), new SizeBucketMeta(bucket.label(), Integer.MAX_VALUE)).sortOrder())
+                        .thenComparing(CatalogFacets.FacetBucket::key))
+                .toList();
+    }
+
+    /** Builds the data-driven grouped size facet in configured display order. */
+    static List<CatalogFacets.SizeGroupFacet> buildSizeGroups(
+            List<Product> products,
+            SizeScaleCatalog catalog,
+            String locale
+    ) {
+        if (catalog == null || catalog.scales().isEmpty()) return List.of();
+
+        Map<String, Set<String>> productIdsByToken = new HashMap<>();
+        Map<String, SizeScaleCatalog.ResolvedSize> resolvedByToken = new HashMap<>();
+        for (Product product : products == null ? List.<Product>of() : products) {
+            if (product == null || product.id() == null) continue;
+            for (SizeScaleCatalog.ResolvedSize resolved : catalog.resolve(product)) {
+                if (resolved == null || resolved.token() == null || resolved.token().isBlank()
+                        || resolved.scale() == null || resolved.scale().group() == null) {
+                    continue;
+                }
+                productIdsByToken.computeIfAbsent(resolved.token(), ignored -> new HashSet<>()).add(product.id());
+                resolvedByToken.putIfAbsent(resolved.token(), resolved);
+            }
+        }
+
+        Map<String, SizeGroupAccumulator> groups = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : productIdsByToken.entrySet()) {
+            SizeScaleCatalog.ResolvedSize resolved = resolvedByToken.get(entry.getKey());
+            if (resolved == null || resolved.scale() == null || resolved.scale().group() == null) continue;
+            var group = resolved.scale().group();
+            SizeGroupAccumulator groupAccumulator = groups.computeIfAbsent(group.key(), ignored ->
+                    new SizeGroupAccumulator(group.key(), group.localizedLabel(locale), group.sortOrder()));
+            var value = resolved.value();
+            SizeBucketAccumulator bucket = new SizeBucketAccumulator(
+                    resolved.token(),
+                    SizeScaleCatalog.normalizeValue(value.key()),
+                    value.localizedLabel(locale),
+                    entry.getValue().size(),
+                    value.sortOrder());
+            // Public filters are intentionally one flat value list per group. The
+            // subgroup columns remain only as migration compatibility data and are
+            // not rendered or exposed by the public facet contract.
+            groupAccumulator.buckets.putIfAbsent(bucket.key(), bucket);
+        }
+
+        return groups.values().stream()
+                .sorted(Comparator.comparingInt(SizeGroupAccumulator::sortOrder)
+                        .thenComparing(SizeGroupAccumulator::key))
+                .map(group -> new CatalogFacets.SizeGroupFacet(
+                        group.key,
+                        group.label,
+                        group.buckets.values().stream()
+                                .sorted(SizeBucketAccumulator.ORDER)
+                                .map(SizeBucketAccumulator::toFacet)
+                                .toList()))
+                .filter(group -> !group.buckets().isEmpty())
+                .toList();
+    }
+
+    private record SizeBucketMeta(String label, int sortOrder) {
+    }
+
+    private static final class SizeGroupAccumulator {
+        private final String key;
+        private final String label;
+        private final int sortOrder;
+        private final Map<String, SizeBucketAccumulator> buckets = new LinkedHashMap<>();
+
+        private SizeGroupAccumulator(String key, String label, int sortOrder) {
+            this.key = key;
+            this.label = label;
+            this.sortOrder = sortOrder;
+        }
+
+        private String key() { return key; }
+
+        private int sortOrder() { return sortOrder; }
+    }
+
+    private record SizeBucketAccumulator(
+            String key,
+            String valueKey,
+            String label,
+            long count,
+            int sortOrder
+    ) {
+        private static final Comparator<SizeBucketAccumulator> ORDER =
+                Comparator.comparingInt(SizeBucketAccumulator::sortOrder)
+                        .thenComparing(SizeBucketAccumulator::valueKey)
+                        .thenComparing(SizeBucketAccumulator::key);
+
+        private CatalogFacets.SizeBucket toFacet() {
+            return new CatalogFacets.SizeBucket(key, valueKey, label, count);
+        }
+    }
+
     static boolean matchesGender(Product product, List<String> filterGenders) {
-        List<String> active = filterGenders == null
-                ? List.of()
-                : filterGenders.stream()
-                        .filter(value -> value != null && !value.isBlank())
-                        .map(String::trim)
-                        .toList();
+        List<String> active = ProductGenderSupport.firstSupported(filterGenders);
         if (active.isEmpty()) return true;
-        if (product.gender() == null) return false;
-        return active.stream().anyMatch(value -> value.equalsIgnoreCase(product.gender()));
+        return active.stream().anyMatch(value -> ProductGenderSupport.contains(product.genders(), value));
     }
 
     static boolean matchesGender(Product product, String filterGender) {
         return matchesGender(product, filterGender == null ? List.of() : List.of(filterGender));
     }
 
-    static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products, String locale) {
-        return PRICE_BANDS.stream()
-                .map(band -> new CatalogFacets.PriceBucket(
-                        band.key(),
-                        pick(band.label(), band.labelEn(), locale),
-                        band.min(),
-                        band.max(),
-                        products.stream().filter(p -> matchesPrice(p, band.min(), band.max())).count()
-                ))
+    static CatalogFacets.PriceRange buildPriceRange(List<Product> products) {
+        List<Long> prices = (products == null ? List.<Product>of() : products).stream()
+                .map(CatalogReadSupport::effectivePrice)
+                .filter(Objects::nonNull)
+                .filter(price -> price.signum() > 0)
+                .map(BigDecimal::longValue)
                 .toList();
+        if (prices.isEmpty()) return null;
+
+        long min = prices.stream().mapToLong(Long::longValue).min().orElse(0L);
+        long max = prices.stream().mapToLong(Long::longValue).max().orElse(0L);
+        if (min == max) return null;
+
+        long span = max - min;
+        int bucketCount = Math.min(MAX_PRICE_HISTOGRAM_BUCKETS,
+                Math.max(1, (int) Math.ceil((double) span / PRICE_FILTER_STEP)));
+        List<CatalogFacets.PriceHistogramBucket> buckets = new ArrayList<>(bucketCount);
+        for (int index = 0; index < bucketCount; index++) {
+            long bucketMin = min + (span * index) / bucketCount;
+            long bucketMax = index == bucketCount - 1
+                    ? max
+                    : min + (span * (index + 1)) / bucketCount - 1;
+            long count = prices.stream()
+                    .filter(price -> price >= bucketMin && price <= bucketMax)
+                    .count();
+            buckets.add(new CatalogFacets.PriceHistogramBucket(bucketMin, bucketMax, count));
+        }
+        return new CatalogFacets.PriceRange(min, max, PRICE_FILTER_STEP, buckets);
     }
 
     static boolean matchesCategory(Product product, String categorySlug) {
@@ -375,6 +379,11 @@ final class CatalogReadSupport {
             return true;
         }
         return product.brand() != null && product.brand().slug().equals(brandSlug);
+    }
+
+    static boolean matchesBrand(Product product, List<String> brandSlugs) {
+        if (brandSlugs == null || brandSlugs.isEmpty()) return true;
+        return product.brand() != null && brandSlugs.contains(product.brand().slug());
     }
 
     static boolean matchesQuery(Product product, String q) {
@@ -406,6 +415,19 @@ final class CatalogReadSupport {
                                 && colorBaseSlug(opt.value()).equals(expectedBase)));
     }
 
+    static boolean matchesSize(Product product, String filterSize) {
+        if (filterSize == null || filterSize.isBlank()) return true;
+        String expected = normalizeSizeValue(filterSize);
+        if (expected.isBlank() || product == null || product.variants() == null) return false;
+        return product.variants().stream()
+                .filter(Objects::nonNull)
+                .filter(variant -> variant.options() != null)
+                .flatMap(variant -> variant.options().stream())
+                .filter(Objects::nonNull)
+                .filter(option -> isSizeOption(option.name()))
+                .anyMatch(option -> expected.equals(normalizeSizeValue(option.value())));
+    }
+
     static boolean matchesPrice(Product product, Long minPrice, Long maxPrice) {
         if (minPrice == null && maxPrice == null) {
             return true;
@@ -430,15 +452,21 @@ final class CatalogReadSupport {
     }
 
     /**
-     * Price filtering and sorting use the parent product price only. Variant
-     * prices are intentionally ignored so list-page filter results stay
-     * consistent with the price the storefront displays.
+     * Price filtering and sorting use the parent product's displayed price only.
+     * A sale price is effective only when it is positive and strictly below retail.
+     * Variant prices are intentionally ignored so list-page filters stay consistent
+     * with the price the storefront displays.
      */
     static BigDecimal effectivePrice(Product product) {
-        if (product.price() == null) {
+        if (product == null || product.price() == null) {
             return null;
         }
-        return product.price().retailPrice();
+        BigDecimal retail = product.price().retailPrice();
+        BigDecimal sale = product.price().salePrice();
+        if (retail == null) return null;
+        return sale != null && sale.signum() > 0 && sale.compareTo(retail) < 0
+                ? sale
+                : retail;
     }
 
     static boolean isColorOption(String name) {
@@ -446,6 +474,19 @@ final class CatalogReadSupport {
         return normalizedName.contains("color")
                 || normalizedName.contains("colour")
                 || normalizedName.contains("mau");
+    }
+
+    static boolean isSizeOption(String name) {
+        String normalizedName = normalize(name);
+        return normalizedName.contains("size")
+                || normalizedName.contains("kich co")
+                || normalizedName.contains("kich thuoc");
+    }
+
+    static String normalizeSizeValue(String value) {
+        if (value == null) return "";
+        String normalized = value.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+        return "XXXL".equals(normalized) ? "3XL" : normalized;
     }
 
     static String normalize(String value) {
@@ -478,29 +519,6 @@ final class CatalogReadSupport {
                 .replaceAll("-{2,}", "-")
                 .replaceAll("(^-|-$)", "")
                 .replaceFirst("-\\d+$", "");
-    }
-
-    static String resolveColorLabel(String baseSlug, String locale) {
-        if ("en".equalsIgnoreCase(locale)) {
-            String en = COLOR_SLUG_LABELS_EN.get(baseSlug);
-            if (en != null) return en;
-        }
-        String vi = COLOR_SLUG_LABELS_VI.get(baseSlug);
-        return vi != null ? vi : formatColorSlug(baseSlug);
-    }
-
-    static String formatColorSlug(String slug) {
-        if (slug == null || slug.isBlank()) return "";
-        String[] parts = slug.split("-");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) sb.append(' ');
-            if (!parts[i].isEmpty()) {
-                sb.append(Character.toUpperCase(parts[i].charAt(0)));
-                sb.append(parts[i].substring(1));
-            }
-        }
-        return sb.toString();
     }
 
     static Comparator<Product> productComparator(SortSpec sortSpec) {

@@ -6,18 +6,21 @@ import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
-import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import type { RouteSearchParams } from "@/lib/utils/query";
 
 // Shell + hero lấy từ settings (admin quản lý, revalidate theo tag "settings"). Lưới
-// sản phẩm view MẶC ĐỊNH (page 1, sort mặc định, chưa lọc) fetch sẵn ở server và
-// truyền xuống CatalogClient → nằm trong HTML server (SEO). Khi khách lọc/sắp xếp/
-// sang trang, client tiếp quản fetch theo searchParams.
-type ProductListPageProps = { params: Promise<{ locale: string }> };
+// sản phẩm và facets được fetch đúng theo searchParams ở server để URL lọc mở thẳng
+// không chớp dữ liệu mặc định. Sau hydrate, client tiếp quản các lần đổi tiếp theo.
+type ProductListPageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<RouteSearchParams>;
+};
 
 export async function generateMetadata({ params }: ProductListPageProps): Promise<Metadata> {
   const { locale } = await params as Awaited<typeof params> & { locale: Locale };
@@ -32,8 +35,9 @@ export async function generateMetadata({ params }: ProductListPageProps): Promis
   });
 }
 
-export default async function ProductListPage({ params }: ProductListPageProps) {
+export default async function ProductListPage({ params, searchParams }: ProductListPageProps) {
   const { locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const catalog = parseCatalogListParams((await searchParams) ?? {}, { includeCategoryParam: true });
   setRequestLocale(locale);
   const tCatalog = await getTranslations("Catalog");
 
@@ -41,13 +45,29 @@ export default async function ProductListPage({ params }: ProductListPageProps) 
     listPublicSettings(locale),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    getCatalogFacets({ lang: locale }),
-    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, lang: locale }),
+    getCatalogFacets({
+      category: catalog.filters.category, brand: catalog.filters.brand, q: catalog.filters.q,
+      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock, lang: locale,
+    }),
+    listProducts({
+      page: catalog.page, size: catalog.size, sort: catalog.productSort,
+      category: catalog.filters.category, brand: catalog.filters.brand, q: catalog.filters.q,
+      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock, lang: locale,
+    }),
   ]);
 
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
-  const heroTitle = heroSettings.title ?? tCatalog("allProducts");
+  const configuredHeroTitle = heroSettings.title?.trim();
+  const heroTitle = configuredHeroTitle === "Tất cả sản phẩm1"
+    ? tCatalog("allProducts")
+    : configuredHeroTitle || tCatalog("allProducts");
   const heroBgUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
@@ -65,6 +85,7 @@ export default async function ProductListPage({ params }: ProductListPageProps) 
   return (
     <div>
         <PageHero
+          className="mb-4 md:mb-22.5"
           focusId="hero_products hero_default"
           title={heroTitle}
           breadcrumb={heroBreadcrumb}

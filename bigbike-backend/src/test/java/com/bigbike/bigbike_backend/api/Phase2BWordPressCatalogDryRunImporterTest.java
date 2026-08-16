@@ -561,7 +561,7 @@ class Phase2BWordPressCatalogDryRunImporterTest {
     // ── 30. realDumpDryRun_inventorySmokeDoesNotCrash ────────────────────────
     @Test
     void realDumpDryRun_inventorySmokeDoesNotCrash() throws Exception {
-        Path realDump = Path.of("../bigbike_vn__2026_04_17/sqldump.sql");
+        Path realDump = externalDumpPath();
         if (!realDump.toFile().exists()) {
             // Real dump not present in test environment — skip gracefully
             return;
@@ -572,7 +572,7 @@ class Phase2BWordPressCatalogDryRunImporterTest {
     // ── 31. realDumpDryRun_reportsNonZeroProductsMediaRedirects ──────────────
     @Test
     void realDumpDryRun_reportsNonZeroProductsMediaRedirects() throws Exception {
-        Path realDump = Path.of("../bigbike_vn__2026_04_17/sqldump.sql");
+        Path realDump = externalDumpPath();
         if (!realDump.toFile().exists()) {
             // Real dump not present — skip gracefully
             return;
@@ -587,6 +587,12 @@ class Phase2BWordPressCatalogDryRunImporterTest {
     // ═══════════════════════════════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════════════════════════════
+
+    private static Path externalDumpPath() {
+        return Path.of(System.getProperty(
+                "bigbike.wp.dump.path",
+                System.getenv().getOrDefault("BIGBIKE_WP_DUMP_PATH", "external-wordpress-dump.sql")));
+    }
 
     private WpPost productPost(long id, String title, String slug, String status) {
         return new WpPost(id, 1L, LocalDateTime.now(), LocalDateTime.now(),

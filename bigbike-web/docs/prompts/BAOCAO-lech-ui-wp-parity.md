@@ -1,4 +1,6 @@
-# Báo cáo lệch UI/UX & responsive — `bigbike-web` ↔ WordPress gốc `bigbike_vn__2026_04_17`
+# Báo cáo lệch UI/UX & responsive — `bigbike-web` ↔ bản tham chiếu WordPress đã lưu trữ
+
+> Tài liệu lịch sử. Bản export WordPress cục bộ đã được chủ dự án xoá vĩnh viễn; các nhận định dưới đây không phải hướng dẫn chạy lại. Quy tắc hiện hành lấy từ `bigbike-web/STYLEGUIDE.md`, docs canonical và code hiện tại.
 
 > **Giai đoạn 2 — Báo cáo dạng option. CHƯA SỬA GÌ.** Khảo sát read-only, mỗi điểm lệch đã được verify lại bằng cách mở đúng dòng file WP + Next (loại bỏ báo nhầm). Đối chiếu ở 7 mốc: **360 / 576 / 768 / 992 / 1200 / 1440 / 1920px**.
 >

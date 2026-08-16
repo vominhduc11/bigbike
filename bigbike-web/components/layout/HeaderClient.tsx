@@ -26,6 +26,27 @@ import { iconBtn } from "@/lib/ui-classes";
 import { toHomePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
+function closeMobileMenuOnNavigation(
+  event: React.MouseEvent<HTMLDivElement>,
+  closePanel: () => void,
+) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  // Mở rộng danh mục chỉ là thao tác trong drawer, không phải điều hướng.
+  if (target.closest("[data-header-submenu-trigger]")) return;
+
+  const interactive = target.closest("a[href], button");
+  if (!(interactive instanceof HTMLElement)) return;
+
+  if (interactive instanceof HTMLAnchorElement) {
+    // Mục mở tab mới không đổi trang hiện tại, nên giữ drawer như trước khi bấm.
+    if (interactive.target === "_blank" || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  }
+
+  closePanel();
+}
+
 export type HeaderContact = {
   address: string;
   phones: string[];
@@ -142,7 +163,14 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
       >
         <div data-bb-canvas className={cn(SITE_CANVAS_CLASS, "flex h-full items-center px-4 md:px-6")}>
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
-            <Link href={toHomePath(locale as Locale)} data-header-logo className="relative flex h-full items-start">
+            <Link
+              href={toHomePath(locale as Locale)}
+              data-header-logo
+              onClick={() => {
+                if (mobileMenuOpen) closePanel();
+              }}
+              className="relative flex h-full items-start"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}
@@ -225,6 +253,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
           showClose={false}
           overlayClassName="top-15! md:top-20!"
           data-header-mobile-menu
+          onClickCapture={(event) => closeMobileMenuOnNavigation(event, closePanel)}
           className="bottom-0! top-15! h-[calc(100dvh-60px)]! w-full! max-w-125! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-20! md:h-[calc(100dvh-80px)]!"
         >
           <SheetTitle className="sr-only">{t("menu")}</SheetTitle>

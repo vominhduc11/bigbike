@@ -801,10 +801,11 @@ final class LiveMigrationExecutor {
                 + "length_cm,width_cm,height_cm,publish_status,seo_title,seo_description,seo_canonical_url,"
                 + "seo_og_image_id,seo_og_image_url,seo_og_image_alt,seo_og_image_width,"
                 + "seo_og_image_height,seo_og_image_mime_type,created_at,updated_at,weight_kg,"
-                + "homepage_block,gender,gallery,videos,available,discount_percent_override,"
+                + "homepage_block,gender_male,gender_female,gallery,videos,available,discount_percent_override,"
                 + "name_en,slug_en,short_description_en,description_en,"
                 + "seo_title_en,seo_description_en";
-        String values = String.join(",", java.util.Collections.nCopies(39, "?"))
+        String values = String.join(",", java.util.Collections.nCopies(38, "?"))
+                + ",?,?"
                 + ",cast(? as jsonb),cast(? as jsonb),?,?,?,?,?,?,?,?";
         try (PreparedStatement statement = connection.prepareStatement(
                 "insert into products (" + columns + ") values (" + values + ")")) {
@@ -841,7 +842,8 @@ final class LiveMigrationExecutor {
             statement.setTimestamp(i++, Timestamp.from(createdAt));
             statement.setBigDecimal(i++, mapped.weightKg());
             statement.setString(i++, "NONE");
-            statement.setString(i++, trimToNull(plan.targetGender()));
+            statement.setBoolean(i++, hasGender(plan.targetGender(), "Nam"));
+            statement.setBoolean(i++, hasGender(plan.targetGender(), "Nữ"));
             statement.setString(i++, gallery);
             statement.setString(i++, videos);
             statement.setBoolean(i++, available);
@@ -854,7 +856,7 @@ final class LiveMigrationExecutor {
                     translation == null ? null : trimToNull(translation.seoTitleEn()));
             statement.setString(i++,
                     translation == null ? null : trimToNull(translation.seoDescriptionEn()));
-            if (i != 50) throw new IllegalStateException("Product insert binding count drift");
+            if (i != 51) throw new IllegalStateException("Product insert binding count drift");
             assertOne(statement.executeUpdate(), "product insert", plan.targetId());
         }
         insertProductCategories(connection, plan.targetId(), plan.targetCategorySlugs());
@@ -911,8 +913,8 @@ final class LiveMigrationExecutor {
                             "/product/" + plan.targetSlug() + "/"), plan.targetId());
             case "brandId" -> updateNullValue(connection, "products", "brand_id",
                     requiredBrandId(connection, plan.targetBrandSlug()), plan.targetId());
-            case "gender" -> updateBlankNullableString(
-                    connection, "products", "gender", plan.targetGender(), plan.targetId());
+            case "gender" -> updateProductGenderFlags(
+                    connection, plan.targetGender(), plan.targetId());
             case "image" -> updateProductAsset(connection, plan.targetId(), "image",
                     requiredMedia(media.byAttachment().get(mapped.thumbnailId()), "product image"));
             case "seoOgImage" -> updateProductAsset(connection, plan.targetId(), "seo_og_image",
@@ -1536,6 +1538,17 @@ final class LiveMigrationExecutor {
         }
     }
 
+    private void updateProductGenderFlags(Connection connection, String value, String id) throws SQLException {
+        String sql = "update products set gender_male=?,gender_female=?,updated_at=now() "
+                + "where id=? and gender_male=false and gender_female=false";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setBoolean(1, hasGender(value, "Nam"));
+            statement.setBoolean(2, hasGender(value, "Nữ"));
+            statement.setString(3, id);
+            assertOne(statement.executeUpdate(), "products blank fill gender flags", id);
+        }
+    }
+
     private void updateNullValue(
             Connection connection, String table, String column, Object value, String id) throws SQLException {
         String safeTable = identifier(table);
@@ -1993,6 +2006,14 @@ final class LiveMigrationExecutor {
 
     private static String trimToNull(String value) {
         return hasText(value) ? value.trim() : null;
+    }
+
+    private static boolean hasGender(String value, String expected) {
+        if (!hasText(value)) return false;
+        for (String token : value.split("\\|")) {
+            if (expected.equalsIgnoreCase(token.trim())) return true;
+        }
+        return false;
     }
 
     private String firstNonBlank(String first, String second) {

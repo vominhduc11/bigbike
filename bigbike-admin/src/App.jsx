@@ -45,6 +45,7 @@ const OrderDetailScreen  = lazyScreen(() => import('./screens/OrderDetailScreen'
 const OrderListScreen    = lazyScreen(() => import('./screens/OrderListScreen'),    'OrderListScreen')
 const ProductDetailScreen = lazyScreen(() => import('./screens/ProductDetailScreen'), 'ProductDetailScreen')
 const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'),  'ProductListScreen')
+const LegacyDiscontinuedProductsScreen = lazyScreen(() => import('./screens/LegacyDiscontinuedProductsScreen'), 'LegacyDiscontinuedProductsScreen')
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
 const ReviewDetailScreen = lazyScreen(() => import('./screens/ReviewDetailScreen'), 'ReviewDetailScreen')
 const ChatConversationListScreen = lazyScreen(() => import('./screens/ChatConversationListScreen'), 'ChatConversationListScreen')
@@ -82,6 +83,7 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.products',
     items: [
       { path: '/admin/products',          labelKey: 'nav.products',          policyKey: 'productsRead', icon: Package },
+      { path: '/admin/discontinued-products', labelKey: 'nav.legacyDiscontinued', policyKey: 'productsRead', icon: Package },
       { path: '/admin/featured-products', labelKey: 'nav.featuredProducts',  policyKey: 'featuredProducts', icon: Star },
       { path: '/admin/categories',        labelKey: 'nav.categories',        policyKey: 'catalogRead', icon: Tag },
       { path: '/admin/brands',            labelKey: 'nav.brands',            policyKey: 'catalogRead', icon: Award },
@@ -146,6 +148,7 @@ function parseRoute(pathname) {
   if (module === 'products' && !id)          return { kind: 'screen', name: 'products-list' }
   if (module === 'products' && id === 'new') return { kind: 'screen', name: 'product-create' }
   if (module === 'products' && id)           return { kind: 'screen', name: 'product-detail', productId: id }
+  if (module === 'discontinued-products') return { kind: 'screen', name: 'legacy-discontinued-products' }
   if (module === 'categories' && !id)          return { kind: 'screen', name: 'categories-list' }
   if (module === 'categories' && id === 'new') return { kind: 'screen', name: 'category-create' }
   if (module === 'categories' && id)           return { kind: 'screen', name: 'category-detail', categoryId: id }
@@ -438,6 +441,8 @@ function AdminApp() {
       screen = <DashboardScreen navigate={navigate} />; break
     case 'products-list':
       screen = <ProductListScreen navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} adminUserId={authState.user?.id} />; break
+    case 'legacy-discontinued-products':
+      screen = <LegacyDiscontinuedProductsScreen canUpdate={hasPermission('products.update')} />; break
     case 'product-create':
       screen = <ProductDetailScreen key="product-create" productId={null} isCreate navigate={navigate} canUpdate={canAccess('productsWrite')} canReadCatalog={hasPermission('catalog.read')} />; break
     case 'product-detail':

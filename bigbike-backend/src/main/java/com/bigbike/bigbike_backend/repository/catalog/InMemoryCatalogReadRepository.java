@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
@@ -254,6 +255,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ProductStockState.IN_STOCK,
                 false,
                 PublishStatus.PUBLISHED,
+                false,
+                null,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
                 1,
                 new BigDecimal("4.50"),
@@ -268,7 +271,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // specStats
                 null,           // trustBadges
                 null,           // quickAnswerSummary
-                null,           // gender
+                List.of(),      // genders
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
@@ -312,6 +315,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ProductStockState.IN_STOCK,
                 false,
                 PublishStatus.DRAFT,
+                false,
+                null,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE,
                 null,
                 new BigDecimal("4.50"),
@@ -326,7 +331,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // specStats
                 null,           // trustBadges
                 null,           // quickAnswerSummary
-                null,           // gender
+                List.of(),      // genders
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
@@ -370,6 +375,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ProductStockState.IN_STOCK,
                 false,
                 PublishStatus.PUBLISHED,
+                false,
+                null,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
                 2,
                 new BigDecimal("4.50"),
@@ -384,7 +391,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // specStats
                 null,           // trustBadges
                 null,           // quickAnswerSummary
-                null,           // gender
+                List.of(),      // genders
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
@@ -416,6 +423,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         // for interface parity but not resolved (no _en data in the fixtures).
         return products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(p -> !p.discontinued())
                 .toList();
     }
 
@@ -432,6 +440,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
             String brandSlug,
             String q,
             List<String> genders,
+            String sizeFilter,
             Long minPrice,
             Long maxPrice,
             com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock,
@@ -443,14 +452,17 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         // Stream-based fallback — the mock backend never needs real SQL pagination.
         List<Product> filtered = products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(p -> !p.discontinued())
                 .filter(p -> categorySlug == null || categorySlug.isBlank()
                         || safeCategories(p).stream().anyMatch(category -> categorySlug.equals(category.slug())))
                 .filter(p -> brandSlug == null || brandSlug.isBlank()
                         || (p.brand() != null && brandSlug.equals(p.brand().slug())))
-                .filter(p -> q == null || q.isBlank()
-                        || (p.name() != null && p.name().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT)))
-                        || (p.shortDescription() != null && p.shortDescription().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT))))
+                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
+                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(),
+                        q == null ? List.of() : List.of(q)))
                 .filter(p -> matchesGender(p, genders))
+                .filter(p -> matchesSize(p, sizeFilter))
+                .filter(p -> matchesRetailPrice(p, minPrice, maxPrice))
                 .filter(p -> homepageBlock == null || p.homepageBlock() == homepageBlock)
                 .toList();
         int fromIndex = Math.min((Math.max(1, page) - 1) * size, filtered.size());
@@ -460,13 +472,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
+        if (tokens == null || tokens.isEmpty() || limit <= 0) {
+            return List.of();
+        }
         return products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(p -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(t -> {
-                    String term = t.toLowerCase(java.util.Locale.ROOT);
-                    return (p.name() != null && p.name().toLowerCase(java.util.Locale.ROOT).contains(term))
-                            || (p.shortDescription() != null && p.shortDescription().toLowerCase(java.util.Locale.ROOT).contains(term));
-                }))
+                .filter(p -> !p.discontinued())
+                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
+                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(), tokens))
                 .limit(limit)
                 .toList();
     }
@@ -488,6 +501,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Comparator<Product> comparator = assistantComparator(sortSpec);
         return products.stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(product -> !product.discontinued())
                 .filter(product -> categorySlug == null || categorySlug.isBlank()
                         || safeCategories(product).stream().anyMatch(category -> categorySlug.equals(category.slug())))
                 .filter(product -> brandSlug == null || brandSlug.isBlank()
@@ -500,21 +514,29 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     private static boolean matchesAssistantTokens(Product product, List<String> tokens) {
-        return tokens.stream().allMatch(token -> containsAssistantToken(product.name(), token)
-                || containsAssistantToken(product.slug(), token)
-                || containsAssistantToken(product.slugEn(), token));
+        return ProductSearchTerms.matchesProductIdentifiers(
+                product.name(), englishName(product), product.slug(), product.slugEn(), product.sku(), tokens);
     }
 
-    private static boolean containsAssistantToken(String value, String token) {
-        return value != null && normalizeDiscovery(value).contains(normalizeDiscovery(token));
+    private static String englishName(Product product) {
+        return product.translations() == null || product.translations().en() == null
+                ? null : product.translations().en().name();
     }
 
     private static boolean matchesRetailPrice(Product product, Long minPrice, Long maxPrice) {
         if (minPrice == null && maxPrice == null) return true;
-        BigDecimal price = product.price() == null ? null : product.price().retailPrice();
+        BigDecimal price = effectiveSellingPrice(product);
         if (price == null) return false;
         return (minPrice == null || price.compareTo(BigDecimal.valueOf(minPrice)) >= 0)
                 && (maxPrice == null || price.compareTo(BigDecimal.valueOf(maxPrice)) <= 0);
+    }
+
+    private static BigDecimal effectiveSellingPrice(Product product) {
+        if (product == null || product.price() == null) return null;
+        BigDecimal retail = product.price().retailPrice();
+        BigDecimal sale = product.price().salePrice();
+        if (retail == null) return null;
+        return sale != null && sale.signum() > 0 && sale.compareTo(retail) < 0 ? sale : retail;
     }
 
     private static Comparator<Product> assistantComparator(
@@ -522,8 +544,10 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         String field = sortSpec == null ? "createdAt" : sortSpec.field();
         Comparator<Product> comparator = switch (field) {
             case "name" -> Comparator.comparing(product -> normalizeDiscovery(product.name()));
-            case "price" -> Comparator.comparing(product -> product.price() == null
-                    || product.price().retailPrice() == null ? BigDecimal.ZERO : product.price().retailPrice());
+            case "price" -> Comparator.comparing(product -> {
+                BigDecimal price = effectiveSellingPrice(product);
+                return price == null ? BigDecimal.ZERO : price;
+            });
             default -> Comparator.comparing(product -> product.createdAt() == null ? Instant.EPOCH : product.createdAt());
         };
         return sortSpec != null
@@ -554,9 +578,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         boolean allIncludingTrash = publishStatus != null && publishStatus.equalsIgnoreCase("ALL_INCLUDING_TRASH");
         boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");
         return products.stream()
-                .filter(p -> query == null || query.isBlank()
-                        || p.name().toLowerCase().contains(query.toLowerCase())
-                        || p.slug().toLowerCase().contains(query.toLowerCase()))
+                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
+                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(),
+                        query == null ? List.of() : List.of(query)))
                 .filter(p -> allIncludingTrash ? true
                         : trashFilter ? p.publishStatus() == PublishStatus.TRASH
                         : defaultList ? p.publishStatus() != PublishStatus.TRASH
@@ -572,19 +596,34 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     private static boolean matchesGender(Product product, List<String> genders) {
-        if (genders == null || genders.stream().allMatch(value -> value == null || value.isBlank())) {
-            return true;
-        }
-        return product.gender() != null
-                && genders.stream().filter(value -> value != null && !value.isBlank())
-                .map(String::trim)
-                .anyMatch(value -> value.equalsIgnoreCase(product.gender()));
+        List<String> active = ProductGenderSupport.firstSupported(genders);
+        return active.isEmpty()
+                || active.stream().anyMatch(value -> ProductGenderSupport.contains(product.genders(), value));
+    }
+
+    private static boolean matchesSize(Product product, String sizeFilter) {
+        if (sizeFilter == null || sizeFilter.isBlank()) return true;
+        String expected = normalizeSize(sizeFilter);
+        return product.variants() != null && product.variants().stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(variant -> variant.options() != null)
+                .flatMap(variant -> variant.options().stream())
+                .filter(java.util.Objects::nonNull)
+                .filter(option -> {
+                    String name = option.name() == null ? "" : option.name().toLowerCase(Locale.ROOT);
+                    return name.contains("size") || name.contains("kích cỡ") || name.contains("kích thước");
+                })
+                .anyMatch(option -> expected.equals(normalizeSize(option.value())));
+    }
+
+    private static String normalizeSize(String value) {
+        String normalized = value == null ? "" : value.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+        return "XXXL".equals(normalized) ? "3XL" : normalized;
     }
 
     private static boolean genderMatchesAdminFilter(Product product, String gender) {
         if (gender == null || gender.isBlank()) return true;
-        if ("NULL".equalsIgnoreCase(gender)) return product.gender() == null;
-        return product.gender() != null && product.gender().equalsIgnoreCase(gender);
+        return ProductGenderSupport.contains(product.genders(), gender.trim());
     }
 
     @Override

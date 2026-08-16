@@ -15,6 +15,8 @@ const buttonVariants = cva(
           "bg-white text-primary border-2 border-primary hover:bg-accent hover:border-brand-hover",
         outline:
           "bg-transparent text-blue border-blue hover:bg-blue/10 hover:border-info",
+        filter:
+          "bg-background text-foreground border-border-control hover:bg-brand-soft hover:border-brand-border hover:text-foreground active:bg-brand-soft active:border-brand-border hover:not-disabled:!scale-100",
         dark: "bg-black text-white border-black hover:bg-primary hover:border-primary",
         ghost:
           "bg-transparent text-foreground border-transparent hover:bg-secondary",

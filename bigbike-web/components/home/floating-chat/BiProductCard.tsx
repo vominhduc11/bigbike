@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
+import Link from "@/i18n/StorefrontLink";
 import type { ChatProductCard } from "@/lib/api/client-api";
 import { toProductPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,7 @@ export function BiProductCard({ product, locale, compact = false }: BiProductCar
           </p>
         </div>
         <Button asChild variant="primary" size="sm" className="mt-4 w-full min-h-11 px-3">
-          <a href={toProductPath(slug, locale)}>{t("viewProduct")}</a>
+          <Link href={toProductPath(slug, locale)}>{t("viewProduct")}</Link>
         </Button>
       </div>
     </article>

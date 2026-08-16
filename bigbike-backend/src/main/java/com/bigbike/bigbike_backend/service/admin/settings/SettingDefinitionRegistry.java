@@ -252,21 +252,21 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("review_moderation_banned_words", "review_moderation", SettingValueType.LONG_TEXT)
                         .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build(),
 
-                // ── AI_ASSISTANT ── (trợ lý bán hàng Bi — CHAT_RULE_001..022).
+                // ── AI_ASSISTANT ── (Trợ lý BigBike — CHAT_RULE_001..022).
                 // Admin-only operational settings. The shared Gemini credential stays in
                 // GEMINI_API_KEY and is never stored in or returned from site_settings.
                 SettingDefinition.builder("ai_assistant_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Bật trợ lý bán hàng Bi. Khi tắt, widget trở về bảng Hotline–Zalo–Messenger.").build(),
+                        .description("Bật Trợ lý BigBike. Khi tắt, khung chat vẫn giữ Hotline–Zalo–Messenger.").build(),
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
                 SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(3)
-                        .description("Số cặp hỏi–đáp gần nhất gửi cho Bi để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 3.").build(),
+                        .description("Số cặp hỏi–đáp gần nhất gửi cho Trợ lý BigBike để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 3.").build(),
                 SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
                         .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build(),
                 SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)
-                        .description("Câu chào đầu khung chat của Bi; có thể nhập riêng bản tiếng Anh.").build(),
+                        .description("Câu chào đầu khung chat của Trợ lý BigBike; có thể nhập riêng bản tiếng Anh.").build(),
                 SettingDefinition.builder("ai_assistant_quick_prompts", "ai_assistant", SettingValueType.LONG_TEXT)
                         .description("Mỗi dòng là một nút gợi ý nhanh; widget dùng tối đa 4 dòng và có thể nhập riêng bản tiếng Anh.").build()
         );

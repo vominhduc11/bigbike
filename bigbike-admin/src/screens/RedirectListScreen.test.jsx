@@ -136,7 +136,7 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
       expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page' }),
     ))
     const [payload] = mocks.createRedirect.mock.calls.at(-1)
-    expect(payload).not.toHaveProperty('statusCode')
+    expect(payload.statusCode).toBe(301)
     expect(payload).not.toHaveProperty('redirectType')
   })
 

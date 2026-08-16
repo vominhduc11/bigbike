@@ -37,4 +37,30 @@ class ProductSearchTermsTest {
                 .isEmpty();
         assertThat(ProductSearchTerms.tokens(null)).isEqualTo(List.of());
     }
+
+    @Test
+    @DisplayName("product matching is limited to bilingual identifiers and SKU")
+    void matchesOnlyProductIdentifiers() {
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Áo giáp Taichi RSJ354", null, "ao-giap-taichi-rsj354", null, "TAICHI-RSJ354",
+                List.of("lot"))).isFalse();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Đồ lót trùm đầu", null, "do-lot-trum-dau", null, "UNDERWEAR-001",
+                List.of("lot"))).isTrue();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Đồ bảo hộ", "Underwear Base Layer", "do-bao-ho", "underwear-base-layer", "BASE-001",
+                List.of("underwear"))).isTrue();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Mũ Xpeed IS-2V", null, "mu-xpeed-is-2v", null, "LOT-REAL-123",
+                List.of("lot"))).isTrue();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Mũ bảo hiểm", null, "mu-bao-hiem", null, "HELMET-001",
+                List.of("mu", "bao", "hiem"))).isTrue();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Mũ bảo hiểm", null, "mu-bao-hiem", null, "HELMET-001",
+                List.of("mũ bảo hiểm"))).isTrue();
+        assertThat(ProductSearchTerms.matchesProductIdentifiers(
+                "Đồ lót trùm đầu", null, "do-lot-trum-dau", null, "UNDERWEAR-001",
+                List.of("lót"))).isTrue();
+    }
 }

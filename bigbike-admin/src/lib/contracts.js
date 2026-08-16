@@ -48,15 +48,45 @@ function toTrimmedString(value) {
   return value.trim()
 }
 
-export function normalizeGender(value) {
+export const PRODUCT_GENDER_VALUES = ['Nam', 'Nữ']
+
+function normalizeGenderValue(value) {
   const normalized = toTrimmedString(value)
-  if (!normalized) {
-    return null
-  }
+  if (!normalized) return null
   const lower = normalized.toLowerCase()
   if (lower === 'nam') return 'Nam'
   if (lower === 'nu' || lower === 'nư' || lower === 'nữ') return 'Nữ'
   return null
+}
+
+/**
+ * Normalize the canonical multi-select gender shape. The second argument is
+ * only for reading older API responses that still expose scalar `gender`.
+ */
+export function normalizeGenders(value, legacyValue) {
+  const source = value !== undefined
+    ? value
+    : legacyValue
+  const values = Array.isArray(source)
+    ? source
+    : toTrimmedString(source).split('|')
+
+  if (!values.length) return []
+
+  const normalized = values
+    .map(normalizeGenderValue)
+    .filter(Boolean)
+
+  // `Unisex` was a removed legacy option. Old records/imports represent it as
+  // no gender; unknown values are also ignored at the display boundary.
+  if (toTrimmedString(source).toLowerCase() === 'unisex') return []
+
+  return PRODUCT_GENDER_VALUES.filter((gender) => normalized.includes(gender))
+}
+
+// Kept for non-product callers that still need to normalize a single value.
+export function normalizeGender(value) {
+  return normalizeGenderValue(value)
 }
 
 
@@ -396,7 +426,9 @@ export function normalizeProduct(input) {
     description: toTrimmedString(source.description) || undefined,
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
-    gender: normalizeGender(source.gender),
+    genders: normalizeGenders(source.genders, source.gender),
+    discontinued: source.discontinued === true,
+    sizeScaleId: toTrimmedString(source.sizeScaleId) || undefined,
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
     sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
@@ -620,14 +652,32 @@ export function normalizeRedirect(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-redirect'
   const hitCount = Number(source.hitCount)
+  const statusCode = Number(source.statusCode)
 
   return {
     id,
     sourcePattern: toTrimmedString(source.sourcePattern) || '',
     targetUrl: toTrimmedString(source.targetUrl) || '',
     enabled: typeof source.enabled === 'boolean' ? source.enabled : undefined,
+    statusCode: statusCode === 410 ? 410 : 301,
     hitCount: Number.isFinite(hitCount) ? hitCount : 0,
     lastHitAt: toTrimmedString(source.lastHitAt) || undefined,
+    createdAt: toTrimmedString(source.createdAt) || undefined,
+    updatedAt: toTrimmedString(source.updatedAt) || undefined,
+  }
+}
+
+export function normalizeLegacyDiscontinuedProduct(input) {
+  const source = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedString(source.id) || 'unknown-legacy-discontinued-product',
+    slug: toTrimmedString(source.slug),
+    name: toTrimmedString(source.name),
+    nameEn: toTrimmedString(source.nameEn),
+    brandName: toTrimmedString(source.brandName),
+    categorySlug: toTrimmedString(source.categorySlug),
+    imageUrl: toTrimmedString(source.imageUrl),
+    enabled: source.enabled !== false,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

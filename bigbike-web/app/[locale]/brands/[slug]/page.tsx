@@ -9,9 +9,7 @@ import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { Tr } from "@/components/i18n/Tr";
 import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
-import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -20,6 +18,8 @@ import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
 import type { Locale } from "@/i18n/locale";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import type { RouteSearchParams } from "@/lib/utils/query";
 
 // ISR on-demand: thương hiệu là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
 // sinh khi truy cập lần đầu + revalidate theo tag brand:{slug}/brands khi admin sửa.
@@ -27,8 +27,13 @@ export async function generateStaticParams() {
   return [];
 }
 
+// A missing brand must reach the server's 404 response instead of being cached
+// as a successful ISR shell by the locale rewrite.
+export const dynamic = "force-dynamic";
+
 type BrandDetailPageProps = {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<RouteSearchParams>;
 };
 
 export async function generateMetadata({ params }: BrandDetailPageProps): Promise<Metadata> {
@@ -73,52 +78,46 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
   });
 }
 
-export default async function BrandDetailPage({ params }: BrandDetailPageProps) {
+export default async function BrandDetailPage({ params, searchParams }: BrandDetailPageProps) {
   const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const catalog = parseCatalogListParams(await searchParams);
   setRequestLocale(locale);
   if (!isValidSlug(slug)) {
     notFound();
   }
 
   const t = await getTranslations("Catalog");
-  // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
-  // Lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định) của thương hiệu fetch sẵn ở
-  // server → nằm trong HTML server cho SEO, đồng bộ cách trang danh mục seed lưới.
+  // Shell theo slug; lưới và facets của thương hiệu đọc đầy đủ searchParams để URL
+  // đã lọc có dữ liệu đúng ngay từ lần hiển thị đầu tiên.
   const [brandResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    getCatalogFacets({ lang: locale }),
+    getCatalogFacets({
+      brand: [slug], q: catalog.filters.q,
+      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock, lang: locale,
+    }),
   ]);
 
-  if (!brandResult.data && brandResult.error?.status === 404) {
-    notFound();
-  }
-  if (!brandResult.data) {
-    return (
-      <div>
-        <PageHero
-          title={t("brandsTitle")}
-          breadcrumb={[
-            { label: "Bigbike.vn", href: toHomePath(locale) },
-            { label: t("brandsTitle"), href: toBrandListPath(locale) },
-          ]}
-        />
-        <div id="main-content">
-          <Container>
-            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Catalog" k="brandDetailLoadFailed" /></p>
-          </Container>
-        </div>
-      </div>
-    );
-  }
+  if (!brandResult.data) notFound();
 
   const brand = brandResult.data;
   const productsResult = await listProducts({
-    page: 1,
-    size: DEFAULT_PRODUCT_PAGE_SIZE,
-    sort: DEFAULT_PRODUCT_SORT,
-    brand: brand.slug,
+    page: catalog.page,
+    size: catalog.size,
+    sort: catalog.productSort,
+    brand: [brand.slug],
+    q: catalog.filters.q,
+    filterColor: catalog.filters.color,
+    filterFinish: catalog.filters.finish,
+    filterGender: catalog.filters.gender,
+    sizeFilter: catalog.filters.size,
+    minPrice: catalog.filters.minPrice,
+    maxPrice: catalog.filters.maxPrice,
+    inStock: catalog.filters.inStock,
     lang: locale,
   });
   const canonicalPath = toBrandPath(brand.slug, locale);
@@ -159,6 +158,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
         <AltSlugRegistrar kind="brand" viSlug={brand.slug} enSlug={null} />
         <div>
           <PageHero
+            className="mb-4 md:mb-22.5"
             title={brandName}
             titleNode={<LText field="name">{brandName}</LText>}
             breadcrumb={heroBreadcrumb}

@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
@@ -34,9 +35,12 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,14 +102,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findAllPublishedProducts(String locale) {
-        return productJpaRepository.findByPublishStatus(PublishStatus.PUBLISHED).stream()
+        return productJpaRepository.findByPublishStatusAndDiscontinuedFalse(PublishStatus.PUBLISHED).stream()
                 .map(entity -> toDomainPublicView(entity, locale))
                 .toList();
     }
 
     @Override
     public List<Product> findAllPublishedProductsForListing(String locale) {
-        return productJpaRepository.findByPublishStatus(PublishStatus.PUBLISHED).stream()
+        return productJpaRepository.findByPublishStatusAndDiscontinuedFalse(PublishStatus.PUBLISHED).stream()
                 .map(entity -> toDomainListing(entity, locale))
                 .toList();
     }
@@ -116,6 +120,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             String brandSlug,
             String q,
             List<String> genders,
+            String sizeFilter,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -157,6 +162,20 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .orElse(Set.of());
     }
 
+    /** PRODUCT_RULE_012: the public catalog filters by the displayed sale price. */
+    private static Expression<BigDecimal> effectivePriceExpression(
+            CriteriaBuilder cb,
+            Root<ProductEntity> root
+    ) {
+        Expression<BigDecimal> retail = root.get("retailPrice");
+        Expression<BigDecimal> sale = root.get("salePrice");
+        return cb.<BigDecimal>selectCase()
+                .when(cb.and(
+                        cb.greaterThan(sale, BigDecimal.ZERO),
+                        cb.lessThan(sale, retail)), sale)
+                .otherwise(retail);
+    }
+
     private static Specification<ProductEntity> buildPublicListingSpec(
             Set<String> categoryIds,
             String brandSlug,
@@ -170,12 +189,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            predicates.add(cb.isFalse(root.get("discontinued")));
             if (categoryIds != null) {
                 if (categoryIds.isEmpty()) {
                     predicates.add(cb.disjunction());
                 } else {
-                    predicates.add(root.join("categories", JoinType.INNER).get("id").in(categoryIds));
-                    query.distinct(true);
+                    predicates.add(categoryMembership(root, query, cb, categoryIds));
                 }
             }
             if (brandSlug != null && !brandSlug.isBlank()) {
@@ -184,19 +203,19 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             if (q != null && !q.isBlank()) {
                 predicates.add(ProductFilterSpecifications.productTextSearch(root, cb, q));
             }
-            List<String> activeGenders = genders == null ? List.of() : genders.stream()
-                    .filter(value -> value != null && !value.isBlank())
-                    .map(value -> value.trim().toLowerCase(Locale.ROOT))
-                    .distinct()
-                    .toList();
+            List<String> activeGenders = ProductGenderSupport.firstSupported(genders);
             if (!activeGenders.isEmpty()) {
-                predicates.add(cb.lower(root.get("gender")).in(activeGenders));
+                String gender = activeGenders.get(0);
+                predicates.add(ProductGenderSupport.MALE.equals(gender)
+                        ? cb.isTrue(root.get("genderMale"))
+                        : cb.isTrue(root.get("genderFemale")));
             }
+            Expression<BigDecimal> effectivePrice = effectivePriceExpression(cb, root);
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("retailPrice"), java.math.BigDecimal.valueOf(minPrice)));
+                predicates.add(cb.greaterThanOrEqualTo(effectivePrice, BigDecimal.valueOf(minPrice)));
             }
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("retailPrice"), java.math.BigDecimal.valueOf(maxPrice)));
+                predicates.add(cb.lessThanOrEqualTo(effectivePrice, BigDecimal.valueOf(maxPrice)));
             }
             if (homepageBlock != null) {
                 predicates.add(cb.equal(root.get("homepageBlock"), homepageBlock));
@@ -211,8 +230,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         query.orderBy(desc ? cb.desc(nameLower) : cb.asc(nameLower));
                     }
                     case "price" -> {
-                        Expression<java.math.BigDecimal> price = root.get("retailPrice");
-                        query.orderBy(desc ? cb.desc(price) : cb.asc(price));
+                        query.orderBy(desc ? cb.desc(effectivePrice) : cb.asc(effectivePrice));
                     }
                     default -> {
                         Expression<java.time.Instant> created = root.get("createdAt");
@@ -226,26 +244,21 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
+        if (tokens == null || tokens.isEmpty() || limit <= 0) {
+            return List.of();
+        }
         boolean english = LOCALE_EN.equalsIgnoreCase(locale);
         Specification<ProductEntity> spec = (root, query, cb) -> {
             java.util.List<Predicate> preds = new ArrayList<>();
             preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            preds.add(cb.isFalse(root.get("discontinued")));
+            preds.add(ProductFilterSpecifications.productTextSearch(
+                    root, cb, String.join(" ", tokens)));
             Expression<String> name = english
                     ? cb.<String>selectCase()
                             .when(cb.or(cb.isNull(root.get("nameEn")), cb.equal(cb.trim(root.get("nameEn")), "")), root.get("name"))
                             .otherwise(root.get("nameEn"))
                     : root.get("name");
-            Expression<String> shortDescription = english
-                    ? cb.<String>selectCase()
-                            .when(cb.or(cb.isNull(root.get("shortDescriptionEn")), cb.equal(cb.trim(root.get("shortDescriptionEn")), "")), root.get("shortDescription"))
-                            .otherwise(root.get("shortDescriptionEn"))
-                    : root.get("shortDescription");
-            for (String token : tokens) {
-                String like = "%" + token.toLowerCase(Locale.ROOT) + "%";
-                preds.add(cb.or(
-                        cb.like(cb.lower(name), like),
-                        cb.like(cb.lower(cb.coalesce(shortDescription, "")), like)));
-            }
             // Sort by name length ASC (shorter = more exact match), then alphabetically.
             // Guard against count query (Long) which does not support orderBy.
             if (!Long.class.equals(query.getResultType())) {
@@ -301,43 +314,25 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            predicates.add(cb.isFalse(root.get("discontinued")));
             if (categoryIds != null) {
                 if (categoryIds.isEmpty()) {
                     predicates.add(cb.disjunction());
                 } else {
-                    predicates.add(root.join("categories", JoinType.INNER).get("id").in(categoryIds));
-                    query.distinct(true);
+                    predicates.add(categoryMembership(root, query, cb, categoryIds));
                 }
             }
             if (brandSlug != null && !brandSlug.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
             }
-            Expression<String> name = unaccentLower(cb, root.get("name"));
-            Expression<String> slug = unaccentLower(cb, root.get("slug"));
-            Expression<String> sku = unaccentLower(cb, cb.coalesce(root.get("sku"), ""));
-            Expression<String> nameEn = unaccentLower(cb, cb.coalesce(root.get("nameEn"), ""));
-            Expression<String> slugEn = unaccentLower(cb, cb.coalesce(root.get("slugEn"), ""));
-            for (String rawToken : tokens) {
-                if (rawToken == null || rawToken.isBlank()) {
-                    continue;
-                }
-                Expression<String> like = cb.function(
-                        "unaccent", String.class,
-                        cb.literal("%" + rawToken.toLowerCase(Locale.ROOT) + "%"));
-                predicates.add(cb.or(
-                        cb.like(name, like),
-                        cb.like(slug, like),
-                        cb.like(sku, like),
-                        cb.like(nameEn, like),
-                        cb.like(slugEn, like)));
-            }
+            predicates.add(ProductFilterSpecifications.productTextSearch(
+                    root, cb, String.join(" ", tokens)));
+            Expression<BigDecimal> effectivePrice = effectivePriceExpression(cb, root);
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("retailPrice"), BigDecimal.valueOf(minPrice)));
+                predicates.add(cb.greaterThanOrEqualTo(effectivePrice, BigDecimal.valueOf(minPrice)));
             }
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(
-                        root.get("retailPrice"), BigDecimal.valueOf(maxPrice)));
+                predicates.add(cb.lessThanOrEqualTo(effectivePrice, BigDecimal.valueOf(maxPrice)));
             }
             if (!Long.class.equals(query.getResultType())) {
                 boolean desc = sortSpec != null
@@ -346,8 +341,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 switch (sortField) {
                     case "name" -> query.orderBy(desc ? cb.desc(cb.lower(root.get("name")))
                             : cb.asc(cb.lower(root.get("name"))));
-                    case "price" -> query.orderBy(desc ? cb.desc(root.get("retailPrice"))
-                            : cb.asc(root.get("retailPrice")));
+                    case "price" -> query.orderBy(desc ? cb.desc(effectivePrice)
+                            : cb.asc(effectivePrice));
                     default -> query.orderBy(desc ? cb.desc(root.get("createdAt"))
                             : cb.asc(root.get("createdAt")));
                 }
@@ -358,6 +353,25 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
         return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
+    }
+
+    /**
+     * A correlated category join makes Hibernate emit SELECT DISTINCT. PostgreSQL then rejects
+     * name sorting because LOWER(name) is not part of the selected entity columns. The bounded
+     * id subquery preserves the same category membership without multiplying outer rows, so all
+     * supported sort expressions remain legal and pagination totals stay exact.
+     */
+    private static Predicate categoryMembership(
+            Root<ProductEntity> root,
+            CriteriaQuery<?> query,
+            CriteriaBuilder cb,
+            Set<String> categoryIds
+    ) {
+        Subquery<String> productsInCategory = query.subquery(String.class);
+        Root<ProductEntity> candidate = productsInCategory.from(ProductEntity.class);
+        productsInCategory.select(candidate.get("id"));
+        productsInCategory.where(candidate.join("categories", JoinType.INNER).get("id").in(categoryIds));
+        return root.get("id").in(productsInCategory);
     }
 
     @Override
@@ -412,6 +426,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getStockState(),
                 entity.getAvailable(),
                 entity.getPublishStatus(),
+                entity.isDiscontinued(),
+                entity.getSizeScaleId(),
                 entity.getHomepageBlock(),
                 entity.getHomepageOrder(),
                 entity.getRating(),
@@ -426,7 +442,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // specStats — detail only
                 null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
-                entity.getGender(),
+                ProductGenderSupport.fromFlags(entity.isGenderMale(), entity.isGenderFemale()),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
@@ -480,6 +496,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getStockState(),
                 entity.getAvailable(),
                 entity.getPublishStatus(),
+                entity.isDiscontinued(),
+                entity.getSizeScaleId(),
                 entity.getHomepageBlock(),
                 entity.getHomepageOrder(),
                 entity.getRating(),
@@ -494,7 +512,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // specStats — detail only
                 null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
-                entity.getGender(),
+                ProductGenderSupport.fromFlags(entity.isGenderMale(), entity.isGenderFemale()),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
@@ -792,6 +810,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getStockState(),
                 entity.getAvailable(),
                 entity.getPublishStatus(),
+                entity.isDiscontinued(),
+                entity.getSizeScaleId(),
                 entity.getHomepageBlock(),
                 entity.getHomepageOrder(),
                 entity.getRating(),
@@ -806,7 +826,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getSpecStats(), entity.getSpecStatsEn(), locale),
                 pick(entity.getTrustBadges(), entity.getTrustBadgesEn(), locale),
                 pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
-                entity.getGender(),
+                ProductGenderSupport.fromFlags(entity.isGenderMale(), entity.isGenderFemale()),
                 toRelatedProducts(entity, publicView, locale),
                 toAccessoryProducts(entity, publicView, locale),
                 publicView

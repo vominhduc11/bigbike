@@ -70,7 +70,7 @@ const SheetContent = React.forwardRef<
         {...props}
       >
         {showClose ? (
-          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:pointer-events-none">
+          <SheetPrimitive.Close className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-none p-0 opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:pointer-events-none">
             <X className="h-5 w-5" aria-hidden />
             <span className="sr-only">{t("close")}</span>
           </SheetPrimitive.Close>

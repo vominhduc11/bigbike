@@ -30,6 +30,9 @@ public class RedirectEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "status_code", nullable = false)
+    private int statusCode = 301;
+
     @Column(name = "hit_count", nullable = false)
     private long hitCount = 0;
 

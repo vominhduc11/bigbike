@@ -70,7 +70,7 @@ function messageResponse(overrides: MessageOverrides = {}) {
     conversationId: overrides.conversationId === undefined ? CONVERSATION_ID : overrides.conversationId,
     mode: overrides.mode ?? "AI",
     reason: overrides.mode ?? "AI",
-    answer: overrides.answer === undefined ? "Bi đã kiểm tra dữ liệu sản phẩm hiện có." : overrides.answer,
+    answer: overrides.answer === undefined ? "Trợ lý BigBike đã kiểm tra dữ liệu sản phẩm hiện có." : overrides.answer,
     turnCount: overrides.turnCount ?? 1,
     maxTurns: overrides.maxTurns ?? 12,
     remainingTurns: overrides.remainingTurns ?? 11,
@@ -95,11 +95,11 @@ function composer(page: Page) {
 }
 
 function launcher(page: Page) {
-  return page.getByRole("button", { name: /Mở trợ lý Bi|Open Bi assistant/i });
+  return page.getByRole("button", { name: /Mở Trợ lý BigBike|Open BigBike Assistant/i });
 }
 
 function messageInput(page: Page) {
-  return page.getByLabel(/Câu hỏi dành cho Bi|Question for Bi/i);
+  return page.getByLabel(/Câu hỏi dành cho Trợ lý BigBike|Question for BigBike Assistant/i);
 }
 
 async function openBi(page: Page) {
@@ -116,12 +116,8 @@ async function sendMessage(page: Page, message: string) {
   await page.getByRole("button", { name: /Gửi tin nhắn|Send message/i }).click();
 }
 
-test("Bi loads availability once, shows AI onboarding, and sends a quick reply through chat API", async ({ page }) => {
+test("BigBike Assistant loads availability once, shows onboarding, and sends a quick reply through chat API", async ({ page }) => {
   let availabilityRequests = 0;
-  const cloudinaryRequests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("res.cloudinary.com")) cloudinaryRequests.push(request.url());
-  });
   await page.route("**/api/v1/chat/availability?lang=vi", async (route) => {
     availabilityRequests += 1;
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -149,12 +145,11 @@ test("Bi loads availability once, shows AI onboarding, and sends a quick reply t
   await trigger.focus();
   await trigger.press("Enter");
   await expect(biDialog(page)).toBeVisible();
-  await expect(biDialog(page).getByText("Bi đang chuẩn bị phiên tư vấn…")).toBeVisible();
+  await expect(biDialog(page).getByText("Trợ lý BigBike đang chuẩn bị phiên tư vấn…")).toBeVisible();
   const onboarding = biDialog(page).locator("[data-bi-onboarding]");
   await expect(onboarding).toBeVisible();
   await expect(onboarding.getByText("Anh/chị đang tìm loại sản phẩm nào?")).toBeVisible();
-  await expect(biDialog(page).locator('[data-bi-avatar] img[src*="res.cloudinary.com"]')).toHaveCount(2);
-  expect(cloudinaryRequests).toEqual([]);
+  await expect(biDialog(page).locator('[data-bi-avatar] svg')).toHaveCount(2);
   const panelBox = await biDialog(page).boundingBox();
   const viewport = page.viewportSize();
   expect(panelBox).not.toBeNull();
@@ -169,13 +164,13 @@ test("Bi loads availability once, shows AI onboarding, and sends a quick reply t
   await onboarding.getByRole("button", { name: "Tìm theo nhu cầu" }).press("Enter");
   await expect(conversation(page).getByText("Anh/chị chủ yếu dùng sản phẩm để đi phố, touring hay đi xa?")).toBeVisible();
 
-  await biDialog(page).getByRole("button", { name: "Thu nhỏ trợ lý Bi" }).click();
-  await page.getByRole("button", { name: "Mở lại trợ lý Bi" }).click();
+  await biDialog(page).getByRole("button", { name: "Thu nhỏ Trợ lý BigBike" }).click();
+  await page.getByRole("button", { name: "Mở lại Trợ lý BigBike" }).click();
   await expect(conversation(page).getByText("Anh/chị chủ yếu dùng sản phẩm để đi phố, touring hay đi xa?")).toBeVisible();
   expect(availabilityRequests).toBe(1);
 });
 
-test("Bi renders at most three verified, sellable product cards", async ({ page }) => {
+test("BigBike Assistant renders at most three verified, sellable product cards", async ({ page }) => {
   await stubAvailability(page);
   await page.route("**/api/v1/chat/messages", async (route) => {
     await fulfillJson(route, messageResponse({
@@ -225,7 +220,7 @@ test("Bi renders at most three verified, sellable product cards", async ({ page 
   await expect(cards.getByRole("link", { name: "Xem chi tiết" })).toHaveCount(3);
 });
 
-test("Bi fails closed when a product card is unpriced, unsellable or exceeds the safe limit", async ({ page }) => {
+test("BigBike Assistant removes an unsafe product card while keeping a verified sellable card", async ({ page }) => {
   await stubAvailability(page);
   await page.route("**/api/v1/chat/messages", async (route) => {
     await fulfillJson(route, messageResponse({
@@ -253,17 +248,17 @@ test("Bi fails closed when a product card is unpriced, unsellable or exceeds the
   await openBi(page);
   await sendMessage(page, "tai nghe dưới 3 triệu");
 
-  await expect(page.locator("[data-bi-contact-view]")).toBeVisible();
+  await expect(conversation(page).locator("[data-bi-product-card]")).toHaveCount(1);
+  await expect(conversation(page).getByRole("heading", { name: "Mũ hợp lệ" })).toBeVisible();
   await expect(conversation(page).getByText("Camera không được bán")).toHaveCount(0);
-  await expect(page.getByText("BigBike Zalo")).toBeVisible();
-  await expect(page.getByText("BigBike Messenger")).toBeVisible();
+  await expect(messageInput(page)).toBeEnabled();
 });
 
-test("Bi presents a handoff recommendation without pretending a staff connection", async ({ page }) => {
+test("BigBike Assistant presents a handoff recommendation without pretending a staff connection", async ({ page }) => {
   await stubAvailability(page);
   await page.route("**/api/v1/chat/messages", async (route) => {
     await fulfillJson(route, messageResponse({
-      answer: "Bi chưa có đủ dữ liệu đã xác nhận cho yêu cầu này.",
+      answer: "Trợ lý BigBike chưa có đủ dữ liệu đã xác nhận cho yêu cầu này.",
       handoffRecommended: true,
     }));
   });
@@ -272,21 +267,16 @@ test("Bi presents a handoff recommendation without pretending a staff connection
   await openBi(page);
   await sendMessage(page, "Mẫu này có phù hợp tuyệt đối không?");
 
-  await expect(conversation(page).getByText(/chưa đủ dữ liệu để trả lời chính xác/i)).toBeVisible();
+  await expect(conversation(page).getByText(/chưa có đủ dữ liệu đã xác nhận/i)).toBeVisible();
   await expect(composer(page).getByRole("button", { name: "Gặp nhân viên" })).toBeVisible();
-  await expect(composer(page).getByRole("button", { name: "Tiếp tục hỏi Bi" })).toBeVisible();
   await expect(page.getByText(/nhân viên đang online/i)).toHaveCount(0);
   await expect(messageInput(page)).toBeEnabled();
 
-  await composer(page).getByRole("button", { name: "Tiếp tục hỏi Bi" }).click();
-  await expect(page.locator("[data-bi-contact-view]")).toHaveCount(0);
-  await expect(messageInput(page)).toBeFocused();
-
   await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
-  await expect(page.locator("[data-bi-contact-view]")).toContainText("Bi vẫn giữ cuộc trò chuyện này trong phiên hiện tại.");
+  await expect(page.locator("[data-bi-contact-inline]")).toContainText("Trợ lý BigBike vẫn giữ cuộc trò chuyện này trong phiên hiện tại.");
 });
 
-test("Bi shows no-results only for an explicit product-finding quick reply", async ({ page }) => {
+test("BigBike Assistant shows no-results only for an explicit product-finding quick reply", async ({ page }) => {
   await stubAvailability(page);
   await page.route("**/api/v1/chat/messages", async (route) => {
     await fulfillJson(route, messageResponse({ answer: "Chưa có mẫu nào đáp ứng đồng thời các điều kiện này." }));
@@ -324,11 +314,32 @@ test("A message network error fails safely to contact mode and offers retry", as
   await openBi(page);
   await sendMessage(page, "Tìm mũ bảo hiểm");
 
-  const contactView = page.locator("[data-bi-contact-view]");
-  await expect(contactView).toBeVisible();
-  await expect(contactView.getByText("Kết nối đang gián đoạn; anh/chị có thể thử lại hoặc liên hệ nhân viên.")).toBeVisible();
+  await expect(composer(page).getByText("Kết nối đang gián đoạn; anh/chị có thể thử lại hoặc liên hệ nhân viên.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Thử lại" })).toBeVisible();
+  await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
+  await expect(page.locator("[data-bi-contact-inline]")).toBeVisible();
   await expect(page.getByText(/stack trace|exception|functionCall|SQL/i)).toHaveCount(0);
+});
+
+test("A delayed message stops after 45 seconds, restores the draft, and keeps both next steps", async ({ page }) => {
+  test.setTimeout(70_000);
+  await stubAvailability(page);
+  await page.route("**/api/v1/chat/messages", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 46_000));
+    await fulfillJson(route, messageResponse({ answer: "Phản hồi đến quá muộn." })).catch(() => {});
+  });
+
+  await page.goto("/", { waitUntil: "load" });
+  await openBi(page);
+  await sendMessage(page, "Tìm mũ trong tầm giá này");
+
+  await expect(composer(page).getByText(
+    "Trợ lý BigBike chưa trả lời trong 45 giây. Anh/chị có thể thử lại; nút Gặp nhân viên vẫn luôn có sẵn.",
+  )).toBeVisible({ timeout: 50_000 });
+  await expect(messageInput(page)).toHaveValue("Tìm mũ trong tầm giá này");
+  await expect(composer(page).getByRole("button", { name: "Thử lại" })).toBeVisible();
+  await expect(composer(page).getByRole("button", { name: "Gặp nhân viên" })).toBeVisible();
+  await expect(conversation(page).getByText("Phản hồi đến quá muộn.")).toHaveCount(0);
 });
 
 test("CONTACT availability renders only valid channels and handles no contact data", async ({ page }) => {
@@ -351,8 +362,9 @@ test("CONTACT availability renders only valid channels and handles no contact da
   await openBi(page);
 
   await expect(page.getByText("Kết nối tư vấn", { exact: true })).toBeVisible();
+  await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
   await expect(page.getByText("Thông tin liên hệ đang được cập nhật. Anh/chị vui lòng thử lại sau.")).toBeVisible();
-  await expect(page.locator('[data-bi-contact-view] a[href=""]')).toHaveCount(0);
+  await expect(page.locator('[data-bi-contact-inline] a[href=""]')).toHaveCount(0);
   await expect(page.getByText(/null|undefined|\[object Object\]/i)).toHaveCount(0);
   expect(messageRequests).toBe(0);
 });
@@ -387,6 +399,8 @@ test("Lead capture validates consent, keeps values after submit error, and succe
   await openBi(page);
   await sendMessage(page, "Nhờ BigBike gọi lại");
 
+  await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
+  await page.getByRole("button", { name: "Để BigBike liên hệ lại" }).click();
   const leadForm = conversation(page).getByRole("heading", { name: "Để BigBike liên hệ lại" }).locator("..").locator("..");
   await expect(leadForm).toBeVisible();
   await leadForm.getByRole("button", { name: "Đồng ý gửi thông tin" }).click();
@@ -408,14 +422,14 @@ test("Lead capture validates consent, keeps values after submit error, and succe
   expect(leadAttempts).toBe(2);
 });
 
-test("Bi warns only near the turn limit and then disables further AI questions", async ({ page }) => {
+test("BigBike Assistant warns only near the turn limit and then disables further AI questions", async ({ page }) => {
   await stubAvailability(page);
   let messageCount = 0;
   await page.route("**/api/v1/chat/messages", async (route) => {
     messageCount += 1;
     await fulfillJson(route, messageResponse(messageCount === 1
       ? {
-          answer: "Bi sẽ ưu tiên giúp anh/chị chốt lựa chọn.",
+          answer: "Trợ lý BigBike sẽ ưu tiên giúp anh/chị chốt lựa chọn.",
           turnCount: 9,
           remainingTurns: 3,
         }
@@ -432,8 +446,10 @@ test("Bi warns only near the turn limit and then disables further AI questions",
   await expect(composer(page).getByText(/Cuộc trò chuyện còn 3 lượt/)).toBeVisible();
 
   await sendMessage(page, "Câu hỏi cuối");
-  await expect(page.locator("[data-bi-contact-view]").getByText(/Cuộc trò chuyện đã đạt giới hạn/)).toBeVisible();
-  await expect(messageInput(page)).toHaveCount(0);
+  await expect(composer(page).getByText(/Cuộc trò chuyện đã đạt giới hạn/)).toBeVisible();
+  await expect(messageInput(page)).toBeDisabled();
+  await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
+  await expect(page.locator("[data-bi-contact-inline]")).toBeVisible();
 });
 
 test("Minimize, close, reopen, Escape, and focus restoration preserve the conversation", async ({ page }) => {
@@ -447,14 +463,14 @@ test("Minimize, close, reopen, Escape, and focus restoration preserve the conver
   await sendMessage(page, "Giữ lại hội thoại này");
   await expect(conversation(page).getByText("Kết quả tư vấn được giữ lại trong phiên này.")).toBeVisible();
 
-  await biDialog(page).getByRole("button", { name: "Thu nhỏ trợ lý Bi" }).click();
-  const minimized = page.getByRole("button", { name: "Mở lại trợ lý Bi" });
+  await biDialog(page).getByRole("button", { name: "Thu nhỏ Trợ lý BigBike" }).click();
+  const minimized = page.getByRole("button", { name: "Mở lại Trợ lý BigBike" });
   await expect(minimized).toBeVisible();
-  await expect(page.getByText("Bi · Tiếp tục tư vấn")).toBeVisible();
+  await expect(page.getByText("Trợ lý BigBike · Tiếp tục tư vấn")).toBeVisible();
   await minimized.click();
   await expect(conversation(page).getByText("Kết quả tư vấn được giữ lại trong phiên này.")).toBeVisible();
 
-  await biDialog(page).getByRole("button", { name: "Đóng trợ lý Bi" }).click();
+  await biDialog(page).getByRole("button", { name: "Đóng Trợ lý BigBike" }).click();
   await expect(biDialog(page)).toBeHidden();
   await expect(launcher(page)).toBeFocused();
   await launcher(page).press("Enter");
@@ -490,11 +506,13 @@ test("An invalid backend payload is hidden and downgraded to safe contact mode",
   await openBi(page);
   await sendMessage(page, "Tìm mũ bảo hiểm");
 
-  await expect(page.locator("[data-bi-contact-view]")).toBeVisible();
   await expect(page.getByText(/functionCall|SELECT \* FROM|Unsafe|evil\.example/i)).toHaveCount(0);
+  await expect(messageInput(page)).toBeDisabled();
+  await composer(page).getByRole("button", { name: "Gặp nhân viên" }).click();
+  await expect(page.locator("[data-bi-contact-inline]")).toBeVisible();
 });
 
-test.describe("Bi mobile full-screen", () => {
+test.describe("BigBike Assistant mobile full-screen", () => {
   test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
 
   test("covers navigation, keeps the composer visible, and supports keyboard close", async ({ page }) => {

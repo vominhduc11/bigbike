@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/customer/auth/oauth/links").hasRole("CUSTOMER")
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/legacy-discontinued-products/**").permitAll()
                         // Public review submission — no auth required, status defaults to PENDING
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/*/reviews").permitAll()
                         // Public review photo upload — no auth, image-only + size + rate-limited (REVIEW_RULE_005)

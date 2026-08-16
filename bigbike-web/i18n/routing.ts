@@ -17,6 +17,7 @@ export const routing = defineRouting({
   pathnames: {
     "/": "/",
     "/sp": { vi: "/sp", en: "/products" },
+    "/sp/[slug].html": { vi: "/sp/[slug].html", en: "/sp/[slug].html" },
     "/product/[slug]": { vi: "/product/[slug]", en: "/product/[slug]" },
     "/danh-muc/[slug]": { vi: "/danh-muc/[slug]", en: "/categories/[slug]" },
     "/brands": "/brands",

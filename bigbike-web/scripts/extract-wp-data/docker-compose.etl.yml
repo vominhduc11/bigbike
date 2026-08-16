@@ -8,7 +8,9 @@ services:
       MYSQL_USER: ${ETL_DB_USER:-etl_user}
       MYSQL_PASSWORD: ${ETL_DB_PASSWORD:-etl_pass}
     volumes:
-      - ../../bigbike_vn__2026_04_17/sqldump.sql:/docker-entrypoint-initdb.d/01-dump.sql:ro
+      # The raw WordPress dump is external and intentionally not stored in this repo.
+      # Set ETL_WP_SQL_DUMP to an absolute path before starting the optional ETL stack.
+      - ${ETL_WP_SQL_DUMP:?Set ETL_WP_SQL_DUMP to an external SQL dump}:/docker-entrypoint-initdb.d/01-dump.sql:ro
     ports:
       - "3307:3306"
     healthcheck:

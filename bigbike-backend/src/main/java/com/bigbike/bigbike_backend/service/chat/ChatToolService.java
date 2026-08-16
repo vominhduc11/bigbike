@@ -37,7 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Fixed, read-only tool allowlist for Bi. No tool accepts SQL, table names or customer identity. */
+/** Fixed, read-only tool allowlist for Trợ lý BigBike. No tool accepts SQL, table names or customer identity. */
 @Service
 @RequiredArgsConstructor
 public class ChatToolService {
@@ -214,20 +214,21 @@ public class ChatToolService {
             return Optional.of(orderOutcome(customerId, english, OrderScope.LATEST));
         }
 
-        // With RECENT_TURNS enabled, Gemini decides whether the turn continues the prior topic;
-        // the backend verifies that decision in executeSearch/executeGetProduct. This local path
-        // remains only for the owner-controlled history-off mode.
-        if (settings == null || settings.recentTurnPairs() == 0) {
-            Optional<ToolOutcome> referencedProduct = referencedProductOutcome(
-                    question, normalized, lang, english, conversationContext);
-            if (referencedProduct.isPresent()) return referencedProduct;
+        // Product cards are verified server state, so a demonstrative/comparison follow-up is
+        // resolved deterministically regardless of whether RECENT_TURNS is enabled for Gemini.
+        Optional<ToolOutcome> referencedProduct = referencedProductOutcome(
+                question, normalized, lang, english, conversationContext);
+        if (referencedProduct.isPresent()) return referencedProduct;
+
+        if (isNeedPrompt(normalized)) {
+            return Optional.of(needPromptOutcome(lang));
         }
 
         if (isGreetingOrHelp(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
-                            ? "Hello, I’m Bi, BigBike’s virtual assistant. I can help you find currently sold products, check verified store policies or view orders on your signed-in account. Tell me the product, brand, category or price range you are considering, or choose Talk to staff for direct help."
-                            : "Dạ, em là Bi, trợ lý ảo của BigBike. Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm; nếu cần, anh/chị có thể bấm Gặp nhân viên.",
+                            ? "Hello, I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you find currently sold products, check verified store policies or view orders on your signed-in account. Tell me the product, brand, category or price range you are considering, or choose Talk to staff for direct help."
+                            : "Dạ, em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm; nếu cần, anh/chị có thể bấm Gặp nhân viên.",
                     "TEMPLATE", false, false, false));
         }
         if (isAmbiguousComparison(question, normalized)) {
@@ -299,7 +300,11 @@ public class ChatToolService {
                 question, normalized, lang, english, context, false);
         if (selection.isEmpty()) return Optional.empty();
         List<Product> matches = selection.get();
-        if (matches.size() > 1) return Optional.of(ambiguousProductOutcome(matches, english));
+        if (matches.size() > 1) {
+            return Optional.of(isCollectiveComparisonRequest(normalized)
+                    ? comparisonProductOutcome(matches, english)
+                    : ambiguousProductOutcome(matches, english));
+        }
         Product product = matches.get(0);
 
         DeterministicAnswer detail = productDetailAnswer(question, normalized, english, product);
@@ -325,11 +330,14 @@ public class ChatToolService {
             boolean modelSelectedReference
     ) {
         if (context == null || context.productSlugs().isEmpty()) return Optional.empty();
-        List<String> identifiers = referenceIdentifiers(normalized);
+        List<String> identifiers = isCollectiveComparisonRequest(normalized)
+                ? List.of()
+                : referenceIdentifiers(normalized);
         boolean explicitReference = hasProductReference(question, normalized, english)
                 || isProductConfirmation(normalized);
         boolean productSignal = modelSelectedReference
                 || explicitReference
+                || isComparisonRequest(normalized)
                 || (identifiers.isEmpty() && (asksForProductDetail(normalized)
                 || (asksForProductAvailability(normalized)
                 && normalized.split("\\s+").length <= 7)));
@@ -391,6 +399,80 @@ public class ChatToolService {
                         + ". Anh/chị chọn đúng tên mẫu để em kiểm tra nhé?";
         // The choices are already visible from the preceding turn; do not render duplicates.
         return ToolOutcome.local(answer, "TOOL", false, false, false);
+    }
+
+    private static ToolOutcome comparisonProductOutcome(List<Product> products, boolean english) {
+        List<Product> selected = products.stream().limit(3).toList();
+        List<ChatProductCardResponse> cards = selected.stream()
+                .map(ChatToolService::toCard)
+                .toList();
+        return ToolOutcome.local(
+                comparisonAnswer(selected, english), "TOOL", false, false, false, List.of(), cards);
+    }
+
+    /**
+     * Comparison follows the immediately preceding verified product cards. Every displayed
+     * value is read from the selected product records; a missing value stays explicitly missing.
+     */
+    private static String comparisonAnswer(List<Product> products, boolean english) {
+        String intro = english
+                ? "I compared the verified products from the previous result."
+                : "Dạ, em so sánh các sản phẩm đã được xác minh từ kết quả ngay trước đó.";
+        List<String> sentences = new ArrayList<>();
+        sentences.add(intro);
+        products.stream()
+                .map(product -> comparisonProductLine(product, english))
+                .map(value -> value.endsWith(".") ? value : value + ".")
+                .forEach(sentences::add);
+        sentences.add(english
+                ? "Open the products below for the complete saved details, or tell me which one you want to inspect next."
+                : "Anh/chị mở các sản phẩm bên dưới để xem đầy đủ thông tin đã lưu, hoặc nói mẫu nào cần kiểm tra tiếp nhé.");
+        return String.join(" ", sentences);
+    }
+
+    private static String comparisonProductLine(Product product, boolean english) {
+        String name = plain(product.name(), 160);
+        Map<String, List<String>> options = normalizedAvailableOptions(product.variants());
+        List<String> sizes = sortSizes(options.getOrDefault("size", List.of())).stream()
+                .limit(8).toList();
+        List<String> colors = options.getOrDefault("color", List.of()).stream()
+                .limit(8).toList();
+        List<String> variants = normalizedAvailableVariants(product.variants()).stream()
+                .map(ChatToolService::displayableVariantCombination)
+                .filter(value -> !value.isBlank())
+                .limit(4)
+                .toList();
+        List<String> prices = availableVariantPriceLabels(product, english).stream()
+                .limit(4).toList();
+        List<String> facts = technicalFacts(product).stream().limit(2).toList();
+        List<String> warnings = safetyWarnings(product).stream().limit(1).toList();
+        String missing = english ? "not saved" : "chưa có dữ liệu lưu";
+        StringBuilder line = new StringBuilder(name).append(": ");
+        line.append(english ? "price " : "giá ")
+                .append(prices.isEmpty() ? missing : String.join(", ", prices));
+        line.append(english ? "; sizes " : "; size ")
+                .append(sizes.isEmpty() ? missing : String.join(", ", sizes));
+        line.append(english ? "; colours " : "; màu ")
+                .append(colors.isEmpty() ? missing : String.join(", ", colors));
+        line.append(english ? "; sellable options " : "; lựa chọn đang bán ")
+                .append(variants.isEmpty() ? missing : String.join("; ", variants));
+        line.append(english ? "; technical facts " : "; thông tin kỹ thuật ")
+                .append(facts.isEmpty() ? missing : String.join("; ", facts));
+        if (!warnings.isEmpty()) {
+            line.append(english ? "; safety warning " : "; cảnh báo an toàn ")
+                    .append(warnings.get(0));
+        }
+        return plain(line.toString(), 900);
+    }
+
+    private static String displayableVariantCombination(Map<String, String> combination) {
+        return combination.entrySet().stream()
+                .filter(entry -> "color".equals(entry.getKey()) || "size".equals(entry.getKey()))
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .filter(value -> value != null && !value.isBlank())
+                .reduce((left, right) -> left + " / " + right)
+                .orElse("");
     }
 
     private static boolean hasProductReference(String question, String normalized, boolean english) {
@@ -875,7 +957,7 @@ public class ChatToolService {
                 outcome.products(),
                 outcome.actions(),
                 outcome.requiredDisclosures(),
-                DeterministicAnswer.from(outcome),
+                DeterministicAnswer.from(outcome, context.question()),
                 null,
                 searchIntent.searchScope());
     }
@@ -913,7 +995,9 @@ public class ChatToolService {
                 context.question(), normalized, context.lang(), english,
                 context.conversationContext(), modelSelectedReference);
         if (selection.isEmpty() || selection.get().size() <= 1) return Optional.empty();
-        ToolOutcome outcome = ambiguousProductOutcome(selection.get(), english);
+        ToolOutcome outcome = isCollectiveComparisonRequest(normalized)
+                ? comparisonProductOutcome(selection.get(), english)
+                : ambiguousProductOutcome(selection.get(), english);
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("tool", toolName);
         response.put("results", outcome.products().stream()
@@ -926,7 +1010,7 @@ public class ChatToolService {
                 outcome.products(),
                 List.of(),
                 Set.of(),
-                DeterministicAnswer.from(outcome),
+                DeterministicAnswer.from(outcome, context.question()),
                 null,
                 null));
     }
@@ -2321,6 +2405,9 @@ public class ChatToolService {
             SearchScope acceptedSearchScope
     ) {
         ConversationContext prior = previous == null ? ConversationContext.empty() : previous;
+        if (isNeedPrompt(normalizeIntent(question))) {
+            return ConversationContext.empty();
+        }
         boolean verifiedSearch = acceptedSearchScope != null
                 && products != null
                 && !products.isEmpty();
@@ -3193,7 +3280,7 @@ public class ChatToolService {
                     : "Anh/chị dùng hướng dẫn đo size mũ hoặc trang phục và đối chiếu số đo thật với bảng size riêng của sản phẩm nếu có. Một số sản phẩm chưa nhập bảng size nên em không suy ra size chỉ từ chiều cao/cân nặng. Anh/chị bấm Gặp nhân viên nếu muốn BigBike xác nhận thêm.";
         } else if (hasWord(normalized, "thanh toan", "payment")) {
             answer = english
-                    ? "BigBike currently supports two manual payment methods: cash on delivery (COD) and bank transfer. Bi cannot take payment or place an order on your behalf. Please continue through the cart to choose a method and review the order before confirming."
+                    ? "BigBike currently supports two manual payment methods: cash on delivery (COD) and bank transfer. BigBike Assistant cannot take payment or place an order on your behalf. Please continue through the cart to choose a method and review the order before confirming."
                     : "Dạ, em xác nhận BigBike hiện hỗ trợ hai hình thức thanh toán thủ công: nhận hàng trả tiền (COD) và chuyển khoản ngân hàng. Em không nhận tiền và không chốt đơn thay anh/chị. Anh/chị vui lòng đi qua Giỏ hàng để chọn hình thức và kiểm tra lại trước khi xác nhận.";
         } else {
             answer = english
@@ -3327,6 +3414,11 @@ public class ChatToolService {
         List<String> words = new ArrayList<>();
         for (String token : separated.split(" ")) {
             if (!token.matches("[\\p{L}\\p{N}]{1,20}")) return null;
+            // Values such as ff320, day1 and 353 are technical model/code fragments, not
+            // customer-facing colour names. Standalone numeric suffixes remain allowed for
+            // real values such as den-nham-3.
+            if (token.matches("(?=.*[\\p{L}])(?=.*\\d).*")
+                    || token.matches("\\d{2,}")) return null;
             words.add(displayColorWord(token));
         }
         if (words.isEmpty() || words.size() > 6) return null;
@@ -3416,6 +3508,11 @@ public class ChatToolService {
                 .replaceAll(VARIANT_INQUIRY.pattern(), " ")
                 .replaceAll(BUDGET_FRAMING.pattern(), " ")
                 .replaceAll(PRICE_SCOPE_RESET.pattern(), " ")
+                // Exact, reviewed request framing must not become a product identifier. This
+                // keeps natural switches such as "Chuyển sang tìm tai nghe" scoped to the new
+                // category instead of searching for literal words "chuyển" and "sang".
+                .replaceAll("(?iU)\\b(?:tim dung (?:mau|san pham)|find (?:the )?exact (?:model|product)"
+                        + "|chuyen sang|doi sang|switch to|change to)\\b", " ")
                 // A concrete option is a product constraint, not a model code. Option extraction
                 // still reads the unmodified normalized question in productOutcome().
                 .replaceAll(SIZE_REQUEST.pattern(), " ")
@@ -3798,6 +3895,56 @@ public class ChatToolService {
                 .contains(compact);
     }
 
+    static boolean isComparisonRequest(String normalized) {
+        return normalized != null && productDetailIntent(normalized).comparison();
+    }
+
+    /** Collective comparison means all immediately preceding cards, not an ambiguous cheaper/other one. */
+    private static boolean isCollectiveComparisonRequest(String normalized) {
+        if (normalized == null || normalized.isBlank()) return false;
+        String compact = normalized.replaceAll("[^\\p{Alnum}]+", " ").trim();
+        return hasWord(compact,
+                "so sanh", "so sanh cac mau", "so sanh san pham", "so sanh giup em",
+                "hai mau nay", "2 mau nay", "ba mau nay", "3 mau nay", "ca hai", "ca ba",
+                "compare", "compare products", "compare models", "compare these models",
+                "compare these products", "both models", "all three models");
+    }
+
+    private static boolean isNeedPrompt(String normalized) {
+        if (normalized == null) return false;
+        String compact = normalized.replaceAll("[^\\p{Alnum}]+", " ").trim();
+        return Set.of("tim theo nhu cau", "doi nhu cau", "find by need", "change needs")
+                .contains(compact);
+    }
+
+    private ToolOutcome needPromptOutcome(String lang) {
+        boolean english = "en".equals(lang);
+        List<String> names = catalogReadService.listAssistantCategories(lang).stream()
+                .filter(category -> category.parentId() == null)
+                .sorted(Comparator
+                        .comparing((Category category) -> category.sortOrder() == null
+                                ? Integer.MAX_VALUE : category.sortOrder())
+                        .thenComparing(category -> nullToEmpty(category.name()), String.CASE_INSENSITIVE_ORDER))
+                .map(Category::name)
+                .filter(name -> name != null && !name.isBlank())
+                .filter(name -> !english || !Pattern.compile("[à-ỹÀ-ỸđĐ]").matcher(name).find())
+                .distinct()
+                .limit(4)
+                .toList();
+        String answer;
+        if (names.isEmpty()) {
+            answer = english
+                    ? "What type of product or riding need would you like help with? Tell me the item and budget, and I will check currently sold products without guessing."
+                    : "Dạ, anh/chị đang cần loại sản phẩm nào hoặc muốn dùng cho nhu cầu gì ạ? Anh/chị cho em biết loại hàng và tầm giá để em kiểm tra đúng sản phẩm đang bán nhé.";
+        } else {
+            String choices = String.join(", ", names);
+            answer = english
+                    ? "BigBike’s main product groups include " + choices + ". Which group or riding need would you like help with?"
+                    : "Dạ, một số nhóm hàng chính của BigBike gồm " + choices + ". Anh/chị đang cần nhóm nào hoặc muốn dùng cho nhu cầu gì ạ?";
+        }
+        return ToolOutcome.local(answer, "TEMPLATE", false, false, false);
+    }
+
     private static boolean isAmbiguousBudget(String normalized) {
         boolean changeBudget = hasWord(normalized, "doi ngan sach", "loc theo ngan sach",
                 "change budget", "filter by budget", "new budget");
@@ -3817,10 +3964,94 @@ public class ChatToolService {
         return hasWord(value, "khong can lien he", "khong de lai so", "no thanks", "do not contact");
     }
 
+    /** Backend-owned lead eligibility; the model cannot suppress a qualifying product/fallback signal. */
+    static boolean shouldOfferLeadPrompt(
+            String question,
+            List<ChatProductCardResponse> products,
+            boolean recoverableFallback
+    ) {
+        if (recoverableFallback || (products != null && !products.isEmpty())) return true;
+        String normalized = normalizeIntent(question);
+        if (normalized.isBlank()
+                || isGreetingOrHelp(normalized)
+                || isKnownOffTopic(normalized)
+                || isHumanHandoff(normalized)
+                || isLeadDecline(normalized)) {
+            return false;
+        }
+        ProductDetailIntent detailIntent = productDetailIntent(normalized);
+        return detailIntent.hasRequestedDetail()
+                || asksForProductAvailability(normalized)
+                || extractProductQuery(question).hasSpecificIdentifier()
+                || hasWord(normalized, "gia", "price", "size", "stock", "con hang", "ton kho",
+                        "available", "mau", "color", "colour");
+    }
+
     private static String plain(String html, int max) {
         if (html == null || html.isBlank()) return "";
-        String text = html.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
-        return text.length() <= max ? text : text.substring(0, max);
+        if (max <= 0) return "";
+        String text = html
+                .replaceAll("(?i)<br\\s*/?>", ". ")
+                .replaceAll("(?i)</(?:p|li|h[1-6]|div|tr|td|section)>", ". ")
+                .replaceAll("<[^>]+>", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (text.length() <= max) return text;
+
+        int cut = lastSentenceBoundary(text, max);
+        if (cut <= 0) {
+            int next = nextSentenceBoundary(text, max);
+            cut = next > 0 && next <= max + 240 ? next : lastWordBoundary(text, max);
+        }
+        if (cut <= 0) cut = Math.min(max, text.length());
+        String candidate = text.substring(0, cut).trim();
+        if (isHeadingOnly(candidate)) {
+            int next = nextSentenceBoundary(text, cut);
+            if (next > cut) candidate = text.substring(0, next).trim();
+        }
+        if (candidate.length() >= text.length()) return candidate;
+        return candidate + " …";
+    }
+
+    private static int lastSentenceBoundary(String text, int max) {
+        int boundary = -1;
+        for (int index = 0; index < Math.min(max, text.length()); index++) {
+            char current = text.charAt(index);
+            if (".!?。！？;".indexOf(current) >= 0
+                    && (index + 1 == text.length() || Character.isWhitespace(text.charAt(index + 1)))) {
+                boundary = index + 1;
+            }
+        }
+        return boundary;
+    }
+
+    private static int nextSentenceBoundary(String text, int start) {
+        for (int index = Math.max(0, start); index < text.length(); index++) {
+            char current = text.charAt(index);
+            if (".!?。！？;".indexOf(current) >= 0
+                    && (index + 1 == text.length() || Character.isWhitespace(text.charAt(index + 1)))) {
+                return index + 1;
+            }
+        }
+        return -1;
+    }
+
+    private static int lastWordBoundary(String text, int max) {
+        int end = Math.min(max, text.length());
+        int boundary = text.lastIndexOf(' ', end - 1);
+        return boundary > 0 ? boundary : end;
+    }
+
+    private static boolean isHeadingOnly(String value) {
+        String normalized = normalize(value.replaceAll("[.!?;]+$", "").trim());
+        if (normalized.isBlank() || value.matches(".*\\d.*")) return false;
+        String compact = value.replaceAll("[^\\p{L}]", "");
+        boolean shortUppercase = !compact.isBlank()
+                && compact.equals(compact.toUpperCase(Locale.ROOT))
+                && value.trim().split("\\s+").length <= 10;
+        boolean knownHeading = hasWord(normalized,
+                "tieu chuan an toan", "thong so ky thuat", "tinh nang", "chat lieu", "kich thuoc");
+        return shortUppercase || (knownHeading && value.trim().split("\\s+").length <= 10);
     }
 
     private static String blankToNull(String value) {
@@ -4383,6 +4614,14 @@ public class ChatToolService {
                     outcome.offTopic(),
                     outcome.handoffRecommended(),
                     false);
+        }
+
+        static DeterministicAnswer from(ToolOutcome outcome, String question) {
+            return new DeterministicAnswer(
+                    outcome.localAnswer(),
+                    outcome.offTopic(),
+                    outcome.handoffRecommended(),
+                    shouldOfferLeadPrompt(question, outcome.products(), outcome.aiRequired()));
         }
     }
 

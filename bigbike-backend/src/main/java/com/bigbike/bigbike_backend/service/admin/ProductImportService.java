@@ -23,6 +23,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
@@ -739,7 +740,7 @@ public class ProductImportService {
                 .map(CategoryEntity::getSlug)
                 .toList());
         r.setBrandId(p.getBrand() != null ? p.getBrand().getSlug() : null);
-        r.setGender(p.getGender());
+        r.setGenders(ProductGenderSupport.fromFlags(p.isGenderMale(), p.isGenderFemale()));
         r.setCurrency(p.getCurrency());
         r.setRetailPrice(p.getRetailPrice());
         r.setSalePrice(p.getSalePrice());

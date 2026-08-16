@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
 
 /** Gemini function-calling orchestrator. Customer text and tool payloads are never logged. */
 @Component
@@ -35,9 +38,10 @@ public class AiChatClient {
     private static final int MAX_QUESTION_CHARS = 1000;
     private static final int MAX_OUTPUT_TOKENS = 400;
     private static final int MAX_PROVIDER_CALLS = 3;
+    private static final long TRANSIENT_RETRY_DELAY_MILLIS = 2_000L;
 
     private static final String SYSTEM_PROMPT = """
-            You are Bi, BigBike's AI sales assistant. The application, not you, reads data.
+            You are BigBike Assistant, BigBike's AI sales assistant. The application, not you, reads data.
             In Vietnamese, prefer referring to yourself as "em" and to the customer as
             "anh/chị", but do not add either merely to satisfy a keyword rule. Never call the
             customer "em", and never use curt or dismissive wording. A polite factual answer
@@ -102,6 +106,11 @@ public class AiChatClient {
             conclusion. Never repeat a raw variant colour slug or internal option value; use only
             the cleaned display values supplied by the function response.
 
+            If RECENT_VERIFIED_PRODUCTS contains two or three products and the customer asks to
+            compare them, use current function data for those exact products and compare their
+            saved prices, sizes, colours, options, technical facts and safety warnings. Do not ask
+            for the product names again unless no verified products are available.
+
             Set offTopic=true only outside BigBike's supported scope. Set
             handoffRecommended=true for complaints, complex warranty cases or price
             negotiation. leadPrompt may be true only when a staff callback would genuinely
@@ -111,6 +120,7 @@ public class AiChatClient {
     private final String apiKey;
     private final String model;
     private final GeminiTransport transport;
+    private final Sleeper sleeper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
@@ -119,14 +129,19 @@ public class AiChatClient {
             @Value("${bigbike.chat.model:gemini-2.5-flash}") String model,
             @Value("${bigbike.chat.timeout-seconds:20}") long timeoutSeconds
     ) {
-        this(apiKey, model, buildTransport(apiKey, model, timeoutSeconds));
+        this(apiKey, model, buildTransport(apiKey, model, timeoutSeconds), Thread::sleep);
     }
 
     AiChatClient(String apiKey, String model, GeminiTransport transport) {
+        this(apiKey, model, transport, Thread::sleep);
+    }
+
+    AiChatClient(String apiKey, String model, GeminiTransport transport, Sleeper sleeper) {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = model == null || model.isBlank() ? DEFAULT_MODEL : model.trim();
         this.transport = transport;
-        log.info("Bi AI client configured={} model={}", isConfigured(), this.model);
+        this.sleeper = sleeper;
+        log.info("Trợ lý BigBike AI client configured={} model={}", isConfigured(), this.model);
     }
 
     public boolean isConfigured() {
@@ -234,15 +249,17 @@ public class AiChatClient {
         ChatToolService.SearchScope searchScope = null;
         int providerCalls = 0;
         String stage = "initial_provider";
+        ProviderBudget providerBudget = new ProviderBudget();
 
         try {
             ModelTurn turn = requestTurn(buildToolRequestBody(
-                    contents, registry.functionDeclarations(), null, toolRequired, responseInstruction));
-            providerCalls++;
+                    contents, registry.functionDeclarations(), null, toolRequired, responseInstruction),
+                    providerBudget, stage);
+            providerCalls = providerBudget.calls();
             stage = "initial_tool_validation";
             if (turn.finalText() != null) {
                 if (toolRequired) {
-                    log.warn("Bi AI orchestration recovering stage={} type=DirectText", stage);
+                    log.warn("Trợ lý BigBike orchestration recovering stage={} type=DirectText", stage);
                     if (providerCalls >= MAX_PROVIDER_CALLS) return Optional.empty();
                     stage = "initial_tool_recovery";
                     turn = requestTurn(buildToolRequestBody(
@@ -251,10 +268,11 @@ public class AiChatClient {
                             null,
                             true,
                             "Your previous response answered directly. Call exactly one declared function now. "
-                                    + "Do not answer with prose before receiving current-turn function data."));
-                    providerCalls++;
+                                    + "Do not answer with prose before receiving current-turn function data."),
+                            providerBudget, stage);
+                    providerCalls = providerBudget.calls();
                     if (turn.finalText() != null || turn.functionCall() == null) {
-                        log.warn("Bi AI orchestration rejected stage={} type=DirectText", stage);
+                        log.warn("Trợ lý BigBike orchestration rejected stage={} type=DirectText", stage);
                         return Optional.empty();
                     }
                 } else {
@@ -295,62 +313,21 @@ public class AiChatClient {
             }
             appendFunctionExchange(contents, turn, firstResult);
 
-            boolean canRequestDetail = ChatToolRegistry.SEARCH_PRODUCTS.equals(first.name())
-                    && !products.isEmpty()
-                    && providerCalls < MAX_PROVIDER_CALLS - 1;
-            if (canRequestDetail && providerCalls < MAX_PROVIDER_CALLS) {
-                stage = "detail_provider";
-                // The model often answers this optional step with several parallel
-                // get_product calls or with loose prose. Nothing unvalidated may run, but
-                // the already-grounded search results are enough to answer, so skip the
-                // detail hop instead of dropping the whole turn to CONTACT.
-                Optional<ModelTurn> detail = parseTurn(transport.generate(buildToolRequestBody(
-                        contents,
-                        registry.functionDeclarations(Set.of(ChatToolRegistry.GET_PRODUCT)),
-                        Set.of(ChatToolRegistry.GET_PRODUCT),
-                        true,
-                        responseInstruction)));
-                providerCalls++;
-                if (detail.isEmpty()) {
-                    log.warn("Bi AI detail step skipped stage={} type=UnusableTurn", stage);
-                } else if (detail.get().finalText() != null) {
-                    // The model answered instead of calling get_product. This hop pins no
-                    // response schema, so take the text only when it parses; otherwise fall
-                    // through to the final request, which does pin the four-field contract.
-                    Optional<Answer> answer = parseFinal(detail.get().finalText());
-                    if (answer.isPresent()) {
-                        return Optional.of(new HybridAnswer(
-                                answer.get(), products, actions, executedTools,
-                                requiredDisclosures, providerCalls, "AI", catalogTotals, searchScope));
-                    }
-                    log.warn("Bi AI detail step skipped stage={} type=UnparsableDetailText", stage);
-                } else {
-                    turn = detail.get();
-                    stage = "detail_tool_execution";
-                    ChatToolRegistry.ValidatedCall second = registry.validate(
-                            turn.functionCall().name(), turn.functionCall().arguments());
-                    if (!ChatToolRegistry.GET_PRODUCT.equals(second.name())) return Optional.empty();
-                    ChatToolService.ToolExecution secondResult = executor.execute(second, session);
-                    executedTools.add(second.name());
-                    products = secondResult.products();
-                    if (!secondResult.actions().isEmpty()) actions = secondResult.actions();
-                    requiredDisclosures.addAll(secondResult.requiredDisclosures());
-                    appendFunctionExchange(contents, turn, secondResult);
-                }
-            }
-
-            if (providerCalls >= MAX_PROVIDER_CALLS) return Optional.empty();
+            // Product detail enrichment is backend-owned. Skipping the former optional provider
+            // hop leaves one of the three calls available for a transient retry.
+            if (providerBudget.calls() >= MAX_PROVIDER_CALLS) return Optional.empty();
             stage = "final_provider";
             ModelTurn finalTurn = requestTurn(buildFinalRequestBody(
-                    contents, registry.functionDeclarations(), responseInstruction));
-            providerCalls++;
+                    contents, registry.functionDeclarations(), responseInstruction),
+                    providerBudget, stage);
+            providerCalls = providerBudget.calls();
             if (finalTurn.finalText() == null || finalTurn.functionCall() != null) {
-                log.warn("Bi AI orchestration rejected stage={} type=NoFinalText", stage);
+                log.warn("Trợ lý BigBike orchestration rejected stage={} type=NoFinalText", stage);
                 return Optional.empty();
             }
-            Optional<Answer> finalAnswer = parseFinal(finalTurn.finalText());
+            Optional<Answer> finalAnswer = parseFinalOrSalvage(finalTurn);
             if (finalAnswer.isEmpty()) {
-                log.warn("Bi AI orchestration rejected stage={} type=UnparsableFinalJson", stage);
+                log.warn("Trợ lý BigBike orchestration rejected stage={} type=UnparsableFinalJson", stage);
                 return Optional.empty();
             }
             List<ChatProductCardResponse> safeProducts = products;
@@ -369,13 +346,13 @@ public class AiChatClient {
 
     private void logOrchestrationFailure(RuntimeException exception, String stage) {
         if (exception instanceof RestClientResponseException providerException) {
-            log.warn("Bi AI orchestration failed stage={} type={} status={}",
+            log.warn("Trợ lý BigBike orchestration failed stage={} type={} status={}",
                     stage,
                     exception.getClass().getSimpleName(),
                     providerException.getStatusCode().value());
             return;
         }
-        log.warn("Bi AI orchestration failed stage={} type={}",
+        log.warn("Trợ lý BigBike orchestration failed stage={} type={}",
                 stage, exception.getClass().getSimpleName());
     }
 
@@ -426,9 +403,50 @@ public class AiChatClient {
                 "");
     }
 
-    private ModelTurn requestTurn(Map<String, Object> body) {
-        String response = transport.generate(body);
-        return parseTurn(response).orElseThrow(() -> new IllegalStateException("Invalid Gemini response"));
+    private ModelTurn requestTurn(
+            Map<String, Object> body,
+            ProviderBudget budget,
+            String stage
+    ) {
+        while (true) {
+            if (budget.calls() >= MAX_PROVIDER_CALLS) {
+                throw new IllegalStateException("Provider request budget exhausted");
+            }
+            budget.recordCall();
+            try {
+                String response = transport.generate(body);
+                return parseTurn(response)
+                        .orElseThrow(() -> new IllegalStateException("Invalid Gemini response"));
+            } catch (RuntimeException exception) {
+                if (!budget.retryUsed()
+                        && budget.calls() < MAX_PROVIDER_CALLS
+                        && isTransientProviderFailure(exception)) {
+                    budget.recordRetry();
+                    log.warn("Trợ lý BigBike provider retry stage={} reason=TRANSIENT_PROVIDER_FAILURE", stage);
+                    sleepBeforeRetry();
+                    continue;
+                }
+                throw exception;
+            }
+        }
+    }
+
+    private void sleepBeforeRetry() {
+        try {
+            sleeper.sleep(TRANSIENT_RETRY_DELAY_MILLIS);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Provider retry interrupted", exception);
+        }
+    }
+
+    private static boolean isTransientProviderFailure(RuntimeException exception) {
+        if (exception instanceof ResourceAccessException) return true;
+        if (exception instanceof RestClientResponseException providerException) {
+            int status = providerException.getStatusCode().value();
+            return status == 429 || status >= 500;
+        }
+        return false;
     }
 
     private Map<String, Object> buildToolRequestBody(
@@ -614,7 +632,10 @@ public class AiChatClient {
             if (!candidates.isArray() || candidates.isEmpty()) return Optional.empty();
             JsonNode candidate = candidates.get(0);
             String finishReason = candidate.path("finishReason").asText("");
-            if (!finishReason.isEmpty() && !"STOP".equals(finishReason)) return Optional.empty();
+            boolean truncated = "MAX_TOKENS".equals(finishReason);
+            if (!finishReason.isEmpty() && !"STOP".equals(finishReason) && !truncated) {
+                return Optional.empty();
+            }
             JsonNode content = candidate.path("content");
             JsonNode parts = content.path("parts");
             if (!content.isObject() || !parts.isArray() || parts.isEmpty()) return Optional.empty();
@@ -636,16 +657,59 @@ public class AiChatClient {
                 }
             }
             if (calls.size() == 1 && texts.isEmpty()) {
+                if (truncated) return Optional.empty();
                 Map<String, Object> modelContent = objectMapper.convertValue(
                         content, new TypeReference<Map<String, Object>>() {});
-                return Optional.of(new ModelTurn(calls.get(0), null, modelContent));
+                return Optional.of(new ModelTurn(calls.get(0), null, modelContent, false));
             }
             if (calls.isEmpty() && texts.size() == 1) {
-                return Optional.of(new ModelTurn(null, texts.get(0), Map.of()));
+                return Optional.of(new ModelTurn(null, texts.get(0), Map.of(), truncated));
             }
             return Optional.empty();
         } catch (Exception exception) {
-            log.warn("Bi AI returned an unparseable payload");
+            log.warn("Trợ lý BigBike AI returned an unparseable payload");
+            return Optional.empty();
+        }
+    }
+
+    /** MAX_TOKENS recovery is allowed only for the final grounded answer stage. */
+    private Optional<Answer> parseFinalOrSalvage(ModelTurn turn) {
+        Optional<Answer> parsed = parseFinal(turn.finalText());
+        if (parsed.isPresent() || !turn.truncated()) return parsed;
+        return extractCompleteAnswerPrefix(turn.finalText())
+                .map(content -> new Answer(content, false, false, false));
+    }
+
+    private Optional<String> extractCompleteAnswerPrefix(String partialJson) {
+        if (partialJson == null || partialJson.isBlank()) return Optional.empty();
+        Matcher field = Pattern.compile("\\\"answer\\\"\\s*:\\s*\\\"").matcher(partialJson);
+        if (!field.find()) return Optional.empty();
+        StringBuilder encoded = new StringBuilder();
+        boolean escaped = false;
+        for (int index = field.end(); index < partialJson.length(); index++) {
+            char current = partialJson.charAt(index);
+            if (!escaped && current == '"') break;
+            encoded.append(current);
+            if (escaped) {
+                escaped = false;
+            } else if (current == '\\') {
+                escaped = true;
+            }
+        }
+        if (encoded.isEmpty()) return Optional.empty();
+        if (encoded.charAt(encoded.length() - 1) == '\\') {
+            encoded.setLength(encoded.length() - 1);
+        }
+        try {
+            String decoded = objectMapper.readValue("\"" + encoded + "\"", String.class).trim();
+            Matcher sentences = Pattern.compile("[.!?。！？]+(?=\\s|$)").matcher(decoded);
+            int lastComplete = -1;
+            while (sentences.find()) lastComplete = sentences.end();
+            if (lastComplete < 0) return Optional.empty();
+            String complete = decoded.substring(0, lastComplete).trim();
+            return complete.isEmpty() || complete.length() > 2000
+                    ? Optional.empty() : Optional.of(complete);
+        } catch (Exception exception) {
             return Optional.empty();
         }
     }
@@ -708,6 +772,11 @@ public class AiChatClient {
     }
 
     @FunctionalInterface
+    interface Sleeper {
+        void sleep(long milliseconds) throws InterruptedException;
+    }
+
+    @FunctionalInterface
     public interface ToolExecutor {
         ChatToolService.ToolExecution execute(
                 ChatToolRegistry.ValidatedCall call, ChatToolService.ToolSession session);
@@ -718,8 +787,30 @@ public class AiChatClient {
     private record ModelTurn(
             FunctionCall functionCall,
             String finalText,
-            Map<String, Object> modelContent
+            Map<String, Object> modelContent,
+            boolean truncated
     ) {}
+
+    private static final class ProviderBudget {
+        private int calls;
+        private boolean retryUsed;
+
+        int calls() {
+            return calls;
+        }
+
+        boolean retryUsed() {
+            return retryUsed;
+        }
+
+        void recordCall() {
+            calls++;
+        }
+
+        void recordRetry() {
+            retryUsed = true;
+        }
+    }
 
     public record Answer(
             String answer,

@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -23,6 +24,8 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
+import com.bigbike.bigbike_backend.service.catalog.SizeScaleCatalog;
+import com.bigbike.bigbike_backend.service.catalog.SizeScaleCatalogService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +58,7 @@ public class CatalogRequestValidator {
     private final BrandJpaRepository brandJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
+    private final SizeScaleCatalogService sizeScaleCatalogService;
     private final boolean isDev;
 
     public CatalogRequestValidator(
@@ -64,6 +68,7 @@ public class CatalogRequestValidator {
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             HomeVideoUrlPolicy homeVideoUrlPolicy,
+            ObjectProvider<SizeScaleCatalogService> sizeScaleCatalogServiceProvider,
             Environment environment
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
@@ -72,8 +77,49 @@ public class CatalogRequestValidator {
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.homeVideoUrlPolicy = homeVideoUrlPolicy;
+        this.sizeScaleCatalogService = sizeScaleCatalogServiceProvider == null
+                ? null : sizeScaleCatalogServiceProvider.getIfAvailable();
         this.isDev = environment != null && java.util.Arrays.stream(environment.getActiveProfiles())
                 .anyMatch(p -> java.util.Set.of("dev", "mock", "test", "local").contains(p.toLowerCase()));
+    }
+
+    /** Validates the explicit scale/value contract after the variant payload has been applied. */
+    public void validateProductSizeScale(ProductEntity entity, List<ApiErrorDetail> errors) {
+        if (entity == null || sizeScaleCatalogService == null || entity.getVariants() == null) return;
+        boolean hasSizeOption = false;
+        for (ProductVariantEntity variant : entity.getVariants()) {
+            if (variant == null || variant.getOptions() == null) continue;
+            for (var option : variant.getOptions()) {
+                if (option != null && SizeScaleCatalog.isSizeOptionName(option.getOptionName())) {
+                    hasSizeOption = true;
+                }
+            }
+        }
+        if (!hasSizeOption) return;
+        if (AdminMutationValidators.trimToNull(entity.getSizeScaleId()) == null) {
+            errors.add(new ApiErrorDetail("sizeScaleId", "REQUIRED",
+                    "A size scale is required when a product has size options."));
+            return;
+        }
+        SizeScaleCatalog catalog = sizeScaleCatalogService.allCatalog();
+        if (catalog.scale(entity.getSizeScaleId()).isEmpty()) {
+            errors.add(new ApiErrorDetail("sizeScaleId", "NOT_FOUND", "Size scale does not exist."));
+            return;
+        }
+        for (int vi = 0; vi < entity.getVariants().size(); vi++) {
+            ProductVariantEntity variant = entity.getVariants().get(vi);
+            if (variant == null || variant.getOptions() == null) continue;
+            for (int oi = 0; oi < variant.getOptions().size(); oi++) {
+                var option = variant.getOptions().get(oi);
+                if (option == null || !SizeScaleCatalog.isSizeOptionName(option.getOptionName())) continue;
+                if (!catalog.hasValue(entity.getSizeScaleId(), option.getOptionValue())) {
+                    errors.add(new ApiErrorDetail(
+                            "variants[" + vi + "].options[" + oi + "].optionValue",
+                            "INVALID_SIZE_SCALE_VALUE",
+                            "Size value does not belong to the selected size scale."));
+                }
+            }
+        }
     }
 
     public String validateProductRequest(
@@ -83,6 +129,7 @@ public class CatalogRequestValidator {
             boolean preview,
             List<ApiErrorDetail> errors
     ) {
+        validateGender(request, errors);
         String slug = AdminMutationValidators.trimToNull(request.getSlug());
         if (create) {
             AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
@@ -337,6 +384,32 @@ public class CatalogRequestValidator {
         }
 
         return slug;
+    }
+
+    private static void validateGender(UpsertProductRequest request, List<ApiErrorDetail> errors) {
+        if (request.isGendersPresent()) {
+            try {
+                ProductGenderSupport.normalize(request.getGenders());
+            } catch (IllegalArgumentException ex) {
+                errors.add(new ApiErrorDetail("genders", "INVALID_VALUE",
+                        "Genders must contain only unique values Nam and Nữ."));
+            }
+            return;
+        }
+        if (request.isGenderPresent()) {
+            String legacy = request.getGender();
+            if (legacy != null && "Unisex".equalsIgnoreCase(legacy.trim())) {
+                errors.add(new ApiErrorDetail("gender", "INVALID_VALUE",
+                        "Unisex is no longer a selectable gender; use genders instead."));
+                return;
+            }
+            try {
+                ProductGenderSupport.fromLegacy(legacy);
+            } catch (IllegalArgumentException ex) {
+                errors.add(new ApiErrorDetail("gender", "INVALID_VALUE",
+                        "Gender must be Nam, Nữ, or blank."));
+            }
+        }
     }
 
     /** Validates a single gallery item's URL(s) against the media whitelist (M6/M7 — video items were

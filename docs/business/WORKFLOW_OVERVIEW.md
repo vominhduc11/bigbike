@@ -16,7 +16,7 @@
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Guest | Open `/dang-nhap` or `/dang-ky` as separate legacy-parity pages; registration remains a separate route, not an in-place auth tab | `CONFIRMED_FROM_CODE` | `bigbike_vn__2026_04_17/sqldump.sql`, live legacy pages `/dang-nhap.html`, `/dang-ky.html`, `page.tsx`, `LoginForm.tsx`, `RegisterForm.tsx` |
+| 1 | Guest | Open `/dang-nhap` or `/dang-ky` as separate legacy-parity pages; registration remains a separate route, not an in-place auth tab | `CONFIRMED_FROM_CODE` | live legacy URLs `/dang-nhap.html`, `/dang-ky.html`, current `page.tsx`, `LoginForm.tsx`, `RegisterForm.tsx`; raw local export permanently unavailable |
 | 2a | Guest | Sign in with email/phone + password; "Ghi nhớ" keeps the session for 30 days (vs 1 day when unchecked) | `CONFIRMED_FROM_CODE` | `CustomerAuthService.login`, `CustomerSessionService` |
 | 2b | Guest | Or sign in with **Google or Facebook** — both buttons appear on the login and register pages and hand off to the backend OAuth service | `CONFIRMED_FROM_CODE` | `SocialLoginButtons.tsx`, `CustomerOAuthService.linkOrCreate` |
 | 2c | System | A social sign-in that fails returns the customer to the login page **for their locale** with a reason they can read (declined / unavailable / account blocked / try again) rather than a blank page | `CONFIRMED_FROM_CODE` | `OAuthError.java`, `lib/auth/oauth-error.ts`, `LoginForm.tsx` |

@@ -25,8 +25,9 @@ export function wpOrderbyToProductSort(
       return "price:asc";
     case "price-desc":
       return "price:desc";
-    case "menu_order":
     case "popularity":
+      return "popularity";
+    case "menu_order":
     default:
       return defaultSort;
   }
@@ -38,6 +39,8 @@ export function productSortToOrderby(sort: string | null | undefined): CatalogOr
       return "price";
     case "price:desc":
       return "price-desc";
+    case "popularity":
+      return "popularity";
     case "createdAt:desc":
     default:
       return DEFAULT_CATALOG_ORDERBY;

@@ -12,6 +12,7 @@ import {
   fetchCategoryTree,
   fetchProductAssignment,
   fetchProductDetail,
+  fetchSizeScales,
   mapValidationErrors,
   previewProduct,
   publishProduct,
@@ -48,7 +49,6 @@ import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -131,8 +131,6 @@ import { PublishChecklistModal } from './product-detail/Modals'
 // "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) có card riêng NGOÀI trình dựng mô tả, và
 // (V327/V328) dữ liệu của chúng giờ cũng lưu ở 2 field riêng (form.suitabilitySection/sizeGuideSection)
 // — không còn embedded trong descriptionBlocks, không cần helper lọc/ghép nữa.
-// Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
-const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
 const EMPTY_ITEMS = []
 // Thụt lề theo cấp trong cây danh mục bằng class Tailwind có sẵn; cấp sâu hơn
 // dùng lại mức sâu nhất để không cần arbitrary spacing.
@@ -246,6 +244,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     queryKey: queryKeys.brandsAll('en'),
     queryFn: () => fetchBrands({ pageSize: 100, lang: 'en' }),
     enabled: canReadCatalog && isEn,
+    staleTime: 5 * 60 * 1000,
+  })
+  const { data: sizeScales = [], isLoading: sizeScalesLoading } = useQuery({
+    queryKey: ['size-scales'],
+    queryFn: fetchSizeScales,
+    enabled: canReadCatalog,
     staleTime: 5 * 60 * 1000,
   })
   const categoriesResult = useMemo(
@@ -1544,26 +1548,36 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} error={validationErrors.gender}>
-                    {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
-                        mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
-                        rõ ràng cho SelectValue để trigger hiện đúng giá trị. */}
-                    <Select value={form.gender || 'NONE'} onValueChange={(val) => { if (val) updateField('gender', val === 'NONE' ? '' : val) }} disabled={isReadOnly}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}>
-                          {form.gender
-                            ? (GENDER_LABEL_EN[form.gender] && isEn ? GENDER_LABEL_EN[form.gender] : form.gender)
-                            : t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu. Value lưu DB
-                            luôn là "Nam"/"Nữ"/NULL (DATA_CONTRACT.md) — chỉ nhãn hiển thị đổi theo contentLang. */}
-                        <SelectItem value="NONE">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
-                        <SelectItem value="Nam">{isEn ? 'Male' : 'Nam'}</SelectItem>
-                        <SelectItem value="Nữ">{isEn ? 'Female' : 'Nữ'}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} error={validationErrors.genders}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { value: 'Nam', label: isEn ? 'Male' : 'Nam', id: 'product-gender-male' },
+                        { value: 'Nữ', label: isEn ? 'Female' : 'Nữ', id: 'product-gender-female' },
+                      ].map((gender) => (
+                        <label
+                          key={gender.value}
+                          htmlFor={gender.id}
+                          className={cn(
+                            'flex min-h-11 items-center gap-3 border border-border px-3 py-2 text-sm',
+                            isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                          )}
+                        >
+                          <Checkbox
+                            id={gender.id}
+                            checked={Array.isArray(form.genders) && form.genders.includes(gender.value)}
+                            onCheckedChange={(checked) => {
+                              const current = Array.isArray(form.genders) ? form.genders : []
+                              const next = checked
+                                ? [...new Set([...current, gender.value])]
+                                : current.filter((value) => value !== gender.value)
+                              updateField('genders', next)
+                            }}
+                            disabled={isReadOnly}
+                          />
+                          <span>{gender.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </Field>
 
                   <Field
@@ -1734,6 +1748,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       <span className="text-muted-foreground">— {t('products.detail.productStockHint')}</span>
                     </div>
                   )}
+                  <div className="@xl:col-span-2 flex items-center gap-2.5 border border-border p-2.5 text-sm">
+                    <Switch
+                      checked={form.discontinued}
+                      onCheckedChange={(checked) => updateField('discontinued', checked)}
+                      disabled={isReadOnly || form.publishStatus !== 'PUBLISHED'}
+                      aria-label={t('products.detail.discontinued', { defaultValue: 'Ngừng bán' })}
+                    />
+                    <span className={form.discontinued ? 'font-medium text-warning' : 'font-medium text-muted-foreground'}>
+                      {t('products.detail.discontinued', { defaultValue: 'Ngừng bán' })}
+                    </span>
+                    <span className="text-muted-foreground">
+                      — {t('products.detail.discontinuedHint', { defaultValue: 'Giữ trang cũ nhưng không còn nút mua.' })}
+                    </span>
+                  </div>
                 </div>
               </SectionCard>
 
@@ -1760,6 +1788,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   validationErrors={validationErrors}
                   onOpenMatrixWizard={() => setShowMatrixWizard(true)}
                   contentLang={contentLang}
+                  sizeScaleId={form.sizeScaleId}
+                  sizeScales={sizeScales}
+                  sizeScalesLoading={sizeScalesLoading}
+                  onSizeScaleChange={(value) => updateField('sizeScaleId', value || '')}
                 />
               </SectionCard>
 

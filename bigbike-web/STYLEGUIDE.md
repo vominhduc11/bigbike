@@ -148,9 +148,20 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 ### Rating display
 
 - Public aggregate ratings always show exactly five stars followed by the approved-review count as `({n})`.
+- Product cards in catalog/search/brand/category lists are the exception: render no rating row when the approved-review count is zero, and never make the card rating a write-review trigger.
 - No approved reviews: use five neutral outline stars and `(0)`; never show a status label, `0/5`, or a default score.
 - Approved reviews: keep the one-decimal partial star fill when needed and show `(n)`; do not show the average as visible text.
 - Inconsistent count/score data: keep neutral stars and the safe count as `(n)`; do not invent a score. Preserve the full state-specific aria-label.
+
+### Catalog filters
+
+- Reuse shadcn/Radix controls and brand tokens. Filter choices use one neutral-to-red language: unselected square choices have a light neutral border and black text, hover uses a very light brand-red surface with a brand-red border, and selected choices use the solid brand red. Link-blue remains reserved for links and secondary text actions such as show-more.
+- Use square checkboxes for multi-select lists and round radio controls for the single-select gender list. Small size choices must not scale on hover; keep every filter control at least 44px tall.
+- Price inputs stay empty until a price bound is active. Their full localized number must match the number shown by the slider; typed bounds apply only from an explicit `Apply`/`Áp dụng` action (the mobile sheet applies its draft once from `View N products`).
+- Desktop filter order is Brand, Price, Size, Color, Finish, Availability, Gender. Category navigation is a child-category image rail above the grid, never a sidebar filter tree.
+- Desktop sidebar is sticky and independently scrollable; list facets show eight rows before a small underlined text action. Size uses a compact grid; color uses a swatch plus name/count.
+- Mobile filter uses the existing sticky toolbar trigger with an active-count badge and a full-viewport sheet. The sheet has collapsed group summaries, active chips, clear-all, and a sticky `View N products` action.
+- Every filter chip/control is keyboard operable, has a complete accessible name, and keeps a minimum 44px touch target on mobile. Empty facet groups are not rendered.
 
 ### Category Tiles (lưới danh mục trang chủ)
 

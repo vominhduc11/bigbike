@@ -1,393 +1,441 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
-import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
-import Link from "@/i18n/StorefrontLink";
-import { useRouter } from "next/navigation";
-import { Minus, Plus } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { ChevronLeft, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { CATALOG_FILTER_OPEN_EVENT } from "@/components/catalog/catalog-events";
-import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { CatalogFilterChips } from "@/components/catalog/CatalogFilterChips";
+import { CatalogPriceFilter } from "@/components/catalog/CatalogPriceFilter";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts/public";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import type { Brand, CatalogFacets, Category, FacetBucket, SizeBucket } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
-import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import {
+  clearCatalogFilters,
+  countCatalogFilters,
+  getAvailableCatalogFilterGroups,
+  removeCatalogFilter,
+  toggleCatalogArrayValue,
+  type CatalogFilterGroupKey,
+  type CatalogFilterState,
+} from "@/lib/utils/catalog-filter-state";
 import { buildQueryString } from "@/lib/utils/query";
-import { toCategoryPath } from "@/lib/utils/routes";
-import { submenuIcon } from "@/lib/ui-classes";
-import type { Locale } from "@/i18n/locale";
 
-const COLOR_FALLBACK_KEYS = [
-  "bac", "cam", "hong", "trang", "xam", "xanh-da-troi", "xanh-la-cay", "vang", "den", "do",
-] as const;
+export type { CatalogFilterState } from "@/lib/utils/catalog-filter-state";
 
-const PRICE_FALLBACK: { key: string; min?: number; max?: number }[] = [
-  { key: "0-500k", min: 0, max: 500_000 },
-  { key: "500k-1tr", min: 500_000, max: 1_000_000 },
-  { key: "1-2tr", min: 1_000_000, max: 2_000_000 },
-  { key: "2-3tr", min: 2_000_000, max: 3_000_000 },
-  { key: "3-5tr", min: 3_000_000, max: 5_000_000 },
-  { key: "5-10tr", min: 5_000_000, max: 10_000_000 },
-  { key: "tren-10tr", min: 10_000_000 },
-];
-
-export type CatalogFilterState = {
-  q?: string;
-  category?: string;
-  brand?: string;
-  color?: string;
-  gender?: string[];
-  minPrice?: number;
-  maxPrice?: number;
-};
+const DESKTOP_OPEN_KEY = "bb-catalog-filter-open-v2";
+const DEFAULT_DESKTOP_OPEN = ["brand", "price"];
 
 type CatalogSidebarProps = {
   brands: Brand[];
   categories: Category[];
   facets?: CatalogFacets | null;
   current: CatalogFilterState;
+  mobileCurrent: CatalogFilterState;
   resetHref: string;
   hiddenParams?: Record<string, string | string[] | number | undefined>;
+  mobileOpen: boolean;
+  onMobileOpenChange: (open: boolean) => void;
+  onMobileChange: (next: CatalogFilterState) => void;
+  onMobileApply: () => void;
+  hideBrandFilter?: boolean;
 };
 
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <div className="flex items-stretch gap-3 pb-4">
-        <span aria-hidden className="w-1 shrink-0 bg-brand" />
-        <h2 className="m-0 font-body text-a2-page font-semibold text-foreground">
-          {title}
-        </h2>
-      </div>
-      {children}
-    </section>
-  );
+function stateToQuery(
+  state: CatalogFilterState,
+  hiddenParams: CatalogSidebarProps["hiddenParams"],
+) {
+  return {
+    ...hiddenParams,
+    "pwb-brand": state.brand.length ? state.brand : undefined,
+    filter_color: state.color.length ? state.color : undefined,
+    filter_finish: state.finish.length ? state.finish : undefined,
+    filter_gender: state.gender,
+    "kich-co": state.size.length ? state.size : undefined,
+    min_price: state.minPrice,
+    max_price: state.maxPrice,
+    in_stock: state.inStock ? "true" : undefined,
+    q: state.q,
+    category: state.category,
+  };
 }
 
-function CatalogToggleList({
-  children,
-  collapseAt = 10,
+function FacetList({
+  rows,
+  selected,
+  onToggle,
+  searchable,
+  colorDots = false,
+  grid = false,
 }: {
-  children: React.ReactNode;
-  collapseAt?: number;
+  rows: FacetBucket[];
+  selected: string[];
+  onToggle: (key: string) => void;
+  searchable?: boolean;
+  colorDots?: boolean;
+  grid?: boolean;
 }) {
   const t = useTranslations("Catalog");
   const [expanded, setExpanded] = useState(false);
-  const [collapsing, setCollapsing] = useState(false);
-  const listRef = useRef<HTMLUListElement>(null);
-  const fromHeight = useRef<number | null>(null);
-  const items = Children.toArray(children);
-  const hasMore = items.length > collapseAt;
-  const collapsed = hasMore && !expanded && !collapsing;
-  const visibleItems = collapsed ? items.slice(0, collapseAt) : items;
-
-  useLayoutEffect(() => {
-    const element = listRef.current;
-    if (!element || fromHeight.current == null) return;
-    const from = fromHeight.current;
-    fromHeight.current = null;
-    const cut = element.children[collapseAt] as HTMLElement | undefined;
-    const to = expanded
-      ? element.scrollHeight
-      : cut
-        ? cut.getBoundingClientRect().top - element.getBoundingClientRect().top
-        : element.scrollHeight;
-    element.style.overflow = "hidden";
-    element.style.maxHeight = `${from}px`;
-    element.getBoundingClientRect();
-    element.style.transition = "max-height 0.3s ease";
-    element.style.maxHeight = `${to}px`;
-    const finish = () => {
-      element.removeEventListener("transitionend", finish);
-      element.style.transition = "";
-      if (expanded) {
-        element.style.maxHeight = "";
-        element.style.overflow = "";
-      } else {
-        setCollapsing(false);
-      }
-    };
-    element.addEventListener("transitionend", finish);
-    return () => element.removeEventListener("transitionend", finish);
-  }, [expanded, collapseAt]);
-
-  useLayoutEffect(() => {
-    if (collapsing || !listRef.current) return;
-    listRef.current.style.maxHeight = "";
-    listRef.current.style.overflow = "";
-    listRef.current.style.transition = "";
-  }, [collapsing]);
-
-  function toggle() {
-    fromHeight.current = listRef.current?.getBoundingClientRect().height ?? null;
-    if (expanded) setCollapsing(true);
-    setExpanded((value) => !value);
-  }
+  const [query, setQuery] = useState("");
+  const filtered = rows.filter((row) => row.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const visible = expanded || query ? filtered : filtered.slice(0, 8);
+  const hasMore = filtered.length > 8 && !query;
 
   return (
-    <>
-      <ul ref={listRef} className="m-0 list-none p-0">
-        {visibleItems}
+    <div>
+      {searchable && rows.length > 10 ? (
+        <label className="relative mb-3 block">
+          <span className="sr-only">{t("brandSearchAria")}</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder={t("brandSearchPlaceholder")}
+            className="min-h-11 pl-10"
+          />
+        </label>
+      ) : null}
+      <ul className={cn("m-0 list-none p-0", grid ? "grid grid-cols-2 gap-2" : "space-y-1")}>
+        {visible.map((row) => {
+          const active = selected.includes(row.key);
+          return (
+            <li key={row.key}>
+              <label className={cn(
+                "flex min-h-11 cursor-pointer items-center gap-3 py-1 text-a5-meta font-semibold text-muted-foreground",
+                grid && "border border-border px-3 transition-colors hover:border-brand hover:bg-brand-soft",
+                active && grid && "border-brand bg-brand-soft",
+              )}>
+                <Checkbox
+                  checked={active}
+                  onCheckedChange={() => onToggle(row.key)}
+                  aria-label={`${row.label} (${row.count})`}
+                />
+                {colorDots ? (
+                  <span
+                    aria-hidden
+                    className="h-5 w-5 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: row.swatch ?? "transparent" }}
+                  />
+                ) : null}
+                <span className={cn("min-w-0 flex-1", active && "text-brand")}>{row.label}</span>
+                <span aria-hidden>({row.count})</span>
+              </label>
+            </li>
+          );
+        })}
       </ul>
       {hasMore ? (
         <Button
           type="button"
-          variant="primary"
-          className="mt-3 h-13 w-full rounded-none text-primary-foreground!"
-          onClick={toggle}
+          variant="link"
+          className="mt-2 min-h-11 rounded-none px-0 text-a5-meta normal-case tracking-normal underline"
+          onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
         >
           {expanded ? t("showLess") : t("showMore")}
-          {expanded ? <Minus className="h-4 w-4" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
         </Button>
       ) : null}
-    </>
+    </div>
   );
 }
 
-const filterListClass = "m-0 list-none p-0";
-const filterRowClass = "flex min-h-11 items-center justify-between gap-3";
-const filterLinkClass = "flex min-h-11 min-w-0 flex-1 items-center font-body font-semibold text-muted-foreground! no-underline! hover:text-brand!";
-const categoryLinkClass = "gap-3 py-2 leading-title text-a4-content md:text-a5-meta";
+function SizeGrid({
+  groups,
+  selected,
+  onToggle,
+}: {
+  groups: NonNullable<CatalogFacets["sizeGroups"]>;
+  selected: string[];
+  onToggle: (key: string) => void;
+}) {
+  const t = useTranslations("Catalog");
+  const allBuckets = groups.flatMap((group) => group.buckets);
+  const [query, setQuery] = useState("");
+  const matches = (bucket: SizeBucket) => bucket.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  return (
+    <div className="space-y-4" data-size-filter="true">
+      {allBuckets.length > 10 ? (
+        <label className="relative block">
+          <span className="sr-only">{t("sizeSearch")}</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder={t("sizeSearch")}
+            className="min-h-11 pl-10"
+          />
+        </label>
+      ) : null}
+      {groups.map((group) => {
+        const buckets = group.buckets.filter(matches);
+        if (!buckets.length) return null;
+        return (
+          <div key={group.key}>
+            <p className="mb-2 text-a5-meta font-semibold text-muted-foreground">{group.label}</p>
+            {/* Ô cỡ tự co giãn theo độ dài nhãn (XS → XL/2XL, 30/44): cột lọc desktop chỉ ~290px
+                nên lưới cột cố định sẽ cắt chữ tràn ra ngoài viền. */}
+            <div className="flex flex-wrap gap-2">
+              {buckets.map((bucket) => {
+                const active = selected.includes(bucket.key);
+                return (
+                  <Button
+                    key={bucket.key}
+                    type="button"
+                    variant={active ? "primary" : "filter"}
+                    className="h-11 min-w-11 shrink-0 whitespace-nowrap rounded-none px-3 text-a5-meta hover:not-disabled:!scale-100"
+                    onClick={() => onToggle(bucket.key)}
+                    aria-pressed={active}
+                    aria-label={`${bucket.label} (${bucket.count})`}
+                  >
+                    {bucket.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function summaryFor(group: CatalogFilterGroupKey, state: CatalogFilterState, facets: CatalogFacets | null | undefined) {
+  const values = group === "brand" ? state.brand
+    : group === "color" ? state.color
+      : group === "finish" ? state.finish
+        : group === "size" ? state.size
+          : [];
+  if (values.length) {
+    const all = [
+      ...(facets?.brands ?? []),
+      ...(facets?.colors ?? []),
+      ...(facets?.finishes ?? []),
+      ...((facets?.sizeGroups ?? []).flatMap((item) => item.buckets)),
+    ];
+    return values.map((value) => all.find((item) => item.key === value)?.label ?? value).join(", ");
+  }
+  if (group === "gender") return state.gender;
+  if (group === "price" && (state.minPrice != null || state.maxPrice != null)) return "✓";
+  if (group === "stock" && state.inStock) return "✓";
+  return undefined;
+}
 
 export function CatalogSidebar({
-  brands,
-  categories,
-  facets = null,
+  facets,
   current,
+  mobileCurrent,
   resetHref,
   hiddenParams = {},
+  mobileOpen,
+  onMobileOpenChange,
+  onMobileChange,
+  onMobileApply,
+  hideBrandFilter = false,
 }: CatalogSidebarProps) {
   const t = useTranslations("Catalog");
-  const locale = useLocale() as Locale;
-  const router = useRouter();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState<string[]>(DEFAULT_DESKTOP_OPEN);
+  const [mobileGroup, setMobileGroup] = useState("");
 
   useEffect(() => {
-    const open = () => setMobileOpen(true);
-    window.addEventListener(CATALOG_FILTER_OPEN_EVENT, open);
-    return () => window.removeEventListener(CATALOG_FILTER_OPEN_EVENT, open);
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = window.localStorage.getItem(DESKTOP_OPEN_KEY);
+        if (saved) setDesktopOpen(JSON.parse(saved) as string[]);
+      } catch { /* localStorage may be unavailable; defaults remain usable. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
-  function queryHref(override: Record<string, string | string[] | number | undefined>): string {
-    const params: Record<string, string | string[] | number | undefined> = {
-      ...hiddenParams,
-      "pwb-brand": current.brand,
-      filter_color: current.color,
-      filter_gender: current.gender,
-      min_price: current.minPrice,
-      max_price: current.maxPrice,
-      q: current.q,
-      ...override,
+  useEffect(() => {
+    const open = () => {
+      setMobileGroup("");
+      onMobileOpenChange(true);
     };
-    return `${resetHref}${buildQueryString(params)}`;
+    window.addEventListener(CATALOG_FILTER_OPEN_EVENT, open);
+    return () => window.removeEventListener(CATALOG_FILTER_OPEN_EVENT, open);
+  }, [onMobileOpenChange]);
+
+  function setMobileSheetOpen(open: boolean) {
+    if (open) setMobileGroup("");
+    onMobileOpenChange(open);
   }
 
-  const visibleCategories = categories.filter((category) => category.isVisible);
-  const activeCategory = visibleCategories.find(
-    (category) => toCategoryPath(category.slug, locale) === resetHref || current.category === category.slug,
-  );
-  const activeParentId = activeCategory?.parentId ?? activeCategory?.id ?? null;
-  const rootCategories = visibleCategories.filter((category) => !category.parentId);
-  const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
-    facets?.brands?.length
-      ? facets.brands
-      : brands.map((brand) => ({ key: brand.slug, label: brand.name, image: brand.logo ?? null }));
-  const colorRows: { key: string; label: string; count?: number }[] = facets?.colors?.length
-    ? facets.colors
-    : COLOR_FALLBACK_KEYS.map((key) => ({ key, label: t(`colorFallback.${key}`) }));
-  const priceRows = facets?.priceBands?.length
-    ? facets.priceBands.map((band) => ({
-        key: band.key,
-        label: band.label,
-        min: band.minPrice ?? undefined,
-        max: band.maxPrice ?? undefined,
-      }))
-    : PRICE_FALLBACK.map((band) => ({ ...band, label: t(`priceFallback.${band.key}`) }));
-  const noPrice = current.minPrice == null && current.maxPrice == null;
-  const genderRows = (facets?.genders ?? []).filter(
-    (gender): gender is CatalogFacets["genders"][number] => gender.key === "Nam" || gender.key === "Nữ",
-  );
-  const selectedGenders = current.gender ?? [];
+  const groups = getAvailableCatalogFilterGroups(facets, hideBrandFilter);
 
-  function renderFilters() {
+  const groupTitle = (group: CatalogFilterGroupKey, state: CatalogFilterState) => {
+    const base = group === "brand" ? t("filterBrand")
+      : group === "price" ? t("filterPrice")
+        : group === "size" ? t("filterSize")
+          : group === "color" ? t("filterColor")
+            : group === "finish" ? t("filterFinish")
+              : group === "stock" ? t("filterAvailability")
+                : t("filterGender");
+    const count = group === "brand" ? state.brand.length
+      : group === "color" ? state.color.length
+        : group === "finish" ? state.finish.length
+          : group === "size" ? state.size.length
+            : group === "gender" && state.gender ? 1
+              : group === "stock" && state.inStock ? 1
+                : group === "price" && (state.minPrice != null || state.maxPrice != null) ? 1 : 0;
+    return count ? `${base} (${count})` : base;
+  };
+
+  function desktopHref(next: CatalogFilterState) {
+    const query = buildQueryString(stateToQuery(next, hiddenParams));
+    return `${resetHref}${query}`;
+  }
+
+  function commitDesktop(next: CatalogFilterState) {
+    const target = desktopHref(next);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (target !== current) window.history.pushState(null, "", target);
+  }
+
+  function content(group: CatalogFilterGroupKey, state: CatalogFilterState, change: (next: CatalogFilterState) => void, mobile: boolean) {
+    if (group === "brand") return (
+      <FacetList rows={facets?.brands ?? []} selected={state.brand} searchable onToggle={(key) => change({ ...state, brand: toggleCatalogArrayValue(state.brand, key) })} />
+    );
+    if (group === "price" && facets?.priceRange) return (
+      <CatalogPriceFilter
+        range={facets.priceRange}
+        currentMinPrice={state.minPrice}
+        currentMaxPrice={state.maxPrice}
+        queryHref={(override) => desktopHref({
+          ...state,
+          minPrice: override.min_price as number | undefined,
+          maxPrice: override.max_price as number | undefined,
+        })}
+        onCommit={(minPrice, maxPrice) => change({ ...state, minPrice, maxPrice })}
+      />
+    );
+    if (group === "size") return (
+      <SizeGrid groups={facets?.sizeGroups ?? []} selected={state.size} onToggle={(key) => change({ ...state, size: toggleCatalogArrayValue(state.size, key) })} />
+    );
+    if (group === "color") return (
+      <FacetList rows={facets?.colors ?? []} selected={state.color} colorDots grid={mobile} onToggle={(key) => change({ ...state, color: toggleCatalogArrayValue(state.color, key) })} />
+    );
+    if (group === "finish") return (
+      <FacetList rows={facets?.finishes ?? []} selected={state.finish} onToggle={(key) => change({ ...state, finish: toggleCatalogArrayValue(state.finish, key) })} />
+    );
+    if (group === "stock") return (
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-a5-meta font-semibold text-muted-foreground">
+        <Checkbox checked={state.inStock} onCheckedChange={() => change({ ...state, inStock: !state.inStock })} />
+        <span className={cn(state.inStock && "text-brand")}>{t("inStockOnly")}</span>
+        <span className="ml-auto">({facets?.availability?.count ?? 0})</span>
+      </label>
+    );
     return (
-      <div className="space-y-6">
-        {rootCategories.length ? (
-          <FilterSection title={t("filterCategory")}>
-            <ul className={filterListClass}>
-              {rootCategories.map((category) => {
-                const href = toCategoryPath(category.slug, locale);
-                const active = href === resetHref || current.category === category.slug;
-                const children = activeParentId === category.id
-                  ? visibleCategories.filter((child) => child.parentId === category.id)
-                  : [];
-                return (
-                  <li key={category.id} className="min-h-11">
-                    <LocalizedLink
-                      kind="category"
-                      viSlug={category.slug}
-                      enSlug={category.slugEn}
-                      className={cn(filterLinkClass, categoryLinkClass, active && "text-brand!")}
-                    >
-                      {category.menuIconUrl ? (
-                        <span
-                          aria-hidden
-                          className={submenuIcon}
-                          style={{ maskImage: `url(${category.menuIconUrl})`, WebkitMaskImage: `url(${category.menuIconUrl})` }}
-                        />
-                      ) : null}
-                      <span className="min-w-0">{category.name}</span>
-                    </LocalizedLink>
-                    {children.length ? (
-                      <ul className="ml-2 mt-2 list-none border-l border-dashed border-muted-foreground/60 pl-8">
-                        {children.map((child) => {
-                          const childActive = toCategoryPath(child.slug, locale) === resetHref || current.category === child.slug;
-                          return (
-                            <li key={child.id} className="min-h-11">
-                              <LocalizedLink
-                                kind="category"
-                                viSlug={child.slug}
-                                enSlug={child.slugEn}
-                                className={cn(filterLinkClass, categoryLinkClass, childActive && "text-brand!")}
-                              >
-                                {child.menuIconUrl ? (
-                                  <span
-                                    aria-hidden
-                                    className={submenuIcon}
-                                    style={{ maskImage: `url(${child.menuIconUrl})`, WebkitMaskImage: `url(${child.menuIconUrl})` }}
-                                  />
-                                ) : null}
-                                <span className="min-w-0">{child.name}</span>
-                              </LocalizedLink>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </FilterSection>
-        ) : null}
-
-        <FilterSection title={t("filterPrice")}>
-          <ul className={filterListClass}>
-            {/* rel="nofollow" như lọc giới tính/màu/thương hiệu bên dưới: queryHref mang
-                theo TẤT CẢ tham số lọc đang bật, nên một link giá không nofollow sẽ mở
-                lại đúng không gian URL tổ hợp mà 3 nhóm kia đã đóng. */}
-            <li className={filterRowClass}>
-              <Link className={cn(filterLinkClass, noPrice && "text-brand!")} rel="nofollow" href={queryHref({ min_price: undefined, max_price: undefined })}>
-                {t("allColors")}
-              </Link>
-            </li>
-            {priceRows.map((band) => {
-              const active = (current.minPrice ?? undefined) === band.min && (current.maxPrice ?? undefined) === band.max;
-              return (
-                <li className={filterRowClass} key={band.key}>
-                  <Link
-                    className={cn(filterLinkClass, active && "text-brand!")}
-                    rel="nofollow"
-                    href={active ? queryHref({ min_price: undefined, max_price: undefined }) : queryHref({ min_price: band.min, max_price: band.max })}
-                  >
-                    {band.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </FilterSection>
-
-        {genderRows.length ? (
-          <FilterSection title={t("filterGender")}>
-            <ul className={filterListClass}>
-              {genderRows.map((gender) => {
-                const active = selectedGenders.includes(gender.key);
-                const nextGenders = active
-                  ? selectedGenders.filter((value) => value !== gender.key)
-                  : [...selectedGenders, gender.key];
-                return (
-                  <li className={filterRowClass} key={gender.key}>
-                    <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 font-body font-semibold text-muted-foreground">
-                      <Checkbox
-                        checked={active}
-                        onCheckedChange={() => {
-                          router.push(queryHref({ filter_gender: nextGenders.length ? nextGenders : undefined }));
-                        }}
-                        aria-label={gender.label}
-                      />
-                      <span className={cn(active && "text-brand!")}>{gender.label}</span>
-                    </label>
-                    {gender.count != null ? <span className="text-a5-meta text-muted-foreground">({gender.count})</span> : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </FilterSection>
-        ) : null}
-
-        <FilterSection title={t("filterColor")}>
-          <CatalogToggleList collapseAt={7}>
-            {colorRows.map((color) => {
-              const active = current.color === color.key;
-              return (
-                <li className={filterRowClass} key={color.key}>
-                  <Link className={cn(filterLinkClass, active && "text-brand!")} rel="nofollow" href={active ? queryHref({ filter_color: undefined }) : queryHref({ filter_color: color.key })}>
-                    {color.label}
-                  </Link>
-                  {color.count != null ? <span className="text-a5-meta text-muted-foreground">({color.count})</span> : null}
-                </li>
-              );
-            })}
-          </CatalogToggleList>
-        </FilterSection>
-
-        {brandRows.length ? (
-          <FilterSection title={t("filterBrand")}>
-            <CatalogToggleList>
-              {brandRows.map((brand) => {
-                const active = current.brand === brand.key;
-                const imageSrc = brand.image?.url?.trim() ? resolveMediaUrl(brand.image.url.trim()) : null;
-                return (
-                  <li className={filterRowClass} key={brand.key}>
-                    <Link className={cn(filterLinkClass, "flex min-w-0 items-center gap-3", active && "text-brand!")} rel="nofollow" href={active ? queryHref({ "pwb-brand": undefined }) : queryHref({ "pwb-brand": brand.key })}>
-                      <span className="flex h-7 w-24 shrink-0 items-center justify-center" aria-hidden={!imageSrc}>
-                        {imageSrc ? <img src={imageSrc} alt={safeText(brand.image?.alt, brand.label)} width={92} height={32} loading="lazy" className="max-h-full max-w-full w-auto object-contain" /> : null}
-                      </span>
-                      <span className="min-w-0">{brand.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </CatalogToggleList>
-          </FilterSection>
-        ) : null}
-      </div>
+      <RadioGroup
+        value={state.gender ?? ""}
+        onValueChange={(value) => change({ ...state, gender: value || undefined })}
+        className={mobile ? "grid grid-cols-2 gap-2" : "space-y-1"}
+        data-gender-filter="true"
+        aria-label={t("filterGender")}
+      >
+        {(facets?.genders ?? []).map((gender) => {
+          const active = state.gender === gender.key;
+          const id = `catalog-gender-${mobile ? "mobile" : "desktop"}-${gender.key}`;
+          return (
+            <label
+              key={gender.key}
+              htmlFor={id}
+              className={cn(
+                "flex min-h-11 cursor-pointer items-center gap-3 py-1 text-a5-meta font-semibold text-muted-foreground",
+                active && "text-brand",
+              )}
+            >
+              <RadioGroupItem id={id} value={gender.key} className="!h-5 !w-5 !rounded-full">
+                {active ? <span aria-hidden className="h-2.5 w-2.5 !rounded-full bg-brand" /> : null}
+              </RadioGroupItem>
+              <span className="min-w-0 flex-1">{gender.label}</span>
+              <span aria-hidden>({gender.count})</span>
+            </label>
+          );
+        })}
+      </RadioGroup>
     );
   }
 
   return (
     <>
-      <aside className="hidden min-w-0 md:block!" aria-label={t("filterMobileHeading")}>
-        {renderFilters()}
+      <aside
+        data-catalog-sidebar
+        className="sticky top-[calc(var(--bb-header-height)+1rem)] hidden max-h-[calc(100dvh-var(--bb-header-height)-2rem)] min-w-0 overflow-y-auto overscroll-contain pr-3 md:block"
+        aria-label={t("filterMobileHeading")}
+      >
+        <Accordion
+          type="multiple"
+          value={desktopOpen}
+          onValueChange={(value) => {
+            setDesktopOpen(value);
+            try { window.localStorage.setItem(DESKTOP_OPEN_KEY, JSON.stringify(value)); } catch { /* noop */ }
+          }}
+        >
+          {groups.map((group) => (
+            <AccordionItem value={group} key={group}>
+              <AccordionTrigger>{groupTitle(group, current)}</AccordionTrigger>
+              <AccordionContent>{content(group, current, commitDesktop, false)}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </aside>
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="w-full! max-w-77.5! overflow-y-auto p-6!">
-          <SheetTitle className="mb-6 border-b border-border pb-5 font-body text-a2-page font-semibold">
-            {t("filterMobileHeading")}
-          </SheetTitle>
-          <SheetDescription className="sr-only">{t("filterMobileHeading")}</SheetDescription>
-          {renderFilters()}
+
+      <Sheet open={mobileOpen} onOpenChange={setMobileSheetOpen}>
+        <SheetContent side="right" showClose={false} className="inset-0 flex h-dvh w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none">
+          <header className="flex min-h-16 items-center gap-3 border-b border-border px-4">
+            <Button type="button" variant="ghost" className="h-11 w-11 rounded-none p-0" onClick={() => setMobileSheetOpen(false)}>
+              <ChevronLeft className="h-5 w-5" aria-hidden />
+              <span className="sr-only">{t("closeFilter")}</span>
+            </Button>
+            <SheetTitle className="flex-1">{t("filterMobileHeading")}</SheetTitle>
+            <SheetDescription className="sr-only">{t("filterMobileDescription")}</SheetDescription>
+            {countCatalogFilters(mobileCurrent) ? (
+              <Button type="button" variant="link" className="h-11 rounded-none text-a5-meta normal-case tracking-normal underline" onClick={() => onMobileChange(clearCatalogFilters(mobileCurrent))}>
+                {t("clearAll")}
+              </Button>
+            ) : null}
+          </header>
+
+          <div className="border-b border-border px-4 py-3">
+            <CatalogFilterChips
+              compact
+              current={mobileCurrent}
+              facets={facets}
+              onRemove={(token) => onMobileChange(removeCatalogFilter(mobileCurrent, token))}
+              onClear={() => onMobileChange(clearCatalogFilters(mobileCurrent))}
+            />
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4">
+            <Accordion type="single" collapsible value={mobileGroup} onValueChange={setMobileGroup}>
+              {groups.map((group) => {
+                const summary = summaryFor(group, mobileCurrent, facets);
+                return (
+                  <AccordionItem value={group} key={group}>
+                    <AccordionTrigger className="min-h-14 py-3">
+                      <span className="min-w-0 text-left">
+                        <span className="block">{groupTitle(group, mobileCurrent)}</span>
+                        {summary ? <span className="mt-1 block truncate font-body text-a5-meta font-normal normal-case text-muted-foreground">{summary}</span> : null}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>{content(group, mobileCurrent, onMobileChange, true)}</AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </div>
+
+          <footer className="border-t border-border bg-background p-4">
+            <Button type="button" variant="primary" className="h-13 w-full rounded-none" onClick={onMobileApply}>
+              {t("viewProducts", { count: facets?.resultCount ?? 0 })}
+            </Button>
+          </footer>
         </SheetContent>
       </Sheet>
     </>

@@ -91,7 +91,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
+| `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. Product matching uses the shared identifier-only search semantics below. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
 | `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
 | `GET` | `/api/v1/sliders?location=home` | Trả các homepage slider đang active theo `sortOrder`. Mỗi item có `desktopImage` và `mobileImage`; `mobileImage` là tùy chọn (`ImageAsset` hoặc `null`). Storefront dùng `mobileImage.url` dưới 768px khi có, nếu không dùng `desktopImage.url`. | `ApiDataResponse<List<PublicSliderResponse>>` | `OWNER_CONFIRMED_2026-07-30` | `PublicSliderController.java`, `PublicSliderResponse.java`, `HeroSlider.tsx` |
 | `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
@@ -191,7 +191,7 @@ and no other link) — the storefront disables the button, and `DELETE` refuses 
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`). Response includes `oauthManaged` (added 2026-08-07) — `true` when the customer has ≥1 `customer_oauth_links` row; the frontend renders the profile/avatar UI read-only in that case | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`). Response includes `oauthManaged` (added 2026-08-07) — `true` when the customer has ≥1 `customer_oauth_links` row; the frontend renders the profile/avatar UI read-only in that case. The assistant may use this response only to prefill/display the quick contact card; the lead endpoint still resolves `ACCOUNT` contact data from the server-side principal/account record | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `ChatService.java` |
 | `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword`. **Refused with `403 FORBIDDEN` outright when `oauthManaged`** (CUSTOMER_RULE_010, before any field-level checks) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
 
 - **Changing `email` through the customer's own `PATCH /api/v1/customer/me` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The admin customer endpoint does not accept email changes (`CUSTOMER_RULE_004`).
@@ -227,14 +227,26 @@ Query params (all optional):
 - `category` — category slug (`SLUG_REGEX`). Scopes the brand/color/price counts to that category.
 - `q` — free-text search term (`@Size(max=100)`).
 
-Response shape: `ApiDataResponse<CatalogFacets>`:
-- `categories`: `[{ key, label, image: null, count }]` — one bucket per visible category, ordered by `sortOrder`.
-- `brands`: `[{ key, label, image, count }]` — one bucket per visible brand with `count > 0`; `image` is the brand logo `ImageAsset`. Buckets with `count = 0` are omitted so the sidebar matches the legacy WordPress brand widget.
-- `colors`: `[{ key, label, image: null, count }]` — **dynamic** buckets derived from every product variant color option (grouped by base slug, e.g. `den-2` → `den`). Buckets with `count = 0` are omitted; ordered by `count` descending. Labels resolve known slugs to friendly names (Vietnamese/English), otherwise echo the raw value. The set is open-ended (model-specific colors like `cyborg-blue`, `mythology-gold` appear) — this mirrors the legacy WordPress layered-nav color widget.
-- `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ]`; at most two buckets are returned and buckets with `count = 0` are omitted (V184).
-- `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 7 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-10tr`, "Trên 10.000.000 VND").
+Product search uses the same case-insensitive, accent-insensitive token-AND semantics as the admin product list and export: each meaningful token must match at least one of the Vietnamese/English product name, Vietnamese/English slug, or product SKU. Short descriptions, detailed descriptions, structured description blocks, SEO copy, and other article/content fields are explicitly outside the search scope.
+- `pwb-brand`, `filter_color`, `filter_finish`, `kich-co` — repeated current-context values. Values within each parameter use OR semantics; different parameters use AND semantics. Each list accepts at most 16 distinct values (`filter_finish` at most 8).
+- `filter_gender` — canonical single-value context; legacy repeated values use the first supported value.
+- `in_stock=true` — restricts the result to `product.stockState = IN_STOCK`; false/blank means no availability restriction.
+- `min_price`, `max_price` — remain accepted for URL/API compatibility and affect the other facet counts, but are deliberately excluded from the price-axis calculation.
 
-**v1 counting semantics:** counts use a base context of `PUBLISHED + q`. Brand/color/price buckets additionally honor `category`; the `categories` bucket intentionally ignores the `category` param so every category keeps a navigable count. Counts are not cross-excluded per dimension — this matches the legacy WordPress filter widget. Status: `CONFIRMED_FROM_CODE` — `CatalogController.getCatalogFacets`, `CatalogReadService.computeFacets`.
+Response shape: `ApiDataResponse<CatalogFacets>`:
+- `categories`: `[{ key, label, image, count }]` — one bucket per visible category, ordered by `sortOrder`. `image` is the category thumbnail when configured. Parent counts include every descendant; a product linked more than once is counted once.
+- `brands`: `[{ key, label, image, count }]` — one bucket per visible brand with `count > 0`; `image` is the brand logo `ImageAsset`. Buckets with `count = 0` are omitted so the sidebar matches the legacy WordPress brand widget.
+- `colors`: `[{ key, label, swatch, image: null, count }]` — configured base colors only, ordered by configured `sortOrder`; one raw alias may contribute to multiple base colors. Unmapped commercial names never become buckets. `swatch` is a validated CSS hex color used only for the dot preview.
+- `finishes`: `[{ key, label, image: null, count }]` — configured Bóng/Nhám/Carbon/Phản quang buckets; absent/empty when the current catalog context has no finish data.
+- `availability`: `{ key: "in-stock", label, image: null, count } | null` — product count after the other active dimensions, before the active availability dimension.
+- `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ]`; products tagged both contribute to both buckets, and buckets with `count = 0` are omitted (V1030).
+- `sizes`: `[{ key, label, image: null, count }]` — backward-compatible flat buckets. A raw key such as `42` aggregates every configured scale containing that value so old links keep their previous behavior.
+- `sizeGroups`: four grouped, ordered size buckets used by the current web filter. Each group is `{ key, label, buckets }`; each bucket is `{ key, valueKey, label, count }`. There is no subgroup layer. `key` is a configured namespace token such as `clothing-letter:M`, `shoe:42`, `pants-waist:42`, or `pants-eu:46`. Labels are localized by `lang`; order comes from configured scale values, never from count or numeric-range guessing.
+- `priceRange`: `null` when the context has no effective-price products or only one distinct effective price; otherwise `{ minPrice, maxPrice, step: 50000, buckets: [{ minPrice, maxPrice, count }] }`. The endpoints are the true minimum/maximum effective sale prices in the current category/search/brand/color/gender/size context. Histogram buckets are dynamic (at most 24), include zero-count columns, and are calculated without applying the active `min_price`/`max_price` selection. `step` remains compatibility metadata for existing clients; the public web derives its round display ticks from the endpoints and density buckets, while typed `min_price`/`max_price` values are sent as entered (subject only to the documented URL-safe bound and reverse-order swap).
+- `resultCount`: count of unique products matching the full current context; powers the mobile `Xem N sản phẩm` action.
+- `resolvedColorKeys`: canonical base-color keys resolved from every active `filter_color` value. A legacy raw alias such as `den-nham` therefore remains valid and resolves to `den`; an unmapped value intentionally omitted from the public color vocabulary resolves to an empty list and does not constrain the result, so the web can remove that stale condition instead of showing a false empty state.
+
+**Current counting semantics:** counts use `PUBLISHED + discontinued=false`, honor category descendants and count unique products. Every selectable facet excludes its own active dimension while honoring search and all other dimensions; values inside brand/color/finish/size use OR, dimensions use AND. When both color and finish are active, the same raw visual option must satisfy both. Non-selected zero buckets are omitted. The price range never applies its own active price selection. Effective price is the positive sale price only when it is strictly below retail; otherwise it is retail. Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-15` — `BUSINESS_RULES.md` `CATALOG_RULE_006`–`CATALOG_RULE_010`.
 
 ## Public Reviews Contract
 
@@ -678,13 +690,31 @@ every matching row across all pages without silent truncation. The response decl
 | `GET` | `/api/v1/admin/products` | `products.read` | Paginated operational list with search, category/brand, publish/stock/homepage/gender filters and sorting. |
 | `GET` | `/api/v1/admin/products/{id}` | `products.read` | Full bilingual edit payload, including media metadata, variants and current lifecycle state. |
 | `POST` | `/api/v1/admin/products` | `products.update` | Creates a product in `DRAFT`. A create payload cannot publish the product. |
-| `PATCH` | `/api/v1/admin/products/{id}` | `products.update` | Saves content without changing lifecycle: a `DRAFT` remains `DRAFT`, and a `PUBLISHED` product remains `PUBLISHED`. |
+| `PATCH` | `/api/v1/admin/products/{id}` | `products.update` | Saves content without changing lifecycle: a `DRAFT` remains `DRAFT`, and a `PUBLISHED` product remains `PUBLISHED`. The optional presence-guarded `discontinued` flag controls the historical discontinued page; it does not change `publishStatus`. |
 | `POST` | `/api/v1/admin/products/preview?lang=vi\|en` | `products.update` | Dry-run storefront render. `lang` accepts only `vi` or `en`; any other value is a validation error. |
 | `PATCH` | `/api/v1/admin/products/{id}/publish` | `products.update` | The only active publish/unpublish action. Body selects `DRAFT` or `PUBLISHED`; Product List and Product Detail may both trigger it. `DRAFT → PUBLISHED` uses the shared publish-readiness checklist; `PUBLISHED → DRAFT` requires a clear confirmation on Product Detail. |
 | `DELETE` | `/api/v1/admin/products/{id}` | `products.update` | Soft-deletes to `TRASH`. |
 | `POST` | `/api/v1/admin/products/{id}/restore` | `products.update` | Restores `TRASH` to `DRAFT`. |
 | `DELETE` | `/api/v1/admin/products/{id}/permanent` | `products.update` | Permanently deletes a trashed product. |
 | `POST` | `/api/v1/admin/products/homepage-blocks` | `products.update` | Atomically replaces the ordered featured-product placement. |
+
+### Legacy discontinued product history
+
+This is a separate admin catalog for historical URLs that have no remaining sellable
+`Product` row. It does not create a product, price, stock or checkout record.
+
+| Method | Path | Permission | Contract |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/legacy-discontinued-products` | `products.read` | Paginated list; `q` searches legacy slug and both names; `enabled` is optional. |
+| `GET` | `/api/v1/admin/legacy-discontinued-products/{id}` | `products.read` | Full operational record. |
+| `POST` | `/api/v1/admin/legacy-discontinued-products` | `products.update` | Creates a history record. Body requires `slug`, Vietnamese `name`, `categorySlug`; accepts `nameEn`, `brandName`, verified `imageUrl`, `enabled`. The category must be public (`visible`, not deleted). |
+| `PATCH` | `/api/v1/admin/legacy-discontinued-products/{id}` | `products.update` | Presence-guarded edit, including enable/disable; validates the same slug/category/image limits. |
+
+`GET /api/v1/legacy-discontinued-products/{slug}?lang=vi|en` is public, exact-slug
+lookup used only by the legacy `/sp/{slug}.html` route. It returns `404` for missing or
+disabled records. Its response contains only `slug`, locale-resolved `name`, `brandName`,
+`categorySlug`, nullable `imageUrl` and `enabled`; it is never returned by normal catalog
+list/search/facet APIs. Status: owner decision 2026-08-15, `REDIRECT_RULE_013`.
 
 Publishing is deliberately separate from ordinary create/save (`PRODUCT_RULE_005`):
 the detail form's Save action only saves content, while Product List and Product
@@ -702,10 +732,10 @@ Query parameters:
 | Parameter | Values / default | Contract |
 |---|---|---|
 | `scope` | `FILTERED` (default), `SELECTED`, `ALL` | `FILTERED` applies list filters; `SELECTED` requires `ids`; `ALL` ignores every filter and includes every publish status. |
-| `q` | optional, max 100 | Same search semantics as the admin product list: unaccented name, slug, SKU and English equivalents. |
+| `q` | optional, max 100 | Same search semantics as the admin product list: unaccented name, slug, SKU and English equivalents. Product short/detailed descriptions and all other content are not searched. |
 | `categoryId` | optional | Includes products assigned to the category or one of its descendants. |
 | `brandId` | optional | Exact brand filter. |
-| `filter_gender` | optional: `Nam`, `Nữ`, `NULL` | Single-value gender filter; `NULL` selects products whose gender is SQL `NULL` (Không chọn). `Unisex` and other values are rejected. |
+| `filter_gender` | optional: `Nam`, `Nữ` | Single-value gender filter. Products tagged with both values match either filter. The old `NULL`/Không chọn option no longer exists; old repeated public URLs are tolerated by using the first supported value. |
 | `publishStatus` | optional: `DRAFT`, `PUBLISHED`, `TRASH`, `ALL` | Blank/`ALL` defaults to `PUBLISHED`; an explicit status is exact. |
 | `stockState` | optional: `IN_STOCK`, `OUT_OF_STOCK`, `ALL` | Same stock filter as the product list; blank/`ALL` leaves stock state unfiltered. |
 | `includeDraft`, `includeTrash` | boolean, default `false` | Effective only when `publishStatus` is blank/`ALL`; explicitly widens the default `PUBLISHED` scope. |
@@ -773,19 +803,79 @@ The admin product-tag sub-resource (`GET`/`PUT /api/v1/admin/products/{id}/tags`
 
 Status: `CONFIRMED_FROM_CODE` — no remaining endpoint.
 
-### Product list — gender filter (V184)
+### Product list — gender filter (V1030)
 
 `GET /api/v1/products` and `GET /api/v1/admin/products` accept:
 
 | Param | Type | Validation | Purpose |
 |---|---|---|---|
-| `filter_gender` | repeated `string` (public), scalar `string` (admin) | each value `@Size(max=20)`; public values Nam/Nữ, admin values Nam/Nữ/`NULL` | Public filter accepts repeated parameters such as `?filter_gender=Nam&filter_gender=Nữ` and matches the union. Without a public value, all products remain eligible including NULL gender; with at least one value, NULL gender is excluded. Admin `NULL` means `gender IS NULL`. |
+| `filter_gender` | scalar `string` | optional value `Nam` or `Nữ`; blank/absent means no filter | Both public and admin filters match flag membership. A product tagged both appears in both results. The public parser accepts old repeated values by taking the first supported value; clicking the active public value again removes the filter. |
 
 - Filtering is product-level (not variant-level).
-- `GET /api/v1/catalog/facets` returns only the Nam/Nữ buckets; it does not accept or re-scope on `filter_gender`.
+- `GET /api/v1/catalog/facets` returns only the Nam/Nữ buckets; a product tagged both contributes to both counts, and products with no gender contribute to neither bucket. It accepts the active `filter_gender` context but excludes that dimension while computing the gender buckets.
 - `@Pattern(SLUG_REGEX)` is intentionally **not** used because `Nữ` contains Vietnamese characters incompatible with the slug regex; `@Size(max=20)` is used instead.
 
-Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService.matchesGender`.
+Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-14` — `CatalogController.java`, `CatalogReadService.matchesGender`.
+
+### Product list — size filter (V1023, owner decision 2026-08-13)
+
+`GET /api/v1/products` accepts the public query parameter `kich-co` (Vietnamese
+for size). The parameter may repeat and matches with OR semantics. A configured
+token is namespace-qualified (`clothing-letter:M`, `shoe:42`,
+`pants-waist:42`, `pants-eu:46`); a legacy unqualified value matches every
+configured scale containing the canonical value. Matching is case-insensitive;
+whitespace is removed; `2XL` normalizes to `XXL` and `XXXL` to `3XL`. The
+parameter is separate from `size`, which remains the pagination page-size
+parameter. The public response and catalog facets exclude
+`discontinued = true` products. Products with size options are classified by
+their stored size scale; the backend never infers a scale from a numeric range.
+
+When the filter returns zero products, the storefront presents the normalized
+size value and a clear-filter action; this is a web presentation rule and does
+not change the API response shape.
+
+Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService`, `SizeScaleCatalog.matches`, `CatalogReadSupport`.
+
+### Public product list — catalog filters and sorting (owner decision 2026-08-15)
+
+`GET /api/v1/products` accepts repeated `pwb-brand`, `filter_color`,
+`filter_finish` and `kich-co` parameters, scalar `filter_gender`, boolean
+`in_stock`, and the existing price/category/search parameters. Repeated values
+within one dimension match with OR; dimensions match with AND. A legacy raw
+color alias is resolved to its configured base color before matching. Color and
+finish must be present on the same raw visual option when both are active.
+
+The storefront exposes only these deterministic sort choices:
+
+| Public choice | Accepted request value | Ordering |
+|---|---|---|
+| Mới nhất | omitted, `menu_order`, or legacy `date` | `createdAt DESC`, then stable id |
+| Bán chạy | `popularity` | `SUM(order_line_items.quantity)` for orders not `CANCELLED`, then newest, then id |
+| Giá tăng | `price` + `order=asc` | effective price ascending, then id |
+| Giá giảm | `price-desc` or `price` + `order=desc` | effective price descending, then id |
+
+The list and facets always exclude `discontinued=true`. Status:
+`CONFIRMED_FROM_OWNER_DECISION_2026-08-15` — `BUSINESS_RULES.md`
+`CATALOG_RULE_006`–`CATALOG_RULE_011`.
+
+### Catalog size scale administration (owner decision 2026-08-14, refined 2026-08-14)
+
+`GET /api/v1/admin/size-scale-groups` returns the four active public display
+groups; `GET /api/v1/admin/size-scales` returns the configured scales and values.
+`POST /api/v1/admin/size-scales` and `PATCH /api/v1/admin/size-scales/{id}` use
+`{ name, groupId, values: string[] }`. The server derives code, namespace,
+English labels and order; the admin screen never edits those fields or subgroup
+data. Delete operations use `products.update`; reads use `products.read`.
+Duplicate normalized values return a validation error naming the duplicate.
+A scale or value used by products cannot be removed or moved across namespaces;
+deleting a referenced scale returns `409 CONFLICT` with the number of products
+using it. Legacy value endpoints may remain for compatibility but are no longer
+used by the admin UI and always preserve the same server-managed invariants.
+
+Admin product read/upsert carries `sizeScaleId`. Saving a product with a size
+option requires a scale and every size option must resolve to a value in that
+scale. The existing `attributeValueId`, option text, variant identity, SKU and
+availability remain unchanged and continue to serve PDP/cart/inventory flows.
 
 ### Product list — category filter includes descendant categories (2026-07-03)
 
@@ -807,6 +897,7 @@ renders; the heavy detail-only payload is served exclusively by
 | `id`, `sku`, `slug`, `name`, `shortDescription` | ✅ present | ✅ present |
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `available`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
+| `discontinued` | ✅ present; always `false` for public list rows | ✅ present; `true` is allowed only alongside `PUBLISHED` for the historical `/sp/` page |
 | **Note (V261):** `stockQuantity` / `quantityOnHand` are absent from the product and variant API shapes — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
 | `description`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
 | `originBrandCountry`, `sizeGuide`, `specifications`, `specStats`, `trustBadges`, `suitabilitySection`, `sizeGuideSection` | ❌ `null` | ✅ present |
@@ -988,6 +1079,8 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 **JSON row shape (V2026-07-22): `ProductImportRow`, a dedicated wire DTO — not `UpsertProductRequest` anymore.** Every bilingual column is nested as one VI/EN object at its own key (e.g. `name: {nameVI, nameEN}`, `seo: {titleVI, titleEN, descriptionVI, descriptionEN, canonicalUrl}`). The canonical category field is ordered `categorySlugs: string[]`; import also accepts `categoryIds: string[]` when `categorySlugs` is absent. Both are resolved in order, duplicate entries are collapsed to the first occurrence, and an invalid, hidden or trashed category is a row error. Legacy `categoryId` remains a one-slug alias during the transition only and cannot be combined with either array. `ProductImportRowMapper.toUpsertRequest` then supplies ordered internal `categoryIds` to the normal product upsert flow. `relatedProductIds`/`accessoryProductIds` may appear in exported or hand-authored JSON, but bulk import is a Draft-editing workflow and ignores both fields instead of resolving/writing them.
 
 **Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU).
+
+**Gender row shape:** `genders` is optional on input and is the canonical array with zero, one or two unique values from `Nam`, `Nữ`, in that order. Omitting it on an update preserves the existing flags; sending `[]` clears both. Older files with scalar `gender: "Nam"` or `gender: "Nữ"` remain accepted, and legacy `gender: "Unisex"` is normalized to `genders: []`; when both keys are present, `genders` wins. Export JSON always writes `genders`, including `[]`. The full CSV export retains its `gender` header for compatibility and writes `Nam`, `Nữ`, `Nam|Nữ` or blank.
 
 **Variants are never written by import (owner decision 2026-08-08, `PRODUCT_RULE_009`).** `ProductImportRowMapper.toUpsertRequest` does not copy the file's `variants` onto `UpsertProductRequest`, so the request's `variants` is always `null` and `ProductMutationService.applyVariants` is skipped entirely: an UPDATE row leaves every existing variant untouched (id, SKU, own price, options, colour media, `attribute_values` links, stock history) and a CREATE row produces a product with zero variants. Consequence: **a CREATE row must carry a product-level `retailPrice > 0`**, because the resulting product takes the `!hasVariants` branch of `AdminMutationValidators.validateProductFieldsRequired`; the resulting `PublishGateException` is an `ApiException`, so it surfaces as that single row's commit error rather than failing the file (the dry-run step does not run this gate, so the error appears at commit). A file that still carries `variants` — an older hand-written file, or a single-product export — imports fine: the field stays declared on `ProductImportRow` (the import `ObjectMapper` rejects unknown keys, so removing it would make such files unparseable as a whole) and `parseJson` attaches a `variants` / `IGNORED` **warning** to that row instead of dropping it silently the way media groups are dropped. The former SKU-matching machinery (`resolveVariantIdentities`, `checkBatchVariantSkuDuplicates`, `computeVariantDiff`, the variant half of `preserveExistingMedia`) and `ImportRowResult`'s five variant counters were removed with the same change; Admin's review table no longer renders a "Variants" column.
 
@@ -1629,15 +1722,15 @@ Admin CRUD for URL redirect rules (`redirects` table) plus an internal lookup AP
 
 | Method | Path | Permission | Body / Query | Response | Notes |
 |---|---|---|---|---|---|
-| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (case-insensitive search trên nguồn và đích), `enabled` (`true`/`false`) | `{data: [...], pagination}` list of `AdminRedirectResponse` | Phân trang và sắp xếp ổn định tại DB theo `updatedAt DESC`, `createdAt DESC`, `id DESC`; không tải toàn bộ bảng vào bộ nhớ. Mọi redirect quản trị là HTTP 301. |
+| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (case-insensitive search trên nguồn và đích), `enabled` (`true`/`false`) | `{data: [...], pagination}` list of `AdminRedirectResponse` | Phân trang và sắp xếp ổn định tại DB theo `updatedAt DESC`, `createdAt DESC`, `id DESC`; không tải toàn bộ bảng vào bộ nhớ. `statusCode` là `301` hoặc `410`. |
 | `GET` | `/redirects/{id}` | `redirects.read` | — | `{data: AdminRedirectResponse}` | |
-| `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required exact internal path; no absolute URL/query/fragment), `targetUrl` (required), `enabled` | `{data: AdminRedirectResponse}` | Mọi redirect được phục vụ bằng HTTP 301. Rejects self-redirect (compares target pathname, including same-site absolute URLs and targets carrying query/fragment), multi-hop loop (max depth 20), duplicate `sourcePattern`, malformed source paths, and open-redirect targets (see BUSINESS_RULES.md `REDIRECT_RULE_00x`). **If `targetUrl` matches another enabled rule's `sourcePattern` (a chain), the server silently stores the fully-resolved final destination instead of the intermediate target** — see `REDIRECT_RULE_010`. |
-| `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest`: `sourcePattern`, `targetUrl`, `enabled` (all presence-guarded — an omitted field leaves the stored value unchanged). | `{data: AdminRedirectResponse}` | Same validation and chain auto-collapse as create. `statusCode` and `redirectType` are not accepted as redirect properties. |
+| `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required exact internal path; no absolute URL/query/fragment), `targetUrl` (required), `statusCode` (optional `301`/`410`, default `301`), `enabled` | `{data: AdminRedirectResponse}` | `301` redirects to the final destination; `410` is terminal and does not follow `targetUrl`. Rejects self-redirect (compares target pathname, including same-site absolute URLs and targets carrying query/fragment), multi-hop loop (max depth 20), duplicate `sourcePattern`, malformed source paths, open-redirect targets, and invalid catalog targets: a product target must be `PUBLISHED` and not discontinued; a category target must be visible and not deleted. A legacy `/sp/...` product source cannot target a list/category (see BUSINESS_RULES.md `REDIRECT_RULE_011`). **If `targetUrl` matches another enabled 301 rule's `sourcePattern` (a chain), the server silently stores the fully-resolved final destination instead of the intermediate target** — see `REDIRECT_RULE_010`. |
+| `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest`: `sourcePattern`, `targetUrl`, `statusCode`, `enabled` (all presence-guarded — an omitted field leaves the stored value unchanged). | `{data: AdminRedirectResponse}` | Same validation and chain auto-collapse as create. `statusCode` accepts only `301` or `410`; `redirectType` is not accepted. |
 | `DELETE` | `/redirects/{id}` | `redirects.write` | — | `204 No Content` | |
 
 Every mutation writes an `AuditLogEntity` (`resourceType = REDIRECT`, see Audit Log Contract below).
 
-`AdminRedirectResponse` mirrors the stored columns 1:1 (`id`, `sourcePattern`, `targetUrl`, `enabled`, `hitCount`, `lastHitAt`, `createdAt`, `updatedAt`) — no computed fields. `targetUrl` is guaranteed to always be the real, final destination: the server resolves any chain through other enabled rules at write time (`REDIRECT_RULE_010`), so a visitor following any enabled redirect always takes exactly one hop. There is no admin-facing chain length, "resolve" preview endpoint, or chained-only filter — none are needed since a chain can no longer exist in stored data. `notes` and `legacyId` were removed (owner decision 2026-08-08, migration `V379`) — the WordPress-migration reference id and free-text note are gone from the schema entirely.
+`AdminRedirectResponse` mirrors the stored columns 1:1 (`id`, `sourcePattern`, `targetUrl`, `statusCode`, `enabled`, `hitCount`, `lastHitAt`, `createdAt`, `updatedAt`) — no computed fields. `targetUrl` is guaranteed to always be the real, final destination for a 301 rule: the server resolves any chain through other enabled 301 rules at write time (`REDIRECT_RULE_010`), so a visitor following any enabled redirect always takes exactly one hop. A 410 rule is terminal and keeps its target only as an audit-visible stored value. There is no admin-facing chain length, "resolve" preview endpoint, or chained-only filter — none are needed since a chain can no longer exist in stored data. `notes` and `legacyId` were removed (owner decision 2026-08-08, migration `V379`) — the WordPress-migration reference id and free-text note are gone from the schema entirely.
 
 ### Internal lookup API — `InternalRedirectController` (`/api/internal`)
 
@@ -1645,8 +1738,8 @@ Not wrapped in the standard `{data}` envelope (bare JSON, optimized for the hot 
 
 | Method | Path | Response | Notes |
 |---|---|---|---|
-| `GET` | `/redirect?path=` | `200 {redirectId, target}` on an enabled match, `404` on miss, `401` unauthorized, `400` blank `path` | Exact-match lookup (`findBySourcePattern`), case-sensitive, no trailing slash (see DATA_CONTRACT.md). `bigbike-web/proxy.ts` always sends HTTP 301 for a match. |
-| `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (`id`, `sourcePattern`, `targetUrl`) | Not currently called by `bigbike-web` — reserved for future use, not part of the live request path. |
+| `GET` | `/redirect?path=` | `200 {redirectId, target, statusCode}` on an enabled match, `404` on miss, `401` unauthorized, `400` blank `path` | Exact-match lookup (`findBySourcePattern`), case-sensitive, no trailing slash (see DATA_CONTRACT.md). The proxy sends 301 for `statusCode=301` and serves its bilingual 410 page for `statusCode=410`. |
+| `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (`id`, `sourcePattern`, `targetUrl`, `statusCode`) | Called by `bigbike-web` as a single-flight snapshot with a 30-second TTL. A failed snapshot is not treated as an empty rule set; the proxy falls back to the single lookup endpoint. |
 | `POST` | `/redirects/hit/{redirectId}` | `204` | Fire-and-forget hit-count increment, called by the proxy after a successful redirect. |
 
 Consumed only by `bigbike-web/proxy.ts` over the Docker-internal network (`http://bigbike-backend:8080`) — never over the public `api.bigbike.vn` domain. `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/**` from the public internet as a second layer of defense (see DEPLOYMENT_GUIDE.md).
@@ -1989,7 +2082,7 @@ While `state = ACTIVE`, `MaintenanceWriteLockFilter` rejects every `POST`/`PUT`/
 
 Customer-facing endpoints are untouched in every state: `POST /api/v1/checkout` has no maintenance guard, and the `ORDERING_PAUSED` error no longer exists.
 
-## Trợ lý ảo AI “Bi” (Giai đoạn 1, owner decision 2026-08-09)
+## Trợ lý ảo AI “Trợ lý BigBike” (Giai đoạn 1, owner decision 2026-08-09)
 
 Mọi response dùng envelope chuẩn `ApiDataResponse`. Ba endpoint storefront chấp nhận cả khách vãng lai và khách đã đăng nhập; nếu có phiên customer hợp lệ, backend tự gắn conversation với customer đó. Client/model không gửi `customerId` hoặc email.
 
@@ -2003,23 +2096,25 @@ Response `data`: `{ mode, reason, greeting, quickPrompts, maxTurns, contacts }`.
 
 ### `POST /api/v1/chat/messages`
 
-Body có `@Valid`: `{ "conversationId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en" }`. `conversationId` bỏ trống ở lượt đầu; response trả id để tiếp tục. Mỗi conversation tối đa 12 customer messages.
+Body có `@Valid`: `{ "conversationId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en" }`. `conversationId` bỏ trống ở lượt đầu; response trả id để tiếp tục. Mỗi conversation tối đa 12 customer messages. Backend chỉ tuần tự hoá thao tác ghi của cùng `conversationId`; các hội thoại khác nhau được xử lý đồng thời. Widget hủy chờ sau 45 giây, khôi phục nội dung để khách thử lại và không ẩn nút Gặp nhân viên.
 
-Response `data`: `{ conversationId, mode, reason, answer, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, actions, contacts }`. Public shape không đổi. `products` tối đa 3 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. Khi answer nêu tổng khớp lớn hơn số card, answer phải phân biệt rõ số card tiêu biểu với tổng đã backend xác minh; card count không phải tổng kho. Với yêu cầu tìm tên/model/slug, backend bỏ lớp dẫn nhập và câu hỏi thuộc tính theo ngữ cảnh (ví dụ “có size và màu nào” hoặc “theo ngân sách”), nhưng giữ câu hỏi gốc để lấy chi tiết/option; sau đó chuẩn hoá từ khoá không phân biệt hoa/thường, dấu, dấu câu, khoảng trắng và thứ tự từ, rồi giữ mọi từ định danh khi đối chiếu metadata catalog VI/EN. Một yêu cầu có match không bị đổi thành fallback chỉ vì cách viết câu hỏi. `leadPrompt=true` tối đa một lần/conversation. `actions` là danh sách hữu hạn `{type}` với `type` thuộc `LOGIN|ORDER_HISTORY|ORDER_LOOKUP`; client tự ánh xạ sang route cục bộ, không nhận URL từ model. `CONTACT` luôn kèm `contacts`; quota/provider/config failure không trả 5xx cho widget.
+Response `data`: `{ conversationId, mode, reason, answer, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, actions, contacts }`. Public shape không đổi. `products` tối đa 3 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. Khi answer nêu tổng khớp lớn hơn số card, answer phải phân biệt rõ số card tiêu biểu với tổng đã backend xác minh; card count không phải tổng kho. Với yêu cầu tìm tên/model/slug, backend bỏ lớp dẫn nhập và câu hỏi thuộc tính theo ngữ cảnh (ví dụ “có size và màu nào” hoặc “theo ngân sách”), nhưng giữ câu hỏi gốc để lấy chi tiết/option; sau đó chuẩn hoá từ khoá không phân biệt hoa/thường, dấu, dấu câu, khoảng trắng và thứ tự từ, rồi giữ mọi từ định danh khi đối chiếu metadata catalog VI/EN. Một yêu cầu có match không bị đổi thành fallback chỉ vì cách viết câu hỏi. Khi lượt trước có 2–3 thẻ sản phẩm đã xác minh và khách yêu cầu so sánh các mẫu vừa hiện, backend nối đúng các slug đó và chỉ dùng dữ liệu sản phẩm đã tra để so sánh. `leadPrompt=true` tối đa một lần/conversation; backend tự bật prompt khi khách đã xem/hỏi mẫu cụ thể, hỏi giá/size/còn hàng hoặc lượt tra cứu rơi vào fallback phục hồi. `actions` là danh sách hữu hạn `{type}` với `type` thuộc `LOGIN|ORDER_HISTORY|ORDER_LOOKUP`; client tự ánh xạ sang route cục bộ, không nhận URL từ model. `CONTACT` luôn kèm `contacts`; quota/provider/config failure không trả 5xx cho widget.
+
+Widget storefront giữ một snapshot tối thiểu ở trình duyệt theo `CHAT_RULE_026`: snapshot chứa `conversationId`, các tin nhắn đã hiển thị, `remainingTurns`, trạng thái `AI|CONTACT` và cờ lời mời liên hệ; không tạo endpoint hay bản ghi server mới. Snapshot hết hạn cố định sau 24 giờ kể từ lần lưu đầu tiên, được xoá khi khách bấm xoá hoặc đăng xuất, và khi khôi phục phải gửi lại đúng `conversationId` trong request kế tiếp để backend tiếp tục đúng cuộc. Link xem sản phẩm dùng điều hướng nội bộ của Next.js nên không làm widget bị tháo khỏi layout; việc khôi phục không gọi lại AI và không phát lại lời mời liên hệ.
 
 Sau availability/master/quota gate, greeting/help, FAQ rõ ràng, shop-info rõ ràng, đơn của chính khách đã đăng nhập, lead decline, guest-order, handoff, off-topic xác định được và câu mơ hồ chưa có dữ kiện trả bằng fast-path backend, không gọi Gemini. Các câu hỏi còn lại gửi `CURRENT_QUESTION`, function declarations cố định, danh sách nhỏ tên/mã chuẩn của nhóm hàng/thương hiệu công khai và tối đa `ai_assistant_recent_turn_pairs` cặp hỏi–đáp gần nhất của đúng conversation dưới `RECENT_TURNS`. Setting mặc định `3`, giới hạn `0..3`; `0` không gửi lịch sử. Mỗi tin lịch sử được che email, điện thoại, địa chỉ, số đơn hàng trước rồi cắt 450 ký tự; payload không được log. Lịch sử chỉ để hiểu ý, không cấp dữ liệu: mọi tên mẫu, giá, tồn kho, option, thông số, chính sách hoặc số liệu trong final phải có function response tương ứng của lượt hiện tại. `RECENT_VERIFIED_PRODUCTS` vẫn là nhãn riêng, tối đa ba slug trần từ sản phẩm đã xác minh; chỉ cho phép `get_product` đúng allowlist backend kiểm tra.
 
 Model tự hiểu ý định và chọn tool; backend kiểm tra call có liên quan, đúng schema/quyền/giới hạn rồi mới thực thi. Khi `ai_assistant_search_ai_interpretation_enabled=true`, `search_products` dùng tham số AI đã đối chiếu; giá luôn lấy từ parser câu khách hoặc context hợp lệ, còn danh mục/thương hiệu phải khớp metadata công khai duy nhất. Tên/model dùng chuẩn hoá bỏ dấu, tách token có nghĩa và AND token trên name/slug/SKU VI/EN; exact miss không được bỏ định danh để quét rộng. Một ứng viên tên gần đúng duy nhất chỉ tạo câu hỏi xác nhận có nêu tên; 2–3 kết quả thật nêu đủ tên/giá và hỏi chọn; không có ứng viên đủ gần thì nói shop chưa bán, không trả sản phẩm ngẫu nhiên. Context (`category`, `brand`, dải giá, slug công khai, cờ chờ đăng nhập) chỉ đổi từ `acceptedSearchScope` của một search thành công; lượt không tìm giữ nguyên, còn search thành công sang nhóm khác xoá filter/slugs cũ. Nếu bộ lọc kế thừa tạo kết quả rỗng, backend chỉ được bỏ riêng bộ lọc đó và phải nói rõ. `functionResponse` chỉ chứa dữ liệu tối thiểu của tool vừa chạy; không gửi catalog dump hay customer identity.
 
-Function registry có sáu tool: `search_products`, `list_categories`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`. `list_categories` không có argument, chỉ trả mỗi nhóm hàng công khai `{name,sellableProductCount}`; tổng tính từ hàng đang bán, không kèm sản phẩm/giá/tồn kho chi tiết. `capture_lead` không expose cho Gemini; ghi lead vẫn chỉ qua endpoint consent bên dưới. Backend reject unknown tool, parallel calls, JSON/kiểu sai, argument ngoài allowlist, SQL/table/column, và mọi identity do model truyền. Một lượt orchestration thực thi tối đa 2 tool và tối đa 3 Gemini provider requests. Nếu response đầu là text trong khi bắt buộc gọi tool, backend dùng đúng một provider request còn lại để yêu cầu gọi tool đúng định dạng; đây vẫn là một logical AI slot. Nếu không phục hồi được, backend dùng context/tool evidence đã xác minh để hỏi lại hoặc trả deterministic `TOOL`, chỉ dùng `CONTACT_FALLBACK` khi không còn nội dung an toàn. Guard kiểm tra final chỉ dựa trên evidence tool của lượt hiện tại; dữ kiện chỉ xuất hiện trong `RECENT_TURNS` bị coi là không có căn cứ. Public response shape không đổi; `mode="AI"` giữ hội thoại mở khi vấp kỹ thuật, còn `mode="CONTACT"` chỉ dùng cho setting/config/quota đóng, handoff, hai lượt lệch chủ đề hoặc hết lượt.
+Function registry có sáu tool: `search_products`, `list_categories`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`. `list_categories` không có argument, chỉ trả mỗi nhóm hàng công khai `{name,sellableProductCount}`; tổng tính từ hàng đang bán, không kèm sản phẩm/giá/tồn kho chi tiết. Hai quick intent `FIND_BY_NEED`/`CHANGE_NEEDS` không gọi tool: backend lấy tối đa 4 nhóm cấp cao nhất theo thứ tự hiện có và hỏi lại gọn. `capture_lead` không expose cho Gemini; ghi lead vẫn chỉ qua endpoint consent bên dưới. Backend reject unknown tool, parallel calls, JSON/kiểu sai, argument ngoài allowlist, SQL/table/column, và mọi identity do model truyền. Một lượt orchestration thực thi tối đa 2 tool và tối đa 3 Gemini provider requests. Provider retry tối đa một lần sau 2 giây, chỉ cho `429`, `5xx`, connect/read timeout; không retry lỗi request, schema, safety hoặc guard. Nếu response đầu là text trong khi bắt buộc gọi tool, backend dùng đúng một provider request còn lại để yêu cầu gọi tool đúng định dạng; đây vẫn là một logical AI slot. Nếu không phục hồi được, backend dùng context/tool evidence đã xác minh để hỏi lại hoặc trả deterministic `TOOL`, chỉ dùng `CONTACT_FALLBACK` khi không còn nội dung an toàn. Guard kiểm tra final chỉ dựa trên evidence tool của lượt hiện tại; `MAX_TOKENS` chỉ được cứu từ các câu hoàn chỉnh của final grounded text rồi phải qua guard đầy đủ. Câu quá 5 được rút còn 5 câu hoàn chỉnh và kiểm lại; sản phẩm không bán được hoặc có giá giảm không hợp lệ bị bỏ riêng, đồng thời prose được dựng lại từ card còn an toàn. Dữ kiện chỉ xuất hiện trong `RECENT_TURNS` bị coi là không có căn cứ. Public response shape không đổi; `mode="AI"` giữ hội thoại mở khi vấp kỹ thuật, còn `mode="CONTACT"` chỉ dùng cho setting/config/quota đóng, handoff, hai lượt lệch chủ đề hoặc hết lượt.
 
 `get_my_orders` và fast-path đơn đã đăng nhập chỉ chạy khi server context có `CustomerPrincipal`; customer identity không được lấy từ body, nội dung chat hoặc function arguments. Scope `latest` trả đúng một đơn; `recent` trả tối đa 5 đơn, sắp xếp theo `placedAt`, rồi `createdAt`, rồi mã đơn. Backend chỉ project `{orderNumber,status,placedAt,createdAt,totalAmount,currency}` và bản địa hóa trạng thái/tổng tiền trước khi trả khách. Khách vãng lai không tra đơn trong chat, nhận action đăng nhập và trang tra cứu đơn hiện có mà không chạm `OrderReadService`.
 
-Một logical assistant response có thể dùng 1–3 provider requests nội bộ nhưng tiêu một daily AI slot. Sau `WRONG_TONE` hoặc số liệu không đủ căn cứ, backend không tạo provider retry riêng: nó sửa cục bộ phần còn có bằng chứng, dùng terminal answer/card đã xác minh, hoặc chỉ fallback khi không còn nội dung an toàn. Vì vậy lượt mới luôn có `ai_retry_count=0`; giá trị khác 0 chỉ là dữ liệu lịch sử cũ. `ai_call_count` tăng đúng một slot của logical response; fast-path không gọi provider giữ `ai_called=false`. Public response không lộ tool name, function payload, provider-call count, retry hay lỗi kỹ thuật.
+Một logical assistant response có thể dùng 1–3 provider requests nội bộ nhưng tiêu một daily AI slot. Slot được giữ bằng counter nguyên tử theo ngày Việt Nam trước provider call; reservation đã thành công vẫn được tính nếu provider lỗi, nên nhiều request đồng thời không vượt trần. Retry mạng tạm thời vẫn thuộc cùng slot; sau `WRONG_TONE` hoặc số liệu không đủ căn cứ, backend không tạo provider retry riêng mà sửa cục bộ phần còn có bằng chứng, dùng terminal answer/card đã xác minh, hoặc chỉ fallback khi không còn nội dung an toàn. Vì vậy lượt mới luôn có `ai_retry_count=0`; giá trị khác 0 chỉ là dữ liệu lịch sử cũ. `ai_call_count` tăng đúng một slot của logical response; fast-path không gọi provider giữ `ai_called=false`. Public response không lộ tool name, function payload, provider-call count, retry hay lỗi kỹ thuật.
 
 ### `POST /api/v1/chat/leads`
 
-Body có `@Valid`: `{ "conversationId": "uuid", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true }`. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
+Body có `@Valid`: `{ "conversationId": "uuid", "contactSource": "FORM|ACCOUNT", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true }`. `contactSource` mặc định là `FORM` để giữ tương thích client cũ. Với `FORM`, backend dùng các trường tên/số/ghi chú do khách gửi sau khi validate; khách vãng lai và tài khoản không đủ điều kiện đi theo nhánh này. Với `ACCOUNT`, caller bắt buộc là khách đã đăng nhập; backend lấy tên và số điện thoại từ customer id trong `CustomerPrincipal` và bản ghi tài khoản hiện tại, bỏ qua `name`/`phone`/`note` trong body, đồng thời không cho caller gán số của tài khoản khác. `ACCOUNT` chỉ hợp lệ khi tên và số tài khoản dùng được; nếu không thì trả lỗi và client phải dùng biểu mẫu đầy đủ. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
 
 ### `POST /api/v1/chat/leads/decline`
 
@@ -2030,8 +2125,8 @@ Body: `{ "conversationId": "uuid" }`. Chỉ hội thoại thuộc caller hiện 
 | Method | Path | Query / response |
 |---|---|---|
 | `GET` | `/api/v1/admin/chat/conversations` | `page` (≥1), `size` (1–100), `from`/`to` ngày Việt Nam, `hasLead`; item gồm id, locale, customerDisplayName nullable, turnCount, aiCallCount, hasLead, startedAt, lastMessageAt, endedReason. |
-| `GET` | `/api/v1/admin/chat/conversations/{id}` | Conversation + messages theo thời gian + lead đã consent (nếu có). |
-| `GET` | `/api/v1/admin/chat/stats` | `date=YYYY-MM-DD` tùy chọn (mặc định hôm nay VN); trả `{date,aiCalls,conversations,leads,dailyLimit,remainingAiCalls}`. |
+| `GET` | `/api/v1/admin/chat/conversations/{id}` | Conversation + messages theo thời gian + lead đã consent (nếu có). Lead detail gồm `name`, `phone`, `note`, `source` (`FORM|ACCOUNT`) và `consentedAt`; `ACCOUNT` là dữ liệu backend resolve từ tài khoản đăng nhập. |
+| `GET` | `/api/v1/admin/chat/stats` | `date=YYYY-MM-DD` tùy chọn (mặc định hôm nay VN); trả `{date,aiCalls,conversations,leads,unanswered,dailyLimit,remainingAiCalls}`. `unanswered` là số tin trợ lý có `role=ASSISTANT` và `source=CONTACT_FALLBACK` trong ngày Việt Nam, gồm cả fallback phục hồi được giữ hội thoại mở. |
 
 Không có admin mutation trong giai đoạn 1. List/detail/stats đều gọi `requirePermission("chat.read")`.
 

@@ -30,9 +30,23 @@ class ProductTemplateFileRoundTripTest {
         assertThat(rows).as("template file should carry at least the 2 documented example products")
                 .hasSizeGreaterThanOrEqualTo(2);
 
+        assertThat(rows[0].getGenders()).containsExactly("Nam", "Nữ");
+        assertThat(rows[1].getGenders()).isEmpty();
+
         for (ProductImportRow row : rows) {
             UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(row);
             assertThat(request.getSku()).as("every row must resolve to a request carrying its SKU").isNotBlank();
         }
+    }
+
+    @Test
+    void oldScalarGenderFileStillMapsToCanonicalRequest() {
+        ProductImportRow row = new ProductImportRow();
+        row.setGender("Nam");
+
+        UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(row);
+
+        assertThat(request.getGenders()).containsExactly("Nam");
+        assertThat(request.isGendersPresent()).isTrue();
     }
 }

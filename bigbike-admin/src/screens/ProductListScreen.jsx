@@ -427,12 +427,9 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       })
     }
     if (query.gender) {
-      const genderLabel = query.gender === 'NULL'
-        ? t('products.genderNone')
-        : query.gender
       chips.push({
         key: 'gender',
-        label: `${t('products.filterGender')}: ${genderLabel}`,
+        label: `${t('products.filterGender')}: ${query.gender}`,
         onRemove: () => updateQuery({ gender: '' }, { resetPage: true }),
       })
     }
@@ -958,7 +955,6 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
             { value: 'ALL', label: t('products.filterGender') },
             { value: 'Nam', label: t('products.genderMale') },
             { value: 'Nữ', label: t('products.genderFemale') },
-            { value: 'NULL', label: t('products.genderNone') },
           ]}
         />
         <FilterSelect

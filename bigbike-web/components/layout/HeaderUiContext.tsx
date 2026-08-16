@@ -5,9 +5,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 export type HeaderPanel = "none" | "search" | "desktop-info" | "mobile-menu" | "cart";
 type ToggleableHeaderPanel = Exclude<HeaderPanel, "none">;
@@ -24,6 +26,22 @@ const HeaderUiContext = createContext<HeaderUiContextValue | null>(null);
 
 export function HeaderUiProvider({ children }: { children: ReactNode }) {
   const [activePanel, setActivePanel] = useState<HeaderPanel>("none");
+  const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) return;
+    previousPathnameRef.current = pathname;
+
+    // Điều hướng có thể bắt đầu từ bất kỳ link hoặc thao tác router nào trong header.
+    // Không để drawer mobile tồn tại sau khi đổi trang, kể cả khi mục mới thêm
+    // chưa biết đến HeaderUiContext.
+    const closeTimer = window.setTimeout(() => {
+      setActivePanel((current) => current === "mobile-menu" ? "none" : current);
+    }, 0);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [pathname]);
 
   useEffect(() => {
     const shouldLockScroll =

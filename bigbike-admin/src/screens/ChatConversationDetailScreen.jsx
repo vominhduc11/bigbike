@@ -28,6 +28,14 @@ function sourceLabel(source, t) {
   return labels[source] || t('common.unknown')
 }
 
+function leadSourceLabel(source, t) {
+  const labels = {
+    ACCOUNT: t('chatAdmin.detail.contactSources.account'),
+    FORM: t('chatAdmin.detail.contactSources.form'),
+  }
+  return labels[source] || t('common.unknown')
+}
+
 function endedReasonLabel(reason, t) {
   if (!reason) return t('chatAdmin.detail.active')
   const labels = {
@@ -120,6 +128,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                 <DetailValue label={t('chatAdmin.detail.leadName')}>{conversation.lead.name}</DetailValue>
                 <DetailValue label={t('chatAdmin.detail.phone')}>{conversation.lead.phone}</DetailValue>
                 <DetailValue label={t('chatAdmin.detail.note')}>{conversation.lead.note || t('chatAdmin.detail.none')}</DetailValue>
+                <DetailValue label={t('chatAdmin.detail.contactSource')}>{leadSourceLabel(conversation.lead.source, t)}</DetailValue>
                 <DetailValue label={t('chatAdmin.detail.consentedAt')}>{formatDateTime(conversation.lead.consentedAt)}</DetailValue>
               </dl>
             ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noLead')}</p>}

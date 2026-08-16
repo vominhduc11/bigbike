@@ -53,7 +53,7 @@ public class AdminCatalogController extends AdminControllerSupport {
     private static final String HOMEPAGE_BLOCK_REGEX =
             "^(NONE|FEATURED_GRID)$";
     private static final String GENDER_FILTER_REGEX =
-            "(?iu)^\\s*(Nam|Nữ|NULL)?\\s*$";
+            "(?iu)^\\s*(Nam|Nữ)?\\s*$";
     private static final String LANG_REGEX = "^(vi|en)$";
 
     private final AdminCatalogReadService adminCatalogReadService;

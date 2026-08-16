@@ -22,7 +22,7 @@ class AiChatRequestShapeTest {
     }
 
     @Test
-    @DisplayName("Bi disables thinking, caps output and sends fixed function declarations")
+    @DisplayName("BigBike Assistant disables thinking, caps output and sends fixed function declarations")
     void pinsCostControls() {
         Map<String, Object> body = client().buildInitialRequestBody(
                 "Tìm mũ 3/4 dưới 2 triệu.", "vi", new ChatToolRegistry());
@@ -37,7 +37,7 @@ class AiChatRequestShapeTest {
     }
 
     @Test
-    @DisplayName("initial request uses only the Generate Content fields needed by Bi")
+    @DisplayName("initial request uses only the Generate Content fields needed by BigBike Assistant")
     @SuppressWarnings("unchecked")
     void usesSupportedGenerateContentRequestFields() {
         Map<String, Object> body = client().buildInitialRequestBody(
@@ -103,7 +103,7 @@ class AiChatRequestShapeTest {
     }
 
     @Test
-    @DisplayName("unconfigured Bi client never attempts an outbound call")
+    @DisplayName("unconfigured BigBike Assistant client never attempts an outbound call")
     void emptyCredentialIsSafe() {
         AiChatClient client = new AiChatClient("  ", "gemini-2.5-flash", 20L);
 

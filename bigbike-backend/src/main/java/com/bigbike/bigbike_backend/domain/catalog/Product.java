@@ -36,6 +36,10 @@ public record Product(
         /** Product-level "còn/hết" toggle for products WITHOUT variants; ignored when variants exist. */
         Boolean available,
         PublishStatus publishStatus,
+        /** Published historical product that must not be listed or purchased. */
+        boolean discontinued,
+        /** Explicit catalog size scale id; null for products without size options. */
+        String sizeScaleId,
         /** Homepage placement slot — see {@link HomepageBlock}. Never null; NONE means not pinned. */
         HomepageBlock homepageBlock,
         /** Pin priority inside the homepage block. Lower = earlier; null = end. Ignored when homepageBlock == NONE. */
@@ -69,8 +73,8 @@ public record Product(
         /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
          *  Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Detail-only; null in list. */
         String quickAnswerSummary,
-        /** Giới tính mục tiêu: "Nam" | "Nữ". Null = Không chọn. */
-        String gender,
+        /** Canonical gender flags: empty, Nam, Nữ, or Nam + Nữ in that order. */
+        List<String> genders,
         /**
          * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
          * List-view shape (no nested gallery/relatedProducts). Detail-only;
@@ -103,4 +107,10 @@ public record Product(
         Instant createdAt,
         Instant updatedAt
 ) {
+
+    /** Deprecated scalar view retained for source compatibility with old internal callers. */
+    @Deprecated
+    public String gender() {
+        return genders == null || genders.isEmpty() ? null : String.join("|", genders);
+    }
 }

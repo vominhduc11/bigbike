@@ -49,6 +49,16 @@ export type ImageAsset = {
   mimeType?: string | null;
 };
 
+/** Exact legacy-only history entry; it is not a sellable catalog product. */
+export type LegacyDiscontinuedProduct = {
+  slug: string;
+  name: string;
+  brandName?: string | null;
+  categorySlug: string;
+  imageUrl?: string | null;
+  enabled: boolean;
+};
+
 /**
  * Một mục trong dải media (gallery) của sản phẩm/biến thể (V248): ảnh HOẶC video.
  * `mediaType="image"` → dùng `image`. `mediaType="video"` → `videoUrl`+`provider` là video,
@@ -272,6 +282,8 @@ export type Product = {
   variants?: ProductVariant[];
   stockState: ProductStockState;
   publishStatus: PublishStatus;
+  /** Published historical product kept at its legacy URL without purchase controls. */
+  discontinued?: boolean;
   /** Homepage placement slot. NONE = not pinned to homepage. */
   homepageBlock: "NONE" | "FEATURED_GRID";
   /**
@@ -323,8 +335,8 @@ export type Product = {
   /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40–60 từ, hiển thị blockquote ngay
    *  sau Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Locale-resolved. Detail-only. */
   quickAnswerSummary?: string | null;
-  /** Giới tính mục tiêu: "Nam" | "Nữ". Null = Không chọn. */
-  gender?: ProductGender | null;
+  /** Giới tính mục tiêu. Mảng rỗng là sản phẩm không gắn giới tính. */
+  genders?: ProductGender[];
   /**
    * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
    * List-view shape. Detail-only; empty hides the section (no category fallback).
@@ -385,25 +397,32 @@ export type Brand = {
 };
 
 /** One filter value + the count of published products matching it. */
- type FacetBucket = {
+export type FacetBucket = {
   key: string;
   label: string;
-  /** Brand logo — only populated for brand buckets. */
+  /** Category thumbnail or brand logo. */
   image?: ImageAsset | null;
+  /** Data-configured color preview; null for non-color buckets. */
+  swatch?: string | null;
   count: number;
 };
 
 export type ProductGender = "Nam" | "Nữ";
 export type GenderFacet = FacetBucket & { key: ProductGender };
 
-/** A fixed price band + the count of products priced within it. */
- type PriceBucket = {
-  key: string;
-  label: string;
-  minPrice?: number | null;
-  /** Null for the open-ended top band. */
-  maxPrice?: number | null;
+/** One dynamic histogram column in the current price context. */
+export type CatalogPriceHistogramBucket = {
+  minPrice: number;
+  maxPrice: number;
   count: number;
+};
+
+/** Actual price extent and density data for the current catalog context. */
+export type CatalogPriceRange = {
+  minPrice: number;
+  maxPrice: number;
+  step: number;
+  buckets: CatalogPriceHistogramBucket[];
 };
 
 /** Aggregated product counts powering the catalog filter sidebar. */
@@ -411,8 +430,29 @@ export type CatalogFacets = {
   categories: FacetBucket[];
   brands: FacetBucket[];
   colors: FacetBucket[];
+  finishes: FacetBucket[];
+  availability?: FacetBucket | null;
   genders: GenderFacet[];
-  priceBands: PriceBucket[];
+  sizes: FacetBucket[];
+  sizeGroups?: SizeGroupFacet[];
+  /** Null when there are no products or only one distinct effective price. */
+  priceRange: CatalogPriceRange | null;
+  resultCount: number;
+  resolvedColorKeys: string[];
+};
+
+export type SizeBucket = {
+  /** Namespaced token sent back as repeated `kich-co` query params. */
+  key: string;
+  valueKey: string;
+  label: string;
+  count: number;
+};
+
+export type SizeGroupFacet = {
+  key: string;
+  label: string;
+  buckets: SizeBucket[];
 };
 
 export type Article = {

@@ -5,7 +5,7 @@ vi.mock("next-intl/middleware", () => ({
   default: () => () => new Response(null, { status: 200 }),
 }));
 
-import { proxy } from "../proxy";
+import { clearRedirectCachesForTests, proxy } from "../proxy";
 
 function mockRedirect(source: string, target: string) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
@@ -22,7 +22,10 @@ function mockRedirect(source: string, target: string) {
 }
 
 describe("legacy redirect proxy", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    clearRedirectCachesForTests();
+  });
 
   it("resolves /vi .html aliases in one 301 and preserves the query", async () => {
     mockRedirect("/sp/legacy-product.html", "/product/canonical-product/");
@@ -48,6 +51,41 @@ describe("legacy redirect proxy", () => {
     expect(response.headers.get("location")).toBe(
       "https://bigbike.vn/en/product/canonical-product/?ref=old",
     );
+  });
+
+  it("maps the old size query pagination to the current catalog in one 301", async () => {
+    mockRedirect("/size/xxl", "/sp/?kich-co=XXL");
+
+    const response = await proxy(new NextRequest(
+      "https://bigbike.vn/size/xxl/?paged=2",
+    ));
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe(
+      "https://bigbike.vn/sp/?kich-co=XXL&page=2",
+    );
+  });
+
+  it("serves terminal removals as 410 with an indexing-removal header", async () => {
+    const fetchSpy = mockRedirect("/removed-legacy-product", "/");
+    fetchSpy.mockImplementation(async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input.toString());
+      if (url.pathname === "/api/internal/redirects/active") {
+        return new Response(JSON.stringify([{
+          id: "gone-test",
+          sourcePattern: "/removed-legacy-product",
+          targetUrl: "/",
+          statusCode: 410,
+        }]), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (init?.method === "POST") return new Response(null, { status: 204 });
+      return new Response(null, { status: 404 });
+    });
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/removed-legacy-product/"));
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
 
   it("normalizes ordinary /vi routes with 301", async () => {
@@ -120,5 +158,98 @@ describe("legacy redirect proxy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
     expect(fetchSpy.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  });
+
+  it("uses one healthy active snapshot for concurrent requests", async () => {
+    let activeCalls = 0;
+    let singleCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input.toString());
+      if (url.pathname === "/api/internal/redirects/active") {
+        activeCalls += 1;
+        return new Response(JSON.stringify([{
+          id: "bulk-redirect",
+          sourcePattern: "/sp/bulk-legacy.html",
+          targetUrl: "/product/bulk-target/",
+          statusCode: 301,
+        }]), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.pathname === "/api/internal/redirect") {
+        singleCalls += 1;
+        return new Response(null, { status: 404 });
+      }
+      if (init?.method === "POST") return new Response(null, { status: 204 });
+      return new Response(null, { status: 404 });
+    });
+
+    const [first, second] = await Promise.all([
+      proxy(new NextRequest("https://bigbike.vn/sp/bulk-legacy.html")),
+      proxy(new NextRequest("https://bigbike.vn/sp/bulk-legacy.html")),
+    ]);
+
+    expect({ first: first.status, second: second.status, activeCalls, singleCalls }).toEqual({
+      first: 301,
+      second: 301,
+      activeCalls: 1,
+      singleCalls: 0,
+    });
+  });
+
+  it("does not make a transient snapshot failure sticky", async () => {
+    let activeCalls = 0;
+    let singleCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input.toString());
+      if (url.pathname === "/api/internal/redirects/active") {
+        activeCalls += 1;
+        if (activeCalls === 1) return new Response(null, { status: 503 });
+        return new Response(JSON.stringify([{
+          id: "recovered-redirect",
+          sourcePattern: "/sp/recovered-legacy.html",
+          targetUrl: "/product/recovered-target/",
+          statusCode: 301,
+        }]), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.pathname === "/api/internal/redirect") {
+        singleCalls += 1;
+        return new Response(null, { status: 503 });
+      }
+      if (init?.method === "POST") return new Response(null, { status: 204 });
+      return new Response(null, { status: 404 });
+    });
+
+    const first = await proxy(new NextRequest("https://bigbike.vn/sp/recovered-legacy.html"));
+    const second = await proxy(new NextRequest("https://bigbike.vn/sp/recovered-legacy.html"));
+
+    expect({ first: first.status, second: second.status, activeCalls, singleCalls }).toEqual({
+      first: 200,
+      second: 301,
+      activeCalls: 2,
+      singleCalls: 1,
+    });
+  });
+
+  it("clears both the snapshot and positive L1 entries", async () => {
+    let activeCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input.toString());
+      if (url.pathname === "/api/internal/redirects/active") {
+        activeCalls += 1;
+        return new Response(JSON.stringify([{
+          id: "clear-redirect",
+          sourcePattern: "/sp/clear-legacy.html",
+          targetUrl: "/product/clear-target/",
+          statusCode: 301,
+        }]), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (init?.method === "POST") return new Response(null, { status: 204 });
+      return new Response(null, { status: 404 });
+    });
+
+    await proxy(new NextRequest("https://bigbike.vn/sp/clear-legacy.html"));
+    clearRedirectCachesForTests();
+    await proxy(new NextRequest("https://bigbike.vn/sp/clear-legacy.html"));
+
+    expect(activeCalls).toBe(2);
   });
 });

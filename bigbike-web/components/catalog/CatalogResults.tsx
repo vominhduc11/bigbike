@@ -9,6 +9,7 @@ import { CatalogSort } from "@/components/catalog/CatalogSort";
 import { MobileFilterTrigger } from "@/components/catalog/MobileFilterTrigger";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ProductCardSkel } from "@/components/ui/skeleton/primitives";
+import Link from "@/i18n/StorefrontLink";
 import type { Product } from "@/lib/contracts/public";
 import type { CatalogOrderbyValue } from "@/lib/utils/catalog-sort";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,11 @@ export type CatalogResultsProps = {
   pagination?: CatalogPaginationData | null;
   products: Product[];
   notice?: string | null;
+  emptyActionHref?: string | null;
+  emptyActionLabel?: string | null;
   beforeGrid?: ReactNode;
+  activeFilters?: ReactNode;
+  activeFilterCount?: number;
   paginationBaseHref: string;
   isLoading?: boolean;
   isRefetching?: boolean;
@@ -35,7 +40,11 @@ export function CatalogResults({
   pagination,
   products,
   notice = null,
+  emptyActionHref = null,
+  emptyActionLabel = null,
   beforeGrid,
+  activeFilters,
+  activeFilterCount = 0,
   paginationBaseHref,
   isLoading = false,
   isRefetching = false,
@@ -52,9 +61,13 @@ export function CatalogResults({
             <div className="order-2 md:order-2">
               <CatalogSort current={orderbyCurrent} />
             </div>
-            <MobileFilterTrigger />
+            <MobileFilterTrigger activeCount={activeFilterCount} />
           </div>
         </div>
+
+        {activeFilterCount > 0 ? (
+          <div className="mb-4" aria-label={t("activeFilters")}>{activeFilters}</div>
+        ) : null}
 
         <div>
           {beforeGrid != null ? <Fragment key="before-grid">{beforeGrid}</Fragment> : null}
@@ -63,12 +76,22 @@ export function CatalogResults({
               {Array.from({ length: 8 }).map((_, index) => <ProductCardSkel key={index} />)}
             </div>
           ) : notice != null ? (
-            <div className="my-8 border border-border bg-secondary p-5 font-semibold" role="status">
-              {notice}
+            <div className="my-8 border border-border bg-secondary p-5" role="status">
+              <p className="m-0 font-semibold">{activeFilterCount > 0 ? t("noMatchingProducts") : notice}</p>
+              {activeFilterCount > 0 ? <div className="mt-4">{activeFilters}</div> : null}
+              {emptyActionHref && emptyActionLabel ? (
+                <Link
+                  href={emptyActionHref}
+                  className="mt-4 inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"
+                >
+                  {emptyActionLabel}
+                </Link>
+              ) : null}
             </div>
           ) : (
             <div className="relative">
               <div
+                data-catalog-product-grid
                 className={cn("grid grid-cols-2 gap-x-5 transition-opacity duration-200 md:grid-cols-4 md:gap-x-8", isRefetching && "opacity-50")}
                 aria-busy={isRefetching || undefined}
               >

@@ -1,5 +1,5 @@
 -- Rebuild the primary (header) menu to match the WordPress production "Main menu".
--- Source: bigbike_vn__2026_04_17/sqldump.sql term_taxonomy_id=360, mapped to the
+-- Source: external historical WordPress SQL dump, term_taxonomy_id=360, mapped to the
 -- header location via theme_mods_bigbike->nav_menu_locations.primary.
 -- 35 items total, up to 3-level hierarchy. UUIDs are deterministic and derived
 -- from the WP nav_menu_item post IDs (legacy_id holds the same value).

@@ -60,13 +60,20 @@ public class CatalogController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
-            @RequestParam(name = "pwb-brand", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String brand,
+            @RequestParam(name = "pwb-brand", required = false) @Size(max = 16)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String> brands,
             @RequestParam(required = false) @Size(max = 100) String q,
-            @RequestParam(name = "filter_color", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String filterColor,
+            @RequestParam(name = "filter_color", required = false) @Size(max = 16)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String> filterColors,
+            @RequestParam(name = "filter_finish", required = false) @Size(max = 8)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid finish slug.") String> filterFinishes,
             @RequestParam(name = "filter_gender", required = false)
                 List<@Size(max = 20) @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.") String> filterGender,
+            @RequestParam(name = "kich-co", required = false) @Size(max = 16)
+                List<@Size(max = 32) String> sizeFilters,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
+            @RequestParam(name = "in_stock", required = false) Boolean inStock,
             @RequestParam(name = "homepage_block", required = false)
                 @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepage_block.")
                 String homepageBlock,
@@ -83,8 +90,8 @@ public class CatalogController {
         HomepageBlock block = homepageBlock == null ? null : HomepageBlock.valueOf(homepageBlock);
         return apiResponseFactory.list(
                 catalogReadService.listProducts(
-                        page, size, sort, category, brand, q, filterColor, filterGender,
-                        minPrice, maxPrice, block, lang),
+                        page, size, sort, category, brands, q, filterColors, filterFinishes,
+                        filterGender, sizeFilters, minPrice, maxPrice, inStock, block, lang),
                 request
         );
     }
@@ -183,11 +190,33 @@ public class CatalogController {
     @GetMapping("/catalog/facets")
     public ApiDataResponse<CatalogFacets> getCatalogFacets(
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
+            @RequestParam(name = "pwb-brand", required = false) @Size(max = 16)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String> brands,
             @RequestParam(required = false) @Size(max = 100) String q,
+            @RequestParam(name = "filter_color", required = false) @Size(max = 16)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String> filterColors,
+            @RequestParam(name = "filter_finish", required = false) @Size(max = 8)
+                List<@Pattern(regexp = SLUG_REGEX, message = "Invalid finish slug.") String> filterFinishes,
+            @RequestParam(name = "filter_gender", required = false)
+                List<@Size(max = 20) @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.") String> filterGender,
+            @RequestParam(name = "kich-co", required = false) @Size(max = 16)
+                List<@Size(max = 32) String> sizeFilters,
+            @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
+            @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
+            @RequestParam(name = "in_stock", required = false) Boolean inStock,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(catalogReadService.computeFacets(category, q, lang), request);
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField(
+                    "min_price",
+                    "INVALID_RANGE",
+                    "min_price must be less than or equal to max_price."
+            );
+        }
+        return apiResponseFactory.data(catalogReadService.computeFacets(
+                category, brands, q, filterColors, filterFinishes, filterGender, sizeFilters,
+                minPrice, maxPrice, inStock, lang), request);
     }
 
     @GetMapping("/brands")

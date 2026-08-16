@@ -1,5 +1,4 @@
-import userEvent from "@testing-library/user-event";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -19,12 +18,6 @@ vi.mock("next-intl", () => ({
     return key;
   },
   useLocale: () => "vi",
-}));
-
-vi.mock("@/components/catalog/reviews/WriteReviewForm", () => ({
-  WriteReviewForm: ({ productId, variant }: { productId: string; variant?: string }) => (
-    <form data-testid={`write-review-form-${productId}`} data-variant={variant} />
-  ),
 }));
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -53,34 +46,31 @@ describe("ProductCard - hiển thị đánh giá", () => {
     expect(screen.getByText("(2)")).toBeInTheDocument();
   });
 
-  it("hiển thị sao trung tính và (0) khi chưa có đánh giá", () => {
+  it("ẩn hoàn toàn sao và (0) khi chưa có đánh giá", () => {
     const { container } = render(
       <ProductCard product={makeProduct({ rating: null, ratingCount: 0 })} />,
     );
-    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
-    expect(screen.getByText("(0)")).toBeInTheDocument();
-    expect(screen.queryByText("Chưa có đánh giá")).toBeNull();
-    expect(screen.queryByText("0 đánh giá")).toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).toBeNull();
+    expect(screen.queryByText("(0)")).toBeNull();
   });
 
   it("không hiển thị điểm giả khi thiếu số lượt đánh giá", () => {
     const { container } = render(
       <ProductCard product={makeProduct({ rating: 4.5, ratingCount: null })} />,
     );
-    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
-    expect(screen.getByText("(0)")).toBeInTheDocument();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).toBeNull();
+    expect(screen.queryByText("(0)")).toBeNull();
     expect(screen.queryByText("4.5")).toBeNull();
   });
 
-  it("vẫn giữ vùng đánh giá khi payload thiếu dữ liệu", () => {
+  it("không tạo vùng đánh giá khi payload thiếu dữ liệu", () => {
     const { container } = render(<ProductCard product={makeProduct()} />);
-    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).toBeNull();
   });
 });
 
-describe("ProductCard - viết đánh giá tại chỗ", () => {
-  it("mở form đúng sản phẩm, không điều hướng và đóng form độc lập theo từng card", async () => {
-    const user = userEvent.setup();
+describe("ProductCard - không viết đánh giá từ danh sách", () => {
+  it("không render nút hoặc hộp viết đánh giá trên thẻ sản phẩm", () => {
     render(
       <>
         <ProductCard product={makeProduct({ id: "p1", name: "Găng tay một" })} />
@@ -88,24 +78,8 @@ describe("ProductCard - viết đánh giá tại chỗ", () => {
       </>,
     );
 
-    const triggers = screen.getAllByRole("button", { name: /Viết đánh giá cho/ });
-    expect(triggers).toHaveLength(2);
-    expect(triggers[0]).not.toHaveAttribute("href");
-    expect(
-      triggers[0].querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]'),
-    ).toHaveAttribute("aria-hidden", "true");
-
-    await user.click(triggers[1]);
-
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByTestId("write-review-form-p2")).toHaveAttribute("data-variant", "dialog");
-    expect(screen.queryByTestId("write-review-form-p1")).toBeNull();
-    expect(window.location.pathname).toBe("/");
-
-    await user.click(screen.getByRole("button", { name: "Đóng" }));
-
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(screen.queryByTestId("write-review-form-p2")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Viết đánh giá cho/ })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 

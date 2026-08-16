@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -105,6 +106,35 @@ class ChatToolServiceTest {
         assertThat(tools.resolveFastPath("Đổi ngân sách", "vi", null, settings())
                 .orElseThrow().localAnswer()).contains("tầm giá nào");
         verifyNoInteractions(catalog);
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_022: need prompts show at most four ordered top-level groups and reset context")
+    void needPromptUsesOnlyTopLevelCategoryChoices() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        when(catalog.listAssistantCategories("vi")).thenReturn(List.of(
+                category("child", "Mũ trẻ em", "helmets", 0),
+                category("accessories", "Phụ kiện", null, 30),
+                category("helmets", "Mũ bảo hiểm", null, 10),
+                category("apparel", "Áo quần bảo hộ", null, 20),
+                category("luggage", "Hành lý", null, 40),
+                category("extra", "Nhóm thứ năm", null, 50)));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+
+        ChatToolService.ToolOutcome outcome = tools.resolveFastPath(
+                "Tìm theo nhu cầu", "vi", null, settings()).orElseThrow();
+
+        assertThat(outcome.localAnswer())
+                .contains("Mũ bảo hiểm", "Áo quần bảo hộ", "Phụ kiện", "Hành lý")
+                .doesNotContain("Mũ trẻ em", "Nhóm thứ năm");
+        assertThat(outcome.localAnswer().indexOf("Mũ bảo hiểm"))
+                .isLessThan(outcome.localAnswer().indexOf("Áo quần bảo hộ"));
+
+        ChatToolService.ConversationContext prior = new ChatToolService.ConversationContext(
+                "helmets", "ilm", 2_000_000L, 3_000_000L, List.of("helmet-a"), false);
+        assertThat(tools.recordConversationContext(
+                prior, "Đổi nhu cầu", "vi", List.of(), List.of(), null))
+                .isEqualTo(ChatToolService.ConversationContext.empty());
     }
 
     @Test
@@ -298,6 +328,10 @@ class ChatToolServiceTest {
         }
 
         verify(catalog, times(2)).getProductBySlug("mu-bao-hiem-fullface-agv-k3", "vi");
+
+        assertThat(ChatToolService.extractProductQuery(
+                "Tìm đúng mẫu Mũ bảo hiểm fullface AGV K3").identifiers())
+                .containsExactly("k3");
     }
 
     @Test
@@ -477,6 +511,28 @@ class ChatToolServiceTest {
 
         assertThat(outcome.localAnswer()).contains("Mũ A", "Mũ B", "đúng tên mẫu");
         assertThat(outcome.products()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_006: collective comparison uses the immediately verified cards and passes the guard")
+    void collectiveComparisonUsesVerifiedRecentProducts() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        Product first = product("mu-a", "Mũ A", BigDecimal.valueOf(1_500_000), List.of(sizeVariant("M")));
+        Product second = product("mu-b", "Mũ B", BigDecimal.valueOf(1_700_000), List.of(sizeVariant("L")));
+        when(catalog.getProductBySlug("mu-a", "vi")).thenReturn(first);
+        when(catalog.getProductBySlug("mu-b", "vi")).thenReturn(second);
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        ChatToolService.ConversationContext context = new ChatToolService.ConversationContext(
+                "mu-bao-hiem", null, null, null, List.of("mu-a", "mu-b"), false);
+
+        ChatToolService.ToolOutcome outcome = tools.resolveFastPath(
+                "So sánh các mẫu", "vi", null, historySettings(), context).orElseThrow();
+
+        assertThat(outcome.localAnswer()).contains("Mũ A", "Mũ B", "chưa có dữ liệu lưu");
+        assertThat(outcome.products()).extracting(ChatProductCardResponse::slug)
+                .containsExactly("mu-a", "mu-b");
+        assertThat(new ChatResponseGuard().check(
+                outcome.localAnswer(), outcome.products(), "vi")).isPresent();
     }
 
     @Test
@@ -799,7 +855,7 @@ class ChatToolServiceTest {
 
         ChatToolService.ToolExecution result = tools.execute(
                 call,
-                new ChatToolService.ToolContext("còn tai nghe thì sao", "vi", null, settings(), context),
+                new ChatToolService.ToolContext("Chuyển sang tìm tai nghe", "vi", null, settings(), context),
                 new ChatToolService.ToolSession());
 
         assertThat(result.products()).extracting(card -> card.slug()).containsExactly("scs-s10x");
@@ -1701,6 +1757,11 @@ class ChatToolServiceTest {
                 null, null, null, true, false, null, null, null, null, null, null);
     }
 
+    private static Category category(String slug, String name, String parentId, Integer sortOrder) {
+        return new Category(slug, slug, null, name, null, parentId, null, null, null,
+                null, null, null, true, false, null, sortOrder, null, null, null, null);
+    }
+
     private static ProductVariant sizeVariant(String size) {
         return new ProductVariant(
                 "variant-" + size,
@@ -1769,6 +1830,8 @@ class ChatToolServiceTest {
                 ProductStockState.IN_STOCK,
                 Boolean.TRUE,
                 PublishStatus.PUBLISHED,
+                false,
+                null,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE,
                 null,
                 null,
@@ -1806,10 +1869,11 @@ class ChatToolServiceTest {
                 base.id(), base.sku(), base.slug(), base.slugEn(), base.name(), base.shortDescription(),
                 description, base.brand(), base.category(), base.categories(), base.image(), base.gallery(),
                 base.videos(), base.price(), variants, base.stockState(), base.available(), base.publishStatus(),
+                base.discontinued(), base.sizeScaleId(),
                 base.homepageBlock(), base.homepageOrder(), base.rating(), base.ratingCount(), base.faqs(),
                 base.commitments(), base.highlights(), base.originBrandCountry(), base.sizeGuide(),
                 base.suitabilityAdvisory(), specifications, base.specStats(), base.trustBadges(),
-                base.quickAnswerSummary(), base.gender(), base.relatedProducts(), base.accessoryProducts(),
+                base.quickAnswerSummary(), base.genders(), base.relatedProducts(), base.accessoryProducts(),
                 base.descriptionBlocks(), base.suitabilitySection(), sizeGuideSection, base.seo(),
                 base.translations(), base.createdAt(), base.updatedAt());
     }

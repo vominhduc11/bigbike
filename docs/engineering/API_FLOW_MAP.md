@@ -5,13 +5,17 @@
 | Client surface | Endpoint(s) | Backend entrypoint | Core side effects / data | Status |
 |---|---|---|---|---|
 | Web search | Kết quả tìm kiếm: trang `/tim-kiem` gọi `GET /api/v1/products`; gợi ý gõ nhanh (dropdown header) gọi `GET /api/v1/search-suggest` qua route `/app/api/search-suggest`. (`GET /api/v1/search` đã gỡ 2026-07-15, AUD-066 — không client nào dùng.) | `PublicSearchController`, `PublicProductController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
+| Web catalog price filter | Catalog archive pages fetch `GET /api/v1/catalog/facets` without the active price bounds, render the returned dynamic `priceRange` histogram, and fetch `GET /api/v1/products` with exact `min_price`/`max_price` after a slider commit or an explicit `Apply`/`Áp dụng` action. Leaving one numeric box never applies by itself. Mobile edits remain a draft until the sheet's single `View N products` action. The range honors category/search/brand/color/gender/size context and keeps true endpoints stable while the customer drags; the web derives a round, density-aware display scale from the existing histogram and treats its final capped tick as open-ended. | `CatalogController` -> `CatalogReadService` -> `CatalogReadSupport` / catalog repositories | Effective sale price (valid sale below retail, otherwise retail), at most 24 density buckets, dual-handle keyboard/touch slider, exact integer input, bilingual full-number labels, and URL-safe clamp/swap only | `OWNER_CONFIRMED_2026-08-14_REFINED_2026-08-15` |
+| Web catalog size filters | Catalog archive pages fetch `GET /api/v1/catalog/facets` with the current category/search/brand/non-size filters, then fetch `GET /api/v1/products` with repeated `kich-co` values. Legacy unqualified values remain accepted. | `CatalogController` -> `CatalogReadService` -> configured size-scale catalog | Four ordered size groups without subgroups and OR-matched product list; size counts exclude the active size dimension but honor the remaining page context | `OWNER_CONFIRMED_2026-08-14` |
+| Web catalog filter workspace | The category/all/search/brand pages server-render the exact URL context, then use repeated `pwb-brand`/`filter_color`/`filter_finish`/`kich-co`, scalar gender/price and `in_stock` for later client updates. Desktop debounces one product+facet pair; while the mobile full-screen sheet is open only facets refresh until the customer applies. | `CatalogController` -> `CatalogReadService` -> visual-facet configuration + catalog/order repositories | OR inside a facet, AND across facets; canonical colors and finishes; descendant-aware category counts; exact `resultCount`; real best-selling order; no unfiltered-to-filtered content flash | `OWNER_CONFIRMED_2026-08-15` |
+| Admin size-scale manager | Product editor opens the manager, reads `GET /api/v1/admin/size-scale-groups` and `GET /api/v1/admin/size-scales`, then creates/updates one scale with `POST/PATCH /api/v1/admin/size-scales` using `{ name, groupId, values[] }`. | `AdminSizeScaleController` -> `AdminSizeScaleService` -> size-scale repositories | Server derives technical metadata, validates duplicates and usage conflicts, and preserves product-to-scale links | `OWNER_CONFIRMED_2026-08-14` |
 | Tin tức list page (`/tin-tuc`, `/en/tin-tuc`) | `GET /api/v1/articles` | `ContentController` -> `ContentReadService` | Paginated article list; content-category filter/sidebar/drawer no longer exists | `CONFIRMED_FROM_OWNER_DECISION` (2026-08-03) |
 | Địa chỉ VN (storefront) | không gọi API — dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`, hai cấp tỉnh/thành → phường/xã). Backend API `GET /api/v1/address/provinces[...]` đã gỡ 2026-07-15 (AUD-056, owner decision #8 — không có caller). | — | Không có side effect | `REMOVED` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
 | Checkout UI | `POST /api/v1/checkout` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
 | Customer address UI | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
 | Customer orders UI | `/api/v1/customer/orders` | `CustomerOrderController` -> `OrderReadService` | Own order list/detail | `CONFIRMED_FROM_CODE` |
-| Storefront trợ lý Bi | `GET /api/v1/chat/availability`; `POST /api/v1/chat/messages`; `POST /api/v1/chat/leads` | `ChatController` -> `ChatService` -> bộ `ChatToolService` cố định -> `AiChatClient` | Lưu hội thoại/tin nhắn tối đa 90 ngày; chỉ lead có consent mới ghi và phát thông báo; FAQ/contact fallback không gọi AI | `OWNER_CONFIRMED_2026-08-09` |
+| Storefront Trợ lý BigBike | `GET /api/v1/chat/availability`; `POST /api/v1/chat/messages`; `POST /api/v1/chat/leads` | `ChatController` -> `ChatService` -> bộ `ChatToolService` cố định -> `AiChatClient` | Lưu hội thoại/tin nhắn tối đa 90 ngày; chỉ lead có consent mới ghi và phát thông báo. Widget còn giữ snapshot tối thiểu ở trình duyệt tối đa 24 giờ, khôi phục đúng `conversationId` và `remainingTurns`, xoá ngay khi khách xoá cuộc hoặc đăng xuất; không tạo API/bản ghi mới. Link thẻ sản phẩm là điều hướng nội bộ nên layout vẫn giữ widget. `/customer/me` chỉ giúp widget hiện thẻ xác nhận nhanh và điền sẵn biểu mẫu; nhánh `ACCOUNT` resolve tên/số từ phiên và bản ghi customer ở backend, nhánh `FORM` dùng dữ liệu khách tự nhập. FAQ/contact fallback không gọi AI | `OWNER_CONFIRMED_2026-08-13` |
 | Storefront login screen (`/dang-nhap`, `/dang-ky`) | `POST /api/v1/customer/auth/login` (+ `remember`), `POST /register`, `GET /oauth/{provider}/authorize` + `/callback` | `CustomerAuthController` / `CustomerOAuthController` -> `CustomerAuthService` / `CustomerOAuthService` | Session cookies issued; `remember` drives refresh-cookie lifetime; OAuth links-or-creates the customer | `CONFIRMED_FROM_CODE` |
 | Product review panel | `GET /api/products/{productId}/reviews` qua BFF chỉ-đọc; `POST /api/v1/products/{productId}/reviews` và `/reviews/photos` gọi thẳng API public từ trình duyệt với `credentials: include` | `PublicReviewController` -> `PublicReviewService` | Gửi trực tiếp giữ đúng `bb_session` của host API để backend tự lấy danh tính khách đã đăng nhập, đồng thời giữ IP thật cho hai hạn mức gửi đánh giá/tải ảnh; review mới ở `PENDING`, ảnh upload được claim nguyên tử khi submit và upload bỏ dở được dọn sau 24 giờ (`REVIEW_RULE_007`, `REVIEW_RULE_009`–`REVIEW_RULE_011`) | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin media UI | `/api/v1/admin/media` | `AdminMediaController` -> `AdminMediaService` | Tika validation, MinIO storage, metadata persistence | `CONFIRMED_FROM_CODE` |
@@ -21,9 +25,45 @@
 | Admin Orders list + CSV | `GET /api/v1/admin/orders`; `GET /api/v1/admin/reports/orders/export` | `AdminOrderController` / `AdminReportController` -> shared order filter specification | List and CSV share `q`/`status`/`from`/`to`; calendar dates use `Asia/Ho_Chi_Minh`. CSV returns every matching order across pages with no 10,000-row cap (`ORDER_RULE_011`/`ORDER_RULE_012`). | `CONFIRMED_FROM_CODE` |
 | Admin Customers list/detail + CSV | `GET /api/v1/admin/customers`, `/summary`, `/{customerId}`; `PATCH /{customerId}`, `PATCH /{customerId}/status`, `DELETE /{customerId}/avatar`; `GET /api/v1/admin/reports/customers/export` | `AdminCustomerController` / `AdminReportController` -> `AdminCustomerService` / `AdminCustomerCsvExportService` | List and CSV share `q`/`status`/`synthetic`/`emailVerified`; CSV returns every match without a row cap. Purchase KPIs exclude cancelled orders; registered-account KPIs exclude synthetic rows. Admin profile edits are limited to display name/phone, synthetic status is locked, and a real avatar removal writes an audit event (`CUSTOMER_RULE_004`–`CUSTOMER_RULE_009`). | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin live order feed | WebSocket `/ws` + topic `/topic/admin/orders` | `WebSocketConfig` + `AdminOrderWsService` | Admin push notifications after commit | `CONFIRMED_FROM_CODE` |
-| Admin lịch sử Bi | `GET /api/v1/admin/chat/conversations`, `/{id}`, `/stats` | `AdminChatController` -> `AdminChatService` | Chỉ đọc, `chat.read`, lọc ngày/lead và thống kê lượt AI theo ngày Việt Nam | `OWNER_CONFIRMED_2026-08-09` |
+| Admin lịch sử Trợ lý BigBike | `GET /api/v1/admin/chat/conversations`, `/{id}`, `/stats` | `AdminChatController` -> `AdminChatService` | Chỉ đọc, `chat.read`, lọc ngày/lead và thống kê lượt AI, câu chưa trả lời được theo ngày Việt Nam | `OWNER_CONFIRMED_2026-08-09` |
 
 ## Flow Highlights
+
+### Catalog size scale
+
+`admin product editor -> GET /admin/size-scales -> select sizeScaleId -> product upsert validation -> product.size_scale_id + existing variant options -> public facets/list filter`
+
+Scale and value labels/order/namespace are data-driven. The manager only edits
+the scale name, its group and the ordered comma-separated values; technical
+metadata is derived on the server. Adding a scale or value does not require
+frontend/backend classification code; a product must be explicitly assigned
+before its size options can be saved.
+
+Status: `OWNER_CONFIRMED_2026-08-14`
+
+### Catalog filters
+
+`request URL -> server page parses exact context -> products + facets fetched for the same key -> desktop chips/sidebar or mobile draft sheet -> 250 ms coalescing -> native history update -> refreshed products/facets`
+
+Color/finish aliases are resolved through configuration data. Direct legacy
+color URLs remain valid and are normalized to base-color keys. Base canonical
+and nofollow behavior do not change; filtered URLs are never added to sitemap
+or opened for indexing.
+
+Status: `OWNER_CONFIRMED_2026-08-15`
+
+### Legacy URL and history catalog
+
+`old URL -> bigbike-web/proxy.ts -> active redirect snapshot (fallback: single lookup) ->
+301/410 or locale route -> exact lookup in admin-managed legacy_discontinued_products (or a
+PUBLISHED product with discontinued=true) -> bilingual history page + up to 3 active
+same-category suggestions`
+
+The redirect table remains the source of truth for 301/410 rules. History entries are
+persisted and operated in Admin, never a static `/sp/` source registry; they do not replace
+a valid published product PDP.
+
+Status: `OWNER_CONFIRMED_2026-08-15`
 
 ### Checkout
 
@@ -59,9 +99,9 @@ The `stock_receipts` schema was **dropped in V120** — no receiving flow was ev
 
 Status: `REMOVED`
 
-### Trợ lý Bi
+### Trợ lý BigBike
 
-`một widget chat duy nhất -> availability/master/quota gate -> context rút gọn không PII của phiên + local fast-path nếu rõ -> đọc tối đa N cặp hỏi–đáp gần nhất của đúng conversation, che PII rồi cắt 450 ký tự/tin -> Gemini nhận CURRENT_QUESTION + RECENT_TURNS chỉ để hiểu ý + RECENT_VERIFIED_PRODUCTS + danh sách nhỏ nhóm hàng/thương hiệu công khai + sáu function declarations cố định để tự chọn tool -> backend registry validate schema/relevance/quyền/giới hạn (không preselect expected tool) -> backend service/repository thực thi với bộ lọc ngữ cảnh -> functionResponse có tổng đã xác minh + số mẫu -> {terminal `TOOL` outcome đã xác minh | Gemini final} -> guard chỉ chấp nhận dữ kiện có tool evidence của lượt hiện tại -> lưu customer + assistant message + context rút gọn -> response hiện tại; thẻ Hotline–Zalo–Messenger mở inline trong cùng luồng khi khách bấm Gặp nhân viên`
+`một widget chat duy nhất -> availability/master/quota gate -> khóa ghi đúng conversation (conversation khác vẫn chạy song song) -> context rút gọn không PII + sản phẩm đã xác minh ở assistant message ngay trước + local fast-path nếu rõ -> đọc tối đa N cặp hỏi–đáp gần nhất của đúng conversation, che PII rồi cắt 450 ký tự/tin -> atomic reserve một daily slot nếu cần AI -> Gemini nhận CURRENT_QUESTION + RECENT_TURNS chỉ để hiểu ý + RECENT_VERIFIED_PRODUCTS + danh sách nhỏ nhóm hàng/thương hiệu công khai + sáu function declarations cố định để tự chọn tool -> backend registry validate schema/relevance/quyền/giới hạn (không preselect expected tool) -> backend service/repository thực thi với bộ lọc ngữ cảnh -> functionResponse có tổng đã xác minh + số mẫu -> {terminal `TOOL` outcome đã xác minh | Gemini final} -> guard giữ tối đa 5 câu/card an toàn và chỉ chấp nhận dữ kiện có tool evidence của lượt hiện tại -> lưu customer + assistant message + context rút gọn -> response hiện tại; widget dừng chờ sau 45 giây và thẻ Hotline–Zalo–Messenger luôn mở được qua Gặp nhân viên`
 
 `search_products -> chuẩn hoá bỏ dấu + tách token có nghĩa + AND token trên metadata VI/EN -> parser/ràng buộc backend theo CHAT_RULE_015..024 + metadata danh mục/thương hiệu hiện hành -> đối chiếu riêng từng tham số AI -> CatalogReadService -> published + sellable + priced -> tối đa 3 sản phẩm`; công tắc vận hành quyết định nhánh mới hay nhánh cũ. Backend giữ giá parser/context, danh mục/thương hiệu công khai hợp lệ và định danh khách đã nêu; tìm hụt định danh không được bỏ tên để quét rộng. Exact miss có đúng một ứng viên tên/model gần nhất đủ ngưỡng thì trả câu hỏi xác nhận có tên; nhiều khớp thật thì trả đủ tối đa ba tên/giá và tổng; không có thì nói shop chưa có. Context chỉ thay đổi bằng `acceptedSearchScope` của lượt tìm thành công; lượt không tìm giữ nguyên. Khi backend đã cấp tổng số cho đúng phạm vi của lượt, function response gồm tổng khớp thật và số mẫu đang hiện; guard chỉ cho phép lặp lại đúng bằng chứng này.
 
@@ -69,6 +109,6 @@ Status: `REMOVED`
 
 `đơn đã đăng nhập -> CustomerPrincipal từ SecurityContext -> OrderReadService customer summary projection -> chỉ orderNumber/status/placedAt/createdAt/totalAmount/currency -> bản địa hóa backend`; Gemini `get_my_orders` giữ cùng ranh giới khi cần. Guest-order dừng ở local action LOGIN/ORDER_LOOKUP và không chạm order repository.
 
-`lead có consent -> chat_leads + admin notification`; `lead decline -> OFFERED -> DECLINED` không tạo lượt chat. Unknown/invalid/parallel/over-limit tool, tool/DB/provider timeout, response không parse được, safety block, thiếu grounding hoặc final không qua guard là fallback kỹ thuật: trước tiên giữ phần prose an toàn hoặc dùng câu trả lời/card đã xác minh; chỉ khi không còn nội dung an toàn mới fallback, giữ `AI`, không trừ lượt và cho hỏi tiếp. Fallback thứ hai liên tiếp đổi thành câu hỏi làm rõ. Availability/config/quota đóng, handoff/off-topic/turn limit giữ `CONTACT` và client khoá composer. Tối đa 2 tool executions/3 provider requests nội bộ tính một daily slot; không có provider retry riêng chỉ để sửa xưng hô.
+`lead có consent -> chat_leads + admin notification`; `lead decline -> OFFERED -> DECLINED` không tạo lượt chat. Unknown/invalid/parallel/over-limit tool, tool/DB/provider timeout, response không parse được, safety block, thiếu grounding hoặc final không qua guard là fallback kỹ thuật: provider `429|5xx|connect/read timeout` được retry đúng một lần sau 2 giây trong cùng slot và tổng 3 requests; sau đó giữ câu hoàn chỉnh/card an toàn, chỉ khi không còn nội dung an toàn mới fallback, giữ `AI`, không trừ lượt và cho hỏi tiếp. Mọi fallback ghi fixed reason code không PII; `CONTACT_FALLBACK` được admin đếm theo ngày. Fallback thứ hai liên tiếp đổi thành câu hỏi làm rõ. Availability/config/quota đóng, handoff/off-topic/turn limit giữ `CONTACT` và client khoá composer.
 
 Status: `OWNER_CONFIRMED_2026-08-09`

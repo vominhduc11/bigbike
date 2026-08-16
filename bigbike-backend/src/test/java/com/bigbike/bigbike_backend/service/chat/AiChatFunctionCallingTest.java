@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 class AiChatFunctionCallingTest {
 
@@ -116,10 +117,9 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
-    void searchMayBeFollowedByOneVerifiedGetProductCall() {
+    void searchGoesDirectlyToTheSchemaPinnedFinalRequest() {
         ScriptedTransport transport = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
-                functionCall("get_product", Map.of("slug", PRODUCT_SLUG), "detail-1"),
                 finalAnswer(safeAnswer("Em đã kiểm tra sản phẩm Tanami đang bán. Thông tin chi tiết em dùng chỉ đến từ dữ liệu BigBike vừa xác nhận. Anh/chị mở thẻ sản phẩm bên dưới để xem thêm.")));
         AiChatClient client = client(transport);
         AtomicInteger executions = new AtomicInteger();
@@ -127,41 +127,27 @@ class AiChatFunctionCallingTest {
         Optional<AiChatClient.HybridAnswer> result = client.answer(
                 "Cho tôi chi tiết tanami", "vi", REGISTRY, true,
                 (call, session) -> {
-                    int index = executions.getAndIncrement();
-                    if (index == 0) {
-                        assertThat(call.name()).isEqualTo("search_products");
-                        return execution(call.name(),
-                                "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
-                                List.of(card()));
-                    }
-                    assertThat(call.name()).isEqualTo("get_product");
+                    executions.incrementAndGet();
+                    assertThat(call.name()).isEqualTo("search_products");
                     return execution(call.name(),
-                            "{\"result\":{\"slug\":\"" + PRODUCT_SLUG + "\"}}",
+                            "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
                             List.of(card()));
                 });
 
         assertThat(result).isPresent();
-        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(2);
         assertThat(result.orElseThrow().executedTools())
-                .containsExactly("search_products", "get_product");
+                .containsExactly("search_products");
         assertThat(result.orElseThrow().products()).extracting(ChatProductCardResponse::slug)
                 .containsExactly(PRODUCT_SLUG);
-        assertThat(executions).hasValue(2);
-        String finalRequest = MAPPER.valueToTree(transport.requests().get(2)).toString();
-        assertThat(finalRequest).contains("functionResponse", "detail-1")
+        assertThat(executions).hasValue(1);
+        String finalRequest = MAPPER.valueToTree(transport.requests().get(1)).toString();
+        assertThat(finalRequest).contains("functionResponse", "search-1")
                 .contains("functionDeclarations", "\"mode\":\"NONE\"")
                 // The final turn calls no function, so it pins the four-field contract with
                 // provider structured output; without it the model replies in prose.
                 .contains("responseSchema", "\"responseMimeType\":\"application/json\"",
                         "propertyOrdering");
-        Map<String, Object> detailBody = transport.requests().get(1);
-        assertThat(MAPPER.valueToTree(detailBody).path("toolConfig").path("functionCallingConfig")
-                .path("mode").asText()).isEqualTo("ANY");
-        assertThat(MAPPER.valueToTree(detailBody).path("toolConfig").path("functionCallingConfig")
-                .path("allowedFunctionNames").toString()).isEqualTo("[\"get_product\"]");
-        assertThat(MAPPER.valueToTree(detailBody).path("tools").path(0)
-                .path("functionDeclarations").findValuesAsText("name"))
-                .containsExactly("get_product");
     }
 
     @Test
@@ -195,13 +181,9 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
-    void unusableDetailTurnSkipsTheDetailHopInsteadOfDroppingTheAnswer() {
-        // The optional detail hop is where the model most often emits several parallel
-        // get_product calls. Nothing unvalidated may execute, but the grounded search
-        // results still answer the question, so the turn must not fall back to CONTACT.
+    void groundedSearchSkipsTheFormerOptionalDetailHop() {
         ScriptedTransport transport = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
-                parallelGetProductCalls(),
                 finalAnswer(safeAnswer("Em đã kiểm tra sản phẩm Tanami đang bán. Thông tin em dùng chỉ đến từ dữ liệu BigBike vừa xác nhận. Anh/chị mở thẻ sản phẩm bên dưới để xem thêm.")));
         AiChatClient client = client(transport);
         AtomicInteger executions = new AtomicInteger();
@@ -221,15 +203,13 @@ class AiChatFunctionCallingTest {
         assertThat(result.orElseThrow().products()).extracting(ChatProductCardResponse::slug)
                 .containsExactly(PRODUCT_SLUG);
         assertThat(executions).as("no unvalidated detail call may run").hasValue(1);
+        assertThat(transport.requests()).hasSize(2);
     }
 
     @Test
-    void proseOnTheDetailHopFallsThroughToTheSchemaPinnedFinalRequest() {
-        // The detail hop pins no response schema, so the model often replies in prose
-        // there. That must not lose the turn: the final request pins the contract.
+    void finalRequestAfterSearchPinsTheStructuredSchema() {
         ScriptedTransport transport = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
-                finalText("Bên em có mẫu Tanami Carbon đang bán ạ."),
                 finalAnswer(safeAnswer("Em đã kiểm tra sản phẩm Tanami đang bán. Anh/chị mở thẻ sản phẩm bên dưới để xem thêm nhé?")));
         AiChatClient client = client(transport);
 
@@ -241,7 +221,9 @@ class AiChatFunctionCallingTest {
 
         assertThat(result).isPresent();
         assertThat(result.orElseThrow().executedTools()).containsExactly("search_products");
-        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(2);
+        assertThat(MAPPER.valueToTree(transport.requests().get(1)).toString())
+                .contains("responseSchema", "\"mode\":\"NONE\"");
     }
 
     @Test
@@ -372,7 +354,7 @@ class AiChatFunctionCallingTest {
                     return execution(call.name(), "{\"ok\":true}", List.of(card()));
                 });
         assertThat(tooMany).isEmpty();
-        assertThat(executions).hasValue(2);
+        assertThat(executions).hasValue(1);
 
         ScriptedTransport wrongSecond = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), null),
@@ -442,6 +424,59 @@ class AiChatFunctionCallingTest {
             logger.detachAppender(appender);
             appender.stop();
         }
+    }
+
+    @Test
+    void transientProviderFailureRetriesExactlyOnceWithinTheThreeCallBudget() {
+        HttpServerErrorException unavailable = HttpServerErrorException.create(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Unavailable",
+                HttpHeaders.EMPTY,
+                new byte[0],
+                StandardCharsets.UTF_8);
+        ScriptedTransport transport = new ScriptedTransport(
+                unavailable,
+                functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
+                finalAnswer(safeAnswer(
+                        "Dạ, em đã kiểm tra sản phẩm đang bán. Anh/chị mở sản phẩm bên dưới để xem thêm nhé.")));
+        AtomicInteger sleeps = new AtomicInteger();
+        AiChatClient client = new AiChatClient(
+                "test-key", "gemini-2.5-flash", transport,
+                milliseconds -> sleeps.incrementAndGet());
+
+        Optional<AiChatClient.HybridAnswer> result = client.answer(
+                "Tìm mũ tanami", "vi", REGISTRY, true,
+                (call, session) -> execution(
+                        call.name(), "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
+                        List.of(card())));
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(transport.requests()).hasSize(3);
+        assertThat(sleeps).hasValue(1);
+    }
+
+    @Test
+    void maxTokensFinalResponseKeepsOnlyCompleteGroundedSentences() {
+        ScriptedTransport transport = new ScriptedTransport(
+                functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
+                maxTokensFinalText(
+                        "{\"answer\":\"Dạ, em đã kiểm tra dữ liệu hiện có. "
+                                + "Anh/chị có thể cho em biết phần cần xem tiếp. Câu này đang bị cắt"));
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Tìm mũ tanami", "vi", REGISTRY, true,
+                (call, session) -> execution(
+                        call.name(), "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
+                        List.of(card())));
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().answer().answer())
+                .isEqualTo("Dạ, em đã kiểm tra dữ liệu hiện có. "
+                        + "Anh/chị có thể cho em biết phần cần xem tiếp.");
+        assertThat(new ChatResponseGuard().check(
+                result.orElseThrow().answer().answer(), result.orElseThrow().products(), "vi"))
+                .isPresent();
     }
 
     @Test
@@ -536,6 +571,12 @@ class AiChatFunctionCallingTest {
 
     private static String finalText(String text) {
         return response(List.of(Map.of("text", text)));
+    }
+
+    private static String maxTokensFinalText(String text) {
+        return json(Map.of("candidates", List.of(Map.of(
+                "finishReason", "MAX_TOKENS",
+                "content", Map.of("role", "model", "parts", List.of(Map.of("text", text)))))));
     }
 
     private static String response(List<Map<String, Object>> parts) {

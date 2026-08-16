@@ -10,6 +10,7 @@ import {
   normalizePagination,
   normalizeProduct,
   normalizeRedirect,
+  normalizeLegacyDiscontinuedProduct,
   normalizeSetting,
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
@@ -417,7 +418,10 @@ function translateValidationMessage(field, detail) {
     return 'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.'
   }
   if (code === 'UNSUPPORTED' && (field === 'statusCode' || field === 'redirectType')) {
-    return 'Hệ thống chỉ hỗ trợ chuyển hướng vĩnh viễn 301; hãy bỏ cấu hình kiểu chuyển hướng cũ.'
+    return 'Hệ thống chỉ hỗ trợ mã 301 hoặc 410; hãy bỏ cấu hình kiểu chuyển hướng cũ.'
+  }
+  if (code === 'INVALID_STATUS_CODE' && field === 'statusCode') {
+    return 'Mã phản hồi chỉ có thể là 301 hoặc 410.'
   }
 
   return rawMessage || 'Giá trị chưa hợp lệ.'
@@ -460,6 +464,44 @@ export async function fetchProductDetail(productId) {
   } catch (error) {
     throw normalizeError(error)
   }
+}
+
+export async function fetchSizeScaleGroups() {
+  const payload = await requestJson('/admin/size-scale-groups')
+  return Array.isArray(payload) ? payload : (payload?.data ?? [])
+}
+
+export async function fetchSizeScales() {
+  const payload = await requestJson('/admin/size-scales')
+  return Array.isArray(payload) ? payload : (payload?.data ?? [])
+}
+
+export async function createSizeScale(input) {
+  const payload = await requestJson('/admin/size-scales', { method: 'POST', body: input })
+  return payload?.data ?? payload
+}
+
+export async function updateSizeScale(scaleId, input) {
+  const payload = await requestJson(`/admin/size-scales/${scaleId}`, { method: 'PATCH', body: input })
+  return payload?.data ?? payload
+}
+
+export async function deleteSizeScale(scaleId) {
+  await requestJson(`/admin/size-scales/${scaleId}`, { method: 'DELETE' })
+}
+
+export async function createSizeScaleValue(scaleId, input) {
+  const payload = await requestJson(`/admin/size-scales/${scaleId}/values`, { method: 'POST', body: input })
+  return payload?.data ?? payload
+}
+
+export async function updateSizeScaleValue(valueId, input) {
+  const payload = await requestJson(`/admin/size-scale-values/${valueId}`, { method: 'PATCH', body: input })
+  return payload?.data ?? payload
+}
+
+export async function deleteSizeScaleValue(valueId) {
+  await requestJson(`/admin/size-scale-values/${valueId}`, { method: 'DELETE' })
 }
 
 export async function createProduct(input) {
@@ -830,6 +872,32 @@ export async function updateRedirect(redirectId, input) {
 
 export async function deleteRedirect(redirectId) {
   await requestJson(`/admin/redirects/${redirectId}`, { method: 'DELETE' })
+}
+
+export async function fetchLegacyDiscontinuedProducts(query) {
+  try {
+    const payload = await requestJson('/admin/legacy-discontinued-products', {
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        q: query?.search,
+        enabled: query?.enabled,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeLegacyDiscontinuedProduct, Number(query?.pageSize) || 20))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function createLegacyDiscontinuedProduct(input) {
+  const payload = await requestJson('/admin/legacy-discontinued-products', { method: 'POST', body: input })
+  return parseDetailPayload(payload, normalizeLegacyDiscontinuedProduct)
+}
+
+export async function updateLegacyDiscontinuedProduct(id, input) {
+  const payload = await requestJson(`/admin/legacy-discontinued-products/${id}`, { method: 'PATCH', body: input })
+  return parseDetailPayload(payload, normalizeLegacyDiscontinuedProduct)
 }
 
 // Orders
@@ -1676,6 +1744,7 @@ function normalizeChatLead(input) {
     name: safeChatString(input.name),
     phone: safeChatString(input.phone),
     note: safeChatString(input.note),
+    source: safeChatString(input.source),
     consentedAt: safeChatString(input.consentedAt),
   }
 }
@@ -1726,6 +1795,7 @@ export async function fetchChatStats(date) {
       aiCalls: safeChatCount(data.aiCalls),
       conversations: safeChatCount(data.conversations),
       leads: safeChatCount(data.leads),
+      unanswered: safeChatCount(data.unanswered),
       dailyLimit: safeChatCount(data.dailyLimit),
       remainingAiCalls: safeChatCount(data.remainingAiCalls),
     })

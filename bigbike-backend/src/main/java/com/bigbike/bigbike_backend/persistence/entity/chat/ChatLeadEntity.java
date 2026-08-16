@@ -36,6 +36,9 @@ public class ChatLeadEntity {
     @Column(length = 500)
     private String note;
 
+    @Column(nullable = false, length = 16)
+    private String source;
+
     @Column(name = "consented_at", nullable = false)
     private Instant consentedAt;
 
@@ -47,5 +50,6 @@ public class ChatLeadEntity {
         Instant now = Instant.now();
         if (consentedAt == null) consentedAt = now;
         if (createdAt == null) createdAt = now;
+        if (source == null) source = "FORM";
     }
 }

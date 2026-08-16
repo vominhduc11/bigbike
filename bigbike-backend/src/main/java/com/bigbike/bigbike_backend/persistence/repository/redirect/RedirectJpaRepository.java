@@ -25,6 +25,6 @@ public interface RedirectJpaRepository extends JpaRepository<RedirectEntity, UUI
     List<RedirectEntity> findByEnabled(boolean enabled);
 
     @Modifying
-    @Query("UPDATE RedirectEntity r SET r.hitCount = r.hitCount + 1, r.lastHitAt = :hitAt WHERE r.id = :id")
+    @Query("UPDATE RedirectEntity r SET r.hitCount = r.hitCount + 1, r.lastHitAt = :hitAt WHERE r.id = :id AND r.statusCode = 301")
     void incrementHitCount(@Param("id") UUID id, @Param("hitAt") java.time.Instant hitAt);
 }

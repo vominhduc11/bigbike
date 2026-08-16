@@ -7,7 +7,10 @@ import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -28,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,14 +39,48 @@ import static com.bigbike.bigbike_backend.service.catalog.CatalogReadSupport.*;
 
 @Service
 @Transactional(readOnly = true)
-@RequiredArgsConstructor
 public class CatalogReadService {
 
     private final CatalogReadRepository catalogReadRepository;
     private final SortParser sortParser;
     private final PaginationService paginationService;
     private final ProductJpaRepository productRepo;
+    private final SizeScaleCatalogService sizeScaleCatalogService;
+    private final CatalogVisualFacetCatalogService visualFacetCatalogService;
+    private final OrderLineItemJpaRepository orderLineItemRepo;
 
+    @Autowired
+    public CatalogReadService(
+            CatalogReadRepository catalogReadRepository,
+            SortParser sortParser,
+            PaginationService paginationService,
+            ProductJpaRepository productRepo,
+            SizeScaleCatalogService sizeScaleCatalogService,
+            CatalogVisualFacetCatalogService visualFacetCatalogService,
+            OrderLineItemJpaRepository orderLineItemRepo
+    ) {
+        this.catalogReadRepository = catalogReadRepository;
+        this.sortParser = sortParser;
+        this.paginationService = paginationService;
+        this.productRepo = productRepo;
+        this.sizeScaleCatalogService = sizeScaleCatalogService;
+        this.visualFacetCatalogService = visualFacetCatalogService;
+        this.orderLineItemRepo = orderLineItemRepo;
+    }
+
+    /** Source-compatible constructor for focused unit tests predating visual facets. */
+    CatalogReadService(
+            CatalogReadRepository catalogReadRepository,
+            SortParser sortParser,
+            PaginationService paginationService,
+            ProductJpaRepository productRepo,
+            SizeScaleCatalogService sizeScaleCatalogService
+    ) {
+        this(catalogReadRepository, sortParser, paginationService, productRepo,
+                sizeScaleCatalogService, null, null);
+    }
+
+    /** Source-compatible overload for internal callers that do not expose storefront size filters. */
     public PageResult<Product> listProducts(
             int page,
             int size,
@@ -58,19 +95,74 @@ public class CatalogReadService {
             HomepageBlock homepageBlock,
             String lang
     ) {
-        SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
+        return listProducts(
+                page, size, sort, category, brand, q, filterColor, filterGenders, List.of(),
+                minPrice, maxPrice, homepageBlock, lang);
+    }
 
-        // Real SQL LIMIT/OFFSET path: covers every filter except color (needs
-        // per-variant-option Vietnamese-diacritic normalization that isn't SQL-pushable
-        // without a dedicated indexed color column) and "homepageOrder" sort (pin +
-        // nulls-last + reversed-only-inside-pinned-section tie-break isn't a plain column
-        // sort). Only the current page's rows are hydrated — see
-        // CatalogReadRepository.findPublishedProductsPaged.
-        boolean sqlPaginationEligible = (filterColor == null || filterColor.isBlank())
+    public PageResult<Product> listProducts(
+            int page,
+            int size,
+            String sort,
+            String category,
+            String brand,
+            String q,
+            String filterColor,
+            List<String> filterGenders,
+            List<String> sizeFilters,
+            Long minPrice,
+            Long maxPrice,
+            HomepageBlock homepageBlock,
+            String lang
+    ) {
+        return listProducts(page, size, sort, category,
+                brand == null || brand.isBlank() ? List.of() : List.of(brand), q,
+                filterColor == null || filterColor.isBlank() ? List.of() : List.of(filterColor),
+                List.of(), filterGenders, sizeFilters, minPrice, maxPrice, null,
+                homepageBlock, lang);
+    }
+
+    /** Canonical public catalog list with OR-within / AND-across facet semantics. */
+    public PageResult<Product> listProducts(
+            int page,
+            int size,
+            String sort,
+            String category,
+            List<String> brands,
+            String q,
+            List<String> filterColors,
+            List<String> filterFinishes,
+            List<String> filterGenders,
+            List<String> sizeFilters,
+            Long minPrice,
+            Long maxPrice,
+            Boolean inStock,
+            HomepageBlock homepageBlock,
+            String lang
+    ) {
+        boolean popularitySort = "popularity".equalsIgnoreCase(sort);
+        String parsedSort = popularitySort || "date".equalsIgnoreCase(sort) || "menu_order".equalsIgnoreCase(sort)
+                ? "createdAt:desc"
+                : sort;
+        SortSpec sortSpec = sortParser.parse(parsedSort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
+        List<String> activeGenderFilters = ProductGenderSupport.firstSupported(filterGenders);
+        List<String> activeSizeFilters = normalizeSizeFilters(sizeFilters);
+        List<String> activeBrands = normalizeSlugFilters(brands);
+        CatalogVisualFacetCatalog visualCatalog = activeVisualCatalog();
+        CatalogVisualFacetCatalog.Selection visualSelection = visualCatalog.resolve(filterColors, filterFinishes);
+
+        // Retain the efficient SQL path for contexts fully supported by the existing query.
+        boolean sqlPaginationEligible = !visualSelection.colorRequested()
+                && !visualSelection.finishRequested()
+                && activeSizeFilters.isEmpty()
+                && activeBrands.size() <= 1
+                && !Boolean.TRUE.equals(inStock)
+                && !popularitySort
                 && !"homepageOrder".equals(sortSpec.field());
         if (sqlPaginationEligible) {
             CatalogReadRepository.ProductListingPage sqlPage = catalogReadRepository.findPublishedProductsPaged(
-                    category, brand, q, filterGenders, minPrice, maxPrice, homepageBlock, sortSpec, page, size, lang);
+                    category, activeBrands.isEmpty() ? null : activeBrands.get(0), q,
+                    activeGenderFilters, null, minPrice, maxPrice, homepageBlock, sortSpec, page, size, lang);
             long totalItems = sqlPage.totalItems();
             int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / size);
             return new PageResult<>(
@@ -82,22 +174,25 @@ public class CatalogReadService {
             );
         }
 
-        // In-memory fallback (color filter and/or homepageOrder pin-sort). Uses the
-        // lighter "listing" projection (skips gallery/video/specs/faqs/commitments/
-        // specStats/trustBadges/notes/related/accessory — none of that survives
-        // toListView() anyway, so loading it just to discard it wastes a lazy-collection
-        // batch fetch per relation on every request that lands on this path).
         Set<String> categorySlugs = resolveCategorySlugsWithDescendants(category, lang);
+        SizeScaleCatalog sizeCatalog = activeSizeCatalog();
+        Comparator<Product> comparator = popularitySort
+                ? bestSellingComparator(loadUnitsSold())
+                : productComparator(sortSpec);
         List<Product> result = catalogReadRepository.findAllPublishedProductsForListing(lang).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(product -> !product.discontinued())
                 .filter(product -> matchesCategoryOrDescendants(product, categorySlugs))
-                .filter(product -> matchesBrand(product, brand))
+                .filter(product -> matchesBrand(product, activeBrands))
                 .filter(product -> matchesQuery(product, q))
-                .filter(product -> matchesColor(product, filterColor))
-                .filter(product -> matchesGender(product, filterGenders))
+                .filter(product -> visualCatalog.matches(product, visualSelection))
+                .filter(product -> matchesGender(product, activeGenderFilters))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
                 .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> !Boolean.TRUE.equals(inStock)
+                        || product.stockState() == ProductStockState.IN_STOCK)
                 .filter(product -> homepageBlock == null || product.homepageBlock() == homepageBlock)
-                .sorted(productComparator(sortSpec))
+                .sorted(comparator)
                 .toList();
 
         // Project only the paginated slice to the lighter list view — the
@@ -112,6 +207,76 @@ public class CatalogReadService {
                 page0.totalItems(),
                 page0.totalPages()
         );
+    }
+
+    private Map<String, Long> loadUnitsSold() {
+        if (orderLineItemRepo == null) return Map.of();
+        Map<String, Long> result = new HashMap<>();
+        for (Object[] row : orderLineItemRepo.catalogUnitsSoldByProduct()) {
+            if (row == null || row.length < 2 || row[0] == null) continue;
+            long units = row[1] instanceof Number number ? number.longValue() : 0L;
+            result.put(row[0].toString(), units);
+        }
+        return result;
+    }
+
+    private static Comparator<Product> bestSellingComparator(Map<String, Long> unitsSold) {
+        return Comparator.<Product>comparingLong(product -> unitsSold.getOrDefault(product.id(), 0L))
+                .reversed()
+                .thenComparing(Product::createdAt, Comparator.reverseOrder())
+                .thenComparing(Product::id);
+    }
+
+    /** Backward-compatible scalar adapter for internal callers and old tests. */
+    public PageResult<Product> listProducts(
+            int page,
+            int size,
+            String sort,
+            String category,
+            String brand,
+            String q,
+            String filterColor,
+            List<String> filterGenders,
+            String sizeFilter,
+            Long minPrice,
+            Long maxPrice,
+            HomepageBlock homepageBlock,
+            String lang
+    ) {
+        return listProducts(page, size, sort, category, brand, q, filterColor, filterGenders,
+                sizeFilter == null || sizeFilter.isBlank() ? List.of() : List.of(sizeFilter),
+                minPrice, maxPrice, homepageBlock, lang);
+    }
+
+    private static List<String> normalizeSizeFilters(List<String> sizeFilters) {
+        if (sizeFilters == null) return List.of();
+        return sizeFilters.stream()
+                .map(SizeScaleCatalog::normalizeFilterToken)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private static List<String> normalizeSlugFilters(List<String> values) {
+        if (values == null) return List.of();
+        return values.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private SizeScaleCatalog activeSizeCatalog() {
+        return sizeScaleCatalogService == null
+                ? new SizeScaleCatalog(List.of())
+                : sizeScaleCatalogService.activeCatalog();
+    }
+
+    private CatalogVisualFacetCatalog activeVisualCatalog() {
+        return visualFacetCatalogService == null
+                ? new CatalogVisualFacetCatalog(List.of())
+                : visualFacetCatalogService.activeCatalog();
     }
 
     /**
@@ -220,6 +385,7 @@ public class CatalogReadService {
         return catalogReadRepository.findProductBySlug(key, lang)
                 .or(() -> catalogReadRepository.findProductByIdPublicView(key, lang))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(item -> !item.discontinued())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
@@ -233,6 +399,7 @@ public class CatalogReadService {
         return catalogReadRepository.findProductBySlugForListing(key, lang)
                 .or(() -> catalogReadRepository.findProductByIdPublicViewForListing(key, lang))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(item -> !item.discontinued())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
@@ -260,7 +427,7 @@ public class CatalogReadService {
     }
 
     /**
-     * Read-only source for Bi's category-listing tool. A category remains visible even with zero
+     * Read-only source for BigBike Assistant's category-listing tool. A category remains visible even with zero
      * current products, while the count itself includes only the same sellable product shape Bi
      * is allowed to show in a product card.
      */
@@ -410,49 +577,203 @@ public class CatalogReadService {
      * filter widget and keeps the endpoint a single pass over the catalog.
      */
     public CatalogFacets computeFacets(String categorySlug, String q, String lang) {
+        return computeFacets(categorySlug, List.of(), q, List.of(), List.of(), List.of(),
+                List.of(), null, null, null, lang);
+    }
+
+    /**
+     * Computes facets in the current catalog context. Size counts deliberately do not
+     * apply a selected size, so users can see the remaining alternatives while refining
+     * a multi-select filter; the price axis does honor the active size context.
+     */
+    public CatalogFacets computeFacets(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String filterColor,
+            List<String> filterGenders,
+            Long minPrice,
+            Long maxPrice,
+            String lang
+    ) {
+        return computeFacets(categorySlug,
+                brandSlug == null || brandSlug.isBlank() ? List.of() : List.of(brandSlug), q,
+                filterColor == null || filterColor.isBlank() ? List.of() : List.of(filterColor),
+                List.of(), filterGenders, List.of(), minPrice, maxPrice, null, lang);
+    }
+
+    /**
+     * Computes facets in the current non-price context. The price axis deliberately
+     * ignores the active price range, while honoring every other active filter.
+     */
+    public CatalogFacets computeFacets(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String filterColor,
+            List<String> filterGenders,
+            List<String> sizeFilters,
+            Long minPrice,
+            Long maxPrice,
+            String lang
+    ) {
+        return computeFacets(categorySlug,
+                brandSlug == null || brandSlug.isBlank() ? List.of() : List.of(brandSlug), q,
+                filterColor == null || filterColor.isBlank() ? List.of() : List.of(filterColor),
+                List.of(), filterGenders, sizeFilters, minPrice, maxPrice, null, lang);
+    }
+
+    /** Canonical cross-excluded catalog facets (CATALOG_RULE_006–010). */
+    public CatalogFacets computeFacets(
+            String categorySlug,
+            List<String> brandSlugs,
+            String q,
+            List<String> filterColors,
+            List<String> filterFinishes,
+            List<String> filterGenders,
+            List<String> sizeFilters,
+            Long minPrice,
+            Long maxPrice,
+            Boolean inStock,
+            String lang
+    ) {
         String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
-        // findAllPublishedProductsForListing() applies the PUBLISHED filter in SQL and
-        // skips the 9 detail-only relations facets never read (gallery/video/specs/faqs/
-        // commitments/specStats/trustBadges/notes/related/accessory) — facets aggregate
-        // counts across the whole matching set so they can't be SQL-paginated, but color/
-        // gender bucket counting still needs full variant+option data, which this keeps.
-        // Facet labels are localized to the storefront language: category/brand
-        // names resolve via locale; color/price labels fall back to Vietnamese.
         List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProductsForListing(locale).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(product -> !product.discontinued())
                 .filter(product -> matchesQuery(product, q))
                 .toList();
 
-        // Expand the category to self + all descendants (CATEGORY_RULE_006) so the
-        // brand/color/gender/price facet counts match the product listing, which also
-        // includes descendant products (see listProducts in-memory path). Using exact
-        // slug matching here undercounts on a parent category: the facet would advertise
-        // e.g. "Đen bóng (1)" while clicking it returns the full descendant-expanded list.
         Set<String> categorySlugs = resolveCategorySlugsWithDescendants(categorySlug, locale);
-        List<Product> inCategory = publishedMatchingQuery.stream()
+        List<Product> base = publishedMatchingQuery.stream()
                 .filter(product -> matchesCategoryOrDescendants(product, categorySlugs))
                 .toList();
 
+        List<String> activeBrands = normalizeSlugFilters(brandSlugs);
+        List<String> activeGenders = ProductGenderSupport.firstSupported(filterGenders);
+        List<String> activeSizeFilters = normalizeSizeFilters(sizeFilters);
+        SizeScaleCatalog sizeCatalog = activeSizeCatalog();
+        CatalogVisualFacetCatalog visualCatalog = activeVisualCatalog();
+        CatalogVisualFacetCatalog.Selection fullVisual = visualCatalog.resolve(filterColors, filterFinishes);
+        CatalogVisualFacetCatalog.Selection finishOnly = visualCatalog.resolve(List.of(), filterFinishes);
+        CatalogVisualFacetCatalog.Selection colorOnly = visualCatalog.resolve(filterColors, List.of());
+
+        List<Product> brandContext = base.stream()
+                .filter(product -> visualCatalog.matches(product, fullVisual))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> colorContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, finishOnly))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> finishContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, colorOnly))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> genderContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, fullVisual))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> sizeContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, fullVisual))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> priceContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, fullVisual))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        List<Product> stockContext = base.stream()
+                .filter(product -> matchesBrand(product, activeBrands))
+                .filter(product -> visualCatalog.matches(product, fullVisual))
+                .filter(product -> matchesGender(product, activeGenders))
+                .filter(product -> sizeCatalog.matches(product, activeSizeFilters))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .toList();
+
+        List<Product> fullContext = stockContext.stream()
+                .filter(product -> matchesStock(product, inStock))
+                .toList();
+
+        long availableCount = stockContext.stream()
+                .filter(product -> product.stockState() == ProductStockState.IN_STOCK)
+                .count();
+        CatalogFacets.FacetBucket availability = availableCount == 0 ? null
+                : new CatalogFacets.FacetBucket(
+                        "in-stock", "en".equals(locale) ? "In stock only" : "Chỉ hiện hàng còn",
+                        null, availableCount);
+
         return new CatalogFacets(
                 buildCategoryBuckets(publishedMatchingQuery, locale),
-                buildBrandBuckets(inCategory, locale),
-                buildColorBuckets(inCategory, locale),
-                buildGenderBuckets(inCategory, locale),
-                buildPriceBuckets(inCategory, locale)
+                buildBrandBuckets(brandContext, locale),
+                buildVisualBuckets(colorContext, visualCatalog, true, locale),
+                buildVisualBuckets(finishContext, visualCatalog, false, locale),
+                availability,
+                buildGenderBuckets(genderContext, locale),
+                buildLegacySizeBuckets(sizeContext, sizeCatalog, locale),
+                buildSizeGroups(sizeContext, sizeCatalog, locale),
+                buildPriceRange(priceContext),
+                fullContext.size(),
+                visualCatalog.colors().stream()
+                        .map(CatalogVisualFacetCatalog.Definition::key)
+                        .filter(fullVisual.colors()::contains)
+                        .toList()
         );
     }
 
     private List<CatalogFacets.FacetBucket> buildCategoryBuckets(List<Product> products, String locale) {
-        return catalogReadRepository.findAllCategories(locale).stream()
+        List<Category> categories = catalogReadRepository.findAllCategories(locale).stream()
                 .filter(Category::isVisible)
+                .filter(category -> !category.deleted())
                 .sorted(Comparator.comparing(category ->
                         category.sortOrder() == null ? Integer.MAX_VALUE : category.sortOrder()))
-                .map(category -> new CatalogFacets.FacetBucket(
-                        category.slug(),
-                        category.name(),
-                        null,
-                        products.stream().filter(p -> matchesCategory(p, category.slug())).count()
-                ))
+                .toList();
+        Map<String, List<String>> childrenByParentId = new HashMap<>();
+        Map<String, String> slugById = new HashMap<>();
+        for (Category category : categories) {
+            slugById.put(category.id(), category.slug());
+            if (category.parentId() != null) {
+                childrenByParentId.computeIfAbsent(category.parentId(), ignored -> new ArrayList<>())
+                        .add(category.id());
+            }
+        }
+        return categories.stream()
+                .map(category -> {
+                    Set<String> descendants = categoryAndDescendantSlugs(
+                            category.id(), childrenByParentId, slugById);
+                    return new CatalogFacets.FacetBucket(
+                            category.slug(),
+                            category.name(),
+                            category.image(),
+                            products.stream()
+                                    .filter(product -> matchesCategoryOrDescendants(product, descendants))
+                                    .count());
+                })
                 .toList();
     }
 
@@ -468,6 +789,32 @@ public class CatalogReadService {
                 ))
                 .filter(b -> b.count() > 0)
                 .toList();
+    }
+
+    private static List<CatalogFacets.FacetBucket> buildVisualBuckets(
+            List<Product> products,
+            CatalogVisualFacetCatalog catalog,
+            boolean colors,
+            String locale
+    ) {
+        List<CatalogVisualFacetCatalog.Definition> definitions = colors
+                ? catalog.colors()
+                : catalog.finishes();
+        return definitions.stream()
+                .map(definition -> new CatalogFacets.FacetBucket(
+                        definition.key(),
+                        definition.label(locale),
+                        null,
+                        colors ? definition.swatch() : null,
+                        products.stream().filter(product -> (colors
+                                ? catalog.colorsFor(product)
+                                : catalog.finishesFor(product)).contains(definition.key())).count()))
+                .filter(bucket -> bucket.count() > 0)
+                .toList();
+    }
+
+    private static boolean matchesStock(Product product, Boolean inStock) {
+        return !Boolean.TRUE.equals(inStock) || product.stockState() == ProductStockState.IN_STOCK;
     }
 
 }

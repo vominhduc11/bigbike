@@ -41,7 +41,7 @@ public class ChatMessageEntity {
     @Column(name = "ai_called", nullable = false)
     private boolean aiCalled;
 
-    /** Extra daily-quota unit consumed only by the bounded tone-correction orchestration. */
+    /** Historical provider retry diagnostic; daily quota counts one logical response only. */
     @Column(name = "ai_retry_count", nullable = false)
     private int aiRetryCount;
 

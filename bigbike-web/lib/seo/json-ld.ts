@@ -488,7 +488,9 @@ function buildProductOffers(product: Product, canonicalUrl: string, priceCurrenc
     url: canonicalUrl,
     priceCurrency,
     price,
-    availability: stockStateToAvailability(product.stockState),
+    availability: product.discontinued
+      ? "https://schema.org/Discontinued"
+      : stockStateToAvailability(product.stockState),
     itemCondition: "https://schema.org/NewCondition",
   };
 }

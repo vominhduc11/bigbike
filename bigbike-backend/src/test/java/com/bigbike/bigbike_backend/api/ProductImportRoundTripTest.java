@@ -43,6 +43,48 @@ class ProductImportRoundTripTest {
                 body.getBytes(StandardCharsets.UTF_8));
     }
 
+    @Test
+    void canonicalBothGenderValuesSurviveImportExportAndReimport() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "BOTH-GENDER-" + suffix;
+        String slug = "both-gender-" + suffix;
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Sản phẩm hai giới %s", "nameEN": "All gender product %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "genders": ["Nam", "Nữ"],
+                    "retailPrice": 1000000
+                  }
+                ]
+                """.formatted(sku, slug, suffix, suffix);
+
+        ImportReportResponse create = productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(create.errorCount()).isZero();
+
+        ProductEntity created = productJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(created.isGenderMale()).isTrue();
+        assertThat(created.isGenderFemale()).isTrue();
+
+        ProductImportService.ProductExportFile exported =
+                productImportService.exportProductAsTemplateJson(created.getId());
+        ProductImportRow[] exportedRows = new ObjectMapper().readValue(exported.content(), ProductImportRow[].class);
+        assertThat(exportedRows).singleElement().satisfies(row ->
+                assertThat(row.getGenders()).containsExactly("Nam", "Nữ"));
+
+        ImportReportResponse reimport = productImportService.commitImport(
+                new MockMultipartFile("file", "reimport.json", "application/json",
+                        exported.content()),
+                Set.of(), DEV_ADMIN_ID);
+        assertThat(reimport.errorCount()).isZero();
+        ProductEntity afterReimport = productJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(afterReimport.isGenderMale()).isTrue();
+        assertThat(afterReimport.isGenderFemale()).isTrue();
+    }
+
     /**
      * Regression test for the bug HUONG-DAN.md documents as the intended behavior but the validator
      * previously violated: an update-only file that touches an unrelated field (retailPrice) and

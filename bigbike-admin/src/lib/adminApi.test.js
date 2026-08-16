@@ -85,7 +85,17 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      statusCode: 'Hệ thống chỉ hỗ trợ chuyển hướng vĩnh viễn 301; hãy bỏ cấu hình kiểu chuyển hướng cũ.',
+      statusCode: 'Hệ thống chỉ hỗ trợ mã 301 hoặc 410; hãy bỏ cấu hình kiểu chuyển hướng cũ.',
+    })
+  })
+
+  it('dịch mã phản hồi redirect không hợp lệ', () => {
+    const error = new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
+      { field: 'statusCode', code: 'INVALID_STATUS_CODE', message: 'Redirect status code must be 301 or 410.' },
+    ])
+
+    expect(mapValidationErrors(error)).toEqual({
+      statusCode: 'Mã phản hồi chỉ có thể là 301 hoặc 410.',
     })
   })
 })

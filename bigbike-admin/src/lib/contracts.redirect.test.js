@@ -11,4 +11,10 @@ describe('normalizeRedirect', () => {
     expect(normalizeRedirect({ id: 'a' }).enabled).toBeUndefined()
     expect(normalizeRedirect({ id: 'b', enabled: 'false' }).enabled).toBeUndefined()
   })
+
+  it('chuẩn hóa mã phản hồi về 301 hoặc 410', () => {
+    expect(normalizeRedirect({ id: 'a' }).statusCode).toBe(301)
+    expect(normalizeRedirect({ id: 'b', statusCode: 410 }).statusCode).toBe(410)
+    expect(normalizeRedirect({ id: 'c', statusCode: 302 }).statusCode).toBe(301)
+  })
 })

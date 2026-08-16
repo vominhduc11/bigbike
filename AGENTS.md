@@ -32,7 +32,7 @@ bigbike/
 │   ├── src/styles/admin-tokens.css # Admin token source
 │   └── public/brand/               # Admin brand assets
 ├── bigbike-backend/                # Spring Boot backend
-└── bigbike_vn__2026_04_17/         # Local-only legacy WordPress export (do not commit)
+└── (raw legacy WordPress export permanently removed; do not recreate or expect it locally)
 ```
 
 Domain context (products, brand identity, actors): xem [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md). Không lặp lại ở đây để file này không bị stale.
@@ -164,14 +164,9 @@ Dùng cho: Dashboard, Product management, Order management, Content management, 
 
 Dùng cho: API endpoints, Request/response shapes, Validation, Order/payment/product state transitions, Permissions, Business enforcement, Data model alignment.
 
-### 3.5 Khi thay đổi legacy migration
+### 3.5 Khi thay đổi legacy-derived behavior
 
-Trước khi implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, hoặc public route behavior derive từ legacy WordPress, inspect:
-
-```text
-bigbike_vn__2026_04_17/             # Local-only legacy WordPress export
-bigbike_vn__2026_04_17/sqldump.sql  # Schema-only reference
-```
+Bản export WordPress cục bộ trước đây đã được chủ dự án xoá vĩnh viễn và không còn là một nguồn có thể truy cập trong repo. Với behavior có nguồn gốc legacy, dùng canonical docs, current code, dữ liệu runtime đã được kiểm chứng, các migration đã áp dụng và redirect registry/audit hiện hành. Nếu bằng chứng còn thiếu hoặc mâu thuẫn thì dừng và hỏi user; không khôi phục, tái tạo hoặc giả định một bản export local.
 
 **Không commit** raw WordPress source, raw SQL dump data, `wp-config.php` secret values, user data, order data, customer email/phone/address, password hash, session, token, API key, webhook secret, hoặc order key values.
 
@@ -190,7 +185,7 @@ bigbike_vn__2026_04_17/sqldump.sql  # Schema-only reference
 | **Backend OpenAPI raw schema** (machine-readable companion to `API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 | **Backend phase implementation reports** (historical) | `bigbike-backend/docs/` |
 | **SEO redirect map** | `bigbike-web/docs/` |
-| **Legacy WordPress data and migration reference** | `bigbike_vn__2026_04_17/` (local-only) |
+| **Legacy WordPress compatibility / migration history** | Canonical docs, current code, applied migrations, runtime evidence and redirect registry/audits; raw export permanently unavailable |
 
 Quy tắc khi docs mâu thuẫn nhau: xem Section 2.
 
@@ -230,7 +225,7 @@ Never render raw `null`, `undefined`, `NaN`, `[object Object]`. Dùng fallback d
 
 ### 5.4 Legacy migration guardrails
 
-Không implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, hoặc public route behavior **from memory**. Inspect `bigbike_vn__2026_04_17/` trước (xem Section 3.5).
+Không implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, hoặc public route behavior **from memory**. Kiểm tra canonical docs, current code, applied migrations và runtime evidence; raw WordPress export đã permanently removed (xem Section 3.5).
 
 Never commit raw legacy source, `sqldump.sql`, `wp-config.php` values, user/order/customer PII, password hashes, sessions, tokens, API keys, webhook secrets, hoặc raw redirect exports.
 

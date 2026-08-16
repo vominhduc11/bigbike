@@ -59,7 +59,8 @@ class ChatSearchInterpretationTest {
                 new SearchCase("tn", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null),
                 new SearchCase("mbh 2 củ", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_400_000L),
                 new SearchCase("mbh 1tr5", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_050_000L),
-                new SearchCase("còn tai nghe thì sao", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null));
+                new SearchCase("còn tai nghe thì sao", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null),
+                new SearchCase("Chuyển sang tìm tai nghe", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null));
 
         for (SearchCase searchCase : cases) {
             CatalogReadService catalog = catalogWithPublicVocabulary();
@@ -401,6 +402,8 @@ class ChatSearchInterpretationTest {
                 ProductStockState.IN_STOCK,
                 Boolean.TRUE,
                 PublishStatus.PUBLISHED,
+                false,
+                null,
                 HomepageBlock.NONE,
                 null,
                 null,

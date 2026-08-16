@@ -155,7 +155,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...localePair(translatePath("/huong-dan/", "vi"), translatePath("/huong-dan/", "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.5 }),
   ];
 
-  for (const product of products) {
+  for (const product of products.filter((item) => !item.discontinued)) {
     entries.push(...entryPair(
       toProductPath(product.slug, "vi"),
       toProductPath(product.slugEn?.trim() || product.slug, "en"),
@@ -203,4 +203,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return entries;
 }
-

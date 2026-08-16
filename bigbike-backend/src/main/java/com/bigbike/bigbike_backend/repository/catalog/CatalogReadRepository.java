@@ -51,6 +51,7 @@ public interface CatalogReadRepository {
             String brandSlug,
             String q,
             List<String> genders,
+            String sizeFilter,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -63,16 +64,18 @@ public interface CatalogReadRepository {
     record ProductListingPage(List<Product> items, long totalItems) {}
 
     /**
-     * DB-level token-AND search against name + shortDescription.
-     * Each token must match at least one field — "ba lo" → ["ba","lo"] finds "balo".
+     * DB-level token-AND search against product identifiers: name, slug, SKU and
+     * their English equivalents. Each token must match at least one field —
+     * "ba lo" → ["ba","lo"] finds "balo". Product descriptions are excluded.
      */
     List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit);
 
     /**
      * Assistant-only product discovery. Every normalized identifier token must match one of
-     * the product's Vietnamese or English name/slug fields; this is intentionally separate
+     * the product's Vietnamese or English name/slug fields or SKU; this is intentionally separate
      * from the public catalog search contract. Category, brand and retail-price predicates
      * remain database filters, while the chat service applies its final sellability checks.
+     * Product descriptions are excluded from matching.
      */
     List<Product> searchPublishedProductsForAssistant(
             java.util.List<String> tokens,

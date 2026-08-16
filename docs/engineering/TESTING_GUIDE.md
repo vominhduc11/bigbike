@@ -27,6 +27,7 @@ GitHub Actions currently runs:
 | Settings/menus | `Phase1JAdminSettingsMenuCouponApiTest.java` | `CONFIRMED_FROM_TEST` |
 | ~~POS~~ | Removed 2026-06-23 (online-only) — `Phase1MPosApiTest.java` deleted | `REMOVED` |
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
+| Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
 
 ## Current Testing Gaps
 
@@ -34,3 +35,4 @@ GitHub Actions currently runs:
 |---|---|---|
 | Admin repo has no dedicated `test` script in `package.json`. | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | Web unit tests exist locally but are not run in CI. | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json`, `.github/workflows/ci.yml` |
+| Live redirect quality | Two sequential scans of the 241-row owner URL list, 0.5s/request/pass; the live scan is evidence, not a unit-test substitute. | `REQUIRED_FOR_AUDIT_2026-08-14` |

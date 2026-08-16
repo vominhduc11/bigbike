@@ -7,10 +7,15 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.mapper.RedirectMapper;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -47,6 +52,8 @@ public class AdminRedirectService {
     private static final int MAX_CHAIN_DEPTH = 20;
 
     private final RedirectJpaRepository redirectRepo;
+    private final ProductJpaRepository productRepo;
+    private final CategoryJpaRepository categoryRepo;
     private final RedirectMapper redirectMapper;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
@@ -91,12 +98,16 @@ public class AdminRedirectService {
 
     @Transactional
     public AdminRedirectResponse createRedirect(UUID adminId, CreateRedirectRequest request) {
-        rejectLegacyStatusConfiguration(request.statusCode(), request.redirectType());
+        rejectRedirectType(request.redirectType());
+        int statusCode = normalizeStatusCode(request.statusCode());
         String sourcePattern = normalizeSourcePattern(request.sourcePattern());
         String targetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
         validateTargetUrl(targetUrl);
-        validateNoRedirectLoop(sourcePattern, targetUrl, null);
-        targetUrl = resolveTargetForSave(targetUrl, null);
+        if (statusCode == 301) {
+            validateCatalogTarget(sourcePattern, targetUrl);
+            validateNoRedirectLoop(sourcePattern, targetUrl, null);
+            targetUrl = resolveTargetForSave(targetUrl, null);
+        }
         ensureUniqueSourcePattern(sourcePattern, null);
 
         boolean enabled = request.enabled() == null || request.enabled();
@@ -105,6 +116,7 @@ public class AdminRedirectService {
         RedirectEntity entity = new RedirectEntity();
         entity.setSourcePattern(sourcePattern);
         entity.setTargetUrl(targetUrl);
+        entity.setStatusCode(statusCode);
         entity.setEnabled(enabled);
         entity.setHitCount(0);
         entity.setLastHitAt(null);
@@ -128,10 +140,13 @@ public class AdminRedirectService {
 
     @Transactional
     public AdminRedirectResponse updateRedirect(UUID id, UUID adminId, UpdateRedirectRequest request) {
-        rejectLegacyStatusConfiguration(request.statusCode(), request.redirectType());
+        rejectRedirectType(request.redirectType());
         RedirectEntity entity = redirectRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Redirect not found."));
         String before = snapshot(entity);
+        int nextStatusCode = request.statusCode() == null
+                ? entity.getStatusCode()
+                : normalizeStatusCode(request.statusCode());
 
         String nextSourcePattern = entity.getSourcePattern();
         if (request.sourcePattern() != null) {
@@ -145,8 +160,11 @@ public class AdminRedirectService {
         // Always re-validated on the effective pair — even a source-only edit could newly
         // collide with the (unchanged) target. Collapsing to a final destination, below, only
         // runs when targetUrl is actually part of this request — see resolveTargetForSave.
-        validateNoRedirectLoop(nextSourcePattern, nextTargetUrl, id);
-        if (request.targetUrl() != null) {
+        if (nextStatusCode == 301) {
+            validateCatalogTarget(nextSourcePattern, nextTargetUrl);
+            validateNoRedirectLoop(nextSourcePattern, nextTargetUrl, id);
+        }
+        if (request.targetUrl() != null && nextStatusCode == 301) {
             nextTargetUrl = resolveTargetForSave(nextTargetUrl, id);
         }
         ensureUniqueSourcePattern(nextSourcePattern, id);
@@ -156,6 +174,9 @@ public class AdminRedirectService {
         }
         if (request.targetUrl() != null) {
             entity.setTargetUrl(nextTargetUrl);
+        }
+        if (request.statusCode() != null) {
+            entity.setStatusCode(nextStatusCode);
         }
         if (request.enabled() != null) {
             entity.setEnabled(request.enabled());
@@ -282,6 +303,88 @@ public class AdminRedirectService {
     }
 
     /**
+     * REDIRECT_RULE_011: catalogue-looking destinations must still point to a
+     * real public page when an admin creates or enables a 301. This guard is
+     * deliberately not based on stock availability: an out-of-stock product
+     * remains a valid product page. Legacy rows are repaired by migration, but
+     * the rule also protects future admin writes.
+     */
+    private void validateCatalogTarget(String sourcePattern, String targetUrl) {
+        String path = redirectLookupPath(targetUrl);
+        if (path == null) return;
+
+        String routePath = stripLocalePrefix(path);
+        if (isLegacyProductSource(sourcePattern) && isListOrCategoryPath(routePath)) {
+            throw ValidationException.fromField(
+                    "targetUrl",
+                    "INVALID_LEGACY_PRODUCT_TARGET",
+                    "A legacy product URL must point to a product page, a reviewed history page, or a terminal 410.");
+        }
+
+        if (routePath.startsWith("/product/")) {
+            String slug = singleRouteSegment(routePath, "/product/");
+            Optional<ProductEntity> product = slug == null
+                    ? Optional.empty()
+                    : productRepo.findBySlug(slug).or(() -> productRepo.findBySlugEn(slug));
+            if (product.isEmpty()
+                    || product.get().getPublishStatus() != PublishStatus.PUBLISHED
+                    || product.get().isDiscontinued()) {
+                throw ValidationException.fromField(
+                        "targetUrl",
+                        "INVALID_PRODUCT_TARGET",
+                        "A product redirect target must resolve to a published, non-discontinued product.");
+            }
+            return;
+        }
+
+        if (routePath.startsWith("/danh-muc/") || routePath.startsWith("/categories/")) {
+            String prefix = routePath.startsWith("/danh-muc/") ? "/danh-muc/" : "/categories/";
+            String slug = singleRouteSegment(routePath, prefix);
+            Optional<CategoryEntity> category = slug == null
+                    ? Optional.empty()
+                    : (prefix.equals("/danh-muc/")
+                            ? categoryRepo.findBySlug(slug).or(() -> categoryRepo.findBySlugEn(slug))
+                            : categoryRepo.findBySlugEn(slug).or(() -> categoryRepo.findBySlug(slug)));
+            if (category.isEmpty() || !category.get().isVisible() || category.get().isDeleted()) {
+                throw ValidationException.fromField(
+                        "targetUrl",
+                        "INVALID_CATEGORY_TARGET",
+                        "A category redirect target must resolve to a visible, non-deleted category.");
+            }
+        }
+    }
+
+    private static String stripLocalePrefix(String path) {
+        if (path.startsWith("/en/") || path.startsWith("/vi/")) return path.substring(3);
+        return path;
+    }
+
+    private static boolean isLegacyProductSource(String sourcePattern) {
+        String normalized = canonicalizePath(sourcePattern);
+        return normalized.startsWith("/sp/")
+                || normalized.startsWith("/en/sp/")
+                || normalized.startsWith("/vi/sp/");
+    }
+
+    private static boolean isListOrCategoryPath(String path) {
+        return path.equals("/")
+                || path.equals("/sp")
+                || path.equals("/sp/")
+                || path.equals("/products")
+                || path.startsWith("/products/")
+                || path.equals("/danh-muc")
+                || path.startsWith("/danh-muc/")
+                || path.equals("/categories")
+                || path.startsWith("/categories/");
+    }
+
+    private static String singleRouteSegment(String path, String prefix) {
+        if (!path.startsWith(prefix)) return null;
+        String slug = path.substring(prefix.length());
+        return slug.isBlank() || slug.contains("/") ? null : slug;
+    }
+
+    /**
      * Validates that creating/updating a redirect from {@code sourcePattern} to {@code targetUrl}
      * does not create a redirect loop: neither a direct self-loop nor a multi-hop A→B→A chain.
      * The chain walk here is deliberately unfiltered by {@code enabled} — a loop through a
@@ -386,7 +489,9 @@ public class AdminRedirectService {
             Optional<RedirectEntity> next = excludeId != null
                     ? redirectRepo.findBySourcePatternAndIdNot(path, excludeId)
                     : redirectRepo.findBySourcePattern(path);
-            return next.map(RedirectEntity::getTargetUrl).orElse(null);
+            return next.filter(r -> r.getStatusCode() == 301)
+                    .map(RedirectEntity::getTargetUrl)
+                    .orElse(null);
         };
     }
 
@@ -399,7 +504,10 @@ public class AdminRedirectService {
             Optional<RedirectEntity> next = excludeId != null
                     ? redirectRepo.findBySourcePatternAndIdNot(path, excludeId)
                     : redirectRepo.findBySourcePattern(path);
-            return next.filter(RedirectEntity::isEnabled).map(RedirectEntity::getTargetUrl).orElse(null);
+            return next.filter(RedirectEntity::isEnabled)
+                    .filter(r -> r.getStatusCode() == 301)
+                    .map(RedirectEntity::getTargetUrl)
+                    .orElse(null);
         };
     }
 
@@ -447,12 +555,22 @@ public class AdminRedirectService {
         }
     }
 
-    private void rejectLegacyStatusConfiguration(Integer statusCode, String redirectType) {
-        if (statusCode == null && (redirectType == null || redirectType.isBlank())) return;
+    private int normalizeStatusCode(Integer statusCode) {
+        if (statusCode != null && statusCode != 301 && statusCode != 410) {
+            throw ValidationException.fromField(
+                    "statusCode",
+                    "INVALID_STATUS_CODE",
+                    "Redirect status code must be 301 or 410.");
+        }
+        return statusCode == null ? 301 : statusCode;
+    }
+
+    private void rejectRedirectType(String redirectType) {
+        if (redirectType == null || redirectType.isBlank()) return;
         throw ValidationException.fromField(
-                statusCode != null ? "statusCode" : "redirectType",
+                "redirectType",
                 "UNSUPPORTED",
-                "Managed redirects always use HTTP 301; statusCode and redirectType are not configurable.");
+                "redirectType is not configurable; use statusCode 301 or 410.");
     }
 
     private void ensureUniqueSourcePattern(String sourcePattern, UUID currentId) {
@@ -471,6 +589,7 @@ public class AdminRedirectService {
                 "id", entity.getId() == null ? "" : entity.getId().toString(),
                 "sourcePattern", nvl(entity.getSourcePattern()),
                 "targetUrl", nvl(entity.getTargetUrl()),
+                "statusCode", entity.getStatusCode(),
                 "enabled", entity.isEnabled(),
                 "hitCount", entity.getHitCount()));
     }

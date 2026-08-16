@@ -81,4 +81,16 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
+
+    /** Storefront best-selling order (CATALOG_RULE_011 / REPORT_RULE_007+009). */
+    @Query(value =
+        "SELECT COALESCE(li.product_pk, li.product_id::text) AS product_key, " +
+        "       COALESCE(SUM(li.quantity), 0) AS units_sold " +
+        "FROM order_line_items li " +
+        "JOIN orders o ON o.id = li.order_id " +
+        "WHERE o.status <> 'CANCELLED' " +
+        "  AND (li.product_pk IS NOT NULL OR li.product_id IS NOT NULL) " +
+        "GROUP BY COALESCE(li.product_pk, li.product_id::text)",
+        nativeQuery = true)
+    List<Object[]> catalogUnitsSoldByProduct();
 }

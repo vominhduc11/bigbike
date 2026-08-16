@@ -30,7 +30,8 @@ class CatalogReadServiceAssistantCategorySummaryTest {
                 repository,
                 mock(SortParser.class),
                 mock(PaginationService.class),
-                mock(ProductJpaRepository.class));
+                mock(ProductJpaRepository.class),
+                null);
         Category helmets = category("helmets", "mu-bao-hiem", "Mũ bảo hiểm", null, 1);
         Category fullface = category("fullface", "mu-bao-hiem-fullface", "Mũ fullface", "helmets", 2);
         Category gloves = category("gloves", "gang-tay", "Găng tay", null, 3);
@@ -78,6 +79,8 @@ class CatalogReadServiceAssistantCategorySummaryTest {
                 ProductStockState.IN_STOCK,
                 Boolean.TRUE,
                 PublishStatus.PUBLISHED,
+                false,
+                null,
                 HomepageBlock.NONE,
                 null,
                 null,

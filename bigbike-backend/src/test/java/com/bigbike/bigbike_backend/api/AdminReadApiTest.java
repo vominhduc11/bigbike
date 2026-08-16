@@ -3,8 +3,6 @@ package com.bigbike.bigbike_backend.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -124,7 +122,7 @@ class AdminReadApiTest {
         women.setName("Gender Women Product " + suffix);
         women.setCategoryId("cat_helmet");
         women.setBrandId("brand_ls2");
-        women.setGender("Nữ");
+        women.setGenders(java.util.List.of("Nữ"));
         women.setSku("GENDER-WOMEN-" + suffix);
         women.setRetailPrice(new BigDecimal("1500000"));
         women.setPublishStatus(PublishStatus.DRAFT);
@@ -135,6 +133,21 @@ class AdminReadApiTest {
 
         productMutationService.createProduct(men, DEV_ADMIN_ID);
         productMutationService.createProduct(women, DEV_ADMIN_ID);
+        UpsertProductRequest both = new UpsertProductRequest();
+        both.setSlug("gender-both-" + suffix);
+        both.setName("Gender Both Product " + suffix);
+        both.setCategoryId("cat_helmet");
+        both.setBrandId("brand_ls2");
+        both.setGenders(java.util.List.of("Nam", "Nữ"));
+        both.setSku("GENDER-BOTH-" + suffix);
+        both.setRetailPrice(new BigDecimal("1500000"));
+        both.setPublishStatus(PublishStatus.DRAFT);
+        both.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Gender Both Product EN " + suffix)
+                        .build()));
+
+        productMutationService.createProduct(both, DEV_ADMIN_ID);
         UpsertProductRequest noGender = new UpsertProductRequest();
         noGender.setSlug("gender-none-" + suffix);
         noGender.setName("Gender None Product " + suffix);
@@ -154,24 +167,26 @@ class AdminReadApiTest {
                         .param("size", "100")
                         .header("X-Admin-Permissions", "products.read"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].gender", everyItem(is("Nam"))))
-                .andExpect(jsonPath("$.data[*].slug", hasItem(men.getSlug())));
+                .andExpect(jsonPath("$.data[*].genders", everyItem(hasItem("Nam"))))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(men.getSlug())))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(both.getSlug())))
+                .andExpect(jsonPath("$.data[*].slug", org.hamcrest.Matchers.not(hasItem(women.getSlug()))));
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .param("filter_gender", "Nữ")
                         .param("size", "100")
                         .header("X-Admin-Permissions", "products.read"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].gender", everyItem(is("Nữ"))))
-                .andExpect(jsonPath("$.data[*].slug", hasItem(women.getSlug())));
+                .andExpect(jsonPath("$.data[*].genders", everyItem(hasItem("Nữ"))))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(women.getSlug())))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(both.getSlug())))
+                .andExpect(jsonPath("$.data[*].slug", org.hamcrest.Matchers.not(hasItem(men.getSlug()))));
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .param("filter_gender", "NULL")
                         .param("size", "100")
                         .header("X-Admin-Permissions", "products.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].gender", everyItem(nullValue())))
-                .andExpect(jsonPath("$.data[*].slug", hasItem(noGender.getSlug())));
+                .andExpect(status().isBadRequest());
     }
 
     @Test

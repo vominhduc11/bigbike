@@ -1,7 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
-import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import type { Brand, CatalogFacets, Category, Product } from "@/lib/contracts/public";
 import { DEFAULT_CATALOG_ORDERBY, type CatalogOrderbyValue } from "@/lib/utils/catalog-sort";
 
@@ -24,9 +23,6 @@ type CatalogDefaultProps = {
 
 export async function CatalogDefault({
   canonicalPath,
-  brands,
-  categories,
-  facets = null,
   beforeGridHtml = null,
   beforeGridNode,
   products = [],
@@ -38,7 +34,10 @@ export async function CatalogDefault({
 
   return (
     <div className="grid gap-8 pb-10 md:grid-cols-[minmax(220px,1fr)_3fr]">
-      <CatalogSidebar brands={brands} categories={categories} facets={facets} current={{}} resetHref={canonicalPath} hiddenParams={{}} />
+      <aside className="hidden min-h-80 border-y border-border md:block" aria-label={t("filterMobileHeading")}>
+        <p className="m-0 border-b border-border py-4 font-semibold">{t("filterBrand")}</p>
+        <p className="m-0 border-b border-border py-4 font-semibold">{t("filterPrice")}</p>
+      </aside>
       <CatalogResults
         orderbyCurrent={orderbyCurrent}
         pagination={pagination}

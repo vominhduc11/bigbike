@@ -79,7 +79,7 @@ export function createProductSchema(t, isCreate = false) {
       // không có biến thể) nằm ở superRefine.
       sku: z.string().optional(),
       brandId: z.string().optional(),
-      gender: z.string().optional(),
+      genders: z.array(z.enum(['Nam', 'Nữ'])).max(2).optional(),
       description: z.string().optional(),
       descriptionBlocks: z.array(z.any()).nullable().optional(),
       // "Phù hợp với ai" / "Bảng size" (V240/V246, tách khỏi descriptionBlocks ở V327/V328) — object

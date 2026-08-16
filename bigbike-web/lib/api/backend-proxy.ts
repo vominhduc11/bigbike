@@ -55,13 +55,18 @@ export function backendRequestHeaders(request?: Request): Headers {
 /** Preserve a backend error envelope and the headers a client needs to recover safely. */
 export async function passthroughBackendError(res: Response): Promise<NextResponse> {
   const headers = new Headers();
-  const contentType = res.headers.get("content-type");
+  const contentType = res.headers?.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
   for (const header of ["retry-after", "x-request-id", "cache-control"]) {
-    const value = res.headers.get(header);
+    const value = res.headers?.get(header);
     if (value) headers.set(header, value);
   }
-  const body = await res.text();
+  const responseLike = res as Response & {
+    text?: () => Promise<string>;
+  };
+  const body = typeof responseLike.text === "function"
+    ? await responseLike.text()
+    : JSON.stringify(await res.json().catch(() => null) ?? {});
   return new NextResponse(body || JSON.stringify({ error: { code: "UPSTREAM_ERROR" } }), {
     status: res.status,
     headers,

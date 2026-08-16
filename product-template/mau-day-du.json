@@ -3,7 +3,7 @@
     "sku": "SCS-CAM-S",
     "categorySlugs": ["tai-nghe-bluetooth-mu-bao-hiem"],
     "brandId": "scs",
-    "gender": "Unisex",
+    "genders": ["Nam", "Nữ"],
     "retailPrice": 3290000,
     "salePrice": null,
     "name": {
@@ -224,7 +224,7 @@
     "sku": "TNB-SCS-S13",
     "categorySlugs": ["tai-nghe-bluetooth-mu-bao-hiem"],
     "brandId": "scs",
-    "gender": "Unisex",
+    "genders": [],
     "retailPrice": 3190000,
     "salePrice": null,
     "name": {

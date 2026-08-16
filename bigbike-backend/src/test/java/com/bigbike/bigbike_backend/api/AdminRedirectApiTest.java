@@ -120,6 +120,82 @@ class AdminRedirectApiTest {
     // ── CRUD happy path (dev-header bypass) ───────────────────────────────────
 
     @Test
+    void rejectsRedirectsToMissingOrTrashedCatalogTargets() throws Exception {
+        String missingProductSource = "/redirect-invalid-product-" + UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "/product/does-not-exist/"
+                                }
+                                """.formatted(missingProductSource)))
+                .andExpect(status().isBadRequest());
+
+        String missingCategorySource = "/redirect-invalid-category-" + UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "/danh-muc/does-not-exist/"
+                                }
+                                """.formatted(missingCategorySource)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsLegacyProductRedirectsToListOrCategory() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "/sp/old-product.html",
+                                  "targetUrl": "/danh-muc/mu-bao-hiem/"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void acceptsPublishedProductAndVisibleCategoryRedirectTargets() throws Exception {
+        String productSource = "/redirect-valid-product-" + UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "/product/mu-bao-hiem-ls2-ff800/"
+                                }
+                                """.formatted(productSource)))
+                .andExpect(status().isOk());
+
+        String categorySource = "/redirect-valid-category-" + UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "/danh-muc/mu-bao-hiem/"
+                                }
+                                """.formatted(categorySource)))
+                .andExpect(status().isOk());
+
+        redirectJpaRepository.findBySourcePattern(productSource).ifPresent(redirectJpaRepository::delete);
+        redirectJpaRepository.findBySourcePattern(categorySource).ifPresent(redirectJpaRepository::delete);
+    }
+
+    @Test
     void shouldListCreateUpdateAndDeleteRedirects() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourcePattern = "/legacy-product-" + suffix;
@@ -148,7 +224,7 @@ class AdminRedirectApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sourcePattern").value(sourcePattern))
                 .andExpect(jsonPath("$.data.targetUrl").value(targetUrl))
-                .andExpect(jsonPath("$.data.statusCode").doesNotExist())
+                .andExpect(jsonPath("$.data.statusCode").value(301))
                 .andExpect(jsonPath("$.data.redirectType").doesNotExist())
                 .andExpect(jsonPath("$.data.notes").doesNotExist())
                 .andExpect(jsonPath("$.data.legacyId").doesNotExist())
@@ -202,7 +278,7 @@ class AdminRedirectApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.redirectId").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.target").value("/internal-target"))
-                .andExpect(jsonPath("$.statusCode").doesNotExist())
+                .andExpect(jsonPath("$.statusCode").value(301))
                 .andExpect(jsonPath("$.redirectType").doesNotExist());
 
         redirectJpaRepository.delete(saved);

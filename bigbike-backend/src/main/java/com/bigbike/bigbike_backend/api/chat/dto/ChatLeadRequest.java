@@ -1,10 +1,8 @@
 package com.bigbike.bigbike_backend.api.chat.dto;
 
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,19 +20,31 @@ public class ChatLeadRequest {
     @NotNull(message = "Thiếu mã hội thoại.")
     private UUID conversationId;
 
-    @Size(max = 100, message = "Tên không được dài quá 100 ký tự.")
     private String name;
 
-    @NotBlank(message = "Số điện thoại hoặc Zalo không được để trống.")
-    @Size(max = 32, message = "Số liên hệ không được dài quá 32 ký tự.")
-    @Pattern(
-            regexp = "^[+0-9][0-9 .()-]{7,31}$",
-            message = "Số điện thoại hoặc Zalo không hợp lệ.")
     private String phone;
 
-    @Size(max = 500, message = "Ghi chú không được dài quá 500 ký tự.")
     private String note;
+
+    @Builder.Default
+    @NotNull(message = "Thiếu nguồn thông tin liên hệ.")
+    @Pattern(regexp = "^(FORM|ACCOUNT)$", message = "Nguồn thông tin liên hệ không hợp lệ.")
+    private String contactSource = "FORM";
 
     @AssertTrue(message = "Khách phải đồng ý trước khi lưu thông tin liên hệ.")
     private boolean consent;
+
+    /**
+     * Account capture deliberately ignores all browser-supplied contact fields. Keep their
+     * validation conditional as well, so a hostile payload cannot influence that branch by
+     * sending an invalid/oversized value that the server is not going to use.
+     */
+    @AssertTrue(message = "Thông tin liên hệ khách tự nhập không hợp lệ.")
+    private boolean hasValidFormFields() {
+        if ("ACCOUNT".equals(contactSource)) return true;
+        return (name == null || name.length() <= 100)
+                && (note == null || note.length() <= 500)
+                && phone != null
+                && phone.matches("^[+0-9][0-9 .()-]{7,31}$");
+    }
 }

@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ProductImportRow;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 
 /**
  * Converts the bulk import / single-product export wire shape ({@link ProductImportRow}, each bilingual column
@@ -42,8 +43,18 @@ final class ProductImportRowMapper {
         if (row.getBrandId() != null) {
             request.setBrandId(row.getBrandId());
         }
-        if (row.getGender() != null) {
-            request.setGender(row.getGender());
+        if (row.getGenders() != null) {
+            request.setGenders(row.getGenders());
+        } else if (row.getGender() != null) {
+            // Legacy scalar files remain readable. Known values are promoted to the
+            // canonical array immediately; Unisex becomes the valid empty state.
+            try {
+                request.setGenders(ProductGenderSupport.fromLegacy(row.getGender()));
+            } catch (IllegalArgumentException ex) {
+                // Preserve the old value so the shared request validator can return
+                // the normal field-level import error for unknown legacy values.
+                request.setGender(row.getGender());
+            }
         }
         if (row.getRetailPrice() != null) {
             request.setRetailPrice(row.getRetailPrice());

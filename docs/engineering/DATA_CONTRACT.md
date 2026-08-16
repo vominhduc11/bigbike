@@ -302,6 +302,49 @@ Evidence: `V2__create_admin_auth_tables.sql`, `V49__create_roles_permissions_tab
   - **Per variant** — `product_variants.is_available` (existing column) is the **sole gate**. The variant's `stock_state` mirrors it: `IN_STOCK` if available, else `OUT_OF_STOCK`.
   - **Per product without variants** — `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly** by the admin toggle, persisted as `products.available` (renamed from `products.force_out_of_stock` in V342, 2026-07-19 — the old hard-override behavior for products WITH variants was removed at the same time).
   - **Product with variants** — `stock_state` = `IN_STOCK` if **any** variant `is_available`, else `OUT_OF_STOCK`.
+
+### Product discontinued flag (V1023, owner decision 2026-08-13)
+
+`products.discontinued BOOLEAN NOT NULL DEFAULT FALSE` is an orthogonal public
+availability flag; it does not extend `PublishStatus` or `stockState`.
+
+- Domain/API: `Product.discontinued` is present on public list/detail and admin
+  responses; `UpsertProductRequest.discontinued` is an optional presence-guarded
+  boolean on create/update.
+- Public list, search, related/accessory projections, catalog facets, sitemap and
+  Merchant feed exclude rows where `discontinued = true`. A direct public detail
+  lookup may still read a `PUBLISHED` discontinued product for its historical
+  `/sp/{slug}.html` page.
+- The historical page is indexable (no `noindex`), uses schema.org
+  `Discontinued`, and must not expose checkout/purchase controls.
+- A discontinued product remains `PUBLISHED`; `DRAFT`/`TRASH` behavior is unchanged.
+
+Migration: `V1023__redirect_and_discontinued_catalog_rules.sql`.
+
+### Legacy discontinued product history (`legacy_discontinued_products`)
+
+Một hàng lịch sử WordPress có thể không còn bản ghi trong `products`; không được tạo
+`Product` giả chỉ để giữ URL cũ. Bảng này là catalog vận hành riêng cho những URL đó.
+Nó dùng cùng trải nghiệm trang lịch sử với `products.discontinued = true`, nhưng không
+có giá, SKU, tồn kho, trạng thái bán hay dữ liệu checkout.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `UUID` | Primary key. |
+| `slug` | `VARCHAR(255)` | Legacy product slug, unique; web chỉ phục vụ qua `/sp/{slug}.html`. |
+| `name` / `name_en` | `VARCHAR(255)` | Tên hiển thị VI và EN; `name_en` rỗng được phép fallback VI. |
+| `brand_name` | `VARCHAR(255)` nullable | Nhãn lịch sử, không tạo hay yêu cầu brand còn public. |
+| `category_slug` | `VARCHAR(255)` | Danh mục public còn hiệu lực, dùng để gợi ý tối đa 3 hàng đang bán cùng nhóm. |
+| `image_url` | `VARCHAR(2048)` nullable | Chỉ URL ảnh nguồn đã kiểm chứng; rỗng thì web dùng empty state, không gán ảnh sản phẩm khác. |
+| `enabled` | `BOOLEAN NOT NULL DEFAULT TRUE` | Tắt là URL không còn được nhận là trang lịch sử (để redirect/410 xử lý nếu có rule). |
+| `created_at` / `updated_at` | `TIMESTAMP` | Audit vận hành. |
+
+Admin chỉ cần `products.read` để xem và `products.update` để tạo/sửa/bật/tắt, giữ cùng
+phạm vi catalog thay vì sinh quyền mới. Public list/search/facet/sitemap không đọc bảng
+này; nó chỉ được lookup chính xác từ route `/sp/{slug}.html`.
+
+Migration: `V1034__create_legacy_discontinued_products.sql`. Owner decision 2026-08-15;
+see `BUSINESS_RULES.md` `REDIRECT_RULE_013`.
 - **Dormant quantity columns:** `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are **kept but no longer read** for availability. The `low_stock_threshold` site setting was **removed (V279)**.
 - **No quantity behavior:** no stock validation by quantity, no auto-decrement on sale, no stock restore on cancel, and **no stock movements written for sales or restores**. Selling does not change availability; the admin must manually mark an item "Hết hàng" when it sells out (overselling is not auto-prevented). The `stock_movements` ledger is dormant for this model.
 - `LOW_STOCK` was **removed from the enum (V279)**. There is no "low stock" tier.
@@ -322,6 +365,43 @@ Evidence:
 - `V120__drop_stock_receipt_tables.sql`
 - `V259__remove_serial_management.sql`
 - `V261__inventory_availability_toggle.sql` (backfilled `is_available` + `stock_state` from current quantities)
+
+### Catalog size scale model (V1028/V1029/V1031, owner decision 2026-08-14)
+
+Size classification is separate from the existing variant attribute dictionary.
+The `products.size_scale_id` foreign key points to one row in
+`catalog_size_scales` for every product that has a size option. The scale points
+to a configured display group and carries a system-managed filter namespace; its
+`catalog_size_values` carry the canonical key, the user-entered display label
+used for both languages, and explicit order. `catalog_size_groups` contains the
+four current public groups: clothing letters, shoes, waist-inch pants and EU
+pants.
+The old subgroup columns remain only as storage compatibility columns and are
+empty after V1031.
+
+The scale catalog is the source of truth for public grouping, ordering and
+namespace matching. Existing `product_variant_options.option_name`,
+`option_value`, `attribute_id` and `attribute_value_id` remain intact for
+variant names, PDP selection, cart and inventory. The data cleanup only
+canonicalizes size option text and repoints duplicate size dictionary values;
+variant IDs, SKUs, availability and option ownership are not changed.
+
+Admin product read/upsert carries `sizeScaleId`. A product with a size option
+cannot be saved without a valid scale, and every size option must resolve to a
+value in that scale. Products without a size option may leave the field null.
+The scale manager write shape is `{ name, groupId, values: string[] }`; code,
+namespace, sort order, English label and subgroup fields are generated or
+cleared by the server. A new scale gets a generated code and appended order;
+an existing scale keeps its internal code and product references when renamed.
+New scales and values are data additions, not code-level numeric or category
+classification rules.
+
+V1029 verifies that every published size option resolves inside its assigned
+scale and aborts the migration otherwise — a scale missing a value that live
+products already use blocks startup, so seed the value in the same migration.
+V1031 moves the two numeric-pants scales into separate groups and clears all
+subgroup assignments without changing scale IDs, value IDs, product links,
+variant IDs, SKUs, availability or option ownership.
 
 ### warranty_records — removed (2026-06-23, V266) `CONFIRMED_FROM_CODE`
 
@@ -798,27 +878,30 @@ Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `Vide
 `V335__MigrateProductGalleryVideosToJsonb.java`,
 `V336__drop_product_gallery_videos_tables.sql`.
 
-### Product gender field — `products.gender` (V184)
+### Product gender flags — `products.gender_male` / `products.gender_female` (V1030)
 
-`products.gender` `VARCHAR(20)` nullable. Giới tính mục tiêu của sản phẩm.
+Giới tính mục tiêu là hai cờ độc lập, không có lựa chọn `Unisex` hay `Không chọn`.
+Hai cờ đều mặc định `false`; `false/false` là trạng thái hợp lệ và được biểu diễn
+trên API bằng `genders: []`.
 
-| Value | Meaning |
-|---|---|
-| `Nam` | Dành cho nam |
-| `Nữ` | Dành cho nữ |
-| `NULL` | Không chọn |
+| Flags | API `genders` | Meaning |
+|---|---|---|
+| `false/false` | `[]` | Không gắn giới tính; chỉ hiện khi không lọc giới tính |
+| `true/false` | `["Nam"]` | Dành cho nam |
+| `false/true` | `["Nữ"]` | Dành cho nữ |
+| `true/true` | `["Nam","Nữ"]` | Dành cho cả nam và nữ |
 
 Field-level attributes:
-- **DB column:** `products.gender VARCHAR(20)`, nullable, no default, no enum constraint.
-- **Domain:** `Product.gender()` — exposed on **both list and detail** responses.
-- **Admin mutation:** `UpsertProductRequest.gender` (`@Size(max=20)`, optional presence-flag pattern — omitting the key on PATCH leaves the column untouched; nonblank values are limited to Nam/Nữ).
-- **Public filter param:** `filter_gender` on `GET /api/v1/products` accepts repeated values (`?filter_gender=Nam&filter_gender=Nữ`) and matches any selected value; absent/blank means no filter, while an active filter excludes NULL-gender products.
-- **Admin filter param:** `filter_gender` on `GET /api/v1/admin/products` is single-valued: Nam, Nữ, or the special value `NULL` for `gender IS NULL`; blank/absent = no filter.
-- **Facet:** `CatalogFacets.genders[]` — fixed set `[Nam, Nữ]` with live counts; at most two buckets are returned and buckets with `count = 0` are omitted.
+- **DB columns:** `products.gender_male BOOLEAN NOT NULL DEFAULT FALSE` and `products.gender_female BOOLEAN NOT NULL DEFAULT FALSE`. Migration V1030 backfills the old scalar without inference: `Nam` → male, `Nữ` → female, blank/`NULL`/legacy `Unisex` → both flags false, then removes the old scalar column.
+- **Domain/API:** `Product.genders[]` is the canonical field on list and detail responses, with unique values in the stable order `Nam`, `Nữ`. `genders: []` is always valid. `UpsertProductRequest.genders` is presence-aware: omitted on PATCH preserves both flags; an explicit empty array clears both; one or both supported values set the corresponding flags.
+- **Legacy compatibility:** import accepts an old scalar `gender` value (`Nam`/`Nữ`; legacy `Unisex` becomes `[]`) and CSV accepts `Nam`, `Nữ`, `Nam|Nữ` or blank. New exports use only canonical `genders` in JSON and the documented CSV encoding.
+- **Public filter param:** canonical `filter_gender` is one value, `Nam` or `Nữ`; a product matches when its corresponding flag is true. Repeated legacy query values are tolerated by taking the first supported value, so old URLs never become an empty result.
+- **Admin filter param:** `filter_gender` is one of blank/all, `Nam`, or `Nữ`; products with both flags match either gender filter. There is no `NULL`/blank-gender filter option.
+- **Facet:** `CatalogFacets.genders[]` remains the fixed set `[Nam, Nữ]` with live membership counts; products with both flags contribute to both counts and zero-count buckets are omitted.
 
-Status: `CONFIRMED_FROM_CODE`
+Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-14`
 
-Evidence: `ProductEntity.java`, `Product.java`, `CatalogReadService.java` (`matchesGender`, `buildGenderBuckets`), `UpsertProductRequest.java`, `AdminCatalogMutationService.java`, `V184__add_product_gender.sql`.
+Evidence: `ProductEntity.java`, `Product.java`, `CatalogReadService.java` (`matchesGender`, `buildGenderBuckets`), `UpsertProductRequest.java`, `ProductImportRow.java`, `V1030__replace_product_gender_with_flags.sql`.
 
 ### Product video description — `product_videos.description` (V175)
 
@@ -1210,6 +1293,7 @@ Stores admin-managed URL-redirect rules, independent from the `slug_en`-triggere
 | `source_pattern` | `VARCHAR(1024)` | The old/legacy exact internal path. **Case-sensitive, stored without trailing slashes** (except root `/`), and never contains a scheme/host, query or fragment — canonicalized by `AdminRedirectService` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
 | `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. Always the fully-resolved final destination — `AdminRedirectService` auto-collapses any chain through another enabled rule at write time (`REDIRECT_RULE_010`), so this column never points at another rule's `source_pattern`. |
 | `enabled` | `BOOLEAN` | Disabled rules are skipped by the internal lookup. |
+| `status_code` | `INTEGER` | `301` (default) or `410`. A `410` rule is terminal and is served as Gone rather than redirecting to `target_url`. |
 | `hit_count` / `last_hit_at` | `INT` / `TIMESTAMP` | Incremented fire-and-forget by `bigbike-web/proxy.ts` after a served redirect. |
 
 `legacy_id` (WordPress migration provenance) and `notes` (free-text admin note) were dropped by
@@ -1218,9 +1302,17 @@ live redirect-serving path, only by the admin screen.
 
 **Normalization policy** (`AdminRedirectService`, applied before persistence and the uniqueness/loop checks): case-sensitive (matches `bigbike-web/proxy.ts`'s pathname lookup and PostgreSQL text equality), all trailing slashes stripped except for root `/`. `/Foo` and `/foo` remain distinct; `/foo`, `/foo/` and `/foo///` are the same source. Loop comparison uses the target pathname, so `/foo?campaign=old`, `/foo#section` and an absolute same-site URL ending in `/foo` are still self-loops for source `/foo`.
 
-**Redirect behavior:** mọi dòng trong bảng này được phục vụ bằng HTTP 301. `status_code` và `redirect_type` đã được loại khỏi schema ở migration `V376__normalize_redirects_to_http_301`; dữ liệu lịch sử trước migration được chuẩn hóa về 301/PERMANENT trước khi xóa cột. Các snapshot audit cũ giữ nguyên nội dung lịch sử; snapshot mới không ghi hai trường này.
+**Redirect behavior:** dòng `status_code = 301` được phục vụ bằng HTTP 301; dòng
+`status_code = 410` được proxy chuyển sang trang Gone song ngữ và không đọc
+`target_url`. `redirect_type` vẫn không tồn tại; `status_code` được bổ sung lại
+ở `V1023__redirect_and_discontinued_catalog_rules.sql` với check constraint chỉ cho `301` hoặc `410`.
+Hit tracking chỉ áp dụng cho redirect 301 đã gửi thành công. Từ `REDIRECT_RULE_011`,
+mọi 301 trỏ vào `/product/` phải resolve được tới sản phẩm `PUBLISHED` và
+`discontinued = false`; mọi 301 trỏ vào danh mục phải resolve được tới danh mục
+`visible` và chưa `deleted`. `available = false` không làm sản phẩm không hợp lệ.
+`410` không áp dụng guard này vì là đích kết thúc.
 
-**Business rules enforced in `AdminRedirectService`** (see BUSINESS_RULES.md `REDIRECT_RULE_001`–`006` for the authoritative list): self-redirect prevention, multi-hop loop detection (max chain depth 20, walked via `redirectRepo.findBySourcePattern`), source-pattern uniqueness, open-redirect protection, HTTP 301 behavior, hit-count tracking.
+**Business rules enforced in `AdminRedirectService`** (see BUSINESS_RULES.md `REDIRECT_RULE_001`–`006` for the authoritative list): self-redirect prevention, multi-hop loop detection (max chain depth 20, walked via `redirectRepo.findBySourcePattern`), source-pattern uniqueness, open-redirect protection, status code limited to HTTP 301/410, and hit-count tracking for 301.
 
 **Migration-seeded data:** `V106__import_legacy_wp_redirects.sql` inserts reviewed paths directly. Historical runtime imports accidentally persisted 49 PHP-serialized RankMath `sources` values as one unusable source each; `V377__repair_serialized_redirect_sources.sql` expands their 72 exact patterns, keeps already-existing canonical rows on conflict, inserts the 14 missing paths, then removes the 49 unusable serialized rows. The storefront proxy still fails closed on unsafe/off-domain targets and direct loops because legacy rows did not necessarily pass the admin validator.
 
@@ -1454,22 +1546,57 @@ Status: `CONFIRMED_FROM_CODE` — `V167__drop_article_product_map.sql`, `Article
 
 ### Catalog facets response shape
 
-Read-only aggregation served by `GET /api/v1/catalog/facets` (see [API_CONTRACT.md](API_CONTRACT.md#catalog-facets-contract)). No DB table — computed in-memory from the catalog read model.
+Read-only aggregation served by `GET /api/v1/catalog/facets` (see [API_CONTRACT.md](API_CONTRACT.md#catalog-facets-contract)). Counts are computed from the catalog read model; color/finish classification is read from the data-driven visual-facet tables below.
 
 `CatalogFacets`:
 | Field | Type | Purpose |
 |---|---|---|
 | `categories` | `FacetBucket[]` | One bucket per visible category. |
 | `brands` | `FacetBucket[]` | One bucket per visible brand; `image` carries the brand logo. |
-| `colors` | `FacetBucket[]` | The 10 fixed named colors. |
-| `genders` | `FacetBucket[]` | Gender buckets (V184). Only genders with `count > 0` are included. |
-| `priceBands` | `PriceBucket[]` | The 9 fixed price bands. |
+| `colors` | `FacetBucket[]` | Configured base colors only; `swatch` carries the configured dot color. |
+| `finishes` | `FacetBucket[]` | Configured finish buckets; empty when the context has no mapped finish. |
+| `availability` | `FacetBucket \| null` | The single `in-stock` bucket/count. |
+| `genders` | `FacetBucket[]` | Fixed Nam/Nữ buckets (V1030). A product with both flags contributes to both buckets; only genders with `count > 0` are included. |
+| `sizes` | `FacetBucket[]` | Dynamic variant-size buckets. Values are normalized for display (`XXXL` → `3XL`) and only buckets with `count > 0` are included. |
+| `sizeGroups` | `SizeGroupFacet[]` | Ordered configured size groups and namespaced values. |
+| `priceRange` | `PriceRange | null` | Actual effective-price extent and dynamic density buckets for the current non-price facet context; null when no product or only one distinct effective price exists. |
+| `resultCount` | `long` | Unique products matching the full active context. |
+| `resolvedColorKeys` | `string[]` | Canonical base-color keys resolved from current/legacy color query values; empty when every supplied value is intentionally outside the public color vocabulary. |
 
-`FacetBucket`: `{ key: string, label: string, image: ImageAsset | null, count: long }` — `image` is non-null only for brand buckets.
+`FacetBucket`: `{ key: string, label: string, image: ImageAsset | null, swatch: string | null, count: long }` — `image` may be populated for category/brand buckets; `swatch` only for colors.
 
-`PriceBucket`: `{ key: string, label: string, minPrice: long | null, maxPrice: long | null, count: long }` — `maxPrice` is `null` for the open-ended top band.
+`PriceRange`: `{ minPrice: long, maxPrice: long, step: long, buckets: PriceHistogramBucket[] }`.
 
-Status: `CONFIRMED_FROM_CODE` — `CatalogFacets.java`, `CatalogReadService.computeFacets`.
+`PriceHistogramBucket`: `{ minPrice: long, maxPrice: long, count: long }`. The range endpoints are the true minimum/maximum effective sale prices after category/search/brand/color/gender/size context, before the active price filter. `step` is `50,000` VND for wire compatibility; the public web does not count display ticks from the true minimum, but derives round intervals from price bands and histogram density, with an open-ended final display tick when the density cap excludes a long tail. There are at most 24 equal-width histogram buckets, including zero-count buckets. Effective sale price is used only when `salePrice > 0` and `salePrice < retailPrice`; otherwise retail price is used. Typed public bounds remain exact integers and are not snapped to `step`. `CONFIRMED_FROM_OWNER_DECISION_2026-08-14_REFINED_2026-08-15`
+
+### Catalog visual facet configuration (V1033, owner decision 2026-08-15)
+
+`catalog_visual_facets` stores the public color/finish vocabulary:
+
+| Column | Type | Constraint / purpose |
+|---|---|---|
+| `facet_type` | `VARCHAR(20)` | `COLOR` or `FINISH`; part of PK. |
+| `facet_key` | `VARCHAR(80)` | Stable public query key; part of PK. |
+| `label_vi`, `label_en` | `VARCHAR(120)` | Required bilingual labels. |
+| `swatch` | `VARCHAR(7)` nullable | `#RRGGBB`, allowed only for `COLOR`. |
+| `sort_order` | `INTEGER` | Stable display order. |
+| `active` | `BOOLEAN` | Inactive rows do not classify or appear. |
+
+`catalog_visual_alias_mappings` is a many-to-many mapping from a normalized raw
+variant-color alias to a configured facet:
+
+| Column | Type | Constraint / purpose |
+|---|---|---|
+| `alias_key` | `VARCHAR(160)` | Normalized legacy/raw option key; part of PK. |
+| `facet_type`, `facet_key` | `VARCHAR` | FK to `catalog_visual_facets`; part of PK. |
+
+One alias may map to several base colors and one or more finishes. Raw product
+variant data is unchanged. Unknown aliases have no mapping, never create a
+bucket, and are surfaced only by the owner audit query. Adding a color, finish
+or alias therefore requires data configuration but no code deployment.
+
+Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-15` — `BUSINESS_RULES.md`
+`CATALOG_RULE_006`–`CATALOG_RULE_010`.
 
 ### customers / customer_addresses — account page fields (V127)
 
@@ -1827,7 +1954,7 @@ admin concurrency metadata.
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage bottom SEO HTML block (`home_content_bottom_html`). The homepage SEO title/description + OG image (`seo_home_title`/`seo_home_description`/`og_image_url`) were **removed 2026-07-12 (V337)** — see "`seo` — 3 keys removed (V337)" below. | SEO website |
-| `ai_assistant` | Vận hành trợ lý Bi: công tắc chung, trần lượt AI theo ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..3`, mặc định `3`, `0` tắt), công tắc cho Bi diễn giải cách nói tự nhiên khi tìm hàng, câu chào và gợi ý nhanh song ngữ. Lịch sử lấy từ `chat_messages` của đúng conversation, che PII rồi cắt 450 ký tự/tin trước khi gửi; không tạo cột chat mới. Không chứa khoá AI. Các giá trị màu biến thể gốc vẫn giữ nguyên trong catalog; chỉ lớp chat chuyển chúng thành nhãn an toàn trước khi đưa vào prose hoặc function payload. | Trợ lý ảo Bi |
+| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần lượt AI theo ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..3`, mặc định `3`, `0` tắt), công tắc cho Trợ lý BigBike diễn giải cách nói tự nhiên khi tìm hàng, câu chào và gợi ý nhanh song ngữ. Lịch sử lấy từ `chat_messages` của đúng conversation, che PII rồi cắt 450 ký tự/tin trước khi gửi; không tạo cột chat mới. Không chứa khoá AI. Các giá trị màu biến thể gốc vẫn giữ nguyên trong catalog; chỉ lớp chat chuyển chúng thành nhãn an toàn trước khi đưa vào prose hoặc function payload. | Trợ lý BigBike |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
@@ -1988,7 +2115,7 @@ V374 also creates the `DEVELOPER` role (`is_system = TRUE`) with 34 explicitly e
 
 No customer or order data is touched by a state change. The response DTO (`state`, `staffNote`, `expectedAt`, `updatedAt`, `canToggle`, `uploadCount`) is derived, not a second persisted model — `canToggle` and `uploadCount` are computed per request. Checkout draft fields remain browser-local only and must never contain an access token, refresh token, password or payment secret.
 
-## Trợ lý Bi — conversation, message và lead (V1016–V1017)
+## Trợ lý BigBike — conversation, message và lead (V1016–V1017)
 
 ### `chat_conversations`
 
@@ -2011,7 +2138,7 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `id`, `conversation_id` | `UUID` | FK conversation `ON DELETE CASCADE`. |
 | `role` | `VARCHAR(16)` | `CUSTOMER|ASSISTANT`. |
 | `content` | `TEXT` | Nội dung đã hiển thị; không được đưa vào application log. |
-| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. `TOOL` dùng cho nội dung deterministic do backend tạo, gồm terminal outcome đã xác minh và recovery cục bộ từ card/disclosure đã hậu kiểm sau khi prose model không qua guard. Chỉ khi không còn nội dung/card an toàn mới dùng `CONTACT_FALLBACK`. |
+| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. `TOOL` dùng cho nội dung deterministic do backend tạo, gồm terminal outcome đã xác minh và recovery cục bộ từ card/disclosure đã hậu kiểm sau khi prose model không qua guard. `CONTACT_FALLBACK` đánh dấu câu trợ lý không hoàn tất được việc tra cứu nhưng vẫn giữ hội thoại mở, cũng như các fallback chuyển sang kênh liên hệ; trường hợp phục hồi này không ghi `ended_reason` và không trừ lượt. Màn quản trị đếm tin `ASSISTANT` có source này theo ngày Việt Nam. |
 | `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message của một logical response đã gọi Gemini, kể cả flow đó dùng 1–3 provider requests hoặc kết thúc bằng `TOOL`/`CONTACT_FALLBACK`. |
 | `ai_retry_count` | `INTEGER`, default `0` | Lượt mới luôn `0`: backend không gọi provider retry chỉ để sửa xưng hô. Giá trị `1` nếu tồn tại là lịch sử của dữ liệu trước thay đổi 2026-08-12, không tạo thêm daily slot trong flow hiện tại. |
 | `products_json` | `JSONB` nullable | Snapshot tối đa 3 product card đã qua hậu kiểm và thực sự trả cho khách, không phải catalog dump. Card trung gian không được persist khi lượt thất bại hoàn toàn; card dùng cho recovery cục bộ an toàn được persist cùng `TOOL` answer thực sự đã trả khách. |
@@ -2025,12 +2152,27 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `name` | `VARCHAR(100)` nullable | Chỉ lưu sau consent. |
 | `phone` | `VARCHAR(32)` | Số điện thoại/Zalo đã chuẩn hoá khoảng trắng; PII, không log. |
 | `note` | `VARCHAR(500)` nullable | Ghi chú khách đồng ý gửi. |
+| `source` | `VARCHAR(16)` | `FORM|ACCOUNT`, bắt buộc (thêm ở migration `V1022`). `FORM` là thông tin khách tự nhập; `ACCOUNT` là tên/số được backend resolve từ customer id của phiên đăng nhập sau consent, không lấy từ body. Dữ liệu lead cũ mặc định `FORM`. |
 | `consented_at`, `created_at` | `TIMESTAMPTZ` | Bằng chứng consent và audit thời gian. |
 
 Index bắt buộc: conversation `last_message_at DESC`, `expires_at`, `customer_id`; message `(conversation_id, created_at)` và partial/index cho `ai_called`; lead `created_at`. Retention job chạy hằng ngày và xoá theo `expires_at < now()` trong transaction giới hạn đúng bảng chat.
+
+### `chat_ai_daily_usage` (V1024)
+
+| Column | Type | Notes |
+|---|---|---|
+| `usage_date` | `DATE` PK | Ngày kinh doanh theo `Asia/Ho_Chi_Minh`. |
+| `used_count` | `INTEGER` | Số logical response đã giữ slot; không âm và không đếm fast-path. |
+| `created_at`, `updated_at` | `TIMESTAMPTZ` | Audit counter, không chứa nội dung chat hay định danh khách. |
+
+Backend dùng một atomic upsert có điều kiện `used_count < dailyLimit` trong transaction riêng trước khi gọi Gemini. Migration backfill từ số assistant message có `ai_called=true` theo ngày Việt Nam; `ai_retry_count` lịch sử không tạo thêm slot. Reservation không hoàn lại khi provider lỗi để ngân sách luôn fail-safe. Availability và admin stats đọc counter này thay vì đếm rồi mới gọi AI.
 
 Không có SQL/tool động. `products_json` và nội dung model không được dùng làm câu lệnh hay tên bảng/cột. Order tool chỉ project `orderNumber/status/placedAt/createdAt/totalAmount/currency`, trong đó `createdAt` chỉ dùng để tie-break khi sắp xếp và không persist snapshot đơn vào chat ngoài câu trả lời mức gọn.
 
 Function calling không tạo thêm persistence record cho từng provider request hoặc từng tool execution. Một customer turn chỉ tạo một assistant message cuối; sau khi guard chặn, backend ưu tiên sửa mệnh đề có căn cứ hoặc dùng card/terminal answer đã xác minh, không gọi provider retry và không tăng thêm quota. `ai_retry_count` chỉ giữ để đọc dữ liệu lịch sử. Provider-call telemetry chi tiết hơn nếu bổ sung sau này phải nằm ngoài business quota/public contract.
 
 Public chat actions are fixed route intents (`LOGIN`, `ORDER_HISTORY`, `ORDER_LOOKUP`); they never carry a model-provided URL. Customer-facing answers and product cards are persisted only after the same forbidden-term, language, product-card and formatting checks used for the API response. The order tool additionally reads `createdAt` only for deterministic tie-breaking and never persists an order snapshot.
+
+### Browser-only chat snapshot (storefront)
+
+Đây không phải bảng dữ liệu hay persistence contract của backend. Theo `CHAT_RULE_026`, website chỉ giữ tối thiểu `version`, `expiresAt`, `locale`, `conversationId`, các tin nhắn đã hiển thị (`role`, `content`, product cards/actions đã được API trả về), `remainingTurns`, trạng thái `AI|CONTACT` và các cờ `leadPrompt|leadCaptured|leadDeclined`. Snapshot có hạn cố định 24 giờ kể từ lần ghi đầu tiên; bản ghi hết hạn hoặc hỏng được xoá khỏi máy. Không lưu bản nháp ô nhập, tên/số điện thoại chưa consent, ghi chú lead, customer profile, cookie/session token, API key hay dữ liệu ngoài mức cần để dựng lại giao diện. Đăng xuất và nút xoá cuộc trò chuyện xoá snapshot.

@@ -28,20 +28,20 @@ public class ChatAssistantSettings {
     public static final int DEFAULT_RECENT_TURN_PAIRS = 3;
 
     private static final String DEFAULT_GREETING_VI =
-            "Em là Bi, trợ lý ảo AI của BigBike. Em có thể giúp anh/chị chọn sản phẩm, xem chính sách hoặc kiểm tra đơn hàng đã đăng nhập.";
+            "Em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể giúp anh/chị chọn sản phẩm, xem chính sách hoặc kiểm tra đơn hàng khi đã đăng nhập.";
     private static final String DEFAULT_GREETING_EN =
-            "I’m Bi, BigBike’s AI assistant. I can help you choose products, check store policies, or view orders on your signed-in account.";
+            "I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you choose products, check store policies, or view orders on your signed-in account.";
 
     private static final List<String> DEFAULT_PROMPTS_VI = List.of(
-            "Tìm mũ bảo hiểm theo ngân sách",
+            "Mũ bảo hiểm dưới 2 triệu",
+            "Mũ bảo hiểm từ 2 đến 5 triệu",
             "Tư vấn chọn size",
-            "Chính sách đổi trả",
-            "Kiểm tra đơn hàng của tôi");
+            "Chính sách đổi trả");
     private static final List<String> DEFAULT_PROMPTS_EN = List.of(
-            "Find a helmet within my budget",
+            "Helmets under 2 million VND",
+            "Helmets from 2 to 5 million VND",
             "Help me choose a size",
-            "Return policy",
-            "Check my orders");
+            "Return policy");
 
     private final SiteSettingJpaRepository settingRepo;
 

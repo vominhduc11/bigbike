@@ -8,21 +8,24 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
+import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatLeadEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.chat.ChatToolService.ToolOutcome;
 import com.bigbike.bigbike_backend.service.ws.AdminChatWsService;
 import com.bigbike.bigbike_backend.service.ws.ChatLeadWsEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,16 +41,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChatService {
 
     public static final int MAX_TURNS = 12;
-    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatLeadJpaRepository leadRepo;
+    private final CustomerJpaRepository customerRepo;
     private final ChatAssistantSettings assistantSettings;
     private final ChatToolService toolService;
     private final ChatToolRegistry toolRegistry;
     private final AiChatClient aiClient;
     private final ChatResponseGuard responseGuard;
+    private final ChatAiQuotaService chatAiQuotaService;
     private final AdminChatWsService adminChatWsService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -73,7 +76,7 @@ public class ChatService {
     }
 
     @Transactional
-    public synchronized ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
+    public ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
         ChatAssistantSettings.Snapshot settings = assistantSettings.load(request.getLang());
         ChatConversationEntity conversation = loadOrCreate(
                 request.getConversationId(), customerId, request.getLang());
@@ -90,7 +93,8 @@ public class ChatService {
             conversation.setEndedReason(endedReason(availability.reason()));
             saveCustomerMessage(conversation, request.getMessage());
             String fallback = contactFallbackText(request.getLang(), fallbackCause(availability.reason()));
-            log.warn("Bi fallback cause={}", fallbackCause(availability.reason()));
+            logFallback(availabilityFallbackReason(availability.reason()), FallbackFlow.CONTACT_GATE,
+                    "NONE", 0, false);
             saveAssistantMessage(conversation, fallback,
                     "CONTACT_FALLBACK", false, List.of(), 0);
             return contactResponse(
@@ -98,19 +102,22 @@ public class ChatService {
         }
 
         ChatToolService.ConversationContext conversationContext = readConversationContext(conversation);
+        List<ChatMessageEntity> existingMessages = messageRepo
+                .findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+        ChatToolService.ConversationContext referenceContext = contextForImmediatePreviousCards(
+                conversationContext, existingMessages);
         List<ChatHistorySanitizer.RecentTurn> recentTurns = settings.recentTurnPairs() == 0
                 ? List.of()
-                : ChatHistorySanitizer.recentTurns(
-                        messageRepo.findByConversationIdOrderByCreatedAtAsc(conversation.getId()),
-                        settings.recentTurnPairs());
+                : ChatHistorySanitizer.recentTurns(existingMessages, settings.recentTurnPairs());
         saveCustomerMessage(conversation, request.getMessage());
         Optional<ToolOutcome> fastPath;
         try {
             fastPath = toolService.resolveFastPath(
-                    request.getMessage(), request.getLang(), customerId, settings, conversationContext);
+                    request.getMessage(), request.getLang(), customerId, settings, referenceContext);
         } catch (RuntimeException exception) {
-            log.warn("Bi fast-path failed type={}", exception.getClass().getSimpleName());
-            return recoverableClarification(conversation, settings, request.getLang(), false);
+            return recoverableClarification(
+                    conversation, settings, request.getLang(), false,
+                    ChatFallbackReason.FAST_PATH_EXCEPTION, "NONE", 0);
         }
 
         if (fastPath.isPresent()) {
@@ -118,7 +125,12 @@ public class ChatService {
             Optional<ChatResponseGuard.CheckedAnswer> checked = responseGuard.check(
                     tool.localAnswer(), tool.products(), request.getLang());
             if (checked.isEmpty()) {
-                return recoverableClarification(conversation, settings, request.getLang(), false);
+                String reason = responseGuard.rejectionReason(
+                        tool.localAnswer(), tool.products(), request.getLang(), List.of(),
+                        tool.requiredDisclosures(), tool.catalogTotals());
+                return recoverableClarification(
+                        conversation, settings, request.getLang(), false,
+                        ChatFallbackReason.FAST_PATH_GUARD_REJECTED, reason, tool.products().size());
             }
             ChatResponseGuard.CheckedAnswer safe = checked.get();
             Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
@@ -132,6 +144,10 @@ public class ChatService {
                     conversation,
                     clarifiedDuplicate ? false : tool.offTopic(),
                     clarifiedDuplicate ? false : tool.handoffRecommended());
+            boolean leadPrompt = offerLeadIfEligible(
+                    conversation,
+                    !handoff && ChatToolService.shouldOfferLeadPrompt(
+                            request.getMessage(), safe.products(), false));
             saveAssistantMessage(conversation, safe.answer(), clarifiedDuplicate ? "TOOL" : tool.source(),
                     false, safe.products(), 0);
             saveConversationContext(conversation, toolService.recordConversationContext(
@@ -149,12 +165,23 @@ public class ChatService {
                     safe.answer(),
                     safe.products(),
                     handoff,
-                    false,
+                    leadPrompt,
                     tool.actions());
         }
 
+        if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
+            conversation.setEndedReason("DAILY_LIMIT_REACHED");
+            String fallback = contactFallbackText(request.getLang(), FallbackCause.DAILY_LIMIT);
+            saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", false, List.of(), 0);
+            logFallback(ChatFallbackReason.DAILY_LIMIT_REACHED, FallbackFlow.QUOTA_GATE,
+                    "NONE", 0, false);
+            conversationRepo.save(conversation);
+            return contactResponse(conversation, settings, fallback, List.of());
+        }
+        conversation.setAiCallCount(conversation.getAiCallCount() + 1);
+
         ChatToolService.ToolContext toolContext = new ChatToolService.ToolContext(
-                request.getMessage(), request.getLang(), customerId, settings, conversationContext);
+                request.getMessage(), request.getLang(), customerId, settings, referenceContext);
         ChatToolService.AssistantCatalogVocabulary vocabulary = toolService.assistantCatalogVocabulary();
         if (vocabulary == null) vocabulary = ChatToolService.AssistantCatalogVocabulary.empty();
         Optional<AiChatClient.HybridAnswer> ai;
@@ -166,27 +193,39 @@ public class ChatService {
                     true,
                     (call, session) -> toolService.execute(call, toolContext, session),
                     vocabulary,
-                    conversationContext.productSlugs(),
+                    referenceContext.productSlugs(),
                     recentTurns);
         } catch (RuntimeException exception) {
-            log.warn("Bi AI invocation failed type={}", exception.getClass().getSimpleName());
             ai = Optional.empty();
         }
-        conversation.setAiCallCount(conversation.getAiCallCount() + 1);
         if (ai.isEmpty()) {
-            return recoverableClarification(conversation, settings, request.getLang(), true);
+            return recoverableClarification(
+                    conversation, settings, request.getLang(), true,
+                    ChatFallbackReason.AI_NO_SAFE_RESULT, "NONE", 0);
         }
 
         AiChatClient.HybridAnswer hybridAnswer = ai.get();
-        Optional<ChatResponseGuard.CheckedAnswer> checked = checkHybridAnswer(
-                hybridAnswer, request.getLang(), settings);
-        ChatResponseGuard.GuardDiagnostic guardDiagnostic = checked.isEmpty()
+        List<ChatProductCardResponse> originalProducts = hybridAnswer.products() == null
+                ? List.of() : hybridAnswer.products();
+        List<ChatProductCardResponse> safeProducts = responseGuard.retainSafeProducts(originalProducts);
+        boolean productsFiltered = safeProducts.size() != originalProducts.size();
+        if (productsFiltered) {
+            hybridAnswer = withSafeProducts(hybridAnswer, safeProducts);
+        }
+        Optional<ChatResponseGuard.CheckedAnswer> checked = productsFiltered
+                ? groundedCardRecovery(hybridAnswer, request.getLang())
+                : checkHybridAnswer(hybridAnswer, request.getLang(), settings);
+        ChatResponseGuard.GuardDiagnostic guardDiagnostic = productsFiltered
+                ? new ChatResponseGuard.GuardDiagnostic(
+                        "UNSAFE_PRODUCT", originalProducts.size(), false, false,
+                        hybridAnswer.requiredDisclosures().size())
+                : (checked.isEmpty()
                 ? rejectionDiagnostic(hybridAnswer, request.getLang(), settings)
-                : null;
+                : null);
         String guardReason = guardDiagnostic == null ? "NONE" : guardDiagnostic.reason();
-        boolean recoveredFromGuard = false;
+        boolean recoveredFromGuard = productsFiltered && checked.isPresent();
         if (checked.isEmpty()) {
-            if ("UNSUPPORTED_CATALOG_CLAIM".equals(guardReason)) {
+            if (!productsFiltered && "UNSUPPORTED_CATALOG_CLAIM".equals(guardReason)) {
                 checked = verifiedSearchRecovery(hybridAnswer, request.getLang());
                 if (checked.isEmpty()) {
                     checked = responseGuard.repairUnsupportedCountClauses(
@@ -198,45 +237,47 @@ public class ChatService {
                 }
                 recoveredFromGuard = checked.isPresent();
             }
-            if (checked.isEmpty()) {
+            if (!productsFiltered && checked.isEmpty()) {
                 checked = verifiedSearchRecovery(hybridAnswer, request.getLang());
                 recoveredFromGuard = checked.isPresent();
             }
-            if (checked.isEmpty()) {
+            if (!productsFiltered && checked.isEmpty()) {
                 checked = groundedCardRecovery(hybridAnswer, request.getLang());
                 recoveredFromGuard = checked.isPresent();
             }
             if (recoveredFromGuard) {
-                log.info("Bi answer recovered conversationId={} turn={} reason={} products={} scopeTotal={} priceRangeTotal={} disclosures={}",
-                        conversation.getId(), conversation.getTurnCount(), guardReason,
-                        guardDiagnostic.productCount(), guardDiagnostic.hasScopeTotal(),
-                        guardDiagnostic.hasPriceRangeTotal(), guardDiagnostic.requiredDisclosureCount());
-            } else {
-                // Fixed structural diagnostics and conversation correlation only; never log
-                // customer/assistant text, product identifiers, prices or PII.
-                log.warn("Bi answer rejected conversationId={} turn={} reason={} products={} scopeTotal={} priceRangeTotal={} disclosures={}",
-                        conversation.getId(), conversation.getTurnCount(), guardReason,
-                        guardDiagnostic.productCount(), guardDiagnostic.hasScopeTotal(),
-                        guardDiagnostic.hasPriceRangeTotal(), guardDiagnostic.requiredDisclosureCount());
+                logFallback(productsFiltered
+                                ? ChatFallbackReason.UNSAFE_PRODUCT_FILTERED
+                                : ChatFallbackReason.AI_GUARD_REJECTED,
+                        FallbackFlow.AI_GUARD, guardReason,
+                        guardDiagnostic.productCount(), true);
             }
         }
         if (checked.isEmpty()) {
-            return recoverableClarification(conversation, settings, request.getLang(), true);
+            return recoverableClarification(
+                    conversation, settings, request.getLang(), true,
+                    productsFiltered
+                            ? ChatFallbackReason.UNSAFE_PRODUCT_FILTERED
+                            : ChatFallbackReason.AI_GUARD_REJECTED,
+                    guardReason,
+                    guardDiagnostic == null ? 0 : guardDiagnostic.productCount());
         }
         ChatResponseGuard.CheckedAnswer safe = checked.get();
         Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
                 conversation, safe, request.getLang());
         boolean clarifiedDuplicate = duplicateClarification.isPresent();
         if (clarifiedDuplicate) safe = duplicateClarification.get();
+        boolean interestLead = ChatToolService.shouldOfferLeadPrompt(
+                request.getMessage(), safe.products(), recoveredFromGuard);
         AiChatClient.Answer answer = recoveredFromGuard || clarifiedDuplicate
-                ? new AiChatClient.Answer(safe.answer(), false, false, false)
+                ? new AiChatClient.Answer(
+                        safe.answer(), false, false,
+                        hybridAnswer.answer().leadPrompt() || interestLead)
                 : hybridAnswer.answer();
         boolean handoff = applyConversationSignals(
                 conversation, answer.offTopic(), answer.handoffRecommended());
-        boolean leadPrompt = answer.leadPrompt()
-                && !handoff
-                && "NONE".equals(conversation.getLeadOfferStatus());
-        if (leadPrompt) conversation.setLeadOfferStatus("OFFERED");
+        boolean leadPrompt = offerLeadIfEligible(
+                conversation, !handoff && (answer.leadPrompt() || interestLead));
         saveAssistantMessage(
                 conversation, safe.answer(), recoveredFromGuard || clarifiedDuplicate ? "TOOL" : hybridAnswer.source(),
                 true, safe.products(), 0);
@@ -272,9 +313,18 @@ public class ChatService {
 
         ChatLeadEntity lead = new ChatLeadEntity();
         lead.setConversationId(conversation.getId());
-        lead.setName(trimToNull(request.getName()));
-        lead.setPhone(request.getPhone().replaceAll("\\s+", " ").trim());
-        lead.setNote(trimToNull(request.getNote()));
+        if ("ACCOUNT".equals(request.getContactSource())) {
+            AccountContact accountContact = resolveAccountContact(customerId);
+            lead.setName(accountContact.name());
+            lead.setPhone(accountContact.phone());
+            lead.setNote(null);
+            lead.setSource("ACCOUNT");
+        } else {
+            lead.setName(trimToNull(request.getName()));
+            lead.setPhone(request.getPhone().replaceAll("\\s+", " ").trim());
+            lead.setNote(trimToNull(request.getNote()));
+            lead.setSource("FORM");
+        }
         lead.setConsentedAt(Instant.now());
         leadRepo.save(lead);
 
@@ -289,6 +339,33 @@ public class ChatService {
                 Instant.now()));
         return new ChatLeadResponse(true);
     }
+
+    private AccountContact resolveAccountContact(UUID customerId) {
+        if (customerId == null) {
+            throw new ForbiddenException("Cần đăng nhập để dùng thông tin liên hệ trong tài khoản.");
+        }
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new ForbiddenException("Không thể xác nhận tài khoản hiện tại."));
+        String name = trimToNull(customer.getDisplayName());
+        if (name == null) {
+            name = trimToNull(String.join(" ",
+                    java.util.stream.Stream.of(customer.getFirstName(), customer.getLastName())
+                            .filter(value -> value != null && !value.isBlank())
+                            .map(String::trim)
+                            .toList()));
+        }
+        String phone = PhoneNumbers.normalize(customer.getPhone());
+        if (name == null || !isUsableAccountPhone(phone)) {
+            throw new ConflictException("Tài khoản chưa có thông tin liên hệ dùng được.");
+        }
+        return new AccountContact(name, phone);
+    }
+
+    private static boolean isUsableAccountPhone(String phone) {
+        return phone != null && phone.matches("[0-9]{8,32}");
+    }
+
+    private record AccountContact(String name, String phone) {}
 
     @Transactional
     public ChatLeadDeclineResponse declineLead(UUID conversationId, UUID customerId) {
@@ -320,7 +397,7 @@ public class ChatService {
     }
 
     private ChatConversationEntity loadExistingForCaller(UUID id, UUID customerId) {
-        ChatConversationEntity conversation = conversationRepo.findById(id)
+        ChatConversationEntity conversation = conversationRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
         UUID owner = conversation.getCustomerId();
         if ((owner != null && customerId == null)
@@ -352,6 +429,22 @@ public class ChatService {
                 hybridAnswer.requiredDisclosures(),
                 hybridAnswer.catalogTotals(),
                 hybridAnswer.executedTools());
+    }
+
+    private static AiChatClient.HybridAnswer withSafeProducts(
+            AiChatClient.HybridAnswer source,
+            List<ChatProductCardResponse> products
+    ) {
+        return new AiChatClient.HybridAnswer(
+                source.answer(),
+                List.copyOf(products),
+                source.actions(),
+                source.executedTools(),
+                source.requiredDisclosures(),
+                source.providerCallCount(),
+                source.source(),
+                null,
+                source.searchScope());
     }
 
     private String rejectionReason(
@@ -560,9 +653,41 @@ public class ChatService {
                     raw, ChatToolService.ConversationContext.class);
             return context == null ? ChatToolService.ConversationContext.empty() : context;
         } catch (JsonProcessingException exception) {
-            log.warn("Bi conversation context ignored type={}", exception.getClass().getSimpleName());
+            log.warn("chat_assistant_context reason=INVALID_CONTEXT_JSON");
             return ChatToolService.ConversationContext.empty();
         }
+    }
+
+    /** Only cards on the immediately preceding assistant message can resolve "this/these". */
+    private ChatToolService.ConversationContext contextForImmediatePreviousCards(
+            ChatToolService.ConversationContext persisted,
+            List<ChatMessageEntity> messages
+    ) {
+        ChatToolService.ConversationContext context = persisted == null
+                ? ChatToolService.ConversationContext.empty() : persisted;
+        List<String> slugs = List.of();
+        if (messages != null && !messages.isEmpty()) {
+            ChatMessageEntity latest = messages.get(messages.size() - 1);
+            if ("ASSISTANT".equals(latest.getRole())
+                    && latest.getProductsJson() != null
+                    && !latest.getProductsJson().isBlank()) {
+                try {
+                    List<ChatProductCardResponse> cards = objectMapper.readValue(
+                            latest.getProductsJson(), new TypeReference<>() {});
+                    slugs = cards.stream()
+                            .filter(card -> card != null && card.slug() != null && !card.slug().isBlank())
+                            .map(ChatProductCardResponse::slug)
+                            .distinct()
+                            .limit(3)
+                            .toList();
+                } catch (JsonProcessingException exception) {
+                    log.warn("Trợ lý BigBike previous-card context ignored reason=INVALID_PRODUCTS_JSON");
+                }
+            }
+        }
+        return new ChatToolService.ConversationContext(
+                context.category(), context.brand(), context.minPrice(), context.maxPrice(),
+                slugs, context.awaitingOrderLogin());
     }
 
     private void saveConversationContext(
@@ -588,7 +713,10 @@ public class ChatService {
             ChatConversationEntity conversation,
             ChatAssistantSettings.Snapshot settings,
             String lang,
-            boolean aiCalled
+            boolean aiCalled,
+            ChatFallbackReason reason,
+            String guardReason,
+            int productCount
     ) {
         conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
         boolean repeated = messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
@@ -599,27 +727,28 @@ public class ChatService {
         String answer = repeated
                 ? repeatedFallbackText(lang)
                 : ("en".equals(lang)
-                ? "I could not complete that lookup yet, but you can keep chatting here. "
-                + "Please tell me the product name, product type or exact detail you want checked, and I will try again."
-                : "Dạ, em chưa hoàn tất được lần tra này nhưng anh/chị vẫn có thể hỏi tiếp ngay tại đây. "
-                + "Anh/chị cho em tên mẫu, loại hàng hoặc đúng chi tiết cần kiểm tra, em sẽ tra lại nhé.");
-        log.warn("Bi recovered with clarification conversationId={} turn={}",
-                conversation.getId(), conversation.getTurnCount());
-        saveAssistantMessage(conversation, answer, "TOOL", aiCalled, List.of(), 0);
+                ? "I could not complete that lookup yet. Please send the product name, product type or exact detail you want checked, and I will try again from the current BigBike catalogue."
+                : "Dạ, em chưa lấy được thông tin phù hợp cho câu hỏi này nhưng anh/chị vẫn có thể hỏi tiếp. Anh/chị gửi tên mẫu, loại hàng hoặc chi tiết cần kiểm tra, em sẽ tra lại theo dữ liệu BigBike đang bán nhé.");
+        logFallback(reason, aiCalled ? FallbackFlow.AI : FallbackFlow.FAST_PATH,
+                guardReason, productCount, false);
+        saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0);
         conversationRepo.save(conversation);
-        return aiResponse(conversation, settings, answer, List.of(), false, false, List.of());
+        return aiResponse(
+                conversation, settings, answer, List.of(), false,
+                offerLeadIfEligible(conversation, true), List.of());
     }
 
     private static boolean isRecoverableClarificationText(String value) {
         String normalized = ChatToolService.normalize(value == null ? "" : value);
-        return normalized.contains("chua hoan tat duoc lan tra nay")
-                || normalized.contains("could not complete that lookup yet");
+        return normalized.contains("chua lay duoc thong tin phu hop cho cau hoi nay")
+                || normalized.contains("could not complete that lookup yet")
+                || normalized.contains("chua hoan tat duoc lan tra nay");
     }
 
     private static String repeatedFallbackText(String lang) {
         return "en".equals(lang)
-                ? "I still need a little more detail to help with this. Please tell me the product type, model or price range you want to check, and I will look at the products currently sold by BigBike."
-                : "Dạ, em cần anh/chị cho em biết rõ loại hàng, tên mẫu hoặc tầm giá để kiểm tra đúng dữ liệu đang bán. Anh/chị nói thêm một chi tiết, em sẽ lọc lại mà không đoán thông tin nhé.";
+                ? "I still need a little more detail to help with this. Please tell me the product type, model or price range, and I will filter the products currently sold by BigBike."
+                : "Dạ, em cần anh/chị nói thêm loại hàng, tên mẫu hoặc tầm giá để lọc đúng dữ liệu BigBike đang bán. Anh/chị cho em biết rõ thêm một chi tiết giúp em nhé.";
     }
 
     private void saveAssistantMessage(
@@ -659,6 +788,12 @@ public class ChatService {
         return false;
     }
 
+    private boolean offerLeadIfEligible(ChatConversationEntity conversation, boolean eligible) {
+        if (!eligible || !"NONE".equals(conversation.getLeadOfferStatus())) return false;
+        conversation.setLeadOfferStatus("OFFERED");
+        return true;
+    }
+
     private void finishTurnIfNeeded(ChatConversationEntity conversation) {
         if (conversation.getTurnCount() >= MAX_TURNS && conversation.getEndedReason() == null) {
             conversation.setEndedReason("TURN_LIMIT");
@@ -668,16 +803,10 @@ public class ChatService {
     private Availability resolveAvailability(ChatAssistantSettings.Snapshot settings) {
         if (!settings.enabled()) return new Availability("CONTACT", "DISABLED");
         if (!aiClient.isConfigured()) return new Availability("CONTACT", "NOT_CONFIGURED");
-        if (settings.dailyLimit() <= 0 || aiCallsToday() >= settings.dailyLimit()) {
+        if (settings.dailyLimit() <= 0 || chatAiQuotaService.usedToday() >= settings.dailyLimit()) {
             return new Availability("CONTACT", "DAILY_LIMIT_REACHED");
         }
         return new Availability("AI", "AVAILABLE");
-    }
-
-    private long aiCallsToday() {
-        Instant from = LocalDate.now(VN_ZONE).atStartOfDay(VN_ZONE).toInstant();
-        Instant to = LocalDate.now(VN_ZONE).plusDays(1).atStartOfDay(VN_ZONE).toInstant();
-        return messageRepo.countAiUsesBetween(from, to);
     }
 
     private static ChatMessageResponse aiResponse(
@@ -750,21 +879,54 @@ public class ChatService {
         };
     }
 
+    private static ChatFallbackReason availabilityFallbackReason(String availabilityReason) {
+        return switch (availabilityReason) {
+            case "DISABLED" -> ChatFallbackReason.SERVICE_DISABLED;
+            case "DAILY_LIMIT_REACHED" -> ChatFallbackReason.DAILY_LIMIT_REACHED;
+            default -> ChatFallbackReason.SERVICE_NOT_CONFIGURED;
+        };
+    }
+
+    private void logFallback(
+            ChatFallbackReason reason,
+            FallbackFlow flow,
+            String guardReason,
+            int productCount,
+            boolean recovered
+    ) {
+        String safeGuardReason = guardReason == null || guardReason.isBlank() ? "NONE" : guardReason;
+        if (recovered) {
+            log.info("chat_assistant_outcome flow={} reason={} guard={} products={} recovered=true",
+                    flow, reason, safeGuardReason, Math.max(0, productCount));
+        } else {
+            log.warn("chat_assistant_outcome flow={} reason={} guard={} products={} recovered=false",
+                    flow, reason, safeGuardReason, Math.max(0, productCount));
+        }
+    }
+
+    private enum FallbackFlow {
+        CONTACT_GATE,
+        QUOTA_GATE,
+        FAST_PATH,
+        AI,
+        AI_GUARD
+    }
+
     private static String contactFallbackText(String lang, FallbackCause cause) {
         if ("en".equals(lang)) {
             return switch (cause) {
-                case SERVICE_PAUSED -> "Bi’s automated chat is temporarily paused. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case DAILY_LIMIT -> "Bi has reached today’s automated-chat limit. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case SERVICE_NOT_READY -> "Bi’s automated chat is not ready at the moment. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
+                case SERVICE_PAUSED -> "BigBike Assistant is temporarily paused. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
+                case DAILY_LIMIT -> "BigBike Assistant has reached today’s automated-chat limit. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
+                case SERVICE_NOT_READY -> "BigBike Assistant is not ready at the moment. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
                 case PROVIDER_UNAVAILABLE -> "That lookup did not finish, but you can keep chatting here. Please send the product name or detail to check again; Talk to staff remains available if you need immediate help.";
                 case SAFETY_REVIEW -> "I do not have enough confirmed detail to answer this part clearly, so I do not want to guess. Please choose Talk to staff; Hotline, Zalo and Messenger below can help you directly.";
                 case STAFF_REVIEW -> "This request needs a BigBike staff review so no unsupported promise is made. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
             };
         }
         return switch (cause) {
-            case SERVICE_PAUSED -> "Dạ, em là Bi và kênh tư vấn tự động đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case DAILY_LIMIT -> "Dạ, em là Bi và đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case SERVICE_NOT_READY -> "Dạ, em là Bi và kênh tư vấn tự động hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case SERVICE_PAUSED -> "Dạ, Trợ lý BigBike đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case DAILY_LIMIT -> "Dạ, Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case SERVICE_NOT_READY -> "Dạ, Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
             case PROVIDER_UNAVAILABLE -> "Dạ, lần tra này chưa hoàn tất nhưng anh/chị vẫn có thể hỏi tiếp trong khung chat. Anh/chị thử gửi tên mẫu hoặc chi tiết cần kiểm tra; nếu cần hỗ trợ ngay, nút Gặp nhân viên vẫn luôn có sẵn ạ.";
             case SAFETY_REVIEW -> "Dạ, em cần anh/chị nói rõ thêm để kiểm tra đúng dữ liệu và không đoán. Anh/chị gửi tên mẫu hoặc chi tiết cần xem; nút Gặp nhân viên vẫn luôn có sẵn nếu mình cần hỗ trợ trực tiếp ạ.";
             case STAFF_REVIEW -> "Dạ, em cần nhân viên BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";

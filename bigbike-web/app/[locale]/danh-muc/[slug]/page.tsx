@@ -11,7 +11,6 @@ import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
-import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -20,12 +19,13 @@ import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
 import type { Locale } from "@/i18n/locale";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import type { RouteSearchParams } from "@/lib/utils/query";
 
 // ISR on-demand: danh mục là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Shell
-// (thông tin danh mục, sidebar) + lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định,
-// chưa lọc) đều render ở SERVER + revalidate theo tag category:{slug}/categories/products
-// → nội dung danh mục nằm trong HTML server (SEO). Lọc/sắp xếp/phân trang do client
-// tiếp quản theo searchParams.
+// (thông tin danh mục, sidebar) + lưới sản phẩm đúng theo URL hiện tại đều render ở
+// SERVER + revalidate theo tag category:{slug}/categories/products. Sau hydrate,
+// lọc/sắp xếp/phân trang do client tiếp quản.
 export async function generateStaticParams() {
   return [];
 }
@@ -42,6 +42,7 @@ async function getCategoryByRouteSlug(slug: string, locale: string) {
 
 type CategoryDetailPageProps = {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<RouteSearchParams>;
 };
 
 export async function generateMetadata({ params }: CategoryDetailPageProps): Promise<Metadata> {
@@ -96,8 +97,9 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
   });
 }
 
-export default async function CategoryDetailPage({ params }: CategoryDetailPageProps) {
+export default async function CategoryDetailPage({ params, searchParams }: CategoryDetailPageProps) {
   const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const catalog = parseCatalogListParams(await searchParams);
   setRequestLocale(locale);
   if (!isValidSlug(slug)) {
     notFound();
@@ -130,13 +132,26 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   const category = categoryResult.data;
   const preferredSlug = locale === "en" ? category.slugEn?.trim() || category.slug : category.slug;
   if (slug !== preferredSlug) permanentRedirect(toCategoryPath(preferredSlug, locale));
-  // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
-  // Facets fetch theo category (không kèm q) làm base; lựa chọn "current" tính ở client.
+  // Shell theo slug; lưới và facets đọc đầy đủ searchParams để lần hiển thị đầu tiên
+  // khớp chính xác URL đã lọc.
   const [brandsResult, allCategoriesResult, facetsResult, productsResult] = await Promise.all([
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    getCatalogFacets({ category: category.slug, lang: locale }),
-    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, category: category.slug, lang: locale }),
+    getCatalogFacets({
+      category: category.slug, brand: catalog.filters.brand, q: catalog.filters.q,
+      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock, lang: locale,
+    }),
+    listProducts({
+      page: catalog.page, size: catalog.size, sort: catalog.productSort,
+      category: category.slug, brand: catalog.filters.brand, q: catalog.filters.q,
+      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock, lang: locale,
+    }),
   ]);
 
   const canonicalPath = toCategoryPath(preferredSlug, locale);
@@ -190,6 +205,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
         <AltSlugRegistrar kind="category" viSlug={category.slug} enSlug={category.slugEn ?? null} />
         <div>
           <PageHero
+            className="mb-4 md:mb-22.5"
             title={categoryName}
             titleNode={<LText field="name">{categoryName}</LText>}
             breadcrumb={heroBreadcrumb}

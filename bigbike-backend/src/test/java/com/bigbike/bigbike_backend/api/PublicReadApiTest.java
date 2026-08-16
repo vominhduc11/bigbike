@@ -172,7 +172,7 @@ class PublicReadApiTest {
     }
 
     @Test
-    void publicProductList_multiGenderFilterReturnsUnionAndExcludesNull() throws Exception {
+    void publicProductList_singleGenderFilterTakesFirstLegacyValueAndSupportsBothFlags() throws Exception {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String category = "pub-gender-cat-" + suffix;
         CategoryEntity cat = seedCategory(category, "Pub Gender Cat " + suffix);
@@ -180,14 +180,16 @@ class PublicReadApiTest {
                 cat, PublishStatus.PUBLISHED, 1_000_000L, "Nam");
         seedProduct("pub-gender-women-" + suffix, "Pub Gender Women " + suffix,
                 cat, PublishStatus.PUBLISHED, 1_100_000L, "Nữ");
+        seedProduct("pub-gender-both-" + suffix, "Pub Gender Both " + suffix,
+                cat, PublishStatus.PUBLISHED, 1_150_000L, "Nam|Nữ");
         seedProduct("pub-gender-none-" + suffix, "Pub Gender None " + suffix,
                 cat, PublishStatus.PUBLISHED, 1_200_000L, null);
 
-        mockMvc.perform(get("/api/v1/products")
+                mockMvc.perform(get("/api/v1/products")
                         .param("category", category)
                         .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.pagination.totalItems").value(4));
 
         mockMvc.perform(get("/api/v1/products")
                         .param("category", category)
@@ -197,7 +199,25 @@ class PublicReadApiTest {
                 .andExpect(jsonPath("$.pagination.totalItems").value(2))
                 .andExpect(jsonPath("$.data[*].slug")
                         .value(org.hamcrest.Matchers.containsInAnyOrder(
-                                "pub-gender-men-" + suffix, "pub-gender-women-" + suffix)));
+                                "pub-gender-men-" + suffix, "pub-gender-both-" + suffix)));
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("category", category)
+                        .param("size", "10")
+                        .param("filter_gender", "Nữ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data[*].slug")
+                        .value(org.hamcrest.Matchers.containsInAnyOrder(
+                                "pub-gender-women-" + suffix, "pub-gender-both-" + suffix)));
+
+        mockMvc.perform(get("/api/v1/catalog/facets")
+                        .param("category", category)
+                        .param("filter_gender", "Nam"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.genders.length()").value(2))
+                .andExpect(jsonPath("$.data.genders[?(@.key == 'Nam')].count").value(2))
+                .andExpect(jsonPath("$.data.genders[?(@.key == 'Nữ')].count").value(2));
     }
 
     @Test
@@ -236,31 +256,51 @@ class PublicReadApiTest {
                 .andExpect(jsonPath("$.data.categories").isArray())
                 .andExpect(jsonPath("$.data.brands").isArray())
                 .andExpect(jsonPath("$.data.colors").isArray())
-                .andExpect(jsonPath("$.data.priceBands").isArray())
-                // 10 fixed named colors, 9 fixed price bands
-                .andExpect(jsonPath("$.data.colors.length()").value(10))
-                .andExpect(jsonPath("$.data.priceBands.length()").value(9))
+                .andExpect(jsonPath("$.data.priceRange.minPrice").value(800000))
+                .andExpect(jsonPath("$.data.priceRange.maxPrice").value(1500000))
+                .andExpect(jsonPath("$.data.priceRange.step").value(50000))
+                .andExpect(jsonPath("$.data.priceRange.buckets").isArray())
                 // category bucket counts only the 2 published products (draft excluded)
                 .andExpect(jsonPath("$.data.categories[?(@.key == '" + catSlug + "')].count").value(2));
     }
 
     @Test
-    void catalogFacets_priceBands_countByBand() throws Exception {
+    void catalogFacets_priceRange_usesEffectiveSaleAndIgnoresActivePrice() throws Exception {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String catSlug = "facet-price-cat-" + suffix;
         CategoryEntity cat = seedCategory(catSlug, "Facet Price Cat " + suffix);
         seedProduct("facet-pr1-" + suffix, "Facet Price 1 " + suffix, cat, PublishStatus.PUBLISHED, 500_000L);
         seedProduct("facet-pr2-" + suffix, "Facet Price 2 " + suffix, cat, PublishStatus.PUBLISHED, 1_500_000L);
         seedProduct("facet-pr3-" + suffix, "Facet Price 3 " + suffix, cat, PublishStatus.PUBLISHED, 9_500_000L);
+        ProductEntity discounted = productRepo.findBySlug("facet-pr1-" + suffix).orElseThrow();
+        discounted.setSalePrice(BigDecimal.valueOf(400_000L));
+        productRepo.save(discounted);
+
+        mockMvc.perform(get("/api/v1/catalog/facets")
+                        .param("category", catSlug)
+                        .param("min_price", "1000000")
+                        .param("max_price", "2000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.priceRange.minPrice").value(400000))
+                .andExpect(jsonPath("$.data.priceRange.maxPrice").value(9500000))
+                .andExpect(jsonPath("$.data.priceRange.step").value(50000))
+                .andExpect(jsonPath("$.data.priceRange.buckets.length()").value(24))
+                .andExpect(jsonPath("$.data.priceRange.buckets[0].minPrice").value(400000))
+                .andExpect(jsonPath("$.data.priceRange.buckets[23].maxPrice").value(9500000))
+                .andExpect(jsonPath("$.data.priceBands").doesNotExist());
+    }
+
+    @Test
+    void catalogFacets_singleEffectivePrice_hidesPriceRange() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String catSlug = "facet-single-price-cat-" + suffix;
+        CategoryEntity cat = seedCategory(catSlug, "Facet Single Price Cat " + suffix);
+        seedProduct("facet-single-price-" + suffix, "Facet Single Price " + suffix,
+                cat, PublishStatus.PUBLISHED, 750_000L);
 
         mockMvc.perform(get("/api/v1/catalog/facets").param("category", catSlug))
                 .andExpect(status().isOk())
-                // index 0 = 0-1tr, index 1 = 1-2tr, index 8 = tren-9tr (fixed order)
-                .andExpect(jsonPath("$.data.priceBands[0].key").value("0-1tr"))
-                .andExpect(jsonPath("$.data.priceBands[0].count").value(1))
-                .andExpect(jsonPath("$.data.priceBands[1].count").value(1))
-                .andExpect(jsonPath("$.data.priceBands[8].key").value("tren-9tr"))
-                .andExpect(jsonPath("$.data.priceBands[8].count").value(1));
+                .andExpect(jsonPath("$.data.priceRange").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test
@@ -300,7 +340,12 @@ class PublicReadApiTest {
         p.setRetailPrice(BigDecimal.valueOf(retailPriceLong));
         p.setCurrency("VND");
         p.setPublishStatus(status);
-        p.setGender(gender);
+        if ("Nam|Nữ".equals(gender)) {
+            p.setGenderMale(true);
+            p.setGenderFemale(true);
+        } else {
+            p.setGender(gender);
+        }
         p.setStockState(ProductStockState.IN_STOCK);
         p.setCategory(cat);
         Instant now = Instant.now();

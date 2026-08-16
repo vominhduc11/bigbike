@@ -19,6 +19,6 @@ public class ChatRetentionCleanupService {
     @Transactional
     public void deleteExpiredConversations() {
         long deleted = conversationRepo.deleteByExpiresAtBefore(Instant.now());
-        if (deleted > 0) log.info("Deleted {} expired Bi conversations", deleted);
+        if (deleted > 0) log.info("Deleted {} expired BigBike Assistant conversations", deleted);
     }
 }

@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   fetchBrands: vi.fn(),
   fetchCategoryTree: vi.fn(),
   fetchProductAssignment: vi.fn(),
+  fetchSizeScales: vi.fn(),
   createProduct: vi.fn(),
   updateProduct: vi.fn(),
   publishProduct: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('../lib/adminApi', () => ({
   fetchBrands: mocks.fetchBrands,
   fetchCategoryTree: mocks.fetchCategoryTree,
   fetchProductAssignment: mocks.fetchProductAssignment,
+  fetchSizeScales: mocks.fetchSizeScales,
   createProduct: mocks.createProduct,
   updateProduct: mocks.updateProduct,
   publishProduct: mocks.publishProduct,
@@ -121,7 +123,15 @@ vi.mock('@/components/ui/select', () => ({
   SelectValue: ({ children }) => <span>{children}</span>,
 }))
 vi.mock('@/components/ui/checkbox', () => ({
-  Checkbox: ({ checked, disabled }) => <input type="checkbox" checked={Boolean(checked)} disabled={disabled} readOnly />,
+  Checkbox: ({ checked, disabled, id, onCheckedChange }) => (
+    <input
+      id={id}
+      type="checkbox"
+      checked={Boolean(checked)}
+      disabled={disabled}
+      onChange={(event) => onCheckedChange?.(event.target.checked)}
+    />
+  ),
 }))
 vi.mock('@/components/ui/switch', () => ({
   Switch: ({ checked, disabled }) => <input type="checkbox" checked={Boolean(checked)} disabled={disabled} readOnly />,
@@ -145,7 +155,7 @@ const product = {
   price: { retailPrice: 5900000, salePrice: 5500000 },
   available: true,
   publishStatus: 'DRAFT',
-  gender: 'Nam',
+  genders: ['Nam'],
   image: {
     rawUrl: '/media/product-main.jpg',
     alt: 'Mũ AGV K1S màu đen',
@@ -200,6 +210,7 @@ beforeEach(() => {
   mocks.fetchBrands.mockResolvedValue({ items: [product.brand] })
   mocks.fetchCategoryTree.mockResolvedValue({ items: product.categories })
   mocks.fetchProductAssignment.mockResolvedValue({})
+  mocks.fetchSizeScales.mockResolvedValue([])
   mocks.publishProduct.mockImplementation(async (_id, publishStatus) => ({
     item: { ...product, publishStatus },
   }))
@@ -355,6 +366,27 @@ describe('ProductDetailScreen', () => {
 
     expect(await screen.findByText('products.detail.notFound')).toBeInTheDocument()
     expect(screen.getByText('products.detail.notFoundDesc')).toBeInTheDocument()
+  })
+
+  it('cho phép chọn cả Nam và Nữ, sau khi lưu vẫn giữ cả hai lựa chọn', async () => {
+    const user = userEvent.setup()
+    mocks.updateProduct.mockImplementation(async (_id, payload) => ({
+      item: normalizeProduct({ ...product, genders: payload.genders }),
+    }))
+    renderScreen()
+
+    const male = await screen.findByLabelText('Nam')
+    const female = screen.getByLabelText('Nữ')
+    expect(male).toBeChecked()
+    expect(female).not.toBeChecked()
+
+    await user.click(female)
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    expect(mocks.updateProduct.mock.calls[0][1].genders).toEqual(['Nam', 'Nữ'])
+    expect(await screen.findByLabelText('Nam')).toBeChecked()
+    expect(screen.getByLabelText('Nữ')).toBeChecked()
   })
 })
 

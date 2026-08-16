@@ -10,6 +10,52 @@ import { translatePath } from "./lib/utils/routes";
 
 const handleI18nRouting = createMiddleware(routing);
 
+function handleI18nRequest(request: NextRequest): NextResponse {
+  const response = handleI18nRouting(request);
+  const location = response.headers.get("location");
+  const rewrite = response.headers.get("x-middleware-rewrite");
+  if (!location || !rewrite) return response;
+
+  try {
+    const requestedUrl = new URL(request.url);
+    const locationUrl = new URL(location, request.url);
+    if (
+      normalizeRedirectPath(locationUrl.pathname) !== normalizeRedirectPath(requestedUrl.pathname)
+      || locationUrl.search !== requestedUrl.search
+    ) {
+      return response;
+    }
+    return NextResponse.rewrite(new URL(rewrite, request.url));
+  } catch {
+    return response;
+  }
+}
+
+function hasExplicitLocalePrefix(pathname: string): boolean {
+  return pathname === "/vi"
+    || pathname.startsWith("/vi/")
+    || pathname === "/en"
+    || pathname.startsWith("/en/");
+}
+
+function rewriteDefaultLocaleRequest(request: NextRequest): NextResponse {
+  const destination = request.nextUrl.clone();
+  if (destination.pathname === "/") {
+    // The public home path is also the next-intl root route. Rewriting it to a
+    // private route keeps production next-intl from turning the internal
+    // `/vi/` rewrite into a visible `/` self-redirect.
+    destination.pathname = "/vi/internal/home/";
+  } else if (destination.pathname === "/sp" || destination.pathname.startsWith("/sp/")) {
+    // `/sp/` is the Vietnamese canonical catalog URL, but it is also a
+    // localized pathname in the next-intl registry. Use an internal alias so
+    // the request remains a 200 instead of becoming a `/sp/` redirect loop.
+    destination.pathname = `/vi/internal${destination.pathname}`;
+  } else {
+    destination.pathname = `/vi${destination.pathname}`;
+  }
+  return NextResponse.rewrite(destination);
+}
+
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -53,10 +99,10 @@ const INTERNAL_HEADERS: Record<string, string> = {
 // L1 in-process cache — prevents redundant backend hits within the same
 // worker process. Capped to avoid unbounded growth across many redirect entries.
 const L1_MAX = 10_000;
-type L1Entry = { value: RedirectLookup | null; expiresAt: number };
+type L1Entry = { value: RedirectLookup; expiresAt: number };
 const l1Cache = new Map<string, L1Entry>();
 
-function l1Get(key: string): RedirectLookup | null | undefined {
+function l1Get(key: string): RedirectLookup | undefined {
   const entry = l1Cache.get(key);
   if (!entry) return undefined;
   if (entry.expiresAt <= Date.now()) {
@@ -66,7 +112,7 @@ function l1Get(key: string): RedirectLookup | null | undefined {
   return entry.value;
 }
 
-function l1Set(key: string, value: RedirectLookup | null): void {
+function l1Set(key: string, value: RedirectLookup): void {
   if (l1Cache.size >= L1_MAX) {
     const first = l1Cache.keys().next().value;
     if (first !== undefined) l1Cache.delete(first);
@@ -74,18 +120,51 @@ function l1Set(key: string, value: RedirectLookup | null): void {
   l1Cache.set(key, { value, expiresAt: Date.now() + TTL_SECONDS * 1_000 });
 }
 
-function clearRedirectL1Cache(): number {
-  const size = l1Cache.size;
-  l1Cache.clear();
-  return size;
-}
-
 type RedirectLookup = {
   redirectId: string;
   target: string;
+  statusCode: 301 | 410;
 };
 
-async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
+type BackendLookupResult =
+  | { kind: "hit"; value: RedirectLookup }
+  | { kind: "miss" }
+  | { kind: "transient" };
+
+type ActiveRedirectItem = {
+  id: string;
+  sourcePattern: string;
+  targetUrl: string;
+  statusCode: 301 | 410;
+};
+
+type ActiveRedirectSnapshot = {
+  rules: Map<string, RedirectLookup>;
+  loadedAt: number;
+};
+
+let activeRedirectSnapshot: ActiveRedirectSnapshot | null = null;
+let activeRedirectSnapshotPromise: Promise<ActiveRedirectSnapshot | null> | null = null;
+let activeRedirectSnapshotGeneration = 0;
+
+function clearRedirectCaches(): { entries: number; snapshot: boolean } {
+  const size = l1Cache.size;
+  l1Cache.clear();
+  const hadSnapshot = activeRedirectSnapshot !== null || activeRedirectSnapshotPromise !== null;
+  activeRedirectSnapshot = null;
+  activeRedirectSnapshotGeneration += 1;
+  // An in-flight request may still finish, but its generation check prevents it
+  // from repopulating the cache after an admin mutation has cleared it.
+  activeRedirectSnapshotPromise = null;
+  return { entries: size, snapshot: hadSnapshot };
+}
+
+/** @internal — keeps cache-isolation tests deterministic without changing runtime behavior. */
+export function clearRedirectCachesForTests(): void {
+  clearRedirectCaches();
+}
+
+async function fetchFromBackend(path: string): Promise<BackendLookupResult> {
   const url = new URL("/api/internal/redirect", API_BASE_URL);
   url.searchParams.set("path", path);
   try {
@@ -94,7 +173,7 @@ async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
       cache: "no-store",
       signal: AbortSignal.timeout(2_000),
     });
-    if (response.status === 404) return null;
+    if (response.status === 404) return { kind: "miss" };
     // 401/403 means the backend denied the request — almost certainly a missing/wrong token.
     // Log explicitly so the issue is visible in server logs rather than silently failing.
     if (response.status === 401 || response.status === 403) {
@@ -103,14 +182,79 @@ async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
         "Verify INTERNAL_API_TOKEN matches BIGBIKE_INTERNAL_TOKEN on the backend. " +
         "Redirects will not function until this is resolved."
       );
-      return null;
+      return { kind: "transient" };
     }
-    if (!response.ok) return null;
-    return (await response.json()) as RedirectLookup;
+    if (!response.ok) return { kind: "transient" };
+    const payload = (await response.json()) as Partial<RedirectLookup>;
+    if (!payload.redirectId || !payload.target) return { kind: "transient" };
+    return {
+      kind: "hit",
+      value: {
+        redirectId: payload.redirectId,
+        target: payload.target,
+        statusCode: payload.statusCode === 410 ? 410 : 301,
+      },
+    };
   } catch {
     // Network error or 2 s timeout — let the request continue normally.
+    return { kind: "transient" };
+  }
+}
+
+async function fetchActiveRedirectSnapshot(): Promise<ActiveRedirectSnapshot | null> {
+  const url = new URL("/api/internal/redirects/active", API_BASE_URL);
+  try {
+    const response = await fetch(url, {
+      headers: INTERNAL_HEADERS,
+      cache: "no-store",
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as unknown;
+    if (!Array.isArray(payload)) return null;
+
+    const rules = new Map<string, RedirectLookup>();
+    for (const item of payload as Partial<ActiveRedirectItem>[]) {
+      if (!item.id || !item.sourcePattern || !item.targetUrl) continue;
+      if (item.statusCode !== 301 && item.statusCode !== 410) continue;
+      rules.set(item.sourcePattern, {
+        redirectId: item.id,
+        target: item.targetUrl,
+        statusCode: item.statusCode,
+      });
+    }
+    return { rules, loadedAt: Date.now() };
+  } catch {
+    // A failed snapshot is not an empty snapshot. lookupRedirect will use the
+    // single-path endpoint for this request and try the snapshot again later.
     return null;
   }
+}
+
+async function getActiveRedirectSnapshot(): Promise<ActiveRedirectSnapshot | null> {
+  if (
+    activeRedirectSnapshot &&
+    activeRedirectSnapshot.loadedAt + TTL_SECONDS * 1_000 > Date.now()
+  ) {
+    return activeRedirectSnapshot;
+  }
+  if (activeRedirectSnapshotPromise) return activeRedirectSnapshotPromise;
+
+  const generation = activeRedirectSnapshotGeneration;
+  const requestPromise = fetchActiveRedirectSnapshot()
+    .then((snapshot) => {
+      if (snapshot && generation === activeRedirectSnapshotGeneration) {
+        activeRedirectSnapshot = snapshot;
+      }
+      return snapshot;
+    })
+    .finally(() => {
+      if (activeRedirectSnapshotPromise === requestPromise) {
+        activeRedirectSnapshotPromise = null;
+      }
+    });
+  activeRedirectSnapshotPromise = requestPromise;
+  return requestPromise;
 }
 
 async function recordHit(redirectId: string): Promise<void> {
@@ -131,17 +275,29 @@ async function lookupRedirect(path: string): Promise<RedirectLookup | null> {
   if (l1 !== undefined) return l1;
 
   // WordPress source paths are stored without trailing slashes.
-  // Next.js trailingSlash:true may normalize /old-path â†' /old-path/, so try
+  // Next.js trailingSlash:true may normalize /old-path → /old-path/, so try
   // the de-trailed variant when the exact path yields no result.
   const deslashed =
     path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
 
-  let fresh = await fetchFromBackend(path);
-  if (!fresh && deslashed !== path) {
-    fresh = await fetchFromBackend(deslashed);
+  const snapshot = await getActiveRedirectSnapshot();
+  if (snapshot) {
+    const fresh = snapshot.rules.get(path) ??
+      (deslashed !== path ? snapshot.rules.get(deslashed) : undefined);
+    if (fresh) l1Set(path, fresh);
+    return fresh ?? null;
   }
 
-  l1Set(path, fresh);
+  const exact = await fetchFromBackend(path);
+  let fresh = exact.kind === "hit" ? exact.value : null;
+  if (!fresh && exact.kind !== "transient" && deslashed !== path) {
+    const fallback = await fetchFromBackend(deslashed);
+    fresh = fallback.kind === "hit" ? fallback.value : null;
+  }
+
+  // Positive-only L1 caching is deliberate: a transient backend outage must
+  // never turn into a sticky negative redirect result.
+  if (fresh) l1Set(path, fresh);
   return fresh;
 }
 
@@ -172,9 +328,81 @@ function legacyEnglishCanonicalPath(pathname: string): string | null {
 
 function legacyHtmlLookupPath(pathname: string): string | null {
   if (!pathname.toLowerCase().endsWith(".html")) return null;
-  if (pathname.startsWith("/vi/")) return pathname.slice(3) || "/";
-  if (pathname.startsWith("/en/")) return pathname.slice(3) || "/";
   return pathname;
+}
+
+function legacyProductRewritePath(pathname: string, locale: "vi" | "en"): string | null {
+  const prefix = locale === "en"
+    ? "/en/sp/"
+    : pathname.startsWith("/vi/sp/") ? "/vi/sp/" : "/sp/";
+  if (!pathname.startsWith(prefix) || !pathname.toLowerCase().endsWith(".html")) return null;
+  const slug = pathname.slice(prefix.length, -".html".length);
+  if (!slug || slug.includes("/")) return null;
+  return `/${locale}/legacy/sp/${slug}.html`;
+}
+
+async function lookupLegacyHtmlRedirect(pathname: string): Promise<RedirectLookup | null> {
+  // Admin sources may intentionally include /en/ while older Vietnamese rows omit /vi/.
+  // Prefer the exact stored path so an English row can never accidentally inherit a
+  // Vietnamese rule; only then try the locale-less legacy spelling.
+  const exact = await lookupRedirect(pathname);
+  if (exact) return exact;
+  if (pathname.startsWith("/vi/") || pathname.startsWith("/en/")) {
+    return lookupRedirect(pathname.slice(3) || "/");
+  }
+  return null;
+}
+
+function brandSlugFromPath(pathname: string): string | null {
+  const normalized = pathname.replace(/\/+$/, "");
+  const match = normalized.match(/^(?:\/en|\/vi)?\/brands\/([^/]+)$/i);
+  return match?.[1] ?? null;
+}
+
+async function lookupPublicBrandExists(slug: string, locale: "vi" | "en"): Promise<boolean | null> {
+  const url = new URL(`/api/v1/brands/${encodeURIComponent(slug)}`, API_BASE_URL);
+  url.searchParams.set("lang", locale);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (response.status === 404) return false;
+    return response.ok ? true : null;
+  } catch {
+    return null;
+  }
+}
+
+function goneCategoryPath(sourcePath: string): string {
+  const source = sourcePath.toLowerCase();
+  if (source.includes("of606")) return "/danh-muc/mu-bao-hiem-3-4/";
+  if (source.includes("scoyco-mt068") || source.includes("forma-")) {
+    return "/danh-muc/giay-bao-ho-moto-phuot/";
+  }
+  if (source.includes("sw-motech") || source.includes("kriega") || source.includes("drybag")) {
+    return "/danh-muc/balo-tui-deo-tui-treo-xe/";
+  }
+  if (source.includes("apollo") || source.includes("zoom-lady")) {
+    return "/danh-muc/ao-quan-bao-ho/";
+  }
+  return "/sp/";
+}
+
+/**
+ * The redirect table owns the legacy `/size/...` source and its filter target.
+ * WordPress could encode the page either in the pathname or as `?paged=`;
+ * the latter cannot be stored as a redirect source (queries are deliberately
+ * excluded from `redirects.source_pattern`), so adapt only that page number
+ * while keeping the redirect itself table-driven.
+ */
+function copyLegacySizePage(request: NextRequest, sourcePath: string, destination: URL): void {
+  if (!/^\/(?:size)\/[^/]+\/?$/i.test(sourcePath)) return;
+  if (destination.searchParams.has("page")) return;
+  const paged = request.nextUrl.searchParams.get("paged");
+  if (!paged || !/^[1-9]\d{0,2}$/.test(paged)) return;
+  destination.searchParams.set("page", paged);
 }
 
 function redirectResponse(
@@ -183,6 +411,16 @@ function redirectResponse(
   currentPath: string,
   locale: "vi" | "en",
 ): NextResponse | null {
+  if (rule.statusCode === 410) {
+    const goneUrl = new URL("/seo/gone/", request.url);
+    goneUrl.searchParams.set("locale", locale);
+    goneUrl.searchParams.set("category", translatePath(goneCategoryPath(currentPath), locale));
+    return NextResponse.rewrite(goneUrl, {
+      status: 410,
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
   // A managed target is either a root-relative path or an absolute http(s) URL
   // on this exact storefront host. Re-check here because legacy DB rows may not
   // have passed the current admin validator.
@@ -213,6 +451,7 @@ function redirectResponse(
   if (!destination.search && request.nextUrl.search) {
     destination.search = request.nextUrl.search;
   }
+  copyLegacySizePage(request, currentPath, destination);
   void recordHit(rule.redirectId);
   return NextResponse.redirect(destination, 301);
 }
@@ -229,8 +468,28 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (!REDIRECT_CACHE_CLEAR_SECRET || secret !== REDIRECT_CACHE_CLEAR_SECRET) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const entries = clearRedirectL1Cache();
-    return NextResponse.json({ cleared: true, entries });
+    const cleared = clearRedirectCaches();
+    return NextResponse.json({ cleared: true, ...cleared });
+  }
+
+  // Internal terminal SEO responses are rendered by an app route. Do not send
+  // that rewrite back through locale routing or the redirect table.
+  if (
+    pathname === "/seo/gone"
+    || pathname === "/seo/gone/"
+    || pathname === "/seo/not-found"
+    || pathname === "/seo/not-found/"
+  ) {
+    return NextResponse.next();
+  }
+  if (
+    pathname.startsWith("/legacy/")
+    || pathname.startsWith("/vi/legacy/")
+    || pathname.startsWith("/en/legacy/")
+    || pathname.startsWith("/vi/internal/")
+    || pathname.startsWith("/en/internal/")
+  ) {
+    return NextResponse.next();
   }
 
   const locale = pathname === "/en" || pathname.startsWith("/en/") ? "en" : "vi";
@@ -246,10 +505,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // normalization. This keeps /vi/...html and /en/...html to one direct 301 hop.
   const htmlLookupPath = legacyHtmlLookupPath(pathname);
   if (htmlLookupPath) {
-    const htmlRule = await lookupRedirect(htmlLookupPath);
+    const htmlRule = await lookupLegacyHtmlRedirect(htmlLookupPath);
     if (htmlRule) {
       const response = redirectResponse(request, htmlRule, htmlLookupPath, locale);
       if (response) return response;
+    }
+    const legacyProductPath = legacyProductRewritePath(pathname, locale);
+    if (legacyProductPath) {
+      const destination = new URL(legacyProductPath, request.url);
+      return NextResponse.rewrite(destination);
     }
   }
 
@@ -257,7 +521,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // hop while retaining query parameters and hashes from the requested URL.
   if (pathname === "/vi" || pathname.startsWith("/vi/")) {
     const destination = request.nextUrl.clone();
-    destination.pathname = htmlLookupPath ?? translatePath(pathname, "vi").split(/[?#]/)[0];
+    destination.pathname = translatePath(pathname, "vi").split(/[?#]/)[0];
     return NextResponse.redirect(destination, 301);
   }
 
@@ -323,16 +587,29 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const rule = await lookupRedirect(viPathname);
+  const isDefaultLocaleRoute = locale === "vi" && !hasExplicitLocalePrefix(pathname);
   if (!rule) {
+    const brandSlug = brandSlugFromPath(pathname);
+    if (brandSlug) {
+      const brandExists = await lookupPublicBrandExists(brandSlug, locale);
+      if (brandExists === false) {
+        const notFoundUrl = new URL("/seo/not-found/", request.url);
+        notFoundUrl.searchParams.set("locale", locale);
+        notFoundUrl.searchParams.set("entity", "brand");
+        return NextResponse.rewrite(notFoundUrl);
+      }
+    }
     if (legacyEnglishTarget) {
       const destination = request.nextUrl.clone();
       destination.pathname = legacyEnglishTarget;
       return NextResponse.redirect(destination, 301);
     }
-    return handleI18nRouting(request);
+    if (isDefaultLocaleRoute) return rewriteDefaultLocaleRequest(request);
+    return handleI18nRequest(request);
   }
 
-  return redirectResponse(request, rule, viPathname, locale) ?? handleI18nRouting(request);
+  return redirectResponse(request, rule, viPathname, locale)
+    ?? (isDefaultLocaleRoute ? rewriteDefaultLocaleRequest(request) : handleI18nRequest(request));
 }
 
 export const config = {

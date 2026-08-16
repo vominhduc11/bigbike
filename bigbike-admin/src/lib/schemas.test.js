@@ -11,7 +11,7 @@ function baseForm(overrides = {}) {
     name: 'Test Product',
     categoryIds: ['cat-1'],
     brandId: 'brand-1',
-    gender: 'Nam',
+    genders: ['Nam'],
     sku: 'TEST-SKU',
     retailPrice: '100000',
     publishStatus: 'DRAFT',
@@ -83,7 +83,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('no variants / draft: name-slug-category-brand-sku-retailPrice always required, isCreate not needed', () => {
     const schema = createProductSchema(t, false)
     const result = schema.safeParse(baseForm({
-      slug: '', name: '', categoryIds: [], brandId: '', gender: '', sku: '', retailPrice: '',
+      slug: '', name: '', categoryIds: [], brandId: '', genders: [], sku: '', retailPrice: '',
     }))
     expect(result.success).toBe(false)
     const paths = pathsOf(result)
@@ -99,6 +99,12 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     const schema = createProductSchema(t, false)
     const result = schema.safeParse(baseForm())
     expect(result.success).toBe(true)
+  })
+
+  it('cho phép bỏ trống giới tính hoặc chọn đồng thời Nam và Nữ', () => {
+    const schema = createProductSchema(t, false)
+    expect(schema.safeParse(baseForm({ genders: [] })).success).toBe(true)
+    expect(schema.safeParse(baseForm({ genders: ['Nam', 'Nữ'] })).success).toBe(true)
   })
 
   it('no variants / publish: image becomes required too', () => {

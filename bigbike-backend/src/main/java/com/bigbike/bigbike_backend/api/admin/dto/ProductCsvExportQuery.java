@@ -25,7 +25,7 @@ public class ProductCsvExportQuery {
     @Size(max = 100, message = "Brand id must not exceed 100 characters.")
     private String brandId;
 
-    @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ|NULL)?\\s*$", message = "Invalid filter_gender.")
+    @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.")
     @BindParam("filter_gender")
     private String filterGender;
 

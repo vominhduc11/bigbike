@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -121,7 +122,10 @@ public class ProductMutationService {
         entity.setUpdatedAt(now);
 
         applyProductPatch(entity, request, slug, categories, brand, true);
+        catalogRequestValidator.validateProductSizeScale(entity, errors);
+        validateDiscontinuedState(entity, errors);
         dropFeaturedPlacementIfNotPublished(entity);
+        AdminMutationValidators.throwIfErrors(errors);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -153,6 +157,8 @@ public class ProductMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         applyProductPatch(entity, request, slug, categories, brand, true);
+        catalogRequestValidator.validateProductSizeScale(entity, errors);
+        AdminMutationValidators.throwIfErrors(errors);
 
         String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
         return jpaCatalogReadRepository.mapPreviewProduct(entity, locale);
@@ -182,7 +188,10 @@ public class ProductMutationService {
 
         entity.setUpdatedAt(Instant.now());
         applyProductPatch(entity, request, slug, categories, brand, false);
+        catalogRequestValidator.validateProductSizeScale(entity, errors);
+        validateDiscontinuedState(entity, errors);
         dropFeaturedPlacementIfNotPublished(entity);
+        AdminMutationValidators.throwIfErrors(errors);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -214,10 +223,22 @@ public class ProductMutationService {
         if (entity.getPublishStatus() == PublishStatus.PUBLISHED) {
             return;
         }
+        entity.setDiscontinued(false);
         if (entity.getHomepageBlock() == HomepageBlock.FEATURED_GRID) {
             entity.setHomepageBlock(HomepageBlock.NONE);
             entity.setHomepageOrder(null);
         }
+    }
+
+    private static void validateDiscontinuedState(ProductEntity entity, List<ApiErrorDetail> errors) {
+        if (entity.isDiscontinued() && entity.getPublishStatus() != PublishStatus.PUBLISHED) {
+            errors.add(new ApiErrorDetail(
+                    "discontinued",
+                    "INVALID_STATE",
+                    "A discontinued product must remain PUBLISHED."
+            ));
+        }
+        AdminMutationValidators.throwIfErrors(errors);
     }
 
     @Transactional
@@ -361,6 +382,7 @@ public class ProductMutationService {
         fields.put("name", nullSafe(e.getName()));
         fields.put("slug", nullSafe(e.getSlug()));
         fields.put("publishStatus", e.getPublishStatus() == null ? "" : e.getPublishStatus().toString());
+        fields.put("discontinued", e.isDiscontinued());
         fields.put("brandId", e.getBrand() == null ? null : e.getBrand().getId());
         List<String> categoryIds = e.getCategories() == null ? List.of() : e.getCategories().stream()
                 .map(CategoryEntity::getId)
@@ -451,6 +473,12 @@ public class ProductMutationService {
         if (create || request.getPublishStatus() != null) {
             entity.setPublishStatus(request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus());
         }
+        if (create || request.isDiscontinuedPresent()) {
+            entity.setDiscontinued(Boolean.TRUE.equals(request.getDiscontinued()));
+        }
+        if (create || request.isSizeScaleIdPresent()) {
+            entity.setSizeScaleId(AdminMutationValidators.trimToNull(request.getSizeScaleId()));
+        }
         if (create || request.getHomepageBlock() != null) {
             entity.setHomepageBlock(request.getHomepageBlock() == null
                     ? com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE
@@ -480,8 +508,12 @@ public class ProductMutationService {
         if (create || request.isQuickAnswerSummaryPresent()) {
             entity.setQuickAnswerSummary(AdminMutationValidators.trimToNull(request.getQuickAnswerSummary()));
         }
-        if (create || request.isGenderPresent()) {
-            entity.setGender(normalizeGender(request.getGender()));
+        if (create || request.isGendersPresent() || request.isGenderPresent()) {
+            List<String> normalizedGenders = request.isGendersPresent()
+                    ? ProductGenderSupport.normalize(request.getGenders())
+                    : ProductGenderSupport.fromLegacy(request.getGender());
+            entity.setGenderMale(normalizedGenders.contains(ProductGenderSupport.MALE));
+            entity.setGenderFemale(normalizedGenders.contains(ProductGenderSupport.FEMALE));
         }
 
         if (request.isDescriptionBlocksPresent()) {
@@ -576,14 +608,6 @@ public class ProductMutationService {
         } else if (create) {
             entity.setAccessoryProducts(new ArrayList<>());
         }
-    }
-
-    private static String normalizeGender(String raw) {
-        String value = AdminMutationValidators.trimToNull(raw);
-        if (value == null) return null;
-        if (value.equalsIgnoreCase("Nam")) return "Nam";
-        if (value.equalsIgnoreCase("Nữ")) return "Nữ";
-        return value;
     }
 
     private List<ProductEntity> resolveProductRefs(List<String> ids, String selfId) {

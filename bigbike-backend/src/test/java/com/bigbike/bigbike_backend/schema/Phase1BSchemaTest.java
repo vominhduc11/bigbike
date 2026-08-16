@@ -127,26 +127,25 @@ class Phase1BSchemaTest {
     // ── redirect round-trip ────────────────────────────────────────────────
 
     @Test
-    void redirectMigration_removesStatusColumnsAndKeepsRows() {
-        Long removedColumns = jdbcTemplate.queryForObject(
+    void redirectMigration_keepsStatusCodeAndRemovesLegacyTypeColumn() {
+        Long statusCodeColumns = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
                         + "where table_schema = current_schema() and table_name = 'redirects' "
-                        + "and column_name in ('status_code', 'redirect_type')",
+                        + "and column_name = 'status_code'",
+                Long.class);
+        Long legacyTypeColumns = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where table_schema = current_schema() and table_name = 'redirects' "
+                        + "and column_name = 'redirect_type'",
                 Long.class);
         Long removedIndex = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.indexes "
                         + "where upper(table_name) = 'REDIRECTS' "
                         + "and upper(index_name) = 'IDX_REDIRECTS_STATUS_CODE'",
                 Long.class);
-        Long removedConstraint = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.table_constraints "
-                        + "where upper(table_name) = 'REDIRECTS' "
-                        + "and upper(constraint_name) = 'CK_REDIRECTS_STATUS_CODE'",
-                Long.class);
-
-        assertThat(removedColumns).isZero();
+        assertThat(statusCodeColumns).isEqualTo(1L);
+        assertThat(legacyTypeColumns).isZero();
         assertThat(removedIndex).isZero();
-        assertThat(removedConstraint).isZero();
         assertThat(redirectRepo.findAll()).allSatisfy(redirect -> {
             assertThat(redirect.getSourcePattern()).isNotBlank();
             assertThat(redirect.getTargetUrl()).isNotBlank();

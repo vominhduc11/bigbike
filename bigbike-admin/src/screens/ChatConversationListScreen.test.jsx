@@ -9,6 +9,7 @@ vi.mock('react-i18next', () => ({
       'chatAdmin.guest': 'Khách vãng lai',
       'chatAdmin.columns.turns': 'Lượt hỏi',
       'chatAdmin.columns.aiCalls': 'Lượt gọi AI',
+      'chatAdmin.stats.unanswered': 'Câu chưa trả lời được trong ngày',
     }[key] || values.defaultValue || key),
   }),
 }))
@@ -33,6 +34,7 @@ vi.mock('../lib/adminApi', () => ({
     aiCalls: 2,
     conversations: 1,
     leads: 1,
+    unanswered: 4,
     dailyLimit: 300,
     remainingAiCalls: 298,
   }),
@@ -62,5 +64,7 @@ describe('ChatConversationListScreen', () => {
     expect(await screen.findAllByText('Khách vãng lai')).not.toHaveLength(0)
     expect(screen.getAllByText('Lượt hỏi').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Lượt gọi AI').length).toBeGreaterThan(0)
+    expect(screen.getByText('Câu chưa trả lời được trong ngày')).toBeInTheDocument()
+    expect(screen.getByText('4')).toBeInTheDocument()
   })
 })

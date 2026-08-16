@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { fetchMe, logoutCustomer } from "@/lib/api/client-api";
+import { clearChatSnapshot } from "@/lib/chat/chat-persistence";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 
  type AuthState =
@@ -80,6 +81,7 @@ export function hasCustomerSessionHint(): boolean {
 export function refreshAuth(): Promise<void> {
   if (inflight) return inflight;
   if (!hasCustomerSessionHint()) {
+    if (state.status === "authenticated") clearChatSnapshot();
     setState({ status: "anonymous" });
     return Promise.resolve();
   }
@@ -90,6 +92,7 @@ export function refreshAuth(): Promise<void> {
     })
     .catch(() => {
       clearCustomerAuthMarker();
+      clearChatSnapshot();
       setState({ status: "anonymous" });
     })
     .finally(() => {
@@ -109,6 +112,7 @@ export async function performLogout(): Promise<void> {
     /* ignore */
   }
   clearCustomerAuthMarker();
+  clearChatSnapshot();
   setAnonymous();
 }
 

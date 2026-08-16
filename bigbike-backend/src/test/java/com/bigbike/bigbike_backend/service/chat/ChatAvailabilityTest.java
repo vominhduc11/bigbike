@@ -22,7 +22,7 @@ class ChatAvailabilityTest {
             new ChatContactResponse("0900000000", "https://zalo.me/shop", "https://m.me/shop", "Shop", "Shop");
 
     @Test
-    @DisplayName("empty shared key puts Bi in contact mode and review moderation still fails safely")
+    @DisplayName("empty shared key puts BigBike Assistant in contact mode and review moderation still fails safely")
     void emptyKeyUsesContactModeWithoutBreakingReviewModerator() {
         AiChatClient chatClient = new AiChatClient("", "gemini-2.5-flash", 20L);
         ChatService service = service(chatClient, 60, 0);
@@ -37,7 +37,7 @@ class ChatAvailabilityTest {
     }
 
     @Test
-    @DisplayName("the persisted Vietnamese-day count closes Bi at the daily ceiling")
+    @DisplayName("the persisted Vietnamese-day count closes BigBike Assistant at the daily ceiling")
     void dailyLimitUsesContactMode() {
         AiChatClient chatClient = mock(AiChatClient.class);
         when(chatClient.isConfigured()).thenReturn(true);
@@ -66,18 +66,20 @@ class ChatAvailabilityTest {
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
                 true, limit, "Xin chào", List.of("A", "B", "C"), CONTACTS,
                 "", "", ""));
-        when(messages.countAiUsesBetween(
-                org.mockito.ArgumentMatchers.any(Instant.class),
-                org.mockito.ArgumentMatchers.any(Instant.class))).thenReturn(spent);
+        ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
+        when(quota.usedToday()).thenReturn(spent);
+        when(quota.tryReserve(org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
         return new ChatService(
                 conversations,
                 messages,
                 leads,
+                mock(com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository.class),
                 settings,
                 mock(ChatToolService.class),
                 new ChatToolRegistry(),
                 client,
                 new ChatResponseGuard(),
+                quota,
                 mock(AdminChatWsService.class));
     }
 }

@@ -187,6 +187,7 @@ describe('media metadata round-trip', () => {
     price: { retailPrice: 5900000, salePrice: 5500000 },
     available: true,
     publishStatus: 'DRAFT',
+    genders: ['Nam'],
     image: {
       rawUrl: '/media/product-main.jpg',
       alt: 'Mũ AGV K1S màu đen',
@@ -306,6 +307,21 @@ describe('media metadata round-trip', () => {
         sortOrder: 0,
       }],
     }))
+  })
+
+  it('giữ đúng 0, 1 hoặc 2 giới tính qua form và payload', () => {
+    const none = buildFormFromItem({ ...item, genders: [] })
+    expect(none.genders).toEqual([])
+    expect(toPayload(none).genders).toEqual([])
+
+    const both = buildFormFromItem({ ...item, genders: ['Nữ', 'Nam'] })
+    expect(both.genders).toEqual(['Nam', 'Nữ'])
+    expect(toPayload(both).genders).toEqual(['Nam', 'Nữ'])
+  })
+
+  it('đọc được bản ghi cũ dùng một gender và không khôi phục Unisex', () => {
+    expect(buildFormFromItem({ ...item, gender: 'Nam', genders: undefined }).genders).toEqual(['Nam'])
+    expect(buildFormFromItem({ ...item, gender: 'Unisex', genders: undefined }).genders).toEqual([])
   })
 
   it('xoá URL thì không gửi lại metadata ảnh cũ', () => {

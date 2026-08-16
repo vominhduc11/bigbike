@@ -139,19 +139,19 @@ export async function Footer({ locale }: { locale: Locale }) {
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">
             <div className="md:col-span-7">
-              <h2 className="mb-10! font-cta text-b1-display font-semibold uppercase leading-title">
+              <h2 className="mb-10! font-cta text-a1-title font-semibold uppercase leading-title">
                 <Tr ns="Footer" k="taglineLong" />
               </h2>
-              <div className="mb-7.5 flex flex-col gap-0">
+              <div className="mb-7.5 flex flex-col gap-3">
                 {FOOTER_HOTLINES.map((phone) => (
-                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold uppercase">
+                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b3-promo font-semibold uppercase">
                     <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     <a href={telHref(phone)} className="text-white! no-underline!">
                       {phone}
                     </a>
                   </p>
                 ))}
-                <p className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold uppercase">
+                <p className="m-0! flex items-center gap-[29px] font-cta text-b3-promo font-semibold uppercase">
                   <a
                     href={`mailto:${FOOTER_EMAIL}`}
                     className="flex items-center gap-[29px] text-white! no-underline!"
@@ -160,7 +160,7 @@ export async function Footer({ locale }: { locale: Locale }) {
                     {FOOTER_EMAIL}
                   </a>
                 </p>
-                <p className="m-0! flex items-start gap-[29px] font-cta text-b2-contact font-semibold uppercase">
+                <p className="m-0! flex items-start gap-[29px] font-cta text-b3-promo font-semibold uppercase">
                   <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                   <Tr ns="Footer" k="address" />
                 </p>

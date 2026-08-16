@@ -1,12 +1,12 @@
-# Prompt cho Claude Code — Đồng bộ UI/UX & responsive của `bigbike-web` theo bản gốc WordPress `bigbike_vn__2026_04_17`
+# Prompt lưu trữ — Đồng bộ UI/UX & responsive của `bigbike-web` theo bản tham chiếu WordPress
 
-> Copy nguyên khối bên dưới và đưa cho Claude Code chạy trong repo `bigbike-web`. Bản WordPress gốc nằm tại `S:\project\bigbike\bigbike_vn__2026_04_17` (thư mục theme: `files/wp-content/themes/bigbike/`) — chỉ đọc, KHÔNG sửa.
+> Tài liệu lịch sử, không còn là prompt có thể chạy lại. Raw WordPress export đã được chủ dự án xoá vĩnh viễn. Khi làm việc hiện tại, dùng `bigbike-web/STYLEGUIDE.md`, design tokens, docs canonical và code đang có làm nguồn chuẩn; không giả định một bản WordPress local.
 
 ---
 
 ## Mục tiêu
 
-Rà soát toàn bộ `bigbike-web` (Next.js) và **đồng bộ UI/UX, responsive về đúng cảm nhận thị giác (visual parity) của bản WordPress gốc** `bigbike_vn__2026_04_17`. Bản gốc WordPress là **nguồn tham chiếu thị giác (source of truth)** cho bố cục, khoảng cách, typography, hành vi responsive.
+Rà soát toàn bộ `bigbike-web` (Next.js) và **đồng bộ UI/UX, responsive theo các quyết định visual parity đã được ghi nhận**. Bản WordPress chỉ là bối cảnh lịch sử; **nguồn chuẩn hiện tại** là `STYLEGUIDE.md`, design tokens, docs canonical và code đang chạy.
 
 Đây **KHÔNG phải** viết lại từ đầu. `bigbike-web` đã port phần lớn theo bản WP (CSS hiện tại có rất nhiều chú thích "WP-parity"). Yêu cầu thực chất là: **tìm những chỗ đã port lệch / chưa khớp với WP và chỉnh lại cho khớp**, đồng thời **giữ nguyên mọi cải tiến của bản Next.js** (trang mới, module/chức năng mới, các breakpoint lớn 3xl/4xl mà WP không có).
 
@@ -41,7 +41,7 @@ Rà soát toàn bộ `bigbike-web` (Next.js) và **đồng bộ UI/UX, responsiv
 - **Class dùng chung** `lib/ui-classes.ts` (vd `iconBtn`, `submenuIcon`).
 - **Breakpoint** — mặc định Tailwind `sm/md/lg/xl/2xl` = 640/768/1024/1280/1536, **cộng thêm** `--breakpoint-3xl: 1920px`, `--breakpoint-4xl: 2560px` (Next-only, GIỮ NGUYÊN). Còn vài breakpoint legacy 600/900px trong CSS homepage.
 
-**`bigbike_vn__2026_04_17`** — theme WordPress + WooCommerce tại `files/wp-content/themes/bigbike/`.
+**Bản WordPress lưu trữ** — theme WordPress + WooCommerce đã từng được dùng làm baseline; raw source không còn được lưu trong workspace.
 
 - **CSS chia theo trang:** `styles/main.css` (global: header/nav/footer/mobile menu), `home.css`, `product.css` + `product-detail.css`, `product-category.css` (dist), `cart.css`, `check-out.css`, `news.css` + `news-detail.css`, `login.css` + `register.css`, `payment-success.css`, `static-page.css`, `custom.css`. Bản minify trong `dist/`.
 - **Template:** `page-templates/*.php`, `template-parts/*.php`, `woocommerce/**` (single-product, archive-product, cart, checkout, myaccount, loop…).

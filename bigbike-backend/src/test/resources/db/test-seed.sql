@@ -115,12 +115,12 @@ SELECT 'uncategorized-brand', 'uncategorized-brand', 'Chua phan loai', false, tr
 WHERE NOT EXISTS (SELECT 1 FROM brands WHERE id = 'uncategorized-brand');
 
 -- ── Products ──────────────────────────────────────────────────────────────────
-INSERT INTO products (id, slug, name, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, image_url, version, created_at, updated_at)
-SELECT 'prod_ls2_ff800', 'mu-bao-hiem-ls2-ff800', 'LS2 FF800 Storm', 'brand_ls2', 3290000, 'VND', 'IN_STOCK', 'PUBLISHED', 'FEATURED_GRID', 4.5, 'https://cdn.bigbike.local/products/ls2-ff800.jpg', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO products (id, slug, name, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, image_url, version, created_at, updated_at, gender_male, gender_female)
+SELECT 'prod_ls2_ff800', 'mu-bao-hiem-ls2-ff800', 'LS2 FF800 Storm', 'brand_ls2', 3290000, 'VND', 'IN_STOCK', 'PUBLISHED', 'FEATURED_GRID', 4.5, 'https://cdn.bigbike.local/products/ls2-ff800.jpg', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 'prod_ls2_ff800');
 
-INSERT INTO products (id, slug, name, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, version, created_at, updated_at)
-SELECT 'prod_ls2_jacket_city', 'ao-giap-ls2-city-rider', 'Ao giap LS2 City Rider', 'brand_ls2', 1890000, 'VND', 'IN_STOCK', 'PUBLISHED', 'NONE', 4.8, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO products (id, slug, name, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, version, created_at, updated_at, gender_male, gender_female)
+SELECT 'prod_ls2_jacket_city', 'ao-giap-ls2-city-rider', 'Ao giap LS2 City Rider', 'brand_ls2', 1890000, 'VND', 'IN_STOCK', 'PUBLISHED', 'NONE', 4.8, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 'prod_ls2_jacket_city');
 
 INSERT INTO product_category_map (product_id, category_id, sort_order)

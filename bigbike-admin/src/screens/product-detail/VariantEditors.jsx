@@ -10,6 +10,10 @@ import {
   deleteAttributeValue,
   fetchAttributes,
   fetchAttributeValues,
+  fetchSizeScaleGroups,
+  createSizeScale,
+  updateSizeScale,
+  deleteSizeScale,
   updateAttribute,
   updateAttributeValueLabel,
 } from '../../lib/adminApi'
@@ -19,6 +23,7 @@ import { Modal, MobileCardList, MobileCard } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -52,6 +57,7 @@ import { GalleryEditor } from './ContentEditors'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
+import { parseSizeScaleValues } from './sizeScaleUtils'
 
 // Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
 // attribute-name Select — kept distinct from any real attribute name/code.
@@ -420,6 +426,407 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
                 />
               ))
             )}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function LegacySizeScaleManagerModal({ open: _open, onClose: _onClose, scales: _scales, contentLang: _contentLang }) {
+  return null
+}
+
+/*
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const { data: groups = [], isLoading: groupsLoading } = useQuery({
+    queryKey: ['size-scale-groups'],
+    queryFn: fetchSizeScaleGroups,
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  })
+  const [selectedScaleId, setSelectedScaleId] = useState('')
+  const [draft, setDraft] = useState({ code: '', name: '', nameEn: '', groupId: '', filterNamespace: '', sortOrder: '100' })
+  const [newValue, setNewValue] = useState({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
+  const selectedScale = scales.find((scale) => scale.id === selectedScaleId) || null
+
+  useEffect(() => {
+    if (!open) return
+    if (selectedScaleId === '__new__') return
+    const next = selectedScaleId && scales.some((scale) => scale.id === selectedScaleId)
+      ? selectedScaleId
+      : scales[0]?.id || ''
+    setSelectedScaleId(next)
+  }, [open, scales, selectedScaleId])
+
+  useEffect(() => {
+    if (!selectedScale) return
+    setDraft({
+      code: selectedScale.code || '',
+      name: selectedScale.name || '',
+      nameEn: selectedScale.nameEn || '',
+      groupId: selectedScale.group?.id || '',
+      filterNamespace: selectedScale.filterNamespace || '',
+      sortOrder: String(selectedScale.sortOrder ?? 100),
+    })
+  }, [selectedScale])
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['size-scales'] })
+  }
+  const createScaleMut = useMutation({
+    mutationFn: (input) => createSizeScale(input),
+    onSuccess: (created) => {
+      toast.success(t('products.detail.sizeScale.created', { defaultValue: 'Đã tạo scale kích cỡ.' }))
+      invalidate()
+      setSelectedScaleId(created?.id || '')
+    },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' })),
+  })
+  const updateScaleMut = useMutation({
+    mutationFn: ({ id, input }) => updateSizeScale(id, input),
+    onSuccess: () => {
+      toast.success(t('products.detail.sizeScale.saved', { defaultValue: 'Đã lưu scale kích cỡ.' }))
+      invalidate()
+    },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' })),
+  })
+  const deleteScaleMut = useMutation({
+    mutationFn: (id) => deleteSizeScale(id),
+    onSuccess: () => {
+      toast.success(t('products.detail.sizeScale.deleted', { defaultValue: 'Đã xóa scale kích cỡ.' }))
+      invalidate()
+      setSelectedScaleId('')
+    },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được scale kích cỡ.' })),
+  })
+  const createValueMut = useMutation({
+    mutationFn: ({ scaleId, input }) => createSizeScaleValue(scaleId, input),
+    onSuccess: () => {
+      toast.success(t('products.detail.sizeScale.valueCreated', { defaultValue: 'Đã thêm giá trị cỡ.' }))
+      setNewValue({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
+      invalidate()
+    },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được giá trị cỡ.' })),
+  })
+  const updateValueMut = useMutation({
+    mutationFn: ({ id, input }) => updateSizeScaleValue(id, input),
+    onSuccess: () => { toast.success(t('products.detail.sizeScale.saved', { defaultValue: 'Đã lưu scale kích cỡ.' })); invalidate() },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được giá trị cỡ.' })),
+  })
+  const deleteValueMut = useMutation({
+    mutationFn: (id) => deleteSizeScaleValue(id),
+    onSuccess: () => { toast.success(t('products.detail.sizeScale.valueDeleted', { defaultValue: 'Đã xóa giá trị cỡ.' })); invalidate() },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được giá trị cỡ.' })),
+  })
+
+  const scaleInput = {
+    ...draft,
+    sortOrder: Number(draft.sortOrder) || 100,
+    active: true,
+  }
+  const valueInput = {
+    ...newValue,
+    sortOrder: Number(newValue.sortOrder) || 100,
+    active: true,
+  }
+  const busy = createScaleMut.isPending || updateScaleMut.isPending || deleteScaleMut.isPending
+    || createValueMut.isPending || updateValueMut.isPending || deleteValueMut.isPending
+
+  const createNewScale = () => {
+    setSelectedScaleId('__new__')
+    setDraft({ code: '', name: '', nameEn: '', groupId: groups[0]?.id || '', filterNamespace: '', sortOrder: '100' })
+    setNewValue({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
+  }
+  const saveScale = () => {
+    if (!draft.code.trim() || !draft.name.trim() || !draft.nameEn.trim() || !draft.groupId || !draft.filterNamespace.trim()) return
+    if (selectedScale) updateScaleMut.mutate({ id: selectedScale.id, input: scaleInput })
+    else createScaleMut.mutate(scaleInput)
+  }
+  const confirmDeleteScale = async () => {
+    if (!selectedScale) return
+    const ok = await showConfirm(
+      t('products.detail.sizeScale.deleteConfirm', { name: selectedScale.name, defaultValue: `Xóa scale "${selectedScale.name}"? Chỉ scale chưa được sản phẩm sử dụng mới xóa được.` }),
+      t('products.detail.sizeScale.deleteTitle', { defaultValue: 'Xóa scale kích cỡ' }),
+    )
+    if (ok) deleteScaleMut.mutate(selectedScale.id)
+  }
+
+  const handleClose = () => {
+    setSelectedScaleId(selectedScale?.id || '')
+    setDraftState({ scaleId: '', name: '', groupId: '', valuesText: '' })
+    setValueError('')
+    onClose()
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      wide
+      title={t('products.detail.sizeScale.managerTitle', { defaultValue: 'Quản lý scale kích cỡ' })}
+      description={t('products.detail.sizeScale.managerDescription', { defaultValue: 'Mỗi sản phẩm có option cỡ phải gắn một scale rõ ràng; không dùng suy luận từ số.' })}
+      actions={<Button variant="outline" onClick={handleClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>}
+    >
+      <div className="grid gap-5 @xl:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">{t('products.detail.sizeScale.listTitle', { defaultValue: 'Scale hiện có' })}</h3>
+            <Button variant="outline" size="sm" onClick={createNewScale} disabled={busy}><Plus size={14} />{t('common.create', { defaultValue: 'Tạo' })}</Button>
+          </div>
+          {scales.map((scale) => (
+            <Button key={scale.id} variant={scale.id === selectedScale?.id ? 'secondary' : 'ghost'} className="h-auto justify-start whitespace-normal text-left" onClick={() => setSelectedScaleId(scale.id)}>
+              <span className="min-w-0"><span className="block font-semibold">{contentLang === 'en' ? scale.nameEn || scale.name : scale.name}</span><span className="block font-mono text-xs text-muted-foreground">{scale.code}</span></span>
+            </Button>
+          ))}
+          {!scales.length ? <p className="text-sm text-muted-foreground">{t('products.detail.sizeScale.empty', { defaultValue: 'Chưa có scale kích cỡ.' })}</p> : null}
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="grid gap-3 @xl:grid-cols-2">
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.code', { defaultValue: 'Mã scale' })}<Input value={draft.code} onChange={(e) => setDraft((v) => ({ ...v, code: e.target.value }))} disabled={busy} /></label>
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.namespace', { defaultValue: 'Namespace lọc' })}<Input value={draft.filterNamespace} onChange={(e) => setDraft((v) => ({ ...v, filterNamespace: e.target.value }))} disabled={busy} /></label>
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.name', { defaultValue: 'Tên tiếng Việt' })}<Input value={draft.name} onChange={(e) => setDraft((v) => ({ ...v, name: e.target.value }))} disabled={busy} /></label>
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.nameEn', { defaultValue: 'Tên tiếng Anh' })}<Input value={draft.nameEn} onChange={(e) => setDraft((v) => ({ ...v, nameEn: e.target.value }))} disabled={busy} /></label>
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.group', { defaultValue: 'Nhóm hiển thị' })}
+              <Select value={draft.groupId || '__none__'} onValueChange={(value) => setDraft((v) => ({ ...v, groupId: value === '__none__' ? '' : value }))} disabled={busy || groupsLoading}>
+                <SelectTrigger><SelectValue placeholder={t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })} /></SelectTrigger>
+                <SelectContent><SelectItem value="__none__">{t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })}</SelectItem>{groups.map((group) => <SelectItem key={group.id} value={group.id}>{contentLang === 'en' ? group.labelEn || group.label : group.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </label>
+            <label className="text-sm font-medium">{t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })}<Input type="number" value={draft.sortOrder} onChange={(e) => setDraft((v) => ({ ...v, sortOrder: e.target.value }))} disabled={busy} /></label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={saveScale} disabled={busy || !draft.code.trim() || !draft.name.trim() || !draft.nameEn.trim() || !draft.groupId || !draft.filterNamespace.trim()}>{t('common.save', { defaultValue: 'Lưu' })}</Button>
+            {selectedScale ? <Button variant="danger" onClick={confirmDeleteScale} disabled={busy}><Trash2 size={14} />{t('common.delete', { defaultValue: 'Xóa' })}</Button> : null}
+          </div>
+
+          {selectedScale ? (
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <h3 className="text-sm font-semibold">{t('products.detail.sizeScale.valuesTitle', { defaultValue: 'Giá trị trong scale' })}</h3>
+              <div className="grid gap-2 @xl:grid-cols-[minmax(90px,0.6fr)_minmax(120px,1fr)_minmax(120px,1fr)_72px_auto] text-xs font-semibold text-muted-foreground">
+                <span>{t('products.detail.sizeScale.valueKey', { defaultValue: 'Mã giá trị' })}</span><span>{t('products.detail.sizeScale.valueLabel', { defaultValue: 'Nhãn tiếng Việt' })}</span><span>{t('products.detail.sizeScale.valueLabelEn', { defaultValue: 'Nhãn tiếng Anh' })}</span><span>{t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })}</span><span />
+              </div>
+              {(selectedScale.values || []).map((value) => (
+                <SizeScaleValueEditRow key={value.id} value={value} saving={updateValueMut.isPending && updateValueMut.variables?.id === value.id} deleting={deleteValueMut.isPending && deleteValueMut.variables === value.id} onSave={(input) => updateValueMut.mutate({ id: value.id, input: { ...input, active: value.active } })} onDelete={() => deleteValueMut.mutate(value.id)} />
+              ))}
+              <div className="flex flex-col gap-2 border border-dashed border-border p-2">
+                <div className="grid gap-2 @xl:grid-cols-[minmax(90px,0.6fr)_minmax(120px,1fr)_minmax(120px,1fr)_72px_auto]">
+                <Input value={newValue.valueKey} onChange={(e) => setNewValue((v) => ({ ...v, valueKey: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueKey', { defaultValue: 'Mã giá trị' })} disabled={busy} />
+                <Input value={newValue.label} onChange={(e) => setNewValue((v) => ({ ...v, label: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueLabel', { defaultValue: 'Nhãn tiếng Việt' })} disabled={busy} />
+                <Input value={newValue.labelEn} onChange={(e) => setNewValue((v) => ({ ...v, labelEn: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueLabelEn', { defaultValue: 'Nhãn tiếng Anh' })} disabled={busy} />
+                <Input type="number" value={newValue.sortOrder} onChange={(e) => setNewValue((v) => ({ ...v, sortOrder: e.target.value }))} aria-label={t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })} disabled={busy} />
+                <Button variant="outline" size="sm" onClick={() => createValueMut.mutate({ scaleId: selectedScale.id, input: valueInput })} disabled={busy || !newValue.valueKey.trim() || !newValue.label.trim() || !newValue.labelEn.trim()}><Plus size={14} />{t('common.create', { defaultValue: 'Tạo' })}</Button>
+                </div>
+                <div className="grid gap-2 @xl:grid-cols-3">
+                  <Input value={newValue.subgroupKey} onChange={(e) => setNewValue((v) => ({ ...v, subgroupKey: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupKey', { defaultValue: 'Mã nhóm phụ' })} aria-label={t('products.detail.sizeScale.subgroupKey', { defaultValue: 'Mã nhóm phụ' })} disabled={busy} />
+                  <Input value={newValue.subgroupLabel} onChange={(e) => setNewValue((v) => ({ ...v, subgroupLabel: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupLabel', { defaultValue: 'Tên nhóm phụ tiếng Việt' })} aria-label={t('products.detail.sizeScale.subgroupLabel', { defaultValue: 'Tên nhóm phụ tiếng Việt' })} disabled={busy} />
+                  <Input value={newValue.subgroupLabelEn} onChange={(e) => setNewValue((v) => ({ ...v, subgroupLabelEn: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupLabelEn', { defaultValue: 'Tên nhóm phụ tiếng Anh' })} aria-label={t('products.detail.sizeScale.subgroupLabelEn', { defaultValue: 'Tên nhóm phụ tiếng Anh' })} disabled={busy} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Modal>
+  )
+}
+*/
+
+function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const { data: groups = [], isLoading: groupsLoading, isError: groupsError } = useQuery({
+    queryKey: ['size-scale-groups'],
+    queryFn: fetchSizeScaleGroups,
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  })
+  const availableScales = Array.isArray(scales) ? scales : []
+  const [selectedScaleId, setSelectedScaleId] = useState('')
+  const [draftState, setDraftState] = useState({ scaleId: '', name: '', groupId: '', valuesText: '' })
+  const [valueError, setValueError] = useState('')
+  const effectiveSelectedScaleId = selectedScaleId || availableScales[0]?.id || ''
+  const selectedScale = availableScales.find((scale) => scale.id === effectiveSelectedScaleId) || null
+  const draft = draftState.scaleId === effectiveSelectedScaleId
+    ? draftState
+    : selectedScale
+      ? {
+          scaleId: effectiveSelectedScaleId,
+          name: selectedScale.name || '',
+          groupId: selectedScale.group?.id || '',
+          valuesText: (selectedScale.values || []).map((value) => value.label || value.valueKey).join(', '),
+        }
+      : draftState
+
+  const draftFromScale = (scale, scaleId = scale?.id || '') => ({
+    scaleId,
+    name: scale?.name || '',
+    groupId: scale?.group?.id || '',
+    valuesText: (scale?.values || []).map((value) => value.label || value.valueKey).join(', '),
+  })
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['size-scales'] })
+  const createScaleMut = useMutation({
+    mutationFn: (input) => createSizeScale(input),
+    onSuccess: (created) => {
+      toast.success(t('products.detail.sizeScale.created', { defaultValue: 'Đã tạo scale kích cỡ.' }))
+      invalidate()
+      setSelectedScaleId(created?.id || '')
+      setDraftState(draftFromScale(created))
+      setValueError('')
+    },
+    onError: (error) => {
+      const message = error?.details?.find((detail) => detail?.field === 'values')?.message || error?.message
+      setValueError(message || '')
+      toast.error(message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' }))
+    },
+  })
+  const updateScaleMut = useMutation({
+    mutationFn: ({ id, input }) => updateSizeScale(id, input),
+    onSuccess: (updated) => {
+      toast.success(t('products.detail.sizeScale.saved', { defaultValue: 'Đã lưu scale kích cỡ.' }))
+      invalidate()
+      setDraftState(draftFromScale(updated, effectiveSelectedScaleId))
+      setValueError('')
+    },
+    onError: (error) => {
+      const message = error?.details?.find((detail) => detail?.field === 'values')?.message || error?.message
+      setValueError(message || '')
+      toast.error(message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' }))
+    },
+  })
+  const deleteScaleMut = useMutation({
+    mutationFn: (id) => deleteSizeScale(id),
+    onSuccess: () => {
+      toast.success(t('products.detail.sizeScale.deleted', { defaultValue: 'Đã xóa scale kích cỡ.' }))
+      invalidate()
+      setSelectedScaleId('')
+    },
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được scale kích cỡ.' })),
+  })
+
+  const busy = createScaleMut.isPending || updateScaleMut.isPending || deleteScaleMut.isPending
+  const createNewScale = () => {
+    setSelectedScaleId('__new__')
+    setDraftState({ scaleId: '__new__', name: '', groupId: groups[0]?.id || '', valuesText: '' })
+    setValueError('')
+  }
+
+  const saveScale = () => {
+    const name = draft.name.trim()
+    const parsed = parseSizeScaleValues(draft.valuesText)
+    if (!name || !draft.groupId || !parsed.values.length) {
+      setValueError(t('products.detail.sizeScale.invalidValues', { defaultValue: 'Hãy nhập tên, nhóm và ít nhất một cỡ.' }))
+      return
+    }
+    if (parsed.duplicate) {
+      setValueError(t('products.detail.sizeScale.duplicateValue', {
+        value: parsed.duplicate,
+        defaultValue: `Cỡ ${parsed.duplicate} bị lặp lại`,
+      }))
+      return
+    }
+    setValueError('')
+    const input = { name, groupId: draft.groupId, values: parsed.values }
+    if (selectedScale) updateScaleMut.mutate({ id: selectedScale.id, input })
+    else createScaleMut.mutate(input)
+  }
+
+  const confirmDeleteScale = async () => {
+    if (!selectedScale) return
+    const ok = await showConfirm(
+      t('products.detail.sizeScale.deleteConfirm', { name: selectedScale.name, defaultValue: `Xóa scale "${selectedScale.name}"? Chỉ scale chưa được sản phẩm sử dụng mới xóa được.` }),
+      t('products.detail.sizeScale.deleteTitle', { defaultValue: 'Xóa scale kích cỡ' }),
+    )
+    if (ok) deleteScaleMut.mutate(selectedScale.id)
+  }
+
+  const handleClose = () => {
+    setSelectedScaleId(selectedScale?.id || '')
+    setDraftState({ scaleId: '', name: '', groupId: '', valuesText: '' })
+    setValueError('')
+    onClose()
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      wide
+      title={t('products.detail.sizeScale.managerTitle', { defaultValue: 'Quản lý scale kích cỡ' })}
+      description={t('products.detail.sizeScale.managerDescription', { defaultValue: 'Mỗi scale chỉ cần tên, nhóm lọc và danh sách cỡ theo đúng thứ tự.' })}
+      actions={<Button variant="outline" onClick={handleClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>}
+    >
+      <div className="grid gap-5 @xl:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">{t('products.detail.sizeScale.listTitle', { defaultValue: 'Scale hiện có' })}</h3>
+            <Button variant="outline" size="sm" onClick={createNewScale} disabled={busy}>
+              <Plus size={14} />{t('common.create', { defaultValue: 'Tạo' })}
+            </Button>
+          </div>
+          {availableScales.map((scale) => (
+            <Button
+              key={scale.id}
+              variant={scale.id === selectedScale?.id ? 'secondary' : 'ghost'}
+              className="h-auto justify-start whitespace-normal text-left"
+              onClick={() => { setSelectedScaleId(scale.id); setDraftState(draftFromScale(scale)) }}
+              disabled={busy}
+            >
+              <span className="min-w-0">
+                <span className="block font-semibold">{scale.name}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {contentLang === 'en' ? scale.group?.labelEn || scale.group?.label : scale.group?.label || scale.group?.key}
+                </span>
+              </span>
+            </Button>
+          ))}
+          {!availableScales.length ? <p className="text-sm text-muted-foreground">{t('products.detail.sizeScale.empty', { defaultValue: 'Chưa có scale kích cỡ.' })}</p> : null}
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          {groupsError ? <p className="text-sm text-destructive" role="alert">{t('products.detail.sizeScale.groupsError', { defaultValue: 'Không tải được nhóm lọc.' })}</p> : null}
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            {t('products.detail.sizeScale.name', { defaultValue: 'Tên scale' })}
+            <Input
+              value={draft.name}
+              onChange={(e) => setDraftState({ ...draft, scaleId: effectiveSelectedScaleId, name: e.target.value })}
+              disabled={busy}
+              placeholder={t('products.detail.sizeScale.namePlaceholder', { defaultValue: 'Ví dụ: Cỡ áo nam' })}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            {t('products.detail.sizeScale.group', { defaultValue: 'Nhóm lọc' })}
+            <Select
+              value={draft.groupId || '__none__'}
+              onValueChange={(value) => setDraftState({ ...draft, scaleId: effectiveSelectedScaleId, groupId: value === '__none__' ? '' : value })}
+              disabled={busy || groupsLoading}
+            >
+              <SelectTrigger><SelectValue placeholder={t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">{t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })}</SelectItem>
+                {groups.map((group) => <SelectItem key={group.id} value={group.id}>{contentLang === 'en' ? group.labelEn || group.label : group.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            {t('products.detail.sizeScale.valuesLabel', { defaultValue: 'Danh sách cỡ theo thứ tự' })}
+            <Textarea
+              value={draft.valuesText}
+              onChange={(e) => { setDraftState({ ...draft, scaleId: effectiveSelectedScaleId, valuesText: e.target.value }); setValueError('') }}
+              disabled={busy}
+              rows={5}
+              placeholder={t('products.detail.sizeScale.valuesPlaceholder', { defaultValue: 'Ví dụ: XS, S, M, L, XL' })}
+              aria-label={t('products.detail.sizeScale.valuesLabel', { defaultValue: 'Danh sách cỡ theo thứ tự' })}
+            />
+            <span className="text-xs font-normal text-muted-foreground">{t('products.detail.sizeScale.valuesHint', { defaultValue: 'Phân cách bằng dấu phẩy. Thứ tự nhập là thứ tự hiển thị.' })}</span>
+          </label>
+          {valueError ? <p className="text-sm text-destructive" role="alert">{valueError}</p> : null}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={saveScale} disabled={busy || !draft.name.trim() || !draft.groupId || !draft.valuesText.trim()}>{t('common.save', { defaultValue: 'Lưu' })}</Button>
+            {selectedScale ? <Button variant="danger" onClick={confirmDeleteScale} disabled={busy}><Trash2 size={14} />{t('common.delete', { defaultValue: 'Xóa' })}</Button> : null}
           </div>
         </div>
       </div>
@@ -1193,7 +1600,18 @@ function VariantMobileCard({
   )
 }
 
-export function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOpenMatrixWizard, contentLang }) {
+export function VariantsEditor({
+  items,
+  onChange,
+  disabled,
+  validationErrors = {},
+  onOpenMatrixWizard,
+  contentLang,
+  sizeScaleId = '',
+  sizeScales = [],
+  sizeScalesLoading = false,
+  onSizeScaleChange,
+}) {
   const { t } = useTranslation()
   // Chỉ mở một panel nặng (ảnh + thuộc tính) tại một thời điểm để bảng vẫn gọn
   // khi sản phẩm có hàng chục hoặc hàng trăm biến thể.
@@ -1203,6 +1621,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
   const [bulkPriceOpen, setBulkPriceOpen] = useState(false)
   const [bulkRetailPrice, setBulkRetailPrice] = useState('')
   const [bulkSalePrice, setBulkSalePrice] = useState('')
+  const [sizeScaleManagerOpen, setSizeScaleManagerOpen] = useState(false)
   // Cho phép xoá giá khuyến mãi hàng loạt (đưa về trống) — ô nhập giá không thể diễn đạt "để trống".
   const [bulkClearSale, setBulkClearSale] = useState(false)
 
@@ -1475,6 +1894,50 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
 
   return (
     <div className="flex flex-col gap-3">
+      {onSizeScaleChange ? (
+        <div className="border border-border p-3">
+          <label className="mb-2 block text-sm font-semibold text-foreground" htmlFor="product-size-scale">
+            {t('products.detail.sizeScale.label', { defaultValue: 'Scale kích cỡ' })}
+          </label>
+          <div className="mb-2 flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={() => setSizeScaleManagerOpen(true)} disabled={disabled}>
+              {t('products.detail.sizeScale.manage', { defaultValue: 'Quản lý scale' })}
+            </Button>
+          </div>
+          <Select
+            value={sizeScaleId || '__none__'}
+            onValueChange={(value) => onSizeScaleChange(value === '__none__' ? '' : value)}
+            disabled={disabled || sizeScalesLoading}
+          >
+            <SelectTrigger id="product-size-scale" className="w-full">
+              <SelectValue placeholder={t('products.detail.sizeScale.placeholder', { defaultValue: 'Chọn scale kích cỡ' })} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">
+                {t('products.detail.sizeScale.none', { defaultValue: 'Không dùng scale (sản phẩm không có cỡ)' })}
+              </SelectItem>
+              {sizeScales.map((scale) => (
+                <SelectItem key={scale.id} value={scale.id}>
+                  {scale.name}
+                  {' · '}{scale.group?.label || scale.group?.key || scale.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('products.detail.sizeScale.hint', { defaultValue: 'Sản phẩm có option tên Size/Kích cỡ phải chọn đúng scale để lọc ngoài website.' })}
+          </p>
+          {validationErrors.sizeScaleId ? (
+            <p className="mt-1 text-xs font-semibold text-danger" role="alert">{validationErrors.sizeScaleId}</p>
+          ) : null}
+        </div>
+      ) : null}
+      <SizeScaleManagerModal
+        open={sizeScaleManagerOpen}
+        onClose={() => setSizeScaleManagerOpen(false)}
+        scales={sizeScales}
+        contentLang={contentLang}
+      />
       <div className="sticky top-0 z-[var(--admin-z-sticky)] flex flex-wrap items-center gap-2 bg-background py-2">
         {showFilter && (
           <Input

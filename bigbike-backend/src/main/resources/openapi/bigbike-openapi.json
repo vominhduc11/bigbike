@@ -38,7 +38,7 @@
     },
     {
       "name": "AI Assistant",
-      "description": "Bi storefront sales assistant with contact fallback"
+      "description": "BigBike Assistant for storefront shopping advice with contact fallback"
     },
     {
       "name": "Admin AI Assistant",
@@ -193,34 +193,64 @@
             "name": "pwb-brand",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "array",
+              "maxItems": 16,
+              "items": { "type": "string" }
             },
-            "description": "Brand slug."
+            "style": "form",
+            "explode": true,
+            "description": "Repeated brand slugs; OR within the dimension."
           },
           {
             "name": "filter_color",
             "in": "query",
             "schema": {
-              "type": "string"
-            }
+              "type": "array",
+              "maxItems": 16,
+              "items": { "type": "string" }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Repeated canonical or legacy color keys; OR within the dimension."
+          },
+          {
+            "name": "filter_finish",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "maxItems": 8,
+              "items": { "type": "string" }
+            },
+            "style": "form",
+            "explode": true
           },
           {
             "name": "filter_gender",
             "in": "query",
             "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "enum": [
+                "Nam",
+                "Nữ"
+              ]
+            },
+            "description": "Canonical single-value public gender filter. Products tagged with both genders match either value. Legacy repeated query values are tolerated by taking the first supported value."
+          },
+          {
+            "name": "kich-co",
+            "in": "query",
+            "schema": {
               "type": "array",
+              "maxItems": 16,
               "items": {
                 "type": "string",
-                "maxLength": 20,
-                "enum": [
-                  "Nam",
-                  "Nữ"
-                ]
-              },
-              "style": "form",
-              "explode": true
+                "maxLength": 32
+              }
             },
-            "description": "Repeated public gender filter; products with NULL gender do not match when the filter is active."
+            "style": "form",
+            "explode": true,
+            "description": "Repeat this parameter for multi-select. Values may be namespaced (for example shoe:42 or pants-waist:42); unqualified legacy values remain supported. Case-insensitive; 2XL/XXXL are normalized to XXL/3XL. Separate from the pagination size parameter."
           },
           {
             "name": "min_price",
@@ -237,6 +267,12 @@
               "type": "integer",
               "minimum": 0
             }
+          },
+          {
+            "name": "in_stock",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "When true, return only products whose aggregate stockState is IN_STOCK."
           },
           {
             "name": "homepage_block",
@@ -582,11 +618,137 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "pwb-brand",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Repeated brand context; OR within the dimension."
+          },
+          {
+            "name": "filter_color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Repeated canonical or legacy color context."
+          },
+          {
+            "name": "filter_finish",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "filter_gender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Nam",
+                  "Nữ"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Repeated gender context values used to calculate remaining facet counts."
+          },
+          {
+            "name": "kich-co",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "maxLength": 32
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Repeated active size context values; the price axis honors them while size counts exclude the active size filter."
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "in_stock",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ]
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Catalog facets (categories, brands, colors, priceBands)"
+            "description": "Catalog facets with grouped, namespaced size buckets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogFacetsDataResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2787,6 +2949,388 @@
         }
       }
     },
+    "/api/v1/admin/size-scale-groups": {
+      "get": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "List size scale groups (admin)",
+        "operationId": "adminListSizeScaleGroups",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size scale groups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SizeScaleGroupResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/size-scales": {
+      "get": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "List size scales (admin)",
+        "operationId": "adminListSizeScales",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size scales and configured values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SizeScaleResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Create size scale (admin)",
+        "operationId": "adminCreateSizeScale",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertSizeScaleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created size scale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/size-scales/{id}": {
+      "patch": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Update size scale (admin)",
+        "operationId": "adminUpdateSizeScale",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertSizeScaleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated size scale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Delete size scale (admin)",
+        "operationId": "adminDeleteSizeScale",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Size scale deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/size-scales/{scaleId}/values": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Create size scale value (admin)",
+        "operationId": "adminCreateSizeScaleValue",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scaleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertSizeScaleValueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created size scale value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleValueDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/size-scale-values/{id}": {
+      "patch": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Update size scale value (admin)",
+        "operationId": "adminUpdateSizeScaleValue",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertSizeScaleValueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated size scale value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleValueDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Delete size scale value (admin)",
+        "operationId": "adminDeleteSizeScaleValue",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Size scale value deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/api/v1/admin/products": {
       "get": {
         "tags": [
@@ -2881,11 +3425,10 @@
               "maxLength": 20,
               "enum": [
                 "Nam",
-                "Nữ",
-                "NULL"
+                "Nữ"
               ]
             },
-            "description": "Case-insensitive exact product-level gender filter; NULL means gender IS NULL."
+            "description": "Case-insensitive product gender flag filter; products tagged with both genders match either value."
           },
           {
             "name": "homepageBlock",
@@ -3385,7 +3928,7 @@
           { "name": "q", "in": "query", "required": false, "description": "Same unaccented product search as the admin product list.", "schema": { "type": "string", "maxLength": 100 } },
           { "name": "categoryId", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 100 } },
           { "name": "brandId", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 100 } },
-          { "name": "filter_gender", "in": "query", "required": false, "description": "Single-value gender filter; NULL means gender IS NULL.", "schema": { "type": "string", "maxLength": 20, "enum": ["Nam", "Nữ", "NULL"] } },
+          { "name": "filter_gender", "in": "query", "required": false, "description": "Single-value gender flag filter; products tagged with both genders match either value.", "schema": { "type": "string", "maxLength": 20, "enum": ["Nam", "Nữ"] } },
           { "name": "publishStatus", "in": "query", "required": false, "description": "Explicit status, or ALL/blank for the PUBLISHED default.", "schema": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "TRASH", "ALL"] } },
           { "name": "stockState", "in": "query", "required": false, "schema": { "type": "string", "enum": ["IN_STOCK", "OUT_OF_STOCK", "ALL"] } },
           { "name": "includeDraft", "in": "query", "required": false, "schema": { "type": "boolean", "default": false } },
@@ -6455,7 +6998,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Case-insensitive search in sourcePattern, targetUrl, and notes",
+            "description": "Case-insensitive search in sourcePattern and targetUrl",
             "schema": {
               "type": "string",
               "maxLength": 200
@@ -7577,7 +8120,7 @@
     "/api/v1/chat/availability": {
       "get": {
         "tags": ["AI Assistant"],
-        "summary": "Get Bi availability, greeting, prompts and contact fallback",
+        "summary": "Get BigBike Assistant availability, greeting, prompts and contact fallback",
         "operationId": "getChatAvailability",
         "parameters": [{"name":"lang","in":"query","schema":{"type":"string","enum":["vi","en"],"default":"vi"}}],
         "responses": {"200":{"description":"AI or contact mode; never calls Gemini"}}
@@ -7586,7 +8129,7 @@
     "/api/v1/chat/messages": {
       "post": {
         "tags": ["AI Assistant"],
-        "summary": "Send one message to Bi",
+        "summary": "Send one message to BigBike Assistant",
         "operationId": "sendChatMessage",
         "requestBody": {
           "required": true,
@@ -7602,7 +8145,7 @@
         "operationId": "captureChatLead",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["conversationId","phone","consent"],"properties":{"conversationId":{"type":"string","format":"uuid"},"name":{"type":"string","maxLength":100},"phone":{"type":"string","maxLength":32},"note":{"type":"string","maxLength":500},"consent":{"type":"boolean","enum":[true]}}}}}
+          "content": {"application/json":{"schema":{"type":"object","required":["conversationId","consent"],"properties":{"conversationId":{"type":"string","format":"uuid"},"contactSource":{"type":"string","enum":["FORM","ACCOUNT"],"default":"FORM","description":"FORM uses the submitted contact fields; ACCOUNT requires an authenticated customer and resolves name/phone server-side."},"name":{"type":"string","maxLength":100},"phone":{"type":"string","maxLength":32},"note":{"type":"string","maxLength":500},"consent":{"type":"boolean","enum":[true]}}}}}
         },
         "responses": {"200":{"description":"Lead captured and admin notified"},"400":{"$ref":"#/components/responses/ValidationError"}}
       }
@@ -7622,7 +8165,7 @@
     "/api/v1/admin/chat/conversations": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "List Bi conversations",
+        "summary": "List BigBike Assistant conversations",
         "operationId": "listChatConversations",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [
@@ -7638,7 +8181,7 @@
     "/api/v1/admin/chat/conversations/{id}": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get one Bi conversation with messages and consented lead",
+        "summary": "Get one BigBike Assistant conversation with messages and consented lead",
         "operationId": "getChatConversation",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
@@ -7648,7 +8191,7 @@
     "/api/v1/admin/chat/stats": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get Bi daily AI usage and lead counts",
+        "summary": "Get BigBike Assistant daily AI usage, fallback and lead counts",
         "operationId": "getChatStats",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"}}],
@@ -10516,6 +11059,16 @@
             ],
             "description": "Lifecycle hint constrained by the operation: create must be DRAFT and ordinary update cannot change the stored state."
           },
+          "discontinued": {
+            "type": "boolean",
+            "description": "Orthogonal discontinuation flag. Allowed only while publishStatus is PUBLISHED."
+          },
+          "sizeScaleId": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true,
+            "description": "Configured size scale used to validate and group the product's size options. Required when the product has size options."
+          },
           "available": {
             "type": "boolean",
             "description": "Availability toggle for products without variants."
@@ -10566,6 +11119,20 @@
             "maxLength": 600,
             "nullable": true
           },
+          "genders": {
+            "type": "array",
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "Nam",
+                "Nữ"
+              ]
+            },
+            "nullable": true,
+            "description": "Optional canonical gender flags. Empty array clears both flags; omission on PATCH preserves them."
+          },
           "gender": {
             "type": "string",
             "maxLength": 20,
@@ -10573,7 +11140,9 @@
               "Nam",
               "Nữ"
             ],
-            "nullable": true
+            "nullable": true,
+            "deprecated": true,
+            "description": "Legacy scalar input accepted for compatibility; use genders instead."
           },
           "seo": {
             "allOf": [
@@ -10785,6 +11354,17 @@
               "TRASH"
             ]
           },
+          "discontinued": {
+            "type": "boolean",
+            "default": false,
+            "description": "Published historical product flag. Discontinued products are excluded from public lists and cannot be purchased."
+          },
+          "sizeScaleId": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true,
+            "description": "Configured size scale used by this product's size options."
+          },
           "homepageBlock": {
             "type": "string",
             "enum": [
@@ -10858,13 +11438,18 @@
             "type": "string",
             "nullable": true
           },
-          "gender": {
-            "type": "string",
-            "enum": [
-              "Nam",
-              "Nữ"
-            ],
-            "nullable": true
+          "genders": {
+            "type": "array",
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "Nam",
+                "Nữ"
+              ]
+            },
+            "description": "Canonical gender flags in stable order; empty when no gender is assigned."
           },
           "relatedProducts": {
             "type": "array",
@@ -10958,13 +11543,30 @@
             "description": "Brand slug on the import wire.",
             "nullable": true
           },
+          "genders": {
+            "type": "array",
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "Nam",
+                "Nữ"
+              ]
+            },
+            "nullable": true,
+            "description": "Optional canonical gender flags; exported JSON includes an empty array when no gender is assigned."
+          },
           "gender": {
             "type": "string",
             "enum": [
               "Nam",
-              "Nữ"
+              "Nữ",
+              "Unisex"
             ],
-            "nullable": true
+            "nullable": true,
+            "deprecated": true,
+            "description": "Legacy import scalar accepted for compatibility; Unisex is normalized to an empty genders array."
           },
           "retailPrice": {
             "type": "number",
@@ -11073,6 +11675,457 @@
             "items": {
               "$ref": "#/components/schemas/ImportRowResult"
             }
+          }
+        }
+      },
+      "CatalogFacetsDataResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CatalogFacets"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "CatalogFacets": {
+        "type": "object",
+        "required": [
+          "categories",
+          "brands",
+          "colors",
+          "finishes",
+          "genders",
+          "sizes",
+          "sizeGroups",
+          "priceRange",
+          "resultCount",
+          "resolvedColorKeys"
+        ],
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetBucket"
+            }
+          },
+          "brands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetBucket"
+            }
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetBucket"
+            }
+          },
+          "finishes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetBucket"
+            }
+          },
+          "availability": {
+            "$ref": "#/components/schemas/CatalogFacetBucket",
+            "nullable": true
+          },
+          "genders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFacetBucket"
+            }
+          },
+          "sizes": {
+            "type": "array",
+            "description": "Legacy flat size buckets retained for compatibility. New clients should use sizeGroups.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogSizeBucket"
+            }
+          },
+          "sizeGroups": {
+            "type": "array",
+            "description": "Configured, ordered size groups with flat namespaced bucket keys.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogSizeGroupFacet"
+            }
+          },
+          "priceRange": {
+            "$ref": "#/components/schemas/CatalogPriceRange",
+            "nullable": true
+          },
+          "resultCount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "resolvedColorKeys": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "CatalogFacetBucket": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          },
+          "swatch": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "CatalogPriceRange": {
+        "type": "object",
+        "required": [
+          "minPrice",
+          "maxPrice",
+          "step",
+          "buckets"
+        ],
+        "properties": {
+          "minPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "maxPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "step": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogPriceHistogramBucket"
+            }
+          }
+        }
+      },
+      "CatalogPriceHistogramBucket": {
+        "type": "object",
+        "required": [
+          "minPrice",
+          "maxPrice",
+          "count"
+        ],
+        "properties": {
+          "minPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "maxPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "CatalogSizeGroupFacet": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "buckets"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogSizeBucket"
+            }
+          }
+        }
+      },
+      "CatalogSizeBucket": {
+        "type": "object",
+        "required": [
+          "key",
+          "valueKey",
+          "label",
+          "count"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Namespaced filter token sent as kich-co, for example shoe:42."
+          },
+          "valueKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "SizeScaleGroupResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "label",
+          "labelEn",
+          "sortOrder",
+          "active"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SizeScaleValueResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "valueKey",
+          "label",
+          "labelEn",
+          "sortOrder",
+          "active"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "valueKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "subgroupKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "subgroupLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "subgroupLabelEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SizeScaleResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "nameEn",
+          "group",
+          "filterNamespace",
+          "sortOrder",
+          "active",
+          "values"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "group": {
+            "$ref": "#/components/schemas/SizeScaleGroupResponse"
+          },
+          "filterNamespace": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SizeScaleValueResponse"
+            }
+          }
+        }
+      },
+      "UpsertSizeScaleRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "groupId",
+          "values"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "groupId": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 128,
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        }
+      },
+      "UpsertSizeScaleValueRequest": {
+        "type": "object",
+        "required": [
+          "valueKey",
+          "label",
+          "labelEn"
+        ],
+        "properties": {
+          "valueKey": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "labelEn": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "subgroupKey": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true
+          },
+          "subgroupLabel": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "subgroupLabelEn": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "nullable": true
+          }
+        }
+      },
+      "SizeScaleDataResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SizeScaleResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "SizeScaleValueDataResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SizeScaleValueResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
@@ -12170,7 +13223,7 @@
       },
       "AdminRedirectResponse": {
         "type": "object",
-        "required": ["id", "sourcePattern", "targetUrl", "enabled", "hitCount", "createdAt", "updatedAt"],
+        "required": ["id", "sourcePattern", "targetUrl", "statusCode", "enabled", "hitCount", "createdAt", "updatedAt"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "sourcePattern": {
@@ -12179,15 +13232,14 @@
             "description": "Exact internal pathname without domain, query, or fragment"
           },
           "targetUrl": { "type": "string", "maxLength": 2048 },
+          "statusCode": { "type": "integer", "enum": [301, 410], "default": 301 },
           "enabled": { "type": "boolean" },
           "hitCount": { "type": "integer", "format": "int64", "minimum": 0 },
           "lastHitAt": { "type": "string", "format": "date-time", "nullable": true },
-          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
-          "legacyId": { "type": "integer", "format": "int64", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "description": "Managed redirects always emit HTTP 301; statusCode and redirectType are intentionally absent."
+        "description": "Managed redirects use HTTP 301 or terminal HTTP 410; redirectType is intentionally absent."
       },
       "CreateRedirectRequest": {
         "type": "object",
@@ -12199,9 +13251,8 @@
             "description": "Exact internal pathname without domain, query, or fragment"
           },
           "targetUrl": { "type": "string", "maxLength": 2048 },
-          "enabled": { "type": "boolean", "default": true },
-          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
-          "legacyId": { "type": "integer", "format": "int64", "minimum": 1, "nullable": true }
+          "statusCode": { "type": "integer", "enum": [301, 410], "default": 301 },
+          "enabled": { "type": "boolean", "default": true }
         },
         "additionalProperties": false
       },
@@ -12214,9 +13265,8 @@
             "description": "Exact internal pathname without domain, query, or fragment"
           },
           "targetUrl": { "type": "string", "maxLength": 2048 },
-          "enabled": { "type": "boolean" },
-          "notes": { "type": "string", "maxLength": 2000, "nullable": true },
-          "legacyId": { "type": "integer", "format": "int64", "minimum": 1, "nullable": true }
+          "statusCode": { "type": "integer", "enum": [301, 410] },
+          "enabled": { "type": "boolean" }
         },
         "additionalProperties": false
       },
@@ -12242,19 +13292,21 @@
       },
       "InternalRedirectLookupResponse": {
         "type": "object",
-        "required": ["redirectId", "target"],
+        "required": ["redirectId", "target", "statusCode"],
         "properties": {
           "redirectId": { "type": "string", "format": "uuid" },
-          "target": { "type": "string" }
+          "target": { "type": "string" },
+          "statusCode": { "type": "integer", "enum": [301, 410] }
         }
       },
       "InternalActiveRedirectItem": {
         "type": "object",
-        "required": ["id", "sourcePattern", "targetUrl"],
+        "required": ["id", "sourcePattern", "targetUrl", "statusCode"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "sourcePattern": { "type": "string" },
-          "targetUrl": { "type": "string" }
+          "targetUrl": { "type": "string" },
+          "statusCode": { "type": "integer", "enum": [301, 410] }
         }
       },
       "AdminMaintenanceResponse": {

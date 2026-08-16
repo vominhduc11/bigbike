@@ -48,6 +48,13 @@ vi.mock('../lib/adminApi', () => ({
 vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('../lib/useRecentItems', () => ({ useRecentItems: () => [] }))
+vi.mock('../components/FilterSelect', () => ({
+  FilterSelect: ({ ariaLabel, value, options, onValueChange }) => (
+    <select aria-label={ariaLabel} value={value} onChange={(event) => onValueChange(event.target.value)}>
+      {options.map((option) => <option key={String(option.value)} value={option.value}>{option.label}</option>)}
+    </select>
+  ),
+}))
 vi.mock('@/components/ImportProductsDialog', () => ({ ImportProductsDialog: () => null }))
 vi.mock('./product-detail/Modals', () => ({ PublishChecklistModal: () => null }))
 
@@ -173,7 +180,7 @@ describe('ProductListScreen', () => {
       ids: ['product-1'],
       preset: 'PRICING',
     })))
-  })
+  }, 10000)
 
   it('vô hiệu hoá nút xuất và giải thích khi thiếu quyền reports.export', async () => {
     mocks.canExport = false
@@ -228,5 +235,15 @@ describe('ProductListScreen', () => {
       expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }))
     })
     expect(window.location.search).not.toContain('page=')
+  })
+
+  it('bộ lọc giới tính chỉ có Tất cả, Nam và Nữ', async () => {
+    renderScreen()
+
+    const genderFilter = await screen.findByLabelText('products.filterGender')
+    expect(Array.from(genderFilter.options).map((option) => option.value)).toEqual(['ALL', 'Nam', 'Nữ'])
+
+    fireEvent.change(genderFilter, { target: { value: 'Nam' } })
+    await waitFor(() => expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({ gender: 'Nam' })))
   })
 })

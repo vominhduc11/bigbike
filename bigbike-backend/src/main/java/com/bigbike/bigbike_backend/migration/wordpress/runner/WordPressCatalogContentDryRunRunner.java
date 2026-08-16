@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
  *   ./mvnw spring-boot:run \
  *     -Dspring-boot.run.arguments="--bigbike.migration.wordpress.enabled=true \
  *       --bigbike.migration.wordpress.dry-run=true \
- *       --bigbike.migration.wordpress.dump-path=../bigbike_vn__2026_04_17/sqldump.sql \
+ *       --bigbike.migration.wordpress.dump-path=/path/to/external-wordpress-dump.sql \
  *       --bigbike.migration.wordpress.mode=catalog-dry-run"
  */
 @Component
@@ -234,7 +234,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         sb.append("  -Dspring-boot.run.arguments=\"\\\n");
         sb.append("    --bigbike.migration.wordpress.enabled=true \\\n");
         sb.append("    --bigbike.migration.wordpress.dry-run=true \\\n");
-        sb.append("    --bigbike.migration.wordpress.dump-path=../bigbike_vn__2026_04_17/sqldump.sql \\\n");
+        sb.append("    --bigbike.migration.wordpress.dump-path=/path/to/external-wordpress-dump.sql \\\n");
         sb.append("    --bigbike.migration.wordpress.mode=catalog-dry-run\"\n");
         sb.append("```\n\n");
 

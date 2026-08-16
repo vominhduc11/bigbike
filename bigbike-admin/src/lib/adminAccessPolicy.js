@@ -83,6 +83,7 @@ export const ADMIN_ACCESS_POLICIES = Object.freeze({
 export const ROUTE_POLICY_KEYS = Object.freeze({
   dashboard: 'dashboard',
   'products-list': 'productsRead',
+  'legacy-discontinued-products': 'productsRead',
   'product-detail': 'productsRead',
   'product-create': 'productsWrite',
   'categories-list': 'catalogRead',

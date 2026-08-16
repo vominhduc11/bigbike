@@ -35,13 +35,13 @@ public class AdminChatWsService {
         try {
             notificationService.persistChatLead(event);
         } catch (RuntimeException exception) {
-            log.warn("Could not persist Bi lead notification for conversation {}",
+            log.warn("Could not persist BigBike Assistant lead notification for conversation {}",
                     event.conversationId());
         }
         try {
             messaging.convertAndSend(TOPIC_CHAT, event);
         } catch (RuntimeException exception) {
-            log.warn("Could not push Bi lead notification for conversation {}",
+            log.warn("Could not push BigBike Assistant lead notification for conversation {}",
                     event.conversationId());
         }
     }

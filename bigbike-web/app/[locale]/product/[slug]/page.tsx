@@ -14,7 +14,7 @@ import {
 } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeArray } from "@/lib/utils/format";
-import { toProductPath } from "@/lib/utils/routes";
+import { toLegacyProductPath, toProductPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import type { Locale } from "@/i18n/locale";
 
@@ -35,6 +35,15 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const result = await getProductBySlug(slug, locale);
   const product = result.data;
   if (!product) return {};
+  if (product.discontinued) {
+    return buildPublicMetadata({
+      title: product.seo?.title ?? product.name,
+      description: product.seo?.description ?? product.name,
+      canonicalPath: toLegacyProductPath(product.slug, locale),
+      locale,
+      noIndex: true,
+    });
+  }
   const preferredSlug = locale === "en" ? product.slugEn?.trim() || product.slug : product.slug;
   const canonicalPath = toProductPath(preferredSlug, locale);
   return buildPublicMetadata({
@@ -72,6 +81,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   const product = result.data;
   if (!product) notFound();
+  if (product.discontinued) notFound();
   const preferredSlug = locale === "en" ? product.slugEn?.trim() || product.slug : product.slug;
   const canonicalPath = toProductPath(preferredSlug, locale);
   if (slug !== preferredSlug) permanentRedirect(canonicalPath);

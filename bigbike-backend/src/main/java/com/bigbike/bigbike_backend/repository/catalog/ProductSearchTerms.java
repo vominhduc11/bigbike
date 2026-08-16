@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.repository.catalog;
 
 import java.text.Normalizer;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,5 +49,35 @@ public final class ProductSearchTerms {
                 .replace('đ', 'd')
                 .replace('Đ', 'd')
                 .toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Returns whether every meaningful search token matches at least one product
+     * identifier. Descriptive copy is deliberately not an input to this helper.
+     */
+    public static boolean matchesProductIdentifiers(
+            String name,
+            String nameEn,
+            String slug,
+            String slugEn,
+            String sku,
+            Collection<String> rawTerms
+    ) {
+        List<String> meaningfulTokens = rawTerms == null
+                ? List.of()
+                : rawTerms.stream()
+                        .flatMap(term -> tokens(term).stream())
+                        .distinct()
+                        .toList();
+        return meaningfulTokens.stream().allMatch(token ->
+                contains(name, token)
+                        || contains(nameEn, token)
+                        || contains(slug, token)
+                        || contains(slugEn, token)
+                        || contains(sku, token));
+    }
+
+    private static boolean contains(String value, String normalizedToken) {
+        return !normalize(value).isEmpty() && normalize(value).contains(normalizedToken);
     }
 }

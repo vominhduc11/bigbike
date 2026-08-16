@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.repository.catalog;
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -73,10 +74,13 @@ public final class ProductFilterSpecifications {
                 criteriaQuery.distinct(true);
             }
             if (gender != null && !gender.isBlank()) {
-                if ("NULL".equalsIgnoreCase(gender)) {
-                    predicates.add(cb.isNull(root.get("gender")));
+                String normalizedGender = gender.trim();
+                if (ProductGenderSupport.MALE.equalsIgnoreCase(normalizedGender)) {
+                    predicates.add(cb.isTrue(root.get("genderMale")));
+                } else if (ProductGenderSupport.FEMALE.equalsIgnoreCase(normalizedGender)) {
+                    predicates.add(cb.isTrue(root.get("genderFemale")));
                 } else {
-                    predicates.add(cb.equal(cb.lower(root.get("gender")), gender.trim().toLowerCase(Locale.ROOT)));
+                    predicates.add(cb.disjunction());
                 }
             }
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -142,8 +146,6 @@ public final class ProductFilterSpecifications {
         Expression<String> sku = unaccentLower(cb, cb.coalesce(root.get("sku"), ""));
         Expression<String> nameEn = unaccentLower(cb, cb.coalesce(root.get("nameEn"), ""));
         Expression<String> slugEn = unaccentLower(cb, cb.coalesce(root.get("slugEn"), ""));
-        Expression<String> shortDescription = unaccentLower(
-                cb, cb.coalesce(root.get("shortDescription"), ""));
         List<Predicate> allTokens = new ArrayList<>();
         for (String token : tokens) {
             Expression<String> term = cb.literal("%" + token + "%");
@@ -152,8 +154,7 @@ public final class ProductFilterSpecifications {
                     cb.like(slug, term),
                     cb.like(sku, term),
                     cb.like(nameEn, term),
-                    cb.like(slugEn, term),
-                    cb.like(shortDescription, term)));
+                    cb.like(slugEn, term)));
         }
         return cb.and(allTokens.toArray(new Predicate[0]));
     }

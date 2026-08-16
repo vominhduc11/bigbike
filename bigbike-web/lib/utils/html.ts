@@ -173,7 +173,13 @@ const TYPOGRAPHY_CSS_PROPERTIES = new Set([
   "text-transform",
 ]);
 
+const TYPOGRAPHY_DECLARATION_PATTERN = /(?:^|[;{])\s*(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i;
+
 function stripTypographyDeclarations(css: string, context: "declarationList" | "stylesheet"): string {
+  if (!TYPOGRAPHY_DECLARATION_PATTERN.test(css)) {
+    return css.trim();
+  }
+
   try {
     const ast = parse(css, { context });
     walk(ast, {

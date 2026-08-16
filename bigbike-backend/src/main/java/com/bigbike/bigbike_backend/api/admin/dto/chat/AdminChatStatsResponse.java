@@ -7,6 +7,7 @@ public record AdminChatStatsResponse(
         long aiCalls,
         long conversations,
         long leads,
+        long unanswered,
         int dailyLimit,
         long remainingAiCalls
 ) {}

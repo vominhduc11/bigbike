@@ -70,12 +70,13 @@ function toNextPath(pattern: string): string | null {
 }
 
 function buildRedirectRules(rows: SeoRedirectRow[]) {
-  // Only emit rows with status=active. Rows marked rewrite/removed/inactive are
-  // handled by afterFiles rewrites or no longer needed.
+  // Only emit active permanent rows. All storefront redirects are deliberately
+  // normalized to one 301 hop; 302/307 rows must be owned by the backend table
+  // or removed from the legacy CSV instead of becoming a hidden second policy.
   return rows
     .filter((row) =>
       row.status === "active" &&
-      ["301", "302", "307", "308"].includes(row.redirectType) &&
+      ["301", "308"].includes(row.redirectType) &&
       row.sourcePattern !== row.targetPattern,
     )
     .map((row) => {
@@ -88,10 +89,10 @@ function buildRedirectRules(rows: SeoRedirectRow[]) {
       return {
         source,
         destination,
-        permanent: row.redirectType === "301" || row.redirectType === "308",
+        statusCode: 301,
       };
     })
-    .filter((item): item is { source: string; destination: string; permanent: boolean } => Boolean(item));
+    .filter((item): item is { source: string; destination: string; statusCode: 301 } => Boolean(item));
 }
 
 function buildNoIndexHeaders(rows: SeoRedirectRow[]) {
@@ -266,16 +267,6 @@ const nextConfig: NextConfig = {
       // Canonical Vietnamese catalog URLs (CATEGORY_RULE_003).
       // Use an explicit statusCode because Next's `permanent: true` emits 308, not 301.
       {
-        source: "/danh-muc-san-pham/:slug/",
-        destination: "/danh-muc/:slug/",
-        statusCode: 301,
-      },
-      {
-        source: "/danh-muc-san-pham/:slug",
-        destination: "/danh-muc/:slug/",
-        statusCode: 301,
-      },
-      {
         source: "/danh-muc-san-pham/",
         destination: "/sp/",
         statusCode: 301,
@@ -324,19 +315,19 @@ const nextConfig: NextConfig = {
       {
         source: "/thanh-toan/",
         destination: "/dat-hang/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/thanh-toan.html",
         destination: "/dat-hang/",
-        permanent: true,
+        statusCode: 301,
       },
       // /home.html → / is a true redirect (home.html was the WP default page slug,
       // not a canonical we want to preserve).
       {
         source: "/home.html",
         destination: "/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/san-pham.html",
@@ -357,51 +348,51 @@ const nextConfig: NextConfig = {
       {
         source: "/huong-dan-mua-hang.html",
         destination: "/huong-dan/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/huong-dan-mua-hang",
         destination: "/huong-dan/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/huong-dan/mua-hang",
         destination: "/huong-dan/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/huong-dan/size-gang-tay",
         destination: "/huong-dan/size-trang-phuc/",
-        permanent: true,
+        statusCode: 301,
       },
       // Canonical cũ trong static-pages.json trước 2026-07-15 trỏ các URL chưa từng
       // được build — 301 về route thực để không mất SEO legacy (AUD-031).
       {
         source: "/cach-do-size-dau",
         destination: "/huong-dan/size-mu/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/cach-do-size-trang-phuc",
         destination: "/huong-dan/size-trang-phuc/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/chinh-sach/bao-hanh",
         destination: "/chinh-sach/chinh-sach-bao-hanh/",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/chinh-sach/doi-tra",
         destination: "/chinh-sach/chinh-sach-doi-tra-hang/",
-        permanent: true,
+        statusCode: 301,
       },
       ...csvRedirectRules,
       // Legacy WP sitemap index → consolidated Next.js sitemap.
       {
         source: "/sitemap_index.xml",
         destination: "/sitemap.xml",
-        permanent: true,
+        statusCode: 301,
       },
     ];
   },
@@ -421,11 +412,6 @@ const nextConfig: NextConfig = {
       // These serve WordPress canonical .html URLs from existing Next.js app routes
       // without redirecting, so .html remains the canonical URL.
       afterFiles: [
-        // Products: /sp/{slug}.html → /product/{slug}/
-        {
-          source: "/sp/:slug.html",
-          destination: "/product/:slug/",
-        },
         // Brands: /brand/{slug}.html → /brands/{slug}/
         {
           source: "/brand/:slug.html",
@@ -478,7 +464,7 @@ const nextConfig: NextConfig = {
         // Hierarchical category URLs: /{parent}/{child}.html → /danh-muc/{child}/
         // (simplified; parent context not used by current category page)
         {
-          source: "/:parent/:child.html",
+          source: "/:parent((?!sp/)[^/]+)/:child.html",
           destination: "/danh-muc/:child/",
         },
         // Catch-all for flat category URLs: /{cat}.html → /danh-muc/{cat}/

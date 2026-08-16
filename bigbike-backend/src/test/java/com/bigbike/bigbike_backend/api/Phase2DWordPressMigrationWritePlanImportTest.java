@@ -38,7 +38,13 @@ import org.springframework.web.context.WebApplicationContext;
 @SpringBootTest
 class Phase2DWordPressMigrationWritePlanImportTest {
 
-    static final Path REAL_DUMP = Path.of("../bigbike_vn__2026_04_17/sqldump.sql");
+    static final Path REAL_DUMP = externalDumpPath();
+
+    private static Path externalDumpPath() {
+        return Path.of(System.getProperty(
+                "bigbike.wp.dump.path",
+                System.getenv().getOrDefault("BIGBIKE_WP_DUMP_PATH", "external-wordpress-dump.sql")));
+    }
 
     @Autowired WordPressMigrationProperties migrationProperties;
     @Autowired WordPressMigrationWritePlanService writePlanService;

@@ -35,6 +35,10 @@ public class ProductImportRow {
     /** Deprecated singleton slug alias kept for files from the transition period. */
     private String categoryId;
     private String brandId;
+    /** Canonical optional gender flags; export always includes this key, including an empty list. */
+    private List<String> genders;
+    /** Deprecated scalar import alias accepted for older files. */
+    @Deprecated
     private String gender;
 
     // Owner decision 2026-07-07: retailPrice/salePrice always show in export, null-filled when the

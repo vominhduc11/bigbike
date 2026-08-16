@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -11,6 +12,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.core.read.ListAppender;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
@@ -29,6 +32,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 
 class ChatServiceFallbackTest {
 
@@ -69,7 +73,7 @@ class ChatServiceFallbackTest {
                 any(AiChatClient.ToolExecutor.class),
                 any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybrid(
-                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.",
+                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để trợ lý hỗ trợ.",
                         List.of(card()))));
 
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi bị guard chặn"), null);
@@ -85,6 +89,62 @@ class ChatServiceFallbackTest {
         assertThat(savedMessages.getAllValues()).filteredOn(message -> "ASSISTANT".equals(message.getRole()))
                 .extracting(ChatMessageEntity::getAiRetryCount)
                 .containsExactly(0);
+    }
+
+    @Test
+    @DisplayName("one unsafe product is removed while verified sellable products remain")
+    void unsafeProductIsFilteredWithoutDiscardingSafeCards() {
+        Fixture fixture = fixture(true, 60, 0);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenReturn(Optional.empty());
+        ChatProductCardResponse unavailable = new ChatProductCardResponse(
+                "sold-out-card", "Sản phẩm đã hết hàng", null,
+                BigDecimal.valueOf(2_000_000), null, "VND", "OUT_OF_STOCK");
+        when(fixture.aiClient.answer(
+                anyString(), eq("vi"), any(ChatToolRegistry.class), eq(true),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
+                .thenReturn(Optional.of(hybrid(
+                        "Dạ, em đã tìm được các sản phẩm phù hợp. "
+                                + "Anh/chị xem các thẻ bên dưới để chọn mẫu cần kiểm tra nhé.",
+                        List.of(card(), unavailable))));
+
+        ChatMessageResponse response = fixture.service.send(request("Tìm sản phẩm đang bán"), null);
+
+        assertThat(response.mode()).isEqualTo("AI");
+        assertThat(response.products()).extracting(ChatProductCardResponse::slug)
+                .containsExactly("safe-card");
+        assertThat(response.answer())
+                .contains("hiển thị 1 sản phẩm")
+                .doesNotContain("Sản phẩm đã hết hàng", "sold-out-card");
+        assertThat(fixture.conversation.getTurnCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("fixed fallback logs include a reason code but exclude customer content and phone")
+    void fallbackLogContainsNoCustomerPersonalData() {
+        Fixture fixture = fixture(true, 60, 0);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenThrow(new RuntimeException("lookup failed"));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatService.class);
+        ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            fixture.service.send(request(
+                    "Tôi là Nguyễn Bí Mật, số điện thoại 0909 123 456, cần tìm mũ"), null);
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        String logs = appender.list.stream()
+                .map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                .collect(java.util.stream.Collectors.joining("\n"));
+        assertThat(logs)
+                .contains("reason=FAST_PATH_EXCEPTION", "flow=FAST_PATH")
+                .doesNotContain("Nguyễn Bí Mật", "0909", "123 456", "cần tìm mũ");
     }
 
     @Test
@@ -139,7 +199,7 @@ class ChatServiceFallbackTest {
                 any(AiChatClient.ToolExecutor.class),
                 any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenReturn(Optional.of(hybrid(
-                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để Bi hỗ trợ.")));
+                        "Chào em, em đang tìm sản phẩm nào? Anh/chị nói rõ để trợ lý hỗ trợ.")));
         ChatMessageEntity priorFallback = new ChatMessageEntity();
         priorFallback.setSource("CONTACT_FALLBACK");
         when(fixture.messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
@@ -360,7 +420,7 @@ class ChatServiceFallbackTest {
         conversation.setId(CONVERSATION_ID);
         conversation.setLocale("vi");
 
-        when(conversations.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+        when(conversations.findByIdForUpdate(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
                 enabled,
                 dailyLimit,
@@ -370,8 +430,9 @@ class ChatServiceFallbackTest {
                 "",
                 "",
                 ""));
-        when(messages.countAiUsesBetween(
-                any(Instant.class), any(Instant.class))).thenReturn(spent);
+        ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
+        when(quota.usedToday()).thenReturn(spent);
+        when(quota.tryReserve(anyInt())).thenReturn(true);
         when(aiClient.isConfigured()).thenReturn(true);
         when(toolService.assistantCatalogVocabulary())
                 .thenReturn(ChatToolService.AssistantCatalogVocabulary.empty());
@@ -380,11 +441,13 @@ class ChatServiceFallbackTest {
                 conversations,
                 messages,
                 leads,
+                mock(com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository.class),
                 settings,
                 toolService,
                 new ChatToolRegistry(),
                 aiClient,
                 new ChatResponseGuard(),
+                quota,
                 mock(AdminChatWsService.class));
         return new Fixture(service, conversation, toolService, aiClient, messages);
     }

@@ -46,6 +46,7 @@ const EMPTY_FORM = {
   sourcePattern: '',
   targetUrl: '',
   enabled: true,
+  statusCode: 301,
 }
 
 const PAGE_SIZES = new Set([20, 50, 100])
@@ -116,6 +117,7 @@ export function RedirectListScreen({ canUpdate }) {
         sourcePattern: form.sourcePattern.trim(),
         targetUrl: form.targetUrl.trim(),
         enabled: form.enabled,
+        statusCode: Number(form.statusCode) === 410 ? 410 : 301,
       }
       return editingRedirect
         ? updateRedirect(editingRedirect.id, payload)
@@ -293,6 +295,7 @@ export function RedirectListScreen({ canUpdate }) {
       sourcePattern: redirect.sourcePattern || '',
       targetUrl: redirect.targetUrl || '',
       enabled: redirect.enabled !== false,
+      statusCode: redirect.statusCode === 410 ? 410 : 301,
     }
     setForm(next)
     setBaseline(next)
@@ -424,6 +427,14 @@ export function RedirectListScreen({ canUpdate }) {
     )
   }
 
+  const statusCodeBadge = (redirect) => (
+    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${redirect.statusCode === 410 ? 'bg-warning-bg text-warning' : 'bg-info-bg text-info'}`}>
+      {redirect.statusCode === 410
+        ? t('redirects.status410', { defaultValue: '410 — Đã gỡ' })
+        : t('redirects.status301', { defaultValue: '301 — Chuyển hướng' })}
+    </span>
+  )
+
   const rowActions = (redirect) => (
     <>
       {/* O4: toggle nhanh Bật/Tắt ngay trên bảng, không cần mở form sửa. */}
@@ -484,6 +495,11 @@ export function RedirectListScreen({ canUpdate }) {
       render: enabledBadge,
     },
     {
+      key: 'statusCode',
+      label: t('redirects.colStatusCode', { defaultValue: 'Mã' }),
+      render: statusCodeBadge,
+    },
+    {
       key: 'hitCount',
       label: t('redirects.colHits', { defaultValue: 'Lượt' }),
       align: 'right',
@@ -511,6 +527,7 @@ export function RedirectListScreen({ canUpdate }) {
     subtitle: redirect.targetUrl,
     status: enabledBadge(redirect),
     meta: [
+      { label: t('redirects.colStatusCode', { defaultValue: 'Mã' }), value: statusCodeBadge(redirect) },
       { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
       { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
     ],
@@ -522,7 +539,7 @@ export function RedirectListScreen({ canUpdate }) {
       <ScreenHeader
         eyebrow={t('nav.redirects', { defaultValue: 'Chuyển hướng' })}
         title={t('redirects.title', { defaultValue: 'Chuyển hướng' })}
-        description={t('redirects.description', { defaultValue: 'Quản lý việc đưa khách từ địa chỉ cũ đến địa chỉ mới trên website. Tất cả quy tắc dùng chuyển hướng vĩnh viễn 301.' })}
+        description={t('redirects.description', { defaultValue: 'Quản lý địa chỉ cũ trên website: chuyển khách tới địa chỉ mới bằng 301 hoặc xác nhận địa chỉ đã gỡ bằng 410.' })}
         actions={canUpdate ? (
           <Button type="button" className="min-h-11" onClick={openCreateForm} disabled={isActionBusy}>
               <Plus size={14} />{t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' })}
@@ -564,7 +581,7 @@ export function RedirectListScreen({ canUpdate }) {
               <FormField
                 label={t('redirects.formTarget', { defaultValue: 'Địa chỉ mới' })}
                 required
-                helper={t('redirects.formTargetHint', { defaultValue: 'Đường dẫn mới trong website. Hệ thống luôn dùng mã 301 vĩnh viễn; nếu địa chỉ này lại trùng nguồn của một chuyển hướng khác, hệ thống tự lưu thẳng tới đích cuối cùng.' })}
+                helper={t('redirects.formTargetHint', { defaultValue: 'Đường dẫn mới trong website. Với mã 410, địa chỉ này chỉ để tham chiếu và khách sẽ không được chuyển tới đó.' })}
                 error={validationErrors.targetUrl || (touched.targetUrl ? targetError : '')}
               >
                 <Input
@@ -573,6 +590,21 @@ export function RedirectListScreen({ canUpdate }) {
                   onChange={(e) => updateFormField('targetUrl', e.target.value)}
                   onBlur={() => markTouched('targetUrl')}
                   placeholder="/dia-chi-moi"
+                />
+              </FormField>
+              <FormField
+                label={t('redirects.formStatusCode', { defaultValue: 'Mã phản hồi' })}
+                helper={t('redirects.formStatusCodeHint', { defaultValue: '301 đưa khách tới địa chỉ mới; 410 xác nhận địa chỉ đã bị gỡ và không có đích đến.' })}
+              >
+                <FilterSelect
+                  value={String(form.statusCode)}
+                  onValueChange={(value) => updateFormField('statusCode', Number(value) === 410 ? 410 : 301)}
+                  ariaLabel={t('redirects.formStatusCode', { defaultValue: 'Mã phản hồi' })}
+                  className="min-h-11 w-full"
+                  options={[
+                    { value: '301', label: t('redirects.status301', { defaultValue: '301 — Chuyển hướng' }) },
+                    { value: '410', label: t('redirects.status410', { defaultValue: '410 — Đã gỡ' }) },
+                  ]}
                 />
               </FormField>
               {/* V2: bỏ marginTop:22 canh thủ công — dùng items-end trên chính field này để tự canh đáy với ô cạnh bên. */}

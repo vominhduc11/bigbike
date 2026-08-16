@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
+import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
@@ -156,6 +157,13 @@ public class ProductEntity {
     @Column(nullable = false)
     private PublishStatus publishStatus;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean discontinued = false;
+
+    /** Explicit catalog size scale; null is valid only for products without size options. */
+    @Column(name = "size_scale_id", length = 64)
+    private String sizeScaleId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "homepage_block", nullable = false, length = 32)
     private com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
@@ -209,8 +217,36 @@ public class ProductEntity {
     @Column(name = "quick_answer_summary", columnDefinition = "text")
     private String quickAnswerSummary;
 
-    @Column(name = "gender", length = 20)
-    private String gender;
+    @Column(name = "gender_male", nullable = false)
+    private boolean genderMale;
+
+    @Column(name = "gender_female", nullable = false)
+    private boolean genderFemale;
+
+    /**
+     * Source-compatible scalar accessor for old fixtures and migration reports.
+     * The scalar is not persisted; new code must use the two boolean flags.
+     */
+    @Deprecated
+    @Transient
+    public String getGender() {
+        List<String> genders = ProductGenderSupport.fromFlags(genderMale, genderFemale);
+        return genders.isEmpty() ? null : String.join("|", genders);
+    }
+
+    /** Legacy scalar writer for old fixtures; Unisex/blank clears both flags. */
+    @Deprecated
+    @Transient
+    public void setGender(String gender) {
+        List<String> normalized;
+        try {
+            normalized = ProductGenderSupport.fromLegacy(gender);
+        } catch (IllegalArgumentException ignored) {
+            normalized = List.of();
+        }
+        this.genderMale = normalized.contains(ProductGenderSupport.MALE);
+        this.genderFemale = normalized.contains(ProductGenderSupport.FEMALE);
+    }
 
     /**
      * Structured description blocks (V139). Each block carries both languages inline in its own

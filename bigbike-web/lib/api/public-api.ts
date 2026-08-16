@@ -12,6 +12,7 @@ import type {
   HomeHighlightItem,
   HomeSlider,
   HomeVideo,
+  LegacyDiscontinuedProduct,
   ListResult,
   PublicMenu,
   PublicSiteSetting,
@@ -39,7 +40,7 @@ const DEFAULT_META_ERROR = {
   details: [] as ApiErrorDetail[],
 } satisfies ClientError;
 
-type RequestQuery = Record<string, string | string[] | number | undefined>;
+type RequestQuery = Record<string, string | string[] | number | boolean | undefined>;
 
 class ApiRequestError extends Error {
   clientError: ClientError;
@@ -271,12 +272,15 @@ export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
   size?: number;
   sort?: string;
   category?: string;
-  brand?: string;
+  brand?: string | string[];
   q?: string;
-  filterColor?: string;
-  filterGender?: string[];
+  filterColor?: string | string[];
+  filterFinish?: string | string[];
+  filterGender?: string;
+  sizeFilter?: string | string[];
   minPrice?: number;
   maxPrice?: number;
+  inStock?: boolean;
   /** Filter to a single homepage placement slot. */
   homepageBlock?: "NONE" | "FEATURED_GRID";
   /** Content language: "vi" (default) or "en". English falls back to Vietnamese per PRODUCT_RULE_002. */
@@ -294,9 +298,12 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       "pwb-brand": query.brand,
       q: query.q,
       filter_color: query.filterColor,
+      filter_finish: query.filterFinish,
       filter_gender: query.filterGender,
+      "kich-co": query.sizeFilter,
       min_price: query.minPrice,
       max_price: query.maxPrice,
+      in_stock: query.inStock ? true : undefined,
       homepage_block: query.homepageBlock,
       lang: query.lang,
     },
@@ -314,6 +321,18 @@ export async function getProductBySlug(slug: string, lang?: string): Promise<Dat
     ["products", `product:${slug}`, `lang:${lang ?? "vi"}`],
   );
   return result.data ? { ...result, data: withFlatHighlights(result.data) } : result;
+}
+
+/** Exact lookup for an admin-managed historical product URL, never a catalog list item. */
+export function getLegacyDiscontinuedProduct(
+  slug: string,
+  lang?: string,
+): Promise<DataResult<LegacyDiscontinuedProduct>> {
+  return loadDataWithQuery(
+    `/api/v1/legacy-discontinued-products/${slug}`,
+    { lang },
+    0,
+  );
 }
 
  type CategoryListQuery = {
@@ -384,9 +403,17 @@ export function getBrandBySlug(slug: string, lang?: string): Promise<DataResult<
   );
 }
 
- type CatalogFacetsQuery = {
+type CatalogFacetsQuery = {
   category?: string;
+  brand?: string | string[];
   q?: string;
+  filterColor?: string | string[];
+  filterFinish?: string | string[];
+  filterGender?: string;
+  sizeFilter?: string | string[];
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
   /** Content language: "vi" (default) or "en". Facet labels fall back to Vietnamese. */
   lang?: string;
 };
@@ -397,7 +424,15 @@ export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<
     "/api/v1/catalog/facets",
     {
       category: query.category,
+      "pwb-brand": query.brand,
       q: query.q,
+      filter_color: query.filterColor,
+      filter_finish: query.filterFinish,
+      filter_gender: query.filterGender,
+      "kich-co": query.sizeFilter,
+      min_price: query.minPrice,
+      max_price: query.maxPrice,
+      in_stock: query.inStock ? true : undefined,
       lang: query.lang,
     },
     3600,

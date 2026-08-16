@@ -69,6 +69,23 @@ File này liên quan trực tiếp đến:
 
 Product state machine kiểm soát vòng đời public/internal của sản phẩm: từ draft, publish, hide/archive/trash và khả năng hiển thị ngoài public web.
 
+### Trạng thái ngừng bán (orthogonal flag, 2026-08-13)
+
+`discontinued` **không phải** một giá trị mới của `publishStatus` và không tạo
+transition mới trong đồ thị bên dưới. Đây là cờ độc lập, mặc định `false`;
+chỉ sản phẩm `PUBLISHED` có thể được giữ công khai với `discontinued = true`.
+Sản phẩm ngừng bán vẫn mở được tại URL lịch sử `/sp/{slug}.html` để phục vụ
+SEO và thông tin tham khảo, nhưng bị loại khỏi catalog/search/facet/sitemap/feed,
+không được checkout và không render nút mua. `PUBLISHED + discontinued = true`
+không được tạo URL `/product/` canonical mới. Đặt lại `discontinued = false`
+không tự thay đổi `publishStatus`.
+
+Trang lịch sử này là một trạng thái trình bày độc lập của web, không phải một
+trạng thái mới trong database: registry giữ tên cũ và bản dịch, nhãn “ngừng bán”,
+canonical chính URL `/sp/`, cùng tối đa 3 gợi ý đang bán trong cùng nhóm hàng.
+Nếu registry không có bản ghi tương ứng, sản phẩm vẫn tuân thủ đường đọc
+`PUBLISHED`/`TRASH` thông thường; không được tự dựng tên hoặc đích mới.
+
 ### State Field
 
 `publishStatus`
@@ -149,7 +166,9 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 - Transition validation is centralized in `AdminMutationValidators.validatePublishTransition`.
 - Product create/update/publish-status methods call the validator through `ProductMutationService`.
-- Public product read filters `PUBLISHED` in `CatalogReadService`.
+- Public product read filters `PUBLISHED` in `CatalogReadService`; public list/search/facet
+  additionally filters `discontinued = false`. Direct detail reads may return a
+  discontinued `PUBLISHED` product only for the legacy `/sp/{slug}.html` page.
 
 ### Test Coverage
 

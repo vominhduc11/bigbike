@@ -8,5 +8,6 @@ public record AdminChatLeadResponse(
         String name,
         String phone,
         String note,
+        String source,
         Instant consentedAt
 ) {}

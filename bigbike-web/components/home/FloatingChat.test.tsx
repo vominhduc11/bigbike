@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createElement } from "react";
 import { FloatingChat } from "./FloatingChat";
+import { CHAT_STORAGE_KEY, writeChatSnapshot } from "@/lib/chat/chat-persistence";
+
+type TestAuthState =
+  | { status: "anonymous" }
+  | { status: "authenticated"; profile: { displayName: string | null; phone: string | null } };
 
 const api = vi.hoisted(() => ({
   fetchChatAvailability: vi.fn(),
@@ -10,6 +14,8 @@ const api = vi.hoisted(() => ({
   captureChatLead: vi.fn(),
   declineChatLead: vi.fn(),
 }));
+
+const auth = vi.hoisted(() => ({ state: { status: "anonymous" } as TestAuthState }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "vi",
@@ -19,18 +25,15 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/lib/api/client-api", () => api);
-vi.mock("next/image", () => ({
-  default: ({ fill, ...props }: { fill?: boolean; src?: string; alt?: string; className?: string; onError?: () => void }) => {
-    void fill;
-    return createElement("img", { ...props, alt: props.alt ?? "" });
-  },
-}));
+vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => auth.state }));
 vi.mock("@/components/ui/MediaImage", () => ({
   MediaImage: ({ altFallback }: { altFallback: string }) => <div aria-label={altFallback} />,
 }));
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
+  window.localStorage.clear();
+  auth.state = { status: "anonymous" };
   vi.stubGlobal("ResizeObserver", class {
     observe() {}
     unobserve() {}
@@ -39,7 +42,7 @@ beforeEach(() => {
   HTMLElement.prototype.scrollTo = vi.fn();
   api.fetchChatAvailability.mockResolvedValue({
     mode: "AI",
-    greeting: "Xin chào từ Bi",
+    greeting: "Xin chào từ Trợ lý BigBike",
     quickPrompts: ["Tìm mũ"],
     maxTurns: 12,
     contacts: {},
@@ -64,15 +67,20 @@ beforeEach(() => {
     contacts: {},
   });
   api.declineChatLead.mockResolvedValue({ declined: true });
+  api.captureChatLead.mockResolvedValue({ captured: true });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("FloatingChat", () => {
-  it("opens Bi, returns a real product card, and keeps Talk to staff available", async () => {
+  it("opens BigBike Assistant, returns a real product card, and keeps Talk to staff available", async () => {
     const user = userEvent.setup();
     render(<FloatingChat hotline="0901 234 567" zaloUrl="https://zalo.me/bigbike" />);
 
     await user.click(screen.getByRole("button", { name: "open" }));
-    expect(await screen.findByText("Xin chào từ Bi")).toBeInTheDocument();
+    expect(await screen.findByText("Xin chào từ Trợ lý BigBike")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("messageLabel"), "Cho em mũ 3/4");
     await user.click(screen.getByRole("button", { name: "send" }));
@@ -80,6 +88,7 @@ describe("FloatingChat", () => {
     expect(await screen.findByText("Em tìm thấy sản phẩm thật này.")).toBeInTheDocument();
     expect(screen.getByText("Mũ 3/4 Test")).toBeInTheDocument();
     expect(screen.getByText(/1\.590\.000/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "viewProduct" })).toHaveAttribute("href", expect.stringContaining("/product/"));
     expect(screen.getByRole("button", { name: /talkToStaff/ })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /talkToStaff/ }));
@@ -87,10 +96,10 @@ describe("FloatingChat", () => {
     expect(screen.getByText("0901234567")).toBeInTheDocument();
   });
 
-  it("shows branded onboarding tiles, the Cloudinary Bi avatar, and a safe avatar fallback", async () => {
+  it("shows branded onboarding tiles and the chat-bubble avatar", async () => {
     api.fetchChatAvailability.mockResolvedValue({
       mode: "AI",
-      greeting: "Xin chào từ Bi",
+      greeting: "Xin chào từ Trợ lý BigBike",
       quickPrompts: ["Tìm theo nhu cầu", "Lọc theo ngân sách", "So sánh sản phẩm", "Kiểm tra còn hàng"],
       maxTurns: 12,
       contacts: {},
@@ -99,15 +108,13 @@ describe("FloatingChat", () => {
     render(<FloatingChat />);
 
     await user.click(screen.getByRole("button", { name: "open" }));
-    expect(await screen.findByText("Xin chào từ Bi")).toBeInTheDocument();
+    expect(await screen.findByText("Xin chào từ Trợ lý BigBike")).toBeInTheDocument();
     expect(document.body.querySelector("[data-bi-onboarding]")).toBeInTheDocument();
     expect(document.body.querySelectorAll("[data-bi-onboarding] button")).toHaveLength(4);
     expect(screen.getByRole("button", { name: "talkToStaff" })).toBeInTheDocument();
 
-    const avatar = document.body.querySelector('[data-bi-avatar] img[src="https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png"]');
+    const avatar = document.body.querySelector("[data-bi-avatar] svg");
     expect(avatar).toBeInTheDocument();
-    fireEvent.error(avatar!);
-    expect(document.body.querySelector('[data-bi-avatar] img[src="https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png"]')).not.toBeInTheDocument();
   });
 
   it("locks the composer for CONTACT and opens the inline contact card on demand", async () => {
@@ -187,6 +194,58 @@ describe("FloatingChat", () => {
     expect(screen.getByLabelText("messageLabel")).toHaveValue("Tìm mũ bảo hiểm");
     expect(screen.queryByText("contactTitle")).not.toBeInTheDocument();
     expect(screen.queryByText(/stack trace|exception|functionCall|SQL/i)).not.toBeInTheDocument();
+  });
+
+  it("stops waiting after 45 seconds, restores the draft, and retries the same message", async () => {
+    vi.useFakeTimers();
+    api.sendChatMessage.mockImplementationOnce(() => new Promise(() => {}));
+    render(<FloatingChat hotline="0901 234 567" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const input = screen.getByLabelText("messageLabel");
+    fireEvent.change(input, { target: { value: "Tìm mũ trong tầm giá này" } });
+    fireEvent.click(screen.getByRole("button", { name: "send" }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(45_000);
+    });
+
+    expect(screen.getByText("timeoutNotice")).toBeInTheDocument();
+    expect(input).toHaveValue("Tìm mũ trong tầm giá này");
+    expect(input).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "retry" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /talkToStaff/ })).toBeInTheDocument();
+
+    api.sendChatMessage.mockResolvedValueOnce({
+      conversationId: "conversation-after-timeout",
+      mode: "AI",
+      answer: "Em đã kiểm tra lại được yêu cầu này.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: false,
+      actions: [],
+      contacts: {},
+    });
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(api.sendChatMessage).toHaveBeenLastCalledWith(
+      "Tìm mũ trong tầm giá này",
+      "vi",
+      undefined,
+      expect.any(AbortSignal),
+    );
+    expect(screen.getByText("Em đã kiểm tra lại được yêu cầu này.")).toBeInTheDocument();
   });
 
   it("keeps asking after a technical fallback response", async () => {
@@ -295,7 +354,122 @@ describe("FloatingChat", () => {
     api.sendChatMessage.mockResolvedValue({
       conversationId: "conversation-lead-decline",
       mode: "AI",
-      answer: "Bi có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
+      answer: "Trợ lý BigBike có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: true,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Gọi lại cho tôi");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
+    await user.click(await screen.findByRole("button", { name: "requestCallback" }));
+    expect(screen.getByLabelText("leadPhone")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "leadDecline" }));
+
+    await waitFor(() => expect(api.declineChatLead).toHaveBeenCalledWith("conversation-lead-decline"));
+    expect(await screen.findByText("leadDeclined")).toBeInTheDocument();
+  });
+
+  it("shows the masked account contact and only captures after explicit consent", async () => {
+    auth.state = {
+      status: "authenticated",
+      profile: { displayName: "Nguyễn Minh", phone: "0909 123 456" },
+    };
+    api.sendChatMessage.mockResolvedValue({
+      conversationId: "conversation-account",
+      mode: "AI",
+      answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: true,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Gọi lại cho tôi");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
+    await user.click(await screen.findByRole("button", { name: "requestCallback" }));
+
+    expect(await screen.findByTestId("bi-lead-quick")).toBeInTheDocument();
+    expect(screen.getByText("Nguyễn Minh")).toBeInTheDocument();
+    expect(screen.getByText("090 ••••• 56")).toBeInTheDocument();
+    expect(api.captureChatLead).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "leadUseAccount" }));
+    await waitFor(() => expect(api.captureChatLead).toHaveBeenCalledWith({
+      conversationId: "conversation-account",
+      contactSource: "ACCOUNT",
+    }));
+  });
+
+  it("opens the editable prefilled form when a signed-in customer chooses another number", async () => {
+    auth.state = {
+      status: "authenticated",
+      profile: { displayName: "Nguyễn Minh", phone: "0909123456" },
+    };
+    api.sendChatMessage.mockResolvedValue({
+      conversationId: "conversation-other-number",
+      mode: "AI",
+      answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: true,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Gọi lại cho tôi");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
+    await user.click(await screen.findByRole("button", { name: "requestCallback" }));
+    await user.click(await screen.findByRole("button", { name: "leadUseOther" }));
+
+    expect(screen.queryByTestId("bi-lead-quick")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("leadName")).toHaveValue("Nguyễn Minh");
+    expect(screen.getByLabelText("leadPhone")).toHaveValue("0909123456");
+    await user.click(screen.getByLabelText("leadConsent"));
+    await user.click(screen.getByRole("button", { name: "leadSubmit" }));
+
+    await waitFor(() => expect(api.captureChatLead).toHaveBeenCalledWith({
+      conversationId: "conversation-other-number",
+      name: "Nguyễn Minh",
+      phone: "0909123456",
+      note: undefined,
+      contactSource: "FORM",
+    }));
+  });
+
+  it("lets a signed-in customer decline the quick contact invitation without capturing a lead", async () => {
+    auth.state = {
+      status: "authenticated",
+      profile: { displayName: "Nguyễn Minh", phone: "0909123456" },
+    };
+    api.sendChatMessage.mockResolvedValue({
+      conversationId: "conversation-account-decline",
+      mode: "AI",
+      answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
       turnCount: 1,
       maxTurns: 12,
       remainingTurns: 11,
@@ -315,7 +489,136 @@ describe("FloatingChat", () => {
     await user.click(await screen.findByRole("button", { name: "requestCallback" }));
     await user.click(await screen.findByRole("button", { name: "leadDecline" }));
 
-    await waitFor(() => expect(api.declineChatLead).toHaveBeenCalledWith("conversation-lead-decline"));
-    expect(await screen.findByText("leadDeclined")).toBeInTheDocument();
+    await waitFor(() => expect(api.declineChatLead).toHaveBeenCalledWith("conversation-account-decline"));
+    expect(api.captureChatLead).not.toHaveBeenCalled();
+  });
+
+  it("keeps the full form for a signed-in customer without a usable phone", async () => {
+    auth.state = {
+      status: "authenticated",
+      profile: { displayName: "Nguyễn Minh", phone: null },
+    };
+    api.sendChatMessage.mockResolvedValue({
+      conversationId: "conversation-no-phone",
+      mode: "AI",
+      answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: true,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Gọi lại cho tôi");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
+    await user.click(await screen.findByRole("button", { name: "requestCallback" }));
+
+    expect(screen.queryByTestId("bi-lead-quick")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("leadPhone")).toBeInTheDocument();
+    expect(screen.getByLabelText("leadName")).toHaveValue("");
+  });
+
+  it("restores the same conversation and remaining turns after remount", async () => {
+    api.sendChatMessage.mockResolvedValue({
+      conversationId: "conversation-restored",
+      mode: "AI",
+      answer: "Em vẫn đang giữ phần tư vấn này cho anh/chị.",
+      turnCount: 2,
+      maxTurns: 12,
+      remainingTurns: 3,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: true,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    const firstRender = render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Tư vấn tiếp giúp em");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    expect(await screen.findByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toBeNull());
+
+    firstRender.unmount();
+    render(<FloatingChat />);
+    await user.click(screen.getByRole("button", { name: "open" }));
+
+    expect(await screen.findByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).toBeInTheDocument();
+    expect(screen.getByText("remainingWarning:3")).toBeInTheDocument();
+    const input = screen.getByLabelText("messageLabel");
+    await user.type(input, "Câu hỏi nối tiếp");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenLastCalledWith(
+      "Câu hỏi nối tiếp",
+      "vi",
+      "conversation-restored",
+      expect.any(AbortSignal),
+    ));
+  });
+
+  it("deletes the local conversation immediately from the chat header", async () => {
+    api.sendChatMessage.mockResolvedValueOnce({
+      conversationId: "conversation-delete",
+      mode: "AI",
+      answer: "Nội dung cần xoá ngay.",
+      turnCount: 1,
+      maxTurns: 12,
+      remainingTurns: 11,
+      products: [],
+      handoffRecommended: false,
+      leadPrompt: false,
+      actions: [],
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Lưu câu này");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    expect(await screen.findByText("Nội dung cần xoá ngay.")).toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "deleteConversation" }));
+    expect(screen.queryByText("Nội dung cần xoá ngay.")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-bi-onboarding]")).toBeInTheDocument();
+    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+  });
+
+  it("restores a finished conversation as locked and does not show a declined lead offer again", async () => {
+    writeChatSnapshot({
+      version: 1,
+      expiresAt: Date.now() + 60_000,
+      locale: "vi",
+      conversationId: "conversation-finished",
+      messages: [
+        { id: "user-1", role: "USER", content: "Câu hỏi cũ" },
+        { id: "assistant-1", role: "ASSISTANT", content: "Cuộc trò chuyện đã kết thúc." },
+      ],
+      remainingTurns: 0,
+      serviceMode: "CONTACT",
+      leadPrompt: false,
+      leadCaptured: false,
+      leadDeclined: true,
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat hotline="0901 234 567" />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    expect(await screen.findByText("Cuộc trò chuyện đã kết thúc.")).toBeInTheDocument();
+    expect(screen.getByLabelText("messageLabel")).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "talkToStaff" }));
+    expect(await screen.findByText("contactTitle")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "requestCallback" })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toBeNull();
   });
 });

@@ -37,7 +37,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Surface | Menu/list/detail | Create/full-edit | Mutation | Supporting/composite |
 |---|---|---|---|---|
 | Dashboard | `orders.read` | — | — | inventory widget/topic: `inventory.read`; Product/Reports links: corresponding `.read` |
-| Products | `products.read` | `products.read` + `products.update` + `catalog.read` | `products.update` | media picker: `media.read`; upload: `media.write` |
+| Products | `products.read` | `products.read` + `products.update` + `catalog.read` | `products.update` | includes the legacy discontinued-history list; media picker: `media.read`; upload: `media.write` |
 | Categories / Brands | `catalog.read` | `catalog.read` + `catalog.update` | `catalog.update` | product references: `products.read`; media picker rules apply |
 | Featured Products | `products.read` + `products.update` | same workspace requirement | save: `products.update` | owner-confirmed composite route |
 | Content | `content.read` | `content.read` + `content.update` | `content.update` | media picker rules apply |
@@ -51,7 +51,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
-| Trợ lý Bi | `chat.read` | — | — | chỉ xem hội thoại/lead/thống kê; không có quyền ghi giai đoạn 1 |
+| Trợ lý BigBike | `chat.read` | — | — | chỉ xem hội thoại/lead/thống kê; không có quyền ghi giai đoạn 1 |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
@@ -85,13 +85,13 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 (Bổ sung 2026-07-15, AUD-076 — hai quyền này đã tồn tại trong seed/catalog từ trước nhưng chưa được ghi vào matrix. Không có quyền `reviews.moderate`.)
 
-### Trợ lý Bi permissions
+### Trợ lý BigBike permissions
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
 | `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | `GET /api/v1/admin/chat/conversations`, `GET /api/v1/admin/chat/conversations/{id}`, `GET /api/v1/admin/chat/stats` | `CHAT_RULE_013`, `PermissionCatalog`, migration `V1016` |
 
-`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role qua màn Vai trò. Lead chứa số/Zalo nên API list chỉ trả bản rút gọn; detail chỉ mở sau khi backend đã kiểm tra `chat.read`.
+`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role qua màn Vai trò. Lead chứa số/Zalo nên API list chỉ trả bản rút gọn; detail chỉ mở sau khi backend đã kiểm tra `chat.read`. Ở storefront, `POST /api/v1/chat/leads` vẫn cho phép nhánh `FORM` của khách vãng lai theo cơ chế sở hữu hội thoại; nhánh `ACCOUNT` chỉ dùng customer id từ phiên `ROLE_CUSTOMER`, không cấp một permission mới và không tin identity/contact do body gửi lên.
 
 ### Catalog / Product permissions
 

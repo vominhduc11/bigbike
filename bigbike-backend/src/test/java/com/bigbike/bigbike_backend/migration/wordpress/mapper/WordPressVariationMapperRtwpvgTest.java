@@ -10,8 +10,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies the rtwpvg_images decoder against payloads taken verbatim from
- * the WP SQL dump (Variation Images Gallery for WooCommerce plugin).
+ * Verifies the rtwpvg_images decoder against a payload captured from the
+ * historical WP SQL dump (Variation Images Gallery for WooCommerce plugin).
  */
 class WordPressVariationMapperRtwpvgTest {
 
@@ -19,7 +19,7 @@ class WordPressVariationMapperRtwpvgTest {
 
     @Test
     void decodes_attachment_ids_in_order() {
-        // From bigbike_vn__2026_04_17/sqldump.sql:
+        // Historical external-dump fixture:
         //   (136802, 8755, 'rtwpvg_images', 'a:4:{i:0;i:8738;i:1;i:8737;i:2;i:8736;i:3;i:8734;}')
         WpPost post = makePost(8755L, 1000L);
         List<WpPostMeta> metas = List.of(

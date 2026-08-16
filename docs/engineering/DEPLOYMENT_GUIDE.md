@@ -146,6 +146,7 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 ## Deployment Caveats
 
 - Internal redirect endpoints (`/api/internal/**`) are protected by both the `X-Internal-Token` app-level check and an nginx-level block (`deploy/nginx/api.bigbike.vn.conf`, returns `403`) — see PERMISSION_MATRIX.md "Internal Redirect Caveat". `CONFIRMED_FROM_CONFIG`
+- The host's nginx `default_server` for both HTTP and HTTPS must return `404` for a direct server IP or an unrecognised `Host`; it must not proxy, redirect, or serve a shared site's virtual host. Before reload: inspect the exact active file, run `nginx -t`, reload nginx only after it passes, then test the raw IP and the named BigBike host separately. `OWNER_CONFIRMED_2026-08-15`
 - No confirmed external payment webhook or shipping carrier deployment contract exists in repo. `NOT_FOUND_IN_REPO`
 
 ## Maintenance Runbook (owner-confirmed 2026-08-06, thu gọn phạm vi cùng ngày)

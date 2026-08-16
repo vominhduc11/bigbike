@@ -1,23 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
+  useCallback,
   type FormEvent,
   type UIEvent,
 } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  Bot,
   Loader2,
   MessageCircle,
   Minus,
   Phone,
   RefreshCw,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,19 @@ import {
   type ChatContact,
   type ChatProductCard,
 } from "@/lib/api/client-api";
+import { useAuth } from "@/lib/auth/auth-store";
+import {
+  CHAT_STORAGE_KEY,
+  CHAT_STORAGE_TTL_MS,
+  clearChatSnapshot,
+  readChatSnapshot,
+  writeChatSnapshot,
+  type ChatPersistenceSnapshot,
+} from "@/lib/chat/chat-persistence";
 import { toLoginPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { BiContactPanel } from "./floating-chat/BiContactPanel";
-import { BiLeadForm, type BiLeadDraft } from "./floating-chat/BiLeadForm";
+import { BiLeadForm, type BiAccountContact, type BiLeadDraft } from "./floating-chat/BiLeadForm";
 import { BiProductCard } from "./floating-chat/BiProductCard";
 
 type FloatingChatProps = {
@@ -73,51 +82,48 @@ type ComposerAction = {
 };
 
 const DEFAULT_MAX_TURNS = 12;
-const BI_AVATAR_SRC = "https://res.cloudinary.com/daohufjec/image/upload/v1786524534/Gemini_Generated_Image_uqsctsuqsctsuqsc-removebg-preview-removebg-preview_oulnfg.png";
+export const CHAT_MESSAGE_TIMEOUT_MS = 45_000;
+
+class ChatMessageTimeoutError extends Error {
+  constructor() {
+    super("Chat message request timed out");
+    this.name = "ChatMessageTimeoutError";
+  }
+}
+const EMPTY_LEAD_DRAFT: BiLeadDraft = {
+  name: "",
+  phone: "",
+  note: "",
+  consented: false,
+};
+
+function accountContactFromProfile(profile: { displayName: string | null; phone: string | null }): BiAccountContact | undefined {
+  const name = profile.displayName?.trim();
+  const phone = profile.phone?.trim();
+  const digits = phone?.replace(/\D/g, "") || "";
+  if (!name || !phone || !/^[0-9]{8,32}$/.test(digits)) return undefined;
+  return { name, phone };
+}
 
 type BiAvatarSize = "launcher" | "header" | "message" | "minimized";
 
-const BI_AVATAR_SIZES: Record<BiAvatarSize, { className: string; sizes: string }> = {
-  launcher: { className: "size-14 md:size-16", sizes: "(min-width: 768px) 64px, 56px" },
-  header: { className: "size-11", sizes: "44px" },
-  message: { className: "size-9", sizes: "36px" },
-  minimized: { className: "size-8", sizes: "32px" },
+const BI_AVATAR_SIZES: Record<BiAvatarSize, { className: string }> = {
+  launcher: { className: "size-14 md:size-16" },
+  header: { className: "size-11" },
+  message: { className: "size-9" },
+  minimized: { className: "size-8" },
 };
 
-function BiAvatar({
-  size,
-  failed,
-  onError,
-  fallback,
-}: {
-  size: BiAvatarSize;
-  failed: boolean;
-  onError: () => void;
-  fallback: "message" | "bot";
-}) {
+function BiAvatar({ size }: { size: BiAvatarSize }) {
   const avatar = BI_AVATAR_SIZES[size];
-  const FallbackIcon = fallback === "message" ? MessageCircle : Bot;
 
   return (
     <span
       data-bi-avatar
       aria-hidden="true"
-      className={`relative inline-flex shrink-0 overflow-hidden rounded-full! ${failed ? "bg-chat" : "bg-transparent"} ${avatar.className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full! bg-chat text-primary-foreground ${avatar.className}`}
     >
-      {failed ? (
-        <span className="flex size-full items-center justify-center text-primary-foreground">
-          <FallbackIcon className={size === "launcher" ? "size-6 md:size-7" : "size-4"} aria-hidden="true" />
-        </span>
-      ) : (
-        <Image
-          src={BI_AVATAR_SRC}
-          alt=""
-          fill
-          sizes={avatar.sizes}
-          className="object-cover object-top scale-125"
-          onError={onError}
-        />
-      )}
+      <MessageCircle className={size === "launcher" ? "size-6 md:size-7" : "size-4"} aria-hidden="true" />
     </span>
   );
 }
@@ -181,6 +187,10 @@ export function FloatingChat({
   const t = useTranslations("Support");
   const activeLocale = useLocale() === "en" ? "en" : "vi";
   const locale = activeLocale as Locale;
+  const auth = useAuth();
+  const accountContact = auth.status === "authenticated"
+    ? accountContactFromProfile(auth.profile)
+    : undefined;
   const defaultGreeting = t("defaultGreeting");
   const fallbackContacts = useMemo<ChatContact>(() => ({
     hotline,
@@ -222,6 +232,7 @@ export function FloatingChat({
   const [contactNotice, setContactNotice] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
   const [retryAvailable, setRetryAvailable] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<{ message: string; intent: PromptIntent } | null>(null);
   const [leadPrompt, setLeadPrompt] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [leadDeclined, setLeadDeclined] = useState(false);
@@ -234,7 +245,6 @@ export function FloatingChat({
   });
   const [announcement, setAnnouncement] = useState("");
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [biAvatarFailed, setBiAvatarFailed] = useState(false);
 
   const fabLauncherRef = useRef<HTMLButtonElement>(null);
   const minimizedLauncherRef = useRef<HTMLButtonElement>(null);
@@ -248,19 +258,143 @@ export function FloatingChat({
   const mountedRef = useRef(true);
   const nearBottomRef = useRef(true);
   const hydratedRef = useRef(false);
+  const persistenceReadyRef = useRef(false);
+  const persistenceExpiresAtRef = useRef<number | null>(null);
+  const restoredSessionRef = useRef(false);
+  const restoredServiceModeRef = useRef<"AI" | "CONTACT" | null>(null);
+  const expiryTimerRef = useRef<number | null>(null);
+  const previousAuthStatusRef = useRef(auth.status);
+  const conversationGenerationRef = useRef(0);
 
   const effectiveContacts = useMemo(
     () => mergeContacts(contacts, fallbackContacts),
     [contacts, fallbackContacts],
   );
 
+  const clearConversation = useCallback((closePanel = false) => {
+    conversationGenerationRef.current += 1;
+    clearChatSnapshot();
+    persistenceExpiresAtRef.current = null;
+    restoredSessionRef.current = false;
+    restoredServiceModeRef.current = null;
+    availabilityLocaleRef.current = undefined;
+    if (expiryTimerRef.current != null && typeof window !== "undefined") {
+      window.clearTimeout(expiryTimerRef.current);
+      expiryTimerRef.current = null;
+    }
+    setMessages([]);
+    setConversationId(undefined);
+    setDraft("");
+    setSending(false);
+    setRemainingTurns(DEFAULT_MAX_TURNS);
+    setServiceMode("AI");
+    setAvailabilityState("idle");
+    setContacts(fallbackContacts);
+    setGreeting("");
+    setInitialPrompts(fallbackPrompts);
+    setContactNotice("");
+    setContactOpen(false);
+    setRetryAvailable(false);
+    setRetryMessage(null);
+    setLeadPrompt(false);
+    setLeadCaptured(false);
+    setLeadDeclined(false);
+    setShowContactLead(false);
+    setLeadDraft(EMPTY_LEAD_DRAFT);
+    setAnnouncement("");
+    if (closePanel) setPanelState("closed");
+  }, [fallbackContacts, fallbackPrompts]);
+
   useEffect(() => {
+    mountedRef.current = true;
     hydratedRef.current = true;
     launcherContainerRef.current?.setAttribute("data-bi-launcher-ready", "true");
+
+    const snapshot = readChatSnapshot();
+    persistenceReadyRef.current = true;
+    if (snapshot) {
+      restoredSessionRef.current = true;
+      restoredServiceModeRef.current = snapshot.serviceMode;
+      persistenceExpiresAtRef.current = snapshot.expiresAt;
+      queueMicrotask(() => {
+        if (!mountedRef.current) return;
+        setMessages(snapshot.messages);
+        setConversationId(snapshot.conversationId);
+        setRemainingTurns(snapshot.remainingTurns);
+        setServiceMode(snapshot.serviceMode);
+        setLeadPrompt(snapshot.leadPrompt && !snapshot.leadCaptured && !snapshot.leadDeclined);
+        setLeadCaptured(snapshot.leadCaptured);
+        setLeadDeclined(snapshot.leadDeclined);
+        setAvailabilityState("ready");
+      });
+    }
+
     return () => {
       mountedRef.current = false;
+      if (expiryTimerRef.current != null && typeof window !== "undefined") {
+        window.clearTimeout(expiryTimerRef.current);
+        expiryTimerRef.current = null;
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (previousAuthStatusRef.current === "authenticated" && auth.status !== "authenticated") {
+      clearConversation(true);
+    }
+    previousAuthStatusRef.current = auth.status;
+  }, [auth.status, clearConversation]);
+
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === CHAT_STORAGE_KEY && event.newValue === null) {
+        clearConversation(false);
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [clearConversation]);
+
+  useEffect(() => {
+    if (!persistenceReadyRef.current || !conversationId || messages.length === 0) return;
+    if (persistenceExpiresAtRef.current == null) {
+      persistenceExpiresAtRef.current = Date.now() + CHAT_STORAGE_TTL_MS;
+    }
+
+    const snapshot: ChatPersistenceSnapshot = {
+      version: 1,
+      expiresAt: persistenceExpiresAtRef.current,
+      locale: activeLocale,
+      conversationId,
+      messages: messages.slice(-64),
+      remainingTurns,
+      serviceMode,
+      leadPrompt: leadPrompt && !leadCaptured && !leadDeclined,
+      leadCaptured,
+      leadDeclined,
+    };
+    writeChatSnapshot(snapshot);
+  }, [activeLocale, conversationId, leadCaptured, leadDeclined, leadPrompt, messages, remainingTurns, serviceMode]);
+
+  useEffect(() => {
+    if (!persistenceReadyRef.current || !conversationId || persistenceExpiresAtRef.current == null) return;
+    const delay = persistenceExpiresAtRef.current - Date.now();
+    if (delay <= 0) {
+      clearConversation(false);
+      return;
+    }
+
+    expiryTimerRef.current = window.setTimeout(() => {
+      if (mountedRef.current) clearConversation(false);
+    }, delay);
+    return () => {
+      if (expiryTimerRef.current != null) {
+        window.clearTimeout(expiryTimerRef.current);
+        expiryTimerRef.current = null;
+      }
+    };
+  }, [clearConversation, conversationId]);
 
   useEffect(() => {
     if (panelState !== "expanded" || !nearBottomRef.current) return;
@@ -281,9 +415,10 @@ export function FloatingChat({
     if (availabilityBusyRef.current) return;
     if (!force && availabilityLocaleRef.current === activeLocale) return;
 
+    const preserveRestoredEndState = restoredSessionRef.current && restoredServiceModeRef.current === "CONTACT";
     availabilityBusyRef.current = true;
     availabilityLocaleRef.current = activeLocale;
-    setAvailabilityState("loading");
+    if (!restoredSessionRef.current) setAvailabilityState("loading");
     try {
       const availability = await fetchChatAvailability(activeLocale);
       if (!mountedRef.current) return;
@@ -302,8 +437,11 @@ export function FloatingChat({
       if (!conversationId) setRemainingTurns(nextMaxTurns);
       setAvailabilityState("ready");
       setRetryAvailable(false);
-      setServiceMode(availability.mode);
-      if (availability.mode === "AI") {
+      setRetryMessage(null);
+      if (!preserveRestoredEndState) setServiceMode(availability.mode);
+      if (preserveRestoredEndState) {
+        setContactNotice(remainingTurns <= 0 ? t("turnLimit") : t("inputLockedExplanation"));
+      } else if (availability.mode === "AI") {
         setContactNotice("");
       } else {
         setContactNotice(t("fallbackNotice", { reason: "service" }));
@@ -312,9 +450,12 @@ export function FloatingChat({
       if (!mountedRef.current) return;
       setAvailabilityState("error");
       setRetryAvailable(true);
-      setServiceMode("AI");
+      setRetryMessage(null);
+      if (!preserveRestoredEndState) setServiceMode("AI");
       setContacts(fallbackContacts);
-      const notice = t("fallbackNotice", { reason: "network" });
+      const notice = preserveRestoredEndState
+        ? (remainingTurns <= 0 ? t("turnLimit") : t("inputLockedExplanation"))
+        : t("fallbackNotice", { reason: "network" });
       setContactNotice(notice);
       setAnnouncement(`${notice} ${t("contactStatus")}`);
     } finally {
@@ -389,15 +530,32 @@ export function FloatingChat({
     if (!message || sending || serviceMode !== "AI" || remainingTurns <= 0) return;
 
     const userMessageId = nextMessageId("user");
+    const conversationGeneration = conversationGenerationRef.current;
     setDraft("");
     setMessages((current) => [...current, { id: userMessageId, role: "USER", content: message }]);
     setSending(true);
+    setRetryAvailable(false);
+    setRetryMessage(null);
+    setContactNotice("");
     setAnnouncement("");
     nearBottomRef.current = true;
 
     try {
-      const response = await sendChatMessage(message, activeLocale, conversationId);
-      if (!mountedRef.current) return;
+      const controller = new AbortController();
+      let timeoutId: number | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          controller.abort();
+          reject(new ChatMessageTimeoutError());
+        }, CHAT_MESSAGE_TIMEOUT_MS);
+      });
+      const response = await Promise.race([
+        sendChatMessage(message, activeLocale, conversationId, controller.signal),
+        timeout,
+      ]).finally(() => {
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      });
+      if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current) return;
       const nextProducts = (response.products || []).slice(0, 3);
       const nextRemainingTurns = validTurnCount(response.remainingTurns, 0);
       const answer = response.answer?.trim()
@@ -430,13 +588,16 @@ export function FloatingChat({
         setServiceMode("AI");
         setContactNotice("");
       }
-    } catch {
-      if (!mountedRef.current) return;
+    } catch (error) {
+      if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current) return;
       setMessages((current) => current.filter((item) => item.id !== userMessageId));
       setDraft(message);
       setAvailabilityState("error");
       setRetryAvailable(true);
-      const notice = t("fallbackNotice", { reason: "network" });
+      setRetryMessage({ message, intent });
+      const notice = error instanceof ChatMessageTimeoutError
+        ? t("timeoutNotice")
+        : t("fallbackNotice", { reason: "network" });
       setContactNotice(notice);
       setAnnouncement(`${notice} ${t("contactStatus")}`);
     } finally {
@@ -554,9 +715,6 @@ export function FloatingChat({
           ) : null}
           <BiAvatar
             size="launcher"
-            failed={biAvatarFailed}
-            onError={() => setBiAvatarFailed(true)}
-            fallback="message"
           />
         </Button>
       </div>
@@ -591,9 +749,6 @@ export function FloatingChat({
             >
               <BiAvatar
                 size="minimized"
-                failed={biAvatarFailed}
-                onError={() => setBiAvatarFailed(true)}
-                fallback="bot"
               />
               <span className="truncate font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
                 {t("minimizedLabel")}
@@ -626,9 +781,6 @@ export function FloatingChat({
             <div className="flex min-w-0 items-start gap-3">
               <BiAvatar
                 size="header"
-                failed={biAvatarFailed}
-                onError={() => setBiAvatarFailed(true)}
-                fallback="bot"
               />
               <div className="min-w-0 flex-1">
                 <DialogTitle className="font-cta text-b4-action font-semibold uppercase tracking-wide text-primary-foreground">
@@ -645,6 +797,17 @@ export function FloatingChat({
                 </DialogDescription>
               </div>
               <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 min-h-11 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
+                  aria-label={t("deleteConversation")}
+                  title={t("deleteConversation")}
+                  onClick={() => clearConversation(false)}
+                >
+                  <Trash2 className="size-5" aria-hidden="true" />
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -675,9 +838,6 @@ export function FloatingChat({
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center" role="status">
               <BiAvatar
                 size="header"
-                failed={biAvatarFailed}
-                onError={() => setBiAvatarFailed(true)}
-                fallback="bot"
               />
               <Loader2 className="size-5 animate-spin text-chat" aria-hidden="true" />
               <p className="font-body text-a4-content text-muted-foreground">{t("checking")}</p>
@@ -696,9 +856,6 @@ export function FloatingChat({
                       <div className="flex items-start gap-3">
                         <BiAvatar
                           size="header"
-                          failed={biAvatarFailed}
-                          onError={() => setBiAvatarFailed(true)}
-                          fallback="bot"
                         />
                         <div className="min-w-0">
                           <p className="font-cta text-b5-label font-semibold uppercase tracking-wide text-chat">{t("biTitle")}</p>
@@ -740,9 +897,6 @@ export function FloatingChat({
                           showAssistantAvatar ? (
                             <BiAvatar
                               size="message"
-                              failed={biAvatarFailed}
-                              onError={() => setBiAvatarFailed(true)}
-                              fallback="bot"
                             />
                           ) : <span className="size-9 shrink-0" aria-hidden="true" />
                         ) : null}
@@ -780,9 +934,6 @@ export function FloatingChat({
                     <div className="flex items-start gap-3" role="status">
                       <BiAvatar
                         size="message"
-                        failed={biAvatarFailed}
-                        onError={() => setBiAvatarFailed(true)}
-                        fallback="bot"
                       />
                       <div className="flex items-center gap-2 border border-border bg-background px-4 py-3 font-body text-a5-meta text-muted-foreground">
                         <Loader2 className="size-4 animate-spin text-chat" aria-hidden="true" />
@@ -811,6 +962,7 @@ export function FloatingChat({
                           onDraftChange={setLeadDraft}
                           onCaptured={handleLeadCaptured}
                           onDeclined={handleLeadDeclined}
+                          accountContact={accountContact}
                         />
                       ) : null}
                     </div>
@@ -833,7 +985,9 @@ export function FloatingChat({
                     <Button
                       type="button"
                       className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
-                      onClick={() => void requestAvailability(true)}
+                      onClick={() => retryMessage
+                        ? void submitMessage(retryMessage.message, retryMessage.intent)
+                        : void requestAvailability(true)}
                     >
                       <RefreshCw className="size-4" aria-hidden="true" />
                       {t("retry")}

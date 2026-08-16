@@ -159,6 +159,12 @@ export function toProductPath(slug: string, locale?: Locale, _isEnSlug?: boolean
   return translatePath(`/product/${encodeURIComponent(slug)}/`, locale ?? getActiveLocale());
 }
 
+/** Legacy WordPress product URL retained as the canonical discontinued-product page. */
+export function toLegacyProductPath(slug: string, locale?: Locale): string {
+  const path = `/sp/${encodeURIComponent(slug)}.html`;
+  return locale === "en" ? `/en${path}` : path;
+}
+
 export function toProductListPath(locale?: Locale): string {
   return translatePath("/sp/", locale ?? getActiveLocale());
 }

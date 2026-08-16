@@ -36,6 +36,7 @@ import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product
 import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
 import type { RecentProduct } from "@/lib/recently-viewed";
 import type { BrandSummary, CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
+import type { Locale } from "@/i18n/locale";
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -64,7 +65,7 @@ type ProductViewProps = {
  * con thật sự nằm TRONG cây con của provider, giống cách `LText`/`PurchaseSection` làm.
  */
 function LocalizedTaxonomyName({ field, viName }: { field: "brand" | "category"; viName: string }) {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const localized = useLocalizedField<CategorySummary | BrandSummary>(field);
   return <>{locale === "en" ? safeText(localized?.name, viName) : viName}</>;
 }
@@ -84,7 +85,7 @@ function LocalizedProductSwiper({
   viProducts: Product[];
   currentProductId: string;
 }) {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const enProducts = useLocalizedField<Product[]>(field);
   const products = safeArray(locale === "en" ? enProducts ?? viProducts : viProducts).filter(
     (p) => p.id !== currentProductId,
@@ -107,7 +108,7 @@ function LocalizedProductSwiper({
  * để đọc đúng context bản EN — ProductView là cha của Provider nên gọi hook ở đó luôn ra rỗng.
  */
 function MobileTrustLine({ product }: { product: Product }) {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const enTrustHtml = useLocalizedField<string>("trustBadges");
   const trustBadgesResolvedHtml = locale === "en"
     ? enTrustHtml ?? product.trustBadges ?? ""
@@ -126,8 +127,50 @@ function MobileTrustLine({ product }: { product: Product }) {
   );
 }
 
+function DiscontinuedProductNotice({
+  product,
+  categorySlug,
+}: {
+  product: Product;
+  categorySlug?: string;
+}) {
+  const t = useTranslations("Product");
+  const locale = useLocale() as Locale;
+  return (
+    <section className="space-y-6 border border-border bg-card p-6 md:p-8">
+      <p className="m-0 inline-flex border border-brand px-3 py-2 text-a5-meta font-semibold uppercase tracking-wide text-brand">
+        {t("discontinuedLabel")}
+      </p>
+      <h2 className="m-0 font-body text-a2-page font-semibold leading-title text-foreground">
+        {safeText(product.name, t("fallbackShortName"))}
+      </h2>
+      <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{t("discontinuedDescription")}</p>
+      <p className="m-0 border-l-4 border-brand bg-muted px-4 py-3 text-a4-content font-semibold leading-relaxed text-foreground">
+        {t("safetyDisclaimer")}
+      </p>
+      <div className="flex flex-wrap gap-4">
+        {categorySlug ? (
+          <LocalizedLink
+            kind="category"
+            viSlug={categorySlug}
+            className="inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"
+          >
+            {t("discontinuedCategoryLink")}
+          </LocalizedLink>
+        ) : null}
+        <Link
+          href={toHomePath(locale)}
+          className="inline-flex min-h-11 items-center border border-border px-5 py-3 font-semibold text-foreground no-underline! hover:border-brand hover:text-brand"
+        >
+          {t("discontinuedHomeLink")}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const tProduct = useTranslations("Product");
   const tA11y = useTranslations("A11y");
 
@@ -405,6 +448,20 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     );
   }
 
+  const categorySlug = category?.slug;
+  const overview = product.discontinued ? (
+    <DiscontinuedProductNotice product={product} categorySlug={categorySlug} />
+  ) : (
+    <PurchaseSection
+      product={product}
+      gallery={gallery}
+      rating={rating}
+      ratingCount={ratingCount}
+      zaloUrl={zaloUrl || undefined}
+      previewMode={previewMode}
+    />
+  );
+
   const inner = (
     <div id="main-content" className="bb-product-page bb-heroless">
       {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
@@ -449,14 +506,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
         <MobileTrustLine product={product} />
 
         <div id="pdp-overview">
-          <PurchaseSection
-            product={product}
-            gallery={gallery}
-            rating={rating}
-            ratingCount={ratingCount}
-            zaloUrl={zaloUrl || undefined}
-            previewMode={previewMode}
-          />
+          {overview}
         </div>
 
         {/* Modal viết đánh giá — mount MỘT lần cho cả PDP. Mọi nút "Viết đánh giá"
