@@ -369,6 +369,9 @@ public class AdminContentMutationService {
         if (create || request.getExcerpt() != null) {
             entity.setExcerpt(AdminMutationValidators.trimToNull(request.getExcerpt()));
         }
+        if (create || request.getAuthorName() != null) {
+            entity.setAuthorName(AdminMutationValidators.trimToNull(request.getAuthorName()));
+        }
         if (request.isBodyBlocksPresent()) {
             entity.setBodyBlocks(request.getBodyBlocks());
             String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
@@ -431,6 +434,7 @@ public class AdminContentMutationService {
             entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
             entity.setExcerptEn(AdminMutationValidators.trimToNull(en.getExcerpt()));
+            entity.setAuthorNameEn(AdminMutationValidators.trimToNull(en.getAuthorName()));
             
             // A3: Sanitize en.body
             String sanitizedBodyEn = descriptionBlockRenderer.sanitizeHtml(AdminMutationValidators.trimToNull(en.getBody()));
@@ -442,6 +446,7 @@ public class AdminContentMutationService {
             entity.setSlugEn(null);
             entity.setTitleEn(null);
             entity.setExcerptEn(null);
+            entity.setAuthorNameEn(null);
             entity.setBodyEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);

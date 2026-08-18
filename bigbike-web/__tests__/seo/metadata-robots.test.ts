@@ -80,3 +80,25 @@ describe("buildPublicMetadata — Open Graph locale", () => {
     });
   });
 });
+
+describe("buildPublicMetadata — tiêu đề và ảnh tuyệt đối", () => {
+  it("không lặp tên shop khi tiêu đề do admin đã có BigBike", () => {
+    const metadata = buildPublicMetadata({
+      ...base,
+      title: "Mũ bảo hiểm | BigBike | BigBike",
+    });
+    expect(metadata.title).toEqual({ absolute: "Mũ bảo hiểm | BigBike" });
+    expect(metadata.openGraph?.title).toBe("Mũ bảo hiểm | BigBike");
+  });
+
+  it("chỉ phát ảnh chia sẻ khi có cấu hình và chuyển ảnh tương đối thành URL đầy đủ", () => {
+    expect(buildPublicMetadata(base).openGraph?.images).toBeUndefined();
+    const metadata = buildPublicMetadata({ ...base, ogImage: "/media/share.jpg" });
+    const openGraphImages = metadata.openGraph?.images;
+    const openGraphImage = Array.isArray(openGraphImages) ? openGraphImages[0] : openGraphImages;
+    const twitterImages = metadata.twitter?.images;
+    const twitterImage = Array.isArray(twitterImages) ? twitterImages[0] : twitterImages;
+    expect(openGraphImage).toMatchObject({ url: expect.stringMatching(/^https?:\/\//) });
+    expect(twitterImage).toMatch(/^https?:\/\//);
+  });
+});

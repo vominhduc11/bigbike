@@ -338,10 +338,11 @@ Combinable với các param khác (`category`, `featured`, `q`, paging). **Store
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`homeExperience` query param), `ArticleJpaRepository.findPublishedArticleIds`.
 
-### Article payload — `featured` + `seo.noIndex` (V222)
+### Article payload — author, `featured` + `seo.noIndex` (V1037/V222)
 
 Both the public `Article` shape (`GET /api/v1/articles`, `GET /api/v1/articles/{slug}`) and admin `AdminContentItem` now carry:
 
+- `authorName` — nullable localized author name. Admin writes it through the Vietnamese field `authorName` and `translations.en.authorName`; English reads fall back to Vietnamese. Blank values are omitted from the public byline and Article JSON-LD.
 - `featured` — top-level boolean. `true` = bài viết được đánh dấu nổi bật.
 - `homeExperience` — top-level boolean (V272). `true` = bài được chọn vào carousel "Góc trải nghiệm" trang chủ.
 - `seo.noIndex` — boolean inside the `seo` object. `true` = trang đặt `noindex` (không cho search engine index bài này). The `seo` object may be `null` when no SEO field is set → treat `noIndex` as `false`.
@@ -453,9 +454,9 @@ Admin detail reads (`AdminContentItem`) của Article bao gồm `bodyBlocks: Des
 
 Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
 
-### Article EN translations on admin read — `translations` (V138)
+### Article EN translations on admin read — `translations` (V138/V1037)
 
-Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en`: `title`, `excerpt`, `body`, `seoTitle`, `seoDescription`. **Public read không đổi** (đọc cột canonical + fallback VI, không trả khối `translations`). (Page translations không còn — module pages đã gỡ 2026-06-24.)
+Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en`: `title`, `excerpt`, `body`, `authorName`, `seoTitle`, `seoDescription`. **Public read trả `authorName` đã resolve theo locale** (đọc cột canonical + fallback VI, không trả khối `translations`). (Page translations không còn — module pages đã gỡ 2026-06-24.)
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `ArticleTranslations`, serialize thẳng `{ en: {...} }`), `AdminContentReadService.fromArticle`, `ContentFieldApplier.toAdminContentItem`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
@@ -1556,6 +1557,30 @@ form danh mục (`CategoryDetailScreen`, field "Nội dung đầu trang danh m�
 **Đọc (admin):** response danh mục đã trả `introContent` (root, theo locale) và `translations.en.introContent`
 (`CategoryTranslations.CategoryContent.introContent`) để editor nạp bản song ngữ.
 
+**Cách nhập trên admin:** trường này có hai chế độ nhập dùng chung đúng một chuỗi HTML: `Nhập có cấu trúc`
+dựng HTML theo mẫu `bb-cat-intro`, còn `Nhập nội dung nâng cao` giữ nguyên HTML người viết dán vào. Khi
+mở lại, admin chọn chế độ dựa trên việc HTML có đúng mẫu cấu trúc hay không; HTML có bảng, style hoặc
+phần tử ngoài mẫu được mở ở chế độ nâng cao. Chuyển sang chế độ có cấu trúc với nội dung như vậy phải
+xác nhận trước khi người dùng sửa/lưu bằng form; hủy xác nhận không được thay đổi field.
+
+Structured mode có nút chép câu lệnh AI theo tên danh mục và locale hiện tại. Admin dán kết quả AI vào ô
+riêng; bộ đọc nhận khuôn nhãn tiếng Việt/Anh hoặc JSON tương đương, bỏ qua lời dẫn/bullet/khác biệt hoa
+thường và dấu câu vô hại. Hệ thống luôn hiện đối chiếu phần nhận được, phần giữ nguyên và phần bỏ qua trước
+khi ghi vào form; không có lệnh gọi AI và không có field/API mới. Câu lệnh yêu cầu mặc định 5 FAQ, đồng thời
+nêu giới hạn của các ô hiện có (nhãn nhỏ 120, tiêu đề 255, giới thiệu 2.000, mỗi thương hiệu 60, câu hỏi
+300, câu trả lời 1.500 ký tự).
+
+Đoạn giới thiệu và câu trả lời trong mẫu cho phép rich text giới hạn ở `strong`/`b`, `em`/`i`, `br` và
+`a` với URL an toàn (`http(s)`, `mailto`, `tel` hoặc đường dẫn nội bộ). Bảng, danh sách, style, ảnh,
+script và thuộc tính sự kiện không thuộc structured mode. Plain-text HTML sinh ra, các class `bb-ci-*`,
+FAQ JSON-LD và cách web hiển thị không đổi.
+
+**Hiển thị an toàn:** `bigbike-web` và preview admin sanitize chuỗi trước khi render. Bảng HTML được bọc
+trong vùng cuộn ngang trên màn hình hẹp; inline layout styles được giữ theo chính sách rich HTML hiện có,
+nhưng script, event handler và typography ngoài design system không được phép. HTML tự do không được coi là
+structured mode vì nó có thể làm mất bố cục thẻ giới thiệu và phần FAQ gửi cho Google. Không có field `mode`
+riêng và không có migration chuyển đổi dữ liệu hiện hữu.
+
 Status: `CONFIRMED_FROM_CODE` — `UpsertCategoryRequest.introContent`,
 `CategoryTranslationRequest.CategoryContentRequest.introContent`,
 `AdminCatalogMutationService.applyCategoryPatch` (ghi `introContent`/`introContentEn`),
@@ -1665,7 +1690,7 @@ Switching a category off does not hide it from the moderator's output: the categ
 - `public_product`: **no shared settings.** All product-detail content is per-product: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233.
 - `seo`:
   - `home_content_bottom_html` — homepage bottom SEO HTML block (still admin-editable).
-  - `seo_home_title`, `seo_home_description`, `og_image_url`: **removed 2026-07-12 (V337)** — the `bigbike-web` homepage now falls back `<title>`/meta-description to `site_name` and emits **no default `og:image`**. See `DATA_CONTRACT.md` "`seo` — 3 keys removed (V337)". (Per-entity SEO for category/product/article is unrelated and unchanged.)
+  - `seo_home_title`, `seo_home_description`, `seo_home_h1`: restored 2026-08-16 (V1036), editable and returned publicly in the selected language. Blank title/H1 fall back to `site_name`; blank description falls back to the localized homepage description. `og_image_url` remains absent, so there is no default `og:image`. (Per-entity SEO for category/product/article is unrelated and unchanged.)
 
 Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSettingsController.java`,
 `V18__add_public_homepage_contract_fields.sql`, `V19__backfill_homepage_data.sql`,

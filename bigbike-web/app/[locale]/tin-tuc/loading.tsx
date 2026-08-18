@@ -11,7 +11,7 @@ export default async function ArticleListLoading() {
 
   return (
     <div aria-label={tCommon("loading")} aria-busy="true">
-      <PageHero title={tBlog("title")} breadcrumb={[]} />
+      <PageHero title={tBlog("title")} breadcrumb={[]} titleAs="div" />
       <Container className="grid grid-cols-1 gap-8 pb-10 md:grid-cols-12">
         <aside className="space-y-4 md:col-span-3">
           <Skeleton className="h-7 w-40 rounded-none" />

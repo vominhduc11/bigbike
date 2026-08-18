@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import type { Brand, CatalogFacets, Category, FacetBucket, SizeBucket } from "@/lib/contracts/public";
+import type { CatalogFacets, FacetBucket, SizeBucket } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
 import {
   clearCatalogFilters,
@@ -32,8 +32,6 @@ const DESKTOP_OPEN_KEY = "bb-catalog-filter-open-v2";
 const DEFAULT_DESKTOP_OPEN = ["brand", "price"];
 
 type CatalogSidebarProps = {
-  brands: Brand[];
-  categories: Category[];
   facets?: CatalogFacets | null;
   current: CatalogFilterState;
   mobileCurrent: CatalogFilterState;
@@ -387,7 +385,7 @@ export function CatalogSidebar({
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileSheetOpen}>
-        <SheetContent side="right" showClose={false} className="inset-0 flex h-dvh w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none">
+        <SheetContent data-catalog-mobile-filter-sheet side="right" showClose={false} className="inset-0 flex h-dvh w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none">
           <header className="flex min-h-16 items-center gap-3 border-b border-border px-4">
             <Button type="button" variant="ghost" className="h-11 w-11 rounded-none p-0" onClick={() => setMobileSheetOpen(false)}>
               <ChevronLeft className="h-5 w-5" aria-hidden />

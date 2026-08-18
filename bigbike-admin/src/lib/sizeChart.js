@@ -1,4 +1,5 @@
 import { generateId } from '@/lib/utils'
+import { hasHtmlInput, makeHtmlImportResult } from './htmlImport'
 
 /**
  * Chuyển đổi giữa field chuỗi `sizeGuide` (lưu dạng <table> HTML cho web render) và
@@ -13,12 +14,12 @@ export const SIZE_COL2_DEFAULT = 'Vòng đầu (cm)'
 /** Style inline chuẩn của bảng size trên PDP — đồng bộ với template trong aiBriefPrompt
  *  (locales `products.detail.sizeGuide.aiBriefPrompt`) để structured mode và AI ra cùng 1 giao diện. */
 const SIZE_TABLE_STYLE =
-  'width:100%;min-width:520px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#111111;margin:0 0 12px 0;'
+  'width:100%;min-width:520px;border-collapse:collapse;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-primary);margin:0 0 12px 0;'
 const SIZE_TH_STYLE =
-  'background:#f5f5f5;color:#111111;border:1px solid #dddddd;padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap;'
-const SIZE_TD_STYLE = 'border:1px solid #dddddd;padding:12px 16px;text-align:center;vertical-align:middle;'
+  'background:var(--bb-bg-surface-raised);color:var(--bb-text-primary);border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap;'
+const SIZE_TD_STYLE = 'border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;vertical-align:middle;'
 const SIZE_TD_FIRST_STYLE = `${SIZE_TD_STYLE}font-weight:700;`
-const SIZE_NOTE_STYLE = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#6f6f6f;margin:8px 0 0 0;'
+const SIZE_NOTE_STYLE = 'font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1.5;color:var(--bb-text-secondary);margin:8px 0 0 0;'
 
 /** Model rỗng mặc định: 2 cột (Size + số đo), chưa có dòng. */
 export function emptySizeGuide() {
@@ -48,6 +49,40 @@ function parseNote(doc) {
     .join('\n')
 }
 
+function isLikelySizeLabel(value) {
+  return /^(?:size\s*)?(?:xxxs|xxs|xs|s|m|l|xl|xxl|xxxl|[2-9]xl|small|medium|large|free(?:\s+size)?|\d{1,3})(?:\s*[/,-]\s*[a-z0-9]+)?$/i.test(value.trim())
+}
+
+function isLikelySizeMeasurement(value) {
+  return /\d/.test(value) && /(?:cm|mm|inch|\bin\b|kg|gram|\bg\b|lb|lbs)/i.test(value)
+}
+
+function headingSizePairs(doc) {
+  return [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+    .map((heading) => {
+      const value = heading.nextElementSibling
+      const size = (heading.textContent || '').trim()
+      const measurement = (value?.textContent || '').trim()
+      if (!value || value.tagName !== 'P' || !(isLikelySizeLabel(size) || isLikelySizeMeasurement(measurement)) || !measurement) return null
+      return { heading, value, size, measurement }
+    })
+    .filter(Boolean)
+}
+
+function parseSizeList(doc) {
+  const rows = []
+  const noteLines = []
+  const listItems = [...doc.querySelectorAll('li')]
+  listItems.forEach((item) => {
+    const line = (item.textContent || '').replace(/\s+/g, ' ').trim()
+    if (!line) return
+    const match = line.match(/^(.+?)\s*(?:[:：]|\s+[–—-]\s+)\s*(.+)$/)
+    if (match) rows.push({ _key: generateId(), cells: [match[1].trim(), match[2].trim()] })
+    else noteLines.push(line)
+  })
+  return { rows, note: noteLines.join('\n') }
+}
+
 /** HTML <table> (+ <p> ghi chú) đã lưu → model nội bộ. Có fallback cho dữ liệu cũ gõ tay
  *  kiểu "- M: 57-58 cm" để không mất nội dung khi mở lần đầu. */
 export function parseSizeGuide(html) {
@@ -57,8 +92,18 @@ export function parseSizeGuide(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const table = doc.querySelector('table')
     if (table) {
-      const headerCells = [...table.querySelectorAll('thead th, thead td')]
-      const bodyCells = [...table.querySelectorAll('tbody tr')].map((tr) =>
+      const allRows = [...table.querySelectorAll('tr')]
+      const explicitHeaderRow = table.querySelector('thead tr')
+      const firstRow = allRows[0]
+      const headerRow = explicitHeaderRow || (firstRow && [...firstRow.querySelectorAll('th, td')].every((cell) => cell.tagName === 'TH') ? firstRow : null)
+      const headerCells = headerRow ? [...headerRow.querySelectorAll('th, td')] : []
+      const explicitBodyRows = [...table.querySelectorAll('tbody tr')]
+      const bodyRows = explicitHeaderRow
+        ? (explicitBodyRows.length
+          ? explicitBodyRows
+          : allRows.filter((row) => row !== headerRow && !row.closest('thead')))
+        : allRows.filter((row) => row !== headerRow)
+      const bodyCells = bodyRows.map((tr) =>
         [...tr.querySelectorAll('td, th')].map((c) => (c.textContent || '').trim()),
       )
       let colCount = Math.max(headerCells.length, ...bodyCells.map((c) => c.length), 0)
@@ -75,6 +120,28 @@ export function parseSizeGuide(html) {
           return { _key: generateId(), cells: padded }
         })
       return { columns, rows, note: parseNote(doc) }
+    }
+    const headingRows = headingSizePairs(doc)
+    if (headingRows.length) {
+      return {
+        columns: [
+          { _key: generateId(), label: 'Size' },
+          { _key: generateId(), label: SIZE_COL2_DEFAULT },
+        ],
+        rows: headingRows.map(({ size, measurement }) => ({ _key: generateId(), cells: [size, measurement] })),
+        note: '',
+      }
+    }
+    const listRows = parseSizeList(doc)
+    if (listRows.rows.length) {
+      return {
+        columns: [
+          { _key: generateId(), label: 'Size' },
+          { _key: generateId(), label: SIZE_COL2_DEFAULT },
+        ],
+        rows: listRows.rows,
+        note: listRows.note,
+      }
     }
     // Fallback: dữ liệu cũ là văn bản thuần (vd "Đo...:\n- M: 57-58 cm\n- L: ...").
     const text = (doc.body.textContent || html).replace(/\r/g, '')
@@ -100,6 +167,20 @@ export function parseSizeGuide(html) {
   }
 }
 
+/** Detailed parser result used by the explicit, non-destructive HTML import flow. */
+export function parseSizeGuideResult(html) {
+  if (!hasHtmlInput(html) || typeof DOMParser === 'undefined') {
+    return makeHtmlImportResult({ hasInput: hasHtmlInput(html), model: emptySizeGuide() })
+  }
+  const model = parseSizeGuide(html)
+  return makeHtmlImportResult({
+    items: model.rows,
+    skippedCount: model.rows.length ? 0 : 1,
+    hasInput: true,
+    model,
+  })
+}
+
 /**
  * Ghép model có cấu trúc vào HTML hiện có mà CHỈ đổi text, GIỮ NGUYÊN style/class/markup.
  * Dùng khi admin sửa ở tab "Có cấu trúc" nhưng HTML đã được tùy chỉnh CSS — chỉ phần chữ
@@ -113,16 +194,40 @@ export function mergeSizeGuideIntoHtml(value, existingHtml) {
   try {
     const doc = new DOMParser().parseFromString(existingHtml, 'text/html')
     const table = doc.querySelector('table')
-    const headRow = table?.querySelector('thead tr')
-    const tbody = table?.querySelector('tbody')
-    // Cần đúng dạng bảng có thead+tbody (dạng serializeSizeGuide tạo ra) mới merge được.
-    if (!table || !headRow || !tbody) return fresh
-
     const columns = value?.columns || []
-    const colCount = columns.length
     const rows = (value?.rows || [])
       .map((r) => (r.cells || []).map((c) => (c || '').trim()))
       .filter((cells) => cells.some(Boolean))
+    if (!table) {
+      const pairs = headingSizePairs(doc)
+      if (pairs.length && pairs.length === rows.length && columns.length >= 2) {
+        rows.forEach((cells, index) => {
+          pairs[index].heading.textContent = cells[0] || ''
+          pairs[index].value.textContent = cells[1] || ''
+        })
+        return doc.body.innerHTML
+      }
+      return fresh
+    }
+
+    let headRow = table.querySelector('thead tr')
+    if (!headRow) {
+      const firstRow = table.querySelector('tr')
+      if (!firstRow) return fresh
+      const thead = doc.createElement('thead')
+      thead.appendChild(firstRow)
+      table.insertBefore(thead, table.firstChild)
+      headRow = firstRow
+    }
+
+    let tbody = table.querySelector('tbody')
+    if (!tbody) {
+      tbody = doc.createElement('tbody')
+      ;[...table.querySelectorAll('tr')].filter((row) => row !== headRow).forEach((row) => tbody.appendChild(row))
+      table.appendChild(tbody)
+    }
+
+    const colCount = columns.length
 
     // Bảng không còn nội dung → bỏ bảng, chỉ giữ/đặt ghi chú.
     if (rows.length === 0 || colCount === 0) {

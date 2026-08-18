@@ -37,6 +37,9 @@ public class ArticleTranslationRequest {
         @Size(max = 65535, message = "EN body is too long.")
         private String body;
 
+        @Size(max = 255, message = "EN author name is too long.")
+        private String authorName;
+
         @Size(max = 255, message = "EN SEO title is too long.")
         private String seoTitle;
 

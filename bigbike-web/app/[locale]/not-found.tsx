@@ -55,7 +55,11 @@ export default async function NotFoundPage() {
               <h2 className={cn(sectionHeading, "mb-4.5")}>{t("recentArticlesHeading")}</h2>
               <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
                 {recent.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    imageSizes="(min-width: 1200px) 376px, (min-width: 1024px) calc((100vw - 112px) / 3), (min-width: 640px) calc((100vw - 72px) / 2), calc(100vw - 32px)"
+                  />
                 ))}
               </div>
             </section>

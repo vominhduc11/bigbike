@@ -9,7 +9,7 @@ import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
+import { getBrandBySlug, getCatalogFacets, listProducts } from "@/lib/api/public-api";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -89,10 +89,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   const t = await getTranslations("Catalog");
   // Shell theo slug; lưới và facets của thương hiệu đọc đầy đủ searchParams để URL
   // đã lọc có dữ liệu đúng ngay từ lần hiển thị đầu tiên.
-  const [brandResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
+  const [brandResult, facetsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
-    listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
-    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({
       brand: [slug], q: catalog.filters.q,
       filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
@@ -121,7 +119,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     lang: locale,
   });
   const canonicalPath = toBrandPath(brand.slug, locale);
-  const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand, canonicalPath));
   const brandName = safeText(brand.name, t("brandsTitle"));
   // Mô tả thương hiệu (admin nhập rich-HTML) — render trên lưới sản phẩm như trang
@@ -173,9 +170,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                 fallback={
                   <CatalogDefault
                     canonicalPath={canonicalPath}
-                    brands={brandsResult.data}
-                    categories={filterCategories}
-                    facets={facetsResult.data}
                     beforeGridNode={beforeGridNode}
                     products={productsResult.data}
                     pagination={productsResult.pagination}
@@ -184,8 +178,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
               >
                 <CatalogClient
                   canonicalPath={canonicalPath}
-                  brands={brandsResult.data}
-                  categories={filterCategories}
                   facets={facetsResult.data}
                   beforeGridNode={beforeGridNode}
                   routeBrandSlug={brand.slug}

@@ -44,8 +44,9 @@ class ContentP1ApiTest {
                   "slug": "%s",
                   "title": "%s",
                   "body": "<p>test</p>",
+                  "authorName": "Tác giả kiểm thử",
                   "publishStatus": "PUBLISHED",
-                  "translations": { "en": { "title": "%s EN" } }
+                  "translations": { "en": { "title": "%s EN", "authorName": "Test Author" } }
                 }
                 """.formatted(slug, title, title);
 
@@ -56,6 +57,7 @@ class ContentP1ApiTest {
                         .content(createPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value(slug))
+                .andExpect(jsonPath("$.data.authorName").value("Tác giả kiểm thử"))
                 .andExpect(jsonPath("$.data.category").doesNotExist())
                 .andExpect(jsonPath("$.data.categoryId").doesNotExist())
                 .andExpect(jsonPath("$.data.categories").doesNotExist());
@@ -64,8 +66,33 @@ class ContentP1ApiTest {
                         .param("q", uniqueMarker))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(1))
+                .andExpect(jsonPath("$.data[0].authorName").value("Tác giả kiểm thử"))
                 .andExpect(jsonPath("$.data[0].category").doesNotExist())
                 .andExpect(jsonPath("$.data[0].categories").doesNotExist());
+
+        String noAuthorSlug = "article-without-author-" + ts;
+        String noAuthorMarker = "NoAuthor" + ts;
+        String noAuthorPayload = """
+                {
+                  "slug": "%s",
+                  "title": "%s",
+                  "body": "<p>test</p>",
+                  "publishStatus": "PUBLISHED",
+                  "translations": { "en": { "title": "%s EN" } }
+                }
+                """.formatted(noAuthorSlug, noAuthorMarker, noAuthorMarker);
+
+        mockMvc.perform(post("/api/v1/admin/content/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(noAuthorPayload))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/articles")
+                        .param("q", noAuthorMarker))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].authorName").doesNotExist());
 
         mockMvc.perform(get("/api/v1/content-categories"))
                 .andExpect(status().isNotFound());

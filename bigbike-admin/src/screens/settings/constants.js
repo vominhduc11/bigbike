@@ -286,8 +286,10 @@ export const KEY_LABELS_VI = {
   zalo_display: 'Chữ hiển thị Zalo (popup liên hệ)',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
-  // seo: 3 ô SEO Title/Description/Ảnh chia sẻ trang chủ gỡ V337 (2026-07-12);
-  // chỉ còn ô nội dung SEO cuối trang chủ.
+  // SEO trang chủ mở lại theo SETTINGS_RULE_003 (2026-08-16).
+  seo_home_title: 'Tiêu đề SEO trang chủ',
+  seo_home_description: 'Mô tả SEO trang chủ',
+  seo_home_h1: 'Tiêu đề chính trang chủ',
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
@@ -332,6 +334,9 @@ export const KEY_HINTS_VI = {
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_default_bg_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
+  seo_home_title:                  'Nhập tiêu đề hiện trên Google và trong thẻ trình duyệt.',
+  seo_home_description:            'Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.',
+  seo_home_h1:                     'Nhập đúng một tiêu đề chính hiển thị trên trang chủ.',
 }
 
 // Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
@@ -465,7 +470,9 @@ export const KEY_GUIDE = {
   hero_default_bg_url:           ['hero_default', 'ảnh nền mặc định'],
   hero_default_illustration_url: ['hero_default', 'ảnh minh hoạ mặc định'],
 
-  // seo_home_title/seo_home_description/og_image_url: 3 ô gỡ V337 — chỉ còn ô dưới.
+  seo_home_title: ['seo_home', 'tiêu đề SEO trang chủ'],
+  seo_home_description: ['seo_home', 'mô tả SEO trang chủ'],
+  seo_home_h1: ['seo_home', 'tiêu đề chính duy nhất trên trang chủ'],
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
   // product_assign: KHÔNG còn ở đây — xem ghi chú ở KEY_LABELS_VI/HIDDEN_GROUPS phía trên.

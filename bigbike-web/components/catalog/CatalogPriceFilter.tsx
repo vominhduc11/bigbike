@@ -19,7 +19,6 @@ import {
   priceSelectionToTickIndexes,
   tickIndexesToPriceSelection,
   type NormalizedPriceSelection,
-  type PriceScale,
 } from "@/lib/utils/catalog-price-filter";
 
 type CatalogPriceFilterProps = {
@@ -152,12 +151,7 @@ export function CatalogPriceFilter({
   const ticks = scale.ticks;
   if (ticks.length < 2) return null;
 
-  const histogramBuckets = Array.isArray(range.buckets) ? range.buckets : [];
   const hasSelection = priceRangeHasSelection(range, currentMinPrice, currentMaxPrice);
-  const maxCount = Math.max(
-    1,
-    ...histogramBuckets.map((bucket) => Number.isFinite(bucket.count) ? Math.max(0, bucket.count) : 0),
-  );
   const lastTickIndex = ticks.length - 1;
   const minIndex = Math.min(lastTickIndex, Math.max(0, sliderValues[0] ?? 0));
   const maxIndex = Math.min(lastTickIndex, Math.max(0, sliderValues[1] ?? lastTickIndex));
@@ -218,28 +212,8 @@ export function CatalogPriceFilter({
       role="group"
       aria-label={t("priceRangeAria")}
     >
-      <div className="relative h-24">
-        <div
-          className="pointer-events-none absolute inset-x-1 bottom-1 z-0 flex h-14 items-end gap-1"
-          data-price-histogram="true"
-          aria-hidden="true"
-        >
-          {histogramBuckets.map((bucket) => {
-            const count = Number.isFinite(bucket.count) ? Math.max(0, bucket.count) : 0;
-            return (
-              <span
-                key={`${bucket.minPrice}-${bucket.maxPrice}`}
-                className={cn(
-                  "min-w-0 flex-1",
-                  count > 0 ? "bg-brand/40" : "h-1 bg-border-default/60",
-                )}
-                style={count > 0 ? { height: `${Math.max(12, (count / maxCount) * 100)}%` } : undefined}
-              />
-            );
-          })}
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-10" aria-hidden="true">
+      <div className="relative h-12">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-12" aria-hidden="true">
           <span
             className={cn("absolute top-0 whitespace-nowrap text-a5-meta text-foreground", thumbLabelPosition(minIndex))}
             data-price-thumb-label="min"
@@ -250,7 +224,7 @@ export function CatalogPriceFilter({
           <span
             className={cn(
               "absolute whitespace-nowrap text-a5-meta text-foreground",
-              thumbsAreClose ? "top-5" : "top-0",
+              thumbsAreClose ? "top-6" : "top-0",
               thumbLabelPosition(maxIndex),
             )}
             data-price-thumb-label="max"

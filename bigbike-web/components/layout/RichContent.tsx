@@ -3,14 +3,14 @@ import { cn } from "@/lib/utils";
 
 export const richContentClassName =
   "bb-richtext text-a4-content leading-body text-foreground " +
-  "[&_a]:font-semibold [&_a]:text-brand [&_a]:underline-offset-4 hover:[&_a]:underline " +
+  "[&_a]:font-semibold [&_a]:text-brand [&_a]:underline-offset-4 [&_a]:[overflow-wrap:anywhere] hover:[&_a]:underline " +
   "[&_blockquote]:border-l-4 [&_blockquote]:border-brand [&_blockquote]:pl-4 " +
   "[&_h1]:mb-5 [&_h1]:font-body [&_h1]:text-a1-title [&_h1]:font-bold " +
   "[&_h2]:mb-4 [&_h2]:mt-8 [&_h2]:font-body [&_h2]:text-a2-page [&_h2]:font-bold " +
   "[&_h3]:mb-3 [&_h3]:mt-6 [&_h3]:font-body [&_h3]:text-a3-section [&_h3]:font-semibold " +
   "[&_img]:h-auto [&_img]:max-w-full [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 " +
   "[&_p]:mb-4 [&_.rich-table-scroll]:mb-4 [&_.rich-table-scroll]:block [&_.rich-table-scroll]:w-full [&_.rich-table-scroll]:overflow-x-auto [&_table]:w-full " +
-  "[&_td]:border-t [&_td]:border-border [&_td]:p-3 [&_th]:border-t [&_th]:border-border [&_th]:p-3 " +
+  "[&_td]:border [&_td]:border-border [&_td]:p-3 [&_th]:border [&_th]:border-border [&_th]:p-3 " +
   "[&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-6";
 
 export function RichContent({

@@ -107,7 +107,8 @@ describe("CatalogPriceFilter UI contract", () => {
     expect(thumbs[1]).toHaveAttribute("aria-valuetext", "2.000.000 đồng");
     expect(container.querySelector('[data-price-filter-active="false"]')).not.toBeNull();
     expect(container.querySelector('[data-price-range-hint="true"]')).toHaveTextContent("50.000");
-    expect(container.querySelectorAll('[data-price-histogram] span')).toHaveLength(24);
+    expect(container.querySelector('[data-price-histogram]')).toBeNull();
+    expect(container.querySelectorAll('[data-price-thumb-label]')).toHaveLength(2);
   });
 
   it("renders bilingual full-number labels and an explicit Apply action", () => {
@@ -165,6 +166,13 @@ describe("CatalogPriceFilter UI contract", () => {
     const indicators = container.querySelectorAll("[data-slider-thumb-indicator='true']");
     expect(indicators).toHaveLength(2);
     expect(indicators[0]).toHaveClass("!rounded-full");
+  });
+
+  it("stacks full-number labels when the two handles are close", () => {
+    const { container } = renderFilter({ currentMinPrice: 50_000, currentMaxPrice: 100_000 });
+
+    expect(container.querySelector('[data-price-thumb-label="min"]')).toHaveClass("top-0");
+    expect(container.querySelector('[data-price-thumb-label="max"]')).toHaveClass("top-6");
   });
 
   it("resets both inputs to blank when the outside price chip removes the filter", () => {

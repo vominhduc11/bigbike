@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   parseSizeGuide,
+  parseSizeGuideResult,
   serializeSizeGuide,
   mergeSizeGuideIntoHtml,
   emptySizeGuide,
@@ -47,6 +48,16 @@ describe('serializeSizeGuide', () => {
     const [, firstTd, secondTd] = html.match(/<td style="([^"]+)">M<\/td><td style="([^"]+)">57<\/td>/)
     expect(firstTd).toContain('font-weight:700')
     expect(secondTd).not.toContain('font-weight:700')
+  })
+
+  it('dùng token web, không hardcode font/màu/cỡ chữ', () => {
+    const html = serializeSizeGuide({ columns: cols('Size', 'Vòng đầu'), rows: [row('M', '57')] })
+    expect(html).toContain('font-family:var(--bb-font-body)')
+    expect(html).toContain('font-size:var(--bb-text-a4-content)')
+    expect(html).toContain('color:var(--bb-text-primary)')
+    expect(html).not.toContain('Arial')
+    expect(html).not.toContain('#dddddd')
+    expect(html).not.toContain('font-size:16px')
   })
 
   it('escape ký tự HTML', () => {
@@ -105,7 +116,21 @@ describe('parseSizeGuide', () => {
     expect(parsed.note).toBe('Đo nơi rộng nhất.')
   })
 
-  it('fallback: văn bản thuần kiểu "- M: 57-58 cm" → tách thành dòng + ghi chú', () => {
+	it('nhận bảng AI dùng token và thead/tbody chuẩn', () => {
+    const html = '<table style="font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);color:var(--bb-text-primary)"><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr></tbody></table>'
+    const result = parseSizeGuideResult(html)
+    expect(result.acceptedCount).toBe(1)
+    expect(result.model.columns.map((c) => c.label)).toEqual(['Size', 'Vòng đầu'])
+    expect(result.model.rows[0].cells).toEqual(['M', '57–58'])
+	})
+
+	it('nhận bảng có thead nhưng không có tbody', () => {
+		const result = parseSizeGuideResult('<table><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tr><td>M</td><td>57–58</td></tr></table>')
+		expect(result.acceptedCount).toBe(1)
+		expect(result.model.rows[0].cells).toEqual(['M', '57–58'])
+	})
+
+	it('fallback: văn bản thuần kiểu "- M: 57-58 cm" → tách thành dòng + ghi chú', () => {
     const legacy = 'Đo chu vi vòng đầu (cm) tại vị trí lớn nhất, rồi đối chiếu:\n- M: 57-58 cm\n- L: 59-60 cm\n- XL: 61-62 cm\nNếu số đo nằm giữa hai size, nên chọn size lớn hơn.'
     const parsed = parseSizeGuide(legacy)
     expect(parsed.rows.map((r) => r.cells)).toEqual([
@@ -115,7 +140,20 @@ describe('parseSizeGuide', () => {
     ])
     expect(parsed.note).toContain('Đo chu vi vòng đầu')
     expect(parsed.note).toContain('Nếu số đo nằm giữa hai size')
-  })
+	})
+
+	it('đọc HTML thông thường dạng size ở tiêu đề + số đo ở đoạn văn', () => {
+		const result = parseSizeGuideResult('<h3>M</h3><p>57–58 cm</p><h3>L</h3><p>59–60 cm</p>')
+		expect(result.model.rows.map((item) => item.cells)).toEqual([['M', '57–58 cm'], ['L', '59–60 cm']])
+	})
+
+	it('đọc bảng size dạng danh sách gạch đầu dòng', () => {
+		const result = parseSizeGuide('<ul><li>Small: 54–55 cm</li><li>Large - 58–59 cm</li></ul>')
+		expect(result.rows.map((row) => row.cells)).toEqual([
+			['Small', '54–55 cm'],
+			['Large', '58–59 cm'],
+		])
+	})
 
   it('emptySizeGuide có _key duy nhất cho mỗi cột', () => {
     const e = emptySizeGuide()
@@ -170,8 +208,24 @@ describe('mergeSizeGuideIntoHtml', () => {
     expect(out).toContain('Ghi chú')
   })
 
-  it('html không phải bảng → sinh mặc định', () => {
+	it('html không phải bảng → sinh mặc định', () => {
     const model = { columns: cols('Size', 'X'), rows: [row('M', '57')], note: '' }
     expect(mergeSizeGuideIntoHtml(model, '<div>tùy biến</div>')).toBe(serializeSizeGuide(model))
+	})
+
+	it('sửa HTML size dạng tiêu đề + đoạn văn vẫn giữ khung trình bày', () => {
+		const existing = '<h3 style="color:blue">M</h3><p class="measure">57</p>'
+		const out = mergeSizeGuideIntoHtml({ columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] }, existing)
+		expect(out).toContain('style="color:blue"')
+		expect(out).toContain('class="measure"')
+		expect(out).toContain('>58</p>')
+	})
+
+  it('bảng không có thead vẫn giữ được bảng khi sửa biểu mẫu', () => {
+    const existing = '<table><tr><th>Size</th><th>Vòng đầu</th></tr><tr><td>M</td><td>57</td></tr></table>'
+    const out = mergeSizeGuideIntoHtml({ columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] }, existing)
+    expect(out).toContain('<thead>')
+    expect(out).toContain('>58<')
+    expect(out).not.toContain('>57<')
   })
 })

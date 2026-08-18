@@ -70,7 +70,8 @@ public interface ArticleMapper {
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                includeTranslations ? entity.getBodyBlocks() : null
+                includeTranslations ? entity.getBodyBlocks() : null,
+                pick(entity.getAuthorName(), entity.getAuthorNameEn(), locale)
         );
     }
 
@@ -110,6 +111,7 @@ public interface ArticleMapper {
                         entity.getTitleEn(),
                         entity.getExcerptEn(),
                         entity.getBodyEn(),
+                        entity.getAuthorNameEn(),
                         entity.getSeoTitleEn(),
                         entity.getSeoDescriptionEn()
                 )

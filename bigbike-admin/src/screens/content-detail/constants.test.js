@@ -89,6 +89,23 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
     expect(payload.excerpt).toBe('Tóm tắt ngắn')
   })
 
+  it('lưu tên tác giả song ngữ và gửi chuỗi rỗng khi để trống để xoá được tên cũ', () => {
+    const payload = toPayload(articleForm({
+      authorName: '  Nguyễn Văn A  ',
+      translations: {
+        en: {
+          slug: '', title: '', excerpt: '', body: '', authorName: '  Alex A  ', seoTitle: '', seoDescription: '',
+        },
+      },
+    }), false)
+    expect(payload.authorName).toBe('Nguyễn Văn A')
+    expect(payload.translations.en.authorName).toBe('Alex A')
+
+    const blank = toPayload(articleForm(), false)
+    expect(blank.authorName).toBe('')
+    expect(blank.translations.en.authorName).toBeNull()
+  })
+
   it('luôn gửi khối SEO rõ ràng, chuẩn hoá ô trống thành null', () => {
     const payload = toPayload(articleForm(), false)
     expect(payload.seo).toMatchObject({
@@ -167,6 +184,9 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
 
     expect(errors.title).toBe('content.detail.errTitleTooLong')
     expect(errors.excerpt).toBe('content.detail.errExcerptTooLong')
+    expect(zodErrors(createContentSchema(t, true, 'ARTICLE').safeParse(validForm({
+      authorName: 'a'.repeat(256),
+    }))).authorName).toBe('content.detail.errAuthorTooLong')
     expect(errors.seoTitle).toBe('content.detail.errSeoTitleTooLong')
     expect(errors.seoDescription).toBe('content.detail.errSeoDescriptionTooLong')
   })

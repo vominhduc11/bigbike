@@ -64,7 +64,22 @@ function isValidLinkHref(url) {
   return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u)
 }
 
-export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false }) {
+function wrapInlineContent(value) {
+  const raw = String(value || '')
+  if (!raw.trim() || /<p(?:\s|>)/i.test(raw)) return raw
+  return `<p>${raw}</p>`
+}
+
+function toInlineFragment(html) {
+  const raw = String(html || '').trim()
+  if (!raw || typeof DOMParser === 'undefined') return raw
+  const doc = new DOMParser().parseFromString(raw, 'text/html')
+  const blocks = Array.from(doc.body.children)
+  if (!blocks.length) return raw
+  return blocks.map((block) => block.tagName === 'P' ? block.innerHTML : block.outerHTML).join('<br>')
+}
+
+export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false, inlineOnly = false, maxLength }) {
   const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const [linkModal, setLinkModal] = useState({ open: false, value: '', error: '' })
@@ -77,29 +92,50 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   const userEditedRef = useRef(false)
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [2, 3] },
-        codeBlock: { languageClassPrefix: 'language-' },
-      }),
-      UnderlineExt,
-      LinkExt.configure({
-        openOnClick: false,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-      }),
-      ImageExt.configure({
-        HTMLAttributes: { class: 'rte-image' },
-      }),
-      // Căn lề (áp cho heading + đoạn văn) + màu chữ/tô nền (TextStyle + Color/BackgroundColor,
-      // xuất inline-style nên web render được khi bật allowInlineStyles) + bảng (TableKit).
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TextStyle,
-      Color,
-      BackgroundColor,
-      TableKit.configure({ table: { resizable: true } }),
-      Placeholder.configure({ placeholder: placeholder || '' }),
-    ],
-    content: value || '',
+    extensions: inlineOnly
+      ? [
+        StarterKit.configure({
+          blockquote: false,
+          bulletList: false,
+          code: false,
+          codeBlock: false,
+          heading: false,
+          horizontalRule: false,
+          listItem: false,
+          link: false,
+          orderedList: false,
+          strike: false,
+        }),
+        LinkExt.configure({
+          openOnClick: false,
+          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        }),
+        Placeholder.configure({ placeholder: placeholder || '' }),
+      ]
+      : [
+        StarterKit.configure({
+          heading: { levels: [2, 3] },
+          codeBlock: { languageClassPrefix: 'language-' },
+          link: false,
+        }),
+        UnderlineExt,
+        LinkExt.configure({
+          openOnClick: false,
+          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        }),
+        ImageExt.configure({
+          HTMLAttributes: { class: 'rte-image' },
+        }),
+        // Căn lề (áp cho heading + đoạn văn) + màu chữ/tô nền (TextStyle + Color/BackgroundColor,
+        // xuất inline-style nên web render được khi bật allowInlineStyles) + bảng (TableKit).
+        TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        TextStyle,
+        Color,
+        BackgroundColor,
+        TableKit.configure({ table: { resizable: true } }),
+        Placeholder.configure({ placeholder: placeholder || '' }),
+      ],
+    content: inlineOnly ? wrapInlineContent(value) : value || '',
     editable: !disabled,
     // Khi paste từ Word: gỡ background-color (highlight Word) và thuộc tính mso-* (Word-specific)
     // khỏi inline style trước khi TipTap parse — giữ lại color, font-weight và các style hợp lệ khác.
@@ -134,7 +170,8 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     onFocus: () => { userEditedRef.current = true },
     onUpdate: ({ editor }) => {
       if (!userEditedRef.current) return
-      const html = editor.isEmpty ? '' : editor.getHTML()
+      if (maxLength && editor.getText().length > maxLength) return
+      const html = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
       onChange?.(html)
     },
   })
@@ -198,14 +235,14 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
   useEffect(() => {
     if (!editor) return
-    const current = editor.isEmpty ? '' : editor.getHTML()
+    const current = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
     if (value !== current) {
       // TipTap v3: tham số thứ 2 là options object. Phải truyền { emitUpdate: false }
       // để đồng bộ value từ ngoài (mount / refetch) KHÔNG bị tính là user sửa —
       // nếu không, mở form rich-text sẽ báo "thay đổi chưa lưu" giả. (v2 nhận false trực tiếp)
-      editor.commands.setContent(value || '', { emitUpdate: false })
+      editor.commands.setContent(inlineOnly ? wrapInlineContent(value) : value || '', { emitUpdate: false })
     }
-  }, [value, editor])
+  }, [value, editor, inlineOnly])
 
   useEffect(() => {
     editor?.setEditable(!disabled)
@@ -252,34 +289,40 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         <Divider />
         {btn(() => editor.chain().focus().toggleBold().run(), s?.isBold, t('richEditor.bold'), <Bold size={14} />)}
         {btn(() => editor.chain().focus().toggleItalic().run(), s?.isItalic, t('richEditor.italic'), <Italic size={14} />)}
-        {btn(() => editor.chain().focus().toggleUnderline().run(), s?.isUnderline, t('richEditor.underline'), <Underline size={14} />)}
-        {btn(() => editor.chain().focus().toggleStrike().run(), s?.isStrike, t('richEditor.strike'), <Strikethrough size={14} />)}
-        <Divider />
-        {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), s?.isH2, t('richEditor.h2'), <Heading2 size={14} />)}
-        {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), s?.isH3, t('richEditor.h3'), <Heading3 size={14} />)}
-        <Divider />
-        {btn(() => editor.chain().focus().toggleBulletList().run(), s?.isBulletList, t('richEditor.bulletList'), <List size={14} />)}
-        {btn(() => editor.chain().focus().toggleOrderedList().run(), s?.isOrderedList, t('richEditor.orderedList'), <ListOrdered size={14} />)}
-        {btn(() => editor.chain().focus().toggleBlockquote().run(), s?.isBlockquote, t('richEditor.quote'), <Quote size={14} />)}
+        {!inlineOnly && (
+          <>
+            {btn(() => editor.chain().focus().toggleUnderline().run(), s?.isUnderline, t('richEditor.underline'), <Underline size={14} />)}
+            {btn(() => editor.chain().focus().toggleStrike().run(), s?.isStrike, t('richEditor.strike'), <Strikethrough size={14} />)}
+            <Divider />
+            {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), s?.isH2, t('richEditor.h2'), <Heading2 size={14} />)}
+            {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), s?.isH3, t('richEditor.h3'), <Heading3 size={14} />)}
+            <Divider />
+            {btn(() => editor.chain().focus().toggleBulletList().run(), s?.isBulletList, t('richEditor.bulletList'), <List size={14} />)}
+            {btn(() => editor.chain().focus().toggleOrderedList().run(), s?.isOrderedList, t('richEditor.orderedList'), <ListOrdered size={14} />)}
+            {btn(() => editor.chain().focus().toggleBlockquote().run(), s?.isBlockquote, t('richEditor.quote'), <Quote size={14} />)}
+          </>
+        )}
         <Divider />
         {btn(handleLink, s?.isLink, t('richEditor.link'), <Link size={14} />)}
         {s?.isLink && btn(() => editor.chain().focus().unsetLink().run(), false, t('richEditor.unlink'), <Link2Off size={14} />)}
-        {enableImagePicker && (
+        {!inlineOnly && enableImagePicker && (
           <>
             <Divider />
             {btn(() => setImagePickerOpen(true), false, t('richEditor.image'), <Image size={14} />)}
           </>
         )}
 
-        {/* Căn lề */}
-        <Divider />
-        {btn(() => editor.chain().focus().setTextAlign('left').run(), s?.alignLeft, t('richEditor.alignLeft', { defaultValue: 'Căn trái' }), <AlignLeft size={14} />)}
-        {btn(() => editor.chain().focus().setTextAlign('center').run(), s?.alignCenter, t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }), <AlignCenter size={14} />)}
-        {btn(() => editor.chain().focus().setTextAlign('right').run(), s?.alignRight, t('richEditor.alignRight', { defaultValue: 'Căn phải' }), <AlignRight size={14} />)}
+        {!inlineOnly && (
+          <>
+            {/* Căn lề */}
+            <Divider />
+            {btn(() => editor.chain().focus().setTextAlign('left').run(), s?.alignLeft, t('richEditor.alignLeft', { defaultValue: 'Căn trái' }), <AlignLeft size={14} />)}
+            {btn(() => editor.chain().focus().setTextAlign('center').run(), s?.alignCenter, t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }), <AlignCenter size={14} />)}
+            {btn(() => editor.chain().focus().setTextAlign('right').run(), s?.alignRight, t('richEditor.alignRight', { defaultValue: 'Căn phải' }), <AlignRight size={14} />)}
 
-        {/* Thêm — gom công cụ ít dùng: mã, kẻ ngang, màu chữ/nền, bảng */}
-        <Divider />
-        <DropdownMenu>
+            {/* Thêm — gom công cụ ít dùng: mã, kẻ ngang, màu chữ/nền, bảng */}
+            <Divider />
+            <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
@@ -358,16 +401,18 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               </>
             )}
           </DropdownMenuContent>
-        </DropdownMenu>
-        {enableImagePicker && (
-          <MediaRequirementHint recommend={IMAGE_RECO.general} className="m-0 basis-full pt-1" />
+            </DropdownMenu>
+            {enableImagePicker && (
+              <MediaRequirementHint recommend={IMAGE_RECO.general} className="m-0 basis-full pt-1" />
+            )}
+          </>
         )}
       </div>
 
       {/* Editor content */}
       <EditorContent
         editor={editor}
-        className="rich-editor-content min-h-[240px]"
+        className={cn('rich-editor-content', inlineOnly ? 'min-h-32' : 'min-h-[240px]')}
       />
 
       {imagePickerOpen && (

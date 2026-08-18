@@ -28,6 +28,7 @@ export function PageHero({
   illustrationAlt,
   focusId,
   className,
+  titleAs = "h1",
 }: {
   title: string;
   titleNode?: ReactNode;
@@ -37,10 +38,13 @@ export function PageHero({
   illustrationAlt?: string | null;
   focusId?: string;
   className?: string;
+  /** Màn hình chờ dùng div để không gửi tiêu đề giả cùng nội dung thật. */
+  titleAs?: "h1" | "div";
 }) {
   const tBreadcrumb = useTranslations("Breadcrumb");
   const background = bgUrl?.trim() || DEFAULT_BG;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
+  const TitleTag = titleAs;
 
   return (
     <section
@@ -52,9 +56,9 @@ export function PageHero({
     >
       <Container className="relative z-10 flex min-h-62.5 items-center md:min-h-112.5">
         <div className="w-full md:w-1/2">
-          <h1 className="m-0 font-body text-a2-page font-semibold leading-title text-white!">
+          <TitleTag className="m-0 font-body text-a2-page font-semibold leading-title text-white!">
             {titleNode ?? title}
-          </h1>
+          </TitleTag>
           <nav className="mt-2" aria-label={tBreadcrumb("ariaLabel")}>
             <ol className="m-0 flex list-none flex-wrap p-0">
               {breadcrumb.map((crumb, index) => {

@@ -32,6 +32,9 @@ public class UpsertArticleRequest {
     @Size(max = 5000, message = "Excerpt is too long.")
     private String excerpt;
 
+    @Size(max = 255, message = "Author name is too long.")
+    private String authorName;
+
     private String body;
 
     @Valid

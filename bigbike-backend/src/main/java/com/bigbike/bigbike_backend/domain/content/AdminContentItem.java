@@ -35,6 +35,8 @@ public record AdminContentItem(
         /** Structured body blocks (V140). Non-null only on admin detail reads. */
         List<DescriptionBlock> bodyBlocks,
         /** English translations (V138). Non-null only on admin detail reads. Serializes as {@code {en: {...}}} per API_CONTRACT §"Article EN translations on admin read". */
-        ArticleTranslations translations
+        ArticleTranslations translations,
+        /** Optional localized author name (ARTICLE_RULE_007). */
+        String authorName
 ) {
 }

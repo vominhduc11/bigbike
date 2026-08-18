@@ -4,6 +4,7 @@ import {
   serializeSuitabilityCards,
   mergeSuitabilityIntoHtml,
   emptySuitabilityCard,
+  parseSuitabilityResult,
 } from './suitabilityCards'
 
 const card = (audience, advice) => ({ audience, advice })
@@ -17,14 +18,14 @@ describe('serializeSuitabilityCards', () => {
 
   it('xuất <li> với đối tượng (đậm) → lời khuyên', () => {
     const html = serializeSuitabilityCards([card('Touring đường dài', 'Trọng lượng nhẹ phát huy tốt.')])
-    expect(html).toContain('<ul class="suitability-list">')
-    expect(html).toContain('<strong>Touring đường dài</strong> → Trọng lượng nhẹ phát huy tốt.')
+    expect(html).toContain('<ul class="suitability-list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;')
+    expect(html).toContain('<li style="margin:0;"><strong style="color:var(--bb-text-primary);font-weight:700;">Touring đường dài</strong> → Trọng lượng nhẹ phát huy tốt.</li>')
   })
 
-  it('escape ký tự HTML', () => {
-    const html = serializeSuitabilityCards([card('<b>x</b> & y', 'z')])
-    expect(html).toContain('&lt;b&gt;x&lt;/b&gt; &amp; y')
-    expect(html).not.toContain('<b>x</b>')
+  it('giữ inline HTML an toàn ở tên và escape lời khuyên', () => {
+    const html = serializeSuitabilityCards([card('<b>x</b> & y', '<i>z</i>')])
+    expect(html).toContain('<strong style="color:var(--bb-text-primary);font-weight:700;"><b>x</b> &amp; y</strong>')
+    expect(html).toContain('&lt;i&gt;z&lt;/i&gt;')
   })
 })
 
@@ -48,10 +49,21 @@ describe('parseSuitabilityCards', () => {
     expect(parseSuitabilityCards(serializeSuitabilityCards(cards))).toEqual(cards)
   })
 
-  it('đọc được HTML tự do dạng <p><strong>…</strong> → …</p>', () => {
+	it('đọc được HTML tự do dạng <p><strong>…</strong> → …</p>', () => {
     const parsed = parseSuitabilityCards('<p><strong>Người mới</strong> → Nên chọn cỡ M</p>')
     expect(parsed).toEqual([card('Người mới', 'Nên chọn cỡ M')])
+	})
+
+  it('đọc và giữ inline đậm/nghiêng trong tên đối tượng', () => {
+    const parsed = parseSuitabilityCards(
+      '<ul><li><strong style="color:var(--bb-text-primary);font-weight:700;">Người <em>mới</em></strong> → Nên chọn cỡ M</li></ul>',
+    )
+    expect(parsed).toEqual([card('Người <em>mới</em>', 'Nên chọn cỡ M')])
   })
+
+	it('đọc HTML thông thường dạng tiêu đề + đoạn văn', () => {
+		expect(parseSuitabilityResult('<h3>Người mới</h3><p>Nên chọn cỡ M</p>').items).toEqual([card('Người mới', 'Nên chọn cỡ M')])
+	})
 
   it('bỏ qua thẻ rỗng nội dung', () => {
     expect(parseSuitabilityCards('<ul><li></li><li><strong>A</strong></li></ul>')).toEqual([card('A', '')])
@@ -88,5 +100,18 @@ describe('mergeSuitabilityIntoHtml', () => {
     const out = mergeSuitabilityIntoHtml([card('A', '')], styled)
     expect(out).toContain('A')
     expect(out).not.toContain('B')
+  })
+
+  it('sửa thẻ không làm mất style khung hoặc inline đậm/nghiêng của tên', () => {
+    const existing =
+      '<ul class="suitability-list" style="list-style:none;"><li style="margin:0;"><strong style="color:var(--bb-text-primary);font-weight:700;">Người <em>cũ</em></strong> → Lời cũ</li></ul>'
+    const out = mergeSuitabilityIntoHtml(
+      [card('Người <em>mới</em>', 'Lời mới')],
+      existing,
+    )
+    expect(out).toContain('class="suitability-list"')
+    expect(out).toContain('style="color:var(--bb-text-primary);font-weight:700;"')
+    expect(out).toContain('Người <em>mới</em>')
+    expect(out).toContain('Lời mới')
   })
 })

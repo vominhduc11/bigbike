@@ -1,10 +1,12 @@
 "use client";
 
-import { resolveMediaUrl } from "@/lib/utils/format";
+import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { MediaImage } from "@/components/ui/MediaImage";
 import type { Category } from "@/lib/contracts/public";
 
-/* eslint-disable @next/next/no-img-element */
+const HOME_CATEGORY_IMAGE_SIZES =
+  "(min-width: 1200px) 300px, (min-width: 768px) calc((100vw - 64px) / 4), (min-width: 640px) calc((100vw - 48px) / 3), calc((100vw - 32px) / 2)";
 
 /**
  * Lưới danh mục trang chủ — server render `vi` (initialCategories) cho SEO/ISR; khi khách
@@ -17,9 +19,11 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
 
   return (
     <div className="mb-10 mt-32 max-md:mt-18">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+      <div data-home-category-grid className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
         {categories.map((c) => {
-          const img = resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || "/brand/home/category-fallback.png";
+          const sourceImage = c.image ?? c.icon;
+          const img = toLegacyWpMediaUrl(resolveMediaUrl(sourceImage?.url?.trim()));
+          const responsiveImage = img && sourceImage ? { ...sourceImage, url: img } : null;
           const name = c.name.normalize("NFC");
           return (
             <div className="border border-border text-center" key={c.id}>
@@ -31,7 +35,19 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
               >
                 <span className="relative z-[1] block w-full px-4">
                   <span className="block">
-                    <img src={img} className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
+                    {responsiveImage ? (
+                      <MediaImage
+                        image={responsiveImage}
+                        altFallback=""
+                        width={600}
+                        height={600}
+                        sizes={HOME_CATEGORY_IMAGE_SIZES}
+                        className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/brand/home/category-fallback.png" className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
+                    )}
                   </span>
                   <span className="mt-7.5 block line-clamp-2 font-cta text-a4-content font-semibold normal-case leading-body text-foreground group-hover:text-white">{name}</span>
                 </span>

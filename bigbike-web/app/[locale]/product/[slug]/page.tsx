@@ -4,7 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { ProductView } from "@/components/catalog/ProductView";
-import { getProductBySlug, listPublicSettings } from "@/lib/api/public-api";
+import { getProductBySlug, listCategories, listPublicSettings } from "@/lib/api/public-api";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
@@ -17,6 +17,7 @@ import { safeArray } from "@/lib/utils/format";
 import { toLegacyProductPath, toProductPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import type { Locale } from "@/i18n/locale";
+import type { Category, CategorySummary, Product } from "@/lib/contracts/public";
 
 // ISR on-demand: KHÔNG prebuild lúc build (sản phẩm là dữ liệu admin quản lý — không gọi
 // API lấy list khi build). Trả [] để mỗi trang sinh khi truy cập lần đầu rồi cache; tồn
@@ -27,6 +28,46 @@ export async function generateStaticParams() {
 }
 
 type ProductDetailPageProps = { params: Promise<{ locale: string; slug: string }> };
+
+function isUsableCategory(category: CategorySummary | null | undefined): category is CategorySummary {
+  return Boolean(
+    category?.name &&
+    category.slug &&
+    category.slug !== "chua-phan-loai" &&
+    category.slug !== "uncategorized" &&
+    category.visible !== false &&
+    category.deleted !== true,
+  );
+}
+
+function buildProductBreadcrumbCategories(product: Product, categories: Category[]): CategorySummary[] {
+  const primary = product.category ?? product.categories?.[0];
+  if (!isUsableCategory(primary)) return [];
+
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const current = byId.get(primary.id);
+  if (!current) return [primary];
+
+  const chain: Category[] = [];
+  const seen = new Set<string>();
+  let cursor: Category | undefined = current;
+  while (cursor && !seen.has(cursor.id)) {
+    seen.add(cursor.id);
+    chain.unshift(cursor);
+    cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined;
+  }
+
+  return chain
+    .map((category) => ({
+      id: category.id,
+      slug: category.slug,
+      slugEn: category.slugEn,
+      name: category.name,
+      visible: category.isVisible,
+      deleted: false,
+    }))
+    .filter(isUsableCategory);
+}
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
@@ -74,9 +115,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
-  const [result, settingsResult] = await Promise.all([
+  const [result, settingsResult, categoriesResult] = await Promise.all([
     getProductBySlug(slug, locale),
     listPublicSettings(locale),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
   ]);
 
   const product = result.data;
@@ -87,6 +129,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   if (slug !== preferredSlug) permanentRedirect(canonicalPath);
 
   const settings = settingsResult.data ?? [];
+  const breadcrumbCategories = buildProductBreadcrumbCategories(product, categoriesResult.data ?? []);
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
 
@@ -96,7 +139,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   // SEO sống ở server component; phần thân hiển thị do <ProductView> đảm nhiệm.
   const jsonLdBlocks: string[] = [
     serializeJsonLd(buildProductJsonLd(product, canonicalPath)),
-    serializeJsonLd(buildBreadcrumbJsonLd(product, canonicalPath)),
+    serializeJsonLd(buildBreadcrumbJsonLd(product, canonicalPath, breadcrumbCategories)),
   ];
   if (faqs.length > 0) {
     jsonLdBlocks.push(serializeJsonLd(buildFaqPageJsonLd(faqs)));
@@ -115,7 +158,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         />
       ))}
       <AltSlugRegistrar kind="product" viSlug={product.slug} enSlug={product.slugEn ?? null} />
-      <ProductView product={product} settings={settings} />
+      <ProductView product={product} settings={settings} breadcrumbCategories={breadcrumbCategories} />
     </>
   );
 }

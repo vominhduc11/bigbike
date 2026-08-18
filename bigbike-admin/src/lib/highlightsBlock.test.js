@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   mergeHighlightsHtmlIntoItems,
   mergeHighlightsPairHtmlIntoItems,
+  parseHighlightsPairResult,
   parseHighlightsFromHtml,
   parseHighlightsPairFromHtml,
   serializeHighlightsPairToHtml,
@@ -76,6 +77,13 @@ describe('serializeHighlightsPairToHtml / parseHighlightsPairFromHtml', () => {
     expect(serializeHighlightsPairToHtml([], [], false)).toBe('')
     expect(parseHighlightsPairFromHtml('')).toEqual({ positive: [], negative: [] })
   })
+
+  it('đọc danh sách không gắn nhãn vào Ưu điểm theo rule owner', () => {
+    const result = parseHighlightsPairResult('<h4>Điểm nổi bật</h4><ul><li>Nhẹ</li><li>Thoáng</li></ul>')
+    expect(result.positive).toEqual(['Nhẹ', 'Thoáng'])
+    expect(result.negative).toEqual([])
+    expect(result.presentGroups).toEqual({ positive: true, negative: false })
+  })
 })
 
 describe('mergeHighlightsPairHtmlIntoItems', () => {
@@ -110,5 +118,14 @@ describe('mergeHighlightsPairHtmlIntoItems', () => {
     expect(next.positiveNotes[0].content).toBe('VI ưu 1')
     expect(next.positiveNotes[0].contentEn).toBe('New pro 1')
     expect(next.negativeNotes[0].contentEn).toBe('New con 1')
+  })
+
+  it('HTML không đọc được giữ nguyên cả hai nhóm', () => {
+    const positive = [{ _key: 'p1', content: 'Ưu cũ', contentEn: '' }]
+    const negative = [{ _key: 'n1', content: 'Nhược cũ', contentEn: '' }]
+    expect(mergeHighlightsPairHtmlIntoItems(positive, negative, '<div>không theo mẫu</div>', false)).toEqual({
+      positiveNotes: positive,
+      negativeNotes: negative,
+    })
   })
 })

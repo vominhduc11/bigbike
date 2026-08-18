@@ -105,3 +105,20 @@ describe("ProductCard - giá bán", () => {
     expect(container.querySelector("[data-product-sale]")).toBeNull();
   });
 });
+
+describe("ProductCard - ảnh responsive", () => {
+  it("truyền đúng kích thước khung ảnh do lưới cung cấp", () => {
+    render(
+      <ProductCard
+        product={makeProduct({
+          image: { url: "/media/uploads/product-test.jpg", width: 1600, height: 1600 },
+        })}
+        imageSizes="(min-width: 768px) 25vw, 50vw"
+      />,
+    );
+
+    const image = screen.getByRole("img", { name: "Găng tay test" });
+    expect(image).toHaveAttribute("sizes", "(min-width: 768px) 25vw, 50vw");
+    expect(image.getAttribute("srcset")).toMatch(/\s\d+w(?:,|$)/);
+  });
+});

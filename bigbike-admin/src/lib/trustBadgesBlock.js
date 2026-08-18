@@ -1,4 +1,5 @@
 import { generateId } from '@/lib/utils'
+import { hasHtmlInput, makeHtmlImportResult } from './htmlImport'
 
 /**
  * Chuyển đổi giữa danh sách "Dải tin cậy" có cấu trúc (model nhập trong admin) và HTML lưu vào
@@ -43,13 +44,16 @@ export function serializeTrustBadges(items) {
   return `<div class="bb-trust-badges" style="${ROW_STYLE}">${spans}</div>`
 }
 
-/** Container dải: ưu tiên .bb-trust-badges; nếu không có thì lấy phần tử bọc đầu có con là phần tử. */
-function findContainer(doc) {
+function findBadgeElements(doc) {
   const marked = doc.querySelector('.bb-trust-badges')
-  if (marked) return marked
-  const first = doc.body.firstElementChild
-  if (first && first.children.length > 0) return first
-  return null
+  if (marked) return [...marked.children]
+  const listItems = [...doc.querySelectorAll('li')]
+  if (listItems.length) return listItems
+  const paragraphs = [...doc.querySelectorAll('p')]
+  if (paragraphs.length) return paragraphs
+  const direct = [...doc.body.children]
+  if (direct.length > 1) return direct
+  return direct
 }
 
 // Ký tự chấm tròn/bullet trang trí có thể đứng lẫn trong chữ (HTML nhập ngoài dùng "• Chữ").
@@ -73,20 +77,26 @@ function isDotSpan(span) {
   return txt === '' || ONLY_BULLET_RE.test(txt)
 }
 
-/** HTML → items[] (best-effort). */
-export function parseTrustBadgesFromHtml(html) {
-  if (!html || typeof html !== 'string' || !html.trim()) return []
-  if (typeof DOMParser === 'undefined') return []
+/** Detailed tolerant parser used by the safe HTML import flow. */
+export function parseTrustBadgesResult(html) {
+  if (!hasHtmlInput(html) || typeof DOMParser === 'undefined') {
+    return makeHtmlImportResult({ hasInput: hasHtmlInput(html) })
+  }
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html')
-    const container = findContainer(doc)
-    if (!container) return []
-    return [...container.children]
+    const elements = findBadgeElements(doc)
+    const items = elements
       .map((el) => ({ _key: generateId(), content: badgeText(el) }))
       .filter((b) => b.content)
+    return makeHtmlImportResult({ items, skippedCount: elements.length - items.length + (items.length ? 0 : 1), hasInput: true })
   } catch {
-    return []
+    return makeHtmlImportResult({ skippedCount: 1, hasInput: true })
   }
+}
+
+/** HTML → items[] (best-effort; giữ API cũ cho caller hiện có). */
+export function parseTrustBadgesFromHtml(html) {
+  return parseTrustBadgesResult(html).items
 }
 
 /**
@@ -119,25 +129,26 @@ export function mergeTrustBadgesIntoHtml(items, existingHtml) {
   if (typeof DOMParser === 'undefined') return fresh
   try {
     const doc = new DOMParser().parseFromString(existingHtml, 'text/html')
-    const container = findContainer(doc)
-    if (!container) return fresh
+    const badgesFromHtml = findBadgeElements(doc)
+    const container = badgesFromHtml[0]?.parentElement
+    if (!container || !badgesFromHtml.length) return fresh
 
     const contents = (items || []).map(contentOf).filter(Boolean)
     if (contents.length === 0) {
-      container.remove()
+      if (container.matches('.bb-trust-badges, ul')) container.remove()
+      else badgesFromHtml.forEach((badge) => badge.remove())
       return doc.body.innerHTML.trim() ? doc.body.innerHTML : ''
     }
 
-    let badges = [...container.children]
-    if (badges.length === 0) return fresh
+    let badges = badgesFromHtml
     while (badges.length < contents.length) {
       const clone = badges[badges.length - 1].cloneNode(true)
       container.appendChild(clone)
-      badges = [...container.children]
+      badges = [...badges, clone]
     }
     while (badges.length > contents.length) {
       badges[badges.length - 1].remove()
-      badges = [...container.children]
+      badges = badges.slice(0, -1)
     }
     contents.forEach((c, i) => {
       if (badges[i]) setBadgeText(doc, badges[i], c)

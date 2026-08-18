@@ -93,6 +93,15 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(output).not.toMatch(/(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i);
   });
 
+  it("keeps advanced tables in a scroll wrapper with safe inline layout styles", () => {
+    const input = '<table style="border-collapse:collapse; width:640px"><thead><tr><th>Cỡ</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>';
+    const output = sanitizeRichHtml(input, { allowInlineStyles: true });
+
+    expect(output).toContain('<div class="rich-table-scroll"><table');
+    expect(output).toContain('style="border-collapse:collapse; width:640px"');
+    expect(output).toContain('<th>Cỡ</th>');
+  });
+
   it("normalizes typography from every frozen static page", () => {
     for (const page of Object.values(staticPages)) {
       for (const body of [page.body, page.bodyEn]) {

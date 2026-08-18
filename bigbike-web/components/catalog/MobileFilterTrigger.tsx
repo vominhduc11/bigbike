@@ -10,6 +10,7 @@ export function MobileFilterTrigger({ activeCount = 0 }: { activeCount?: number 
   const t = useTranslations("Catalog");
   return (
     <Button
+      data-mobile-filter-trigger
       type="button"
       variant="outline"
       className="order-1 h-13 w-full justify-between rounded-none border-border px-5 font-cta text-b4-action font-semibold uppercase md:hidden"

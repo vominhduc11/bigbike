@@ -11,19 +11,45 @@ import { toast } from '@/lib/toast'
  * Nút "Sao chép" đưa sẵn bản brief chứa font/màu/cỡ/khoảng cách thật của web để
  * admin dán kèm nội dung, giúp HTML sinh ra khớp giao diện.
  *
- * `promptKey` là locale key bắt buộc, trỏ tới nội dung brief riêng của từng khối PDP
- * (ví dụ `products.detail.specStats.aiBriefPrompt`).
+ * `promptKey` trỏ tới nội dung brief riêng của từng khối PDP (ví dụ
+ * `products.detail.specStats.aiBriefPrompt`); màn hình khác có thể truyền `prompt` động.
  */
-export default function AiHtmlBrief({ promptKey }) {
+export default function AiHtmlBrief({
+  promptKey,
+  prompt: promptValue,
+  title,
+  copyLabel,
+  copiedMessage,
+  copyFailedMessage,
+}) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const panelId = useId()
-  const prompt = t(promptKey)
+  const prompt = promptValue ?? t(promptKey)
 
-  function handleCopy() {
-    navigator.clipboard?.writeText(prompt)
-      .then(() => toast.success(t('products.detail.aiBrief.copied')))
-      .catch(() => toast.error(t('products.detail.aiBrief.copyFailed')))
+  async function copyText(value) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+      return
+    }
+    const textarea = document.createElement('textarea')
+    textarea.value = value
+    textarea.setAttribute('readonly', '')
+    textarea.className = 'fixed -left-full -top-full'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const copied = document.execCommand?.('copy')
+    textarea.remove()
+    if (!copied) throw new Error('Clipboard is unavailable')
+  }
+
+  async function handleCopy() {
+    try {
+      await copyText(prompt)
+      toast.success(copiedMessage || t('products.detail.aiBrief.copied'))
+    } catch {
+      toast.error(copyFailedMessage || t('products.detail.aiBrief.copyFailed'))
+    }
   }
 
   return (
@@ -41,11 +67,11 @@ export default function AiHtmlBrief({ promptKey }) {
           {open
             ? <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
             : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
-          {t('products.detail.aiBrief.title')}
+          {title || t('products.detail.aiBrief.title')}
         </Button>
         <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={handleCopy}>
           <Copy className="size-3.5" aria-hidden="true" />
-          {t('products.detail.aiBrief.copy')}
+          {copyLabel || t('products.detail.aiBrief.copy')}
         </Button>
       </div>
       {open && (

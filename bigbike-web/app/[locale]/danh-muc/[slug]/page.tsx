@@ -10,11 +10,18 @@ import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
-import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
-import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import { getCatalogFacets, getCategoryBySlug, listCategories, listProducts } from "@/lib/api/public-api";
+import {
+  buildCategoryBreadcrumbJsonLd,
+  buildCategoryCollectionJsonLd,
+  buildFaqPageJsonLd,
+  serializeJsonLd,
+} from "@/lib/seo/json-ld";
+import { extractCategoryFaqs } from "@/lib/seo/category-intro";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { stripHtmlToText } from "@/lib/utils/text";
 import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
@@ -29,6 +36,10 @@ import type { RouteSearchParams } from "@/lib/utils/query";
 export async function generateStaticParams() {
   return [];
 }
+
+// Trang này đọc bộ lọc và phân trang từ URL. Ép dựng động để Next.js không
+// cố dùng cache tĩnh cho từng tổ hợp searchParams (SEO_RULE_007).
+export const dynamic = "force-dynamic";
 
 async function getCategoryByRouteSlug(slug: string, locale: string) {
   const result = await getCategoryBySlug(slug, locale);
@@ -118,7 +129,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       <div>
         <PageHero
           title={fallbackTitle}
-          breadcrumb={[{ label: "Bigbike.vn", href: toHomePath(locale) }, { label: fallbackTitle }]}
+          breadcrumb={[{ label: locale === "en" ? "Home" : "Trang chủ", href: toHomePath(locale) }, { label: fallbackTitle }]}
         />
         <div id="main-content">
           <Container>
@@ -134,8 +145,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   if (slug !== preferredSlug) permanentRedirect(toCategoryPath(preferredSlug, locale));
   // Shell theo slug; lưới và facets đọc đầy đủ searchParams để lần hiển thị đầu tiên
   // khớp chính xác URL đã lọc.
-  const [brandsResult, allCategoriesResult, facetsResult, productsResult] = await Promise.all([
-    listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
+  const [allCategoriesResult, facetsResult, productsResult] = await Promise.all([
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({
       category: category.slug, brand: catalog.filters.brand, q: catalog.filters.q,
@@ -159,14 +169,27 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   const parentCategory = category.parentId
     ? (allCategories.find((c) => c.id === category.parentId) ?? null)
     : null;
-  const filterCategories = allCategories.filter((c) => c.isVisible);
-
+  const categoryName = safeText(category.name, tCatalog("categoryFallback"));
+  const categoryIntroHtml = category.introContent?.trim()
+    ? sanitizeRichHtml(category.introContent, { allowInlineStyles: true, rewriteMediaUrls: true, locale })
+    : null;
+  const categoryDescription = stripHtmlToText(categoryIntroHtml ?? category.description ?? "").slice(0, 500);
   const breadcrumbJsonLd = serializeJsonLd(
     buildCategoryBreadcrumbJsonLd(category, parentCategory, canonicalPath),
   );
-  const categoryName = safeText(category.name, tCatalog("categoryFallback"));
-  const categoryIntroHtml = category.introContent?.trim()
-    ? sanitizeRichHtml(category.introContent, { rewriteMediaUrls: true, locale })
+  const collectionJsonLd = serializeJsonLd(
+    buildCategoryCollectionJsonLd(
+      category,
+      productsResult.data,
+      productsResult.pagination?.page ?? catalog.page,
+      productsResult.pagination?.pageSize ?? catalog.size,
+      canonicalPath,
+      categoryDescription,
+    ),
+  );
+  const categoryFaqs = extractCategoryFaqs(categoryIntroHtml);
+  const faqJsonLd = categoryFaqs.length > 0
+    ? serializeJsonLd(buildFaqPageJsonLd(categoryFaqs))
     : null;
   const beforeGridNode = categoryIntroHtml ? (
     <CollapsibleContent className="mb-8">
@@ -180,7 +203,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   ) : undefined;
 
   const heroBreadcrumb: PageHeroCrumb[] = [
-    { label: "Bigbike.vn", href: toHomePath(locale) },
+    { label: locale === "en" ? "Home" : "Trang chủ", href: toHomePath(locale) },
     ...(parentCategory
       ? [
           {
@@ -200,6 +223,8 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: collectionJsonLd }} />
+      {faqJsonLd ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} /> : null}
 
       <LocalizedContentProvider kind="category" slug={category.slug}>
         <AltSlugRegistrar kind="category" viSlug={category.slug} enSlug={category.slugEn ?? null} />
@@ -220,9 +245,6 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
                 fallback={
                   <CatalogDefault
                     canonicalPath={canonicalPath}
-                    brands={brandsResult.data}
-                    categories={filterCategories}
-                    facets={facetsResult.data}
                     beforeGridNode={beforeGridNode}
                     products={productsResult.data}
                     pagination={productsResult.pagination}
@@ -231,8 +253,6 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
               >
                 <CatalogClient
                   canonicalPath={canonicalPath}
-                  brands={brandsResult.data}
-                  categories={filterCategories}
                   facets={facetsResult.data}
                   beforeGridNode={beforeGridNode}
                   routeCategorySlug={category.slug}

@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,13 @@ type ArticleImageProps = {
   fallbackSrc?: string | null;
   alt: string;
   className?: string;
+  sizes: string;
 };
 
 const TRANSPARENT_THUMBNAIL =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='169' viewBox='0 0 300 169'%3E%3C/svg%3E";
 
-export function ArticleImage({ src, fallbackSrc, alt, className }: ArticleImageProps) {
+export function ArticleImage({ src, fallbackSrc, alt, className, sizes }: ArticleImageProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [currentSrc, setCurrentSrc] = useState(src);
   const [failed, setFailed] = useState(false);
@@ -51,6 +52,8 @@ export function ArticleImage({ src, fallbackSrc, alt, className }: ArticleImageP
 
   if (!currentSrc || failed) {
     return (
+      // Transparent fallback is already a complete data URI; optimization would add no value.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={TRANSPARENT_THUMBNAIL}
         alt={alt}
@@ -62,12 +65,15 @@ export function ArticleImage({ src, fallbackSrc, alt, className }: ArticleImageP
   }
 
   return (
-    <img
+    <Image
       ref={imageRef}
       src={currentSrc}
       data-src={currentSrc}
       data-fallback-src={fallbackSrc ?? undefined}
       alt={alt}
+      width={600}
+      height={338}
+      sizes={sizes}
       className={className}
       loading="lazy"
       decoding="async"

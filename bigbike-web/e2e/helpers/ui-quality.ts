@@ -252,6 +252,277 @@ export async function expectNoHorizontalOverflow(page: Page, label: string, tole
   return r;
 }
 
+export type RenderedOverflowKind =
+  | "element-viewport"
+  | "text-viewport"
+  | "text-container";
+
+export type RenderedOverflowFinding = {
+  kind: RenderedOverflowKind;
+  selector: string;
+  text: string;
+  left: number;
+  right: number;
+  boundaryLeft: number;
+  boundaryRight: number;
+  depth: number;
+};
+
+export type RenderedOverflowResult = {
+  viewportWidth: number;
+  findings: RenderedOverflowFinding[];
+};
+
+/**
+ * Geometry-first overflow audit. Unlike scrollWidth, this still sees content
+ * hidden by the global html/body overflow policy and measures every rendered
+ * text line using Range#getClientRects(). Intentional carousel tracks and
+ * genuinely horizontally-scrollable regions remain accessible and are skipped.
+ */
+export async function checkRenderedHorizontalOverflow(
+  page: Page,
+  tolerance = 2,
+): Promise<RenderedOverflowResult> {
+  return page.evaluate((tol) => {
+    const viewportWidth = window.innerWidth;
+    const findings: RenderedOverflowFinding[] = [];
+    const seen = new Set<string>();
+    const carouselSelector =
+      '[data-responsive-overflow-ignore="carousel"], .swiper, [aria-roledescription="carousel"]';
+
+    const number = (value: string) => Number.parseFloat(value) || 0;
+    const rounded = (value: number) => Math.round(value * 10) / 10;
+    const metricsCache = new WeakMap<Element, {
+      rect: DOMRect;
+      style: CSSStyleDeclaration;
+      visible: boolean;
+    }>();
+    const carouselCache = new WeakMap<Element, boolean>();
+    const horizontalScrollerCache = new WeakMap<Element, boolean>();
+    const truncationCache = new WeakMap<Element, boolean>();
+    const boundsCache = new WeakMap<Element, { left: number; right: number }>();
+
+    const metricsFor = (element: Element) => {
+      const cached = metricsCache.get(element);
+      if (cached) return cached;
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const metrics = {
+        rect,
+        style,
+        visible:
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity) !== 0 &&
+          rect.width > 0 &&
+          rect.height > 0,
+      };
+      metricsCache.set(element, metrics);
+      return metrics;
+    };
+
+    const depthOf = (element: Element) => {
+      let depth = 0;
+      let current: Element | null = element;
+      while (current.parentElement) {
+        depth += 1;
+        current = current.parentElement;
+      }
+      return depth;
+    };
+
+    const describe = (element: Element) => {
+      const html = element as HTMLElement;
+      if (html.id) return `${element.tagName.toLowerCase()}#${html.id}`;
+      for (const attr of ["data-testid", "data-product-card", "data-catalog-product-grid", "data-bb-rail"]) {
+        if (html.hasAttribute(attr)) return `${element.tagName.toLowerCase()}[${attr}]`;
+      }
+      const classes = Array.from(element.classList)
+        .filter((name) => !name.includes(":"))
+        .slice(0, 3)
+        .join(".");
+      return `${element.tagName.toLowerCase()}${classes ? `.${classes}` : ""}`;
+    };
+
+    const visible = (element: Element) => metricsFor(element).visible;
+
+    const intentionallyTruncated = (element: Element) => {
+      if (truncationCache.has(element)) return truncationCache.get(element) ?? false;
+      const visited: Element[] = [];
+      let current: Element | null = element;
+      let result = false;
+      while (current && current !== document.body) {
+        if (truncationCache.has(current)) {
+          result = truncationCache.get(current) ?? false;
+          break;
+        }
+        visited.push(current);
+        const className = current.getAttribute("class") ?? "";
+        if (/(^|\s)truncate(\s|$)|(^|\s)line-clamp-/.test(className)) {
+          result = true;
+          break;
+        }
+        current = current.parentElement;
+      }
+      visited.forEach((item) => truncationCache.set(item, result));
+      return result;
+    };
+
+    const ignoredByCarousel = (element: Element) => {
+      if (carouselCache.has(element)) return carouselCache.get(element) ?? false;
+      const ignored = Boolean(element.closest(carouselSelector));
+      carouselCache.set(element, ignored);
+      return ignored;
+    };
+
+    const insideAccessibleHorizontalScroller = (element: Element) => {
+      if (horizontalScrollerCache.has(element)) {
+        return horizontalScrollerCache.get(element) ?? false;
+      }
+      const parent = element.parentElement;
+      if (!parent || parent === document.body || parent === document.documentElement) {
+        horizontalScrollerCache.set(element, false);
+        return false;
+      }
+      const style = metricsFor(parent).style;
+      const parentScrolls =
+        (style.overflowX === "auto" || style.overflowX === "scroll") &&
+        parent.scrollWidth > parent.clientWidth + tol;
+      const result = parentScrolls || insideAccessibleHorizontalScroller(parent);
+      horizontalScrollerCache.set(element, result);
+      return result;
+    };
+
+    const contentBounds = (element: Element) => {
+      const cached = boundsCache.get(element);
+      if (cached) return cached;
+      const { rect, style } = metricsFor(element);
+      const bounds = {
+        left: rect.left + number(style.borderLeftWidth) + number(style.paddingLeft),
+        right: rect.right - number(style.borderRightWidth) - number(style.paddingRight),
+      };
+      boundsCache.set(element, bounds);
+      return bounds;
+    };
+
+    const add = (
+      kind: RenderedOverflowKind,
+      element: Element,
+      rect: Pick<DOMRect, "left" | "right">,
+      boundary: { left: number; right: number },
+      textValue: string,
+    ) => {
+      const finding: RenderedOverflowFinding = {
+        kind,
+        selector: describe(element),
+        text: textValue.replace(/\s+/g, " ").trim().slice(0, 90),
+        left: rounded(rect.left),
+        right: rounded(rect.right),
+        boundaryLeft: rounded(boundary.left),
+        boundaryRight: rounded(boundary.right),
+        depth: depthOf(element),
+      };
+      const key = `${finding.kind}|${finding.selector}|${finding.text}|${finding.left}|${finding.right}|${finding.boundaryLeft}|${finding.boundaryRight}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        findings.push(finding);
+      }
+    };
+
+    const elements = Array.from(document.querySelectorAll("body *"));
+    for (const element of elements) {
+      if (ignoredByCarousel(element) || !visible(element)) continue;
+      const rect = metricsFor(element).rect;
+      // Fully off-canvas nodes are closed drawers/popovers; only partially visible
+      // content can be cut from the customer's view.
+      if (rect.right <= 0 || rect.left >= viewportWidth) continue;
+      if (insideAccessibleHorizontalScroller(element)) continue;
+
+      if (rect.left < -tol || rect.right > viewportWidth + tol) {
+        add(
+          "element-viewport",
+          element,
+          rect,
+          { left: 0, right: viewportWidth },
+          element.textContent ?? "",
+        );
+      }
+    }
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        return node.textContent?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      },
+    });
+
+    let textNode = walker.nextNode();
+    while (textNode) {
+      const owner = textNode.parentElement;
+      if (
+        !owner ||
+        owner.closest('[aria-hidden="true"], .sr-only') ||
+        ignoredByCarousel(owner) ||
+        !visible(owner) ||
+        insideAccessibleHorizontalScroller(owner) ||
+        intentionallyTruncated(owner)
+      ) {
+        textNode = walker.nextNode();
+        continue;
+      }
+
+      let container: Element | null = owner;
+      while (container && container !== document.body && container !== document.documentElement) {
+        const display = metricsFor(container).style.display;
+        if (display !== "inline" && display !== "contents") break;
+        container = container.parentElement;
+      }
+      if (!container || container === document.body || container === document.documentElement) {
+        textNode = walker.nextNode();
+        continue;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      const boundary = contentBounds(container);
+      for (const lineRect of Array.from(range.getClientRects())) {
+        if (lineRect.width <= 0 || lineRect.height <= 0) continue;
+        if (lineRect.right > 0 && lineRect.left < viewportWidth) {
+          if (lineRect.left < -tol || lineRect.right > viewportWidth + tol) {
+            add("text-viewport", owner, lineRect, { left: 0, right: viewportWidth }, textNode.textContent ?? "");
+          }
+          if (lineRect.left < boundary.left - tol || lineRect.right > boundary.right + tol) {
+            add("text-container", owner, lineRect, boundary, textNode.textContent ?? "");
+          }
+        }
+      }
+      range.detach();
+      textNode = walker.nextNode();
+    }
+
+    findings.sort((a, b) => b.depth - a.depth || a.kind.localeCompare(b.kind));
+    return { viewportWidth, findings: findings.slice(0, 25) };
+  }, tolerance);
+}
+
+export async function expectNoRenderedHorizontalOverflow(
+  page: Page,
+  label: string,
+  tolerance = 2,
+): Promise<RenderedOverflowResult> {
+  const result = await checkRenderedHorizontalOverflow(page, tolerance);
+  const detail = result.findings
+    .map((finding) =>
+      `  [${finding.kind}] ${finding.selector} x=${finding.left}..${finding.right} ` +
+      `inside ${finding.boundaryLeft}..${finding.boundaryRight} "${finding.text}"`,
+    )
+    .join("\n");
+  expect(
+    result.findings,
+    `Rendered horizontal overflow on ${label} (viewport=${result.viewportWidth}):\n${detail}`,
+  ).toEqual([]);
+  return result;
+}
+
 export async function getBrokenImages(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const broken: string[] = [];

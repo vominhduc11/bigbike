@@ -95,18 +95,29 @@ export function LoginForm({ returnTo, socialErrorKey }: { returnTo?: string; soc
                   name="remember"
                   control={control}
                   render={({ field }) => (
-                    <Checkbox
-                      id="remember-me"
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                      onBlur={field.onBlur}
-                      ref={field.ref}
-                    />
+                    <>
+                      <Checkbox
+                        id="remember-me"
+                        touchTarget
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      />
+                      <label
+                        htmlFor="remember-me"
+                        className="cursor-pointer select-none text-a5-meta"
+                        onClick={(event) => {
+                          if ((event.target as HTMLElement).closest('[role="checkbox"]')) return;
+                          event.preventDefault();
+                          field.onChange(!field.value);
+                        }}
+                      >
+                        {t("remember")}
+                      </label>
+                    </>
                   )}
                 />
-                <label htmlFor="remember-me" className="cursor-pointer select-none text-a5-meta">
-                  {t("remember")}
-                </label>
               </div>
               <div className="flex min-h-11 items-center md:justify-end">
                 <Link

@@ -46,6 +46,10 @@ public class ArticleEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String body;
 
+    /** Optional bilingual article author (ARTICLE_RULE_007). */
+    @Column(name = "author_name", length = 255)
+    private String authorName;
+
     private String coverImageId;
 
     @Column(columnDefinition = "text")
@@ -111,6 +115,9 @@ public class ArticleEntity {
 
     @Column(columnDefinition = "text")
     private String bodyEn;
+
+    @Column(name = "author_name_en", length = 255)
+    private String authorNameEn;
 
     private String seoTitleEn;
 

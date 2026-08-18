@@ -53,7 +53,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-10T03:00:00Z"),
                 Instant.parse("2026-04-09T02:00:00Z"),
                 Instant.parse("2026-04-10T03:00:00Z"),
-                null
+                null,
+                null                       // authorName
         );
 
         Article article2 = new Article(
@@ -86,7 +87,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-15T03:00:00Z"),
                 Instant.parse("2026-04-14T03:00:00Z"),
                 Instant.parse("2026-04-15T03:00:00Z"),
-                null
+                null,
+                null                       // authorName
         );
 
         this.articles = List.of(article1, article2);

@@ -46,6 +46,7 @@ export function ArticleView({
   const articleTitleFallback = tBlog("articleTitleFallback");
   const articleTitle = safeText(article.title, articleTitleFallback);
   const articleDate = getArticleDate(article);
+  const authorName = safeText(article.authorName, "");
 
   const legacyShareUrl = toCanonicalUrl(`/tin-tuc/${article.slug}.html`);
   const facebookShareHref = `http://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(legacyShareUrl)}`;
@@ -84,6 +85,11 @@ export function ArticleView({
           {articleDate ? (
             <div className="my-5 text-a5-meta text-muted-foreground">
               <p className="m-0"><LocalDate value={articleDate} dateStyle="long" /></p>
+              {authorName ? <p className="m-0"><Tr ns="Blog" k="authorLabel" />: {authorName}</p> : null}
+            </div>
+          ) : authorName ? (
+            <div className="my-5 text-a5-meta text-muted-foreground">
+              <p className="m-0"><Tr ns="Blog" k="authorLabel" />: {authorName}</p>
             </div>
           ) : null}
 
@@ -157,7 +163,13 @@ export function ArticleView({
               <Tr ns="Blog" k="relatedSectionHeading" />
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((item) => <ArticleCard key={item.id} article={item} />)}
+              {related.map((item) => (
+                <ArticleCard
+                  key={item.id}
+                  article={item}
+                  imageSizes="(min-width: 1200px) 274px, (min-width: 1024px) calc((100vw - 136px) / 4), (min-width: 640px) calc((100vw - 72px) / 2), calc(100vw - 32px)"
+                />
+              ))}
             </div>
           </Container>
         </section>
@@ -214,7 +226,13 @@ function ArticleSidebarItem({
   return (
     <article className="flex border-b border-border py-5 first:pt-0 last:border-b-0">
       <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn} className="w-2/5 shrink-0">
-        <ArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} className="aspect-video h-full w-full object-cover" />
+        <ArticleImage
+          src={imageUrl}
+          fallbackSrc={fallbackUrl}
+          alt={title}
+          sizes="(min-width: 1200px) 150px, (min-width: 768px) 14vw, 40vw"
+          className="aspect-video h-full w-full object-cover"
+        />
       </LocalizedLink>
       <div className="w-3/5 min-w-0 p-3">
         {date ? (

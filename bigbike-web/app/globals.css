@@ -529,7 +529,7 @@ body {
   height: auto;
 }
 .bb-richtext iframe { width: 100%; aspect-ratio: 16 / 9; }
-.bb-richtext table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.bb-richtext table { max-width: 100%; border-collapse: collapse; }
 .bb-richtext figure { margin: 0; }
 
 .bb-richtext h1,
@@ -1625,6 +1625,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-weight: bold;
   color: var(--bb-text-primary) !important;
   line-height: var(--bb-line-snug);
+  margin: 0;
+  display: block;
+  flex: 1;
 }
 .bb-ci-at {
   font-size: var(--bb-text-a4-content);

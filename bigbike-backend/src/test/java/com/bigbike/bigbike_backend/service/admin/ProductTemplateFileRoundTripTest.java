@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ProductImportRow;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -37,6 +38,40 @@ class ProductTemplateFileRoundTripTest {
             UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(row);
             assertThat(request.getSku()).as("every row must resolve to a request carrying its SKU").isNotBlank();
         }
+    }
+
+    @Test
+    void templateFile_usesCanonicalHtmlAndPreservesInlineFormatting() throws Exception {
+        File file = new File("../product-template/mau-day-du.json");
+        ProductImportRow[] rows = new ObjectMapper().readValue(file, ProductImportRow[].class);
+        ProductImportRow s13 = Arrays.stream(rows)
+                .filter(row -> "TNB-SCS-S13".equals(row.getSku()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(s13.getSpecifications()).isNotNull();
+        assertThat(s13.getSpecifications().getSpecificationsVI())
+                .contains("<table class=\"shop_attributes\">")
+                .contains("<strong>Mesh Intercom</strong>")
+                .doesNotContain("style=");
+        assertThat(s13.getSpecifications().getSpecificationsEN())
+                .contains("<table class=\"shop_attributes\">")
+                .contains("<strong>Mesh Intercom</strong>")
+                .doesNotContain("style=");
+
+        assertThat(s13.getSuitabilitySection().getHtml())
+                .contains("class=\"suitability-list\"")
+                .contains("color:var(--bb-text-primary);font-weight:700;");
+        assertThat(s13.getSizeGuideSection().getHtml())
+                .contains("<thead>")
+                .contains("font-family:var(--bb-font-body)")
+                .contains("font-weight:700");
+
+        UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(s13);
+        assertThat(request.getSpecifications()).contains("<strong>Mesh Intercom</strong>");
+        assertThat(request.getSuitabilitySection().getHtml())
+                .contains("color:var(--bb-text-primary);font-weight:700;");
+        assertThat(request.getSizeGuideSection().getHtml()).contains("<thead>");
     }
 
     @Test

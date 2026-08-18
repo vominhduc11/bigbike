@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import type { Article, Product, VideoAsset } from "@/lib/contracts/public";
+import type { Article, Category, Product, VideoAsset } from "@/lib/contracts/public";
 import {
   buildBreadcrumbJsonLd,
+  buildArticleJsonLd,
+  buildCategoryCollectionJsonLd,
   buildFaqPageJsonLd,
   buildLocalBusinessJsonLd,
   buildProductJsonLd,
@@ -145,11 +147,11 @@ describe("buildProductJsonLd", () => {
 });
 
 describe("buildBreadcrumbJsonLd", () => {
-  it("ưu tiên thương hiệu: Trang chủ → Thương hiệu → Sản phẩm", () => {
+  it("đi qua danh mục thay vì thương hiệu: Trang chủ → Danh mục → Sản phẩm", () => {
     const ld = obj(buildBreadcrumbJsonLd(makeProduct()));
     expect(ld["@type"]).toBe("BreadcrumbList");
     const names = arr(ld.itemListElement).map((i) => i.name);
-    expect(names).toEqual(["Trang chủ", "ABC", "Áo giáp mô tô ABC"]);
+    expect(names).toEqual(["Trang chủ", "Áo giáp", "Áo giáp mô tô ABC"]);
     expect(arr(ld.itemListElement).map((i) => i.position)).toEqual([1, 2, 3]);
   });
 
@@ -162,11 +164,58 @@ describe("buildBreadcrumbJsonLd", () => {
     ]);
   });
 
-  it("bỏ qua danh mục 'chua-phan-loai' khi không có thương hiệu", () => {
+  it("bỏ qua danh mục 'chua-phan-loai' khi không có danh mục hợp lệ", () => {
     const ld = obj(buildBreadcrumbJsonLd(
-      makeProduct({ brand: undefined, category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
+      makeProduct({ category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
     ));
     expect(arr(ld.itemListElement).map((i) => i.name)).toEqual(["Trang chủ", "Áo giáp mô tô ABC"]);
+  });
+
+  it("giữ đủ danh mục cha và con theo đúng thứ tự đang hiển thị", () => {
+    const ld = obj(buildBreadcrumbJsonLd(makeProduct(), "/product/ao-giap-moto-abc/", [
+      { id: "parent", slug: "bao-ho", name: "Đồ bảo hộ" },
+      { id: "child", slug: "ao-giap", name: "Áo giáp" },
+    ]));
+    expect(arr(ld.itemListElement).map((i) => i.name)).toEqual([
+      "Trang chủ", "Đồ bảo hộ", "Áo giáp", "Áo giáp mô tô ABC",
+    ]);
+  });
+});
+
+describe("article and category structured data", () => {
+  const article = {
+    id: "article-1",
+    slug: "bai-viet-1",
+    title: "Bài viết",
+    body: "Nội dung",
+    coverImage: { url: "/media/article-cover.jpg" },
+    authorName: "Nguyễn Văn A",
+    publishStatus: "PUBLISHED",
+    createdAt: "2026-06-01T00:00:00Z",
+    updatedAt: "2026-06-01T00:00:00Z",
+  } as Article;
+
+  it("chỉ khai author khi bài có tên tác giả và luôn dùng URL ảnh đầy đủ", () => {
+    const withAuthor = obj(buildArticleJsonLd(article, "BigBike"));
+    expect(withAuthor.author).toEqual({ "@type": "Person", name: "Nguyễn Văn A" });
+    expect(withAuthor.image).toEqual([expect.stringMatching(/^https?:\/\//)]);
+    expect(obj(buildArticleJsonLd({ ...article, authorName: "  " }, "BigBike")).author).toBeUndefined();
+  });
+
+  it("chỉ liệt kê sản phẩm của trang hiện tại và tiếp tục vị trí qua trang", () => {
+    const ld = obj(buildCategoryCollectionJsonLd(
+      { id: "c1", slug: "ao-giap", name: "Áo giáp" } as Category,
+      [makeProduct({ slug: "sp-1" }), makeProduct({ slug: "sp-2" })],
+      2,
+      12,
+      "/danh-muc/ao-giap/?page=2",
+      "<p>Áo giáp <strong>chính hãng</strong></p>",
+    ));
+    expect(ld["@type"]).toBe("CollectionPage");
+    expect(obj(ld.mainEntity).numberOfItems).toBe(2);
+    expect(arr(obj(ld.mainEntity).itemListElement).map((item) => item.position)).toEqual([13, 14]);
+    expect(arr(obj(ld.mainEntity).itemListElement)[0].url).toMatch(/^https?:\/\//);
+    expect(ld.description).toBe("Áo giáp chính hãng");
   });
 });
 

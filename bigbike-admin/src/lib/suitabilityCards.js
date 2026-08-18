@@ -1,3 +1,5 @@
+import { sanitizeInlineHtml } from './sanitizeHtml'
+
 /**
  * Chuyển đổi giữa danh sách thẻ "Phù hợp với ai" (model nhập có cấu trúc) và HTML —
  * để tab "Dán mã HTML" của khối luôn hiển thị sẵn mã tương ứng với các thẻ (giống Bảng size),
@@ -23,6 +25,11 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
 }
 
+const SUITABILITY_LIST_STYLE =
+  'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-secondary);'
+const SUITABILITY_ITEM_STYLE = 'margin:0;'
+const SUITABILITY_AUDIENCE_STYLE = 'color:var(--bb-text-primary);font-weight:700;'
+
 function normalizeCard(c) {
   return {
     audience: (c?.audience || '').trim(),
@@ -39,17 +46,30 @@ export function suitabilityCardHasContent(c) {
 export function serializeSuitabilityCards(cards) {
   const items = (cards || []).map(normalizeCard).filter((c) => suitabilityCardHasContent(c))
   if (items.length === 0) return ''
-  const lis = items.map((c) => `<li>${cardInnerHtml(c)}</li>`)
-  return `<ul class="suitability-list">${lis.join('')}</ul>`
+  const lis = items.map((c) => `<li style="${SUITABILITY_ITEM_STYLE}">${cardInnerHtml(c)}</li>`)
+  return `<ul class="suitability-list" style="${SUITABILITY_LIST_STYLE}">${lis.join('')}</ul>`
 }
 
 /** Dựng nội dung BÊN TRONG một thẻ từ card (giữ phần tử thẻ ngoài + style/class của nó). */
 function cardInnerHtml(c) {
   let inner = ''
-  if (c.audience) inner += `<strong>${escapeHtml(c.audience)}</strong>`
+  if (c.audience) inner += `<strong style="${SUITABILITY_AUDIENCE_STYLE}">${sanitizeInlineHtml(c.audience)}</strong>`
   if (c.audience && c.advice) inner += ' → '
   if (c.advice) inner += escapeHtml(c.advice)
   return inner
+}
+
+function mergeCardIntoElement(element, card) {
+  const existingAudience = element.querySelector('strong, b')
+  const audience = existingAudience
+    ? existingAudience.cloneNode(false)
+    : element.ownerDocument.createElement('strong')
+  if (!existingAudience) audience.setAttribute('style', SUITABILITY_AUDIENCE_STYLE)
+  audience.innerHTML = sanitizeInlineHtml(card.audience)
+  element.replaceChildren()
+  if (card.audience) element.appendChild(audience)
+  if (card.audience && card.advice) element.appendChild(element.ownerDocument.createTextNode(' → '))
+  if (card.advice) element.appendChild(element.ownerDocument.createTextNode(card.advice))
 }
 
 /**
@@ -65,6 +85,24 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
   if (typeof DOMParser === 'undefined') return fresh
   try {
     const doc = new DOMParser().parseFromString(existingHtml, 'text/html')
+    const headingPairs = [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+      .map((heading) => {
+        const answer = heading.nextElementSibling
+        return answer?.tagName === 'P' ? { heading, answer } : null
+      })
+      .filter(Boolean)
+    if (headingPairs.length && headingPairs.length === model.length) {
+      if (model.length === 0) {
+        headingPairs.forEach(({ heading, answer }) => { heading.remove(); answer.remove() })
+      } else {
+        model.forEach((card, index) => {
+          const pair = headingPairs[index]
+          pair.heading.innerHTML = sanitizeInlineHtml(card.audience)
+          pair.answer.innerHTML = sanitizeInlineHtml(card.advice)
+        })
+      }
+      return doc.body.innerHTML.trim() ? doc.body.innerHTML : ''
+    }
     let items = [...doc.querySelectorAll('li')]
     if (!items.length) items = [...doc.querySelectorAll('p')].filter((p) => (p.textContent || '').trim())
     const container = items[0]?.parentElement
@@ -86,36 +124,82 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
       items[items.length - 1].remove()
       items = items.slice(0, -1)
     }
-    model.forEach((c, i) => { if (items[i]) items[i].innerHTML = cardInnerHtml(c) })
+    model.forEach((c, i) => { if (items[i]) mergeCardIntoElement(items[i], c) })
     return doc.body.innerHTML
   } catch {
     return fresh
   }
 }
 
-/** HTML → cards[] (best-effort; đọc lại đúng định dạng do serializeSuitabilityCards tạo ra).
- *  Mỗi <li>/<p>: <strong> → đối tượng, phần chữ còn lại (bỏ dấu → và link cũ nếu có) → lời khuyên. */
-export function parseSuitabilityCards(html) {
-  if (!html || typeof html !== 'string' || !html.trim()) return []
-  if (typeof DOMParser === 'undefined') return []
+function parseSuitabilityElement(el) {
+  const strongEl = el.querySelector('strong, b')
+  const clone = el.cloneNode(true)
+  // Bỏ hẳn <a> (link gợi ý cũ nếu HTML còn giữ) để không lẫn vào lời khuyên.
+  clone.querySelectorAll('strong, b, a').forEach((n) => n.remove())
+  const rawAdvice = (clone.textContent || '').replace(/\s+/g, ' ').trim()
+  const parts = rawAdvice.split(/\s*→\s*/)
+  const audience = strongEl?.innerHTML || (!strongEl && parts.length > 1 ? parts[0] : '')
+  const advice = strongEl
+    ? rawAdvice.replace(/→/g, ' ').replace(/\s+/g, ' ').trim()
+    : (parts.length > 1 ? parts.slice(1).join(' → ').trim() : rawAdvice)
+  return normalizeCard({ audience, advice })
+}
+
+function parseHeadingSuitability(doc) {
+  const items = []
+  let skippedCount = 0
+  const headings = [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+  headings.forEach((heading) => {
+    const next = heading.nextElementSibling
+    if (!next || !['P', 'UL', 'OL'].includes(next.tagName)) return
+    const elements = next.tagName === 'P' ? [next] : [...next.querySelectorAll('li')]
+    if (next.tagName !== 'P' && elements.some((element) => element.querySelector('strong, b') || /→/.test(element.textContent || ''))) return
+    if (!elements.length) {
+      skippedCount += 1
+      return
+    }
+    elements.forEach((element) => {
+      const parsed = parseSuitabilityElement(element)
+      const card = normalizeCard({ audience: heading.innerHTML, advice: parsed.advice })
+      if (suitabilityCardHasContent(card)) items.push(card)
+      else skippedCount += 1
+    })
+  })
+  return { items, skippedCount }
+}
+
+/** Detailed tolerant parser used by the safe HTML import flow. */
+export function parseSuitabilityResult(html) {
+  if (!html || typeof html !== 'string' || !html.trim() || typeof DOMParser === 'undefined') {
+    return { items: [], acceptedCount: 0, skippedCount: 0, hasInput: Boolean(html?.trim()) }
+  }
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html')
+    const headingResult = parseHeadingSuitability(doc)
+    if (headingResult.items.length) {
+      return {
+        items: headingResult.items,
+        acceptedCount: headingResult.items.length,
+        skippedCount: headingResult.skippedCount,
+        hasInput: true,
+      }
+    }
     const lis = [...doc.querySelectorAll('li')]
-    const source = lis.length ? lis : [...doc.querySelectorAll('p')]
-    return source
-      .map((el) => {
-        const strongEl = el.querySelector('strong, b')
-        const clone = el.cloneNode(true)
-        // Bỏ hẳn <a> (link gợi ý cũ nếu HTML còn giữ) để không lẫn vào lời khuyên.
-        clone.querySelectorAll('strong, b, a').forEach((n) => n.remove())
-        const advice = (clone.textContent || '').replace(/→/g, ' ').replace(/\s+/g, ' ').trim()
-        return normalizeCard({
-          audience: strongEl?.textContent || '',
-          advice,
-        })
-      })
-      .filter((c) => suitabilityCardHasContent(c))
+    const paragraphs = [...doc.querySelectorAll('p')]
+    const source = lis.length ? lis : paragraphs
+    const items = source.map(parseSuitabilityElement).filter(suitabilityCardHasContent)
+    return {
+      items,
+      acceptedCount: items.length,
+      skippedCount: source.length - items.length + (items.length ? 0 : 1),
+      hasInput: true,
+    }
   } catch {
-    return []
+    return { items: [], acceptedCount: 0, skippedCount: 1, hasInput: true }
   }
+}
+
+/** HTML → cards[] (best-effort; giữ API cũ cho caller hiện có). */
+export function parseSuitabilityCards(html) {
+  return parseSuitabilityResult(html).items
 }

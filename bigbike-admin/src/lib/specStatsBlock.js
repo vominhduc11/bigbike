@@ -1,4 +1,5 @@
 import { generateId } from '@/lib/utils'
+import { hasHtmlInput, makeHtmlImportResult, textOf } from './htmlImport'
 
 /**
  * Chuyển đổi giữa danh sách "Ô số liệu nổi bật" có cấu trúc (model nhập trong admin) và HTML lưu
@@ -62,51 +63,103 @@ export function serializeSpecStats(items) {
   return `<div class="bb-specstats" style="${GRID_STYLE}">${stats.map(boxHtml).join('')}</div>`
 }
 
-/** Container lưới: ưu tiên .bb-specstats; nếu không có thì lấy phần tử bọc đầu có con là phần tử. */
-function findContainer(doc) {
+function findStatBoxes(doc) {
   const marked = doc.querySelector('.bb-specstats')
-  if (marked) return marked
-  const first = doc.body.firstElementChild
-  if (first && first.children.length > 0) return first
-  return null
+  if (marked) return [...marked.children]
+  const listItems = [...doc.querySelectorAll('li')]
+  if (listItems.length) return listItems
+  const direct = [...doc.body.children].filter((element) => textOf(element))
+  if (direct.length > 1) return direct
+  return direct
+}
+
+function isStatCandidate(box) {
+  if (!box) return false
+  if (box.children.length >= 2) return true
+  if (box.querySelector('strong, b, span')) return true
+  return /\n|[|:：→—–-]/.test(textOf(box))
+}
+
+function looksLikeStatValue(value) {
+  return /\d|%|kg|gram|cm|mm|ece|dot|watt/i.test(value)
+}
+
+function headingStatPairs(doc) {
+  return [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+    .map((heading) => {
+      const label = heading.nextElementSibling
+      if (!label || !textOf(heading) || !textOf(label)) return null
+      const headingText = textOf(heading)
+      const labelText = textOf(label)
+      const headingIsValue = looksLikeStatValue(headingText) || !looksLikeStatValue(labelText)
+      return {
+        heading,
+        label,
+        headingIsValue,
+        value: headingIsValue ? headingText : labelText,
+        metric: headingIsValue ? labelText : headingText,
+      }
+    })
+    .filter(Boolean)
 }
 
 /** Tách 1 ô thành {value,label}: value = span đầu, label = span cuối (bỏ qua span giữa nếu có). */
 function readBox(box) {
-  const spans = [...box.querySelectorAll('span, strong, b, p, div')]
+  const spans = [...box.children].filter((element) => textOf(element))
   const text = (el) => (el?.textContent || '').trim()
   if (spans.length >= 2) return { value: text(spans[0]), label: text(spans.at(-1)) }
+  const marker = box.querySelector('strong, b')
+  if (marker) {
+    const clone = box.cloneNode(true)
+    clone.querySelectorAll('strong, b').forEach((element) => element.remove())
+    const remainder = text(clone).replace(/^[|:：→—–-]+\s*/, '').trim()
+    return { value: text(marker), label: remainder }
+  }
   if (spans.length === 1) return { value: text(spans[0]), label: '' }
   // fallback: tách theo dòng text
-  const lines = (box.textContent || '').split('\n').map((l) => l.trim()).filter(Boolean)
+  const lines = text(box).split(/\n|\s+[|→—–-]\s+/).map((l) => l.trim()).filter(Boolean)
   return { value: lines[0] || '', label: lines.at(-1) || '' }
 }
 
-/** HTML → items[] (best-effort). */
-export function parseSpecStatsFromHtml(html) {
-  if (!html || typeof html !== 'string' || !html.trim()) return []
-  if (typeof DOMParser === 'undefined') return []
+/** Detailed tolerant parser used by the safe HTML import flow. */
+export function parseSpecStatsResult(html) {
+  if (!hasHtmlInput(html) || typeof DOMParser === 'undefined') {
+    return makeHtmlImportResult({ hasInput: hasHtmlInput(html) })
+  }
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html')
-    const container = findContainer(doc)
-    if (!container) return []
-    return [...container.children]
+    const headingPairs = headingStatPairs(doc)
+    if (headingPairs.length) {
+      const items = headingPairs.map(({ value, metric }) => ({ _key: generateId(), value, label: metric }))
+      return makeHtmlImportResult({ items, hasInput: true })
+    }
+    const boxes = findStatBoxes(doc)
+    const items = boxes
+      .filter(isStatCandidate)
       .map((box) => ({ _key: generateId(), ...readBox(box) }))
       .filter(statHasContent)
+    return makeHtmlImportResult({ items, skippedCount: boxes.length - items.length + (items.length ? 0 : 1), hasInput: true })
   } catch {
-    return []
+    return makeHtmlImportResult({ skippedCount: 1, hasInput: true })
   }
+}
+
+/** HTML → items[] (best-effort; giữ API cũ cho caller hiện có). */
+export function parseSpecStatsFromHtml(html) {
+  return parseSpecStatsResult(html).items
 }
 
 /** Đặt text {value,label} vào 1 ô, GIỮ style span value & label sẵn có; gỡ span giữa nếu còn sót. */
 function applyStatToBox(doc, box, s) {
   let spans = [...box.children]
-  // Đảm bảo có span value (đầu) + span label (cuối).
+  const directTextNodes = [...box.childNodes].filter((node) => node.nodeType === 3 && node.textContent.trim())
   if (spans.length === 0) {
-    const v = doc.createElement('span'); v.setAttribute('style', VALUE_STYLE); box.appendChild(v)
-    const l = doc.createElement('span'); l.setAttribute('style', LABEL_STYLE); box.appendChild(l)
-    spans = [...box.children]
-  } else if (spans.length === 1) {
+    box.textContent = s.label ? `${s.value} — ${s.label}` : s.value
+    return
+  }
+  directTextNodes.forEach((node) => node.remove())
+  // Đảm bảo có span value (đầu) + span label (cuối).
+  if (spans.length === 1) {
     const l = doc.createElement('span'); l.setAttribute('style', LABEL_STYLE); box.appendChild(l)
     spans = [...box.children]
   }
@@ -129,24 +182,40 @@ export function mergeSpecStatsIntoHtml(items, existingHtml) {
   if (typeof DOMParser === 'undefined') return fresh
   try {
     const doc = new DOMParser().parseFromString(existingHtml, 'text/html')
-    const container = findContainer(doc)
-    if (!container) return fresh
-
+    const headingPairs = headingStatPairs(doc)
     const stats = (items || []).map(normalizeStat).filter(statHasContent)
+    if (headingPairs.length && headingPairs.length === stats.length) {
+      stats.forEach((stat, index) => {
+        const pair = headingPairs[index]
+        if (pair.headingIsValue) {
+          pair.heading.textContent = stat.value
+          pair.label.textContent = stat.label
+        } else {
+          pair.heading.textContent = stat.label
+          pair.label.textContent = stat.value
+        }
+      })
+      return doc.body.innerHTML
+    }
+    const initialBoxes = findStatBoxes(doc).filter(isStatCandidate)
+    const container = initialBoxes[0]?.parentElement
+    if (!container || !initialBoxes.length) return fresh
+
     if (stats.length === 0) {
-      container.remove()
+      if (container.matches('.bb-specstats, ul')) container.remove()
+      else initialBoxes.forEach((box) => box.remove())
       return doc.body.innerHTML.trim() ? doc.body.innerHTML : ''
     }
 
-    let boxes = [...container.children]
-    if (boxes.length === 0) return fresh
+    let boxes = initialBoxes
     while (boxes.length < stats.length) {
-      container.appendChild(boxes[boxes.length - 1].cloneNode(true))
-      boxes = [...container.children]
+      const clone = boxes[boxes.length - 1].cloneNode(true)
+      container.appendChild(clone)
+      boxes = [...boxes, clone]
     }
     while (boxes.length > stats.length) {
       boxes[boxes.length - 1].remove()
-      boxes = [...container.children]
+      boxes = boxes.slice(0, -1)
     }
     stats.forEach((s, i) => {
       const box = boxes[i]

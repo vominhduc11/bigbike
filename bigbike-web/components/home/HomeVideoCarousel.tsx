@@ -125,7 +125,7 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
   return (
     <>
       {/* Layout: arrows đặt tuyệt đối ngoài hai mép carousel (đẩy ra lề bằng inline style) */}
-      <div style={{ position: "relative" }}>
+      <div data-responsive-overflow-ignore="carousel" style={{ position: "relative" }}>
         {/* Prev arrow — desktop; khung gọn ẩn khi không cuộn được, khung full hiện mờ */}
         {showArrows && (
           <div style={{ position: "absolute", top: "50%", left: -72, transform: "translateY(-50%)", zIndex: 2 }}>

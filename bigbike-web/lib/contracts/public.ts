@@ -471,6 +471,8 @@ export type Article = {
   featured?: boolean;
   /** Khi true, bài được chọn vào carousel "Góc trải nghiệm" trang chủ — lọc qua `?homeExperience=true` (V272). */
   homeExperience?: boolean;
+  /** Tên tác giả theo ngôn ngữ; để trống thì web ẩn dòng tác giả và JSON-LD không khai author. */
+  authorName?: string | null;
   seo?: SeoMeta;
   publishedAt?: string;
   createdAt: string;

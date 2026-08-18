@@ -70,21 +70,18 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
   const tHome = await getTranslations({ locale, namespace: "Home" });
   const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
-  // Nhóm setting SEO trang chủ (seo_home_title/description, og_image_url) gỡ hẳn V337
-  // (2026-07-12): title/description rơi về tên shop, không còn og:image mặc định.
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
+  const homeTitle = pickSetting(settings, ["seo_home_title"]) || siteName;
+  const homeDescription = pickSetting(settings, ["seo_home_description"]) || tHome("metaDescription");
 
-  return {
-    ...buildPublicMetadata({
-      title: siteName,
-      description: tHome("metaDescription"),
-      canonicalPath: toHomePath(locale),
-      locale,
-      languageAlternates: { vi: toHomePath("vi"), en: toHomePath("en") },
-      siteName,
-    }),
-    title: { absolute: siteName },
-  };
+  return buildPublicMetadata({
+    title: homeTitle,
+    description: homeDescription,
+    canonicalPath: toHomePath(locale),
+    locale,
+    languageAlternates: { vi: toHomePath("vi"), en: toHomePath("en") },
+    siteName,
+  });
 }
 
 function isRenderableHomeVideo(video: HomeVideo): boolean {
@@ -136,6 +133,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
   const settings = settingsResult.data ?? [];
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
+  const homeH1 = pickSetting(settings, ["seo_home_h1"]) || siteName;
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const address = pickSetting(settings, ["contact_address", "address"]);
   const homeContentBottomHtml = pickSetting(settings, ["home_content_bottom_html"]);
@@ -218,6 +216,13 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 1. Main banner ===== */}
       <HeroSlider slides={slides} />
+      <section className="border-b border-border py-6">
+        <Container>
+          <h1 className="m-0 text-center font-body text-a2-page font-semibold leading-title text-foreground">
+            {homeH1}
+          </h1>
+        </Container>
+      </section>
 
       {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
       {homeHighlights.length > 0 && (

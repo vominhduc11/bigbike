@@ -1,4 +1,4 @@
-import type { Article, Brand, Category, Product, VideoAsset } from "@/lib/contracts/public";
+import type { Article, Brand, Category, CategorySummary, Product, VideoAsset } from "@/lib/contracts/public";
 import {
   normalizeStorefrontUrl,
   toArticleListPath,
@@ -103,7 +103,8 @@ export function buildArticleJsonLd(
 ): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
   const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug, locale));
-  const images = article.coverImage?.url ? [article.coverImage.url] : [];
+  const images = article.coverImage?.url ? [toCanonicalUrl(article.coverImage.url)] : [];
+  const authorName = article.authorName?.trim();
 
   return {
     "@context": "https://schema.org",
@@ -116,11 +117,21 @@ export function buildArticleJsonLd(
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
     inLanguage: locale,
+    author: authorName
+      ? {
+          "@type": "Person",
+          name: authorName,
+        }
+      : undefined,
     publisher: buildPublisher(publisherName, publisherLogoPath),
   };
 }
 
-export function buildBreadcrumbJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
+export function buildBreadcrumbJsonLd(
+  product: Product,
+  canonicalPathOverride?: string,
+  breadcrumbCategories?: CategorySummary[],
+): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
   const primaryCategory = product.category ?? product.categories?.[0];
   const items: Array<{ position: number; name: string; item: string }> = [
@@ -131,14 +142,22 @@ export function buildBreadcrumbJsonLd(product: Product, canonicalPathOverride?: 
     },
   ];
 
-  // Mirror đúng breadcrumb hiển thị trên PDP: ưu tiên thương hiệu, nếu không có
-  // thì dùng danh mục (bỏ qua "chua-phan-loai"). Schema phải khớp UI (yêu cầu Google).
-  if (product.brand?.name && product.brand.slug) {
-    items.push({
-      position: items.length + 1,
-      name: product.brand.name,
-      item: toCanonicalUrl(toBrandPath(product.brand.slug, locale)),
-    });
+  // Breadcrumb của sản phẩm đi qua danh mục (kể cả danh mục cha), không đi qua
+  // thương hiệu. Thương hiệu vẫn có liên kết riêng trong khu vực tên sản phẩm.
+  const categories = (breadcrumbCategories ?? []).filter(isPublicProductCategory);
+  if (categories.length > 0) {
+    for (const category of categories) {
+      items.push({
+        position: items.length + 1,
+        name: category.name,
+        item: toCanonicalUrl(
+          toCategoryPath(
+            locale === "en" ? category.slugEn?.trim() || category.slug : category.slug,
+            locale,
+          ),
+        ),
+      });
+    }
   } else if (isPublicProductCategory(primaryCategory)) {
     items.push({
       position: items.length + 1,
@@ -343,7 +362,9 @@ export function buildLocalBusinessJsonLd(
   const openingHoursSpec = buildOpeningHoursSpecification(opts.openingHours);
   if (openingHoursSpec.length > 0) result.openingHoursSpecification = openingHoursSpec;
   if (opts.email) result.email = opts.email;
-  const sameAs = (opts.sameAs ?? []).filter((u): u is string => Boolean(u && u.trim()));
+  const sameAs = (opts.sameAs ?? [])
+    .filter((u): u is string => Boolean(u && u.trim()))
+    .map((url) => toCanonicalUrl(url.trim()));
   if (sameAs.length > 0) result.sameAs = sameAs;
   if (opts.foundingDate) result.foundingDate = opts.foundingDate;
   if (opts.areaServed) result.areaServed = { "@type": "City", name: opts.areaServed };
@@ -448,19 +469,19 @@ function collectProductImages(product: Product): string[] {
   const images = new Set<string>();
 
   if (product.image?.url) {
-    images.add(product.image.url);
+    images.add(toCanonicalUrl(product.image.url));
   }
 
   for (const media of product.gallery ?? []) {
     // V248: gallery hỗn hợp (ảnh + video) → chỉ lấy URL ảnh cho schema.org image[].
     if (media?.image?.url) {
-      images.add(media.image.url);
+      images.add(toCanonicalUrl(media.image.url));
     }
   }
 
   for (const variant of product.variants ?? []) {
     if (variant?.image?.url) {
-      images.add(variant.image.url);
+      images.add(toCanonicalUrl(variant.image.url));
     }
   }
 
@@ -522,6 +543,58 @@ export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[])
 }
 
 /**
+ * Structured data for the products visible on the current category page only.
+ * `page`/`pageSize` keep ItemList positions continuous across pagination instead
+ * of restarting at 1 on every page (SEO_RULE_007).
+ */
+export function buildCategoryCollectionJsonLd(
+  category: Category,
+  products: Product[],
+  page: number,
+  pageSize: number,
+  canonicalPathOverride?: string,
+  description = "",
+): JsonLdObject {
+  const locale = localeFromPath(canonicalPathOverride);
+  const canonicalUrl = toCanonicalUrl(
+    canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug, locale),
+  );
+  const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+  const safePageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : products.length || 1;
+  const itemListElement = products.map((product, index) => {
+    const productSlug = locale === "en" ? product.slugEn?.trim() || product.slug : product.slug;
+    const url = toCanonicalUrl(toProductPath(productSlug, locale));
+    return {
+      "@type": "ListItem",
+      position: (safePage - 1) * safePageSize + index + 1,
+      name: product.name,
+      url,
+      item: {
+        "@type": "Product",
+        name: product.name,
+        url,
+      },
+    };
+  });
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: category.name,
+    description: stripHtmlToText(description),
+    url: canonicalUrl,
+    inLanguage: locale,
+    image: category.image?.url ? [toCanonicalUrl(category.image.url)] : undefined,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: itemListElement.length,
+      itemListElement,
+    },
+  };
+}
+
+/**
  * VideoObject cho các video nhúng trong gallery PDP (checklist #20). Mỗi video
  * cần thumbnailUrl + uploadDate để Google chấp nhận — thiếu thumbnail thì bỏ qua
  * video đó thay vì khai schema lỗi. uploadDate dùng ngày tạo sản phẩm làm proxy
@@ -547,10 +620,10 @@ export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product):
         "@type": "VideoObject",
         name,
         description: video.description?.trim() || video.title?.trim() || product.shortDescription || product.name,
-        thumbnailUrl: [thumbnailUrl],
+        thumbnailUrl: [toCanonicalUrl(thumbnailUrl)],
         uploadDate,
         embedUrl,
-        contentUrl: embedUrl ? undefined : url,
+        contentUrl: embedUrl ? undefined : toCanonicalUrl(url),
       };
     })
     .filter((item): item is JsonLdObject => item !== null);

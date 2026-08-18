@@ -836,6 +836,25 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         maxLength={5000}
                       />
                     </Field>
+
+                    <Field
+                      full
+                      label={t('content.detail.authorName', { defaultValue: 'Tác giả' })}
+                      count={`${langValue('authorName').length} / 255`}
+                      countWarn={langValue('authorName').length > 240}
+                      error={isEnLang ? validationErrors['translations.en.authorName'] : validationErrors.authorName}
+                      helper={isEnLang
+                        ? t('content.detail.enFieldHint')
+                        : t('content.detail.authorNameHint', { defaultValue: 'Không bắt buộc. Để trống nếu chưa chốt tên tác giả.' })}
+                    >
+                      <Input
+                        value={isEnLang ? (form.translations?.en?.authorName ?? '') : form.authorName}
+                        onChange={(e) => isEnLang ? updateTranslation('authorName', e.target.value) : updateField('authorName', e.target.value)}
+                        onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.authorName' : 'authorName')}
+                        disabled={isReadOnly}
+                        maxLength={255}
+                      />
+                    </Field>
                 </div>
               </SectionCard>
 

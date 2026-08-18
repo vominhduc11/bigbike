@@ -606,6 +606,7 @@ function normalizeContentTranslations(source) {
       excerpt: toTrimmedString(en.excerpt) || '',
       // body is rich HTML — keep verbatim, don't trim away markup whitespace
       body: typeof en.body === 'string' ? en.body : '',
+      authorName: toTrimmedString(en.authorName) || '',
       seoTitle: toTrimmedString(en.seoTitle) || '',
       seoDescription: toTrimmedString(en.seoDescription) || '',
     },
@@ -629,6 +630,7 @@ export function normalizeContentItem(input) {
     title: toTrimmedString(source.title) || 'Untitled content',
     excerpt: toTrimmedString(source.excerpt) || undefined,
     body: toTrimmedString(source.body) || undefined,
+    authorName: toTrimmedString(source.authorName) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
     productImage: normalizeImageAsset(source.productImage),
     parentId: toTrimmedString(source.parentId) || undefined,

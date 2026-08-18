@@ -93,6 +93,19 @@ describe('Category payload contract', () => {
     expect(payload.introContent).toBe('<p>Giới thiệu danh mục</p>')
   })
 
+  it('giữ nguyên HTML nâng cao ở cùng field cho cả VI và English', () => {
+    const viHtml = '<p>Bảng cỡ mũ</p><table><tbody><tr><td>M</td></tr></tbody></table>'
+    const enHtml = '<p>Helmet size chart</p><table><tbody><tr><td>M</td></tr></tbody></table>'
+    const payload = toPayload({
+      ...buildEmptyForm(),
+      introContent: `  ${viHtml}  `,
+      translations: { en: { ...buildEmptyForm().translations.en, introContent: `  ${enHtml}  ` } },
+    })
+
+    expect(payload.introContent).toBe(viHtml)
+    expect(payload.translations.en.introContent).toBe(enHtml)
+  })
+
   it('gửi rỗng ảnh thành url null để xóa từng vai trò ảnh riêng biệt', () => {
     const payload = toPayload(buildEmptyForm())
 

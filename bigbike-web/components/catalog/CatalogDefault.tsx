@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
-import type { Brand, CatalogFacets, Category, Product } from "@/lib/contracts/public";
+import type { Product } from "@/lib/contracts/public";
 import { DEFAULT_CATALOG_ORDERBY, type CatalogOrderbyValue } from "@/lib/utils/catalog-sort";
 
 type CatalogPagination = {
@@ -12,9 +12,6 @@ type CatalogPagination = {
 
 type CatalogDefaultProps = {
   canonicalPath: string;
-  brands: Brand[];
-  categories: Category[];
-  facets?: CatalogFacets | null;
   beforeGridHtml?: string | null;
   beforeGridNode?: ReactNode;
   products?: Product[];

@@ -4,9 +4,11 @@ import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/forma
 import { stripHtmlToText } from "@/lib/utils/text";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { LocalDate } from "@/components/i18n/LocalDate";
+import { MediaImage } from "@/components/ui/MediaImage";
 import type { Article } from "@/lib/contracts/public";
 
-/* eslint-disable @next/next/no-img-element */
+const HOME_NEWS_IMAGE_SIZES =
+  "(min-width: 1200px) 384px, (min-width: 768px) calc((100vw - 96px) / 3), (min-width: 640px) calc((100vw - 72px) / 2), calc(100vw - 32px)";
 
 /**
  * Khối "Tin tức" trang chủ — server render `vi` (initialArticles) cho SEO/ISR; đổi sang EN
@@ -17,15 +19,25 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
   if (newsArticles.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+    <div data-home-news-grid className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {newsArticles.map((a) => {
           const img = toLegacyWpMediaUrl(resolveMediaUrl(a.coverImage?.url?.trim()));
+          const coverImage = img && a.coverImage ? { ...a.coverImage, url: img } : null;
           const title = safeText(a.title, "");
           return (
             <article className="bg-card shadow-sm" key={a.id}>
                 <div className="aspect-video overflow-hidden text-center">
                   <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="block h-full">
-                    {img ? <img src={img} alt={title} className="h-full w-full object-cover" loading="lazy" /> : null}
+                    {coverImage ? (
+                      <MediaImage
+                        image={coverImage}
+                        altFallback={title}
+                        width={1200}
+                        height={675}
+                        sizes={HOME_NEWS_IMAGE_SIZES}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
                   </LocalizedLink>
                 </div>
                 <div className="relative">

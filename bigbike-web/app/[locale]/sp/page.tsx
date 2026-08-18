@@ -5,7 +5,7 @@ import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
-import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { getCatalogFacets, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
@@ -41,10 +41,8 @@ export default async function ProductListPage({ params, searchParams }: ProductL
   setRequestLocale(locale);
   const tCatalog = await getTranslations("Catalog");
 
-  const [settingsResult, brandsResult, categoriesResult, facetsResult, productsResult] = await Promise.all([
+  const [settingsResult, facetsResult, productsResult] = await Promise.all([
     listPublicSettings(locale),
-    listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
-    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({
       category: catalog.filters.category, brand: catalog.filters.brand, q: catalog.filters.q,
       filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
@@ -79,7 +77,6 @@ export default async function ProductListPage({ params, searchParams }: ProductL
     { label: heroTitle },
   ];
 
-  const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
   const canonicalPath = toProductListPath(locale);
 
   return (
@@ -100,9 +97,6 @@ export default async function ProductListPage({ params, searchParams }: ProductL
               fallback={
                 <CatalogDefault
                   canonicalPath={canonicalPath}
-                  brands={brandsResult.data}
-                  categories={filterCategories}
-                  facets={facetsResult.data}
                   products={productsResult.data}
                   pagination={productsResult.pagination}
                 />
@@ -110,8 +104,6 @@ export default async function ProductListPage({ params, searchParams }: ProductL
             >
               <CatalogClient
                 canonicalPath={canonicalPath}
-                brands={brandsResult.data}
-                categories={filterCategories}
                 facets={facetsResult.data}
                 initialProducts={productsResult.data}
                 initialPagination={productsResult.pagination}

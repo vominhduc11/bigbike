@@ -13,8 +13,10 @@ import { showConfirm } from '../../lib/confirm'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
-import { parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
-import { parseTrustBadgesFromHtml, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
+import { parseSpecStatsResult, parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
+import { parseTrustBadgesFromHtml, parseTrustBadgesResult, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
+import { HtmlImportNotice } from '../../components/HtmlImportNotice'
+import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 import { SPEC_STAT_MAX } from './constants'
 
 // Bộ icon dựng sẵn cho khối cam kết (V232) — key khớp COMMITMENT_ICON_MAP bên web.
@@ -148,6 +150,8 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
   const [mode, setMode] = useState(() =>
     ((html || '').trim() && !isGeneratedTrustBadgesHtml(html)) ? 'html' : 'structured',
   )
+  const importer = useHtmlImportDraft(html, parseTrustBadgesResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
   const [rows, setRows] = useState(() => {
     const parsed = parseTrustBadgesFromHtml(html)
     return parsed.length ? parsed : [newRow()]
@@ -169,11 +173,59 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
     lastHtmlRef.current = nextHtml
     onHtmlChange?.(nextHtml)
   }
-  function changeMode(next) {
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextHtml = mergeTrustBadgesIntoHtml(parsed.items, nextDraft)
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+      lastHtmlRef.current = nextHtml
+      onHtmlChange?.(nextHtml)
+      setMode('structured')
+      return { sourceHtml: nextHtml }
+    })
+  }
+
+  async function applyRaw() {
+    if (!dirty || !draftHtml.trim()) return
+    await runApply(async ({ draftHtml: nextDraft }) => {
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.rawConfirmMessage'),
+        t('products.detail.htmlImport.rawConfirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      lastHtmlRef.current = nextDraft
+      onHtmlChange?.(nextDraft)
+      return { sourceHtml: nextDraft }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
     if (next === 'structured') {
-      const parsed = parseTrustBadgesFromHtml(html)
-      setRows(parsed.length ? parsed : [newRow()])
+      if (dirty) {
+        await applyParsed()
+        return
+      }
+      const parsed = parseTrustBadgesResult(html)
+      if (html.trim() && !parsed.acceptedCount) return
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+    } else {
+      commitDraft(html)
     }
     setMode(next)
   }
@@ -242,22 +294,30 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
         <Textarea
           className="font-mono text-xs"
           placeholder={t('products.detail.specs.htmlPlaceholder')}
-          value={html || ''}
-          onChange={(e) => onHtmlChange?.(e.target.value)}
-          disabled={disabled}
+          value={draftHtml}
+          onChange={(e) => updateDraft(e.target.value)}
+          disabled={disabled || pending}
           rows={8}
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.trustBadges.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || pending}
+          onApply={applyParsed}
+          onUseRaw={applyRaw}
+          allowRaw
+        />
         <AiHtmlBrief promptKey="products.detail.trustBadges.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
           </label>
-          {(html || '').trim() ? (
+          {draftHtml.trim() ? (
             <div
               className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(draftHtml) }}
             />
           ) : (
             <p className="list-editor-empty">{t('products.detail.specs.previewEmpty')}</p>
@@ -285,6 +345,8 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
   const [mode, setMode] = useState(() =>
     ((html || '').trim() && !isGeneratedSpecStatsHtml(html)) ? 'html' : 'structured',
   )
+  const importer = useHtmlImportDraft(html, parseSpecStatsResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
   const [rows, setRows] = useState(() => {
     const parsed = parseSpecStatsFromHtml(html)
     return parsed.length ? parsed : [newRow()]
@@ -306,11 +368,59 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
     lastHtmlRef.current = nextHtml
     onHtmlChange?.(nextHtml)
   }
-  function changeMode(next) {
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextHtml = mergeSpecStatsIntoHtml(parsed.items, nextDraft)
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+      lastHtmlRef.current = nextHtml
+      onHtmlChange?.(nextHtml)
+      setMode('structured')
+      return { sourceHtml: nextHtml }
+    })
+  }
+
+  async function applyRaw() {
+    if (!dirty || !draftHtml.trim()) return
+    await runApply(async ({ draftHtml: nextDraft }) => {
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.rawConfirmMessage'),
+        t('products.detail.htmlImport.rawConfirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      lastHtmlRef.current = nextDraft
+      onHtmlChange?.(nextDraft)
+      return { sourceHtml: nextDraft }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
     if (next === 'structured') {
-      const parsed = parseSpecStatsFromHtml(html)
-      setRows(parsed.length ? parsed : [newRow()])
+      if (dirty) {
+        await applyParsed()
+        return
+      }
+      const parsed = parseSpecStatsResult(html)
+      if (html.trim() && !parsed.acceptedCount) return
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+    } else {
+      commitDraft(html)
     }
     setMode(next)
   }
@@ -395,22 +505,30 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
         <Textarea
           className="font-mono text-xs"
           placeholder={t('products.detail.specs.htmlPlaceholder')}
-          value={html || ''}
-          onChange={(e) => onHtmlChange?.(e.target.value)}
-          disabled={disabled}
+          value={draftHtml}
+          onChange={(e) => updateDraft(e.target.value)}
+          disabled={disabled || pending}
           rows={10}
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specStats.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || pending}
+          onApply={applyParsed}
+          onUseRaw={applyRaw}
+          allowRaw
+        />
         <AiHtmlBrief promptKey="products.detail.specStats.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
           </label>
-          {(html || '').trim() ? (
+          {draftHtml.trim() ? (
             <div
               className="size-guide-preview specstats-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(draftHtml) }}
             />
           ) : (
             <p className="list-editor-empty">{t('products.detail.specs.previewEmpty')}</p>

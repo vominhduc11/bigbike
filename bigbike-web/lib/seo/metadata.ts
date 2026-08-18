@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { toCanonicalUrl } from "@/lib/utils/routes";
 
-const DEFAULT_OG_IMAGE = "/wp/logo.png";
+const DEFAULT_SITE_NAME = "BigBike";
 
 type PublicMetadataInput = {
   title: string;
@@ -23,10 +23,13 @@ type PublicMetadataInput = {
 
 export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
   const canonicalUrl = toCanonicalUrl(input.canonicalPath);
-  const ogImageUrl = input.ogImage ?? DEFAULT_OG_IMAGE;
+  const title = normalizePageTitle(input.title, input.siteName ?? DEFAULT_SITE_NAME);
+  const ogImageUrl = input.ogImage?.trim() ? toCanonicalUrl(input.ogImage.trim()) : undefined;
 
   const metadata: Metadata = {
-    title: input.title,
+    // Route-level titles must be absolute so the root layout template cannot
+    // append the shop name a second time (SEO_RULE_006).
+    title: { absolute: title },
     description: input.description,
     alternates: {
       canonical: canonicalUrl,
@@ -41,20 +44,20 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
         : {}),
     },
     openGraph: {
-      title: input.title,
+      title,
       description: input.description,
       url: canonicalUrl,
       ...(input.siteName ? { siteName: input.siteName } : {}),
-      images: [{ url: ogImageUrl }],
+      ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
       locale: input.locale === "en" ? "en_US" : "vi_VN",
       alternateLocale: input.locale === "en" ? ["vi_VN"] : ["en_US"],
       type: input.ogType ?? "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: input.title,
+      title,
       description: input.description,
-      images: [ogImageUrl],
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
     },
   };
 
@@ -66,4 +69,36 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
   }
 
   return metadata;
+}
+
+function normalizePageTitle(value: string, siteName: string): string {
+  const rawTitle = value.trim();
+  const normalizedSiteName = siteName.trim() || DEFAULT_SITE_NAME;
+  if (!rawTitle) return normalizedSiteName;
+
+  // Remove only repeated pipe-separated shop-name segments. The rest of an
+  // editor-provided title stays unchanged, including its language and SEO
+  // wording.
+  const shopNamePattern = new RegExp(
+    `^${escapeRegExp(normalizedSiteName)}$|^BigBike(?:\\.vn)?$`,
+    "i",
+  );
+  const parts = rawTitle.split("|").map((part) => part.trim()).filter(Boolean);
+  let sawShopSegment = false;
+  const deduplicatedParts = parts.filter((part) => {
+    if (!shopNamePattern.test(part)) return true;
+    if (sawShopSegment) return false;
+    sawShopSegment = true;
+    return true;
+  });
+  const normalizedTitle = deduplicatedParts.join(" | ") || rawTitle;
+
+  if (sawShopSegment || normalizedTitle.toLocaleLowerCase().includes(normalizedSiteName.toLocaleLowerCase())) {
+    return normalizedTitle;
+  }
+  return `${normalizedTitle} | ${normalizedSiteName}`;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

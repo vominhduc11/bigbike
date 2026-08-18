@@ -7,6 +7,7 @@ public record ArticleTranslations(ArticleContent en) {
             String title,
             String excerpt,
             String body,
+            String authorName,
             String seoTitle,
             String seoDescription
     ) {}

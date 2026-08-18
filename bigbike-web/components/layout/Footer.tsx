@@ -142,27 +142,27 @@ export async function Footer({ locale }: { locale: Locale }) {
               <h2 className="mb-10! font-cta text-a1-title font-semibold uppercase leading-title">
                 <Tr ns="Footer" k="taglineLong" />
               </h2>
-              <div className="mb-7.5 flex flex-col gap-3">
+              <div data-footer-contacts className="mb-7.5 flex min-w-0 flex-col gap-3">
                 {FOOTER_HOTLINES.map((phone) => (
-                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b3-promo font-semibold uppercase">
+                  <p key={phone} className="m-0! flex min-w-0 items-center gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                     <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <a href={telHref(phone)} className="text-white! no-underline!">
+                    <a href={telHref(phone)} className="min-w-0 text-white! no-underline! [overflow-wrap:anywhere]">
                       {phone}
                     </a>
                   </p>
                 ))}
-                <p className="m-0! flex items-center gap-[29px] font-cta text-b3-promo font-semibold uppercase">
+                <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                   <a
                     href={`mailto:${FOOTER_EMAIL}`}
-                    className="flex items-center gap-[29px] text-white! no-underline!"
+                    className="flex min-w-0 items-start gap-3 text-white! no-underline! sm:gap-[29px]"
                   >
                     <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    {FOOTER_EMAIL}
+                    <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">{FOOTER_EMAIL}</span>
                   </a>
                 </p>
-                <p className="m-0! flex items-start gap-[29px] font-cta text-b3-promo font-semibold uppercase">
+                <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                   <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                  <Tr ns="Footer" k="address" />
+                  <span className="min-w-0 [overflow-wrap:anywhere]"><Tr ns="Footer" k="address" /></span>
                 </p>
               </div>
             </div>

@@ -44,7 +44,7 @@ export function LanguageSwitch() {
   }
 
   return (
-    <div className="flex h-20 items-center px-5">
+    <div data-language-switch className="flex h-20 items-center px-5">
       {LOCALES.map((code, index) => (
         <span key={code} className="inline-flex items-center">
           {index > 0 ? <span className="select-none px-1 font-cta text-b5-label uppercase text-white/40">/</span> : null}
@@ -56,7 +56,7 @@ export function LanguageSwitch() {
             disabled={isPending}
             aria-pressed={code === locale}
             className={cn(
-              "min-h-11 px-1 py-0 font-cta text-b4-action uppercase text-white hover:bg-transparent hover:text-white hover:not-disabled:scale-100",
+              "min-h-11 min-w-11 px-1 py-0 font-cta text-b4-action uppercase text-white hover:bg-transparent hover:text-white hover:not-disabled:scale-100",
               code === locale ? "font-bold opacity-100" : "opacity-60",
             )}
           >

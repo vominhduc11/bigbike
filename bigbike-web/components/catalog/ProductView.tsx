@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
@@ -35,7 +35,7 @@ import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/Mob
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
 import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
 import type { RecentProduct } from "@/lib/recently-viewed";
-import type { BrandSummary, CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
+import type { CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
 import type { Locale } from "@/i18n/locale";
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
@@ -48,6 +48,8 @@ type ProductViewProps = {
    *  server-fetched settings; live-preview fetches the same public endpoint client-side
    *  so Hotline/Địa chỉ match the live page. */
   settings: PublicSiteSetting[];
+  /** Danh mục hiện tại và các danh mục cha, đã resolve theo ngôn ngữ của trang. */
+  breadcrumbCategories?: CategorySummary[];
   /**
    * Live-preview mode (admin editor iframe). Skips sections that fetch by a
    * real product id or have browser side effects — reviews + "recently viewed"
@@ -56,19 +58,6 @@ type ProductViewProps = {
    */
   previewMode?: boolean;
 };
-
-/**
- * `brand.name`/`category.name` resolve theo locale ở backend (JpaCatalogReadRepository
- * toCategorySummary/toBrandSummary — cùng cơ chế pick() với các field khác). `ProductView`
- * tạo ra `LocalizedContentProvider` bên dưới nên KHÔNG thể gọi `useLocalizedField` ngay
- * trong thân hàm của chính nó (chạy trước khi provider tồn tại) — phải tách một component
- * con thật sự nằm TRONG cây con của provider, giống cách `LText`/`PurchaseSection` làm.
- */
-function LocalizedTaxonomyName({ field, viName }: { field: "brand" | "category"; viName: string }) {
-  const locale = useLocale() as Locale;
-  const localized = useLocalizedField<CategorySummary | BrandSummary>(field);
-  return <>{locale === "en" ? safeText(localized?.name, viName) : viName}</>;
-}
 
 /**
  * "Sản phẩm tương tự"/"Phụ kiện" — mảng `relatedProducts`/`accessoryProducts` cũng resolve
@@ -169,7 +158,7 @@ function DiscontinuedProductNotice({
   );
 }
 
-export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
+export function ProductView({ product, settings, breadcrumbCategories = [], previewMode = false }: ProductViewProps) {
   const locale = useLocale() as Locale;
   const tProduct = useTranslations("Product");
   const tA11y = useTranslations("A11y");
@@ -240,7 +229,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const positiveNotes = safeArray(product.positiveNotes);
   const negativeNotes = safeArray(product.negativeNotes);
 
-  const brand = product.brand ?? null;
   const primaryCategory = product.category ?? product.categories?.[0] ?? null;
   const category = primaryCategory &&
     primaryCategory.slug !== "chua-phan-loai" &&
@@ -249,6 +237,11 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     primaryCategory.deleted !== true
     ? primaryCategory
     : null;
+  const visibleBreadcrumbCategories = breadcrumbCategories.length > 0
+    ? breadcrumbCategories
+    : category
+      ? [category]
+      : [];
 
   const recentRecord: RecentProduct = {
     id: product.id,
@@ -472,28 +465,24 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
               <Link href={toHomePath(locale as "vi" | "en")} className="font-semibold hover:text-brand">
-                <span property="name">Bigbike.vn</span>
+                <span property="name">{locale === "en" ? "Home" : "Trang chủ"}</span>
               </Link>
             </li>
-            {brand ? (
-              <>
+            {visibleBreadcrumbCategories.map((breadcrumbCategory) => (
+              <Fragment key={breadcrumbCategory.id}>
                 <li aria-hidden>/</li>
                 <li>
-                  <LocalizedLink kind="brand" viSlug={brand.slug} className="font-semibold hover:text-brand">
-                    <span property="name"><LocalizedTaxonomyName field="brand" viName={brand.name} /></span>
+                  <LocalizedLink
+                    kind="category"
+                    viSlug={breadcrumbCategory.slug}
+                    enSlug={breadcrumbCategory.slugEn}
+                    className="font-semibold hover:text-brand"
+                  >
+                    <span property="name">{breadcrumbCategory.name}</span>
                   </LocalizedLink>
                 </li>
-              </>
-            ) : category ? (
-              <>
-                <li aria-hidden>/</li>
-                <li>
-                  <LocalizedLink kind="category" viSlug={category.slug} enSlug={category.slugEn} className="font-semibold hover:text-brand">
-                    <span property="name"><LocalizedTaxonomyName field="category" viName={category.name} /></span>
-                  </LocalizedLink>
-                </li>
-              </>
-            ) : null}
+              </Fragment>
+            ))}
             <li aria-hidden>/</li>
             <li>
               <span>

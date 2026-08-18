@@ -628,6 +628,52 @@ hệt cơ chế cũ (`sanitizeRichHtml` cho phép `style` inline ở web, `sanit
 
 Status: `CONFIRMED_FROM_CODE` — `SuitabilitySection.java`/`SizeGuideSection.java` (domain), `SuitabilitySectionConverter`/`SizeGuideSectionConverter` (JPA), `ProductEntity.suitabilitySection`/`sizeGuideSection`, `UpsertProductRequest.suitabilitySection`/`sizeGuideSection` + presence flags, `AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository`/`JpaCatalogReadSupport` (`resolveSuitabilitySectionForPublic`/`resolveSizeGuideSectionForPublic`, `hasSuitabilitySectionTranslation`/`hasSizeGuideSectionTranslation` cho cờ "có bản dịch EN"), `V327__add_product_suitability_size_guide_sections.sql`, `V328__ExtractProductSuitabilitySizeGuideFromBlocks.java`, `V329__BackfillProductHtmlOnlySections.java`.
 
+### Product admin HTML input safety and structured import (owner decision 2026-08-17)
+
+Seven product-detail blocks expose a structured input tab and an HTML input tab: trust badges,
+highlight stat boxes, suitability, size guide, specifications, highlights, and FAQs. The tab is
+an admin editing choice; it does not add a second persisted source. The existing persisted sources
+remain unchanged: HTML fields for trust/spec-stats/specifications/size guide/suitability, and JSONB
+arrays for highlights/FAQs.
+
+HTML typed or pasted into the admin editor is held as a local draft. It must not update the form's
+canonical value until the manager explicitly chooses to receive the parsed content and confirms the
+operation. The parser accepts ordinary headings, paragraphs, lists and tables in addition to the
+BigBike-generated marker classes. The UI reports the number of recognized items and skipped parts.
+Zero recognized items is a non-destructive result: the persisted value remains unchanged and the
+editor shows that the old content was kept. A custom raw-HTML action is available only for fields
+whose persisted source is HTML; array-backed highlights/FAQs continue to persist recognized item
+content only, with no new raw-HTML field.
+
+The Vietnamese model remains canonical for item count and order. English import updates only existing
+matching positions and never creates, removes or reorders Vietnamese items (`PRODUCT_RULE_001/002`).
+Structured edits merge text into existing HTML while preserving the current presentation markup where
+possible. Specifications read the first two cells as name/value and leave additional table cells
+untouched; the admin form warns that those extra cells are not editable there. Size-guide and
+specification serializers/prompts use the website's canonical token-based presentation so generated
+HTML and AI output round-trip into the structured tab consistently. No API, database column, JSONB
+shape or storefront renderer changes are part of this behavior.
+
+**Canonical product-template presentation (owner decision 2026-08-17):** the four descriptions of a
+product-content template are one contract: the admin structured serializer, the admin AI brief, the
+`product-template/HUONG-DAN.md` guide, and `product-template/mau-day-du.json`. `specifications` uses
+only the `shop_attributes` class and lets the website's scoped CSS apply web font/color tokens; it
+must not put fixed colors, fonts, or sizes on the table cells. A specification value may contain safe
+inline `<strong>`/`<em>` markup. Parsing must return that inline markup and structured merging must
+retain it, including when another cell is edited. `sizeGuideSection` uses the exact tokenized
+table/header/cell/note styles emitted by `lib/sizeChart.js`, with `<thead>` and `<tbody>`. The
+generated `suitabilitySection` wrapper and audience `<strong>` use the exact tokenized styles in the
+admin AI brief; audience content may contain safe bold/italic inline markup and merging must retain
+the audience element's presentation attributes. `specStats`, `trustBadges`, highlights, and FAQs
+continue to use their existing canonical templates. The sample's illustration URLs are checked
+`/media/uploads/...` paths from the current media store; this cleanup does not mutate stored product
+records. Automated template tests must verify the sample parses into the structured size/spec/
+suitability models and that structured edits preserve text and inline formatting.
+
+Status: `CONFIRMED_FROM_OWNER_DECISION` — `BUSINESS_RULES.md` `PRODUCT_RULE_019`/`PRODUCT_RULE_020`, admin block
+editors and helpers under `bigbike-admin/src/screens/product-detail/`, `bigbike-admin/src/components/
+block-editor/`, and `bigbike-admin/src/lib/`.
+
 **`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. **Không field nào bắt buộc riêng lẻ** — admin có thể lưu khối chỉ có ảnh, chỉ có chữ, hoặc cả hai; khối chỉ bị coi là rỗng và bị lọc bỏ trước khi gửi khi CẢ ảnh lẫn mọi phần chữ (VI **và** EN) đều trống (`cleanDescriptionBlocks` ở admin). Web tự chọn layout theo dữ liệu thực có (`featureHasImage`/`featureHasText` ở `description-blocks/grouping.ts`): đủ ảnh+chữ → 2 cột; chỉ chữ hoặc chỉ ảnh → full width, không chừa nửa cột trống. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 
 **Vốn từ khối GIỚI HẠN ở phạm vi SẢN PHẨM (V238 + V251 + V327/V328 + owner decision 2026-07-15, thu hẹp tiếp 2026-07-20):** Trình soạn mô tả sản phẩm chỉ cho tạo đúng **2 khối menu**: `feature` preset ảnh phải + chữ trái (`side="right"`), và `feature` preset ảnh trái + chữ phải (`side="left"`). **`paragraph`/`image` đã gỡ khỏi menu sản phẩm (owner decision 2026-07-20)** — 2 loại này vẫn còn trong menu bài viết (`CONTENT_MENU`), chỉ không còn tạo mới được cho sản phẩm; migration một lần `V343__MigrateLegacyDescriptionBlocksToFeature.java` đã chuyển hết khối `paragraph`/`image` cũ của mọi sản phẩm sang khối `feature` tương đương (chữ-thuần hoặc ảnh-thuần) tại thời điểm đổi quyết định. Video sản phẩm là mục riêng (`videos[]`) trong form Admin, không phải khối mô tả chi tiết của sản phẩm. **`prosCons` đã gỡ khỏi vốn từ khối (V251)** — Ưu/Nhược điểm nhập ở card riêng. **`suitability`/`sizeGuide` đã tách khỏi `descriptionBlocks` (V327/V328)** thành `suitabilitySection`/`sizeGuideSection`; request còn gửi hai type này trong mảng sẽ nhận 400. Các loại `heading`/`list`/`video`/`callout`/`divider` không được tạo mới cho sản phẩm. Migration `V238__ConsolidateProductDescriptionBlocks.java` vẫn là lịch sử gộp dữ liệu cũ về vốn từ tại thời điểm migration; subtype cũ có thể còn để đọc dữ liệu lịch sử nhưng không xuất ra template nhập sản phẩm.
@@ -1151,6 +1197,36 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domain record, migration `V137`.
 
+### Category intro FAQ markup normalization (V1038)
+
+The category intro structured mode remains the safe input source for the visible template. Its
+FAQ questions are rendered as `<h3 class="bb-ci-qt">` and the display HTML no longer
+contains `FAQPage`/`Question`/`Answer` microdata attributes. The public web emits one
+standalone `FAQPage` JSON-LD block from the same parsed questions and plain-text answers,
+so the customer-facing text and machine-readable text stay in sync without duplicate
+markup. Migration `V1038__normalize_category_intro_faq_markup.sql` first copies every
+affected category's Vietnamese and English intro HTML into
+`category_intro_faq_markup_backup`, then normalizes both language columns. The backup
+table is retained as a recovery record and is not part of the admin editing flow.
+
+The same `intro_content`/`intro_content_en` fields also support an advanced raw-HTML input mode.
+The mode is an admin editing choice, not stored data: structured and advanced input always read and
+write one field. HTML that contains custom presentation outside the structured template (including
+tables) opens in advanced mode and is not converted on load. Switching to structured mode requires
+confirmation before a later structured edit can serialize over the custom markup. The 50,000-character
+limit and bilingual fallback are unchanged; no category rows are rewritten for this capability.
+
+Structured mode also exposes a copy-only AI prompt and a manual paste reader. The reader accepts the
+Vietnamese/English labeled format or the equivalent JSON object, reports ignored/unknown sections before
+writing, and preserves existing fields that are absent from the pasted result. It does not call an AI service.
+The structured model stores only the existing template fields; the intro and FAQ answer values may contain
+sanitized inline `strong`/`b`, `em`/`i`, `br`, and safe `a` markup. Titles, labels, brands, and questions remain
+plain text. The serializer continues to produce the same `bb-cat-intro` wrapper and FAQ rows, while free HTML
+in advanced mode still does not produce the template's intro cards or category FAQ JSON-LD.
+
+Status: `CONFIRMED_FROM_CODE` — `V1038__normalize_category_intro_faq_markup.sql`,
+`categoryIntro.js`, `category-intro.ts`, category page JSON-LD builder.
+
 ### Category soft-delete — `deleted` (V293)
 
 Cột `deleted` (`BOOLEAN`, `NOT NULL`, mặc định `false`) trên bảng `categories` được sử dụng để quản lý trạng thái Xóa mềm (Thùng rác) của danh mục. Khi `deleted = true`, danh mục được coi là nằm trong Thùng rác và sẽ tự động bị ẩn khỏi toàn bộ luồng đọc công khai (storefront web). Các sản phẩm thuộc danh mục bị xóa mềm vẫn được giữ nguyên và bán bình thường.
@@ -1332,8 +1408,9 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 | `body` | `body_en` | `TEXT` |
 | `seo_title` | `seo_title_en` | `VARCHAR(255)` |
 | `seo_description` | `seo_description_en` | `TEXT` |
+| `author_name` | `author_name_en` | `VARCHAR(255)` |
 
-Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `ARTICLE_RULE_001/002`.
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Tác giả là trường tùy chọn; cả hai bản trống thì không sinh byline hoặc JSON-LD `author`. Xem `ARTICLE_RULE_001/002/007`.
 
 **Slug tiếng Anh (`slug_en`, V216):** xem mục **"English URL slug"** bên trên — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn (không sinh redirect).
 
@@ -1953,7 +2030,7 @@ admin concurrency metadata.
 | `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
-| `seo` | Homepage bottom SEO HTML block (`home_content_bottom_html`). The homepage SEO title/description + OG image (`seo_home_title`/`seo_home_description`/`og_image_url`) were **removed 2026-07-12 (V337)** — see "`seo` — 3 keys removed (V337)" below. | SEO website |
+| `seo` | Homepage SEO title, description and visible H1 (`seo_home_title`/`seo_home_description`/`seo_home_h1`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The three text fields were restored by owner decision on 2026-08-16 (V1036); the default OG image setting remains absent. | SEO website |
 | `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần lượt AI theo ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..3`, mặc định `3`, `0` tắt), công tắc cho Trợ lý BigBike diễn giải cách nói tự nhiên khi tìm hàng, câu chào và gợi ý nhanh song ngữ. Lịch sử lấy từ `chat_messages` của đúng conversation, che PII rồi cắt 450 ký tự/tin trước khi gửi; không tạo cột chat mới. Không chứa khoá AI. Các giá trị màu biến thể gốc vẫn giữ nguyên trong catalog; chỉ lớp chat chuyển chúng thành nhãn an toàn trước khi đưa vào prose hoặc function payload. | Trợ lý BigBike |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
@@ -1977,19 +2054,19 @@ admin concurrency metadata.
 > | Khối giới thiệu | `about_title`, `about_subtitle`, `about_content_html` |
 > | Sản phẩm nổi bật / Tin tức / Video | `home_featured_kicker`, `home_featured_title`, `home_news_kicker`, `home_news_title`, `home_videos_title` |
 >
-> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key — the `HomeContentBottom`/`home_content_bottom_html` block (group `seo`) is unaffected and still admin-editable (V337 removed 3 sibling `seo` keys but kept this one, see "`seo` — 3 keys removed" below). `promo_image_url`'s external hotlink (`https://bigbike.vn/wp-content/themes/bigbike/images/banner-ads.jpg`) was replaced with the already-vendored local asset `bigbike-web/public/wp-content/themes/bigbike/images/banner-ads.jpg` (byte-identical, confirmed by checksum) — no new file added, no more external image host per the MinIO/no-hotlink rule. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
+> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key. The `HomeContentBottom`/`home_content_bottom_html` block remains admin-editable, and the homepage title/description/H1 fields are again admin-editable in the same `seo` group after V1036. The old `promo_image_url` hotlink is no longer used; the current homepage banner is the bundled `bigbike-web/public/brand/home/promo-banner.jpg`. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
 
-### `seo` — 3 keys removed (2026-07-12, V337)
+### `seo` — homepage SEO fields restored (2026-08-16, V1036)
 
-> **Removed (2026-07-12, V337).** Shop-owner decision: **3 of the 4** `seo` keys were dropped — the homepage SEO title, description, and OG/social-share image. These controlled how the homepage appears on Google + when shared; their only consumer was `bigbike-web/app/page.tsx` (`generateMetadata`). After removal the homepage falls back gracefully: `title`/`description` come from `site_name` (was `seo_home_title`/`seo_home_description`) and it emits **no default `og:image`** (was `og_image_url`). Removed together: the 3 `site_settings` rows (`V337__remove_seo_home_settings.sql`), the 3 `SettingDefinitionRegistry` definitions, and their admin `constants.js` entries (`KEY_LABELS_VI`/`KEY_HINTS_VI`/`KEY_RECO`/`KEY_GUIDE`). The 3 removed keys:
+> **Historical note:** V337 removed `seo_home_title`, `seo_home_description` and `og_image_url` on 2026-07-12. Owner decision on 2026-08-16 reversed that decision for the two text SEO fields plus a new `seo_home_h1` field. The migration below restores the three editable fields; `og_image_url` remains intentionally absent, so the website still has no default social-share image.
 >
 > | Key | Type | What it controlled |
 > |---|---|---|
 > | `seo_home_title` | STRING | Homepage `<title>` (Google/browser tab) |
 > | `seo_home_description` | LONG_TEXT | Homepage meta description (Google snippet) |
-> | `og_image_url` | IMAGE_URL | Default OG/social-share image (1200×630) |
+> | `seo_home_h1` | STRING | Homepage visible `<h1>` |
 >
-> **Kept:** `home_content_bottom_html` (HTML — the bottom-of-homepage SEO block) is still admin-editable and is the sole remaining key in the group, so the **"SEO website" admin tab, the `seo` group in `SettingDefinitionRegistry`/`TAB_ORDER`/`TAB_META`/`TRANSLATABLE_GROUPS`, the `group_seo` locale string, and the `HomeContentBottom`/`useEnSettingLookup` web helpers all remain**. Per-entity SEO (category/product/article — `SeoMeta`/`seoOgImageUrl` + the `IMAGE_RECO.cover` recommendation) is a separate concern and is untouched.
+> **Current keys:** `seo_home_title` (`STRING`), `seo_home_description` (`LONG_TEXT`), `seo_home_h1` (`STRING`) and `home_content_bottom_html` (`HTML`) are admin-editable and public. All text keys are translatable; blank title/H1 fall back to `site_name`, blank description falls back to the localized homepage description. Per-entity SEO (category/product/article — `SeoMeta`/`seoOgImageUrl`) is separate and untouched.
 
 ### `public_about` keys — removed (2026-06-24, V274)
 
@@ -2033,7 +2110,7 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `seo` group now has only `home_content_bottom_html` after V337; the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `seo` group contains the three restored homepage SEO text fields plus `home_content_bottom_html`; the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
 - `V157__seed_product_assignment_settings.sql` — original 7-key seed; `V318__consolidate_product_assignment_roles.sql` — consolidation to the 2-key JSON shape
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, one of `products.read` / `content.read`)
 - `SettingsScreen.jsx` — `HIDDEN_GROUPS` now includes `product_assign` (bypasses the generic per-field settings flow; rendered instead by the bespoke `AssignmentRolesScreen.jsx`, same pattern as `public_hero`/`BannerScreen.jsx`), explicit `isSuperAdmin` gate on the synthetic tab

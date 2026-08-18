@@ -142,7 +142,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             <div className="text-a4-content leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(billingAddress.fullName, "—")}</p>
               {billingAddress.phone && <p className="m-0">{billingAddress.phone}</p>}
-              {billingAddress.email && <p className="m-0">{billingAddress.email}</p>}
+              {billingAddress.email && <p className="m-0 [overflow-wrap:anywhere]">{billingAddress.email}</p>}
               <p className="m-0">{formatAddress([billingAddress.addressLine1, billingAddress.ward, billingAddress.district, billingAddress.province])}</p>
             </div>
           ) : (
@@ -156,7 +156,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             <div className="text-a4-content leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(shippingAddress.fullName, "—")}</p>
               {shippingAddress.phone && <p className="m-0">{shippingAddress.phone}</p>}
-              {shippingAddress.email && <p className="m-0">{shippingAddress.email}</p>}
+              {shippingAddress.email && <p className="m-0 [overflow-wrap:anywhere]">{shippingAddress.email}</p>}
               <p className="m-0">{formatAddress([shippingAddress.addressLine1, shippingAddress.ward, shippingAddress.district, shippingAddress.province])}</p>
             </div>
           ) : (

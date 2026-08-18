@@ -93,7 +93,11 @@ export async function LegacyDiscontinuedProductView({
               </h2>
               <div className="mt-2 grid grid-cols-2 gap-x-5 md:grid-cols-3 md:gap-x-8">
                 {suggestions.slice(0, 3).map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    imageSizes="(min-width: 1200px) 368px, (min-width: 768px) calc((100vw - 112px) / 3), calc((100vw - 52px) / 2)"
+                  />
                 ))}
               </div>
             </section>

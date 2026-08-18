@@ -19,7 +19,9 @@ type PaginationNavProps = {
   onPageChange?: (page: number) => void;
 };
 
-function buildPageList(page: number, totalPages: number): (number | "...")[] {
+type PageToken = number | "...";
+
+export function buildPageList(page: number, totalPages: number): PageToken[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
@@ -31,6 +33,19 @@ function buildPageList(page: number, totalPages: number): (number | "...")[] {
   if (page < totalPages - 2) pages.push("...");
   pages.push(totalPages);
   return pages;
+}
+
+/**
+ * Narrow archive pagination: at most first/current/last plus edge neighbour(s).
+ * Combined with 44px links and 20px ellipses, the worst case fits a 320px page rail.
+ */
+export function buildCompactPageList(page: number, totalPages: number): PageToken[] {
+  if (totalPages <= 4) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+  if (page <= 2) return [1, 2, "...", totalPages];
+  if (page >= totalPages - 1) return [1, "...", totalPages - 1, totalPages];
+  return [1, "...", page, "...", totalPages];
 }
 
 export function PaginationNav({ page, totalPages, baseHref = "", variant = "default", onPageChange }: PaginationNavProps) {
@@ -53,39 +68,56 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     const itemCls = "inline-block px-2 text-a2-page font-semibold";
     const linkBase =
       "inline-flex items-center justify-center px-2.5 py-2.5 text-a2-page leading-title no-underline";
-    // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
-    return (
-      <nav className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>
-        <ul className="m-0 w-full list-none whitespace-nowrap p-0">
+    const compactPages = buildCompactPageList(page, totalPages);
+    const renderList = (items: PageToken[], compact: boolean) => {
+      const compactItemCls = "inline-flex p-0 text-a2-page font-semibold";
+      const compactLinkBase =
+        "inline-flex min-h-11 min-w-11 items-center justify-center p-0 text-a2-page leading-title no-underline";
+      const compactCurrentBase =
+        "inline-flex min-h-11 min-w-8 items-center justify-center p-0 text-a2-page leading-title";
+      const compactEllipsisBase =
+        "inline-flex h-11 w-5 items-center justify-center p-0 text-a2-page leading-title";
+
+      return (
+        <ul
+          className={compact
+            ? "m-0 flex w-full max-w-full list-none items-center whitespace-nowrap p-0 sm:hidden"
+            : "m-0 hidden w-full list-none whitespace-nowrap p-0 sm:block"}
+        >
           {page > 1 && (
-            <li className={itemCls}>
+            <li className={compact ? compactItemCls : itemCls}>
               <Link
                 href={makeHref(page - 1)}
-                className={`${linkBase} text-black hover:text-brand`}
+                className={`${compact ? compactLinkBase : linkBase} text-black hover:text-brand`}
                 aria-label={t("previousPage")}
               >
                 <ChevronLeft className="h-[1.375rem] w-[1.375rem]" strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </li>
           )}
-          {pages.map((p, i) => (
-            <li key={p === "..." ? `ellipsis-${i}` : p} className={itemCls}>
+          {items.map((p, index) => (
+            <li key={p === "..." ? `ellipsis-${index}` : p} className={compact ? compactItemCls : itemCls}>
               {p === "..." ? (
-                <span className={`${linkBase} text-black`}>…</span>
+                <span className={`${compact ? compactEllipsisBase : linkBase} text-black`}>…</span>
               ) : p === page ? (
-                <span className={`${linkBase} text-brand`}>{p}</span>
+                <span
+                  aria-current="page"
+                  className={`${compact ? compactCurrentBase : linkBase} text-brand`}
+                >
+                  {p}
+                </span>
               ) : (
-                <Link href={makeHref(p)} className={`${linkBase} text-black hover:text-brand`}>
+                <Link href={makeHref(p)} className={`${compact ? compactLinkBase : linkBase} text-black hover:text-brand`}>
                   {p}
                 </Link>
               )}
             </li>
           ))}
           {page < totalPages && (
-            <li className={itemCls}>
+            <li className={compact ? compactItemCls : itemCls}>
               <Link
                 href={makeHref(page + 1)}
-                className={`${linkBase} text-black hover:text-brand`}
+                className={`${compact ? compactLinkBase : linkBase} text-black hover:text-brand`}
                 aria-label={t("nextPage")}
               >
                 <ChevronRight className="h-[1.375rem] w-[1.375rem]" strokeWidth={1.5} aria-hidden="true" />
@@ -93,6 +125,13 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
             </li>
           )}
         </ul>
+      );
+    };
+    // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
+    return (
+      <nav data-archive-pagination className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>
+        {renderList(compactPages, true)}
+        {renderList(pages, false)}
       </nav>
     );
   }

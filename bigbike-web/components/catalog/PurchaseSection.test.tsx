@@ -136,7 +136,8 @@ describe("PurchaseSection — fallback nội dung tiếng Việt", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Áo giáp tiếng Việt" })).toBeInTheDocument();
-    expect(screen.getByText("Áo giáp / BigBike")).toBeInTheDocument();
+    expect(screen.getByText("Áo giáp")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "BigBike" })).toHaveAttribute("href", "/en/brands/bigbike");
     expect(screen.getByText("Hàng chính hãng")).toBeInTheDocument();
     expect(screen.getByText("Miễn phí vận chuyển")).toBeInTheDocument();
   });

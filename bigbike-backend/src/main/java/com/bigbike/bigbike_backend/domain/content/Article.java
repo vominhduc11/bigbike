@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.domain.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
@@ -31,6 +32,9 @@ public record Article(
         Instant createdAt,
         Instant updatedAt,
         /** Structured body blocks (V140). Non-null only on admin detail reads; null on public/list reads. */
-        List<DescriptionBlock> bodyBlocks
+        List<DescriptionBlock> bodyBlocks,
+        /** Optional localized author name (ARTICLE_RULE_007). */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String authorName
 ) {
 }

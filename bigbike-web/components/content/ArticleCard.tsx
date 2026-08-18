@@ -10,7 +10,14 @@ import { MediaImage } from "@/components/ui/MediaImage";
 type ArticleCardProps = {
   article: Article;
   variant?: "default" | "featured";
+  /** Exact responsive slot occupied by the cover in the caller's grid. */
+  imageSizes?: string;
 };
+
+const DEFAULT_ARTICLE_IMAGE_SIZES =
+  "(min-width: 1200px) 276px, (min-width: 1024px) 23vw, (min-width: 640px) calc((100vw - 72px) / 2), calc(100vw - 32px)";
+const FEATURED_ARTICLE_IMAGE_SIZES =
+  "(min-width: 1200px) 720px, (min-width: 768px) 62vw, calc(100vw - 32px)";
 
 function truncateText(text: string, maxLength = 160): string {
   if (text.length <= maxLength) return text;
@@ -19,7 +26,7 @@ function truncateText(text: string, maxLength = 160): string {
   return text.slice(0, pos).trimEnd() + "…";
 }
 
-export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
+export function ArticleCard({ article, variant = "default", imageSizes }: ArticleCardProps) {
   const t = useTranslations("Blog");
 
   function resolveArticleExcerpt(a: Article): string {
@@ -40,6 +47,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   if (!isFeatured) {
     return (
       <LocalizedLink
+        data-article-card
         kind="article"
         viSlug={article.slug}
         enSlug={article.slugEn}
@@ -52,6 +60,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             className="block w-full h-full object-cover [transition:transform_0.3s_ease] group-hover:[transform:scale(1.05)]"
             width={1200}
             height={675}
+            sizes={imageSizes ?? DEFAULT_ARTICLE_IMAGE_SIZES}
           />
         </div>
         <div className="relative pt-[41px] px-5 pb-7.5 flex flex-col gap-2 flex-1 bg-card max-md:pt-8.5 max-md:px-3.5 max-md:pb-4.5">
@@ -73,6 +82,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
 
   return (
     <LocalizedLink
+      data-article-card
       kind="article"
       viSlug={article.slug}
       enSlug={article.slugEn}
@@ -87,6 +97,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           width={1200}
           height={675}
+          sizes={imageSizes ?? FEATURED_ARTICLE_IMAGE_SIZES}
         />
       </div>
       <div

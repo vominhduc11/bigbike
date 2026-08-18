@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
@@ -19,13 +20,24 @@ type ProductCardProps = {
   product: Product;
   className?: string;
   layout?: "grid" | "carousel";
+  /** Exact responsive slot occupied by the image in the caller's grid. */
+  imageSizes?: string;
 };
 
-export function ProductCard({ product, className, layout = "grid" }: ProductCardProps) {
+const CATALOG_GRID_IMAGE_SIZES =
+  "(min-width: 1200px) 195px, (min-width: 768px) 18vw, calc((100vw - 52px) / 2)";
+const CAROUSEL_IMAGE_SIZES =
+  "(min-width: 1280px) 278px, (min-width: 768px) calc((100vw - 138px) / 4), calc((100vw - 52px) / 2)";
+
+export function ProductCard({ product, className, layout = "grid", imageSizes }: ProductCardProps) {
   const t = useTranslations("Product");
   const { current, retail, isSale, discountPercent } = derivePricing(product.price);
   const imageUrl = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
+  const responsiveImage = imageUrl && product.image
+    ? { ...product.image, url: imageUrl }
+    : null;
   const name = safeText(product.name, "");
+  const resolvedImageSizes = imageSizes ?? (layout === "carousel" ? CAROUSEL_IMAGE_SIZES : CATALOG_GRID_IMAGE_SIZES);
 
   return (
     <article
@@ -41,14 +53,13 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
           enSlug={product.slugEn}
           className="flex h-full w-full items-center justify-center overflow-hidden"
         >
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl}
-              alt={name}
-              loading="lazy"
+          {responsiveImage ? (
+            <MediaImage
+              image={responsiveImage}
+              altFallback={name}
               width={600}
               height={600}
+              sizes={resolvedImageSizes}
               className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105"
             />
           ) : (

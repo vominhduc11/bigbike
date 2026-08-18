@@ -19,6 +19,9 @@ const ALLOWED_ATTR = [
   'style',
 ]
 
+const INLINE_ALLOWED_TAGS = ['a', 'b', 'br', 'em', 'i', 's', 'span', 'strong', 'u']
+const INLINE_ALLOWED_ATTR = ['class', 'href', 'rel', 'target', 'title', 'style']
+
 /**
  * Sanitize an admin-managed HTML string before rendering via dangerouslySetInnerHTML.
  *
@@ -37,6 +40,20 @@ export function sanitizeHtml(raw) {
     ALLOW_DATA_ATTR: false,
   })
   return wrapTablesForScroll(sanitized)
+}
+
+/**
+ * Làm sạch một mảnh HTML inline để đưa vào ô dữ liệu rich-text.
+ * Khác với sanitizeHtml(), hàm này không bọc table bằng div vì caller đang nằm trong table/list.
+ * Giữ strong/em và style/class hợp lệ để đổi ô khác không làm mất định dạng đang có.
+ */
+export function sanitizeInlineHtml(raw) {
+  if (raw == null || raw === '') return ''
+  return DOMPurify.sanitize(String(raw), {
+    ALLOWED_TAGS: INLINE_ALLOWED_TAGS,
+    ALLOWED_ATTR: INLINE_ALLOWED_ATTR,
+    ALLOW_DATA_ATTR: false,
+  })
 }
 
 // Bọc mỗi <table> bằng <div class="rich-table-scroll"> — khớp với cách bigbike-web

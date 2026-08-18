@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
@@ -16,9 +16,10 @@ import { buildQueryString } from "@/lib/utils/query";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
 import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { CatalogFilterChips } from "@/components/catalog/CatalogFilterChips";
-import { CatalogCategoryRail } from "@/components/catalog/CatalogCategoryRail";
-import type { Brand, CatalogFacets, Category, Product } from "@/lib/contracts/public";
+import type { CatalogFacets, Product } from "@/lib/contracts/public";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
+import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import {
   clearCatalogFilters,
   countCatalogFilters,
@@ -38,8 +39,6 @@ import {
  */
 export type CatalogClientProps = {
   canonicalPath: string;
-  brands: Brand[];
-  categories: Category[];
   facets?: CatalogFacets | null;
   /** HTML mô tả (đã sanitize) render ngay trên lưới — vd mô tả danh mục. */
   beforeGridHtml?: string | null;
@@ -68,8 +67,6 @@ export type CatalogClientProps = {
 
 export function CatalogClient({
   canonicalPath,
-  brands,
-  categories,
   facets = null,
   beforeGridHtml = null,
   beforeGridNode,
@@ -107,6 +104,12 @@ export function CatalogClient({
     return parseCatalogListParams(params, { includeCategoryParam, queryParamKeys });
   }, [searchParams, includeCategoryParam, queryParamKeys]);
   const [mobileDraft, setMobileDraft] = useState<CatalogFilterState>(catalog.currentFilters);
+  const mobileDraftRef = useRef(mobileDraft);
+  const mobileOpenRef = useRef(mobileOpen);
+  const updateMobileDraft = useCallback((next: CatalogFilterState) => {
+    mobileDraftRef.current = next;
+    setMobileDraft(next);
+  }, []);
 
   const productQuery = useMemo(
     () => ({
@@ -264,7 +267,7 @@ export function CatalogClient({
 
   const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
 
-  function hrefForState(state: CatalogFilterState) {
+  const hrefForState = useCallback((state: CatalogFilterState) => {
     return `${canonicalPath}${buildQueryString({
       size: catalog.size,
       orderby: catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
@@ -279,25 +282,33 @@ export function CatalogClient({
       max_price: state.maxPrice,
       in_stock: state.inStock ? "true" : undefined,
     })}`;
-  }
+  }, [canonicalPath, catalog.orderbyCurrent, catalog.size, includeCategoryParam]);
 
-  function commitState(state: CatalogFilterState) {
+  const commitState = useCallback((state: CatalogFilterState) => {
     const target = hrefForState(state);
     const current = `${window.location.pathname}${window.location.search}`;
     if (target !== current) window.history.pushState(null, "", target);
-  }
+  }, [hrefForState]);
 
   function handleMobileOpenChange(open: boolean) {
-    if (open) setMobileDraft(catalog.currentFilters);
+    if (open) updateMobileDraft(catalog.currentFilters);
+    mobileOpenRef.current = open;
     setMobileOpen(open);
   }
 
-  function handleMobileApply() {
+  const handleMobileApply = useCallback(() => {
     const scrollY = window.scrollY;
-    commitState(mobileDraft);
+    commitState(mobileDraftRef.current);
+    mobileOpenRef.current = false;
     setMobileOpen(false);
     requestAnimationFrame(() => window.scrollTo({ top: scrollY }));
-  }
+  }, [commitState]);
+
+  const applyMobileFiltersAtDesktop = useCallback(() => {
+    if (mobileOpenRef.current) handleMobileApply();
+  }, [handleMobileApply]);
+
+  useMediaQueryChange(`(min-width: ${BB_BREAKPOINTS.md}px)`, applyMobileFiltersAtDesktop);
 
   const activeFilterCount = countCatalogFilters(catalog.currentFilters);
   const activeFilterChips = (
@@ -316,8 +327,6 @@ export function CatalogClient({
     // áp cho cả 4 trang archive (san-pham/tim-kiem/danh-muc/brands).
     <div className="grid gap-8 pb-10 md:grid-cols-[minmax(220px,1fr)_3fr]">
       <CatalogSidebar
-        brands={brands}
-        categories={categories}
         facets={activeFacets}
         current={catalog.currentFilters}
         mobileCurrent={mobileDraft}
@@ -327,7 +336,7 @@ export function CatalogClient({
         }}
         mobileOpen={mobileOpen}
         onMobileOpenChange={handleMobileOpenChange}
-        onMobileChange={setMobileDraft}
+        onMobileChange={updateMobileDraft}
         onMobileApply={handleMobileApply}
         hideBrandFilter={Boolean(routeBrandSlug)}
       />
@@ -343,15 +352,8 @@ export function CatalogClient({
         activeFilterCount={activeFilterCount}
         activeFilters={activeFilterChips}
         beforeGrid={
-          <>
-            {beforeGridNode ??
-              (beforeGridHtml ? <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} /> : null)}
-            <CatalogCategoryRail
-              categories={categories}
-              facets={activeFacets}
-              activeSlug={routeCategorySlug ?? catalog.filters.category}
-            />
-          </>
+          beforeGridNode ??
+            (beforeGridHtml ? <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} /> : null)
         }
         paginationBaseHref={paginationBaseHref}
       />

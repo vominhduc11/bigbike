@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   mergeFaqsHtmlIntoItems,
+  parseFaqsResult,
   parseFaqsFromHtml,
   serializeFaqsToHtml,
 } from './faqsBlock'
@@ -31,6 +32,24 @@ describe('serializeFaqsToHtml / parseFaqsFromHtml', () => {
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt; &amp; giá?')
     expect(html).not.toContain('<img src=x')
     expect(parseFaqsFromHtml(html)[0].question).toBe('<img src=x onerror=alert(1)> & giá?')
+  })
+
+  it('đọc HTML thông thường dạng tiêu đề nhỏ + đoạn trả lời', () => {
+    const result = parseFaqsResult('<h3>Mũ có Pinlock không?</h3><p>Có, kèm Pinlock 70.</p>')
+    expect(result.items).toEqual([{ question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' }])
+    expect(result.acceptedCount).toBe(1)
+  })
+
+  it('đọc FAQ dạng danh sách có câu hỏi in đậm và câu trả lời', () => {
+    const result = parseFaqsResult('<ul><li><strong>Mũ có Pinlock không?</strong><p>Có, kèm Pinlock 70.</p></li></ul>')
+    expect(result.items).toEqual([{ question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' }])
+    expect(result.acceptedCount).toBe(1)
+  })
+
+  it('HTML không đọc được không tạo ra danh sách rỗng hợp lệ', () => {
+    const result = parseFaqsResult('<div>Chỉ có bố cục riêng</div>')
+    expect(result.acceptedCount).toBe(0)
+    expect(result.hasInput).toBe(true)
   })
 })
 
@@ -77,5 +96,10 @@ describe('mergeFaqsHtmlIntoItems', () => {
     expect(next.map((item) => item.answer)).toEqual(['<p>Đáp VI 1</p>', '<p>Đáp VI 2</p>'])
     expect(next.map((item) => item.questionEn)).toEqual(['New 1', 'New 2'])
     expect(next.map((item) => item.answerEn)).toEqual(['<p>New answer 1</p>', '<p>New answer 2</p>'])
+  })
+
+  it('HTML không đọc được giữ nguyên FAQ hiện có', () => {
+    const items = [faq('Câu hỏi cũ', '<p>Đáp án cũ</p>', '', '', 'old')]
+    expect(mergeFaqsHtmlIntoItems(items, '<div>không theo mẫu</div>')).toEqual(items)
   })
 })

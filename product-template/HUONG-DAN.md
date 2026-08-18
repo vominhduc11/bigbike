@@ -143,10 +143,10 @@ Không dùng `paragraph`, `image`, `heading`, `list`, `video`, `callout`, `divid
 - ⚠️ **`suitabilitySection`/`sizeGuideSection` CHỈ có đúng 4 trường: `title`, `titleEn`, `html`, `htmlEn`.** Không có `url`/`urlEn` hay bất kỳ trường nào khác — dễ nhầm vì khối "Hình ảnh"/"Ảnh + chữ" trong `descriptionBlocks` có dùng `url`, nhưng 2 khoá này thì không. Thêm nhầm 1 trường lạ (kể cả để `null`) → vi phạm quy tắc 3 (JSON không được có khoá lạ) → **cả file bị từ chối khi nhập**, không sản phẩm nào lọt qua.
 
 ### Quy tắc HTML bắt buộc cho các khối HTML thô
-- `specifications`: dùng `<table class="shop_attributes">` với `style` gồm `width:100%;border-collapse:collapse;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);color:var(--bb-text-primary);`; chỉ cần `<tbody>` — **KHÔNG cần `<thead>`** (khác `sizeGuideSection` bên dưới: hệ thống chỉ đọc `<tr>` ngoài `<thead>` khi chuyển về tab "Nhập có cấu trúc", có `<thead>` cũng không lỗi nhưng không bắt buộc); mỗi dòng `<tr><th scope="row" style="background:var(--bb-bg-surface-raised);color:var(--bb-text-primary);border:1px solid var(--bb-border-subtle);padding:12px 16px;">Tên</th><td style="border:1px solid var(--bb-border-subtle);padding:12px 16px;">Giá trị</td></tr>`; giữ nguyên các `var(--bb-...)` trên, không hardcode hex (`#111111`/`#f5f5f5`/`#dddddd`) hay `!important`; không gán cứng `font-size` riêng trên từng `th`/`td`.
+- `specifications`: dùng đúng `<table class="shop_attributes"><tbody><tr><th scope="row">Tên thông số</th><td>Giá trị</td></tr>...</tbody></table>`; **không thêm `style` vào table/th/td**. Website tự áp phông, màu, cỡ chữ và khoảng cách chuẩn qua class/token của web; không hardcode hex, px, font hoặc `!important`. Mỗi dòng là một thông số, `th scope="row"` là tên và `td` đầu tiên là giá trị. Giá trị được phép có HTML inline an toàn như `<strong>`/`<em>`; khi sửa một ô khác bằng biểu mẫu, phần chữ và định dạng trong giá trị đang có phải được giữ nguyên.
 - `specStats`: **COPY Y NGUYÊN khối HTML kèm TẤT CẢ `style="..."` inline, chỉ thay chữ** (số liệu + nhãn), KHÔNG rút gọn, KHÔNG bỏ bớt style. Bắt buộc giữ đủ: container `<div class="bb-specstats">` có `display:grid` + `border`/`background` dùng `var(--bb-border-subtle)` (đường kẻ ngăn ô); mỗi ô là `<div>` riêng có `display:flex;flex-direction:column` + `padding` + nền `var(--bb-bg-surface)`; trong ô đúng 2 `<span>` — số liệu trước (`font-weight:700;font-size:var(--bb-text-a2-page);line-height:1;text-transform:uppercase;color:var(--bb-action-primary)`), nhãn sau (`font-size:var(--bb-text-a5-meta);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--bb-text-secondary)` — **không thêm `opacity`**, làm nhạt màu lệch token). Tối đa 4 ô, giữ nguyên các `var(--bb-...)` — không hardcode hex. **Thiếu `display:grid`/viền/đệm ô hoặc dùng `<br>` thay ô → web hiển thị chữ căn giữa xếp dọc, KHÔNG ra dạng bảng số liệu.**
 - `trustBadges`: **COPY Y NGUYÊN khối HTML kèm TẤT CẢ `style="..."` inline, chỉ thay chữ nhãn.** Container `<div class="bb-trust-badges">` có `display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1;color:var(--bb-text-secondary)` (hàng ngang; `line-height:1` bắt buộc — khớp `leading-none` mà web ép trên dải này). Mỗi nhãn là `<span style="display:flex;align-items:center;gap:8px;line-height:1">` chứa **đúng 2 `<span>`**: chấm màu là **1 span RỖNG** tô nền bằng style (`height:6px;width:6px;background:var(--bb-action-primary)`) — **KHÔNG dùng ký tự "•"**, KHÔNG để chữ trần ngoài span — rồi span thứ hai chứa chữ. Giữ nguyên các `var(--bb-...)` — không hardcode hex.
-- `suitabilitySection.html`: bọc trong `<ul class="suitability-list">`, mỗi dòng `<li><strong>Tên đối tượng</strong> → Lời khuyên</li>`.
+- `suitabilitySection.html`: dùng đúng wrapper token hóa `<ul class="suitability-list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-secondary);">`; mỗi dòng là `<li style="margin:0;"><strong style="color:var(--bb-text-primary);font-weight:700;">Tên đối tượng</strong> → Lời khuyên</li>`. Tên đối tượng được phép chứa HTML inline an toàn như `<strong>`/`<em>`; không đổi các token/style chuẩn.
 - `sizeGuideSection.html`: **COPY Y NGUYÊN khối HTML kèm TẤT CẢ `style="..."` inline, chỉ thay chữ** (tên cột + số liệu), KHÔNG rút gọn, KHÔNG bỏ style, KHÔNG tự chọn màu/cỡ chữ khác — giữ nguyên mọi `var(--bb-...)`, đó là biến font/màu thật của web, không đổi thành hex hay px cụ thể. Bảng có đủ `<thead>`/`<tbody>`; `<table>` dùng đúng `style="width:100%;min-width:520px;border-collapse:collapse;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-primary);margin:0 0 12px 0;"`; `<th>` dùng đúng `style="background:var(--bb-bg-surface-raised);color:var(--bb-text-primary);border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap;"`; `<td>` dùng đúng `style="border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;vertical-align:middle;"`, riêng cột size (cột đầu tiên) thêm `font-weight:700` vào `<td>`. Ghi chú nếu có đặt trong `<p style="font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1.5;color:var(--bb-text-secondary);margin:8px 0 0 0;"><em>...</em></p>` bên NGOÀI `<table>`, không có ghi chú thì bỏ hẳn `<p>`. KHÔNG set width cố định theo px cho từng cột (chỉ `min-width` ở `<table>`), KHÔNG bọc `<table>` trong `<div>` nếu không cần, KHÔNG nền tối/đổ bóng/bo góc/gradient/emoji.
 - Tất cả 5 mục trên: KHÔNG `<script>`, KHÔNG `<style>`, KHÔNG `id`.
 
@@ -212,15 +212,11 @@ BẮT BUỘC:
   Khối "Ảnh + chữ" (feature) vẫn giữ, chỉ mất phần ảnh, cần chọn ảnh thật lại trong trang
   quản trị. Ảnh đại diện/gallery/video sản phẩm trong file tải về có thể giữ nguyên, hệ
   thống sẽ bỏ qua khi nạp Nháp.
-- Quy tắc HTML cho specifications: bảng phải có <table class="shop_attributes"> với
-  style="width:100%;border-collapse:collapse;font-family:var(--bb-font-body);
-  font-size:var(--bb-text-a4-content);color:var(--bb-text-primary);". Chỉ cần <tbody> —
-  KHÔNG cần <thead> (khác sizeGuideSection bên dưới). Mỗi dòng theo mẫu <tr>
-  <th scope="row" style="background:var(--bb-bg-surface-raised);color:var(--bb-text-primary);
-  border:1px solid var(--bb-border-subtle);padding:12px 16px;">Tên</th>
-  <td style="border:1px solid var(--bb-border-subtle);padding:12px 16px;">Giá trị</td></tr>.
-  Giữ nguyên các var(--bb-...) — KHÔNG đổi thành hex hay !important, KHÔNG gán cứng
-  font-size riêng trên từng th/td.
+- Quy tắc HTML cho specifications: dùng đúng <table class="shop_attributes"><tbody><tr>
+  <th scope="row">Tên thông số</th><td>Giá trị</td></tr>...</tbody></table>. KHÔNG thêm
+  style vào table/th/td: website tự áp phông, màu, cỡ chữ và khoảng cách bằng class/token
+  chuẩn. Giá trị được phép có HTML inline an toàn như <strong>/<em>; sửa ô khác bằng biểu mẫu
+  không được làm mất phần chữ hay định dạng đang có.
 - Quy tắc HTML cho specStats: COPY Y NGUYÊN kèm TẤT CẢ inline-style, chỉ thay chữ (số
   liệu + nhãn). KHÔNG rút gọn, KHÔNG bỏ style. Bắt buộc giữ: <div class="bb-specstats">
   có display:grid + border/background dùng var(--bb-border-subtle); mỗi ô là <div>
@@ -240,8 +236,10 @@ BẮT BUỘC:
   background:var(--bb-action-primary)) — TUYỆT ĐỐI KHÔNG dùng ký tự "•", KHÔNG để chữ
   trần ngoài span — rồi span thứ hai chứa chữ. Giữ nguyên các var(--bb-...) — không
   hardcode hex.
-- Quy tắc HTML cho suitabilitySection.html: bọc trong <ul class="suitability-list">,
-  mỗi dòng đúng mẫu <li><strong>Tên đối tượng</strong> → Lời khuyên</li>.
+- Quy tắc HTML cho suitabilitySection.html: dùng đúng wrapper
+  <ul class="suitability-list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-secondary);">
+  mỗi dòng đúng mẫu <li style="margin:0;"><strong style="color:var(--bb-text-primary);font-weight:700;">Tên đối tượng</strong> → Lời khuyên</li>.
+  Tên đối tượng được phép chứa HTML inline an toàn như <strong>/<em>; giữ nguyên style/token chuẩn.
 - Quy tắc HTML cho sizeGuideSection.html: COPY Y NGUYÊN khối HTML kèm TẤT CẢ inline-style
   — chỉ thay chữ (tên cột + số liệu), KHÔNG rút gọn, KHÔNG bỏ style, KHÔNG tự chọn
   màu/cỡ chữ khác — giữ nguyên mọi var(--bb-...), đó là biến font/màu thật của web,

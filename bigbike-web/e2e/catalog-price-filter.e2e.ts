@@ -63,11 +63,8 @@ test.describe("Catalog price filter render/accessibility @price-filter", () => {
       await expect(filter.locator('[data-price-input="max"]')).toHaveValue("");
       await expect(filter.locator('[data-price-input="min"]')).toHaveAttribute("placeholder", /\d/);
       await expect(filter.locator('[data-price-input="max"]')).toHaveAttribute("placeholder", /\d/);
-
-      const histogram = filter.locator('[data-price-histogram="true"]');
-      await expect(histogram).toBeVisible();
-      expect((await histogram.boundingBox())?.height ?? 0).toBeGreaterThan(0);
-      expect(await histogram.locator("span").count()).toBeGreaterThan(0);
+      await expect(filter.locator('[data-price-histogram="true"]')).toHaveCount(0);
+      await expect(filter.locator('[data-price-thumb-label]')).toHaveCount(2);
 
       const thumbs = filter.getByRole("slider");
       await expect(thumbs).toHaveCount(2);
@@ -112,10 +109,28 @@ test.describe("Catalog price filter render/accessibility @price-filter", () => {
       expect(closeBounds?.width ?? 0).toBeGreaterThanOrEqual(44);
       expect(closeBounds?.height ?? 0).toBeGreaterThanOrEqual(44);
       await expect(filter.locator('[data-price-input="min"]')).toBeVisible();
+      await expect(filter.locator('[data-price-histogram="true"]')).toHaveCount(0);
       await close.click();
       await expect(dialog).toBeHidden();
     });
   }
+
+  test("keeps close handle labels readable without overlap", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const filter = await openPriceFilter(page, "/vi/sp/");
+    const thumbs = filter.getByRole("slider");
+    await thumbs.nth(0).focus();
+    await thumbs.nth(0).press("End");
+
+    const labels = filter.locator("[data-price-thumb-label]");
+    await expect(labels).toHaveCount(2);
+    await expect(labels.nth(1)).toHaveClass(/top-6/);
+    const bounds = await labels.evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    }));
+    expect(bounds[1]!.top).toBeGreaterThanOrEqual(bounds[0]!.bottom - 1);
+  });
 
   test("typed round prices apply exactly once after the range is complete", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

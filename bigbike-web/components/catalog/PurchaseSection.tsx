@@ -11,6 +11,7 @@ import { formatVndNumber, safeText } from "@/lib/utils/format";
 import { collectAttributeNames, findColorPreviewVariant, findMatchingVariant } from "@/lib/utils/variant-match";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
@@ -184,8 +185,8 @@ export function PurchaseSection({
     ? sanitizeRichHtml(product.shortDescription, { allowInlineStyles: true })
     : "";
 
-  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — badge PDP dùng Arial,
-  // mobile và desktop đều 14px theo mockup.
+  // Eyebrow chỉ dành cho danh mục. Thương hiệu được tách thành một dòng có liên kết
+  // riêng gần tên sản phẩm, không còn nằm trong breadcrumb.
   // category.name/brand.name/originBrandCountry resolve theo locale ở backend
   // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/
   // trustBadges ở trên (V319: originBrandCountry có cột *_en riêng).
@@ -203,8 +204,8 @@ export function PurchaseSection({
   const enOriginBrandCountry = useLocalizedField<string>("originBrandCountry");
   const activeOriginBrandCountry =
     locale === "en" ? enOriginBrandCountry ?? product.originBrandCountry : product.originBrandCountry;
-  const eyebrowBrand = safeText(activeOriginBrandCountry, "") || safeText(activeBrand?.name, "");
-  const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
+  const originLabel = safeText(activeOriginBrandCountry, "");
+  const brandLabel = safeText(activeBrand?.name, "");
 
   // Khối "cam kết" dưới nút mua (V232) — quản theo TỪNG sản phẩm; khối ngoài tab → rỗng thì ẩn cả khối.
   // Đổi ngôn ngữ qua LocalizedContentProvider (như enName/enTrustHtml ở trên) — bản EN nếu có, không thì fallback bản vi.
@@ -248,9 +249,23 @@ export function PurchaseSection({
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
             />
           ) : null}
-          {eyebrow ? (
+          {eyebrowCategory ? (
             <p className="mb-0 font-barlow text-pdp-eyebrow font-semibold uppercase leading-none tracking-display text-brand">
-              {eyebrow}
+              {eyebrowCategory}
+            </p>
+          ) : null}
+          {originLabel || brandLabel ? (
+            <p className="mb-2 mt-2 font-body text-a5-meta text-muted-foreground">
+              {originLabel ? `${originLabel}${brandLabel ? " / " : ""}` : null}
+              {brandLabel && activeBrand?.slug ? (
+                <LocalizedLink
+                  kind="brand"
+                  viSlug={activeBrand.slug}
+                  className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline"
+                >
+                  {brandLabel}
+                </LocalizedLink>
+              ) : brandLabel}
             </p>
           ) : null}
           <div itemProp="name">

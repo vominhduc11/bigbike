@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => ({
+    t: (key, values = {}) => ({
       'products.detail.highlights.modeStructured': 'Structured input',
       'products.detail.highlights.modeHtml': 'Paste HTML',
       'products.detail.highlights.htmlPlaceholder': 'Compose highlights HTML',
@@ -14,6 +14,18 @@ vi.mock('react-i18next', () => ({
       'products.detail.highlights.previewEmpty': 'No highlights preview',
       'products.detail.highlights.prosTitle': 'Pros',
       'products.detail.highlights.consTitle': 'Cons',
+      'products.detail.htmlImport.read': 'Read {{count}} item(s).',
+      'products.detail.htmlImport.readWithSkipped': 'Read {{count}} item(s); skipped {{skipped}} part(s).',
+      'products.detail.htmlImport.unreadable': 'Could not read the pasted content — existing content was kept.',
+      'products.detail.htmlImport.empty': 'The new content is empty — existing content was kept.',
+      'products.detail.htmlImport.pending': 'The new content has not been accepted yet; click the button below before saving.',
+      'products.detail.htmlImport.apply': 'Apply new content',
+      'products.detail.htmlImport.useRaw': 'Use this as custom HTML',
+      'products.detail.htmlImport.confirmTitle': 'Apply new HTML content?',
+      'products.detail.htmlImport.confirmMessage': 'Read {{count}} and skipped {{skipped}}.',
+      'products.detail.htmlImport.confirmApply': 'Apply and save',
+      'products.detail.htmlImport.confirmCancel': 'Keep existing',
+      'products.detail.htmlImport.arraySource': 'This block is stored as individual items.',
       'products.detail.faqs.modeStructured': 'Structured input',
       'products.detail.faqs.modeHtml': 'Paste HTML',
       'products.detail.faqs.htmlPlaceholder': 'Compose FAQ HTML',
@@ -35,7 +47,7 @@ vi.mock('react-i18next', () => ({
       'products.detail.video.descriptionLabel': 'Video description',
       'products.detail.gallery.videoUpload': 'Upload / media library',
       'products.detail.gallery.legacySourceWarning': 'Legacy gallery source must be replaced',
-    }[key] || key),
+    }[key] || key).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? `{{${name}}}`)),
   }),
 }))
 
@@ -73,6 +85,7 @@ vi.mock('../../components/Sortable', () => ({
 vi.mock('../../lib/confirm', () => ({ showConfirm: vi.fn() }))
 
 import { FaqEditor, GalleryEditor, HighlightsEditor, HighlightsHtmlEditor, VideoEditor } from './ContentEditors'
+import { showConfirm } from '../../lib/confirm'
 
 function FaqHarness() {
   const [items, setItems] = useState([
@@ -167,6 +180,67 @@ describe('FaqEditor HTML tab', () => {
     await user.click(screen.getByRole('tab', { name: 'Structured input' }))
     expect(screen.getByPlaceholderText('Question *')).toHaveValue('Có kèm Pinlock không?')
     expect(screen.getByTestId('rich-text')).toHaveValue('<p>Có.</p>')
+  })
+
+  it('dán HTML thông thường không xoá FAQ cũ trước khi nhận nội dung', async () => {
+    const onChange = vi.fn()
+    render(
+      <FaqEditor
+        items={[{ _key: 'old', question: 'Câu hỏi cũ', answer: '<p>Đáp án cũ</p>' }]}
+        onChange={onChange}
+        validationErrors={{}}
+      />,
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: 'Paste HTML' }))
+    const htmlBox = screen.getByRole('textbox', { name: 'Paste HTML' })
+    fireEvent.change(htmlBox, { target: { value: '<h3>Câu hỏi mới?</h3><p>Đáp án mới.</p>' } })
+
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByText('The new content has not been accepted yet; click the button below before saving.')).toBeInTheDocument()
+    expect(screen.getByText('Read 1 item(s).')).toBeInTheDocument()
+  })
+
+  it('chỉ ghi FAQ sau khi bấm nhận và xác nhận', async () => {
+    vi.mocked(showConfirm).mockResolvedValueOnce(true)
+    const onChange = vi.fn()
+    render(
+      <FaqEditor
+        items={[{ _key: 'old', question: 'Câu hỏi cũ', answer: '<p>Đáp án cũ</p>' }]}
+        onChange={onChange}
+        validationErrors={{}}
+      />,
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: 'Paste HTML' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Paste HTML' }), { target: { value: '<h3>Câu hỏi mới?</h3><p>Đáp án mới.</p>' } })
+    await user.click(screen.getByRole('button', { name: 'Apply new content' }))
+
+    expect(showConfirm).toHaveBeenCalled()
+    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ question: 'Câu hỏi mới?', answer: '<p>Đáp án mới.</p>' }),
+    ]))
+  })
+})
+
+describe('HighlightsHtmlEditor data safety', () => {
+  it('ký tự đầu tiên hoặc HTML không đọc được không làm mất hai nhóm cũ', async () => {
+    const onChangePositive = vi.fn()
+    const onChangeNegative = vi.fn()
+    render(
+      <HighlightsHtmlEditor
+        positiveNotes={[{ _key: 'p', content: 'Ưu điểm cũ', contentEn: '' }]}
+        negativeNotes={[{ _key: 'n', content: 'Nhược điểm cũ', contentEn: '' }]}
+        onChangePositive={onChangePositive}
+        onChangeNegative={onChangeNegative}
+      />,
+    )
+    const htmlBox = screen.getByRole('textbox', { name: 'Paste HTML' })
+    fireEvent.change(htmlBox, { target: { value: '<div>không theo mẫu</div>' } })
+
+    expect(onChangePositive).not.toHaveBeenCalled()
+    expect(onChangeNegative).not.toHaveBeenCalled()
+    expect(screen.getByText('Could not read the pasted content — existing content was kept.')).toBeInTheDocument()
   })
 })
 

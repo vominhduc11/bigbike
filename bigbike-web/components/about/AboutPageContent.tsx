@@ -62,9 +62,9 @@ function ContactItem({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-4 md:px-5">
+    <div className="flex min-w-0 items-start gap-4 md:px-5">
       <span className="mt-0.5 shrink-0 text-brand">{icon}</span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
         <div className="mb-2 text-a4-content font-bold text-foreground">{label}</div>
         {children}
       </div>
@@ -149,7 +149,7 @@ export function AboutPageContent({
         <p className="m-0 mt-3 text-a4-content leading-relaxed text-muted-foreground">{t("connect1")}</p>
         <p className="m-0 mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("connect2")}</p>
 
-        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:divide-x md:divide-border">
+        <div data-about-contact-grid className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:divide-x md:divide-border">
           {contact.address ? (
             <ContactItem icon={<Store size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("storeLabel")}>
               <p className="m-0 text-a4-content leading-relaxed text-foreground">{contact.address}</p>
@@ -174,7 +174,7 @@ export function AboutPageContent({
           {contact.facebookUrl ? (
             <ContactItem icon={<Share2 size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("facebookLabel")}>
               <p className="m-0 text-a4-content leading-relaxed">
-                <a href={contact.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-brand">
+                <a data-about-facebook href={contact.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-foreground [overflow-wrap:anywhere] hover:text-brand">
                   {facebookHandle}
                 </a>
               </p>

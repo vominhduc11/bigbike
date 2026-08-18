@@ -9,10 +9,12 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
 import { RichTextEditor } from '../RichTextEditor'
 import { cn, generateId } from '@/lib/utils'
-import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
-import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
+import { parseSizeGuide, parseSizeGuideResult, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
+import { parseSuitabilityCards, parseSuitabilityResult, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../AiHtmlBrief'
+import { HtmlImportNotice } from '../HtmlImportNotice'
+import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
 import { MediaRequirementHint } from '../MediaRequirementHint'
@@ -513,11 +515,14 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
   const fHtml = isEn ? 'htmlEn' : 'html'
+  const sourceHtml = block[fHtml] || ''
   const [mode, setMode] = useState(() =>
-    ((block[fHtml] || '').trim() && !isGeneratedSuitabilityHtml(block[fHtml])) ? 'html' : 'structured',
+    (sourceHtml.trim() && !isGeneratedSuitabilityHtml(sourceHtml)) ? 'html' : 'structured',
   )
+  const importer = useHtmlImportDraft(sourceHtml, parseSuitabilityResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
   const seedCards = () => {
-    const parsed = parseSuitabilityCards(block[fHtml])
+    const parsed = parseSuitabilityCards(sourceHtml)
     if (parsed.length) return parsed
     if (block.cards && block.cards.length) return block.cards.map((c) => ({ ...emptySuitabilityCard(), ...c }))
     return [emptySuitabilityCard()]
@@ -530,12 +535,57 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
     setCards(nextCards)
     onChange({ [fHtml]: mergeSuitabilityIntoHtml(nextCards, block[fHtml]), cards: undefined })
   }
-  function changeMode(next) {
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextHtml = mergeSuitabilityIntoHtml(parsed.items, nextDraft)
+      setCards(parsed.items.length ? parsed.items : [emptySuitabilityCard()])
+      onChange({ [fHtml]: nextHtml, cards: undefined })
+      setMode('structured')
+      return { sourceHtml: nextHtml }
+    })
+  }
+
+  async function applyRaw() {
+    if (!dirty || !draftHtml.trim()) return
+    await runApply(async ({ draftHtml: nextDraft }) => {
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.rawConfirmMessage'),
+        t('products.detail.htmlImport.rawConfirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      onChange({ [fHtml]: nextDraft, cards: undefined })
+      return { sourceHtml: nextDraft }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
-    // Vào tab có cấu trúc: nạp lại thẻ từ html hiện tại (bỏ CSS, chỉ lấy chữ).
     if (next === 'structured') {
-      const parsed = parseSuitabilityCards(block[fHtml])
-      setCards(parsed.length ? parsed : [emptySuitabilityCard()])
+      if (dirty) {
+        await applyParsed()
+        return
+      }
+      const parsed = parseSuitabilityResult(sourceHtml)
+      if (sourceHtml.trim() && !parsed.acceptedCount) return
+      setCards(parsed.items.length ? parsed.items : [emptySuitabilityCard()])
+    } else {
+      commitDraft(sourceHtml)
     }
     setMode(next)
   }
@@ -551,8 +601,6 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
     const next = cards.filter((_, idx) => idx !== i)
     commit(next.length === 0 ? [emptySuitabilityCard()] : next)
   }
-
-  const html = block[fHtml] || ''
 
   return (
     <div className="flex-1 flex flex-col gap-3">
@@ -586,14 +634,20 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                   onClick={() => removeCard(i)} disabled={disabled}
                   aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
               </div>
-              <Input
-                aria-label={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
-                placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
-                value={card.audience || ''}
-                onChange={(e) => updateCard(i, { audience: e.target.value })}
-                disabled={disabled}
-                maxLength={500}
-              />
+              <div className="flex flex-col gap-1">
+                <RichTextEditor
+                  key={`suitability-audience-${i}-${contentLang}`}
+                  value={card.audience || ''}
+                  onChange={(value) => updateCard(i, { audience: value })}
+                  placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
+                  disabled={disabled}
+                  inlineOnly
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('products.detail.blocks.suitabilityAudienceFormatHint')}
+                </p>
+              </div>
               <Input
                 aria-label={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
                 placeholder={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
@@ -611,25 +665,33 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
 
         {/* Chế độ DÁN MÃ HTML — chỉnh trực tiếp, cho phép CSS inline. */}
         <TabsContent value="html" className="flex flex-col gap-2">
-          <Textarea
-            className="font-mono text-xs"
-            placeholder={t('products.detail.suitability.htmlPlaceholder')}
-            value={html}
-            onChange={(e) => onChange({ [fHtml]: e.target.value, cards: undefined })}
-            disabled={disabled}
-            rows={8}
-            maxLength={20000}
-          />
-          <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
-          <AiHtmlBrief promptKey="products.detail.suitability.aiBriefPrompt" />
+        <Textarea
+          className="font-mono text-xs"
+          placeholder={t('products.detail.suitability.htmlPlaceholder')}
+          value={draftHtml}
+          onChange={(e) => updateDraft(e.target.value)}
+          disabled={disabled || pending}
+          rows={8}
+          maxLength={20000}
+        />
+        <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || pending}
+          onApply={applyParsed}
+          onUseRaw={applyRaw}
+          allowRaw
+        />
+        <AiHtmlBrief promptKey="products.detail.suitability.aiBriefPrompt" />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
             </label>
-            {html.trim() ? (
+            {draftHtml.trim() ? (
               <div
                 className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(draftHtml) }}
               />
             ) : (
               <p className="list-editor-empty">{t('products.detail.suitability.previewEmpty')}</p>
@@ -647,7 +709,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
 function isStructuredHtml(html) {
   const h = html || ''
   if (!h.trim()) return true
-  return serializeSizeGuide(parseSizeGuide(h)) === h
+  return parseSizeGuideResult(h).acceptedCount > 0
 }
 
 /**
@@ -663,13 +725,65 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
   const fHtml = isEn ? 'htmlEn' : 'html'
-  const [mode, setMode] = useState(() => (isStructuredHtml(block[fHtml]) ? 'structured' : 'html'))
-  const [model, setModel] = useState(() => parseSizeGuide(block[fHtml]))
+  const sourceHtml = block[fHtml] || ''
+  const [mode, setMode] = useState(() => (isStructuredHtml(sourceHtml) ? 'structured' : 'html'))
+  const [model, setModel] = useState(() => parseSizeGuide(sourceHtml))
+  const importer = useHtmlImportDraft(sourceHtml, parseSizeGuideResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
 
-  function changeMode(next) {
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextModel = parsed.model || parseSizeGuide(nextDraft)
+      const nextHtml = mergeSizeGuideIntoHtml(nextModel, nextDraft)
+      setModel(nextModel)
+      onChange({ [fHtml]: nextHtml })
+      setMode('structured')
+      return { sourceHtml: nextHtml }
+    })
+  }
+
+  async function applyRaw() {
+    if (!dirty || !draftHtml.trim()) return
+    await runApply(async ({ draftHtml: nextDraft }) => {
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.rawConfirmMessage'),
+        t('products.detail.htmlImport.rawConfirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      onChange({ [fHtml]: nextDraft })
+      return { sourceHtml: nextDraft }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
-    // Vào tab có cấu trúc: nạp lại model từ HTML hiện tại (kể cả HTML vừa dán).
-    if (next === 'structured') setModel(parseSizeGuide(block[fHtml]))
+    if (next === 'structured') {
+      if (dirty) {
+        await applyParsed()
+        return
+      }
+      const parsed = parseSizeGuideResult(sourceHtml)
+      if (sourceHtml.trim() && !parsed.acceptedCount) return
+      setModel(parsed.model || parseSizeGuide(sourceHtml))
+    } else {
+      commitDraft(sourceHtml)
+    }
     setMode(next)
   }
 
@@ -851,25 +965,33 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
 
         {/* Chế độ DÁN MÃ HTML */}
         <TabsContent value="html" className="flex flex-col gap-2">
-          <Textarea
-            className="font-mono text-xs"
-            placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
-            value={block[fHtml] || ''}
-            onChange={(e) => onChange({ [fHtml]: e.target.value })}
-            disabled={disabled}
-            rows={8}
-            maxLength={20000}
-          />
-          <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
-          <AiHtmlBrief promptKey="products.detail.sizeGuide.aiBriefPrompt" />
+        <Textarea
+          className="font-mono text-xs"
+          placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
+          value={draftHtml}
+          onChange={(e) => updateDraft(e.target.value)}
+          disabled={disabled || pending}
+          rows={8}
+          maxLength={20000}
+        />
+        <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || pending}
+          onApply={applyParsed}
+          onUseRaw={applyRaw}
+          allowRaw
+        />
+        <AiHtmlBrief promptKey="products.detail.sizeGuide.aiBriefPrompt" />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}
             </label>
-            {(block[fHtml] || '').trim() ? (
+            {draftHtml.trim() ? (
               <div
                 className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block[fHtml]) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(draftHtml) }}
               />
             ) : (
               <p className="list-editor-empty">{t('products.detail.sizeGuide.previewEmpty')}</p>

@@ -195,9 +195,9 @@ export function AddressBookContent() {
                       </p>
                     )}
                     {(addr.email ?? accountEmail) && (
-                      <p className="m-0 flex items-center gap-2.5">
+                      <p className="m-0 flex min-w-0 items-center gap-2.5">
                         <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                        {addr.email ?? accountEmail}
+                        <span className="min-w-0 [overflow-wrap:anywhere]">{addr.email ?? accountEmail}</span>
                       </p>
                     )}
                     <p className="m-0 flex items-start gap-2.5">

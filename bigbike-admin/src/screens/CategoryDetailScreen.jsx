@@ -921,6 +921,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   value={isEnLang ? (form.translations?.en?.introContent ?? '') : form.introContent}
                   onChange={(html) => isEnLang ? updateTranslation('introContent', html) : updateField('introContent', html)}
                   lang={contentLang}
+                  categoryName={displayName}
                   disabled={isReadOnly}
                 />
               </div>

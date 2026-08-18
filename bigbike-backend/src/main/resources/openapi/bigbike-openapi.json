@@ -841,7 +841,7 @@
         ],
         "summary": "Get public site settings",
         "operationId": "getPublicSettings",
-        "description": "Returns all SiteSettings where isPublic=true. Includes homepage keys such as zalo_url and hotline. No authentication required.",
+        "description": "Returns all SiteSettings where isPublic=true. Includes the restored homepage SEO keys seo_home_title, seo_home_description and seo_home_h1. No authentication required.",
         "responses": {
           "200": {
             "description": "Public settings list",
@@ -12552,6 +12552,11 @@
                 "type": "string",
                 "maxLength": 65535
               },
+              "authorName": {
+                "type": "string",
+                "maxLength": 255,
+                "nullable": true
+              },
               "seoTitle": {
                 "type": "string",
                 "maxLength": 255
@@ -12609,6 +12614,11 @@
           "excerpt": {
             "type": "string",
             "maxLength": 5000
+          },
+          "authorName": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
           },
           "body": {
             "type": "string"
@@ -12676,6 +12686,10 @@
             "nullable": true
           },
           "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "authorName": {
             "type": "string",
             "nullable": true
           },
@@ -12848,6 +12862,11 @@
           },
           "body": {
             "type": "string"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Localized author name. When absent, the public byline and Article JSON-LD author are omitted."
           },
           "coverImage": {
             "$ref": "#/components/schemas/ImageAsset"

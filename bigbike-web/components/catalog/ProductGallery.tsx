@@ -34,6 +34,11 @@ type ProductGalleryProps = {
   variantKey?: string | null;
 };
 
+const MAIN_IMAGE_SIZES =
+  "(min-width: 1200px) 668px, (min-width: 1024px) 56vw, calc(100vw - 32px)";
+const THUMB_IMAGE_SIZES =
+  "(min-width: 1200px) 110px, (min-width: 1024px) 9vw, (min-width: 768px) calc((100vw - 128px) / 5), (min-width: 540px) calc((100vw - 110px) / 4), calc((100vw - 96px) / 3)";
+
 export function ProductGallery({
   mainImage,
   gallery,
@@ -320,6 +325,7 @@ export function ProductGallery({
                     preload={index === 0}
                     width={1200}
                     height={1200}
+                    sizes={MAIN_IMAGE_SIZES}
                     className="w-full h-full object-contain"
                   />
                 )}
@@ -476,6 +482,7 @@ export function ProductGallery({
                       altFallback={altFallback}
                       width={220}
                       height={220}
+                      sizes={THUMB_IMAGE_SIZES}
                       loading={index === 0 ? "eager" : "lazy"}
                       className="w-full h-full object-contain"
                     />

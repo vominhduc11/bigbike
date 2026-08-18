@@ -16,12 +16,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { cn, generateId } from '@/lib/utils'
 import { showConfirm } from '../../lib/confirm'
-import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
-import { mergeHighlightsPairHtmlIntoItems, serializeHighlightsPairToHtml } from '../../lib/highlightsBlock'
-import { mergeFaqsHtmlIntoItems, serializeFaqsToHtml } from '../../lib/faqsBlock'
+import { parseSpecsFromHtml, parseSpecsResult, mergeSpecsIntoHtml } from '../../lib/specSheet'
+import { parseHighlightsPairResult, mergeHighlightsPairHtmlIntoItems, serializeHighlightsPairToHtml } from '../../lib/highlightsBlock'
+import { parseFaqsResult, mergeFaqsHtmlIntoItems, serializeFaqsToHtml } from '../../lib/faqsBlock'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId } from './constants'
 import { useMediaAltSync, useMediaAltSyncList } from '@/lib/useMediaAltSync'
+import { HtmlImportNotice } from '../../components/HtmlImportNotice'
+import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 
 export function IconChevronDown() {
   return (
@@ -507,6 +509,8 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
   const [mode, setMode] = useState(() =>
     ((html || '').trim() && !isGeneratedSpecsHtml(html)) ? 'html' : 'structured',
   )
+  const importer = useHtmlImportDraft(html, parseSpecsResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
   const [rows, setRows] = useState(() => {
     const parsed = parseSpecsFromHtml(html)
     return parsed.length ? parsed : [newRow()]
@@ -529,12 +533,61 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
     lastHtmlRef.current = nextHtml
     onHtmlChange?.(nextHtml)
   }
-  function changeMode(next) {
+
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextHtml = mergeSpecsIntoHtml(parsed.items, nextDraft)
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+      lastHtmlRef.current = nextHtml
+      onHtmlChange?.(nextHtml)
+      setMode('structured')
+      return { sourceHtml: nextHtml }
+    })
+  }
+
+  async function applyRaw() {
+    if (!dirty || !draftHtml.trim()) return
+    await runApply(async ({ draftHtml: nextDraft }) => {
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.rawConfirmMessage'),
+        t('products.detail.htmlImport.rawConfirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      lastHtmlRef.current = nextDraft
+      onHtmlChange?.(nextDraft)
+      setMode('html')
+      return { sourceHtml: nextDraft }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
-    // Vào tab có cấu trúc: nạp lại dòng từ html hiện tại (bỏ CSS, chỉ lấy chữ).
     if (next === 'structured') {
-      const parsed = parseSpecsFromHtml(html)
-      setRows(parsed.length ? parsed : [newRow()])
+      if (dirty) {
+        await applyParsed()
+        return
+      }
+      const parsed = parseSpecsResult(html)
+      if (html.trim() && !parsed.acceptedCount) return
+      setRows(parsed.items.length ? parsed.items : [newRow()])
+    } else {
+      commitDraft(html)
     }
     setMode(next)
   }
@@ -585,16 +638,19 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
                 maxLength={255}
                />
             </div>
-            <div>
-              <Textarea
-                placeholder={t('products.detail.specs.valuePlaceholder')}
-                aria-label={t('products.detail.specs.valueLabel')}
+            <div className="flex flex-col gap-1">
+              <RichTextEditor
+                key={`spec-value-${row._key}`}
                 value={row.value || ''}
-                onChange={(e) => updateRow(index, 'value', e.target.value)}
+                onChange={(value) => updateRow(index, 'value', value)}
+                placeholder={t('products.detail.specs.valuePlaceholder')}
                 disabled={disabled}
-                rows={3}
+                inlineOnly
                 maxLength={2000}
-               />
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('products.detail.specs.valueFormatHint')}
+              </p>
             </div>
           </div>
           <Button
@@ -621,22 +677,31 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
         <Textarea
           className="font-mono text-xs"
           placeholder={t('products.detail.specs.htmlPlaceholder')}
-          value={html || ''}
-          onChange={(e) => onHtmlChange?.(e.target.value)}
-          disabled={disabled}
+          value={draftHtml}
+          onChange={(e) => updateDraft(e.target.value)}
+          disabled={disabled || pending}
           rows={10}
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || pending}
+          onApply={applyParsed}
+          onUseRaw={applyRaw}
+          allowRaw
+          extraNotice={result.extraColumnCount > 0 ? t('products.detail.htmlImport.extraColumns', { count: result.extraColumnCount }) : null}
+        />
         <AiHtmlBrief promptKey="products.detail.specs.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
           </label>
-          {(html || '').trim() ? (
+          {draftHtml.trim() ? (
             <div
               className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(draftHtml) }}
             />
           ) : (
             <p className="list-editor-empty">{t('products.detail.specs.previewEmpty')}</p>
@@ -794,23 +859,30 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const labels = { prosLabel: t('products.detail.highlights.prosTitle'), consLabel: t('products.detail.highlights.consTitle') }
-  const [rawHtml, setRawHtml] = useState(() => serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels))
-  const lastHtmlRef = useRef(rawHtml)
+  const sourceHtml = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels)
+  const importer = useHtmlImportDraft(sourceHtml, parseHighlightsPairResult)
+  const { draftHtml, result, dirty, pending, updateDraft, runApply } = importer
 
-  useEffect(() => {
-    const nextHtml = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels)
-    if (nextHtml === lastHtmlRef.current) return
-    lastHtmlRef.current = nextHtml
-    setRawHtml(nextHtml)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positiveNotes, negativeNotes, isEn])
-
-  function updateHtml(value) {
-    const next = mergeHighlightsPairHtmlIntoItems(positiveNotes, negativeNotes, value, isEn)
-    lastHtmlRef.current = serializeHighlightsPairToHtml(next.positiveNotes, next.negativeNotes, isEn, labels)
-    setRawHtml(value)
-    onChangePositive(next.positiveNotes)
-    onChangeNegative(next.negativeNotes)
+  async function applyParsed() {
+    await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const next = mergeHighlightsPairHtmlIntoItems(positiveNotes, negativeNotes, nextDraft, isEn)
+      onChangePositive(next.positiveNotes)
+      onChangeNegative(next.negativeNotes)
+      return {
+        sourceHtml: serializeHighlightsPairToHtml(next.positiveNotes, next.negativeNotes, isEn, labels),
+      }
+    })
   }
 
   const isEmptyEn = isEn && positiveNotes.length === 0 && negativeNotes.length === 0
@@ -821,18 +893,25 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
         className="font-mono text-xs"
         placeholder={t('products.detail.highlights.htmlPlaceholder')}
         aria-label={t('products.detail.highlights.modeHtml')}
-        value={rawHtml}
-        onChange={(event) => updateHtml(event.target.value)}
-        disabled={disabled || isEmptyEn}
+        value={draftHtml}
+        onChange={(event) => updateDraft(event.target.value)}
+        disabled={disabled || isEmptyEn || pending}
         rows={14}
       />
       <p className="text-xs text-muted-foreground">{t('products.detail.highlights.htmlHint')}</p>
+      <HtmlImportNotice
+        result={result}
+        dirty={dirty}
+        disabled={disabled || isEmptyEn || pending}
+        onApply={applyParsed}
+        extraNotice={t('products.detail.htmlImport.arraySource')}
+      />
       <AiHtmlBrief promptKey="products.detail.highlights.aiBriefPrompt" />
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {t('products.detail.highlights.previewLabel')}
         </label>
-        {rawHtml.trim() ? (
+        {draftHtml.trim() ? (
           <div className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto">
             <HighlightsCardsPreview
               positiveNotes={positiveNotes}
@@ -856,15 +935,9 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   const fQuestion = isEn ? 'questionEn' : 'question'
   const fAnswer = isEn ? 'answerEn' : 'answer'
   const [mode, setMode] = useState('structured')
-  const [rawHtml, setRawHtml] = useState(() => serializeFaqsToHtml(items, isEn))
-  const lastHtmlRef = useRef(rawHtml)
-
-  useEffect(() => {
-    const nextHtml = serializeFaqsToHtml(items, isEn)
-    if (nextHtml === lastHtmlRef.current) return
-    lastHtmlRef.current = nextHtml
-    setRawHtml(nextHtml)
-  }, [items, isEn])
+  const sourceHtml = serializeFaqsToHtml(items, isEn)
+  const importer = useHtmlImportDraft(sourceHtml, parseFaqsResult)
+  const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
 
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
@@ -882,20 +955,37 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
     }
     onChange(items.filter((_, i) => i !== index))
   }
-  function changeMode(next) {
+  async function applyParsed() {
+    return runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
+      if (!parsed.acceptedCount) return null
+      const confirmed = await showConfirm(
+        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmTitle'),
+        {
+          variant: 'default',
+          confirmLabel: t('products.detail.htmlImport.confirmApply'),
+          cancelLabel: t('products.detail.htmlImport.confirmCancel'),
+        },
+      )
+      if (!confirmed) return null
+      const nextItems = mergeFaqsHtmlIntoItems(items, nextDraft, isEn)
+      onChange(nextItems)
+      return { sourceHtml: serializeFaqsToHtml(nextItems, isEn) }
+    })
+  }
+
+  async function changeMode(next) {
     if (next === mode) return
     if (next === 'html') {
-      const nextHtml = serializeFaqsToHtml(items, isEn)
-      lastHtmlRef.current = nextHtml
-      setRawHtml(nextHtml)
+      commitDraft(sourceHtml)
+    } else if (dirty) {
+      const applied = await applyParsed()
+      if (applied?.sourceHtml !== undefined) setMode(next)
+      return
+    } else if (sourceHtml.trim() && !parseFaqsResult(sourceHtml).acceptedCount) {
+      return
     }
     setMode(next)
-  }
-  function updateHtml(value) {
-    const nextItems = mergeFaqsHtmlIntoItems(items, value, isEn)
-    lastHtmlRef.current = serializeFaqsToHtml(nextItems, isEn)
-    setRawHtml(value)
-    onChange(nextItems)
   }
 
   return (
@@ -974,18 +1064,25 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
           className="font-mono text-xs"
           placeholder={t('products.detail.faqs.htmlPlaceholder')}
           aria-label={t('products.detail.faqs.modeHtml')}
-          value={rawHtml}
-          onChange={(event) => updateHtml(event.target.value)}
-          disabled={disabled || (isEn && items.length === 0)}
+          value={draftHtml}
+          onChange={(event) => updateDraft(event.target.value)}
+          disabled={disabled || (isEn && items.length === 0) || pending}
           rows={10}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.faqs.htmlHint')}</p>
+        <HtmlImportNotice
+          result={result}
+          dirty={dirty}
+          disabled={disabled || (isEn && items.length === 0) || pending}
+          onApply={applyParsed}
+          extraNotice={t('products.detail.htmlImport.arraySource')}
+        />
         <AiHtmlBrief promptKey="products.detail.faqs.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.faqs.previewLabel')}
           </label>
-          {rawHtml.trim() ? (
+          {draftHtml.trim() ? (
             <div className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto">
               <FaqAccordionPreview items={items} isEn={isEn} />
             </div>

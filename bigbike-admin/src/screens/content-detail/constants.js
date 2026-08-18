@@ -38,7 +38,7 @@ export function canonicalUrlFromSlug(slug) {
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 export const SECTION_FIELD_PREFIXES = {
-  basic:   ['title', 'slug', 'excerpt', 'translations.en.title', 'translations.en.slug', 'translations.en.excerpt'],
+  basic:   ['title', 'slug', 'excerpt', 'authorName', 'translations.en.title', 'translations.en.slug', 'translations.en.excerpt', 'translations.en.authorName'],
   body:    ['body', 'bodyBlocks', 'translations.en.body'],
   media:   ['coverImageUrl'],
   seo:     ['seoTitle', 'seoDescription', 'seoOgImageUrl', 'translations.en.seoTitle', 'translations.en.seoDescription'],
@@ -86,6 +86,7 @@ export function buildEmptyForm(contentType) {
     slug: '',
     title: '',
     excerpt: '',
+    authorName: '',
     body: '',
     publishStatus: 'DRAFT',
     featured: false,
@@ -109,7 +110,7 @@ export function buildEmptyForm(contentType) {
     seoOgImageMimeType: '',
     type: normalizeContentType(contentType),
     translations: {
-      en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
+      en: { slug: '', title: '', excerpt: '', body: '', authorName: '', seoTitle: '', seoDescription: '' },
     },
   }
 }
@@ -122,6 +123,7 @@ export function buildFormFromItem(contentType, item) {
     slug: item.slug || '',
     title: item.title || '',
     excerpt: item.excerpt || '',
+    authorName: item.authorName || '',
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
     featured: Boolean(item.featured),
@@ -153,6 +155,7 @@ export function buildFormFromItem(contentType, item) {
         title: item.translations?.en?.title || '',
         excerpt: item.translations?.en?.excerpt || '',
         body: item.translations?.en?.body || '',
+        authorName: item.translations?.en?.authorName || '',
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
       },
@@ -256,6 +259,9 @@ export function toPayload(form, _isCreate) {
 
   payload.featured = Boolean(form.featured)
   payload.homeExperience = Boolean(form.homeExperience)
+  // Empty string is intentional: the backend treats a present empty field as
+  // a request to clear an existing author, while an omitted field keeps it.
+  payload.authorName = form.authorName?.trim() || ''
 
   // Always send seo as non-null object so backend can clear fields when all are empty
   payload.seo = {
@@ -283,6 +289,7 @@ export function toPayload(form, _isCreate) {
       title: form.translations?.en?.title?.trim() || null,
       excerpt: form.translations?.en?.excerpt?.trim() || null,
       body: form.translations?.en?.body?.trim() || null,
+      authorName: form.translations?.en?.authorName?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
     },
