@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,8 +28,13 @@ export default function AiHtmlBrief({
   const [open, setOpen] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   const [dynamicPrompt, setDynamicPrompt] = useState(null)
+  const [previewStatus, setPreviewStatus] = useState('idle')
+  const [previewError, setPreviewError] = useState(false)
+  const previewAttempted = useRef(false)
+  const fallbackPromptRef = useRef(null)
   const panelId = useId()
-  const prompt = dynamicPrompt ?? promptValue ?? (promptKey ? t(promptKey) : '')
+  const fallbackPrompt = promptValue ?? (promptKey ? t(promptKey) : '')
+  const prompt = dynamicPrompt ?? fallbackPrompt
 
   async function copyText(value) {
     if (navigator.clipboard?.writeText) {
@@ -47,12 +52,53 @@ export default function AiHtmlBrief({
     if (!copied) throw new Error('Clipboard is unavailable')
   }
 
+  async function resolvePrompt(force = false) {
+    if (fallbackPromptRef.current !== fallbackPrompt) {
+      fallbackPromptRef.current = fallbackPrompt
+      previewAttempted.current = false
+      setDynamicPrompt(null)
+      setPreviewStatus('idle')
+      setPreviewError(false)
+    }
+    if (!force && previewAttempted.current) return dynamicPrompt ?? fallbackPrompt
+
+    previewAttempted.current = true
+    const builder = getPrompt
+    if (typeof builder !== 'function') {
+      setPreviewStatus('ready')
+      setPreviewError(false)
+      return fallbackPrompt
+    }
+
+    setPreviewStatus('loading')
+    setPreviewError(false)
+    try {
+      const nextPrompt = await builder()
+      const normalizedPrompt = String(nextPrompt ?? '').trim()
+      if (!normalizedPrompt) throw new Error('AI brief is empty')
+      setDynamicPrompt(normalizedPrompt)
+      setPreviewStatus('ready')
+      return normalizedPrompt
+    } catch (error) {
+      setDynamicPrompt(null)
+      setPreviewStatus('error')
+      setPreviewError(true)
+      throw error
+    }
+  }
+
+  function handleToggle() {
+    const nextOpen = !open
+    setOpen(nextOpen)
+    if (nextOpen) void resolvePrompt().catch(() => {})
+  }
+
   async function handleCopy() {
     if (isCopying) return
     setIsCopying(true)
     try {
-      const nextPrompt = typeof getPrompt === 'function' ? await getPrompt() : prompt
-      setDynamicPrompt(nextPrompt)
+      const nextPrompt = await resolvePrompt(true)
+      if (!nextPrompt) throw new Error('AI brief is empty')
       await copyText(nextPrompt)
       toast.success(copiedMessage || t('products.detail.aiBrief.copied'))
     } catch {
@@ -69,7 +115,7 @@ export default function AiHtmlBrief({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setOpen((v) => !v)}
+          onClick={handleToggle}
           aria-expanded={open}
           aria-controls={panelId}
           className="h-8 flex-1 justify-start gap-1.5 px-1 text-left text-xs font-medium text-foreground hover:bg-transparent"
@@ -85,9 +131,21 @@ export default function AiHtmlBrief({
         </Button>
       </div>
       {open && (
-        <pre id={panelId} className="whitespace-pre-wrap border-t border-border px-2 py-2 font-mono text-xs leading-relaxed text-muted-foreground">
-          {prompt}
-        </pre>
+        <div id={panelId} className="border-t border-border">
+          {previewStatus === 'loading' && (
+            <p role="status" className="px-2 pt-2 text-xs text-muted-foreground">
+              {t('products.detail.aiBrief.previewLoading')}
+            </p>
+          )}
+          {previewError && (
+            <p role="alert" className="px-2 pt-2 text-xs text-muted-foreground">
+              {t('products.detail.aiBrief.previewFailed')}
+            </p>
+          )}
+          <pre className="whitespace-pre-wrap px-2 py-2 font-mono text-xs leading-relaxed text-muted-foreground">
+            {prompt || fallbackPrompt}
+          </pre>
+        </div>
       )}
     </div>
   )

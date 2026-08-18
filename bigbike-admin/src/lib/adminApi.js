@@ -1716,18 +1716,36 @@ function safeChatCount(value) {
   return Number.isInteger(number) && number >= 0 ? number : 0
 }
 
+function nullableChatNumber(value) {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? number : null
+}
+
 function normalizeChatConversation(input) {
   const s = input && typeof input === 'object' ? input : {}
+  const aiCallCount = safeChatCount(s.aiCallCount)
+  const providerRequests = nullableChatNumber(s.providerRequests)
   return {
     id: safeChatString(s.id),
     locale: s.locale === 'en' ? 'en' : 'vi',
     customerDisplayName: safeChatString(s.customerDisplayName),
     turnCount: safeChatCount(s.turnCount),
-    aiCallCount: safeChatCount(s.aiCallCount),
+    aiCallCount,
     hasLead: Boolean(s.hasLead),
     startedAt: safeChatString(s.startedAt),
     lastMessageAt: safeChatString(s.lastMessageAt),
     endedReason: safeChatString(s.endedReason),
+    inputTokens: nullableChatNumber(s.inputTokens),
+    outputTokens: nullableChatNumber(s.outputTokens),
+    thinkingTokens: nullableChatNumber(s.thinkingTokens),
+    providerRequests,
+    averageLatencyMs: nullableChatNumber(s.averageLatencyMs),
+    estimatedCostUsd: nullableChatNumber(s.estimatedCostUsd),
+    contentRefusals: nullableChatNumber(s.contentRefusals),
+    assistedOrders: nullableChatNumber(s.assistedOrders),
+    assistedRevenue: nullableChatNumber(s.assistedRevenue),
+    hasTelemetry: aiCallCount === 0 || (providerRequests ?? 0) > 0,
   }
 }
 
@@ -1743,11 +1761,30 @@ function normalizeChatMessage(input) {
   }
   return {
     id: safeChatString(s.id),
-    role: s.role === 'USER' ? 'USER' : 'ASSISTANT',
+    role: s.role === 'USER' || s.role === 'CUSTOMER' ? 'USER' : 'ASSISTANT',
     content: safeChatString(s.content),
     source: safeChatString(s.source),
     aiCalled: Boolean(s.aiCalled),
-    products: products.filter((item) => item && typeof item === 'object').slice(0, 3),
+    products: products.filter((item) => item && typeof item === 'object').slice(0, 8),
+    answerFormat: s.answerFormat === 'MARKDOWN' ? 'MARKDOWN' : 'PLAIN_TEXT',
+    resultKind: safeChatString(s.resultKind),
+    inputTokens: nullableChatNumber(s.inputTokens),
+    outputTokens: nullableChatNumber(s.outputTokens),
+    thinkingTokens: nullableChatNumber(s.thinkingTokens),
+    providerRequestCount: nullableChatNumber(s.providerRequestCount),
+    latencyMs: nullableChatNumber(s.latencyMs),
+    estimatedCostUsd: nullableChatNumber(s.estimatedCostUsd),
+    createdAt: safeChatString(s.createdAt),
+  }
+}
+
+function normalizeChatOrderAttribution(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    orderId: safeChatString(s.orderId),
+    orderLineItemId: safeChatString(s.orderLineItemId),
+    attributedAmount: nullableChatNumber(s.attributedAmount),
+    currency: safeChatString(s.currency) || 'VND',
     createdAt: safeChatString(s.createdAt),
   }
 }
@@ -1771,6 +1808,9 @@ function normalizeChatDetail(input) {
     customerId: safeChatString(s.customerId),
     leadOfferStatus: safeChatString(s.leadOfferStatus),
     messages: Array.isArray(s.messages) ? s.messages.map(normalizeChatMessage) : [],
+    orderAttributions: Array.isArray(s.orderAttributions)
+      ? s.orderAttributions.map(normalizeChatOrderAttribution).filter((item) => item.orderId)
+      : [],
     lead: normalizeChatLead(s.lead),
   }
 }
@@ -1813,6 +1853,16 @@ export async function fetchChatStats(date) {
       unanswered: safeChatCount(data.unanswered),
       dailyLimit: safeChatCount(data.dailyLimit),
       remainingAiCalls: safeChatCount(data.remainingAiCalls),
+      inputTokens: nullableChatNumber(data.inputTokens),
+      outputTokens: nullableChatNumber(data.outputTokens),
+      thinkingTokens: nullableChatNumber(data.thinkingTokens),
+      providerRequests: nullableChatNumber(data.providerRequests),
+      averageLatencyMs: nullableChatNumber(data.averageLatencyMs),
+      estimatedCostUsd: nullableChatNumber(data.estimatedCostUsd),
+      contentRefusals: nullableChatNumber(data.contentRefusals),
+      assistedOrders: nullableChatNumber(data.assistedOrders),
+      assistedRevenue: nullableChatNumber(data.assistedRevenue),
+      hasTelemetry: safeChatCount(data.aiCalls) === 0 || (nullableChatNumber(data.providerRequests) ?? 0) > 0,
     })
   } catch (error) {
     throw normalizeError(error)

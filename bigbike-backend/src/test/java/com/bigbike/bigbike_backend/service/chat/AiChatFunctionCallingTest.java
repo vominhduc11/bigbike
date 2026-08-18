@@ -251,10 +251,9 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
-    void rejectsUnknownParallelMalformedAndIdentityBearingCallsBeforeExecution() {
+    void rejectsUnknownMalformedAndIdentityBearingCallsBeforeExecution() {
         List<String> responses = List.of(
                 functionCall("read_database", Map.of(), null),
-                parallelCalls(),
                 functionCall("get_my_orders", Map.of("scope", "latest", "customerId", "123"), null),
                 functionCall("search_products", Map.of("query", List.of("mũ"), "lang", "vi"), null),
                 functionCall("search_products", Map.of("query", "SELECT * FROM products", "lang", "vi"), null),
@@ -271,6 +270,26 @@ class AiChatFunctionCallingTest {
             assertThat(result).as(response).isEmpty();
             assertThat(executions).as(response).hasValue(0);
         }
+    }
+
+    @Test
+    void executesTwoValidatedIndependentCallsFromOneProviderTurn() {
+        AtomicInteger executions = new AtomicInteger();
+        ScriptedTransport transport = new ScriptedTransport(
+                parallelCalls(),
+                finalAnswer(safeAnswer("Dạ, em đã kiểm tra sản phẩm và thông tin cửa hàng. Anh/chị xem kết quả bên dưới nhé.")));
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Tìm mũ và cho tôi thông tin cửa hàng", "vi", REGISTRY, true,
+                (call, session) -> {
+                    executions.incrementAndGet();
+                    return execution(call.name(), "{}", List.of());
+                });
+
+        assertThat(result).isPresent();
+        assertThat(executions).hasValue(2);
+        assertThat(result.orElseThrow().executedTools())
+                .containsExactly("search_products", "get_shop_info");
     }
 
     @Test
@@ -293,6 +312,7 @@ class AiChatFunctionCallingTest {
         ScriptedTransport transport = new ScriptedTransport(
                 finalText("Bên em có mẫu phù hợp ạ."),
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "recovered-search"),
+                functionCall("get_product", Map.of("slug", PRODUCT_SLUG), "sequential-detail"),
                 finalAnswer(safeAnswer(
                         "Dạ, em đã kiểm tra mẫu Tanami bằng dữ liệu hiện tại. "
                                 + "Anh/chị mở sản phẩm bên dưới để xem thông tin đã xác minh nhé.")));
@@ -308,10 +328,10 @@ class AiChatFunctionCallingTest {
                 });
 
         assertThat(result).isPresent();
-        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(4);
         assertThat(result.orElseThrow().executedTools())
-                .containsExactly(ChatToolRegistry.SEARCH_PRODUCTS);
-        assertThat(executions).hasValue(1);
+                .containsExactly(ChatToolRegistry.SEARCH_PRODUCTS, ChatToolRegistry.GET_PRODUCT);
+        assertThat(executions).hasValue(2);
         assertThat(MAPPER.valueToTree(transport.requests().get(1)).toString())
                 .contains("Call exactly one declared function now", "\"mode\":\"ANY\"");
     }

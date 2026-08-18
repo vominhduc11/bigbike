@@ -45,6 +45,8 @@ public class ChatResponseGuard {
             "(?i)(?:\\b\\d[\\d.,]*\\s*(?:VND|VNĐ)\\b|\\b(?:VND|VNĐ)\\b"
                     + "|\\b\\d[\\d.,]*[.,]\\d{1,2}\\s*₫)");
     private static final Pattern URL = Pattern.compile("(?i)(?:https?://|www\\.|/(?:product|san-pham)/)");
+    private static final Pattern FORBIDDEN_RICH_CONTENT = Pattern.compile(
+            "(?s)(?:<[^>]+>|```|`[^`]*`|!\\[[^]]*]|\\[[^]]+]\\([^)]*\\))");
     private static final Pattern EMAIL = Pattern.compile(
             "(?i)(?<![\\p{Alnum}._%+-])[\\p{Alnum}._%+-]+@[\\p{Alnum}.-]+\\.[a-z]{2,}(?![\\p{Alnum}])");
     private static final Pattern PRIVATE_PHONE = Pattern.compile(
@@ -102,8 +104,10 @@ public class ChatResponseGuard {
                     + "|bigbike\\s+has\\s+no\\s+(?:products?|items?|helmets?|models?|headsets?|stock)"
                     + "|(?:could\\s+not|cannot|can't)\\s+find\\s+(?:any\\s+)?(?:product|item|helmet|model))\\b");
     private static final Pattern SENTENCE_END = Pattern.compile("[.!?。！？]+(?=\\s|$)");
-    private static final int MIN_SENTENCES = 2;
-    private static final int MAX_SENTENCES = 5;
+    private static final int MIN_SENTENCES = 1;
+    private static final int MAX_SENTENCES = 10;
+    private static final int MAX_ANSWER_CHARS = 2_000;
+    private static final int MAX_PRODUCTS = 8;
 
     public Optional<CheckedAnswer> check(
             String answer,
@@ -136,7 +140,7 @@ public class ChatResponseGuard {
         // but a correct short answer must reach the customer instead of becoming fallback.
         int sentences = sentenceCount(content);
         if (sentences < MIN_SENTENCES) return Optional.empty();
-        if (products == null || products.size() > 3) return Optional.empty();
+        if (products == null || products.size() > MAX_PRODUCTS) return Optional.empty();
         if (products.stream().anyMatch(product -> !isSafeProduct(product))) return Optional.empty();
         return Optional.of(new CheckedAnswer(content, List.copyOf(products)));
     }
@@ -190,7 +194,7 @@ public class ChatResponseGuard {
         if (sentences < MIN_SENTENCES) {
             return "SENTENCE_COUNT_" + sentences;
         }
-        if (products == null || products.size() > 3) return "TOO_MANY_PRODUCTS";
+        if (products == null || products.size() > MAX_PRODUCTS) return "TOO_MANY_PRODUCTS";
         if (products.stream().anyMatch(product -> !isSafeProduct(product))) return "UNSAFE_PRODUCT";
         return "NONE";
     }
@@ -433,7 +437,8 @@ public class ChatResponseGuard {
                 || RAW_INTERNAL_CODES.matcher(content).find()
                 || containsRawInternalSlug(content, lang)
                 || RAW_CURRENCY.matcher(content).find()
-                || URL.matcher(content).find()) {
+                || URL.matcher(content).find()
+                || FORBIDDEN_RICH_CONTENT.matcher(content).find()) {
             return false;
         }
         return !"en".equals(lang)
@@ -671,7 +676,7 @@ public class ChatResponseGuard {
         if (products == null || products.isEmpty()) return List.of();
         return products.stream()
                 .filter(ChatResponseGuard::isSafeProduct)
-                .limit(3)
+                .limit(MAX_PRODUCTS)
                 .toList();
     }
 
@@ -680,21 +685,22 @@ public class ChatResponseGuard {
         return (int) SENTENCE_END.matcher(value).results().count();
     }
 
-    /** Keep the first five complete sentences; every remaining guard runs on the returned text. */
+    /** Keep complete sentences only; every remaining guard runs on the returned text. */
     private static String trimToSentenceLimit(String value) {
         if (value == null) return null;
         String content = value.trim();
         Matcher matcher = SENTENCE_END.matcher(content);
         int count = 0;
-        int fifthEnd = -1;
+        int safeEnd = -1;
         while (matcher.find()) {
             count++;
-            if (count == MAX_SENTENCES) fifthEnd = matcher.end();
-            if (count > MAX_SENTENCES) {
-                return content.substring(0, fifthEnd).trim();
+            if (count <= MAX_SENTENCES && matcher.end() <= MAX_ANSWER_CHARS) safeEnd = matcher.end();
+            if (count > MAX_SENTENCES || matcher.end() > MAX_ANSWER_CHARS) {
+                return safeEnd < 0 ? "" : content.substring(0, safeEnd).trim();
             }
         }
-        return content;
+        if (content.length() <= MAX_ANSWER_CHARS) return content;
+        return safeEnd < 0 ? "" : content.substring(0, safeEnd).trim();
     }
 
     private static boolean blank(String value) {

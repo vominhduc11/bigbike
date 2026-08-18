@@ -352,7 +352,7 @@ public class ChatToolService {
                     }
                 })
                 .filter(product -> product != null && !sellable(List.of(product)).isEmpty())
-                .limit(3)
+                .limit(8)
                 .toList();
         if (recent.isEmpty()) return Optional.empty();
 
@@ -387,7 +387,7 @@ public class ChatToolService {
 
     private static ToolOutcome ambiguousProductOutcome(List<Product> products, boolean english) {
         List<ChatProductCardResponse> cards = products.stream()
-                .limit(3)
+                .limit(8)
                 .map(ChatToolService::toCard)
                 .toList();
         List<String> names = cards.stream().map(ChatProductCardResponse::name).toList();
@@ -636,7 +636,7 @@ public class ChatToolService {
         List<Product> orderedProducts = used.priceDropped()
                 ? matchingProducts
                 : prioritizePreviouslyShown(matchingProducts, conversationContext);
-        List<Product> products = orderedProducts.stream().limit(3).toList();
+        List<Product> products = orderedProducts.stream().limit(8).toList();
 
         List<ChatProductCardResponse> cards = products.stream()
                 .map(ChatToolService::toCard)
@@ -717,7 +717,7 @@ public class ChatToolService {
                         .map(product -> plain(product.name(), 160))
                         .filter(name -> !name.isBlank())
                         .distinct()
-                        .limit(3)
+                        .limit(8)
                         .toList()
                 : List.of();
 
@@ -1103,7 +1103,7 @@ public class ChatToolService {
             return null;
         }
         int displayed = products.size();
-        if (displayed != Math.min(totals.currentTotalItems(), 3)) return null;
+        if (displayed != Math.min(totals.currentTotalItems(), 8)) return null;
 
         boolean english = "en".equals(context.lang());
         boolean priceScoped = totals.priceRangeTotalItems() != null;
@@ -1122,7 +1122,7 @@ public class ChatToolService {
         sentences.add(first);
         if (names != null && !names.isEmpty()) {
             List<String> namedPrices = products.stream()
-                    .limit(3)
+                    .limit(8)
                     .map(product -> product.name() + " (" + cardPrice(product, english) + ")")
                     .toList();
             sentences.add(english
@@ -2424,7 +2424,7 @@ public class ChatToolService {
                         .map(String::trim)
                         .filter(slug -> !slug.isBlank())
                         .distinct()
-                        .limit(3)
+                        .limit(8)
                         .toList();
         boolean askedToLogin = actions != null && actions.stream()
                 .anyMatch(action -> action != null && "LOGIN".equals(action.type()));
@@ -3768,7 +3768,7 @@ public class ChatToolService {
      * boundaries, so the approved one-letter forms never alter a price such as {@code 500k} or a
      * model such as {@code V2}.
      */
-    private static String normalizeIntent(String value) {
+    static String normalizeIntent(String value) {
         String normalized = normalize(value)
                 // Preserve price separators for CHAT_RULE_015; product tokenization performs
                 // its own punctuation cleanup after price/option extraction.
@@ -3782,7 +3782,12 @@ public class ChatToolService {
                     + "(?![\\p{Alnum}])";
             expanded = expanded.replaceAll(expression, entry.getValue());
         }
-        return expanded.replaceAll("\\s+", " ").trim();
+        String contextual = expanded.replaceAll("\\s+", " ").trim();
+        if (contextual.matches(".*\\b(?:co|con|con hang|duoc|phai|khong)\\b.*\\bhong(?:\\s+(?:shop|ad|anh chi))?$")
+                && !contextual.matches(".*\\b(?:mau|deo|giap)\\s+hong(?:\\s+(?:shop|ad|anh chi))?$")) {
+            contextual = contextual.replaceFirst("\\bhong(?=(?:\\s+(?:shop|ad|anh chi))?$)", "khong");
+        }
+        return contextual;
     }
 
     private static boolean isPriceScopeReset(String normalized) {
@@ -4148,24 +4153,25 @@ public class ChatToolService {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("mu bh", "mu bao hiem");
         map.put("mbh", "mu bao hiem");
-        map.put("gt", "gang tay");
-        map.put("ff", "fullface");
+        map.put("non", "mu bao hiem");
+        map.put("kieng", "kinh");
+        map.put("mu ff", "mu fullface");
         map.put("tn", "tai nghe");
-        map.put("sp", "san pham");
         map.put("bh", "bao hanh");
+        map.put("sdt", "so dien thoai");
+        map.put("cty", "cong ty");
+        map.put("ship", "giao hang");
+        map.put("sz", "size");
         map.put("bnhieu", "bao nhieu");
         map.put("bn", "bao nhieu");
         map.put("hok", "khong");
-        map.put("hong", "khong");
         map.put("khong", "khong");
         map.put("ko", "khong");
-        map.put("k", "khong");
         map.put("ntn", "nhu the nao");
         map.put("dc", "duoc");
         map.put("ae", "anh em");
         map.put("ad", "admin");
         map.put("z", "vay");
-        map.put("v", "vay");
         map.put("j", "gi");
         return java.util.Collections.unmodifiableMap(map);
     }
@@ -4443,7 +4449,7 @@ public class ChatToolService {
                     .filter(slug -> slug != null && !slug.isBlank())
                     .map(String::trim)
                     .distinct()
-                    .limit(3)
+                    .limit(8)
                     .toList();
         }
 
@@ -4499,18 +4505,13 @@ public class ChatToolService {
             recentVerifiedProducts.stream()
                     .filter(slug -> slug != null && slug.matches("[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"))
                     .map(ChatToolService::normalizedSlug)
-                    .limit(3)
+                    .limit(8)
                     .forEach(allowedSlugs::add);
         }
 
         void begin(String name) {
-            if (executed.size() >= 2 || executed.contains(name)) {
+            if (executed.size() >= 3) {
                 throw new IllegalStateException("Chat tool execution limit exceeded");
-            }
-            if (executed.size() == 1
-                    && !(ChatToolRegistry.SEARCH_PRODUCTS.equals(executed.get(0))
-                    && ChatToolRegistry.GET_PRODUCT.equals(name))) {
-                throw new IllegalStateException("Invalid chat tool sequence");
             }
             executed.add(name);
         }

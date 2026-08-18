@@ -19,7 +19,12 @@ type Toast = {
 
 type CartContextValue = {
   cartCount: number | null;
-  addToCart: (productId: string, quantity: number, variantId?: string) => Promise<void>;
+  addToCart: (
+    productId: string,
+    quantity: number,
+    variantId?: string,
+    assistantConversationId?: string,
+  ) => Promise<void>;
   showToast: (title: string, message: string) => void;
   refreshCount: () => void;
 };
@@ -63,8 +68,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToCart = useCallback(
-    async (productId: string, quantity: number, variantId?: string) => {
-      const updated = await addCartItem(productId, quantity, variantId);
+    async (productId: string, quantity: number, variantId?: string, assistantConversationId?: string) => {
+      const updated = await addCartItem(productId, quantity, variantId, assistantConversationId);
       qc.setQueryData(queryKeys.cart(), updated);
       showToast(t("toastAddedTitle"), t("toastAddedBody"));
     },

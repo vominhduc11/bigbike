@@ -16,6 +16,10 @@ export type ChatPersistenceMessage = {
   products?: ChatProductCard[];
   actions?: ChatAction[];
   noResults?: boolean;
+  answerFormat?: "PLAIN_TEXT" | "MARKDOWN";
+  resultKind?: string;
+  requestId?: string;
+  failed?: boolean;
 };
 
 export type ChatPersistenceSnapshot = {
@@ -29,6 +33,7 @@ export type ChatPersistenceSnapshot = {
   leadPrompt: boolean;
   leadCaptured: boolean;
   leadDeclined: boolean;
+  pendingRequestId?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -82,7 +87,7 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
 
   const message: ChatPersistenceMessage = { id, role, content };
   if (value.products != null) {
-    if (!Array.isArray(value.products) || value.products.length > 3) return undefined;
+    if (!Array.isArray(value.products) || value.products.length > 8) return undefined;
     const products = value.products.map(readProduct);
     if (products.some((product) => !product)) return undefined;
     message.products = products as ChatProductCard[];
@@ -96,6 +101,24 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
   if (value.noResults != null) {
     if (typeof value.noResults !== "boolean") return undefined;
     message.noResults = value.noResults;
+  }
+  if (value.answerFormat != null) {
+    if (value.answerFormat !== "PLAIN_TEXT" && value.answerFormat !== "MARKDOWN") return undefined;
+    message.answerFormat = value.answerFormat;
+  }
+  if (value.resultKind != null) {
+    const resultKind = boundedString(value.resultKind, 80);
+    if (!resultKind) return undefined;
+    message.resultKind = resultKind;
+  }
+  if (value.requestId != null) {
+    const requestId = boundedString(value.requestId, 120);
+    if (!requestId) return undefined;
+    message.requestId = requestId;
+  }
+  if (value.failed != null) {
+    if (typeof value.failed !== "boolean") return undefined;
+    message.failed = value.failed;
   }
   return message;
 }
@@ -145,6 +168,13 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       removeSnapshot();
       return null;
     }
+    const pendingRequestId = parsed.pendingRequestId == null
+      ? undefined
+      : boundedString(parsed.pendingRequestId, 120);
+    if (parsed.pendingRequestId != null && !pendingRequestId) {
+      removeSnapshot();
+      return null;
+    }
 
     const messages = parsed.messages.map(readMessage);
     if (messages.some((message) => !message)) {
@@ -163,6 +193,7 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       leadPrompt: parsed.leadPrompt,
       leadCaptured: parsed.leadCaptured,
       leadDeclined: parsed.leadDeclined,
+      pendingRequestId,
     };
   } catch {
     removeSnapshot();

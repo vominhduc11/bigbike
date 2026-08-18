@@ -54,8 +54,8 @@ class ChatSearchInterpretationTest {
     void shorthandNaturalWordingAndPriceFormsReachTheInterpretedPublicCategory() {
         List<SearchCase> cases = List.of(
                 new SearchCase("mbh", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", null),
-                new SearchCase("gt", "Găng tay", "găng tay", "gang-tay-xe-may-moto", null),
-                new SearchCase("ff", "Mũ bảo hiểm fullface", "fullface", "mu-bao-hiem-fullface", null),
+                new SearchCase("nón", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", null),
+                new SearchCase("mũ ff", "Mũ bảo hiểm fullface", "fullface", "mu-bao-hiem-fullface", null),
                 new SearchCase("tn", "Tai nghe bluetooth mũ bảo hiểm", "tai nghe", "tai-nghe-bluetooth-mu-bao-hiem", null),
                 new SearchCase("mbh 2 củ", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_400_000L),
                 new SearchCase("mbh 1tr5", "Mũ bảo hiểm", "mũ bảo hiểm", "mu-bao-hiem", 1_050_000L),

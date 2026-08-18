@@ -10,7 +10,7 @@ type TestAuthState =
 
 const api = vi.hoisted(() => ({
   fetchChatAvailability: vi.fn(),
-  sendChatMessage: vi.fn(),
+  streamChatMessage: vi.fn(),
   captureChatLead: vi.fn(),
   declineChatLead: vi.fn(),
 }));
@@ -26,6 +26,9 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@/lib/api/client-api", () => api);
 vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => auth.state }));
+vi.mock("@/lib/cart-context", () => ({
+  useCart: () => ({ addToCart: vi.fn() }),
+}));
 vi.mock("@/components/ui/MediaImage", () => ({
   MediaImage: ({ altFallback }: { altFallback: string }) => <div aria-label={altFallback} />,
 }));
@@ -40,6 +43,7 @@ beforeEach(() => {
     disconnect() {}
   });
   HTMLElement.prototype.scrollTo = vi.fn();
+  window.matchMedia = vi.fn().mockReturnValue({ matches: true });
   api.fetchChatAvailability.mockResolvedValue({
     mode: "AI",
     greeting: "Xin chào từ Trợ lý BigBike",
@@ -47,7 +51,7 @@ beforeEach(() => {
     maxTurns: 12,
     contacts: {},
   });
-  api.sendChatMessage.mockResolvedValue({
+  api.streamChatMessage.mockResolvedValue({
     conversationId: "conversation-1",
     mode: "AI",
     answer: "Em tìm thấy sản phẩm thật này.",
@@ -85,7 +89,7 @@ describe("FloatingChat", () => {
     await user.type(screen.getByLabelText("messageLabel"), "Cho em mũ 3/4");
     await user.click(screen.getByRole("button", { name: "send" }));
 
-    expect(await screen.findByText("Em tìm thấy sản phẩm thật này.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Em tìm thấy sản phẩm thật này.")).not.toHaveLength(0);
     expect(screen.getByText("Mũ 3/4 Test")).toBeInTheDocument();
     expect(screen.getByText(/1\.590\.000/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "viewProduct" })).toHaveAttribute("href", expect.stringContaining("/product/"));
@@ -142,11 +146,11 @@ describe("FloatingChat", () => {
     expect(screen.getByText("0901234567")).toBeInTheDocument();
     expect(screen.getByText("messenger")).toBeInTheDocument();
     expect(document.querySelector("[data-bi-contact-view]")).not.toBeInTheDocument();
-    await waitFor(() => expect(api.sendChatMessage).not.toHaveBeenCalled());
+    await waitFor(() => expect(api.streamChatMessage).not.toHaveBeenCalled());
   });
 
   it("locks the composer after a closed conversation while keeping the answer in the chat flow", async () => {
-    api.sendChatMessage.mockResolvedValueOnce({
+    api.streamChatMessage.mockResolvedValueOnce({
       conversationId: "conversation-closed",
       mode: "CONTACT",
       answer: "Hội thoại đã kết thúc theo quy định. Anh/chị có thể gặp nhân viên BigBike để được hỗ trợ tiếp.",
@@ -180,7 +184,7 @@ describe("FloatingChat", () => {
   });
 
   it("keeps the composer open and returns the draft after a network failure", async () => {
-    api.sendChatMessage.mockRejectedValue(new Error("network failure"));
+    api.streamChatMessage.mockRejectedValue(new Error("network failure"));
     const user = userEvent.setup();
     render(<FloatingChat hotline="0901 234 567" />);
 
@@ -196,9 +200,9 @@ describe("FloatingChat", () => {
     expect(screen.queryByText(/stack trace|exception|functionCall|SQL/i)).not.toBeInTheDocument();
   });
 
-  it("stops waiting after 45 seconds, restores the draft, and retries the same message", async () => {
+  it("stops waiting after 75 seconds, restores the draft, and retries with the same request id", async () => {
     vi.useFakeTimers();
-    api.sendChatMessage.mockImplementationOnce(() => new Promise(() => {}));
+    api.streamChatMessage.mockImplementationOnce(() => new Promise(() => {}));
     render(<FloatingChat hotline="0901 234 567" />);
 
     fireEvent.click(screen.getByRole("button", { name: "open" }));
@@ -211,7 +215,7 @@ describe("FloatingChat", () => {
     fireEvent.click(screen.getByRole("button", { name: "send" }));
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(45_000);
+      await vi.advanceTimersByTimeAsync(75_000);
     });
 
     expect(screen.getByText("timeoutNotice")).toBeInTheDocument();
@@ -220,7 +224,7 @@ describe("FloatingChat", () => {
     expect(screen.getByRole("button", { name: "retry" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /talkToStaff/ })).toBeInTheDocument();
 
-    api.sendChatMessage.mockResolvedValueOnce({
+    api.streamChatMessage.mockResolvedValueOnce({
       conversationId: "conversation-after-timeout",
       mode: "AI",
       answer: "Em đã kiểm tra lại được yêu cầu này.",
@@ -239,17 +243,20 @@ describe("FloatingChat", () => {
       await Promise.resolve();
     });
 
-    expect(api.sendChatMessage).toHaveBeenLastCalledWith(
+    const firstRequestId = api.streamChatMessage.mock.calls[0]?.[3];
+    expect(api.streamChatMessage).toHaveBeenLastCalledWith(
       "Tìm mũ trong tầm giá này",
       "vi",
       undefined,
+      firstRequestId,
+      expect.any(Function),
       expect.any(AbortSignal),
     );
-    expect(screen.getByText("Em đã kiểm tra lại được yêu cầu này.")).toBeInTheDocument();
+    expect(screen.getAllByText("Em đã kiểm tra lại được yêu cầu này.")).not.toHaveLength(0);
   });
 
   it("keeps asking after a technical fallback response", async () => {
-    api.sendChatMessage
+    api.streamChatMessage
       .mockResolvedValueOnce({
         conversationId: "conversation-fallback",
         mode: "AI",
@@ -284,18 +291,18 @@ describe("FloatingChat", () => {
     await user.type(input, "Câu hỏi bị lỗi");
     await user.click(screen.getByRole("button", { name: "send" }));
 
-    expect(await screen.findByText("fallback kỹ thuật")).toBeInTheDocument();
+    expect(await screen.findAllByText("fallback kỹ thuật")).not.toHaveLength(0);
     expect(input).not.toBeDisabled();
 
     await user.type(input, "Câu hỏi tiếp theo");
     await user.click(screen.getByRole("button", { name: "send" }));
 
-    expect(await screen.findByText("Em đã kiểm tra được thông tin này. Anh/chị có thể xem tiếp nhé.")).toBeInTheDocument();
-    expect(api.sendChatMessage).toHaveBeenCalledTimes(2);
+    expect(await screen.findAllByText("Em đã kiểm tra được thông tin này. Anh/chị có thể xem tiếp nhé.")).not.toHaveLength(0);
+    expect(api.streamChatMessage).toHaveBeenCalledTimes(2);
   });
 
   it("maps every backend action to a fixed local route", async () => {
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-actions",
       mode: "AI",
       answer: "Anh/chị có thể dùng các trang tài khoản hiện có.",
@@ -325,7 +332,7 @@ describe("FloatingChat", () => {
   });
 
   it("disables new questions when the backend reports no remaining turns", async () => {
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-limit",
       mode: "AI",
       answer: "Hội thoại này đã đến lượt cuối. Anh/chị có thể xem thông tin vừa nhận. BigBike vẫn giữ kênh nhân viên bên dưới.",
@@ -351,7 +358,7 @@ describe("FloatingChat", () => {
   });
 
   it("records a declined callback invitation without sending contact details", async () => {
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-lead-decline",
       mode: "AI",
       answer: "Trợ lý BigBike có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
@@ -376,7 +383,7 @@ describe("FloatingChat", () => {
     await user.click(await screen.findByRole("button", { name: "leadDecline" }));
 
     await waitFor(() => expect(api.declineChatLead).toHaveBeenCalledWith("conversation-lead-decline"));
-    expect(await screen.findByText("leadDeclined")).toBeInTheDocument();
+    expect(await screen.findAllByText("leadDeclined")).not.toHaveLength(0);
   });
 
   it("shows the masked account contact and only captures after explicit consent", async () => {
@@ -384,7 +391,7 @@ describe("FloatingChat", () => {
       status: "authenticated",
       profile: { displayName: "Nguyễn Minh", phone: "0909 123 456" },
     };
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-account",
       mode: "AI",
       answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
@@ -423,7 +430,7 @@ describe("FloatingChat", () => {
       status: "authenticated",
       profile: { displayName: "Nguyễn Minh", phone: "0909123456" },
     };
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-other-number",
       mode: "AI",
       answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
@@ -466,7 +473,7 @@ describe("FloatingChat", () => {
       status: "authenticated",
       profile: { displayName: "Nguyễn Minh", phone: "0909123456" },
     };
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-account-decline",
       mode: "AI",
       answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
@@ -498,7 +505,7 @@ describe("FloatingChat", () => {
       status: "authenticated",
       profile: { displayName: "Nguyễn Minh", phone: null },
     };
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-no-phone",
       mode: "AI",
       answer: "Em có thể nhờ BigBike liên hệ lại nếu anh/chị đồng ý.",
@@ -526,7 +533,7 @@ describe("FloatingChat", () => {
   });
 
   it("restores the same conversation and remaining turns after remount", async () => {
-    api.sendChatMessage.mockResolvedValue({
+    api.streamChatMessage.mockResolvedValue({
       conversationId: "conversation-restored",
       mode: "AI",
       answer: "Em vẫn đang giữ phần tư vấn này cho anh/chị.",
@@ -545,28 +552,30 @@ describe("FloatingChat", () => {
     await user.click(screen.getByRole("button", { name: "open" }));
     await user.type(await screen.findByLabelText("messageLabel"), "Tư vấn tiếp giúp em");
     await user.click(screen.getByRole("button", { name: "send" }));
-    expect(await screen.findByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).not.toHaveLength(0);
     await waitFor(() => expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toBeNull());
 
     firstRender.unmount();
     render(<FloatingChat />);
     await user.click(screen.getByRole("button", { name: "open" }));
 
-    expect(await screen.findByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Em vẫn đang giữ phần tư vấn này cho anh/chị.")).not.toHaveLength(0);
     expect(screen.getByText("remainingWarning:3")).toBeInTheDocument();
     const input = screen.getByLabelText("messageLabel");
     await user.type(input, "Câu hỏi nối tiếp");
     await user.click(screen.getByRole("button", { name: "send" }));
-    await waitFor(() => expect(api.sendChatMessage).toHaveBeenLastCalledWith(
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenLastCalledWith(
       "Câu hỏi nối tiếp",
       "vi",
       "conversation-restored",
+      expect.any(String),
+      expect.any(Function),
       expect.any(AbortSignal),
     ));
   });
 
   it("deletes the local conversation immediately from the chat header", async () => {
-    api.sendChatMessage.mockResolvedValueOnce({
+    api.streamChatMessage.mockResolvedValueOnce({
       conversationId: "conversation-delete",
       mode: "AI",
       answer: "Nội dung cần xoá ngay.",
@@ -585,7 +594,7 @@ describe("FloatingChat", () => {
     await user.click(screen.getByRole("button", { name: "open" }));
     await user.type(await screen.findByLabelText("messageLabel"), "Lưu câu này");
     await user.click(screen.getByRole("button", { name: "send" }));
-    expect(await screen.findByText("Nội dung cần xoá ngay.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Nội dung cần xoá ngay.")).not.toHaveLength(0);
     await waitFor(() => expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toBeNull());
 
     await user.click(screen.getByRole("button", { name: "deleteConversation" }));
@@ -614,7 +623,7 @@ describe("FloatingChat", () => {
     render(<FloatingChat hotline="0901 234 567" />);
 
     await user.click(screen.getByRole("button", { name: "open" }));
-    expect(await screen.findByText("Cuộc trò chuyện đã kết thúc.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Cuộc trò chuyện đã kết thúc.")).not.toHaveLength(0);
     expect(screen.getByLabelText("messageLabel")).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "talkToStaff" }));
     expect(await screen.findByText("contactTitle")).toBeInTheDocument();

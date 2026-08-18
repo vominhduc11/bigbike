@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Bot, CircleAlert, MessageCircle, PhoneCall, Sparkles } from 'lucide-react'
+import { BadgeDollarSign, Bot, CircleAlert, Clock3, MessageCircle, PhoneCall, ReceiptText, ShieldAlert, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminTable } from '../components/AdminTable'
@@ -22,6 +22,22 @@ function localDate() {
   const now = new Date()
   const offset = now.getTimezoneOffset() * 60_000
   return new Date(now.getTime() - offset).toISOString().slice(0, 10)
+}
+
+function formatNumber(value) {
+  return value == null ? '—' : new Intl.NumberFormat().format(value)
+}
+
+function formatUsd(value) {
+  return value == null ? '—' : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(value)
+}
+
+function formatVnd(value) {
+  return value == null ? '—' : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
+}
+
+function formatLatency(value) {
+  return value == null ? '—' : value >= 1_000 ? `${(value / 1_000).toFixed(1)} s` : `${Math.round(value)} ms`
 }
 
 function SummaryCard({ icon, label, value, detail }) {
@@ -97,6 +113,24 @@ export function ChatConversationListScreen({ navigate }) {
       align: 'right',
     },
     {
+      key: 'averageLatencyMs',
+      label: t('chatAdmin.columns.latency'),
+      render: (item) => <span className="whitespace-nowrap">{item.hasTelemetry ? formatLatency(item.averageLatencyMs) : '—'}</span>,
+      align: 'right',
+    },
+    {
+      key: 'estimatedCostUsd',
+      label: t('chatAdmin.columns.cost'),
+      render: (item) => <span className="whitespace-nowrap">{item.hasTelemetry ? formatUsd(item.estimatedCostUsd) : '—'}</span>,
+      align: 'right',
+    },
+    {
+      key: 'assistedRevenue',
+      label: t('chatAdmin.columns.assistedRevenue'),
+      render: (item) => <span className="whitespace-nowrap">{formatVnd(item.assistedRevenue)}</span>,
+      align: 'right',
+    },
+    {
       key: 'hasLead',
       label: t('chatAdmin.columns.lead'),
       render: (item) => (
@@ -127,6 +161,16 @@ export function ChatConversationListScreen({ navigate }) {
         <SummaryCard icon={<MessageCircle size={20} />} label={t('chatAdmin.stats.conversations')} value={stats?.conversations ?? '—'} />
         <SummaryCard icon={<PhoneCall size={20} />} label={t('chatAdmin.stats.leads')} value={stats?.leads ?? '—'} />
         <SummaryCard icon={<CircleAlert size={20} />} label={t('chatAdmin.stats.unanswered')} value={stats?.unanswered ?? '—'} />
+        <SummaryCard icon={<Clock3 size={20} />} label={t('chatAdmin.stats.averageLatency')} value={stats?.hasTelemetry ? formatLatency(stats.averageLatencyMs) : '—'} />
+        <SummaryCard
+          icon={<Bot size={20} />}
+          label={t('chatAdmin.stats.tokens')}
+          value={stats?.hasTelemetry ? formatNumber((stats.inputTokens ?? 0) + (stats.outputTokens ?? 0) + (stats.thinkingTokens ?? 0)) : '—'}
+          detail={stats?.hasTelemetry ? t('chatAdmin.stats.providerRequests', { count: stats.providerRequests ?? 0 }) : t('chatAdmin.stats.noTelemetry')}
+        />
+        <SummaryCard icon={<BadgeDollarSign size={20} />} label={t('chatAdmin.stats.estimatedCost')} value={stats?.hasTelemetry ? formatUsd(stats.estimatedCostUsd) : '—'} detail={stats?.hasTelemetry ? t('chatAdmin.stats.estimateNotice') : t('chatAdmin.stats.noTelemetry')} />
+        <SummaryCard icon={<ShieldAlert size={20} />} label={t('chatAdmin.stats.contentRefusals')} value={formatNumber(stats?.contentRefusals)} />
+        <SummaryCard icon={<ReceiptText size={20} />} label={t('chatAdmin.stats.assistedOrders')} value={formatNumber(stats?.assistedOrders)} detail={stats ? formatVnd(stats.assistedRevenue) : ''} />
       </div>
 
       <FilterBar ariaLabel={t('chatAdmin.filters.label')}>
@@ -172,6 +216,8 @@ export function ChatConversationListScreen({ navigate }) {
               meta: [
                 { label: t('chatAdmin.columns.turns'), value: item.turnCount },
                 { label: t('chatAdmin.columns.aiCalls'), value: item.aiCallCount },
+                { label: t('chatAdmin.columns.cost'), value: item.hasTelemetry ? formatUsd(item.estimatedCostUsd) : '—' },
+                { label: t('chatAdmin.columns.assistedRevenue'), value: formatVnd(item.assistedRevenue) },
               ],
               onClick: () => navigate(`/admin/chat/${item.id}`),
             })}

@@ -48,22 +48,24 @@ class ChatResponseGuardTest {
         assertThat(guard.check("Mức giá này đang được áp dụng. Anh/chị mở sản phẩm để xem thêm. Em luôn sẵn sàng hỗ trợ.",
                 List.of(invalid), "vi")).isEmpty();
         assertThat(guard.check("Mức giá này đang được áp dụng. Anh/chị mở sản phẩm để xem thêm. Em luôn sẵn sàng hỗ trợ.",
-                List.of(valid, valid, valid, valid), "vi")).isEmpty();
+                java.util.Collections.nCopies(8, valid), "vi")).isPresent();
+        assertThat(guard.check("Mức giá này đang được áp dụng. Anh/chị mở sản phẩm để xem thêm. Em luôn sẵn sàng hỗ trợ.",
+                java.util.Collections.nCopies(9, valid), "vi")).isEmpty();
     }
 
     @Test
-    @DisplayName("CHAT_RULE_007: answers need 2 sentences and safe overlong copy is trimmed to 5")
+    @DisplayName("CHAT_RULE_007: one sentence is valid and safe overlong copy is trimmed to 10")
     void enforcesSentenceRange() {
         assertThat(guard.check("Em đã kiểm tra sản phẩm này.", List.of(), "vi"))
-                .as("one sentence is still too short").isEmpty();
+                .as("one precise sentence is accepted").isPresent();
         assertThat(guard.check(
                 "Em đã kiểm tra sản phẩm này đang bán. Anh/chị mở thẻ bên dưới để xem thêm nhé?",
                 List.of(), "vi"))
                 .as("two sentences reach the customer instead of falling back").isPresent();
         assertThat(guard.check(
-                "Một. Hai. Ba. Bốn. Năm. Sáu.", List.of(), "vi"))
+                "Một. Hai. Ba. Bốn. Năm. Sáu. Bảy. Tám. Chín. Mười. Mười một.", List.of(), "vi"))
                 .map(ChatResponseGuard.CheckedAnswer::answer)
-                .hasValue("Một. Hai. Ba. Bốn. Năm.");
+                .hasValue("Một. Hai. Ba. Bốn. Năm. Sáu. Bảy. Tám. Chín. Mười.");
     }
 
     @Test

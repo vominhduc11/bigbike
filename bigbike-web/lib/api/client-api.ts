@@ -168,13 +168,18 @@ export type ChatMessageResult = {
   leadPrompt: boolean;
   actions: ChatAction[];
   contacts: ChatContact;
+  answerFormat: "PLAIN_TEXT" | "MARKDOWN";
+  resultKind: string;
 };
+
+export type ChatProgressCode = "UNDERSTANDING" | "CHECKING_PRODUCTS" | "FINALIZING";
 
 const CHAT_ACTION_TYPES = new Set<ChatActionType>(["LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP"]);
 const CHAT_FORBIDDEN_TEXT = /(?:\b(?:api|endpoint|database|session|quota|gemini|json|tool|sql|function\s*call|functioncall|stack\s*trace|exception|error(?:\s*(?:code|id|message))?)\b|\berror\s*[:#])/i;
 const CHAT_RAW_CODES = /\b(?:CANCELLED|COMPLETED|PENDING|PROCESSING|IN_STOCK|OUT_OF_STOCK|AI_UNAVAILABLE|CONTACT_FALLBACK|NO_MATCH_IN_REQUESTED_PRICE_RANGE|SEARCH_WAS_BROADENED)\b/;
 const CHAT_RAW_CURRENCY = /(?:\b\d[\d.,]*\s*(?:VND|VNĐ)\b|\b(?:VND|VNĐ)\b|\b\d[\d.,]*[.,]\d{1,2}\s*₫)/i;
 const CHAT_URL = /(?:https?:\/\/|www\.|\/(?:product|san-pham)\/)/i;
+const CHAT_UNSAFE_RICH_CONTENT = /(?:<\/?[a-z][^>]*>|`|!?\[[^\]]*\]\([^)]*\))/i;
 const CHAT_VIETNAMESE_TEXT = /[à-ỹÀ-ỸđĐ]/;
 
 function isSafeChatDisplayText(value: unknown, lang: "vi" | "en"): value is string {
@@ -183,7 +188,8 @@ function isSafeChatDisplayText(value: unknown, lang: "vi" | "en"): value is stri
   if (CHAT_FORBIDDEN_TEXT.test(text)
     || CHAT_RAW_CODES.test(text)
     || CHAT_RAW_CURRENCY.test(text)
-    || CHAT_URL.test(text)) return false;
+    || CHAT_URL.test(text)
+    || CHAT_UNSAFE_RICH_CONTENT.test(text)) return false;
   return lang !== "en" || !CHAT_VIETNAMESE_TEXT.test(text);
 }
 
@@ -242,7 +248,7 @@ function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; u
       stockState: "IN_STOCK",
     });
   }
-  return { products: products.slice(0, 3), unsafe: false };
+  return { products: products.slice(0, 8), unsafe: false };
 }
 
 function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMessageResult {
@@ -265,6 +271,10 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
     leadPrompt: !unsafe && source.leadPrompt === true,
     actions: unsafe || !answer ? [] : normalizeChatActions(source.actions),
     contacts: normalizeChatContacts(source.contacts),
+    answerFormat: source.answerFormat === "MARKDOWN" ? "MARKDOWN" : "PLAIN_TEXT",
+    resultKind: typeof source.resultKind === "string" && source.resultKind.trim()
+      ? source.resultKind.trim()
+      : mode,
   };
 }
 
@@ -290,12 +300,94 @@ export function sendChatMessage(
   lang: "vi" | "en",
   conversationId?: string,
   signal?: AbortSignal,
+  requestId?: string,
 ): Promise<ChatMessageResult> {
   return clientRequest<unknown>("POST", "/api/v1/chat/messages", {
     conversationId: conversationId || null,
     message,
     lang,
+    requestId: requestId || null,
   }, undefined, signal).then((value) => normalizeChatMessageResult(value, lang));
+}
+
+function parseSseEvent(block: string): { event: string; data: string } | null {
+  let event = "message";
+  const data: string[] = [];
+  for (const line of block.split(/\r?\n/)) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+  }
+  return data.length > 0 ? { event, data: data.join("\n") } : null;
+}
+
+/**
+ * Reads only the server's fixed progress codes. The completed, moderated answer
+ * is returned as one object; partial model output is never exposed to the UI.
+ */
+export async function streamChatMessage(
+  message: string,
+  lang: "vi" | "en",
+  conversationId: string | undefined,
+  requestId: string,
+  onProgress: (code: ChatProgressCode) => void,
+  signal?: AbortSignal,
+): Promise<ChatMessageResult> {
+  const headers: Record<string, string> = {
+    Accept: "text/event-stream",
+    "Content-Type": "application/json",
+  };
+  const csrf = getCsrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/chat/messages/stream`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({
+      conversationId: conversationId || null,
+      message,
+      lang,
+      requestId,
+    }),
+    signal,
+  });
+  if (!response.ok || !response.body) throw new ApiClientError(response.status);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: ChatMessageResult | null = null;
+
+  const consume = (block: string) => {
+    const parsed = parseSseEvent(block);
+    if (!parsed) return;
+    const value: unknown = JSON.parse(parsed.data);
+    if (parsed.event === "progress") {
+      const code = value && typeof value === "object" ? (value as { code?: unknown }).code : null;
+      if (code === "UNDERSTANDING" || code === "CHECKING_PRODUCTS" || code === "FINALIZING") {
+        onProgress(code);
+      }
+    } else if (parsed.event === "result") {
+      result = normalizeChatMessageResult(value, lang);
+    } else if (parsed.event === "error") {
+      throw new Error("CHAT_UNAVAILABLE");
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, "\n");
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary >= 0) {
+      consume(buffer.slice(0, boundary));
+      buffer = buffer.slice(boundary + 2);
+      boundary = buffer.indexOf("\n\n");
+    }
+    if (done) break;
+  }
+  if (buffer.trim()) consume(buffer);
+  if (!result) throw new Error(invalidPayloadMessage());
+  return result;
 }
 
 export function captureChatLead(input: {
@@ -316,8 +408,18 @@ export function fetchCart(): Promise<Cart> {
   return clientRequest("GET", "/api/v1/cart");
 }
 
-export function addCartItem(productId: string, quantity: number, variantId?: string): Promise<Cart> {
-  return clientRequest("POST", "/api/v1/cart/items", { productId, quantity, productVariantId: variantId ?? null });
+export function addCartItem(
+  productId: string,
+  quantity: number,
+  variantId?: string,
+  assistantConversationId?: string,
+): Promise<Cart> {
+  return clientRequest("POST", "/api/v1/cart/items", {
+    productId,
+    quantity,
+    productVariantId: variantId ?? null,
+    assistantConversationId: assistantConversationId ?? null,
+  });
 }
 
 export function updateCartItem(itemId: string, quantity: number): Promise<Cart> {

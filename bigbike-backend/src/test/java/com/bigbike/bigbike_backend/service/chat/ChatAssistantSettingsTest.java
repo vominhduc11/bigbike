@@ -13,19 +13,19 @@ import org.junit.jupiter.api.Test;
 class ChatAssistantSettingsTest {
 
     @Test
-    @DisplayName("CHAT_RULE_005: recent-turn setting defaults to three, accepts zero and clamps oversized data")
+    @DisplayName("CHAT_RULE_005: recent-turn setting defaults to twelve, accepts zero and clamps oversized data")
     void recentTurnPairSettingIsRuntimeConfigurableAndBounded() {
         SiteSettingJpaRepository repository = mock(SiteSettingJpaRepository.class);
         ChatAssistantSettings settings = new ChatAssistantSettings(repository);
 
         when(repository.findAll()).thenReturn(List.of());
-        assertThat(settings.load("vi").recentTurnPairs()).isEqualTo(3);
+        assertThat(settings.load("vi").recentTurnPairs()).isEqualTo(12);
 
         when(repository.findAll()).thenReturn(List.of(setting("0")));
         assertThat(settings.load("vi").recentTurnPairs()).isZero();
 
         when(repository.findAll()).thenReturn(List.of(setting("99")));
-        assertThat(settings.load("vi").recentTurnPairs()).isEqualTo(3);
+        assertThat(settings.load("vi").recentTurnPairs()).isEqualTo(12);
     }
 
     private static SiteSettingEntity setting(String value) {

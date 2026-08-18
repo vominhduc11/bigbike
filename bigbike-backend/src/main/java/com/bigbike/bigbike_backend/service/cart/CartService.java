@@ -13,6 +13,8 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,6 +43,8 @@ public class CartService {
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final CartCalculator calculator;
+    private final ChatConversationJpaRepository chatConversationRepo;
+    private final ChatMessageJpaRepository chatMessageRepo;
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {
@@ -90,6 +94,8 @@ public class CartService {
     public CartEntity addItem(CartEntity cart, AddCartItemRequest req) {
         ProductEntity product = productRepo.findById(req.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
+        UUID assistantConversationId = validateAssistantAttribution(
+                cart, product, req.assistantConversationId());
 
         if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
             throw new ConflictException("Product is not available.");
@@ -133,6 +139,7 @@ public class CartService {
             item = existing.get();
             item.setQuantity(newQuantity);
             item.setUnitPrice(unitPrice);
+            if (assistantConversationId != null) item.setAssistantConversationId(assistantConversationId);
             applyImageSnapshot(item, product, variant);
         } else {
             item = new CartItemEntity();
@@ -149,6 +156,7 @@ public class CartService {
             item.setUnitPrice(unitPrice);
             item.setRegularPrice(VariantPricing.regularPrice(product, variant));
             item.setSalePrice(VariantPricing.salePrice(product, variant));
+            item.setAssistantConversationId(assistantConversationId);
             item.setCreatedAt(Instant.now());
         }
         item.setUpdatedAt(Instant.now());
@@ -208,6 +216,9 @@ public class CartService {
                     ci.setQuantity(ci.getQuantity() + guestItem.getQuantity());
                     ci.setUpdatedAt(Instant.now());
                     calculator.recalculateItem(ci);
+                    if (ci.getAssistantConversationId() == null) {
+                        ci.setAssistantConversationId(guestItem.getAssistantConversationId());
+                    }
                     cartItemRepo.save(ci);
                     cartItemRepo.delete(guestItem);
                 } else {
@@ -352,5 +363,29 @@ public class CartService {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private UUID validateAssistantAttribution(
+            CartEntity cart,
+            ProductEntity product,
+            UUID conversationId
+    ) {
+        if (conversationId == null) return null;
+        var conversation = chatConversationRepo.findById(conversationId)
+                .orElseThrow(() -> new ConflictException("Hội thoại trợ lý không hợp lệ."));
+        UUID cartCustomerId = cart.getCustomerId();
+        if (conversation.getCustomerId() != null
+                && !conversation.getCustomerId().equals(cartCustomerId)) {
+            throw new ConflictException("Hội thoại trợ lý không thuộc giỏ hàng này.");
+        }
+        if (conversation.getCustomerId() == null && cartCustomerId != null) {
+            throw new ConflictException("Hội thoại trợ lý không thuộc giỏ hàng này.");
+        }
+        String slug = product.getSlug();
+        if (slug == null || slug.isBlank()
+                || chatMessageRepo.countShownProduct(conversationId, slug) == 0) {
+            throw new ConflictException("Sản phẩm chưa được hiển thị trong hội thoại trợ lý này.");
+        }
+        return conversationId;
     }
 }

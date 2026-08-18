@@ -28,6 +28,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Validated
 @RestController
@@ -58,6 +62,43 @@ public class ChatController {
                     RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.getConversationId().toString());
         }
         return apiResponseFactory.data(chatService.send(body, currentCustomerId()), request);
+    }
+
+    @PostMapping(path = "/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(
+            @Valid @RequestBody ChatMessageRequest body,
+            HttpServletRequest request
+    ) {
+        if (body.getConversationId() != null) {
+            rateLimitService.checkOrThrow(
+                    RateLimitTier.CHAT, RateLimitScope.CONVERSATION,
+                    body.getConversationId().toString());
+        }
+        UUID customerId = currentCustomerId();
+        SseEmitter emitter = new SseEmitter(75_000L);
+        CompletableFuture.runAsync(() -> {
+            try {
+                sendProgress(emitter, "UNDERSTANDING");
+                sendProgress(emitter, "CHECKING_PRODUCTS");
+                ChatMessageResponse result = chatService.send(body, customerId);
+                sendProgress(emitter, "FINALIZING");
+                emitter.send(SseEmitter.event().name("result").data(result));
+                emitter.complete();
+            } catch (Exception exception) {
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(Map.of(
+                            "code", "CHAT_UNAVAILABLE")));
+                    emitter.complete();
+                } catch (Exception ignored) {
+                    emitter.completeWithError(exception);
+                }
+            }
+        });
+        return emitter;
+    }
+
+    private static void sendProgress(SseEmitter emitter, String code) throws java.io.IOException {
+        emitter.send(SseEmitter.event().name("progress").data(Map.of("code", code)));
     }
 
     @PostMapping("/leads")

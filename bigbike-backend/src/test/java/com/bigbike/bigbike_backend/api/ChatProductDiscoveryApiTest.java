@@ -273,7 +273,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(contextAfterCategoryChange.minPrice()).isNull();
         assertThat(contextAfterCategoryChange.maxPrice()).isNull();
         assertThat(aboveThree.path("answer").asText()).contains("5 mẫu tai nghe");
-        assertThat(aboveThree.path("products").size()).isEqualTo(3);
+        assertThat(aboveThree.path("products").size()).isEqualTo(5);
     }
 
     @Test
@@ -341,7 +341,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void discoveryReturnsAtMostThreeVerifiedSellableCards() throws Exception {
+    void discoveryReturnsUpToEightVerifiedSellableCards() throws Exception {
         String marker = "bi-card-limit-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         CategoryEntity category = fixture.tanami().getCategories().get(0);
@@ -366,11 +366,28 @@ public class ChatProductDiscoveryApiTest {
 
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         JsonNode products = data.path("products");
-        assertThat(products.size()).isEqualTo(3);
+        assertThat(products.size()).isEqualTo(4);
         for (JsonNode card : products) {
             assertThat(card.path("name").asText()).contains("RiderFox Z9");
             assertThat(card.path("stockState").asText()).isEqualTo("IN_STOCK");
         }
+    }
+
+    @Test
+    void retryWithTheSameRequestIdReturnsTheStoredResponseWithoutDuplicateMessages() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        JsonNode first = send(null, "Có mũ Tanami không?", "vi", requestId);
+        UUID conversationId = UUID.fromString(first.path("conversationId").asText());
+        int storedMessages = messageRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversationId).size();
+
+        JsonNode replay = send(conversationId, "Có mũ Tanami không?", "vi", requestId);
+
+        assertThat(replay.path("answer").asText()).isEqualTo(first.path("answer").asText());
+        assertThat(replay.path("turnCount").asInt()).isEqualTo(first.path("turnCount").asInt());
+        assertThat(replay.path("products")).isEqualTo(first.path("products"));
+        assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
+                .hasSize(storedMessages);
     }
 
     @Test
@@ -637,10 +654,15 @@ public class ChatProductDiscoveryApiTest {
     }
 
     private JsonNode send(UUID conversationId, String message, String lang) throws Exception {
+        return send(conversationId, message, lang, null);
+    }
+
+    private JsonNode send(UUID conversationId, String message, String lang, UUID requestId) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("conversationId", conversationId);
         body.put("message", message);
         body.put("lang", lang);
+        if (requestId != null) body.put("requestId", requestId);
         MvcResult result = mockMvc.perform(post("/api/v1/chat/messages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(body)))

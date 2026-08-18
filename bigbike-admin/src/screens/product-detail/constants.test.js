@@ -358,6 +358,64 @@ describe('media metadata round-trip', () => {
   })
 })
 
+describe('product pricing payload normalization', () => {
+  it('sends exact integer money values and maps admin sale zero to null', () => {
+    const form = {
+      ...buildEmptyForm(),
+      name: 'Mũ kiểm thử',
+      slug: 'mu-kiem-thu',
+      sku: 'TEST-PRICE',
+      categoryIds: ['helmet'],
+      brandId: 'brand-agv',
+      retailPrice: '2.000.000',
+      salePrice: '0',
+    }
+
+    const payload = toPayload(form)
+    expect(payload.retailPrice).toBe(2000000)
+    expect(payload.salePrice).toBeNull()
+    expect(Number.isInteger(payload.retailPrice)).toBe(true)
+  })
+
+  it('applies the same number/null normalization to variant-specific prices', () => {
+    const form = {
+      ...buildEmptyForm(),
+      name: 'Mũ có biến thể',
+      slug: 'mu-co-bien-the',
+      sku: 'TEST-VARIANT-PRICE',
+      categoryIds: ['helmet'],
+      brandId: 'brand-agv',
+      retailPrice: '6.000.000',
+      variants: [{
+        _key: 'variant-1',
+        name: 'Đen',
+        sku: 'TEST-VARIANT-PRICE-BLACK',
+        retailPrice: '2,000,000',
+        salePrice: '0',
+        options: [{ name: 'Màu', value: 'Đen' }],
+        gallery: [],
+      }],
+    }
+
+    expect(toPayload(form).variants[0]).toEqual(expect.objectContaining({
+      retailPrice: 2000000,
+      salePrice: null,
+    }))
+  })
+
+  it('keeps empty prices null and preserves negative/invalid values for existing validation', () => {
+    const form = {
+      ...buildEmptyForm(),
+      retailPrice: '',
+      salePrice: '-100',
+    }
+
+    const payload = toPayload(form)
+    expect(payload.retailPrice).toBeNull()
+    expect(payload.salePrice).toBe(-100)
+  })
+})
+
 describe('description block media metadata', () => {
   it('giữ cả alt tiếng Việt và tiếng Anh cho khối ảnh và khối feature', () => {
     const blocks = cleanDescriptionBlocks([

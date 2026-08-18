@@ -62,6 +62,21 @@ function all(root, selector) {
   return root ? Array.from(root.querySelectorAll(selector)) : []
 }
 
+function collectFaqPairs(questions, answers) {
+  const questionNodes = questions.filter((node) => text(node))
+  const pairCount = Math.min(questionNodes.length, answers.length)
+
+  return Array.from({ length: pairCount }, (_, index) => {
+    const question = questionNodes[index]
+    const answer = answers[index]
+    return {
+      question,
+      answer,
+      item: question.closest(SELECTORS.faqItem) || answer.closest(SELECTORS.faqItem) || null,
+    }
+  })
+}
+
 function findRoot(doc) {
   const direct = doc.querySelector(SELECTORS.root)
   if (direct) return direct
@@ -83,6 +98,7 @@ function findManagedSlots(root) {
       brands: [],
       questions: [],
       answers: [],
+      faqPairs: [],
       faqItems: [],
       faqContainer: null,
       faqHead: null,
@@ -98,6 +114,7 @@ function findManagedSlots(root) {
   const brands = all(brandContainer || root, SELECTORS.brand).filter((element) => !element.closest(SELECTORS.faqItem))
   const questions = all(root, SELECTORS.faqQuestion)
   const answers = all(root, SELECTORS.faqAnswer)
+  const faqPairs = collectFaqPairs(questions, answers)
   const faqItems = all(root, SELECTORS.faqItem)
   const faqContainer = first(root, SELECTORS.faqContainer) || faqItems[0]?.parentElement || null
   const cta = first(root, SELECTORS.cta)
@@ -110,6 +127,7 @@ function findManagedSlots(root) {
     brands,
     questions,
     answers,
+    faqPairs,
     faqItems,
     faqContainer,
     faqHead: first(root, SELECTORS.faqHead),
@@ -122,7 +140,7 @@ function findManagedSlots(root) {
 function hasManagedContent(slots) {
   return Boolean(
     slots.eyebrow || slots.heading || slots.intro || slots.brands.length ||
-    slots.questions.length || slots.answers.length || slots.ctaText || slots.ctaButton,
+    slots.faqPairs.length || slots.ctaText || slots.ctaButton,
   )
 }
 
@@ -199,12 +217,11 @@ export function parseIntro(html) {
     model.heading = text(slots.heading)
     model.intro = inlineMarkup(slots.intro)
     model.brands = slots.brands.map(text).filter(Boolean)
-    const count = Math.max(slots.questions.length, slots.answers.length)
-    model.faqs = Array.from({ length: count }, (_, index) => ({
+    model.faqs = slots.faqPairs.map(({ question, answer }) => ({
       _key: generateId(),
-      question: text(slots.questions[index]),
-      answer: inlineMarkup(slots.answers[index]),
-    })).filter((faq) => faq.question || faq.answer)
+      question: text(question),
+      answer: inlineMarkup(answer),
+    }))
     model.ctaText = text(slots.ctaText)
     model.ctaLabel = text(slots.ctaButton)
     model.ctaUrl = slots.ctaButton?.getAttribute('href')?.trim() || ''
@@ -294,35 +311,52 @@ function patchBrands(slots, root, brands) {
   if (!values.length && !container.children.length) container.remove()
 }
 
+function removeEmptyAncestors(start, stopAt) {
+  let current = start
+  while (current && current !== stopAt && !current.textContent.trim() && !current.children.length) {
+    const parent = current.parentElement
+    current.remove()
+    current = parent
+  }
+}
+
 function patchFaqs(slots, root, faqs, lang) {
   const values = (Array.isArray(faqs) ? faqs : [])
     .map((faq) => ({ question: String(faq?.question || '').trim(), answer: String(faq?.answer || '').trim() }))
-    .filter((faq) => faq.question || faq.answer)
+    .filter((faq) => faq.question)
   let container = slots.faqContainer
   if (!container && values.length) container = ensureElement(root.ownerDocument, root, 'div', 'bb-ci-b', '', '.bb-ci-c')
   if (!container) return
 
-  const items = all(container, SELECTORS.faqItem)
-  const questions = all(container, SELECTORS.faqQuestion)
-  const answers = all(container, SELECTORS.faqAnswer)
-  values.forEach((faq, index) => {
-    let question = questions[index]
-    let answer = answers[index]
-    if (!question || !answer) {
-      const item = ensureElement(root.ownerDocument, container, 'div', 'bb-ci-faq')
-      question = ensureElement(root.ownerDocument, item, 'h3', 'bb-ci-qt')
-      answer = ensureElement(root.ownerDocument, item, 'p', 'bb-ci-at')
-    }
-    question.textContent = faq.question
-    answer.innerHTML = safeInline(faq.answer)
+  const existingPairs = slots.faqPairs
+  values.slice(0, existingPairs.length).forEach((faq, index) => {
+    const pair = existingPairs[index]
+    pair.question.textContent = faq.question
+    pair.answer.innerHTML = safeInline(faq.answer)
   })
 
-  // Remove only recognized surplus nodes. With one shared legacy wrapper we do
-  // not remove the wrapper or any unrelated siblings.
-  if (items.length) items.slice(values.length).forEach((item) => item.remove())
-  else {
-    questions.slice(values.length).forEach((node) => node.remove())
-    answers.slice(values.length).forEach((node) => node.remove())
+  existingPairs.slice(values.length).forEach((pair) => {
+    const questionWrapper = pair.question.closest('.bb-ci-q')
+    const questionParent = pair.question.parentElement
+    const answerParent = pair.answer.parentElement
+    questionWrapper?.querySelector('.bb-ci-qbadge')?.remove()
+    pair.question.remove()
+    pair.answer.remove()
+
+    // Only remove wrappers that became empty. If an unknown/free node shares
+    // the wrapper, leave it in place instead of treating it as an FAQ node.
+    removeEmptyAncestors(questionWrapper || questionParent, root)
+    removeEmptyAncestors(answerParent, root)
+    removeEmptyAncestors(pair.item, root)
+  })
+
+  for (let index = existingPairs.length; index < values.length; index += 1) {
+    const faq = values[index]
+    const item = ensureElement(root.ownerDocument, container, 'div', 'bb-ci-faq')
+    const question = ensureElement(root.ownerDocument, item, 'h3', 'bb-ci-qt')
+    const answer = ensureElement(root.ownerDocument, item, 'p', 'bb-ci-at')
+    question.textContent = faq.question
+    answer.innerHTML = safeInline(faq.answer)
   }
 
   let head = first(container, SELECTORS.faqHead)

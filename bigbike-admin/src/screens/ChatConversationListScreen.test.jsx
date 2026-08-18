@@ -10,6 +10,11 @@ vi.mock('react-i18next', () => ({
       'chatAdmin.columns.turns': 'Lượt hỏi',
       'chatAdmin.columns.aiCalls': 'Lượt gọi AI',
       'chatAdmin.stats.unanswered': 'Câu chưa trả lời được trong ngày',
+      'chatAdmin.stats.averageLatency': 'Thời gian trả lời trung bình',
+      'chatAdmin.stats.tokens': 'Token đã dùng',
+      'chatAdmin.stats.estimatedCost': 'Chi phí ước tính',
+      'chatAdmin.stats.contentRefusals': 'Nội dung bị từ chối',
+      'chatAdmin.stats.assistedOrders': 'Đơn được trợ lý hỗ trợ',
     }[key] || values.defaultValue || key),
   }),
 }))
@@ -26,6 +31,11 @@ vi.mock('../lib/adminApi', () => ({
       startedAt: '2026-08-09T03:00:00Z',
       lastMessageAt: '2026-08-09T03:05:00Z',
       endedReason: '',
+      providerRequests: 2,
+      averageLatencyMs: 1500,
+      estimatedCostUsd: 0.0002,
+      assistedRevenue: 1590000,
+      hasTelemetry: true,
     }],
     pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
   }),
@@ -35,8 +45,18 @@ vi.mock('../lib/adminApi', () => ({
     conversations: 1,
     leads: 1,
     unanswered: 4,
-    dailyLimit: 300,
-    remainingAiCalls: 298,
+    dailyLimit: 120,
+    remainingAiCalls: 118,
+    inputTokens: 100,
+    outputTokens: 50,
+    thinkingTokens: 20,
+    providerRequests: 3,
+    averageLatencyMs: 1500,
+    estimatedCostUsd: 0.0002,
+    contentRefusals: 2,
+    assistedOrders: 1,
+    assistedRevenue: 1590000,
+    hasTelemetry: true,
   }),
 }))
 
@@ -66,5 +86,9 @@ describe('ChatConversationListScreen', () => {
     expect(screen.getAllByText('Lượt gọi AI').length).toBeGreaterThan(0)
     expect(screen.getByText('Câu chưa trả lời được trong ngày')).toBeInTheDocument()
     expect(screen.getByText('4')).toBeInTheDocument()
+    expect(screen.getByText('Thời gian trả lời trung bình')).toBeInTheDocument()
+    expect(screen.getByText('Chi phí ước tính')).toBeInTheDocument()
+    expect(screen.getByText('Nội dung bị từ chối')).toBeInTheDocument()
+    expect(screen.getByText('Đơn được trợ lý hỗ trợ')).toBeInTheDocument()
   })
 })

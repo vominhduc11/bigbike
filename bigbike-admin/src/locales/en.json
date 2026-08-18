@@ -864,6 +864,8 @@
         "title": "AI brief for on-brand HTML",
         "copy": "Copy",
         "copying": "Fetching current data...",
+        "previewLoading": "Fetching current data for the preview...",
+        "previewFailed": "Could not fetch fresh data; showing the general brief. Click Copy to try again.",
         "copied": "AI brief copied",
         "copyFailed": "Couldn't copy"
       },
@@ -2740,7 +2742,15 @@
       "conversations": "Conversations today",
       "leads": "New follow-ups today",
       "unanswered": "Unanswered replies today",
-      "limit": "Daily limit: {{count}}"
+      "limit": "Daily limit: {{count}}",
+      "averageLatency": "Average response time",
+      "tokens": "Tokens today",
+      "providerRequests": "{{count}} provider requests",
+      "estimatedCost": "Estimated AI cost",
+      "estimateNotice": "Estimated from actual token usage",
+      "contentRefusals": "Content refusals",
+      "assistedOrders": "Assistant-supported orders",
+      "noTelemetry": "Telemetry is unavailable for older data"
     },
     "columns": {
       "startedAt": "Started",
@@ -2748,6 +2758,9 @@
       "language": "Language",
       "turns": "Questions",
       "aiCalls": "AI calls",
+      "latency": "Avg. time",
+      "cost": "Estimated cost",
+      "assistedRevenue": "Assisted revenue",
       "lead": "Follow-up",
       "lastMessage": "Last message"
     },
@@ -2760,6 +2773,8 @@
       "description": "This read-only view reflects the exact conversation with the customer.",
       "messages": "Messages",
       "messagesDescription": "Customer messages and BigBike Assistant's replies in chronological order.",
+      "noMessages": "No conversation content",
+      "noMessagesDescription": "This conversation has no stored messages, or its content has passed the retention period.",
       "customer": "Customer",
       "bi": "BigBike Assistant · AI assistant",
       "source": "Reply source",
@@ -2768,9 +2783,15 @@
         "ai": "Automated assistant",
         "template": "Saved answer",
         "data": "Verified data lookup",
-        "staff": "Passed to staff"
+        "staff": "Passed to staff",
+        "outOfScope": "Outside support scope",
+        "contentRefusal": "Inappropriate content refusal",
+        "roleDefense": "Assistant role protection"
       },
+      "messageTelemetry": "{{tokens}} tokens · {{requests}} requests · {{latency}} · {{cost}}",
       "summary": "Conversation summary",
+      "tokens": "Total tokens",
+      "providerRequests": "Provider requests",
       "endedReason": "End state",
       "active": "Active",
       "endStates": {
@@ -2792,7 +2813,10 @@
       },
       "consentedAt": "Consent time",
       "noLead": "The customer has not shared contact details.",
-      "none": "No note"
+      "none": "No note",
+      "assistedOrders": "Assistant-supported orders",
+      "openOrder": "Open order {{id}}",
+      "noAssistedOrders": "No line item from this conversation has been attributed to an order."
     }
   },
   "settings": {
@@ -2880,8 +2904,8 @@
       "seo_home_description": "Enter the Google description; leave blank to use the localized homepage description.",
       "seo_home_h1": "Enter the single main heading shown on the homepage.",
       "ai_assistant_enabled": "When disabled, customers still see the chat button and get the Hotline, Zalo and Messenger contact panel.",
-      "ai_assistant_daily_limit": "The limit follows Vietnam time. When it is reached, BigBike Assistant automatically falls back to the contact panel.",
-      "ai_assistant_recent_turn_pairs": "Choose 0 to 3. Set 0 to send no history; private details are redacted and every message is shortened.",
+      "ai_assistant_daily_limit": "The limit follows Vietnam time and defaults to 120 AI calls per day. When it is reached, BigBike Assistant automatically falls back to the contact panel.",
+      "ai_assistant_recent_turn_pairs": "Choose 0 to 12, defaulting to 12. Set 0 to send no history; private details are redacted and every message is shortened.",
       "ai_assistant_search_ai_interpretation_enabled": "When enabled, BigBike Assistant can understand shorthand and natural wording while the system still verifies every result. Disable it to return to the previous search behaviour immediately.",
       "ai_assistant_greeting": "Enter Vietnamese and English separately. The first line should identify BigBike Assistant as an AI assistant.",
       "ai_assistant_quick_prompts": "Enter one button per line, with 3 to 4 lines for each language."
@@ -2889,7 +2913,7 @@
     "keyWhere": {
       "ai_assistant_enabled": "enable or disable BigBike Assistant across the website",
       "ai_assistant_daily_limit": "daily AI-call cap in Vietnam time",
-      "ai_assistant_recent_turn_pairs": "0–3 recent pairs for follow-up context",
+      "ai_assistant_recent_turn_pairs": "0–12 recent pairs for follow-up context",
       "ai_assistant_search_ai_interpretation_enabled": "switch between the new and previous product-search interpretation",
       "ai_assistant_greeting": "greeting shown when customers open chat",
       "ai_assistant_quick_prompts": "3–4 quick-question buttons in chat"

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CatalogPriceFilter } from "@/components/catalog/CatalogPriceFilter";
@@ -118,6 +119,24 @@ describe("CatalogPriceFilter UI contract", () => {
     expect(screen.getByLabelText("From")).toHaveValue("500,000");
     expect(screen.getByLabelText("To")).toHaveValue("2,000,000");
     expect(screen.getByRole("button", { name: "Apply" })).toBeVisible();
+  });
+
+  it("lets both price boxes replace existing values without moving the caret while typing", async () => {
+    const user = userEvent.setup();
+    renderFilter({ currentMinPrice: 220_000, currentMaxPrice: 1_600_000 });
+    const minimumInput = screen.getByLabelText("Từ");
+    const maximumInput = screen.getByLabelText("Đến");
+
+    await user.click(minimumInput);
+    await user.keyboard("2000000");
+    expect(minimumInput).toHaveValue("2000000");
+    await user.tab();
+    expect(minimumInput).toHaveValue("2.000.000");
+
+    await user.keyboard("1800000");
+    expect(maximumInput).toHaveValue("1800000");
+    await user.tab();
+    expect(maximumInput).toHaveValue("1.800.000");
   });
 
   it("does not apply when focus leaves the first box, then applies the exact range once", () => {

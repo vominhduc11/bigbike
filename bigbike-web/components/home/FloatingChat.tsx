@@ -33,9 +33,10 @@ import { Label } from "@/components/ui/label";
 import {
   declineChatLead,
   fetchChatAvailability,
-  sendChatMessage,
+  streamChatMessage,
   type ChatAction,
   type ChatContact,
+  type ChatProgressCode,
   type ChatProductCard,
 } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
@@ -52,6 +53,7 @@ import type { Locale } from "@/i18n/locale";
 import { BiContactPanel } from "./floating-chat/BiContactPanel";
 import { BiLeadForm, type BiAccountContact, type BiLeadDraft } from "./floating-chat/BiLeadForm";
 import { BiProductCard } from "./floating-chat/BiProductCard";
+import { SafeChatMarkdown } from "./floating-chat/SafeChatMarkdown";
 
 type FloatingChatProps = {
   hotline?: string;
@@ -72,6 +74,11 @@ type ChatMessage = {
   products?: ChatProductCard[];
   actions?: ChatAction[];
   noResults?: boolean;
+  answerFormat?: "PLAIN_TEXT" | "MARKDOWN";
+  resultKind?: string;
+  animate?: boolean;
+  requestId?: string;
+  failed?: boolean;
 };
 
 type ComposerAction = {
@@ -82,7 +89,7 @@ type ComposerAction = {
 };
 
 const DEFAULT_MAX_TURNS = 12;
-export const CHAT_MESSAGE_TIMEOUT_MS = 45_000;
+export const CHAT_MESSAGE_TIMEOUT_MS = 75_000;
 
 class ChatMessageTimeoutError extends Error {
   constructor() {
@@ -103,6 +110,49 @@ function accountContactFromProfile(profile: { displayName: string | null; phone:
   const digits = phone?.replace(/\D/g, "") || "";
   if (!name || !phone || !/^[0-9]{8,32}$/.test(digits)) return undefined;
   return { name, phone };
+}
+
+function createRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") crypto.getRandomValues(bytes);
+  else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
+function AssistantAnswer({ message }: { message: ChatMessage }) {
+  const [visible, setVisible] = useState("");
+  const shouldAnimate = Boolean(message.animate);
+
+  useEffect(() => {
+    if (!shouldAnimate) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const reducedMotionTimer = window.setTimeout(() => setVisible(message.content), 0);
+      return () => window.clearTimeout(reducedMotionTimer);
+    }
+    let length = 0;
+    const step = Math.max(1, Math.ceil(message.content.length / 80));
+    const timer = window.setInterval(() => {
+      length = Math.min(message.content.length, length + step);
+      setVisible(message.content.slice(0, length));
+      if (length >= message.content.length) window.clearInterval(timer);
+    }, 16);
+    return () => window.clearInterval(timer);
+  }, [message.content, shouldAnimate]);
+
+  const displayContent = shouldAnimate ? visible : message.content;
+
+  return (
+    <>
+      <span className="sr-only">{message.content}</span>
+      <div aria-hidden="true">
+        {message.answerFormat === "MARKDOWN" ? <SafeChatMarkdown content={displayContent} /> : displayContent}
+      </div>
+    </>
+  );
 }
 
 type BiAvatarSize = "launcher" | "header" | "message" | "minimized";
@@ -232,7 +282,9 @@ export function FloatingChat({
   const [contactNotice, setContactNotice] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
   const [retryAvailable, setRetryAvailable] = useState(false);
-  const [retryMessage, setRetryMessage] = useState<{ message: string; intent: PromptIntent } | null>(null);
+  const [retryMessage, setRetryMessage] = useState<{ message: string; intent: PromptIntent; requestId: string } | null>(null);
+  const [progressCode, setProgressCode] = useState<ChatProgressCode | null>(null);
+  const [pendingRequestId, setPendingRequestId] = useState<string>();
   const [leadPrompt, setLeadPrompt] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [leadDeclined, setLeadDeclined] = useState(false);
@@ -252,7 +304,6 @@ export function FloatingChat({
   const messageInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const closeTargetRef = useRef<Exclude<PanelState, "expanded">>("closed");
-  const messageSequence = useRef(0);
   const availabilityBusyRef = useRef(false);
   const availabilityLocaleRef = useRef<string | undefined>(undefined);
   const mountedRef = useRef(true);
@@ -296,6 +347,8 @@ export function FloatingChat({
     setContactOpen(false);
     setRetryAvailable(false);
     setRetryMessage(null);
+    setProgressCode(null);
+    setPendingRequestId(undefined);
     setLeadPrompt(false);
     setLeadCaptured(false);
     setLeadDeclined(false);
@@ -326,6 +379,15 @@ export function FloatingChat({
         setLeadCaptured(snapshot.leadCaptured);
         setLeadDeclined(snapshot.leadDeclined);
         setAvailabilityState("ready");
+        setPendingRequestId(snapshot.pendingRequestId);
+        if (snapshot.pendingRequestId) {
+          const failedMessage = [...snapshot.messages].reverse().find((item) =>
+            item.role === "USER" && item.failed && item.requestId === snapshot.pendingRequestId);
+          if (failedMessage) {
+            setRetryAvailable(true);
+            setRetryMessage({ message: failedMessage.content, intent: "UNKNOWN", requestId: snapshot.pendingRequestId });
+          }
+        }
       });
     }
 
@@ -373,9 +435,10 @@ export function FloatingChat({
       leadPrompt: leadPrompt && !leadCaptured && !leadDeclined,
       leadCaptured,
       leadDeclined,
+      pendingRequestId,
     };
     writeChatSnapshot(snapshot);
-  }, [activeLocale, conversationId, leadCaptured, leadDeclined, leadPrompt, messages, remainingTurns, serviceMode]);
+  }, [activeLocale, conversationId, leadCaptured, leadDeclined, leadPrompt, messages, pendingRequestId, remainingTurns, serviceMode]);
 
   useEffect(() => {
     if (!persistenceReadyRef.current || !conversationId || persistenceExpiresAtRef.current == null) return;
@@ -504,8 +567,7 @@ export function FloatingChat({
   }
 
   function nextMessageId(prefix: string) {
-    messageSequence.current += 1;
-    return `${prefix}-${messageSequence.current}`;
+    return `${prefix}-${createRequestId()}`;
   }
 
   function announceAssistant(content: string, products: ChatProductCard[] = []) {
@@ -525,19 +587,25 @@ export function FloatingChat({
     announceAssistant(content);
   }
 
-  async function submitMessage(raw: string, intent: PromptIntent = "UNKNOWN") {
+  async function submitMessage(raw: string, intent: PromptIntent = "UNKNOWN", existingRequestId?: string) {
     const message = raw.trim();
     if (!message || sending || serviceMode !== "AI" || remainingTurns <= 0) return;
 
+    const requestId = existingRequestId ?? createRequestId();
+    const isRetry = Boolean(existingRequestId);
     const userMessageId = nextMessageId("user");
     const conversationGeneration = conversationGenerationRef.current;
     setDraft("");
-    setMessages((current) => [...current, { id: userMessageId, role: "USER", content: message }]);
+    setMessages((current) => isRetry && current.some((item) => item.requestId === requestId)
+      ? current.map((item) => item.requestId === requestId ? { ...item, failed: false } : item)
+      : [...current, { id: userMessageId, role: "USER", content: message, requestId }]);
     setSending(true);
     setRetryAvailable(false);
     setRetryMessage(null);
     setContactNotice("");
     setAnnouncement("");
+    setProgressCode("UNDERSTANDING");
+    setPendingRequestId(requestId);
     nearBottomRef.current = true;
 
     try {
@@ -550,13 +618,22 @@ export function FloatingChat({
         }, CHAT_MESSAGE_TIMEOUT_MS);
       });
       const response = await Promise.race([
-        sendChatMessage(message, activeLocale, conversationId, controller.signal),
+        streamChatMessage(
+          message,
+          activeLocale,
+          conversationId,
+          requestId,
+          (code) => {
+            if (mountedRef.current && conversationGeneration === conversationGenerationRef.current) setProgressCode(code);
+          },
+          controller.signal,
+        ),
         timeout,
       ]).finally(() => {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       });
       if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current) return;
-      const nextProducts = (response.products || []).slice(0, 3);
+      const nextProducts = (response.products || []).slice(0, 8);
       const nextRemainingTurns = validTurnCount(response.remainingTurns, 0);
       const answer = response.answer?.trim()
         || (response.mode === "CONTACT" ? t("inputLockedExplanation") : t("noInformation"));
@@ -567,6 +644,9 @@ export function FloatingChat({
         products: nextProducts,
         actions: response.actions,
         noResults: intent === "PRODUCT_FINDING" && nextProducts.length === 0,
+        answerFormat: response.answerFormat,
+        resultKind: response.resultKind,
+        animate: true,
       };
 
       setMessages((current) => [...current, assistantMessage]);
@@ -576,6 +656,7 @@ export function FloatingChat({
       setRemainingTurns(nextRemainingTurns);
       setLeadPrompt(Boolean(response.leadPrompt) && !leadCaptured && !leadDeclined);
       setRetryAvailable(false);
+      setPendingRequestId(undefined);
 
       if (response.mode === "CONTACT") {
         setServiceMode("CONTACT");
@@ -590,18 +671,23 @@ export function FloatingChat({
       }
     } catch (error) {
       if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current) return;
-      setMessages((current) => current.filter((item) => item.id !== userMessageId));
+      setMessages((current) => current.map((item) =>
+        item.requestId === requestId ? { ...item, failed: true } : item));
       setDraft(message);
       setAvailabilityState("error");
       setRetryAvailable(true);
-      setRetryMessage({ message, intent });
+      setRetryMessage({ message, intent, requestId });
+      setPendingRequestId(requestId);
       const notice = error instanceof ChatMessageTimeoutError
         ? t("timeoutNotice")
         : t("fallbackNotice", { reason: "network" });
       setContactNotice(notice);
       setAnnouncement(`${notice} ${t("contactStatus")}`);
     } finally {
-      if (mountedRef.current) setSending(false);
+      if (mountedRef.current) {
+        setSending(false);
+        setProgressCode(null);
+      }
     }
   }
 
@@ -890,7 +976,7 @@ export function FloatingChat({
                   {displayMessages.map((message, index) => {
                     const showAssistantAvatar = message.role === "ASSISTANT"
                       && (index === 0 || displayMessages[index - 1]?.role !== "ASSISTANT");
-                    const products = message.products?.slice(0, 3) || [];
+                    const products = message.products?.slice(0, 8) || [];
                     return (
                       <div key={message.id} className={`flex gap-3 ${message.role === "USER" ? "justify-end" : "justify-start"}`}>
                         {message.role === "ASSISTANT" ? (
@@ -902,7 +988,7 @@ export function FloatingChat({
                         ) : null}
                         <div className="grid max-w-4/5 min-w-0 gap-2">
                           <div className={`border px-4 py-3 font-body text-a4-content leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : "border-border bg-background"}`}>
-                            {message.content}
+                            {message.role === "ASSISTANT" ? <AssistantAnswer message={message} /> : message.content}
                           </div>
                           {products.length > 0 ? (
                             <div
@@ -915,6 +1001,7 @@ export function FloatingChat({
                                   product={product}
                                   locale={locale}
                                   compact={products.length > 1}
+                                  conversationId={conversationId}
                                 />
                               ))}
                             </div>
@@ -937,7 +1024,11 @@ export function FloatingChat({
                       />
                       <div className="flex items-center gap-2 border border-border bg-background px-4 py-3 font-body text-a5-meta text-muted-foreground">
                         <Loader2 className="size-4 animate-spin text-chat" aria-hidden="true" />
-                        {t("typing")}
+                        {progressCode === "UNDERSTANDING"
+                          ? t("progressUnderstanding")
+                          : progressCode === "FINALIZING"
+                            ? t("progressFinalizing")
+                            : t("progressCheckingProducts")}
                       </div>
                     </div>
                   ) : null}
@@ -986,7 +1077,7 @@ export function FloatingChat({
                       type="button"
                       className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
                       onClick={() => retryMessage
-                        ? void submitMessage(retryMessage.message, retryMessage.intent)
+                        ? void submitMessage(retryMessage.message, retryMessage.intent, retryMessage.requestId)
                         : void requestAvailability(true)}
                     >
                       <RefreshCw className="size-4" aria-hidden="true" />

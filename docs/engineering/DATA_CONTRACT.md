@@ -151,6 +151,8 @@ Evidence:
 - `V317__consolidate_product_pricing.sql`, `PRODUCT_RULE_012`
 - `VariantPricing.java`, `CheckoutSupport.java`, `CartService.java`, `JpaCatalogReadRepository.java` (`toVariant`/`toVariantForListing`), `bigbike-admin/src/lib/schemas.js`, `PRODUCT_RULE_013`
 
+**Admin input normalization (2026-08-18):** form state của các ô tiền trong `bigbike-admin` là chuỗi trong lúc soạn thảo; khi rời ô, giá được format theo locale. Khi tạo payload, `retailPrice`/`salePrice` luôn là số nguyên hoặc `null` theo presence semantics hiện hành. Riêng `salePrice = 0` do giao diện admin nhập được coi là để trống và gửi `null`; wire shape/backend storage vẫn giữ `sale_price` nullable `numeric(19,2)`, không thêm giới hạn giá mới.
+
 ### Address fields — district (quận/huyện) is legacy-only (2025 administrative reform)
 
 From 01/07/2025 Vietnam abolished the district administrative tier nationwide (Nghị quyết
@@ -2053,7 +2055,7 @@ admin concurrency metadata.
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title, description and visible H1 (`seo_home_title`/`seo_home_description`/`seo_home_h1`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The three text fields were restored by owner decision on 2026-08-16 (V1036); the default OG image setting remains absent. | SEO website |
-| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần lượt AI theo ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..3`, mặc định `3`, `0` tắt), công tắc cho Trợ lý BigBike diễn giải cách nói tự nhiên khi tìm hàng, câu chào và gợi ý nhanh song ngữ. Lịch sử lấy từ `chat_messages` của đúng conversation, che PII rồi cắt 450 ký tự/tin trước khi gửi; không tạo cột chat mới. Không chứa khoá AI. Các giá trị màu biến thể gốc vẫn giữ nguyên trong catalog; chỉ lớp chat chuyển chúng thành nhãn an toàn trước khi đưa vào prose hoặc function payload. | Trợ lý BigBike |
+| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 120 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`), công tắc diễn giải cách nói tự nhiên, câu chào và bốn gợi ý nhanh song ngữ. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI hay trần tiền tháng. | Trợ lý BigBike |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
@@ -2226,7 +2228,7 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `turn_count` / `ai_call_count` | `INTEGER` | Không âm; turn tối đa 12; `ai_call_count` đếm logical orchestration AI đã tiêu đúng một slot. Không còn orchestration retry riêng chỉ để sửa xưng hô. |
 | `consecutive_off_topic` | `INTEGER` | Hai lần liên tiếp thì handoff. |
 | `lead_offer_status` | `VARCHAR(16)` | `NONE|OFFERED|ACCEPTED|DECLINED`; không mời lại sau lần đầu. |
-| `context_json` | `JSONB` nullable | Ngữ cảnh rút gọn, không PII: `category`, `brand`, dải giá, tối đa 3 slug sản phẩm công khai đã xác minh và cờ chờ đăng nhập. Slug chỉ được chuyển nội bộ dưới dạng `RECENT_VERIFIED_PRODUCTS` (slug trần, allowlist `get_product`). Category/brand/giá/slug chỉ đổi sau một `acceptedSearchScope` thành công; lượt phụ không tìm hàng giữ nguyên. `RECENT_TURNS` đọc có giới hạn từ các row `chat_messages` hiện có, không persist trong context và không đổi schema chat. |
+| `context_json` | `JSONB` nullable | Ngữ cảnh rút gọn, không PII: `category`, `brand`, dải giá, tối đa 8 slug sản phẩm công khai đã xác minh theo đúng thứ tự nhóm gần nhất và cờ chờ đăng nhập. Câu chính sách/câu phụ không xoá nhóm sản phẩm; dữ kiện vẫn phải tra lại ở lượt hiện tại. |
 | `ended_reason` | `VARCHAR(32)` nullable | `TURN_LIMIT|OFF_TOPIC|HANDOFF|AI_UNAVAILABLE|DAILY_LIMIT_REACHED|DISABLED`. |
 | `started_at`, `last_message_at`, `expires_at`, `created_at`, `updated_at` | `TIMESTAMPTZ` | `expires_at = started_at + 90 days`; cleanup xoá conversation hết hạn và cascade messages/lead. |
 
@@ -2237,10 +2239,16 @@ No customer or order data is touched by a state change. The response DTO (`state
 | `id`, `conversation_id` | `UUID` | FK conversation `ON DELETE CASCADE`. |
 | `role` | `VARCHAR(16)` | `CUSTOMER|ASSISTANT`. |
 | `content` | `TEXT` | Nội dung đã hiển thị; không được đưa vào application log. |
-| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK`. `TOOL` dùng cho nội dung deterministic do backend tạo, gồm terminal outcome đã xác minh và recovery cục bộ từ card/disclosure đã hậu kiểm sau khi prose model không qua guard. `CONTACT_FALLBACK` đánh dấu câu trợ lý không hoàn tất được việc tra cứu nhưng vẫn giữ hội thoại mở, cũng như các fallback chuyển sang kênh liên hệ; trường hợp phục hồi này không ghi `ended_reason` và không trừ lượt. Màn quản trị đếm tin `ASSISTANT` có source này theo ngày Việt Nam. |
-| `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message của một logical response đã gọi Gemini, kể cả flow đó dùng 1–3 provider requests hoặc kết thúc bằng `TOOL`/`CONTACT_FALLBACK`. |
+| `source` | `VARCHAR(24)` | `AI|TEMPLATE|TOOL|CONTACT_FALLBACK|OUT_OF_SCOPE|CONTENT_REFUSAL|ROLE_DEFENSE`. Ba nguồn cuối là từ chối cục bộ/safety, không dùng quota AI. |
+| `request_id` | `UUID` nullable | Mã logical turn duy nhất toàn hệ thống do client gửi. Dữ liệu client cũ có thể null. Cùng mã trả lại kết quả đã lưu, không tạo message/quota/provider call trùng. |
+| `answer_format` / `result_kind` | `VARCHAR(24)` | `PLAIN_TEXT|MARKDOWN` và `ANSWER|PRODUCT_RESULTS|CLARIFICATION|REFUSAL|CONTACT`; dữ liệu cũ được backfill giá trị an toàn. |
+| `action_metadata` | `JSONB` nullable | Metadata hành động backend đã kiểm tra; không chứa URL do model tạo, PII hoặc secret. |
+| `ai_called` | `BOOLEAN` | true đúng một lần cho assistant message của một logical response đã gọi Gemini, kể cả flow dùng 1–4 provider requests. |
 | `ai_retry_count` | `INTEGER`, default `0` | Lượt mới luôn `0`: backend không gọi provider retry chỉ để sửa xưng hô. Giá trị `1` nếu tồn tại là lịch sử của dữ liệu trước thay đổi 2026-08-12, không tạo thêm daily slot trong flow hiện tại. |
-| `products_json` | `JSONB` nullable | Snapshot tối đa 3 product card đã qua hậu kiểm và thực sự trả cho khách, không phải catalog dump. Card trung gian không được persist khi lượt thất bại hoàn toàn; card dùng cho recovery cục bộ an toàn được persist cùng `TOOL` answer thực sự đã trả khách. |
+| `products_json` | `JSONB` nullable | Snapshot tối đa 8 product card đã qua hậu kiểm và thực sự trả cho khách, không phải catalog dump. |
+| `input_tokens` / `output_tokens` / `thinking_tokens` | `INTEGER` nullable | Usage provider cộng dồn của logical turn; nullable cho dữ liệu cũ/fast-path. |
+| `provider_request_count` / `latency_ms` | `INTEGER` nullable | Số request provider (tối đa 4) và độ trễ toàn lượt; không chứa nội dung. |
+| `estimated_cost_usd` | `NUMERIC(19,8)` nullable | Chi phí ước tính theo giá cấu hình tại thời điểm ghi; chỉ phục vụ báo cáo, không phải quota tiền. |
 | `created_at` | `TIMESTAMPTZ` | Sắp xếp tăng dần trong detail admin. |
 
 ### `chat_leads`
@@ -2268,10 +2276,22 @@ Backend dùng một atomic upsert có điều kiện `used_count < dailyLimit` t
 
 Không có SQL/tool động. `products_json` và nội dung model không được dùng làm câu lệnh hay tên bảng/cột. Order tool chỉ project `orderNumber/status/placedAt/createdAt/totalAmount/currency`, trong đó `createdAt` chỉ dùng để tie-break khi sắp xếp và không persist snapshot đơn vào chat ngoài câu trả lời mức gọn.
 
-Function calling không tạo thêm persistence record cho từng provider request hoặc từng tool execution. Một customer turn chỉ tạo một assistant message cuối; sau khi guard chặn, backend ưu tiên sửa mệnh đề có căn cứ hoặc dùng card/terminal answer đã xác minh, không gọi provider retry và không tăng thêm quota. `ai_retry_count` chỉ giữ để đọc dữ liệu lịch sử. Provider-call telemetry chi tiết hơn nếu bổ sung sau này phải nằm ngoài business quota/public contract.
+Function calling không tạo persistence record riêng cho từng provider request/tool. Một customer turn chỉ tạo một assistant message cuối và telemetry cộng dồn. `ai_retry_count` chỉ giữ để đọc dữ liệu lịch sử.
 
 Public chat actions are fixed route intents (`LOGIN`, `ORDER_HISTORY`, `ORDER_LOOKUP`); they never carry a model-provided URL. Customer-facing answers and product cards are persisted only after the same forbidden-term, language, product-card and formatting checks used for the API response. The order tool additionally reads `createdAt` only for deterministic tie-breaking and never persists an order snapshot.
 
 ### Browser-only chat snapshot (storefront)
 
-Đây không phải bảng dữ liệu hay persistence contract của backend. Theo `CHAT_RULE_026`, website chỉ giữ tối thiểu `version`, `expiresAt`, `locale`, `conversationId`, các tin nhắn đã hiển thị (`role`, `content`, product cards/actions đã được API trả về), `remainingTurns`, trạng thái `AI|CONTACT` và các cờ `leadPrompt|leadCaptured|leadDeclined`. Snapshot có hạn cố định 24 giờ kể từ lần ghi đầu tiên; bản ghi hết hạn hoặc hỏng được xoá khỏi máy. Không lưu bản nháp ô nhập, tên/số điện thoại chưa consent, ghi chú lead, customer profile, cookie/session token, API key hay dữ liệu ngoài mức cần để dựng lại giao diện. Đăng xuất và nút xoá cuộc trò chuyện xoá snapshot.
+Đây không phải bảng dữ liệu backend. Website chỉ giữ tối thiểu `version`, `expiresAt`, `locale`, `conversationId`, `pendingRequestId`, các tin nhắn đã hiển thị (`role`, `content`, `answerFormat`, `resultKind`, product cards/actions), `remainingTurns`, trạng thái `AI|CONTACT` và cờ lead. Snapshot có hạn cố định 24 giờ; không lưu bản nháp, PII chưa consent, hồ sơ, session/API key. Đăng xuất và nút xoá cuộc trò chuyện xoá snapshot.
+
+### Attribution Trợ lý BigBike (V1039)
+
+| Table/column | Type | Notes |
+|---|---|---|
+| `cart_items.assistant_conversation_id` | `UUID` nullable FK `chat_conversations`, `ON DELETE SET NULL` | Chỉ ghi khi backend xác minh sản phẩm của dòng giỏ đã xuất hiện trong assistant message thuộc đúng conversation/caller. Dòng giỏ merge chỉ giữ attribution hợp lệ. |
+| `chat_order_attributions.id` | `UUID` PK | Bản ghi doanh thu hỗ trợ bất biến. |
+| `chat_order_attributions.order_id` | `UUID` FK `orders`, `ON DELETE CASCADE` | Cùng `order_line_item_id` unique để checkout/replay idempotent. |
+| `chat_order_attributions.order_line_item_id` | `UUID` FK `order_line_items`, `ON DELETE CASCADE` | Quy đúng từng dòng được thêm từ chat. |
+| `chat_order_attributions.conversation_id` | `UUID` nullable FK `chat_conversations`, `ON DELETE SET NULL` | Liên kết biến mất khi hết retention 90 ngày; số tiền vẫn giữ. |
+| `chat_order_attributions.attributed_amount` / `currency` | `NUMERIC(19,2)` / `VARCHAR(10)` | Giá cuối cùng backend xác nhận cho đúng dòng khi checkout. |
+| `chat_order_attributions.created_at` | `TIMESTAMPTZ` | Mốc báo cáo. Không lưu nội dung chat hoặc PII. |

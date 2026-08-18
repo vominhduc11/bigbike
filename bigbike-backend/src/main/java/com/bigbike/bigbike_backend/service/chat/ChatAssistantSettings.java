@@ -24,8 +24,8 @@ public class ChatAssistantSettings {
     public static final String KEY_GREETING = "ai_assistant_greeting";
     public static final String KEY_QUICK_PROMPTS = "ai_assistant_quick_prompts";
     public static final String SETTING_GROUP = "ai_assistant";
-    public static final int DEFAULT_DAILY_LIMIT = 60;
-    public static final int DEFAULT_RECENT_TURN_PAIRS = 3;
+    public static final int DEFAULT_DAILY_LIMIT = 120;
+    public static final int DEFAULT_RECENT_TURN_PAIRS = 12;
 
     private static final String DEFAULT_GREETING_VI =
             "Em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể giúp anh/chị chọn sản phẩm, xem chính sách hoặc kiểm tra đơn hàng khi đã đăng nhập.";
@@ -33,15 +33,15 @@ public class ChatAssistantSettings {
             "I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you choose products, check store policies, or view orders on your signed-in account.";
 
     private static final List<String> DEFAULT_PROMPTS_VI = List.of(
-            "Mũ bảo hiểm dưới 2 triệu",
-            "Mũ bảo hiểm từ 2 đến 5 triệu",
-            "Tư vấn chọn size",
-            "Chính sách đổi trả");
+            "Mũ bảo hiểm nào dưới 2 triệu phù hợp đi phố?",
+            "Mũ bảo hiểm nào từ 2 đến 5 triệu đáng cân nhắc?",
+            "Hướng dẫn tôi chọn size phù hợp.",
+            "Chính sách đổi trả của BigBike như thế nào?");
     private static final List<String> DEFAULT_PROMPTS_EN = List.of(
-            "Helmets under 2 million VND",
-            "Helmets from 2 to 5 million VND",
-            "Help me choose a size",
-            "Return policy");
+            "Which helmets under VND 2 million suit city riding?",
+            "Which helmets from VND 2 to 5 million should I consider?",
+            "Help me choose the right size.",
+            "What is BigBike's return policy?");
 
     private final SiteSettingJpaRepository settingRepo;
 
@@ -73,7 +73,7 @@ public class ChatAssistantSettings {
                 localized(settings, "contact_address", english, ""),
                 localized(settings, "opening_hours_weekday", english, ""),
                 localized(settings, "opening_hours_weekend", english, ""),
-                Math.min(3, readInteger(
+                Math.min(12, readInteger(
                         settings, KEY_RECENT_TURN_PAIRS, DEFAULT_RECENT_TURN_PAIRS)));
     }
 
@@ -185,7 +185,7 @@ public class ChatAssistantSettings {
 
         public Snapshot {
             quickPrompts = List.copyOf(quickPrompts);
-            recentTurnPairs = Math.max(0, Math.min(3, recentTurnPairs));
+            recentTurnPairs = Math.max(0, Math.min(12, recentTurnPairs));
         }
     }
 }

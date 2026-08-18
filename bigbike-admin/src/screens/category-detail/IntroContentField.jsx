@@ -328,6 +328,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', getA
 
       <TabsContent value="advanced" className="flex flex-col gap-4">
         <AiHtmlBrief
+          prompt={t('categories.detail.introAiBriefPrompt')}
           getPrompt={getAiPrompt}
           title={t('categories.detail.introAiPromptTitle')}
           copyLabel={t('categories.detail.introAiPromptCopy')}

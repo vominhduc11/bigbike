@@ -56,6 +56,11 @@ kèm hồ sơ mới đọc từ hệ thống của đúng danh mục/sản phẩ
 giá, biến thể và nội dung hiện có của khối đang sửa. Dữ liệu chưa có phải được ghi rõ là chưa có;
 không dùng số liệu cố định trong mã giao diện.
 
+Khi admin mở bảng xem trước của nút này, hệ thống đọc hồ sơ một lần để hiển thị đúng nội dung sẽ
+được chép; đóng rồi mở lại không đọc lặp. Lần bấm **Chép hướng dẫn AI** luôn đọc lại hồ sơ mới nhất
+trước khi đưa vào bộ nhớ tạm. Nếu lần đọc xem trước lỗi, hướng dẫn nền vẫn hiện kèm thông báo nhẹ;
+không có thao tác nào trong luồng này ghi dữ liệu danh mục hoặc sản phẩm.
+
 Với `Category.introContent`, HTML là bản gốc. Biểu mẫu chỉ vá phần được nhận diện, giữ nguyên các
 block tự do và thứ tự cũ; chuyển qua lại giữa thẻ **Biểu mẫu** và **HTML** không tự ghi và không
 cảnh báo mất nội dung. Bản hướng dẫn danh mục phân biệt sáu phần do biểu mẫu quản lý với bảng,

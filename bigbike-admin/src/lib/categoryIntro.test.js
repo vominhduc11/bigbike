@@ -80,6 +80,38 @@ describe('category intro HTML source and structured reader', () => {
     expect(root.querySelector('.bb-ci-b').compareDocumentPosition(root.querySelector('.bb-ci-c')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('ignores an answer-like store paragraph and does not duplicate it across three FAQ edits', () => {
+    const faqMarkup = Array.from({ length: 6 }, (_, index) => `
+      <div class="bb-ci-faq">
+        <div class="bb-ci-q"><span class="bb-ci-qbadge">Q</span><h3 class="bb-ci-qt">Câu hỏi ${index + 1}?</h3></div>
+        <div><p class="bb-ci-at">Câu trả lời ${index + 1}.</p></div>
+      </div>`).join('')
+    const storeParagraph = '<p class="bb-ci-at">Bigbike.vn hoạt động từ 2014 tại địa chỉ của cửa hàng.</p>'
+    let html = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Mũ bảo hiểm</h2><p class="bb-ci-body">Giới thiệu.</p></div><table class="comparison"><tbody><tr><td>So sánh</td></tr></tbody></table><div class="bb-ci-b">${faqMarkup}${storeParagraph}</div><div class="free-block"><img src="/keep.jpg" alt="Giữ nguyên" /></div></div>`
+
+    for (let edit = 0; edit < 3; edit += 1) {
+      const parsed = parseIntro(html)
+      expect(parsed.faqs).toHaveLength(6)
+      expect(parsed.faqs.every((faq) => faq.question && faq.answer)).toBe(true)
+
+      html = patchIntroHtml(html, {
+        field: 'faqs',
+        value: parsed.faqs.map((faq, index) => ({
+          ...faq,
+          answer: `${faq.answer} Lần sửa ${edit + 1}-${index + 1}.`,
+        })),
+      }, 'vi')
+
+      const document = new DOMParser().parseFromString(html, 'text/html')
+      expect(document.querySelectorAll('.bb-ci-qt')).toHaveLength(6)
+      expect(document.querySelectorAll('.bb-ci-at')).toHaveLength(7)
+      expect(document.body.textContent).toContain(`Lần sửa ${edit + 1}-1.`)
+      expect(document.body.textContent.match(/Bigbike\.vn hoạt động từ 2014/g)).toHaveLength(1)
+      expect(document.querySelector('.comparison').compareDocumentPosition(document.querySelector('.bb-ci-b')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(document.querySelector('.free-block img')).not.toBeNull()
+    }
+  })
+
   it('creates a managed root without deleting the supplied HTML when a new field is edited', () => {
     const patched = patchIntroHtml('<table><tr><td>Existing</td></tr></table>', { field: 'heading', value: 'Heading' }, 'en')
     expect(patched).toContain('Existing')

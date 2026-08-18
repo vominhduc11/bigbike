@@ -51,6 +51,7 @@ import { Alert } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '../components/MoneyInput'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs as UiTabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -58,7 +59,6 @@ import { cn } from '@/lib/utils'
 
 import {
   slugify,
-  formatPrice,
   getAutosaveKey,
   saveFormToStorage,
   loadFormFromStorage,
@@ -1667,13 +1667,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 )}
                 <div className={cn('grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5', form.variants.length > 0 && 'mt-5')}>
                   <Field label={t('products.detail.retailPrice')} required={!hasVariants} error={validationErrors.retailPrice}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                    <MoneyInput
                       placeholder={t('products.detail.retailPricePlaceholder')}
-                      value={formatPrice(form.retailPrice)}
-                      onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
+                      value={form.retailPrice}
+                      onValueChange={(value) => updateField('retailPrice', value)}
                       onBlur={() => validateFieldOnBlur('retailPrice')}
                       disabled={isReadOnly}
                     />
@@ -1690,13 +1687,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     }
                   >
                     <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                      <MoneyInput
                         placeholder={t('products.detail.salePricePlaceholder')}
-                        value={formatPrice(form.salePrice)}
-                        onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
+                        value={form.salePrice}
+                        onValueChange={(value) => updateField('salePrice', value)}
+                        zeroAsEmpty
                         disabled={isReadOnly}
                       />
                       {!isReadOnly && (

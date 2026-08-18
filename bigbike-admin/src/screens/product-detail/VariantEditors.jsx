@@ -23,6 +23,8 @@ import { Modal, MobileCardList, MobileCard } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '../../components/MoneyInput'
+import { parseMoneyInput } from '../../lib/moneyInput'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -49,7 +51,6 @@ import {
   getVariantColorKey,
   cloneGallery,
   resolveColorChangeMedia,
-  formatPrice,
   VARIANTS_FILTER_THRESHOLD,
   VARIANTS_RENDER_CAP,
 } from './constants'
@@ -1378,12 +1379,9 @@ function VariantRow({
           {fieldErrors.sku && <small className="mt-1 block text-xs text-danger" role="alert">{fieldErrors.sku}</small>}
         </TableCell>
         <TableCell className="min-w-36" onClick={stopRowToggle}>
-          <Input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={formatPrice(variant.retailPrice)}
-            onChange={(event) => updateField('retailPrice', event.target.value.replace(/\D/g, ''))}
+          <MoneyInput
+            value={variant.retailPrice}
+            onValueChange={(value) => updateField('retailPrice', value)}
             disabled={disabled}
             aria-label={t('products.detail.variant.retailPrice')}
             aria-invalid={fieldErrors.retailPrice ? true : undefined}
@@ -1391,12 +1389,10 @@ function VariantRow({
           {fieldErrors.retailPrice && <small className="mt-1 block text-xs text-danger" role="alert">{fieldErrors.retailPrice}</small>}
         </TableCell>
         <TableCell className="min-w-36" onClick={stopRowToggle}>
-          <Input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={formatPrice(variant.salePrice)}
-            onChange={(event) => updateField('salePrice', event.target.value.replace(/\D/g, ''))}
+          <MoneyInput
+            value={variant.salePrice}
+            onValueChange={(value) => updateField('salePrice', value)}
+            zeroAsEmpty
             disabled={disabled}
             aria-label={t('products.detail.variant.salePrice')}
             aria-invalid={fieldErrors.salePrice ? true : undefined}
@@ -1537,12 +1533,9 @@ function VariantMobileCard({
           {
             label: t('products.detail.variant.columnRetailPrice'),
             value: (
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={formatPrice(variant.retailPrice)}
-                onChange={(event) => updateField('retailPrice', event.target.value.replace(/\D/g, ''))}
+              <MoneyInput
+                value={variant.retailPrice}
+                onValueChange={(value) => updateField('retailPrice', value)}
                 disabled={disabled}
                 aria-label={t('products.detail.variant.retailPrice')}
                 aria-invalid={fieldErrors.retailPrice ? true : undefined}
@@ -1552,12 +1545,10 @@ function VariantMobileCard({
           {
             label: t('products.detail.variant.columnSalePrice'),
             value: (
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={formatPrice(variant.salePrice)}
-                onChange={(event) => updateField('salePrice', event.target.value.replace(/\D/g, ''))}
+              <MoneyInput
+                value={variant.salePrice}
+                onValueChange={(value) => updateField('salePrice', value)}
+                zeroAsEmpty
                 disabled={disabled}
                 aria-label={t('products.detail.variant.salePrice')}
                 aria-invalid={fieldErrors.salePrice ? true : undefined}
@@ -1827,8 +1818,9 @@ export function VariantsEditor({
 
   function applyBulkPrices() {
     const selected = new Set(selectedKeys)
-    const retailPrice = bulkRetailPrice.replace(/\D/g, '')
-    const salePrice = bulkSalePrice.replace(/\D/g, '')
+    const retailPrice = bulkRetailPrice
+    // Giá sale bằng 0 trong giao diện admin có cùng nghĩa với để trống.
+    const salePrice = parseMoneyInput(bulkSalePrice) === 0 ? '' : bulkSalePrice
     if (!retailPrice && !salePrice && !bulkClearSale) return
     onChange(items.map((variant) => {
       if (!selected.has(variant._key)) return variant
@@ -2161,22 +2153,17 @@ export function VariantsEditor({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="form-field">
             <span>{t('products.detail.variant.columnRetailPrice')}</span>
-            <Input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={formatPrice(bulkRetailPrice)}
-              onChange={(event) => setBulkRetailPrice(event.target.value.replace(/\D/g, ''))}
+            <MoneyInput
+              value={bulkRetailPrice}
+              onValueChange={setBulkRetailPrice}
             />
           </label>
           <label className="form-field">
             <span>{t('products.detail.variant.columnSalePrice')}</span>
-            <Input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={formatPrice(bulkSalePrice)}
-              onChange={(event) => setBulkSalePrice(event.target.value.replace(/\D/g, ''))}
+            <MoneyInput
+              value={bulkSalePrice}
+              onValueChange={setBulkSalePrice}
+              zeroAsEmpty
               disabled={bulkClearSale}
             />
           </label>
@@ -2237,7 +2224,7 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
     if (estimatedCount > MATRIX_HARD_CAP) return
     const combos = cartesian(parsed.map((a) => a.values.map((v) => ({ name: a.name, value: v }))))
     const prefix = skuPrefix.trim()
-    const price = sharedPrice.replace(/\D/g, '')
+    const price = sharedPrice
     const newVariants = combos.map((combo) => {
       const tokens = combo.map((o) => skuToken(o.value)).filter(Boolean)
       return {
@@ -2370,12 +2357,9 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
             <label className="text-xs font-medium text-muted-foreground">
               {t('products.detail.matrix.sharedPriceLabel', { defaultValue: 'Giá bán chung' })}
             </label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={formatPrice(sharedPrice)}
-              onChange={(e) => setSharedPrice(e.target.value.replace(/\D/g, ''))}
+            <MoneyInput
+              value={sharedPrice}
+              onValueChange={setSharedPrice}
               placeholder={t('products.detail.matrix.sharedPricePlaceholder', { defaultValue: 'vd: 5.900.000' })}
             />
             <p className="text-xs text-muted-foreground">

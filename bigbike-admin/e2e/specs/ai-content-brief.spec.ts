@@ -47,14 +47,34 @@ test.describe('AI content brief is read-only and HTML-first', () => {
 
     const intro = adminPage.locator('[data-field="introContent"]')
     const beforeHtml = await intro.locator('textarea').inputValue()
-    const heading = intro.getByPlaceholder(/Mũ bảo hiểm mô tô|Genuine motorcycle helmets|Heading/i).first()
-    await heading.fill(`${await heading.inputValue()} — kiểm tra bản nháp`)
-    const afterHtml = await intro.locator('textarea').inputValue()
+    const storeMarker = 'Bigbike.vn hoạt động từ 2014'
+    const beforeStoreCount = (beforeHtml.match(new RegExp(storeMarker, 'g')) || []).length
+    expect(beforeStoreCount).toBeGreaterThan(0)
 
-    expect(afterHtml).toContain('<table')
-    expect((afterHtml.match(/bb-ci-qt/g) || []).length).toBeGreaterThanOrEqual(6)
-    expect((afterHtml.match(/bb-ci-at/g) || []).length).toBeGreaterThanOrEqual(6)
-    expect(afterHtml).not.toBe(beforeHtml)
+    for (let edit = 1; edit <= 3; edit += 1) {
+      const answer = intro.getByRole('textbox', { name: /Câu trả lời ngắn gọn|Short answer/i }).first()
+      await answer.fill(`${await answer.innerText()} — lần sửa ${edit}`)
+      const afterHtml = await intro.locator('textarea').inputValue()
+      const structure = await adminPage.evaluate((rawHtml, marker) => {
+        const doc = new DOMParser().parseFromString(rawHtml, 'text/html')
+        const table = doc.querySelector('table')
+        const faq = doc.querySelector('.bb-ci-b')
+        return {
+          questions: doc.querySelectorAll('.bb-ci-qt').length,
+          answers: doc.querySelectorAll('.bb-ci-at').length,
+          tables: doc.querySelectorAll('table').length,
+          tableBeforeFaq: Boolean(table && faq && (table.compareDocumentPosition(faq) & Node.DOCUMENT_POSITION_FOLLOWING)),
+          storeCount: (rawHtml.match(new RegExp(marker, 'g')) || []).length,
+        }
+      }, afterHtml, storeMarker)
+
+      expect(structure.questions).toBe(6)
+      expect(structure.answers).toBe(7)
+      expect(structure.tables).toBeGreaterThan(0)
+      expect(structure.tableBeforeFaq).toBe(true)
+      expect(structure.storeCount).toBe(beforeStoreCount)
+    }
+
     expect(await adminPage.getByRole('button', { name: /Lưu danh mục|Save category/i }).count()).toBeGreaterThan(0)
     expectRuntimeClean(collect)
   })
@@ -67,6 +87,10 @@ test.describe('AI content brief is read-only and HTML-first', () => {
     await skipWhenRuntimeFixtureDiffers(adminPage, testInfo)
 
     await adminPage.locator('[data-field="introContent"]').getByRole('tab', { name: 'HTML' }).click()
+    const categoryBrief = adminPage.locator('[data-field="introContent"]')
+      .getByRole('button', { name: /Hướng dẫn tạo nội dung đúng giao diện|AI brief for on-brand HTML/i })
+    await categoryBrief.click()
+    await expect(adminPage.locator('[data-field="introContent"] pre')).toContainText(/HỒ SƠ DANH MỤC|CATEGORY PROFILE/i)
     await adminPage.getByRole('button', { name: /Chép câu lệnh|Copy prompt/i }).click()
     const categoryPrompt = await adminPage.evaluate(() => navigator.clipboard.readText())
     expect(categoryPrompt).toContain('17')
@@ -94,6 +118,9 @@ test.describe('AI content brief is read-only and HTML-first', () => {
     await waitForScreenReady(adminPage)
     const sizeCard = adminPage.getByText(/Bảng size|Size guide/i).first().locator('..').locator('..')
     await sizeCard.getByRole('tab', { name: 'HTML' }).click()
+    const sizeBrief = sizeCard.getByRole('button', { name: /Hướng dẫn tạo nội dung đúng giao diện|AI brief for on-brand HTML/i })
+    await sizeBrief.click()
+    await expect(sizeCard.locator('pre')).toContainText(String(helmet.sku || helmet.id))
     await sizeCard.getByRole('button', { name: /Sao chép|Copy/i }).click()
     const productPrompt = await adminPage.evaluate(() => navigator.clipboard.readText())
     expect(productPrompt).toContain(String(helmet.sku || helmet.id))

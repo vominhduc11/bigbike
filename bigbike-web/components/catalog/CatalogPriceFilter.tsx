@@ -33,35 +33,32 @@ function countDigitsBeforeCaret(value: string, caret: number | null): number {
   return (value.slice(0, caret ?? value.length).match(/\d/g) ?? []).length;
 }
 
-function caretAfterDigits(value: string, digitCount: number): number {
-  if (digitCount === 0) return value.startsWith("-") ? 1 : 0;
-  let seen = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    if (!/\d/.test(value[index] ?? "")) continue;
-    seen += 1;
-    if (seen === digitCount) return index + 1;
-  }
-  return value.length;
-}
-
-function updateFormattedInput(
+function updateInputWhileTyping(
   event: ChangeEvent<HTMLInputElement>,
-  locale: string,
   setValue: (value: string) => void,
 ) {
   const target = event.currentTarget;
   const rawValue = target.value;
-  const nextValue = formatPriceInput(rawValue, locale);
   const selectionStart = target.selectionStart;
   const selectionEnd = target.selectionEnd;
+  const digitsBeforeCaret = countDigitsBeforeCaret(rawValue, selectionStart);
+  const nextValue = rawValue.replace(/\D/g, "");
   const nextCaret = selectionStart === selectionEnd
-    ? caretAfterDigits(nextValue, countDigitsBeforeCaret(rawValue, selectionStart))
+    ? Math.min(digitsBeforeCaret, nextValue.length)
     : nextValue.length;
 
   setValue(nextValue);
   queueMicrotask(() => {
     if (document.activeElement === target) target.setSelectionRange(nextCaret, nextCaret);
   });
+}
+
+function formatInputOnBlur(
+  value: string,
+  locale: string,
+  setValue: (value: string) => void,
+) {
+  setValue(formatPriceInput(value, locale));
 }
 
 function inputValue(value: number | undefined, locale: string): string {
@@ -271,7 +268,9 @@ export function CatalogPriceFilter({
             value={inputMin}
             placeholder={formatPriceInput(range.minPrice, locale)}
             data-price-input="min"
-            onChange={(event) => updateFormattedInput(event, locale, setInputMin)}
+            onFocus={(event) => event.currentTarget.select()}
+            onChange={(event) => updateInputWhileTyping(event, setInputMin)}
+            onBlur={() => formatInputOnBlur(inputMin, locale, setInputMin)}
             onKeyDown={handleInputKeyDown}
             aria-label={t("priceFrom")}
           />
@@ -286,7 +285,9 @@ export function CatalogPriceFilter({
             value={inputMax}
             placeholder={formatPriceInput(range.maxPrice, locale)}
             data-price-input="max"
-            onChange={(event) => updateFormattedInput(event, locale, setInputMax)}
+            onFocus={(event) => event.currentTarget.select()}
+            onChange={(event) => updateInputWhileTyping(event, setInputMax)}
+            onBlur={() => formatInputOnBlur(inputMax, locale, setInputMax)}
             onKeyDown={handleInputKeyDown}
             aria-label={t("priceTo")}
           />

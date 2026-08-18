@@ -8,6 +8,8 @@ public record ChatMessageResponse(
         String mode,
         String reason,
         String answer,
+        String answerFormat,
+        String resultKind,
         int turnCount,
         int maxTurns,
         int remainingTurns,

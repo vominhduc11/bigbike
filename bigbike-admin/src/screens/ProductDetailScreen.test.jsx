@@ -358,6 +358,33 @@ describe('ProductDetailScreen', () => {
     }))
   })
 
+  it('giữ caret khi sửa giá, chưa gọi mutation trước Lưu và gửi số/null cuối cùng', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    const retail = await screen.findByDisplayValue('5.900.000')
+    const sale = screen.getByDisplayValue('5.500.000')
+
+    await user.click(retail)
+    await user.clear(retail)
+    await user.type(retail, '6200000')
+    await user.tab()
+    expect(retail).toHaveValue('6.200.000')
+
+    await user.click(sale)
+    await user.clear(sale)
+    await user.type(sale, '0')
+    await user.tab()
+    expect(sale).toHaveValue('')
+    expect(mocks.updateProduct).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    const payload = mocks.updateProduct.mock.calls[0][1]
+    expect(payload.retailPrice).toBe(6200000)
+    expect(payload.salePrice).toBeNull()
+  })
+
   it('hiển thị trạng thái không tìm thấy riêng cho lỗi 404', async () => {
     const error = Object.assign(new Error('Not found'), { status: 404 })
     mocks.fetchProductDetail.mockRejectedValue(error)

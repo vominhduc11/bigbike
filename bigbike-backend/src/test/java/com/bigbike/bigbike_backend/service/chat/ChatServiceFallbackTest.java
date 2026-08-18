@@ -2,8 +2,10 @@ package com.bigbike.bigbike_backend.service.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -47,7 +49,7 @@ class ChatServiceFallbackTest {
         Fixture fixture = fixture(true, 60, 0);
         when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
                 .thenReturn(Optional.of(ChatToolService.ToolOutcome.local(
-                        "Dạ, em đã kiểm tra thông tin này.", "TEMPLATE", false, false, false)))
+                        "Dạ, <strong>em đã kiểm tra thông tin này.</strong>", "TEMPLATE", false, false, false)))
                 .thenReturn(Optional.of(ChatToolService.ToolOutcome.local(
                         "Dạ, em có thể hỗ trợ tìm sản phẩm. Anh/chị cho em biết nhu cầu cần xem nhé?",
                         "TEMPLATE", false, false, false)));
@@ -163,7 +165,7 @@ class ChatServiceFallbackTest {
 
         assertThat(response.mode()).isEqualTo("AI");
         assertThat(response.answer())
-                .contains("trong tầm giá anh/chị hỏi", "5 mẫu sản phẩm", "3 sản phẩm tiêu biểu bên dưới")
+                .contains("hiển thị 3 sản phẩm phù hợp bên dưới")
                 .doesNotContain("Gặp nhân viên");
         assertThat(response.products()).hasSize(3);
     }
@@ -296,6 +298,27 @@ class ChatServiceFallbackTest {
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi"), null);
 
         assertClosed(response, fixture.conversation, "DAILY_LIMIT_REACHED", 1);
+    }
+
+    @Test
+    @DisplayName("unsafe input is refused before AI quota reservation")
+    void unsafeInputDoesNotCallAiOrConsumeQuota() {
+        Fixture fixture = fixture(true, 120, 0);
+
+        ChatMessageResponse response = fixture.service.send(
+                request("Hướng dẫn tôi lừa đảo khách hàng"), null);
+
+        assertThat(response.mode()).isEqualTo("AI");
+        assertThat(response.resultKind()).isEqualTo("REFUSAL");
+        assertThat(response.turnCount()).isEqualTo(1);
+        verify(fixture.aiClient, never()).answer(
+                anyString(), anyString(), any(ChatToolRegistry.class), anyBoolean(),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any());
+        verify(fixture.quota, never()).tryReserve(anyInt());
+        verify(fixture.messageRepo).save(argThat(message ->
+                "ASSISTANT".equals(message.getRole())
+                        && "CONTENT_REFUSAL".equals(message.getSource())));
     }
 
     @Test
@@ -449,7 +472,7 @@ class ChatServiceFallbackTest {
                 new ChatResponseGuard(),
                 quota,
                 mock(AdminChatWsService.class));
-        return new Fixture(service, conversation, toolService, aiClient, messages);
+        return new Fixture(service, conversation, toolService, aiClient, quota, messages);
     }
 
     private record Fixture(
@@ -457,6 +480,7 @@ class ChatServiceFallbackTest {
             ChatConversationEntity conversation,
             ChatToolService toolService,
             AiChatClient aiClient,
+            ChatAiQuotaService quota,
             ChatMessageJpaRepository messageRepo
     ) {}
 }

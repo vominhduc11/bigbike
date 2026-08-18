@@ -631,6 +631,9 @@ class ChatToolServiceTest {
                 prior, "vậy còn thông tin bảng size", "vi", List.of(), List.of(), null);
 
         assertThat(afterSideQuestion).isEqualTo(prior);
+        assertThat(tools.recordConversationContext(
+                prior, "chính sách đổi trả thế nào", "vi", List.of(), List.of(), null))
+                .isEqualTo(prior);
     }
 
     @Test
@@ -911,11 +914,19 @@ class ChatToolServiceTest {
         List<Product> gloves = List.of(
                 product("glove-1", "Găng tay 1", BigDecimal.valueOf(800_000), List.of()),
                 product("glove-2", "Găng tay 2", BigDecimal.valueOf(900_000), List.of()),
-                product("glove-3", "Găng tay 3", BigDecimal.valueOf(1_000_000), List.of()));
+                product("glove-3", "Găng tay 3", BigDecimal.valueOf(1_000_000), List.of()),
+                product("glove-4", "Găng tay 4", BigDecimal.valueOf(1_100_000), List.of()),
+                product("glove-5", "Găng tay 5", BigDecimal.valueOf(1_200_000), List.of()),
+                product("glove-6", "Găng tay 6", BigDecimal.valueOf(1_300_000), List.of()),
+                product("glove-7", "Găng tay 7", BigDecimal.valueOf(1_400_000), List.of()),
+                product("glove-8", "Găng tay 8", BigDecimal.valueOf(1_500_000), List.of()));
         List<Product> shoes = List.of(
                 product("shoe-1", "Giày bảo hộ 1", BigDecimal.valueOf(2_000_000), List.of()),
                 product("shoe-2", "Giày bảo hộ 2", BigDecimal.valueOf(2_200_000), List.of()),
-                product("shoe-3", "Giày bảo hộ 3", BigDecimal.valueOf(2_400_000), List.of()));
+                product("shoe-3", "Giày bảo hộ 3", BigDecimal.valueOf(2_400_000), List.of()),
+                product("shoe-4", "Giày bảo hộ 4", BigDecimal.valueOf(2_600_000), List.of()),
+                product("shoe-5", "Giày bảo hộ 5", BigDecimal.valueOf(2_800_000), List.of()),
+                product("shoe-6", "Giày bảo hộ 6", BigDecimal.valueOf(3_000_000), List.of()));
         when(catalog.listAssistantCategories(any())).thenReturn(List.of(
                 category("mu-bao-hiem", "Mũ bảo hiểm"),
                 category("gang-tay-xe-may-moto", "Găng tay"),
@@ -945,7 +956,7 @@ class ChatToolServiceTest {
                 gloveResult.products(), gloveResult.actions(), gloveResult.searchScope());
 
         assertThat(gloveResult.terminalAnswer().answer())
-                .contains("20 mẫu găng tay", "3 mẫu tiêu biểu bên dưới trong tổng 20 mẫu")
+                .contains("20 mẫu găng tay", "8 mẫu tiêu biểu bên dưới trong tổng 20 mẫu")
                 .doesNotContain("mũ bảo hiểm");
         assertThat(gloveContext.category()).isEqualTo("gang-tay-xe-may-moto");
         assertThat(gloveContext.minPrice()).isNull();
@@ -1282,8 +1293,8 @@ class ChatToolServiceTest {
     }
 
     @Test
-    @DisplayName("a generic floor request returns three verified cards instead of one")
-    void genericFloorRequestReturnsThreeCards() {
+    @DisplayName("a generic floor request can return up to eight verified cards")
+    void genericFloorRequestReturnsAvailableCardsUpToEight() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         List<Product> candidates = List.of(
                 product("from-five-1", "Sản phẩm từ năm triệu 1", BigDecimal.valueOf(5_000_000), List.of()),
@@ -1295,9 +1306,9 @@ class ChatToolServiceTest {
                 .thenReturn(new PageResult<>(candidates, 1, 10, candidates.size(), 1));
 
         ChatToolService.ToolOutcome outcome = new ChatToolService(catalog, mock(OrderReadService.class))
-                .resolve("Tìm 3 sản phẩm từ 5tr", "vi", null, settings());
+                .resolve("Tìm sản phẩm từ 5tr", "vi", null, settings());
 
-        assertThat(outcome.products()).hasSize(3);
+        assertThat(outcome.products()).hasSize(4);
         assertThat(outcome.products()).allSatisfy(card ->
                 assertThat(card.retailPrice()).isGreaterThanOrEqualTo(BigDecimal.valueOf(5_000_000)));
     }
@@ -1348,7 +1359,7 @@ class ChatToolServiceTest {
     }
 
     @Test
-    @DisplayName("a matching model from this conversation stays among the capped cards and no more than three names are spoken")
+    @DisplayName("a matching model from this conversation stays first among up to eight search cards")
     void priorMentionIsPrioritizedWithoutDroppingTheVerifiedSmallSet() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         List<Product> headsets = List.of(
@@ -1372,12 +1383,11 @@ class ChatToolServiceTest {
                 new ChatToolService.ToolSession());
 
         assertThat(result.products()).extracting(card -> card.slug())
-                .containsExactly("scs-s12", "s13", "g7-plus");
+                .containsExactly("scs-s12", "s13", "g7-plus", "t2-plus");
         assertThat(result.terminalAnswer()).isNotNull();
         assertThat(result.terminalAnswer().answer())
-                .contains("SCS S13", "SCS G7+", "SCS S12")
-                .doesNotContain("SCS T2 Plus")
-                .contains("hiển thị 3 mẫu tiêu biểu bên dưới trong tổng 4 mẫu");
+                .contains("SCS S13", "SCS G7+", "SCS S12", "SCS T2 Plus")
+                .contains("hiển thị đầy đủ 4 sản phẩm phù hợp bên dưới");
     }
 
     @Test

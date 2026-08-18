@@ -26,6 +26,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @Slf4j
@@ -50,9 +53,16 @@ public class ChatService {
     private final ChatToolRegistry toolRegistry;
     private final AiChatClient aiClient;
     private final ChatResponseGuard responseGuard;
+    private final ChatInputGuard inputGuard = new ChatInputGuard();
     private final ChatAiQuotaService chatAiQuotaService;
     private final AdminChatWsService adminChatWsService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${bigbike.chat.input-cost-usd-per-million:0.30}")
+    private BigDecimal inputCostUsdPerMillion = new BigDecimal("0.30");
+
+    @Value("${bigbike.chat.output-cost-usd-per-million:2.50}")
+    private BigDecimal outputCostUsdPerMillion = new BigDecimal("2.50");
 
     @Transactional(readOnly = true)
     public ChatAvailabilityResponse availability(String lang) {
@@ -77,7 +87,13 @@ public class ChatService {
 
     @Transactional
     public ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
+        long startedNanos = System.nanoTime();
         ChatAssistantSettings.Snapshot settings = assistantSettings.load(request.getLang());
+        if (request.getRequestId() != null) {
+            Optional<ChatMessageResponse> replay = replayStoredResponse(
+                    request.getRequestId(), customerId, settings);
+            if (replay.isPresent()) return replay.get();
+        }
         ChatConversationEntity conversation = loadOrCreate(
                 request.getConversationId(), customerId, request.getLang());
 
@@ -88,15 +104,32 @@ public class ChatService {
             return contactResponse(conversation, settings, turnLimitText(request.getLang()), List.of());
         }
 
+        Optional<ChatInputGuard.Decision> inputDecision = inputGuard.evaluate(
+                request.getMessage(), request.getLang());
+        if (inputDecision.isPresent()) {
+            ChatInputGuard.Decision decision = inputDecision.get();
+            saveCustomerMessage(conversation, request.getMessage(), request.getRequestId());
+            finishTurnIfNeeded(conversation);
+            boolean ended = conversation.getEndedReason() != null;
+            saveAssistantMessage(
+                    conversation, decision.answer(), decision.source(), false, List.of(), 0,
+                    request.getRequestId(), "PLAIN_TEXT", "REFUSAL", List.of(),
+                    ended, false, Telemetry.local(startedNanos));
+            conversationRepo.save(conversation);
+            return refusalResponse(conversation, settings, decision.answer());
+        }
+
         Availability availability = resolveAvailability(settings);
         if (!"AI".equals(availability.mode())) {
             conversation.setEndedReason(endedReason(availability.reason()));
-            saveCustomerMessage(conversation, request.getMessage());
+            saveCustomerMessage(conversation, request.getMessage(), request.getRequestId());
             String fallback = contactFallbackText(request.getLang(), fallbackCause(availability.reason()));
             logFallback(availabilityFallbackReason(availability.reason()), FallbackFlow.CONTACT_GATE,
                     "NONE", 0, false);
             saveAssistantMessage(conversation, fallback,
-                    "CONTACT_FALLBACK", false, List.of(), 0);
+                    "CONTACT_FALLBACK", false, List.of(), 0,
+                    request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
+                    true, false, Telemetry.local(startedNanos));
             return contactResponse(
                     conversation, settings, fallback, List.of());
         }
@@ -109,7 +142,7 @@ public class ChatService {
         List<ChatHistorySanitizer.RecentTurn> recentTurns = settings.recentTurnPairs() == 0
                 ? List.of()
                 : ChatHistorySanitizer.recentTurns(existingMessages, settings.recentTurnPairs());
-        saveCustomerMessage(conversation, request.getMessage());
+        saveCustomerMessage(conversation, request.getMessage(), request.getRequestId());
         Optional<ToolOutcome> fastPath;
         try {
             fastPath = toolService.resolveFastPath(
@@ -117,6 +150,7 @@ public class ChatService {
         } catch (RuntimeException exception) {
             return recoverableClarification(
                     conversation, settings, request.getLang(), false,
+                    request.getRequestId(), startedNanos,
                     ChatFallbackReason.FAST_PATH_EXCEPTION, "NONE", 0);
         }
 
@@ -130,6 +164,7 @@ public class ChatService {
                         tool.requiredDisclosures(), tool.catalogTotals());
                 return recoverableClarification(
                         conversation, settings, request.getLang(), false,
+                        request.getRequestId(), startedNanos,
                         ChatFallbackReason.FAST_PATH_GUARD_REJECTED, reason, tool.products().size());
             }
             ChatResponseGuard.CheckedAnswer safe = checked.get();
@@ -149,7 +184,9 @@ public class ChatService {
                     !handoff && ChatToolService.shouldOfferLeadPrompt(
                             request.getMessage(), safe.products(), false));
             saveAssistantMessage(conversation, safe.answer(), clarifiedDuplicate ? "TOOL" : tool.source(),
-                    false, safe.products(), 0);
+                    false, safe.products(), 0,
+                    request.getRequestId(), answerFormat(safe.answer()), resultKind(safe.products(), handoff),
+                    tool.actions(), handoff, leadPrompt, Telemetry.local(startedNanos));
             saveConversationContext(conversation, toolService.recordConversationContext(
                     conversationContext,
                     request.getMessage(),
@@ -172,7 +209,9 @@ public class ChatService {
         if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
             conversation.setEndedReason("DAILY_LIMIT_REACHED");
             String fallback = contactFallbackText(request.getLang(), FallbackCause.DAILY_LIMIT);
-            saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", false, List.of(), 0);
+            saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", false, List.of(), 0,
+                    request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
+                    true, false, Telemetry.local(startedNanos));
             logFallback(ChatFallbackReason.DAILY_LIMIT_REACHED, FallbackFlow.QUOTA_GATE,
                     "NONE", 0, false);
             conversationRepo.save(conversation);
@@ -195,12 +234,25 @@ public class ChatService {
                     vocabulary,
                     referenceContext.productSlugs(),
                     recentTurns);
+        } catch (AiChatClient.SafetyBlockedException exception) {
+            String refusal = safetyRefusalText(request.getLang());
+            Telemetry safetyTelemetry = telemetry(
+                    startedNanos, exception.usage(), exception.providerCallCount());
+            finishTurnIfNeeded(conversation);
+            boolean ended = conversation.getEndedReason() != null;
+            saveAssistantMessage(
+                    conversation, refusal, "CONTENT_REFUSAL", true, List.of(), 0,
+                    request.getRequestId(), "PLAIN_TEXT", "REFUSAL", List.of(),
+                    ended, false, safetyTelemetry);
+            conversationRepo.save(conversation);
+            return refusalResponse(conversation, settings, refusal);
         } catch (RuntimeException exception) {
             ai = Optional.empty();
         }
         if (ai.isEmpty()) {
             return recoverableClarification(
                     conversation, settings, request.getLang(), true,
+                    request.getRequestId(), startedNanos,
                     ChatFallbackReason.AI_NO_SAFE_RESULT, "NONE", 0);
         }
 
@@ -256,6 +308,7 @@ public class ChatService {
         if (checked.isEmpty()) {
             return recoverableClarification(
                     conversation, settings, request.getLang(), true,
+                    request.getRequestId(), startedNanos,
                     productsFiltered
                             ? ChatFallbackReason.UNSAFE_PRODUCT_FILTERED
                             : ChatFallbackReason.AI_GUARD_REJECTED,
@@ -280,7 +333,10 @@ public class ChatService {
                 conversation, !handoff && (answer.leadPrompt() || interestLead));
         saveAssistantMessage(
                 conversation, safe.answer(), recoveredFromGuard || clarifiedDuplicate ? "TOOL" : hybridAnswer.source(),
-                true, safe.products(), 0);
+                true, safe.products(), 0,
+                request.getRequestId(), answerFormat(safe.answer()), resultKind(safe.products(), handoff),
+                recoveredFromGuard || clarifiedDuplicate ? List.of() : hybridAnswer.actions(),
+                handoff, leadPrompt, telemetry(startedNanos, hybridAnswer));
         saveConversationContext(conversation, toolService.recordConversationContext(
                 conversationContext,
                 request.getMessage(),
@@ -396,6 +452,51 @@ public class ChatService {
         return conversationRepo.save(conversation);
     }
 
+    private Optional<ChatMessageResponse> replayStoredResponse(
+            UUID requestId,
+            UUID customerId,
+            ChatAssistantSettings.Snapshot settings
+    ) {
+        Optional<ChatMessageEntity> stored = messageRepo.findFirstByRequestIdAndRole(
+                requestId, "ASSISTANT");
+        if (stored.isEmpty()) return Optional.empty();
+        ChatMessageEntity message = stored.get();
+        ChatConversationEntity conversation = loadExistingForCaller(
+                message.getConversationId(), customerId);
+        List<ChatProductCardResponse> products = readStoredProducts(message.getProductsJson());
+        StoredResponseMetadata metadata = readStoredMetadata(message.getActionMetadata());
+        String mode = metadata == null ? "AI" : metadata.mode();
+        String reason = metadata == null ? mode : metadata.reason();
+        boolean handoff = metadata != null && metadata.handoff();
+        boolean leadPrompt = metadata != null && metadata.leadPrompt();
+        List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions = metadata == null
+                ? List.of() : metadata.actions();
+        return Optional.of(new ChatMessageResponse(
+                conversation.getId(), mode, reason, message.getContent(),
+                message.getAnswerFormat(), message.getResultKind(),
+                conversation.getTurnCount(), MAX_TURNS,
+                Math.max(0, MAX_TURNS - conversation.getTurnCount()),
+                products, handoff, leadPrompt, actions, settings.contacts()));
+    }
+
+    private List<ChatProductCardResponse> readStoredProducts(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(raw, new TypeReference<>() {});
+        } catch (JsonProcessingException exception) {
+            return List.of();
+        }
+    }
+
+    private StoredResponseMetadata readStoredMetadata(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return objectMapper.readValue(raw, StoredResponseMetadata.class);
+        } catch (JsonProcessingException exception) {
+            return null;
+        }
+    }
+
     private ChatConversationEntity loadExistingForCaller(UUID id, UUID customerId) {
         ChatConversationEntity conversation = conversationRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
@@ -444,7 +545,8 @@ public class ChatService {
                 source.providerCallCount(),
                 source.source(),
                 null,
-                source.searchScope());
+                source.searchScope(),
+                source.usage());
     }
 
     private String rejectionReason(
@@ -558,7 +660,7 @@ public class ChatService {
                 || totals.priceRangeTotalItems() == null
                 || products == null
                 || products.isEmpty()
-                || products.size() != Math.min(totals.currentTotalItems(), 3)
+                || products.size() != Math.min(totals.currentTotalItems(), 8)
                 || hybridAnswer.requiredDisclosures() == null
                 || !hybridAnswer.requiredDisclosures().isEmpty()) {
             return Optional.empty();
@@ -658,14 +760,14 @@ public class ChatService {
         }
     }
 
-    /** Only cards on the immediately preceding assistant message can resolve "this/these". */
+    /** Keep the most recent verified product group through policy and other non-product turns. */
     private ChatToolService.ConversationContext contextForImmediatePreviousCards(
             ChatToolService.ConversationContext persisted,
             List<ChatMessageEntity> messages
     ) {
         ChatToolService.ConversationContext context = persisted == null
                 ? ChatToolService.ConversationContext.empty() : persisted;
-        List<String> slugs = List.of();
+        List<String> slugs = context.productSlugs();
         if (messages != null && !messages.isEmpty()) {
             ChatMessageEntity latest = messages.get(messages.size() - 1);
             if ("ASSISTANT".equals(latest.getRole())
@@ -678,7 +780,7 @@ public class ChatService {
                             .filter(card -> card != null && card.slug() != null && !card.slug().isBlank())
                             .map(ChatProductCardResponse::slug)
                             .distinct()
-                            .limit(3)
+                            .limit(8)
                             .toList();
                 } catch (JsonProcessingException exception) {
                     log.warn("Trợ lý BigBike previous-card context ignored reason=INVALID_PRODUCTS_JSON");
@@ -698,6 +800,14 @@ public class ChatService {
     }
 
     private void saveCustomerMessage(ChatConversationEntity conversation, String content) {
+        saveCustomerMessage(conversation, content, null);
+    }
+
+    private void saveCustomerMessage(
+            ChatConversationEntity conversation,
+            String content,
+            UUID requestId
+    ) {
         conversation.setTurnCount(conversation.getTurnCount() + 1);
         conversation.setLastMessageAt(Instant.now());
         ChatMessageEntity message = new ChatMessageEntity();
@@ -705,6 +815,7 @@ public class ChatService {
         message.setRole("CUSTOMER");
         message.setContent(content.trim());
         message.setSource("TOOL");
+        message.setRequestId(requestId);
         messageRepo.save(message);
     }
 
@@ -714,6 +825,8 @@ public class ChatService {
             ChatAssistantSettings.Snapshot settings,
             String lang,
             boolean aiCalled,
+            UUID requestId,
+            long startedNanos,
             ChatFallbackReason reason,
             String guardReason,
             int productCount
@@ -731,7 +844,9 @@ public class ChatService {
                 : "Dạ, em chưa lấy được thông tin phù hợp cho câu hỏi này nhưng anh/chị vẫn có thể hỏi tiếp. Anh/chị gửi tên mẫu, loại hàng hoặc chi tiết cần kiểm tra, em sẽ tra lại theo dữ liệu BigBike đang bán nhé.");
         logFallback(reason, aiCalled ? FallbackFlow.AI : FallbackFlow.FAST_PATH,
                 guardReason, productCount, false);
-        saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0);
+        saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0,
+                requestId, "PLAIN_TEXT", "CLARIFICATION", List.of(),
+                false, false, Telemetry.local(startedNanos));
         conversationRepo.save(conversation);
         return aiResponse(
                 conversation, settings, answer, List.of(), false,
@@ -759,14 +874,51 @@ public class ChatService {
             List<ChatProductCardResponse> products,
             int aiRetryCount
     ) {
+        saveAssistantMessage(
+                conversation, content, source, aiCalled, products, aiRetryCount,
+                null, answerFormat(content), resultKind(products, false), List.of(),
+                false, false, Telemetry.empty());
+    }
+
+    private void saveAssistantMessage(
+            ChatConversationEntity conversation,
+            String content,
+            String source,
+            boolean aiCalled,
+            List<ChatProductCardResponse> products,
+            int aiRetryCount,
+            UUID requestId,
+            String answerFormat,
+            String resultKind,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            boolean handoff,
+            boolean leadPrompt,
+            Telemetry telemetry
+    ) {
         ChatMessageEntity message = new ChatMessageEntity();
         message.setConversationId(conversation.getId());
         message.setRole("ASSISTANT");
         message.setContent(content);
         message.setSource(source);
+        message.setRequestId(requestId);
+        message.setAnswerFormat(answerFormat);
+        message.setResultKind(resultKind);
+        message.setActionMetadata(writeJson(new StoredResponseMetadata(
+                handoff ? "CONTACT" : "AI",
+                handoff ? "CONTACT" : "AI",
+                handoff,
+                leadPrompt,
+                actions == null ? List.of() : List.copyOf(actions))));
         message.setAiCalled(aiCalled);
         message.setAiRetryCount(Math.max(0, aiRetryCount));
         message.setProductsJson(products.isEmpty() ? null : writeJson(products));
+        Telemetry safeTelemetry = telemetry == null ? Telemetry.empty() : telemetry;
+        message.setInputTokens(safeTelemetry.inputTokens());
+        message.setOutputTokens(safeTelemetry.outputTokens());
+        message.setThinkingTokens(safeTelemetry.thinkingTokens());
+        message.setProviderRequestCount(safeTelemetry.providerRequests());
+        message.setLatencyMs(safeTelemetry.latencyMs());
+        message.setEstimatedCostUsd(safeTelemetry.estimatedCostUsd());
         messageRepo.save(message);
     }
 
@@ -823,6 +975,8 @@ public class ChatService {
                 handoff || conversation.getEndedReason() != null ? "CONTACT" : "AI",
                 handoff || conversation.getEndedReason() != null ? "CONTACT" : "AI",
                 answer,
+                answerFormat(answer),
+                resultKind(products, handoff || conversation.getEndedReason() != null),
                 conversation.getTurnCount(),
                 MAX_TURNS,
                 Math.max(0, MAX_TURNS - conversation.getTurnCount()),
@@ -844,6 +998,8 @@ public class ChatService {
                 "CONTACT",
                 "CONTACT",
                 answer,
+                "PLAIN_TEXT",
+                "CONTACT",
                 conversation.getTurnCount(),
                 MAX_TURNS,
                 Math.max(0, MAX_TURNS - conversation.getTurnCount()),
@@ -854,11 +1010,96 @@ public class ChatService {
                 settings.contacts());
     }
 
+    private static ChatMessageResponse refusalResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            String answer
+    ) {
+        boolean ended = conversation.getEndedReason() != null;
+        return new ChatMessageResponse(
+                conversation.getId(), ended ? "CONTACT" : "AI", ended ? "CONTACT" : "AI",
+                answer, "PLAIN_TEXT", "REFUSAL",
+                conversation.getTurnCount(), MAX_TURNS,
+                Math.max(0, MAX_TURNS - conversation.getTurnCount()),
+                List.of(), ended, false, List.of(), settings.contacts());
+    }
+
+    private static String safetyRefusalText(String lang) {
+        return "en".equals(lang)
+                ? "I cannot help with that content. I can still assist with BigBike products, protective gear and store policies."
+                : "Em không thể hỗ trợ nội dung này. Em vẫn có thể tư vấn sản phẩm, đồ bảo hộ và chính sách của BigBike.";
+    }
+
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException exception) {
             return null;
+        }
+    }
+
+    private static String answerFormat(String answer) {
+        if (answer == null) return "PLAIN_TEXT";
+        return answer.contains("**")
+                || answer.matches("(?s).*(?:^|\\R)\\s*(?:[-*]|\\d+\\.)\\s+.*")
+                || answer.matches("(?s).*\\|[^\\r\\n]+\\|.*")
+                ? "MARKDOWN" : "PLAIN_TEXT";
+    }
+
+    private static String resultKind(List<ChatProductCardResponse> products, boolean contact) {
+        if (contact) return "CONTACT";
+        return products != null && !products.isEmpty() ? "PRODUCT_RESULTS" : "ANSWER";
+    }
+
+    private Telemetry telemetry(long startedNanos, AiChatClient.HybridAnswer answer) {
+        AiChatClient.TokenUsage usage = answer == null
+                ? AiChatClient.TokenUsage.empty() : answer.usage();
+        return telemetry(startedNanos, usage, answer == null ? 0 : answer.providerCallCount());
+    }
+
+    private Telemetry telemetry(
+            long startedNanos,
+            AiChatClient.TokenUsage usage,
+            int providerRequestCount
+    ) {
+        int latency = elapsedMillis(startedNanos);
+        BigDecimal input = inputCostUsdPerMillion.multiply(BigDecimal.valueOf(usage.inputTokens()));
+        long billedOutputTokens = (long) usage.outputTokens() + usage.thinkingTokens();
+        BigDecimal output = outputCostUsdPerMillion.multiply(BigDecimal.valueOf(billedOutputTokens));
+        BigDecimal cost = input.add(output)
+                .divide(BigDecimal.valueOf(1_000_000L), 8, RoundingMode.HALF_UP);
+        return new Telemetry(
+                usage.inputTokens(), usage.outputTokens(), usage.thinkingTokens(),
+                providerRequestCount, latency, cost);
+    }
+
+    private static int elapsedMillis(long startedNanos) {
+        long millis = Math.max(0L, (System.nanoTime() - startedNanos) / 1_000_000L);
+        return (int) Math.min(Integer.MAX_VALUE, millis);
+    }
+
+    private record StoredResponseMetadata(
+            String mode,
+            String reason,
+            boolean handoff,
+            boolean leadPrompt,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions
+    ) {}
+
+    private record Telemetry(
+            Integer inputTokens,
+            Integer outputTokens,
+            Integer thinkingTokens,
+            Integer providerRequests,
+            Integer latencyMs,
+            BigDecimal estimatedCostUsd
+    ) {
+        static Telemetry empty() {
+            return new Telemetry(null, null, null, null, null, null);
+        }
+
+        static Telemetry local(long startedNanos) {
+            return new Telemetry(0, 0, 0, 0, elapsedMillis(startedNanos), BigDecimal.ZERO);
         }
     }
 

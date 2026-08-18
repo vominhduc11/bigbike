@@ -13,7 +13,7 @@ function DetailValue({ label, children }) {
   return (
     <div>
       <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-sm text-foreground">{children || '—'}</dd>
+      <dd className="mt-1 text-sm text-foreground">{children ?? '—'}</dd>
     </div>
   )
 }
@@ -24,8 +24,27 @@ function sourceLabel(source, t) {
     TEMPLATE: t('chatAdmin.detail.sources.template'),
     TOOL: t('chatAdmin.detail.sources.data'),
     CONTACT_FALLBACK: t('chatAdmin.detail.sources.staff'),
+    OUT_OF_SCOPE: t('chatAdmin.detail.sources.outOfScope'),
+    CONTENT_REFUSAL: t('chatAdmin.detail.sources.contentRefusal'),
+    ROLE_DEFENSE: t('chatAdmin.detail.sources.roleDefense'),
   }
   return labels[source] || t('common.unknown')
+}
+
+function formatNumber(value) {
+  return value == null ? '—' : new Intl.NumberFormat().format(value)
+}
+
+function formatUsd(value) {
+  return value == null ? '—' : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(value)
+}
+
+function formatVnd(value) {
+  return value == null ? '—' : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
+}
+
+function formatLatency(value) {
+  return value == null ? '—' : value >= 1_000 ? `${(value / 1_000).toFixed(1)} s` : `${Math.round(value)} ms`
 }
 
 function leadSourceLabel(source, t) {
@@ -87,7 +106,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <DetailSection title={t('chatAdmin.detail.messages')} description={t('chatAdmin.detail.messagesDescription')}>
-            <ol className="grid gap-4">
+            {conversation.messages.length > 0 ? <ol className="grid gap-4">
               {conversation.messages.map((message) => {
                 const isUser = message.role === 'USER'
                 const Icon = isUser ? UserRound : Bot
@@ -100,13 +119,27 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                         <time dateTime={message.createdAt}>{formatDateTime(message.createdAt)}</time>
                       </header>
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content || t('common.unknown')}</p>
-                      {!isUser ? <p className="mt-2 text-xs text-muted-foreground">{t('chatAdmin.detail.source')}: {sourceLabel(message.source, t)}{message.aiCalled ? ` · ${t('chatAdmin.detail.usedAi')}` : ''}</p> : null}
+                      {!isUser ? (
+                        <div className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                          <p>{t('chatAdmin.detail.source')}: <span className="font-semibold text-foreground">{sourceLabel(message.source, t)}</span>{message.aiCalled ? ` · ${t('chatAdmin.detail.usedAi')}` : ''}</p>
+                          {message.providerRequestCount != null ? (
+                            <p className="mt-1">
+                              {t('chatAdmin.detail.messageTelemetry', {
+                                tokens: formatNumber((message.inputTokens ?? 0) + (message.outputTokens ?? 0) + (message.thinkingTokens ?? 0)),
+                                requests: formatNumber(message.providerRequestCount),
+                                latency: formatLatency(message.latencyMs),
+                                cost: formatUsd(message.estimatedCostUsd),
+                              })}
+                            </p>
+                          ) : <p className="mt-1">{t('chatAdmin.stats.noTelemetry')}</p>}
+                        </div>
+                      ) : null}
                     </article>
                     {isUser ? <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground" aria-hidden="true"><Icon size={17} /></span> : null}
                   </li>
                 )
               })}
-            </ol>
+            </ol> : <StatePanel tone="neutral" title={t('chatAdmin.detail.noMessages')} description={t('chatAdmin.detail.noMessagesDescription')} />}
           </DetailSection>
         </div>
 
@@ -116,10 +149,33 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
               <DetailValue label={t('chatAdmin.columns.language')}>{conversation.locale.toUpperCase()}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.turns')}>{conversation.turnCount}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.aiCalls')}>{conversation.aiCallCount}</DetailValue>
+              <DetailValue label={t('chatAdmin.detail.tokens')}>{conversation.hasTelemetry ? formatNumber((conversation.inputTokens ?? 0) + (conversation.outputTokens ?? 0) + (conversation.thinkingTokens ?? 0)) : '—'}</DetailValue>
+              <DetailValue label={t('chatAdmin.detail.providerRequests')}>{conversation.hasTelemetry ? formatNumber(conversation.providerRequests) : '—'}</DetailValue>
+              <DetailValue label={t('chatAdmin.columns.latency')}>{conversation.hasTelemetry ? formatLatency(conversation.averageLatencyMs) : '—'}</DetailValue>
+              <DetailValue label={t('chatAdmin.columns.cost')}>{conversation.hasTelemetry ? formatUsd(conversation.estimatedCostUsd) : '—'}</DetailValue>
+              <DetailValue label={t('chatAdmin.stats.contentRefusals')}>{formatNumber(conversation.contentRefusals)}</DetailValue>
+              <DetailValue label={t('chatAdmin.stats.assistedOrders')}>{formatNumber(conversation.assistedOrders)}</DetailValue>
+              <DetailValue label={t('chatAdmin.columns.assistedRevenue')}>{formatVnd(conversation.assistedRevenue)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.startedAt')}>{formatDateTime(conversation.startedAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.lastMessage')}>{formatDateTime(conversation.lastMessageAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.detail.endedReason')}>{endedReasonLabel(conversation.endedReason, t)}</DetailValue>
             </dl>
+          </SectionCard>
+
+          <SectionCard title={t('chatAdmin.detail.assistedOrders')} headingLevel={2}>
+            {conversation.orderAttributions.length > 0 ? (
+              <ul className="grid gap-3">
+                {conversation.orderAttributions.map((attribution) => (
+                  <li key={attribution.orderLineItemId || `${attribution.orderId}-${attribution.createdAt}`} className="rounded-[var(--admin-radius-card)] border border-border bg-surface-muted p-3">
+                    <Button type="button" variant="link" className="h-auto p-0 font-mono text-sm" onClick={() => navigate(`/admin/orders/${attribution.orderId}`)}>
+                      {t('chatAdmin.detail.openOrder', { id: attribution.orderId.slice(0, 8) })}
+                    </Button>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{formatVnd(attribution.attributedAmount)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(attribution.createdAt)}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noAssistedOrders')}</p>}
           </SectionCard>
 
           <SectionCard title={t('chatAdmin.detail.lead')} headingLevel={2}>

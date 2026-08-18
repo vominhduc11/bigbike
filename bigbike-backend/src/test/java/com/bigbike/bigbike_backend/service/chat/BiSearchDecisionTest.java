@@ -180,16 +180,37 @@ class BiSearchDecisionTest {
     @DisplayName("CHAT_RULE_017: approved chat abbreviations expand by exact word before catalog matching")
     void approvedAbbreviationsResolveOnlyAtWordBoundaries() {
         assertThat(firstSearch("mbh giá bao nhiêu").category()).isEqualTo("mu-bao-hiem");
-        assertThat(firstSearch("shop có gt ko").category()).isEqualTo("gang-tay-xe-may-moto");
+        assertThat(firstSearch("shop có găng tay ko").category()).isEqualTo("gang-tay-xe-may-moto");
         assertThat(firstSearch("mu ff gia bn z").category()).isEqualTo("mu-bao-hiem-fullface");
         assertThat(firstSearch("tn khoảng 2 triệu").category())
                 .isEqualTo("tai-nghe-bluetooth-mu-bao-hiem");
 
         assertThat(ChatToolService.extractProductQuery("LS2 V2").identifiers())
                 .containsExactly("v2");
+        assertThat(ChatToolService.extractProductQuery("Caberg Drift GT").identifiers())
+                .containsExactly("drift", "gt");
         assertThat(ChatToolService.extractPriceIntent("găng tay 500k"))
                 .returns(350_000L, ChatToolService.PriceIntent::min)
                 .returns(600_000L, ChatToolService.PriceIntent::max);
+        assertThat(ChatToolService.extractPriceIntent("găng tay 500 k"))
+                .returns(350_000L, ChatToolService.PriceIntent::min)
+                .returns(600_000L, ChatToolService.PriceIntent::max);
+    }
+
+    @Test
+    @DisplayName("CHAT_RULE_017: hông and GT stay catalog words while confirmation slang is contextual")
+    void collisionProneWordsAreNotExpandedGlobally() {
+        assertThat(ChatToolService.normalizeIntent("túi đeo hông")).isEqualTo("tui deo hong");
+        assertThat(ChatToolService.normalizeIntent("giáp hông")).isEqualTo("giap hong");
+        assertThat(ChatToolService.normalizeIntent("mũ màu hồng")).isEqualTo("mu mau hong");
+        assertThat(ChatToolService.normalizeIntent("Caberg Drift GT")).isEqualTo("caberg drift gt");
+        assertThat(ChatToolService.normalizeIntent("Alpinestars SP-8 V2")).isEqualTo("alpinestars sp-8 v2");
+        assertThat(ChatToolService.normalizeIntent("LS2 FF901 V.24")).isEqualTo("ls2 ff901 v.24");
+        assertThat(ChatToolService.normalizeIntent("màu FF-xanh lá")).isEqualTo("mau ff-xanh la");
+        assertThat(ChatToolService.normalizeIntent("mũ ff")).isEqualTo("mu fullface");
+        assertThat(ChatToolService.normalizeIntent("còn hàng hong shop")).isEqualTo("con hang khong shop");
+        assertThat(ChatToolService.normalizeIntent("nón kiếng sz sdt cty ship"))
+                .isEqualTo("mu bao hiem kinh size so dien thoai cong ty giao hang");
     }
 
     @Test

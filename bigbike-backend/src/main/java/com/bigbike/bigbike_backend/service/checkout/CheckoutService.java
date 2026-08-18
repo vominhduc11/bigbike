@@ -17,6 +17,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEnti
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.chat.ChatOrderAttributionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
@@ -25,6 +26,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAd
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
@@ -68,6 +70,7 @@ public class CheckoutService {
     private final AdminOrderWsService adminOrderWsService;
     private final JdbcTemplate jdbcTemplate;
     private final WebRevalidationService webRevalidationService;
+    private final ChatOrderAttributionJpaRepository chatOrderAttributionRepo;
 
     // ── Checkout from cart ────────────────────────────────────────────────────
 
@@ -154,7 +157,19 @@ public class CheckoutService {
 
         // Persist line items.
         for (CartItemEntity cartItem : items) {
-            lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now));
+            OrderLineItemEntity lineItem = lineItemRepo.save(
+                    buildLineItemFromCart(savedOrder, cartItem, now));
+            if (cartItem.getAssistantConversationId() != null
+                    && !chatOrderAttributionRepo.existsByOrderLineItemId(lineItem.getId())) {
+                ChatOrderAttributionEntity attribution = new ChatOrderAttributionEntity();
+                attribution.setOrderId(savedOrder.getId());
+                attribution.setOrderLineItemId(lineItem.getId());
+                attribution.setConversationId(cartItem.getAssistantConversationId());
+                attribution.setAttributedAmount(lineItem.getLineTotal());
+                attribution.setCurrency(savedOrder.getCurrency());
+                attribution.setCreatedAt(now);
+                chatOrderAttributionRepo.save(attribution);
+            }
         }
 
         // Inventory is boolean availability only (owner decision 2026-06-23) — no decrement on sale.

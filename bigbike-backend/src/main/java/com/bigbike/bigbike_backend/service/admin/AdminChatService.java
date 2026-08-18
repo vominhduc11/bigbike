@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatConversationRespo
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatLeadResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatMessageResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatStatsResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatOrderAttributionResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.mapper.ChatMapper;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
@@ -12,6 +13,9 @@ import com.bigbike.bigbike_backend.persistence.entity.chat.ChatLeadEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
+import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.chat.ChatOrderAttributionEntity;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
 import com.bigbike.bigbike_backend.service.chat.ChatAiQuotaService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -24,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +45,7 @@ public class AdminChatService {
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatLeadJpaRepository leadRepo;
+    private final ChatOrderAttributionJpaRepository attributionRepo;
     private final ChatAssistantSettings assistantSettings;
     private final ChatAiQuotaService chatAiQuotaService;
     private final ChatMapper chatMapper;
@@ -77,8 +83,7 @@ public class AdminChatService {
         int fromIndex = Math.min((safePage - 1) * safeSize, filtered.size());
         int toIndex = Math.min(fromIndex + safeSize, filtered.size());
         List<AdminChatConversationResponse> items = filtered.subList(fromIndex, toIndex).stream()
-                .map(entity -> chatMapper.toListItem(
-                        entity, null, leadIds.contains(entity.getId())))
+                .map(entity -> toListItem(entity, leadIds.contains(entity.getId())))
                 .toList();
         int totalPages = filtered.isEmpty() ? 0 : (int) Math.ceil((double) filtered.size() / safeSize);
         return new PageResult<>(items, safePage, safeSize, filtered.size(), totalPages);
@@ -94,7 +99,23 @@ public class AdminChatService {
         AdminChatLeadResponse lead = leadRepo.findByConversationId(id)
                 .map(chatMapper::toLead)
                 .orElse(null);
-        return chatMapper.toDetail(conversation, messages, lead);
+        List<ChatOrderAttributionEntity> attributions = attributionRepo.findByConversationId(id);
+        ConversationMetrics metrics = summarize(
+                messageRepo.findByConversationIdOrderByCreatedAtAsc(id), attributions);
+        List<AdminChatOrderAttributionResponse> attributionResponses = attributions.stream()
+                .map(item -> new AdminChatOrderAttributionResponse(
+                        item.getOrderId(), item.getOrderLineItemId(), item.getAttributedAmount(),
+                        item.getCurrency(), item.getCreatedAt()))
+                .toList();
+        return new AdminChatConversationDetailResponse(
+                conversation.getId(), conversation.getCustomerId(), conversation.getLocale(),
+                conversation.getTurnCount(), conversation.getAiCallCount(),
+                conversation.getLeadOfferStatus(), conversation.getEndedReason(),
+                conversation.getStartedAt(), conversation.getLastMessageAt(),
+                metrics.inputTokens(), metrics.outputTokens(), metrics.thinkingTokens(),
+                metrics.providerRequests(), metrics.averageLatencyMs(), metrics.estimatedCostUsd(),
+                metrics.contentRefusals(), metrics.assistedOrders(), metrics.assistedRevenue(),
+                messages, attributionResponses, lead);
     }
 
     public AdminChatStatsResponse stats(LocalDate requestedDate) {
@@ -106,8 +127,84 @@ public class AdminChatService {
                 .countByStartedAtGreaterThanEqualAndStartedAtLessThan(from, to);
         long leads = leadRepo.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);
         long unanswered = messageRepo.countFallbackMessagesBetween(from, to);
+        ChatMessageJpaRepository.TelemetrySummary telemetry = messageRepo.summarizeBetween(from, to);
+        long assistedOrders = attributionRepo.countAssistedOrdersBetween(from, to);
+        BigDecimal assistedRevenue = zero(attributionRepo.sumAssistedRevenueBetween(from, to));
         int limit = assistantSettings.load("vi").dailyLimit();
         return new AdminChatStatsResponse(
-                date, aiCalls, conversations, leads, unanswered, limit, Math.max(0, limit - aiCalls));
+                date, aiCalls, conversations, leads, unanswered,
+                value(telemetry.getContentRefusals()), limit, Math.max(0, limit - aiCalls),
+                value(telemetry.getInputTokens()), value(telemetry.getOutputTokens()),
+                value(telemetry.getThinkingTokens()), value(telemetry.getProviderRequests()),
+                rounded(telemetry.getAverageLatencyMs()), zero(telemetry.getEstimatedCostUsd()),
+                assistedOrders, assistedRevenue);
     }
+
+    private AdminChatConversationResponse toListItem(
+            ChatConversationEntity entity,
+            boolean hasLead
+    ) {
+        ConversationMetrics metrics = summarize(
+                messageRepo.findByConversationIdOrderByCreatedAtAsc(entity.getId()),
+                attributionRepo.findByConversationId(entity.getId()));
+        return new AdminChatConversationResponse(
+                entity.getId(), entity.getLocale(), null, entity.getTurnCount(),
+                entity.getAiCallCount(), hasLead,
+                metrics.inputTokens(), metrics.outputTokens(), metrics.thinkingTokens(),
+                metrics.providerRequests(), metrics.averageLatencyMs(), metrics.estimatedCostUsd(),
+                metrics.contentRefusals(), metrics.assistedOrders(), metrics.assistedRevenue(),
+                entity.getStartedAt(), entity.getLastMessageAt(), entity.getEndedReason());
+    }
+
+    private static ConversationMetrics summarize(
+            List<ChatMessageEntity> messages,
+            List<ChatOrderAttributionEntity> attributions
+    ) {
+        long input = messages.stream().map(ChatMessageEntity::getInputTokens)
+                .filter(java.util.Objects::nonNull).mapToLong(Integer::longValue).sum();
+        long output = messages.stream().map(ChatMessageEntity::getOutputTokens)
+                .filter(java.util.Objects::nonNull).mapToLong(Integer::longValue).sum();
+        long thinking = messages.stream().map(ChatMessageEntity::getThinkingTokens)
+                .filter(java.util.Objects::nonNull).mapToLong(Integer::longValue).sum();
+        long requests = messages.stream().map(ChatMessageEntity::getProviderRequestCount)
+                .filter(java.util.Objects::nonNull).mapToLong(Integer::longValue).sum();
+        Long averageLatency = rounded(messages.stream().map(ChatMessageEntity::getLatencyMs)
+                .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue)
+                .average().stream().boxed().findFirst().orElse(null));
+        BigDecimal cost = messages.stream().map(ChatMessageEntity::getEstimatedCostUsd)
+                .filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        long refusals = messages.stream().filter(message ->
+                "CONTENT_REFUSAL".equals(message.getSource())
+                        || "ROLE_DEFENSE".equals(message.getSource())).count();
+        long orders = attributions.stream().map(ChatOrderAttributionEntity::getOrderId)
+                .distinct().count();
+        BigDecimal revenue = attributions.stream().map(ChatOrderAttributionEntity::getAttributedAmount)
+                .filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ConversationMetrics(
+                input, output, thinking, requests, averageLatency, cost, refusals, orders, revenue);
+    }
+
+    private static long value(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private static Long rounded(Double value) {
+        return value == null ? null : Math.round(value);
+    }
+
+    private static BigDecimal zero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private record ConversationMetrics(
+            long inputTokens,
+            long outputTokens,
+            long thinkingTokens,
+            long providerRequests,
+            Long averageLatencyMs,
+            BigDecimal estimatedCostUsd,
+            long contentRefusals,
+            long assistedOrders,
+            BigDecimal assistedRevenue
+    ) {}
 }

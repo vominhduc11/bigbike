@@ -320,9 +320,9 @@ export const KEY_HINTS_VI = {
   ai_assistant_enabled:
     'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
   ai_assistant_daily_limit:
-    'Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+    'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 120 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
   ai_assistant_recent_turn_pairs:
-    'Từ 0 đến 3. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
+    'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
     'Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
   ai_assistant_greeting:
@@ -488,7 +488,7 @@ export const KEY_GUIDE = {
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
-  ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–3 cặp gần nhất để hiểu câu nối'],
+  ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
   ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
   ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],

@@ -8,6 +8,7 @@ import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { extractAllowedYouTubeId, isAllowedMediaVideoUrl } from '../../lib/urlPolicies'
 import { generateId } from '@/lib/utils'
 import { normalizeGenders } from '../../lib/contracts'
+import { formatMoneyInput, toMoneyNumberOrNull } from '../../lib/moneyInput'
 
 // Editable "Phân công" guide text (role names + task lists), fetched from
 // GET /admin/product-assignment. SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
@@ -102,8 +103,7 @@ export { allowedPublishOptions as getAllowedPublishStatuses } from '../../lib/co
 
 // Format a raw digit string as Vietnamese price (e.g. "6300000" → "6.300.000").
 export function formatPrice(raw) {
-  if (!raw) return ''
-  return String(raw).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return formatMoneyInput(raw, 'vi-VN')
 }
 
 // ── Autosave utilities ─────────────────────────────────────────────────────────
@@ -705,11 +705,13 @@ export function translationFormFromItem(en) {
 // Like toIntegerOrUndefined but sends null for empty so the backend can
 // distinguish "user cleared this field" from "field not sent at all".
 export function toIntegerOrNull(value) {
-  const normalized = String(value ?? '').trim()
-  if (!normalized) return null
-  const parsed = Number(normalized)
-  if (!Number.isInteger(parsed)) return Number.NaN
-  return parsed
+  return toMoneyNumberOrNull(value)
+}
+
+// Admin treats a typed sale price of zero as an empty sale price. The backend
+// contract remains nullable and unchanged; this only normalizes the admin UI.
+export function toSalePriceOrNull(value) {
+  return toMoneyNumberOrNull(value, { zeroAsEmpty: true })
 }
 
 // English product-level content → upsert payload. Blank fields become undefined
@@ -871,7 +873,7 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     // Send null when cleared so backend (presence-flag logic) can distinguish
     // "user erased this" from "field not part of this request".
     retailPrice: toIntegerOrNull(form.retailPrice),
-    salePrice: toIntegerOrNull(form.salePrice),
+    salePrice: toSalePriceOrNull(form.salePrice),
     currency: 'VND',
     available: Boolean(form.available),
     publishStatus: form.publishStatus,
@@ -1058,7 +1060,7 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
       // send the key (null when cleared) so the backend presence-flag can tell "cleared" from
       // "not sent" (mirrors the product-level retailPrice/salePrice above).
       retailPrice: toIntegerOrNull(v.retailPrice),
-      salePrice: toIntegerOrNull(v.salePrice),
+      salePrice: toSalePriceOrNull(v.salePrice),
       // Representation image (ảnh đại diện màu) is a separate variant field, scoped per-color.
       imageUrl: v.imageUrl?.trim() || undefined,
       imageAlt: v.imageAlt?.trim() || null,

@@ -16,6 +16,21 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
     Optional<ChatMessageEntity> findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
             UUID conversationId, String role);
 
+    Optional<ChatMessageEntity> findFirstByRequestIdAndRole(UUID requestId, String role);
+
+    @Query(value = """
+            select count(*)
+            from chat_messages message
+            where message.conversation_id = :conversationId
+              and message.role = 'ASSISTANT'
+              and message.products_json is not null
+              and lower(cast(message.products_json as varchar))
+                  like lower(concat('%\"slug\":\"', :slug, '\"%'))
+            """, nativeQuery = true)
+    long countShownProduct(
+            @Param("conversationId") UUID conversationId,
+            @Param("slug") String slug);
+
     @Query("""
             select coalesce(sum(case when message.aiCalled = true then 1 else 0 end), 0)
             from ChatMessageEntity message
@@ -31,4 +46,29 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
               and message.createdAt >= :from and message.createdAt < :to
             """)
     long countFallbackMessagesBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("""
+            select
+              coalesce(sum(message.inputTokens), 0) as inputTokens,
+              coalesce(sum(message.outputTokens), 0) as outputTokens,
+              coalesce(sum(message.thinkingTokens), 0) as thinkingTokens,
+              coalesce(sum(message.providerRequestCount), 0) as providerRequests,
+              avg(message.latencyMs) as averageLatencyMs,
+              coalesce(sum(message.estimatedCostUsd), 0) as estimatedCostUsd,
+              coalesce(sum(case when message.source in ('CONTENT_REFUSAL', 'ROLE_DEFENSE') then 1 else 0 end), 0) as contentRefusals
+            from ChatMessageEntity message
+            where message.role = 'ASSISTANT'
+              and message.createdAt >= :from and message.createdAt < :to
+            """)
+    TelemetrySummary summarizeBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    interface TelemetrySummary {
+        Long getInputTokens();
+        Long getOutputTokens();
+        Long getThinkingTokens();
+        Long getProviderRequests();
+        Double getAverageLatencyMs();
+        java.math.BigDecimal getEstimatedCostUsd();
+        Long getContentRefusals();
+    }
 }

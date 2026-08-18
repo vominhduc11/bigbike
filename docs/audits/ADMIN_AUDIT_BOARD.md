@@ -33,6 +33,7 @@ Cập nhật lần cuối: 2026-07-29
 
 ## Việc xuyên module
 
+- ✅ Đã dọn (2026-08-18): audit toàn bộ ô nhập tiền trong admin — inventory gồm giá sản phẩm `retailPrice`/`salePrice`, giá niêm yết/khuyến mãi riêng của biến thể ở desktop/mobile, bulk edit và matrix wizard; các giá trị phí/cost/discount/amount còn lại chỉ đọc hoặc không phải tiền hiện hành. Gom logic vào `bigbike-admin/src/components/MoneyInput.jsx` + `src/lib/moneyInput.js`: không format trong lúc gõ, giữ caret, nhận paste có/không dấu phân cách, blur format `vi-VN`, payload số/null. Bổ sung 14 ca regression helper/component/payload/screen; E2E chạy 1440/768/375, không mutation trước Lưu/Áp dụng. `salePrice = 0` được chuẩn hóa thành `null` theo `BUSINESS_RULES.md`/`DATA_CONTRACT.md`; không khôi phục `costPrice`/`compareAtPrice`/phí đã gỡ khỏi contract.
 - ✅ Đã dọn (2026-07-29): checkbox của `MobileCardList` nhận nhãn theo đúng tên từng bài viết/chuyển hướng/đánh giá; 2 kiểm thử component đạt.
 - ✅ Đã dọn (2026-07-29): `contracts.js` dùng fallback “Sản phẩm không xác định” và không còn dựng `updatedAt` ngoài hợp đồng chi tiết đơn; 2 kiểm thử contract đạt.
 - ✅ Đã dọn (2026-07-29, lượt Chuyển hướng): lỗi lint `waitFor` import thừa trong `RedirectListScreen.test.jsx` — full admin lint giờ sạch 0 lỗi.

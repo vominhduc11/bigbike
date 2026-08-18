@@ -865,6 +865,8 @@
         "title": "Hướng dẫn tạo nội dung đúng giao diện",
         "copy": "Sao chép",
         "copying": "Đang lấy số liệu...",
+        "previewLoading": "Đang đọc số liệu để cập nhật bản xem trước...",
+        "previewFailed": "Chưa lấy được số liệu mới; đang hiển thị hướng dẫn chung. Bấm Sao chép để thử lại.",
         "copied": "Đã sao chép yêu cầu cho AI",
         "copyFailed": "Không sao chép được"
       },
@@ -2746,7 +2748,15 @@
       "conversations": "Hội thoại trong ngày",
       "leads": "Liên hệ mới trong ngày",
       "unanswered": "Câu chưa trả lời được trong ngày",
-      "limit": "Trần {{count}} lượt/ngày"
+      "limit": "Trần {{count}} lượt/ngày",
+      "averageLatency": "Thời gian trả lời trung bình",
+      "tokens": "Tổng token trong ngày",
+      "providerRequests": "{{count}} yêu cầu tới nhà cung cấp",
+      "estimatedCost": "Chi phí AI ước tính",
+      "estimateNotice": "Số ước tính theo token thực tế",
+      "contentRefusals": "Lần từ chối nội dung",
+      "assistedOrders": "Đơn được trợ lý hỗ trợ",
+      "noTelemetry": "Dữ liệu cũ chưa có số đo"
     },
     "columns": {
       "startedAt": "Bắt đầu",
@@ -2754,6 +2764,9 @@
       "language": "Ngôn ngữ",
       "turns": "Lượt hỏi",
       "aiCalls": "Lượt AI",
+      "latency": "Thời gian TB",
+      "cost": "Chi phí ước tính",
+      "assistedRevenue": "Doanh thu hỗ trợ",
       "lead": "Có liên hệ",
       "lastMessage": "Tin cuối"
     },
@@ -2766,6 +2779,8 @@
       "description": "Màn hình chỉ đọc, phản ánh đúng nội dung đã trao đổi với khách.",
       "messages": "Nội dung trao đổi",
       "messagesDescription": "Tin của khách và câu trả lời của Trợ lý BigBike theo đúng thứ tự thời gian.",
+      "noMessages": "Chưa có nội dung hội thoại",
+      "noMessagesDescription": "Hội thoại này chưa lưu được tin nhắn hoặc dữ liệu đã hết thời hạn lưu.",
       "customer": "Khách hàng",
       "bi": "Trợ lý BigBike · Trợ lý ảo AI",
       "source": "Nguồn trả lời",
@@ -2774,9 +2789,15 @@
         "ai": "Trợ lý tự động",
         "template": "Mẫu có sẵn",
         "data": "Tra cứu dữ liệu",
-        "staff": "Chuyển nhân viên"
+        "staff": "Chuyển nhân viên",
+        "outOfScope": "Ngoài phạm vi hỗ trợ",
+        "contentRefusal": "Từ chối nội dung không phù hợp",
+        "roleDefense": "Bảo vệ vai trò trợ lý"
       },
+      "messageTelemetry": "{{tokens}} token · {{requests}} yêu cầu · {{latency}} · {{cost}}",
       "summary": "Tóm tắt hội thoại",
+      "tokens": "Tổng token",
+      "providerRequests": "Yêu cầu tới nhà cung cấp",
       "endedReason": "Trạng thái kết thúc",
       "active": "Đang mở",
       "endStates": {
@@ -2798,7 +2819,10 @@
       },
       "consentedAt": "Thời điểm đồng ý",
       "noLead": "Khách chưa để lại thông tin liên hệ.",
-      "none": "Không có ghi chú"
+      "none": "Không có ghi chú",
+      "assistedOrders": "Đơn hàng được trợ lý hỗ trợ",
+      "openOrder": "Mở đơn {{id}}",
+      "noAssistedOrders": "Chưa có món hàng nào từ hội thoại này được ghi nhận vào đơn."
     }
   },
   "settings": {
@@ -2886,8 +2910,8 @@
       "seo_home_description": "Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.",
       "seo_home_h1": "Nhập đúng một tiêu đề chính hiển thị trên trang chủ.",
       "ai_assistant_enabled": "Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.",
-      "ai_assistant_daily_limit": "Trần chi phí tính theo ngày giờ Việt Nam. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ.",
-      "ai_assistant_recent_turn_pairs": "Chọn từ 0 đến 3. Đặt 0 để không gửi lịch sử; thông tin riêng tư được che và mỗi tin được cắt gọn.",
+      "ai_assistant_daily_limit": "Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 120 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ.",
+      "ai_assistant_recent_turn_pairs": "Chọn từ 0 đến 12, mặc định 12. Đặt 0 để không gửi lịch sử; thông tin riêng tư được che và mỗi tin được cắt gọn.",
       "ai_assistant_search_ai_interpretation_enabled": "Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay.",
       "ai_assistant_greeting": "Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Trợ lý BigBike là trợ lý ảo AI.",
       "ai_assistant_quick_prompts": "Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ."
@@ -2895,7 +2919,7 @@
     "keyWhere": {
       "ai_assistant_enabled": "bật/tắt Trợ lý BigBike trên toàn website",
       "ai_assistant_daily_limit": "trần lượt gọi AI mỗi ngày, giờ Việt Nam",
-      "ai_assistant_recent_turn_pairs": "0–3 cặp gần nhất để hiểu câu nối",
+      "ai_assistant_recent_turn_pairs": "0–12 cặp gần nhất để hiểu câu nối",
       "ai_assistant_search_ai_interpretation_enabled": "chuyển giữa cách hiểu tìm hàng mới và cũ",
       "ai_assistant_greeting": "câu chào khi khách mở khung chat",
       "ai_assistant_quick_prompts": "3–4 nút câu hỏi nhanh trong khung chat"

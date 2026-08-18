@@ -19,6 +19,9 @@ public class ChatMessageRequest {
 
     private UUID conversationId;
 
+    /** Optional for legacy clients; new clients reuse it when retrying one logical turn. */
+    private UUID requestId;
+
     @NotBlank(message = "Tin nhắn không được để trống.")
     @Size(max = 1000, message = "Tin nhắn không được dài quá 1.000 ký tự.")
     private String message;

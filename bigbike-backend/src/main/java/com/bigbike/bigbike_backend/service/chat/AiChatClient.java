@@ -36,8 +36,10 @@ public class AiChatClient {
             "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
     private static final String DEFAULT_MODEL = "gemini-2.5-flash";
     private static final int MAX_QUESTION_CHARS = 1000;
-    private static final int MAX_OUTPUT_TOKENS = 400;
-    private static final int MAX_PROVIDER_CALLS = 3;
+    private static final int MAX_OUTPUT_TOKENS = 2_048;
+    private static final int MAX_PROVIDER_CALLS = 4;
+    private static final int MAX_TOOL_EXECUTIONS = 3;
+    private static final long LOGICAL_TURN_DEADLINE_NANOS = Duration.ofSeconds(65).toNanos();
     private static final long TRANSIENT_RETRY_DELAY_MILLIS = 2_000L;
 
     private static final String SYSTEM_PROMPT = """
@@ -48,7 +50,7 @@ public class AiChatClient {
             such as "Dạ, shop hiện có..." is valid without both pronouns.
 
             For any product, price, stock, size, policy, shop or signed-in order fact,
-            call exactly one declared function and use only its functionResponse. Never
+            call up to three relevant declared functions and use only their functionResponse data. Never
             invent, widen filters, output a URL, expose function names, internal status
             labels or technical errors. Product cards and fixed actions are rendered by
             the application. Never ask for customer identity, contact details,
@@ -75,6 +77,13 @@ public class AiChatClient {
             size beyond the customer's current wording; the application independently verifies
             every proposed search filter and may remove an unsafe field.
 
+            Preserve the exact order of RECENT_VERIFIED_PRODUCTS. A reference such as "the second
+            model" or "mẫu thứ hai" means the second slug in that ordered list, even if a policy
+            question appeared between the product list and the reference. Re-read that product in
+            the current turn before answering. If a non-ordinal reference can mean more than one
+            recent product, re-read the candidates and ask the customer to choose by verified name;
+            never guess one.
+
             When a customer asks what BigBike sells, call list_categories. It returns only
             public category names and verified sellable-product counts. Do not invent categories,
             individual products, prices or stock facts. Use the category names in prose, but do
@@ -82,10 +91,11 @@ public class AiChatClient {
 
             After receiving enough function data, return one JSON object only with exactly
             these fields: answer (string), offTopic (boolean), handoffRecommended (boolean),
-            leadPrompt (boolean). Aim for 3 to 5 sentences; a precise 2-sentence answer is
-            allowed when it fully answers the customer. Each sentence must end with a full stop
-            or a question mark, and mention at most three
-            products. Never write an item price, amount or currency in the answer text, and
+            leadPrompt (boolean). A precise one-sentence answer is allowed. Use at most 10
+            sentences and 2,000 visible characters. You may use only paragraphs, bold text,
+            bullet/numbered lists and Markdown tables. Never use HTML, code, images, links or URLs.
+            Mention no more than eight products; direct comparison remains limited to three.
+            Never write an item price, amount or currency in the answer text, and
             never write digits followed by "VND", "VNĐ", "đ" or "₫". The application renders
             every item price on product cards. When the functionResponse requires a price-scope
             disclosure, state that scope plainly without repeating its amount. Binding notes in a
@@ -127,7 +137,7 @@ public class AiChatClient {
     public AiChatClient(
             @Value("${bigbike.ai.gemini-api-key:}") String apiKey,
             @Value("${bigbike.chat.model:gemini-2.5-flash}") String model,
-            @Value("${bigbike.chat.timeout-seconds:20}") long timeoutSeconds
+            @Value("${bigbike.chat.timeout-seconds:65}") long timeoutSeconds
     ) {
         this(apiKey, model, buildTransport(apiKey, model, timeoutSeconds), Thread::sleep);
     }
@@ -149,7 +159,7 @@ public class AiChatClient {
     }
 
     /**
-     * Runs one logical assistant response. It may make up to three provider requests, but
+     * Runs one logical assistant response. It may make up to four provider requests, but
      * delegates every real tool execution to the backend callback.
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -271,7 +281,7 @@ public class AiChatClient {
                                     + "Do not answer with prose before receiving current-turn function data."),
                             providerBudget, stage);
                     providerCalls = providerBudget.calls();
-                    if (turn.finalText() != null || turn.functionCall() == null) {
+                    if (turn.finalText() != null || turn.functionCalls().isEmpty()) {
                         log.warn("Trợ lý BigBike orchestration rejected stage={} type=DirectText", stage);
                         return Optional.empty();
                     }
@@ -280,22 +290,30 @@ public class AiChatClient {
                     if (directAnswer.isEmpty()) return Optional.empty();
                     return Optional.of(new HybridAnswer(
                             directAnswer.get(), products, actions, executedTools,
-                            requiredDisclosures, providerCalls));
+                            requiredDisclosures, providerCalls, "AI", null, null,
+                            providerBudget.usage()));
                 }
             }
 
-            stage = "first_tool_execution";
-            ChatToolRegistry.ValidatedCall first = registry.validate(
-                    turn.functionCall().name(), turn.functionCall().arguments());
-            ChatToolService.ToolExecution firstResult = executor.execute(first, session);
-            executedTools.add(first.name());
-            products = firstResult.products();
-            actions = firstResult.actions();
-            requiredDisclosures.addAll(firstResult.requiredDisclosures());
-            catalogTotals = firstResult.catalogTotals();
-            searchScope = firstResult.searchScope();
-            if (firstResult.terminalAnswer() != null) {
-                ChatToolService.DeterministicAnswer terminal = firstResult.terminalAnswer();
+            stage = "tool_execution";
+            if (turn.functionCalls().isEmpty() || turn.functionCalls().size() > MAX_TOOL_EXECUTIONS) {
+                return Optional.empty();
+            }
+            List<ChatToolService.ToolExecution> toolResults = new ArrayList<>();
+            for (FunctionCall functionCall : turn.functionCalls()) {
+                ChatToolRegistry.ValidatedCall validated = registry.validate(
+                        functionCall.name(), functionCall.arguments());
+                ChatToolService.ToolExecution result = executor.execute(validated, session);
+                toolResults.add(result);
+                executedTools.add(validated.name());
+                products = mergeProducts(products, result.products());
+                actions = mergeActions(actions, result.actions());
+                requiredDisclosures.addAll(result.requiredDisclosures());
+                if (result.catalogTotals() != null) catalogTotals = result.catalogTotals();
+                if (result.searchScope() != null) searchScope = result.searchScope();
+            }
+            if (toolResults.size() == 1 && toolResults.get(0).terminalAnswer() != null) {
+                ChatToolService.DeterministicAnswer terminal = toolResults.get(0).terminalAnswer();
                 return Optional.of(new HybridAnswer(
                         new Answer(
                                 terminal.answer(),
@@ -309,9 +327,47 @@ public class AiChatClient {
                         providerCalls,
                         "TOOL",
                         catalogTotals,
-                        searchScope));
+                        searchScope,
+                        providerBudget.usage()));
             }
-            appendFunctionExchange(contents, turn, firstResult);
+            appendFunctionExchange(contents, turn, toolResults);
+
+            // Model/code detail questions may need search first so the returned slug can be
+            // validated before get_product. Independent sources remain parallel in the turn above.
+            if (requiresSequentialProductLookup(safeQuestion, executedTools)
+                    && executedTools.size() < MAX_TOOL_EXECUTIONS
+                    && providerBudget.calls() < MAX_PROVIDER_CALLS - 1) {
+                stage = "sequential_tool_selection";
+                ModelTurn sequentialTurn = requestTurn(buildToolRequestBody(
+                        contents,
+                        registry.functionDeclarations(),
+                        null,
+                        true,
+                        "The current request needs product detail after search. Call only the next declared "
+                                + "function needed from a verified slug in the current functionResponse. Do not answer yet."),
+                        providerBudget,
+                        stage);
+                int remainingTools = MAX_TOOL_EXECUTIONS - executedTools.size();
+                if (sequentialTurn.finalText() != null
+                        || sequentialTurn.functionCalls().isEmpty()
+                        || sequentialTurn.functionCalls().size() > remainingTools) {
+                    return Optional.empty();
+                }
+                List<ChatToolService.ToolExecution> sequentialResults = new ArrayList<>();
+                for (FunctionCall functionCall : sequentialTurn.functionCalls()) {
+                    ChatToolRegistry.ValidatedCall validated = registry.validate(
+                            functionCall.name(), functionCall.arguments());
+                    ChatToolService.ToolExecution result = executor.execute(validated, session);
+                    sequentialResults.add(result);
+                    executedTools.add(validated.name());
+                    products = mergeProducts(products, result.products());
+                    actions = mergeActions(actions, result.actions());
+                    requiredDisclosures.addAll(result.requiredDisclosures());
+                    if (result.catalogTotals() != null) catalogTotals = result.catalogTotals();
+                    if (result.searchScope() != null) searchScope = result.searchScope();
+                }
+                appendFunctionExchange(contents, sequentialTurn, sequentialResults);
+            }
 
             // Product detail enrichment is backend-owned. Skipping the former optional provider
             // hop leaves one of the three calls available for a transient retry.
@@ -321,7 +377,7 @@ public class AiChatClient {
                     contents, registry.functionDeclarations(), responseInstruction),
                     providerBudget, stage);
             providerCalls = providerBudget.calls();
-            if (finalTurn.finalText() == null || finalTurn.functionCall() != null) {
+            if (finalTurn.finalText() == null || !finalTurn.functionCalls().isEmpty()) {
                 log.warn("Trợ lý BigBike orchestration rejected stage={} type=NoFinalText", stage);
                 return Optional.empty();
             }
@@ -337,11 +393,28 @@ public class AiChatClient {
             ChatToolService.SearchScope safeSearchScope = searchScope;
             return finalAnswer.map(answer -> new HybridAnswer(
                     answer, safeProducts, safeActions, executedTools,
-                    requiredDisclosures, totalProviderCalls, "AI", safeCatalogTotals, safeSearchScope));
+                    requiredDisclosures, totalProviderCalls, "AI", safeCatalogTotals, safeSearchScope,
+                    providerBudget.usage()));
+        } catch (SafetyBlockedException exception) {
+            throw new SafetyBlockedException(providerBudget.calls(), providerBudget.usage());
         } catch (RuntimeException exception) {
             logOrchestrationFailure(exception, stage);
             return Optional.empty();
         }
+    }
+
+    private static boolean requiresSequentialProductLookup(String question, List<String> executedTools) {
+        if (!executedTools.contains(ChatToolRegistry.SEARCH_PRODUCTS)
+                || executedTools.contains(ChatToolRegistry.GET_PRODUCT)) return false;
+        String normalized = java.text.Normalizer.normalize(
+                        question == null ? "" : question.toLowerCase(java.util.Locale.ROOT),
+                        java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd');
+        return Pattern.compile(
+                        "(?:con hang|size|kich co|mau|thong so|mau thu|second|stock|available|spec|colour|color)")
+                .matcher(normalized)
+                .find();
     }
 
     private void logOrchestrationFailure(RuntimeException exception, String stage) {
@@ -409,12 +482,15 @@ public class AiChatClient {
             String stage
     ) {
         while (true) {
+            budget.ensureWithinDeadline();
             if (budget.calls() >= MAX_PROVIDER_CALLS) {
                 throw new IllegalStateException("Provider request budget exhausted");
             }
             budget.recordCall();
             try {
                 String response = transport.generate(body);
+                budget.ensureWithinDeadline();
+                budget.recordUsage(response, objectMapper);
                 return parseTurn(response)
                         .orElseThrow(() -> new IllegalStateException("Invalid Gemini response"));
             } catch (RuntimeException exception) {
@@ -492,6 +568,7 @@ public class AiChatClient {
         // gemini-2.5-flash answers product questions in prose and every reply falls back.
         @SuppressWarnings("unchecked")
         Map<String, Object> generation = (Map<String, Object>) body.get("generationConfig");
+        generation.put("thinkingConfig", Map.of("thinkingBudget", 0));
         generation.put("responseMimeType", "application/json");
         generation.put("responseSchema", answerSchema());
         return body;
@@ -519,7 +596,7 @@ public class AiChatClient {
     ) {
         Map<String, Object> generation = new LinkedHashMap<>();
         generation.put("maxOutputTokens", MAX_OUTPUT_TOKENS);
-        generation.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        generation.put("thinkingConfig", Map.of("thinkingBudget", 1_024));
 
         Map<String, Object> body = new LinkedHashMap<>();
         String systemInstruction = responseInstruction == null || responseInstruction.isBlank()
@@ -528,7 +605,16 @@ public class AiChatClient {
         body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", systemInstruction))));
         body.put("contents", List.copyOf(contents));
         body.put("generationConfig", generation);
+        body.put("safetySettings", List.of(
+                safetySetting("HARM_CATEGORY_HARASSMENT"),
+                safetySetting("HARM_CATEGORY_HATE_SPEECH"),
+                safetySetting("HARM_CATEGORY_SEXUALLY_EXPLICIT"),
+                safetySetting("HARM_CATEGORY_DANGEROUS_CONTENT")));
         return body;
+    }
+
+    private static Map<String, Object> safetySetting(String category) {
+        return Map.of("category", category, "threshold", "BLOCK_ONLY_HIGH");
     }
 
     private List<Map<String, Object>> initialContents(
@@ -579,7 +665,7 @@ public class AiChatClient {
     private String recentTurnsJson(List<ChatHistorySanitizer.RecentTurn> recentTurns) {
         try {
             return objectMapper.writeValueAsString(recentTurns.stream()
-                    .limit(3)
+                    .limit(12)
                     .map(turn -> Map.of(
                             "customer", ChatHistorySanitizer.sanitize(turn.customer()),
                             "assistant", ChatHistorySanitizer.sanitize(turn.assistant())))
@@ -596,42 +682,78 @@ public class AiChatClient {
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .distinct()
-                .limit(3)
+                .limit(8)
                 .toList();
     }
 
     private void appendFunctionExchange(
             List<Map<String, Object>> contents,
             ModelTurn modelTurn,
-            ChatToolService.ToolExecution result
+            List<ChatToolService.ToolExecution> results
     ) {
         contents.add(modelTurn.modelContent());
-        Map<String, Object> response;
-        try {
-            response = objectMapper.readValue(
-                    result.responseJson(), new TypeReference<Map<String, Object>>() {});
-        } catch (Exception exception) {
-            throw new IllegalStateException("Invalid backend function response", exception);
-        }
-        Map<String, Object> functionResponse = new LinkedHashMap<>();
-        functionResponse.put("name", result.name());
-        functionResponse.put("response", response);
-        if (modelTurn.functionCall().id() != null && !modelTurn.functionCall().id().isBlank()) {
-            functionResponse.put("id", modelTurn.functionCall().id());
+        List<Map<String, Object>> parts = new ArrayList<>();
+        for (int index = 0; index < results.size(); index++) {
+            ChatToolService.ToolExecution result = results.get(index);
+            FunctionCall call = modelTurn.functionCalls().get(index);
+            Map<String, Object> response;
+            try {
+                response = objectMapper.readValue(
+                        result.responseJson(), new TypeReference<Map<String, Object>>() {});
+            } catch (Exception exception) {
+                throw new IllegalStateException("Invalid backend function response", exception);
+            }
+            Map<String, Object> functionResponse = new LinkedHashMap<>();
+            functionResponse.put("name", result.name());
+            functionResponse.put("response", response);
+            if (call.id() != null && !call.id().isBlank()) functionResponse.put("id", call.id());
+            parts.add(Map.of("functionResponse", functionResponse));
         }
         contents.add(Map.of(
                 "role", "user",
-                "parts", List.of(Map.of("functionResponse", functionResponse))));
+                "parts", parts));
+    }
+
+    private static List<ChatProductCardResponse> mergeProducts(
+            List<ChatProductCardResponse> current,
+            List<ChatProductCardResponse> additions
+    ) {
+        Map<String, ChatProductCardResponse> merged = new LinkedHashMap<>();
+        if (current != null) current.forEach(card -> {
+            if (card != null && card.slug() != null) merged.putIfAbsent(card.slug(), card);
+        });
+        if (additions != null) additions.forEach(card -> {
+            if (card != null && card.slug() != null) merged.putIfAbsent(card.slug(), card);
+        });
+        return merged.values().stream().limit(8).toList();
+    }
+
+    private static List<ChatActionResponse> mergeActions(
+            List<ChatActionResponse> current,
+            List<ChatActionResponse> additions
+    ) {
+        Map<String, ChatActionResponse> merged = new LinkedHashMap<>();
+        if (current != null) current.forEach(action -> {
+            if (action != null && action.type() != null) merged.putIfAbsent(action.type(), action);
+        });
+        if (additions != null) additions.forEach(action -> {
+            if (action != null && action.type() != null) merged.putIfAbsent(action.type(), action);
+        });
+        return List.copyOf(merged.values());
     }
 
     private Optional<ModelTurn> parseTurn(String response) {
         if (response == null || response.isBlank()) return Optional.empty();
         try {
             JsonNode root = objectMapper.readTree(response);
+            if (!root.path("promptFeedback").path("blockReason").asText("").isBlank()) {
+                throw new SafetyBlockedException();
+            }
             JsonNode candidates = root.path("candidates");
             if (!candidates.isArray() || candidates.isEmpty()) return Optional.empty();
             JsonNode candidate = candidates.get(0);
             String finishReason = candidate.path("finishReason").asText("");
+            if ("SAFETY".equals(finishReason)) throw new SafetyBlockedException();
             boolean truncated = "MAX_TOKENS".equals(finishReason);
             if (!finishReason.isEmpty() && !"STOP".equals(finishReason) && !truncated) {
                 return Optional.empty();
@@ -656,16 +778,18 @@ public class AiChatClient {
                     texts.add(text.asText());
                 }
             }
-            if (calls.size() == 1 && texts.isEmpty()) {
+            if (!calls.isEmpty() && calls.size() <= MAX_TOOL_EXECUTIONS && texts.isEmpty()) {
                 if (truncated) return Optional.empty();
                 Map<String, Object> modelContent = objectMapper.convertValue(
                         content, new TypeReference<Map<String, Object>>() {});
-                return Optional.of(new ModelTurn(calls.get(0), null, modelContent, false));
+                return Optional.of(new ModelTurn(List.copyOf(calls), null, modelContent, false));
             }
             if (calls.isEmpty() && texts.size() == 1) {
-                return Optional.of(new ModelTurn(null, texts.get(0), Map.of(), truncated));
+                return Optional.of(new ModelTurn(List.of(), texts.get(0), Map.of(), truncated));
             }
             return Optional.empty();
+        } catch (SafetyBlockedException exception) {
+            throw exception;
         } catch (Exception exception) {
             log.warn("Trợ lý BigBike AI returned an unparseable payload");
             return Optional.empty();
@@ -785,15 +909,19 @@ public class AiChatClient {
     private record FunctionCall(String name, JsonNode arguments, String id) {}
 
     private record ModelTurn(
-            FunctionCall functionCall,
+            List<FunctionCall> functionCalls,
             String finalText,
             Map<String, Object> modelContent,
             boolean truncated
     ) {}
 
     private static final class ProviderBudget {
+        private final long startedAtNanos = System.nanoTime();
         private int calls;
         private boolean retryUsed;
+        private int inputTokens;
+        private int outputTokens;
+        private int thinkingTokens;
 
         int calls() {
             return calls;
@@ -809,6 +937,57 @@ public class AiChatClient {
 
         void recordRetry() {
             retryUsed = true;
+        }
+
+        void ensureWithinDeadline() {
+            if (System.nanoTime() - startedAtNanos >= LOGICAL_TURN_DEADLINE_NANOS) {
+                throw new IllegalStateException("Logical chat turn deadline exceeded");
+            }
+        }
+
+        void recordUsage(String response, ObjectMapper objectMapper) {
+            if (response == null || response.isBlank()) return;
+            try {
+                JsonNode usage = objectMapper.readTree(response).path("usageMetadata");
+                inputTokens += Math.max(0, usage.path("promptTokenCount").asInt(0));
+                outputTokens += Math.max(0, usage.path("candidatesTokenCount").asInt(0));
+                thinkingTokens += Math.max(0, usage.path("thoughtsTokenCount").asInt(0));
+            } catch (Exception ignored) {
+                // Telemetry must never turn a valid customer answer into an error.
+            }
+        }
+
+        TokenUsage usage() {
+            return new TokenUsage(inputTokens, outputTokens, thinkingTokens);
+        }
+    }
+
+    public static final class SafetyBlockedException extends RuntimeException {
+        private final int providerCallCount;
+        private final TokenUsage usage;
+
+        public SafetyBlockedException() {
+            this(0, TokenUsage.empty());
+        }
+
+        public SafetyBlockedException(int providerCallCount, TokenUsage usage) {
+            super("Gemini safety block");
+            this.providerCallCount = Math.max(0, providerCallCount);
+            this.usage = usage == null ? TokenUsage.empty() : usage;
+        }
+
+        public int providerCallCount() {
+            return providerCallCount;
+        }
+
+        public TokenUsage usage() {
+            return usage;
+        }
+    }
+
+    public record TokenUsage(int inputTokens, int outputTokens, int thinkingTokens) {
+        public static TokenUsage empty() {
+            return new TokenUsage(0, 0, 0);
         }
     }
 
@@ -828,8 +1007,24 @@ public class AiChatClient {
             int providerCallCount,
             String source,
             ChatToolService.CatalogTotals catalogTotals,
-            ChatToolService.SearchScope searchScope
+            ChatToolService.SearchScope searchScope,
+            TokenUsage usage
     ) {
+        public HybridAnswer(
+                Answer answer,
+                List<ChatProductCardResponse> products,
+                List<ChatActionResponse> actions,
+                List<String> executedTools,
+                Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+                int providerCallCount,
+                String source,
+                ChatToolService.CatalogTotals catalogTotals,
+                ChatToolService.SearchScope searchScope
+        ) {
+            this(answer, products, actions, executedTools, requiredDisclosures,
+                    providerCallCount, source, catalogTotals, searchScope, TokenUsage.empty());
+        }
+
         public HybridAnswer(
                 Answer answer,
                 List<ChatProductCardResponse> products,
@@ -841,7 +1036,7 @@ public class AiChatClient {
                 ChatToolService.CatalogTotals catalogTotals
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, source, catalogTotals, null);
+                    providerCallCount, source, catalogTotals, null, TokenUsage.empty());
         }
 
         public HybridAnswer(
@@ -854,7 +1049,7 @@ public class AiChatClient {
                 String source
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, source, null, null);
+                    providerCallCount, source, null, null, TokenUsage.empty());
         }
 
         public HybridAnswer(
@@ -866,7 +1061,7 @@ public class AiChatClient {
                 int providerCallCount
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, "AI", null, null);
+                    providerCallCount, "AI", null, null, TokenUsage.empty());
         }
 
         public HybridAnswer(
@@ -886,6 +1081,7 @@ public class AiChatClient {
             requiredDisclosures = requiredDisclosures == null
                     ? Set.of() : Set.copyOf(requiredDisclosures);
             source = "TOOL".equals(source) ? "TOOL" : "AI";
+            usage = usage == null ? TokenUsage.empty() : usage;
         }
     }
 }

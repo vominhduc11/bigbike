@@ -22,14 +22,14 @@ class AiChatRequestShapeTest {
     }
 
     @Test
-    @DisplayName("BigBike Assistant disables thinking, caps output and sends fixed function declarations")
+    @DisplayName("BigBike Assistant budgets thinking for intent selection and caps output")
     void pinsCostControls() {
         Map<String, Object> body = client().buildInitialRequestBody(
                 "Tìm mũ 3/4 dưới 2 triệu.", "vi", new ChatToolRegistry());
         Map<String, Object> config = generation(body);
 
-        assertThat(config.get("thinkingConfig")).isEqualTo(Map.of("thinkingBudget", 0));
-        assertThat(config.get("maxOutputTokens")).isEqualTo(400);
+        assertThat(config.get("thinkingConfig")).isEqualTo(Map.of("thinkingBudget", 1_024));
+        assertThat(config.get("maxOutputTokens")).isEqualTo(2_048);
         assertThat(config).doesNotContainKey("responseMimeType");
         assertThat(MAPPER.valueToTree(body).path("tools").toString())
                 .contains("search_products", "list_categories", "get_product", "get_policy", "get_shop_info", "get_my_orders")
@@ -44,7 +44,7 @@ class AiChatRequestShapeTest {
                 "Tìm mũ 3/4 dưới 2 triệu.", "vi", new ChatToolRegistry());
 
         assertThat(body).containsOnlyKeys(
-                "systemInstruction", "contents", "generationConfig", "tools", "toolConfig");
+                "systemInstruction", "contents", "generationConfig", "tools", "toolConfig", "safetySettings");
         assertThat((Map<String, Object>) body.get("generationConfig"))
                 .containsOnlyKeys("maxOutputTokens", "thinkingConfig");
         assertThat((Map<String, Object>) body.get("toolConfig"))
@@ -54,6 +54,9 @@ class AiChatRequestShapeTest {
                 .containsOnlyKeys("mode");
         assertThat(MAPPER.valueToTree(body).path("toolConfig").path("functionCallingConfig")
                 .path("mode").asText()).isEqualTo("ANY");
+        assertThat(MAPPER.valueToTree(body).path("safetySettings")).hasSize(4);
+        assertThat(MAPPER.valueToTree(body).path("safetySettings").toString())
+                .contains("BLOCK_ONLY_HIGH");
     }
 
     @Test
@@ -98,6 +101,7 @@ class AiChatRequestShapeTest {
                 .contains("do not add either merely to satisfy a keyword rule", "Never call the", "customer")
                 .contains("PUBLIC_CATALOG_VOCABULARY", "interpret customer shorthand")
                 .contains("RECENT_VERIFIED_PRODUCTS", "server-verified public slugs")
+                .contains("exact order", "mẫu thứ hai", "policy")
                 .contains("Product cards are a short page, not a warehouse count")
                 .contains("displayedCardCount", "whole-catalogue", "conclusion");
     }
