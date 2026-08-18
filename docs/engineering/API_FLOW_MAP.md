@@ -21,6 +21,7 @@
 | Admin media UI | `/api/v1/admin/media` | `AdminMediaController` -> `AdminMediaService` | Tika validation, MinIO storage, metadata persistence | `CONFIRMED_FROM_CODE` |
 | Admin dashboard out-of-stock alert | `GET /api/v1/admin/inventory/summary` | `AdminInventoryController` -> `AdminInventoryService` | Standalone admin inventory screen removed 2026-06-23; only the summary endpoint is still called (by the Dashboard "Hết hàng" alert). Còn/Hết toggled per-variant in the product editor (`products.update`). The orphan `grouped` / `movements` / `PATCH .../availability` / `export.csv` endpoints were deleted 2026-07-15 (AUD-056, owner decision #8). Serial tracking removed V259, quantity model removed V261 | `CONFIRMED_FROM_CODE` |
 | Admin product editor live preview | `POST /api/v1/admin/products/preview` | `AdminCatalogController` -> `AdminCatalogMutationService.previewProduct` -> `JpaCatalogReadRepository.mapPreviewProduct` | Dry-run render of the unsaved upsert payload to the public `Product` shape; **no persistence** (`@Transactional(readOnly=true)`); admin embeds the bigbike-web `/preview/product` iframe and postMessages the result | `CONFIRMED_FROM_CODE` |
+| Admin AI content brief | Category editor reads the existing category detail/tree plus `GET /api/v1/catalog/facets?category={slug}&lang={lang}`; product editor reads `GET /api/v1/admin/products/{id}` at copy time | Existing catalog read services; no new mutation endpoint | Builds a clipboard-only localized HTML brief with fresh category/product facts and the current block content; no AI call and no database write | `OWNER_CONFIRMED_FROM_OWNER_DECISION_2026-08-18` |
 | Admin product list CSV export | `ProductListScreen` → export Dialog → `GET /api/v1/admin/products/export.csv` | `ProductListScreen` / `adminApi.exportFullProductCatalogCsv` -> `AdminProductExportController` -> filtered keyset export service | Operator chooses `FILTERED`, `SELECTED`, or explicit `ALL`, status expansion and a column preset; CSV is streamed with UTF-8 BOM and every export records effective scope, filters, columns and row count | `CONFIRMED_FROM_OWNER_DECISION` (2026-08-09) |
 | Admin Orders list + CSV | `GET /api/v1/admin/orders`; `GET /api/v1/admin/reports/orders/export` | `AdminOrderController` / `AdminReportController` -> shared order filter specification | List and CSV share `q`/`status`/`from`/`to`; calendar dates use `Asia/Ho_Chi_Minh`. CSV returns every matching order across pages with no 10,000-row cap (`ORDER_RULE_011`/`ORDER_RULE_012`). | `CONFIRMED_FROM_CODE` |
 | Admin Customers list/detail + CSV | `GET /api/v1/admin/customers`, `/summary`, `/{customerId}`; `PATCH /{customerId}`, `PATCH /{customerId}/status`, `DELETE /{customerId}/avatar`; `GET /api/v1/admin/reports/customers/export` | `AdminCustomerController` / `AdminReportController` -> `AdminCustomerService` / `AdminCustomerCsvExportService` | List and CSV share `q`/`status`/`synthetic`/`emailVerified`; CSV returns every match without a row cap. Purchase KPIs exclude cancelled orders; registered-account KPIs exclude synthetic rows. Admin profile edits are limited to display name/phone, synthetic status is locked, and a real avatar removal writes an audit event (`CUSTOMER_RULE_004`–`CUSTOMER_RULE_009`). | `CONFIRMED_BACKEND_ENFORCED` |
@@ -56,12 +57,17 @@ Status: `OWNER_CONFIRMED_2026-08-15`
 
 `old URL -> bigbike-web/proxy.ts -> active redirect snapshot (fallback: single lookup) ->
 301/410 or locale route -> exact lookup in admin-managed legacy_discontinued_products (or a
-PUBLISHED product with discontinued=true) -> bilingual history page + up to 3 active
-same-category suggestions`
+PUBLISHED product with discontinued=true) -> bilingual history page + 4–8 ranked active
+suggestions (same brand, then same product kind, then same/parent category or popularity
+fallback)`
 
 The redirect table remains the source of truth for 301/410 rules. History entries are
-persisted and operated in Admin, never a static `/sp/` source registry; they do not replace
-a valid published product PDP.
+persisted and operated in Admin, never a static `/sp/` source registry. A legacy-only entry
+renders the history layout; a matching `PUBLISHED + discontinued=true` product keeps its
+existing PDP content and replaces only the purchase area with a discontinued status panel.
+The 4–8 suggestion ranking, no-image single-column layout, breadcrumb/brand links, trust
+strip, Zalo contact, inline search and bottom safety note are the owner display decision of
+2026-08-18; they do not change API shape, URL, catalog exclusion or redirect behavior.
 
 Status: `OWNER_CONFIRMED_2026-08-15`
 

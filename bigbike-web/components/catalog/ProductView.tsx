@@ -31,6 +31,9 @@ import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { WriteReviewDialog } from "@/components/catalog/WriteReviewDialog";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
+import { DiscontinuedProductOverview } from "@/components/catalog/DiscontinuedProductOverview";
+import { DiscontinuedSearchForm } from "@/components/catalog/DiscontinuedSearchForm";
+import { DiscontinuedSuggestions } from "@/components/catalog/DiscontinuedSuggestions";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
 import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
@@ -57,6 +60,8 @@ type ProductViewProps = {
    * draft already resolved to the chosen locale by the backend dry-run.
    */
   previewMode?: boolean;
+  /** Ranked active alternatives for a discontinued product's retained PDP. */
+  discontinuedSuggestions?: Product[];
 };
 
 /**
@@ -116,49 +121,13 @@ function MobileTrustLine({ product }: { product: Product }) {
   );
 }
 
-function DiscontinuedProductNotice({
+export function ProductView({
   product,
-  categorySlug,
-}: {
-  product: Product;
-  categorySlug?: string;
-}) {
-  const t = useTranslations("Product");
-  const locale = useLocale() as Locale;
-  return (
-    <section className="space-y-6 border border-border bg-card p-6 md:p-8">
-      <p className="m-0 inline-flex border border-brand px-3 py-2 text-a5-meta font-semibold uppercase tracking-wide text-brand">
-        {t("discontinuedLabel")}
-      </p>
-      <h2 className="m-0 font-body text-a2-page font-semibold leading-title text-foreground">
-        {safeText(product.name, t("fallbackShortName"))}
-      </h2>
-      <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{t("discontinuedDescription")}</p>
-      <p className="m-0 border-l-4 border-brand bg-muted px-4 py-3 text-a4-content font-semibold leading-relaxed text-foreground">
-        {t("safetyDisclaimer")}
-      </p>
-      <div className="flex flex-wrap gap-4">
-        {categorySlug ? (
-          <LocalizedLink
-            kind="category"
-            viSlug={categorySlug}
-            className="inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"
-          >
-            {t("discontinuedCategoryLink")}
-          </LocalizedLink>
-        ) : null}
-        <Link
-          href={toHomePath(locale)}
-          className="inline-flex min-h-11 items-center border border-border px-5 py-3 font-semibold text-foreground no-underline! hover:border-brand hover:text-brand"
-        >
-          {t("discontinuedHomeLink")}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-export function ProductView({ product, settings, breadcrumbCategories = [], previewMode = false }: ProductViewProps) {
+  settings,
+  breadcrumbCategories = [],
+  previewMode = false,
+  discontinuedSuggestions = [],
+}: ProductViewProps) {
   const locale = useLocale() as Locale;
   const tProduct = useTranslations("Product");
   const tA11y = useTranslations("A11y");
@@ -269,7 +238,7 @@ export function ProductView({ product, settings, breadcrumbCategories = [], prev
   // product.commitments với khối dưới nút mua) + footer liên hệ (xem product-view/ProductTrustCard).
   // Tự ẩn khi rỗng cả ba. Tiêu đề dùng CHUNG <PdpSectionHeading> như mọi section khác (huy hiệu
   // "Chính hãng" ở slot `end` cùng hàng) — tự vẽ bên TRONG ProductTrustCard, không lặp lại ở đây.
-  const trustItems = buildTrustItems({ product, previewMode });
+  const trustItems = product.discontinued ? [] : buildTrustItems({ product, previewMode });
   const hasTrustContact = Boolean(hotline || contactAddress);
   const hasTrustCommitments = safeArray(product.commitments).some((c) => c.title);
   const trustCard =
@@ -441,9 +410,13 @@ export function ProductView({ product, settings, breadcrumbCategories = [], prev
     );
   }
 
-  const categorySlug = category?.slug;
   const overview = product.discontinued ? (
-    <DiscontinuedProductNotice product={product} categorySlug={categorySlug} />
+    <DiscontinuedProductOverview
+      product={product}
+      gallery={gallery}
+      zaloUrl={zaloUrl || undefined}
+      hasSuggestions={discontinuedSuggestions.length > 0}
+    />
   ) : (
     <PurchaseSection
       product={product}
@@ -492,11 +465,19 @@ export function ProductView({ product, settings, breadcrumbCategories = [], prev
           </ol>
         </nav>
 
-        <MobileTrustLine product={product} />
+        {!product.discontinued ? <MobileTrustLine product={product} /> : null}
 
         <div id="pdp-overview">
           {overview}
         </div>
+
+        {product.discontinued ? (
+          <div className="space-y-8 pt-8 md:space-y-10 md:pt-10">
+            <DiscontinuedSuggestions products={discontinuedSuggestions} />
+            <DiscontinuedSearchForm />
+            <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground">{tProduct("safetyDisclaimer")}</p>
+          </div>
+        ) : null}
 
         {/* Modal viết đánh giá — mount MỘT lần cho cả PDP. Mọi nút "Viết đánh giá"
             (khối mua hàng trên + khối đánh giá dưới) đều mở modal này thay vì cuộn
@@ -545,12 +526,14 @@ export function ProductView({ product, settings, breadcrumbCategories = [], prev
         )}
 
         {/* Dải liên hệ cửa hàng ở chân trang (local-SEO). Lấy từ system settings. */}
-        <ProductContactCta
-          productName={name}
-          siteName={siteName}
-          address={contactAddress || undefined}
-          zaloUrl={zaloUrl || undefined}
-        />
+        {!product.discontinued ? (
+          <ProductContactCta
+            productName={name}
+            siteName={siteName}
+            address={contactAddress || undefined}
+            zaloUrl={zaloUrl || undefined}
+          />
+        ) : null}
       </div>
     </div>
   );

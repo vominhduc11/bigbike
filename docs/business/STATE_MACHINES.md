@@ -82,9 +82,23 @@ không tự thay đổi `publishStatus`.
 
 Trang lịch sử này là một trạng thái trình bày độc lập của web, không phải một
 trạng thái mới trong database: registry giữ tên cũ và bản dịch, nhãn “ngừng bán”,
-canonical chính URL `/sp/`, cùng tối đa 3 gợi ý đang bán trong cùng nhóm hàng.
+canonical chính URL `/sp/`, cùng 4–8 gợi ý đang bán khi nguồn hàng phù hợp có đủ.
+Từ quyết định owner ngày 18/08/2026, gợi ý được xếp ưu tiên theo thương hiệu
+trùng, sau đó theo kiểu hàng suy ra từ tên (ví dụ áo với áo, quần với quần,
+găng với găng), rồi mới bổ sung hàng khác trong nhóm; nếu nhóm không còn hàng
+đang bán thì dùng nhóm cha hoặc thứ tự bán chạy hiện hành. Trang có thể bỏ khung
+ảnh hoàn toàn khi không có ảnh, giữ breadcrumb đủ cây nhóm hàng, link thương hiệu/
+nhóm hàng, dải cam kết, nút Zalo, ô tìm kiếm và cảnh báo an toàn ở cuối trang.
+Đây là quyết định hiển thị mới, không phải khôi phục bố cục lịch sử cũ.
 Nếu registry không có bản ghi tương ứng, sản phẩm vẫn tuân thủ đường đọc
 `PUBLISHED`/`TRASH` thông thường; không được tự dựng tên hoặc đích mới.
+
+Với `PUBLISHED + discontinued = true`, `/sp/{slug}.html` giữ nguyên URL lịch sử
+nhưng render toàn bộ nội dung PDP hiện có (gallery, mô tả, thông số, FAQ, video,
+đánh giá và các phần nội dung khác). Chỉ vùng giá/mua được thay bằng khối trạng
+thái ở đầu trang; cả thanh mua hàng dính đáy và mọi đường thêm giỏ đều không được
+render. Quyết định này của owner ngày 18/08/2026 không tạo URL mới và không sửa
+dữ liệu sản phẩm.
 
 ### State Field
 

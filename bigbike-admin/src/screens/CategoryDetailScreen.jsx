@@ -6,6 +6,7 @@ import { AlertCircle, ArrowLeft, Check, Copy, FolderTree, Globe2, Hash, Image as
 
 import {
   createCategory,
+  fetchCatalogFacets,
   fetchCategoryDetail,
   fetchCategoryTree,
   fetchProducts,
@@ -27,6 +28,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { IntroContentField } from './category-detail/IntroContentField'
+import { createCategoryAiPromptBuilder } from '../lib/aiContentProfile'
 import { buildCategoryTreeOrder } from './product-detail/constants'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -150,6 +152,17 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const productsTotal = productsInCat?.pagination?.totalItems ?? 0
 
   const currentItem = fetchResult?.item ?? null
+
+  const getCategoryAiPrompt = () => createCategoryAiPromptBuilder({
+    categoryId,
+    lang: contentLang,
+    form: { ...form, id: categoryId },
+    currentItem,
+    fetchCategoryDetail,
+    fetchCategoryTree,
+    fetchCatalogFacets,
+    basePrompt: () => t('categories.detail.introAiBriefPrompt'),
+  })()
 
   const breadcrumbPath = useMemo(() => {
     const items = categoriesResult?.items ?? []
@@ -921,7 +934,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   value={isEnLang ? (form.translations?.en?.introContent ?? '') : form.introContent}
                   onChange={(html) => isEnLang ? updateTranslation('introContent', html) : updateField('introContent', html)}
                   lang={contentLang}
-                  categoryName={displayName}
+                  getAiPrompt={getCategoryAiPrompt}
                   disabled={isReadOnly}
                 />
               </div>

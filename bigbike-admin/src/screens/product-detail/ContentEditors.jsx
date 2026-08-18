@@ -503,7 +503,7 @@ function isGeneratedSpecsHtml(html) {
  * Cho phép CSS inline khi dán HTML. Component được key theo contentLang ở screen nên đổi ngôn ngữ =
  * remount + nạp lại theo html ngôn ngữ đó.
  */
-export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
+export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiPromptBuilder }) {
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), name: '', value: '' })
   const [mode, setMode] = useState(() =>
@@ -693,7 +693,10 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
           allowRaw
           extraNotice={result.extraColumnCount > 0 ? t('products.detail.htmlImport.extraColumns', { count: result.extraColumnCount }) : null}
         />
-        <AiHtmlBrief promptKey="products.detail.specs.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.specs.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('specifications', t('products.detail.specs.aiBriefPrompt')) : undefined}
+        />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
@@ -855,7 +858,7 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
 /** Ưu/Nhược điểm — chế độ "Dán mã HTML": MỘT khối mã cho cả Ưu điểm lẫn Nhược điểm cùng
  *  lúc (2 vùng .bb-highlights-pros/.bb-highlights-cons bên trong), gõ xong tách ngay về
  *  positiveNotes/negativeNotes tương ứng — không tạo trường HTML riêng để lưu. */
-export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePositive, onChangeNegative, disabled, contentLang = 'vi' }) {
+export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePositive, onChangeNegative, disabled, contentLang = 'vi', aiPromptBuilder }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const labels = { prosLabel: t('products.detail.highlights.prosTitle'), consLabel: t('products.detail.highlights.consTitle') }
@@ -906,7 +909,10 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
         onApply={applyParsed}
         extraNotice={t('products.detail.htmlImport.arraySource')}
       />
-      <AiHtmlBrief promptKey="products.detail.highlights.aiBriefPrompt" />
+      <AiHtmlBrief
+        promptKey="products.detail.highlights.aiBriefPrompt"
+        getPrompt={aiPromptBuilder ? () => aiPromptBuilder('highlights', t('products.detail.highlights.aiBriefPrompt')) : undefined}
+      />
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {t('products.detail.highlights.previewLabel')}
@@ -929,7 +935,7 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
   )
 }
 
-export function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
+export function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi', aiPromptBuilder }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fQuestion = isEn ? 'questionEn' : 'question'
@@ -1077,7 +1083,10 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
           onApply={applyParsed}
           extraNotice={t('products.detail.htmlImport.arraySource')}
         />
-        <AiHtmlBrief promptKey="products.detail.faqs.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.faqs.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('faqs', t('products.detail.faqs.aiBriefPrompt')) : undefined}
+        />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.faqs.previewLabel')}

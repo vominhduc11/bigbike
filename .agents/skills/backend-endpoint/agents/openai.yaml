@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Endpoint"
+  short_description: "Scaffold a backend endpoint slice"
+  default_prompt: "Use $backend-endpoint to add a new BigBike backend resource with docs, permission, migration, and tests."

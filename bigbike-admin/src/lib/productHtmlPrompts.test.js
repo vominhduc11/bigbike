@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import vi from '../locales/vi.json'
 import en from '../locales/en.json'
-import { serializeSizeGuide } from './sizeChart'
-
-const sizeModel = {
-  columns: [{ label: 'Size' }, { label: 'Vòng đầu (cm)' }],
-  rows: [{ cells: ['M', '57–58'] }],
-  note: 'Ghi chú nếu có.',
-}
-
 describe('canonical product HTML prompts', () => {
   it.each([
     ['vi', vi.products.detail],
@@ -24,10 +16,12 @@ describe('canonical product HTML prompts', () => {
   it.each([
     ['vi', vi.products.detail],
     ['en', en.products.detail],
-  ])('%s uses the exact tokenized size styles emitted by the form', (_locale, detail) => {
+  ])('%s keeps size-guide AI output presentation-free', (_locale, detail) => {
     const prompt = detail.sizeGuide.aiBriefPrompt
-    const emittedStyles = [...serializeSizeGuide(sizeModel).matchAll(/style="([^"]+)"/g)].map((match) => match[1])
-    emittedStyles.forEach((style) => expect(prompt).toContain(`style="${style}"`))
+    expect(prompt).toContain('<table><thead><tr><th>Size</th>')
+    expect(prompt).not.toContain('style="')
+    expect(prompt).not.toContain('var(--bb-')
+    expect(prompt).toMatch(/website owns presentation|website tự áp dụng phần trình bày/)
     expect(prompt).not.toContain('Arial')
     expect(prompt).not.toContain('#dddddd')
     expect(prompt).not.toContain('font-size:16px')

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Admin Module Audit"
+  short_description: "Audit and fix one admin module"
+  default_prompt: "Use $admin-module-audit to audit and fix the Brand admin module with tests and a concise report."

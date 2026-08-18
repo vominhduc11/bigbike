@@ -510,7 +510,7 @@ function isGeneratedSuitabilityHtml(html) {
  *  - Cấu trúc → HTML: `html` đã được merge cập nhật sẵn.
  *  - Cho phép CSS inline khi dán HTML (sanitizeHtml admin đã mở `style`).
  */
-export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
+export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang = 'vi', aiPromptBuilder }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
@@ -683,7 +683,10 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
           onUseRaw={applyRaw}
           allowRaw
         />
-        <AiHtmlBrief promptKey="products.detail.suitability.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.suitability.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('suitability', t('products.detail.suitability.aiBriefPrompt')) : undefined}
+        />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
@@ -720,7 +723,7 @@ function isStructuredHtml(html) {
  * chỉnh (không round-trip được) → mở tab HTML để khỏi mất; bảng có cấu trúc → mở tab có cấu trúc.
  * State cục bộ là nguồn sự thật khi đang sửa (reseed khi remount theo block._key ở SortableList).
  */
-export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
+export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 'vi', aiPromptBuilder }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
@@ -983,7 +986,10 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
           onUseRaw={applyRaw}
           allowRaw
         />
-        <AiHtmlBrief promptKey="products.detail.sizeGuide.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.sizeGuide.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('sizeGuide', t('products.detail.sizeGuide.aiBriefPrompt')) : undefined}
+        />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}

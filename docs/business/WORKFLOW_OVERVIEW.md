@@ -48,6 +48,19 @@ The point-of-sale / walk-in ("bán tại quầy") workflow was removed entirely.
 
 Preview **không** đổi `publishStatus`, không lưu, và không expose draft ra public (đi qua phiên admin, không qua public read path).
 
+### Admin AI content brief workflow
+
+Trong editor danh mục và editor sản phẩm, nút **Chép hướng dẫn AI** chỉ tạo một bản hướng dẫn để
+admin dán sang ChatGPT/Claude; nút này không gọi AI và không ghi dữ liệu. Mỗi lần bấm, admin nhận
+kèm hồ sơ mới đọc từ hệ thống của đúng danh mục/sản phẩm, ngôn ngữ đang chọn, số liệu catalog,
+giá, biến thể và nội dung hiện có của khối đang sửa. Dữ liệu chưa có phải được ghi rõ là chưa có;
+không dùng số liệu cố định trong mã giao diện.
+
+Với `Category.introContent`, HTML là bản gốc. Biểu mẫu chỉ vá phần được nhận diện, giữ nguyên các
+block tự do và thứ tự cũ; chuyển qua lại giữa thẻ **Biểu mẫu** và **HTML** không tự ghi và không
+cảnh báo mất nội dung. Bản hướng dẫn danh mục phân biệt sáu phần do biểu mẫu quản lý với bảng,
+bảng cỡ và layout tự do được phép chèn độc lập.
+
 Khung xem trước chỉ để **xem giao diện**, nên các thao tác/điều hướng không liên quan bị **khóa** để admin không đi lạc: mọi link điều hướng + ô tìm kiếm vô hiệu (`PreviewGuard`), nút mua/thêm giỏ vô hiệu (`canBuy=false`), và các nút hành động ngoài luồng — Tư vấn Zalo, Viết/Xem đánh giá, Chia sẻ Facebook/X, thanh mua dính đáy mobile — render **mờ + khóa bấm** khi `previewMode`. Vẫn giữ tương tác tại chỗ để kiểm tra hiển thị: chọn biến thể (màu/size), xem ảnh phóng to gallery. Khối đánh giá của khách + "sản phẩm đã xem" bị ẩn trong preview (draft chưa có id).
 
 **Bài viết tin tức** dùng cùng cơ chế: editor `ContentDetailScreen` → `POST /api/v1/admin/content/articles/preview` (dry-run `content.update`, không lưu) → iframe `/preview/article` render bằng `ArticleView` — đúng template blog detail. Cùng tính chất: không đổi `publishStatus`, không lưu, không expose draft.

@@ -1,174 +1,89 @@
-import { describe, it, expect } from 'vitest'
-import { emptyIntro, getIntroInputMode, isStructuredIntroHtml, parseIntro, serializeIntro } from './categoryIntro'
+import { describe, expect, it } from 'vitest'
+import {
+  emptyIntro,
+  getIntroInputMode,
+  isStructuredIntroHtml,
+  parseIntro,
+  patchIntroHtml,
+  serializeIntro,
+} from './categoryIntro'
 
 const model = (over = {}) => ({ ...emptyIntro(), ...over })
 
-// So sánh model bỏ qua _key (random) và cờ _legacy.
-function clean(m) {
-  return {
-    eyebrow: m.eyebrow,
-    heading: m.heading,
-    intro: m.intro,
-    brands: m.brands,
-    faqs: (m.faqs || []).map((f) => ({ question: f.question, answer: f.answer })),
-    ctaText: m.ctaText,
-    ctaLabel: m.ctaLabel,
-    ctaUrl: m.ctaUrl,
-  }
-}
-
-describe('serializeIntro', () => {
-  it('model rỗng → chuỗi rỗng', () => {
-    expect(serializeIntro(emptyIntro(), 'vi')).toBe('')
-    expect(serializeIntro(null, 'vi')).toBe('')
-  })
-
-  it('dựng đủ 3 khối với class và FAQ có cấu trúc', () => {
-    const html = serializeIntro(
-      model({
-        eyebrow: 'Danh mục · mu-bao-hiem',
-        heading: 'Mũ bảo hiểm chính hãng',
-        intro: 'Mũ là thứ cần chọn kỹ.',
-        brands: ['AGV', 'LS2'],
-        faqs: [{ _key: 'x', question: 'Chọn loại nào?', answer: 'Tuỳ cách chạy.' }],
-        ctaText: 'Cần tư vấn?',
-        ctaLabel: 'Nhắn Zalo Mrs. Thư',
-        ctaUrl: 'https://zalo.me/84764640679',
-      }),
-      'vi',
-    )
-    expect(html).toContain('<div class="bb-cat-intro" lang="vi">')
-    expect(html).toContain('<span class="bb-ci-pill">AGV</span><span class="bb-ci-pill">LS2</span>')
-    expect(html).not.toContain('itemscope')
-    expect(html).not.toContain('itemtype=')
-    expect(html).not.toContain('itemprop=')
-    expect(html).toContain('<span class="bb-ci-b-head">1 câu hỏi thường gặp nhất</span>')
-    expect(html).toContain('<h3 class="bb-ci-qt">Chọn loại nào?</h3>')
-    expect(html).toContain('<a class="bb-ci-btn" href="https://zalo.me/84764640679"')
-  })
-
-  it('lang=en đổi nhãn cố định', () => {
-    const html = serializeIntro(model({ faqs: [{ question: 'Q', answer: 'A' }] }), 'en')
-    expect(html).toContain('lang="en"')
-    expect(html).toContain('1 most common questions')
-  })
-
-  it('bỏ khối khi không có nội dung (không câu hỏi → không khối FAQ)', () => {
-    const html = serializeIntro(model({ heading: 'Chỉ tiêu đề' }), 'vi')
-    expect(html).not.toContain('bb-ci-b')
-    expect(html).not.toContain('bb-ci-c')
-  })
-
-  it('escape ký tự đặc biệt', () => {
-    const html = serializeIntro(model({ heading: 'A & B <x>' }), 'vi')
+describe('category intro HTML source and structured reader', () => {
+  it('keeps canonical serialization available for genuinely new content', () => {
+    const html = serializeIntro(model({ heading: 'A & B <x>', brands: ['AGV'] }), 'vi')
     expect(html).toContain('A &amp; B &lt;x&gt;')
-  })
-})
-
-describe('parseIntro', () => {
-  it('round-trip giữ nguyên nội dung', () => {
-    const src = model({
-      eyebrow: 'Danh mục · balo',
-      heading: 'Balo mô tô',
-      intro: 'Giữ chắc ở tốc độ cao.',
-      brands: ['LS2', 'Komine', 'Givi'],
-      faqs: [
-        { question: 'Câu 1?', answer: 'Đáp 1.' },
-        { question: 'Câu 2?', answer: 'Đáp 2 & hơn nữa.' },
-      ],
-      ctaText: 'Cần tư vấn?',
-      ctaLabel: 'Nhắn Zalo Mrs. Thư',
-      ctaUrl: 'https://zalo.me/84764640679',
-    })
-    const parsed = parseIntro(serializeIntro(src, 'vi'))
-    expect(clean(parsed)).toEqual(clean(src))
-    expect(parsed._legacy).toBe(false)
+    expect(html).toContain('<span class="bb-ci-pill">AGV</span>')
   })
 
-  it('HTML cũ không theo mẫu → đưa text vào ô giới thiệu, _legacy=true', () => {
-    const parsed = parseIntro('<p>Bài SEO cũ một khối</p><p>Đoạn hai</p>')
-    expect(parsed._legacy).toBe(true)
-    expect(parsed.intro).toContain('Bài SEO cũ một khối')
-    expect(parsed.intro).toContain('Đoạn hai')
-    expect(parsed.faqs).toEqual([])
-  })
-
-  it('rỗng → model rỗng', () => {
-    expect(parseIntro('')._legacy).toBe(false)
-    expect(parseIntro('   ').faqs).toEqual([])
-  })
-})
-
-describe('intro input mode detection', () => {
-  it('mở HTML do form sinh ra ở tab có cấu trúc, cho cả VI và EN', () => {
-    const vi = serializeIntro(model({ heading: 'Mũ bảo hiểm' }), 'vi')
-    const en = serializeIntro(model({ heading: 'Motorcycle helmets' }), 'en')
-
-    expect(isStructuredIntroHtml(vi)).toBe(true)
-    expect(getIntroInputMode(vi)).toBe('structured')
-    expect(isStructuredIntroHtml(en)).toBe(true)
-    expect(getIntroInputMode(en)).toBe('structured')
-  })
-
-  it('vẫn nhận diện markup FAQ structured cũ có microdata', () => {
-    const current = serializeIntro(model({ faqs: [{ question: 'Q', answer: 'A' }] }), 'vi')
-    const legacy = current
-      .replace('<div class="bb-ci-b">', '<div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">')
-      .replace('<div class="bb-ci-faq">', '<div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">')
-      .replace('<h3 class="bb-ci-qt">Q</h3>', '<span class="bb-ci-qt" itemprop="name">Q</span>')
-      .replace('<div><p class="bb-ci-at">A</p></div>', '<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">A</p></div>')
-
-    expect(isStructuredIntroHtml(legacy)).toBe(true)
-    expect(getIntroInputMode(legacy)).toBe('structured')
-  })
-
-  it('mở raw HTML, bảng và markup thêm vào ở tab nâng cao', () => {
-    const cases = [
-      '<p>Nội dung cũ</p>',
-      '<table><tbody><tr><td>Bảng cỡ</td></tr></tbody></table>',
-      `${serializeIntro(model({ heading: 'Mũ' }), 'vi')}<p>Phần riêng</p>`,
-    ]
-
-    cases.forEach((html) => {
-      expect(isStructuredIntroHtml(html)).toBe(false)
-      expect(getIntroInputMode(html)).toBe('advanced')
-    })
-  })
-
-  it('cho phép định dạng inline an toàn trong giới thiệu và câu trả lời', () => {
-    const html = serializeIntro(model({
-      intro: '<strong>Nội dung</strong> <em>nhấn mạnh</em><br><a href="https://bigbike.vn">Xem thêm</a>',
-      faqs: [{ question: 'Q', answer: '<b>Đáp</b> <i>chi tiết</i><br><a href="/lien-he">Liên hệ</a>' }],
-    }), 'vi')
+  it('recognizes a table plus six FAQ pairs in one shared wrapper', () => {
+    const answers = Array.from({ length: 6 }, (_, index) => `<p class="bb-ci-at">Câu trả lời ${index + 1}.</p>`).join('')
+    const html = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Mũ</h2><p class="bb-ci-body">Giới thiệu</p></div><table><tr><td>Bảng riêng</td></tr></table><div class="bb-ci-b"><div class="legacy-questions">${Array.from({ length: 6 }, (_, index) => `<h3 class="bb-ci-qt">Câu hỏi ${index + 1}?</h3>`).join('')}${answers}</div></div></div>`
+    const parsed = parseIntro(html)
 
     expect(isStructuredIntroHtml(html)).toBe(true)
     expect(getIntroInputMode(html)).toBe('structured')
-    expect(parseIntro(html).intro).toContain('<strong>Nội dung</strong>')
-    expect(parseIntro(html).faqs[0].answer).toContain('<a href="/lien-he">Liên hệ</a>')
+    expect(parsed.heading).toBe('Mũ')
+    expect(parsed.faqs).toHaveLength(6)
+    expect(parsed.faqs.map((faq) => faq.question)).toEqual(Array.from({ length: 6 }, (_, index) => `Câu hỏi ${index + 1}?`))
+    expect(parsed.faqs.map((faq) => faq.answer)).toEqual(Array.from({ length: 6 }, (_, index) => `Câu trả lời ${index + 1}.`))
   })
 
-  it('đẩy thuộc tính hoặc thẻ không an toàn sang tab nâng cao', () => {
-    const cases = [
-      serializeIntro(model({ intro: 'Nội dung' }), 'vi').replace('Nội dung', '<span style="color:red">Nội dung</span>'),
-      serializeIntro(model({ intro: 'Nội dung' }), 'vi').replace('Nội dung', '<a href="javascript:alert(1)">Nội dung</a>'),
-      serializeIntro(model({ faqs: [{ question: 'Q', answer: 'A' }] }), 'vi').replace('>A</p>', '><ul><li>A</li></ul></p>'),
-    ]
+  it('recognizes legacy microdata and incomplete managed content', () => {
+    const html = `<section data-category-intro itemscope itemtype="https://schema.org/FAQPage"><h2 itemprop="headline">Helmets</h2><div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question"><span itemprop="name">Which fit?</span><div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer"><p itemprop="text">Measure first.</p></div></div><div class="unmanaged"><img src="/safe.jpg" alt="Example" /></div></section>`
+    const parsed = parseIntro(html)
 
-    cases.forEach((html) => {
-      expect(isStructuredIntroHtml(html)).toBe(false)
-      expect(getIntroInputMode(html)).toBe('advanced')
-    })
+    expect(parsed.heading).toBe('Helmets')
+    expect(parsed.faqs).toHaveLength(1)
+    expect(parsed.faqs[0]).toMatchObject({ question: 'Which fit?', answer: 'Measure first.' })
+    expect(getIntroInputMode(html)).toBe('structured')
   })
 
-  it('bỏ qua khoảng trắng và dấu nháy cong vô hại khi dò khuôn', () => {
-    const html = serializeIntro(model({ heading: '“Mũ bảo hiểm”', intro: 'Nội dung' }), 'vi')
-      .replace(/\n/g, '\r\n')
-
-    expect(isStructuredIntroHtml(html)).toBe(true)
+  it('leaves an HTML-only table in the HTML tab without calling it an error', () => {
+    const html = '<table><tbody><tr><td>Comparison</td></tr></tbody></table>'
+    expect(parseIntro(html).heading).toBe('')
+    expect(parseIntro(html).faqs).toEqual([])
+    expect(isStructuredIntroHtml(html)).toBe(false)
+    expect(getIntroInputMode(html)).toBe('advanced')
   })
 
-  it('coi nội dung rỗng là có cấu trúc mặc định', () => {
-    expect(isStructuredIntroHtml('')).toBe(true)
-    expect(getIntroInputMode('   ')).toBe('structured')
+  it('patches one managed field while preserving table, unknown blocks, order, and all FAQ pairs', () => {
+    const html = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Cũ</h2><p class="bb-ci-body">Giới thiệu</p></div><div class="free-columns"><img src="/keep.jpg" alt="Keep" /></div><table class="comparison"><tbody><tr><td>Giữ nguyên</td></tr></tbody></table><div class="bb-ci-b"><div class="legacy-questions">${Array.from({ length: 6 }, (_, index) => `<h3 class="bb-ci-qt">Q${index + 1}</h3>`).join('')}${Array.from({ length: 6 }, (_, index) => `<p class="bb-ci-at">A${index + 1}</p>`).join('')}</div></div><div class="free-after"><p>Khối lạ</p></div></div>`
+    const patched = patchIntroHtml(html, { field: 'heading', value: 'Mới' }, 'vi')
+    const doc = new DOMParser().parseFromString(patched, 'text/html')
+    const root = doc.querySelector('.bb-cat-intro')
+
+    expect(root.querySelector('.bb-ci-h2').textContent).toBe('Mới')
+    expect(root.querySelector('.comparison td').textContent).toBe('Giữ nguyên')
+    expect(root.querySelector('.free-columns img')).not.toBeNull()
+    expect(root.querySelector('.free-after p').textContent).toBe('Khối lạ')
+    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual(['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'])
+    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'A6'])
+    expect(root.querySelector('table').compareDocumentPosition(root.querySelector('.bb-ci-b')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('patches FAQ content by global appearance order and inserts a new FAQ before the CTA', () => {
+    const html = '<div class="bb-cat-intro"><div class="bb-ci-b"><h3 class="bb-ci-qt">Q1</h3><p class="bb-ci-at">A1</p></div><div class="bb-ci-c"><span class="bb-ci-ct">Contact</span></div></div>'
+    const patched = patchIntroHtml(html, {
+      field: 'faqs',
+      value: [
+        { question: 'Q mới 1', answer: 'A mới 1' },
+        { question: 'Q mới 2', answer: 'A mới 2' },
+      ],
+    }, 'vi')
+    const doc = new DOMParser().parseFromString(patched, 'text/html')
+    const root = doc.querySelector('.bb-cat-intro')
+
+    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual(['Q mới 1', 'Q mới 2'])
+    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual(['A mới 1', 'A mới 2'])
+    expect(root.querySelector('.bb-ci-b').compareDocumentPosition(root.querySelector('.bb-ci-c')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('creates a managed root without deleting the supplied HTML when a new field is edited', () => {
+    const patched = patchIntroHtml('<table><tr><td>Existing</td></tr></table>', { field: 'heading', value: 'Heading' }, 'en')
+    expect(patched).toContain('Existing')
+    expect(patched).toContain('Heading')
+    expect(patched).toContain('class="bb-cat-intro"')
   })
 })

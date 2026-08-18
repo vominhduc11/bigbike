@@ -144,7 +144,7 @@ function isGeneratedTrustBadgesHtml(html) {
 // "Dải tin cậy" trên tên sản phẩm (V233 + V257). `trustBadges` (theo ngôn ngữ) là NGUỒN render
 // web; tab "Có cấu trúc" chỉ là công cụ nhập (mỗi nhãn = 1 dòng chữ ngắn). Sửa cấu trúc được GHÉP
 // vào html (giữ CSS/chấm tròn, chỉ đổi chữ); HTML→Cấu trúc parse bỏ CSS. Key theo contentLang ở screen.
-export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
+export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptBuilder }) {
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), content: '' })
   const [mode, setMode] = useState(() =>
@@ -309,7 +309,10 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
           onUseRaw={applyRaw}
           allowRaw
         />
-        <AiHtmlBrief promptKey="products.detail.trustBadges.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.trustBadges.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('trustBadges', t('products.detail.trustBadges.aiBriefPrompt')) : undefined}
+        />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
@@ -339,7 +342,7 @@ function isGeneratedSpecStatsHtml(html) {
 // (theo ngôn ngữ) là NGUỒN render web; tab "Có cấu trúc" chỉ là công cụ nhập (mỗi ô = value + nhãn,
 // tối đa 4). Sửa cấu trúc được GHÉP vào html (giữ CSS, chỉ đổi chữ); HTML→Cấu trúc parse bỏ CSS.
 // Component được key theo contentLang ở screen → đổi ngôn ngữ = remount + nạp lại theo html.
-export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
+export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuilder }) {
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), value: '', label: '' })
   const [mode, setMode] = useState(() =>
@@ -520,7 +523,10 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           onUseRaw={applyRaw}
           allowRaw
         />
-        <AiHtmlBrief promptKey="products.detail.specStats.aiBriefPrompt" />
+        <AiHtmlBrief
+          promptKey="products.detail.specStats.aiBriefPrompt"
+          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('specStats', t('products.detail.specStats.aiBriefPrompt')) : undefined}
+        />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}

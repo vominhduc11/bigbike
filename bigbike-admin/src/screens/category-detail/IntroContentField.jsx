@@ -4,31 +4,23 @@ import { ArrowDown, ArrowUp, Plus, X as XIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Alert } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FormField } from '@/components/layout/FormField'
-import { Modal } from '@/components/layout/Modal'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import AiHtmlBrief from '@/components/AiHtmlBrief'
 import { RichTextEditor } from '@/components/RichTextEditor'
 import { showConfirm } from '../../lib/confirm'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
-import { emptyIntro, emptyFaq, getIntroInputMode, parseIntro, serializeIntro } from '@/lib/categoryIntro'
-import {
-  buildCategoryIntroAiPrompt,
-  CATEGORY_INTRO_LIMITS,
-  mergeCategoryIntroAiModel,
-  parseCategoryIntroAiInput,
-} from '@/lib/categoryIntroAi'
+import { CATEGORY_INTRO_LIMITS, emptyIntro, emptyFaq, getIntroInputMode, parseIntro, patchIntroHtml } from '@/lib/categoryIntro'
 
 const INTRO_CONTENT_MAX_LENGTH = 50000
 
 /**
  * Ô "Nội dung đầu trang danh mục" có hai công cụ nhập trên cùng một field HTML:
  * form cấu trúc cho khối `bb-cat-intro` và ô nhập nâng cao giữ nguyên markup người viết dán vào.
- * Chỉ khi người dùng sửa form cấu trúc mới serialize model thành HTML; mở/chuyển tab không tự ghi đè.
+ * HTML hiện có luôn là bản gốc. Form chỉ vá đúng trường được sửa; mở/chuyển tab không tự ghi đè.
  */
-export function IntroContentField({ value, onChange, disabled, lang = 'vi', categoryName = '' }) {
+export function IntroContentField({ value, onChange, disabled, lang = 'vi', getAiPrompt }) {
   const { t } = useTranslation()
   const html = value || ''
   const [mode, setMode] = useState(() => getIntroInputMode(html))
@@ -37,9 +29,6 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
     return initialMode === 'structured' ? parseIntro(html) : emptyIntro()
   })
   const [brandInput, setBrandInput] = useState('')
-  const [aiPaste, setAiPaste] = useState('')
-  const [aiReview, setAiReview] = useState(null)
-  const [aiParseError, setAiParseError] = useState('')
   const lastHtml = useRef(html)
   // Form dài → thu gọn 2 phần ít dùng hơn (Câu hỏi thường gặp, Nút liên hệ). Mở
   // sẵn khi đã có nội dung để không giấu dữ liệu; đóng sẵn khi trống. Đọc giá trị
@@ -62,12 +51,12 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
     }
   }, [html])
 
-  function commit(next) {
-    const cleaned = { ...next, _legacy: false }
-    setModel(cleaned)
-    const serialized = serializeIntro(cleaned, lang)
-    lastHtml.current = serialized
-    onChange(serialized)
+  function commitField(field, value) {
+    const nextModel = { ...model, [field]: value, _legacy: false }
+    setModel(nextModel)
+    const nextHtml = patchIntroHtml(lastHtml.current, { field, value }, lang)
+    lastHtml.current = nextHtml
+    onChange(nextHtml)
   }
 
   function updateAdvancedHtml(nextHtml) {
@@ -75,83 +64,8 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
     onChange(nextHtml)
   }
 
-  function openAiReview() {
-    const parsed = parseCategoryIntroAiInput(aiPaste)
-    if (!parsed.hasContent) {
-      setAiReview(null)
-      setAiParseError(t('categories.detail.introAiPasteEmpty'))
-      return
-    }
-    setAiParseError('')
-    setAiReview(parsed)
-  }
-
-  function confirmAiReview() {
-    if (!aiReview || aiReview.errors.length > 0) return
-    const nextModel = mergeCategoryIntroAiModel(model, aiReview)
-    commit(nextModel)
-    setFaqOpen(nextModel.faqs.length > 0)
-    setAiPaste('')
-    setAiReview(null)
-  }
-
-  function reviewFieldLabel(field) {
-    const labels = {
-      heading: t('categories.detail.introHeading'),
-      eyebrow: t('categories.detail.introEyebrow'),
-      intro: t('categories.detail.introText'),
-      brands: t('categories.detail.introBrands'),
-      faqs: t('categories.detail.introSectionFaq'),
-    }
-    return labels[field] || field
-  }
-
-  function formatIgnoredItem(item) {
-    const value = String(item || '')
-    if (value === 'preamble') return t('categories.detail.introAiIgnoredPreamble')
-    if (value === 'unsupportedHtml') return t('categories.detail.introAiIgnoredHtml')
-    if (value === 'incompleteFaq') return t('categories.detail.introAiIgnoredIncompleteFaq')
-    if (value.startsWith('unknown:')) {
-      return t('categories.detail.introAiIgnoredUnknown', { label: value.slice('unknown:'.length) })
-    }
-    if (value.startsWith('json:')) {
-      return t('categories.detail.introAiIgnoredJson', { label: value.slice('json:'.length) })
-    }
-    return value
-  }
-
-  function formatAiError(error) {
-    const [field, limit] = String(error || '').split(':')
-    return t('categories.detail.introAiTooLong', { field: reviewFieldLabel(field), max: limit })
-  }
-
-  const aiReviewReceived = aiReview ? [
-    aiReview.present.heading ? reviewFieldLabel('heading') : '',
-    aiReview.present.eyebrow ? reviewFieldLabel('eyebrow') : '',
-    aiReview.present.intro ? reviewFieldLabel('intro') : '',
-    aiReview.present.brands ? t('categories.detail.introAiReviewBrands', { count: aiReview.model.brands.length }) : '',
-    aiReview.present.faqs ? t('categories.detail.introAiReviewFaqs', { count: aiReview.model.faqs.length }) : '',
-  ].filter(Boolean) : []
-  const aiReviewPreserved = aiReview ? Object.keys(aiReview.present)
-    .filter((field) => !aiReview.present[field])
-    .map((field) => reviewFieldLabel(field)) : []
-  const aiPrompt = buildCategoryIntroAiPrompt({ categoryName, lang, faqCount: 5 })
-
-  async function changeMode(next) {
+  function changeMode(next) {
     if (next === mode) return
-
-    if (next === 'structured' && html.trim() && getIntroInputMode(html) === 'advanced') {
-      const confirmed = await showConfirm(
-        t('categories.detail.introAdvancedSwitchConfirm'),
-        t('categories.detail.introAdvancedSwitchTitle'),
-        {
-          variant: 'default',
-          confirmLabel: t('categories.detail.introAdvancedSwitchContinue'),
-          cancelLabel: t('categories.detail.introAdvancedSwitchCancel'),
-        },
-      )
-      if (!confirmed) return
-    }
 
     if (next === 'structured') {
       const nextModel = parseIntro(html)
@@ -163,11 +77,11 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
     setMode(next)
   }
 
-  const setField = (field, v) => commit({ ...model, [field]: v })
+  const setField = (field, v) => commitField(field, v)
 
-  const addFaq = () => commit({ ...model, faqs: [...model.faqs, emptyFaq()] })
+  const addFaq = () => commitField('faqs', [...model.faqs, emptyFaq()])
   const updateFaq = (i, field, v) =>
-    commit({ ...model, faqs: model.faqs.map((f, idx) => (idx === i ? { ...f, [field]: v } : f)) })
+    commitField('faqs', model.faqs.map((f, idx) => (idx === i ? { ...f, [field]: v } : f)))
   // Xoá câu hỏi là mất nội dung đã nhập — xác nhận trước (không có Hoàn tác).
   const removeFaq = async (i) => {
     const ok = await showConfirm(
@@ -176,23 +90,23 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
       { variant: 'danger', confirmLabel: t('common.delete') },
     )
     if (!ok) return
-    commit({ ...model, faqs: model.faqs.filter((_, idx) => idx !== i) })
+    commitField('faqs', model.faqs.filter((_, idx) => idx !== i))
   }
   const moveFaq = (i, dir) => {
     const j = i + dir
     if (j < 0 || j >= model.faqs.length) return
     const faqs = [...model.faqs]
     ;[faqs[i], faqs[j]] = [faqs[j], faqs[i]]
-    commit({ ...model, faqs })
+    commitField('faqs', faqs)
   }
 
   function addBrand() {
     const b = brandInput.trim()
     if (!b) return
-    if (!model.brands.includes(b)) commit({ ...model, brands: [...model.brands, b] })
+    if (!model.brands.includes(b)) commitField('brands', [...model.brands, b])
     setBrandInput('')
   }
-  const removeBrand = (i) => commit({ ...model, brands: model.brands.filter((_, idx) => idx !== i) })
+  const removeBrand = (i) => commitField('brands', model.brands.filter((_, idx) => idx !== i))
 
   const sectionClass = 'rounded-[var(--admin-radius-sm)] border border-input p-3 flex flex-col gap-3'
   const legendClass = 'text-sm font-semibold'
@@ -214,42 +128,6 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
 
       <TabsContent value="structured">
         <div className="flex flex-col gap-4">
-
-      <div className="flex flex-col gap-3">
-        <AiHtmlBrief
-          prompt={aiPrompt}
-          title={t('categories.detail.introAiPromptTitle')}
-          copyLabel={t('categories.detail.introAiPromptCopy')}
-          copiedMessage={t('categories.detail.introAiPromptCopied')}
-          copyFailedMessage={t('categories.detail.introAiPromptCopyFailed')}
-        />
-        <FormField
-          label={t('categories.detail.introAiPasteLabel')}
-          helper={t('categories.detail.introAiPasteHint')}
-        >
-          <Textarea
-            value={aiPaste}
-            onChange={(e) => {
-              setAiPaste(e.target.value)
-              if (aiParseError) setAiParseError('')
-            }}
-            placeholder={t('categories.detail.introAiPastePlaceholder')}
-            disabled={disabled}
-            rows={8}
-          />
-        </FormField>
-        {aiParseError ? <Alert tone="danger" size="sm">{aiParseError}</Alert> : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={openAiReview}
-          disabled={disabled || !aiPaste.trim()}
-          className="self-start"
-        >
-          {t('categories.detail.introAiPasteReview')}
-        </Button>
-      </div>
 
       {/* Phần 1: Giới thiệu + thương hiệu */}
       <fieldset className={sectionClass} disabled={disabled}>
@@ -449,9 +327,13 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
       </TabsContent>
 
       <TabsContent value="advanced" className="flex flex-col gap-4">
-        <Alert tone="warning" size="sm">
-          {t('categories.detail.introAdvancedWarning')}
-        </Alert>
+        <AiHtmlBrief
+          getPrompt={getAiPrompt}
+          title={t('categories.detail.introAiPromptTitle')}
+          copyLabel={t('categories.detail.introAiPromptCopy')}
+          copiedMessage={t('categories.detail.introAiPromptCopied')}
+          copyFailedMessage={t('categories.detail.introAiPromptCopyFailed')}
+        />
         <FormField
           label={t('categories.detail.introAdvancedLabel')}
           helper={t('categories.detail.introAdvancedHint')}
@@ -482,68 +364,6 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', cate
         </div>
       </TabsContent>
       </Tabs>
-      {aiReview ? (
-        <Modal
-          open
-          onClose={() => setAiReview(null)}
-          title={t('categories.detail.introAiReviewTitle')}
-          description={t('categories.detail.introAiReviewDescription')}
-          wide
-          actions={(
-            <>
-              <Button type="button" variant="secondary" onClick={() => setAiReview(null)}>
-                {t('categories.detail.introAiReviewCancel')}
-              </Button>
-              <Button type="button" onClick={confirmAiReview} disabled={aiReview.errors.length > 0}>
-                {t('categories.detail.introAiReviewConfirm')}
-              </Button>
-            </>
-          )}
-        >
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[var(--admin-radius-sm)] border border-border bg-surface-raised p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('categories.detail.introAiReviewReceived')}
-                </p>
-                {aiReviewReceived.length ? (
-                  <ul className="m-0 list-disc space-y-1 pl-4 text-sm text-foreground">
-                    {aiReviewReceived.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                ) : <p className="m-0 text-sm text-muted-foreground">{t('categories.detail.introAiReviewNone')}</p>}
-              </div>
-              <div className="rounded-[var(--admin-radius-sm)] border border-border bg-surface-raised p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('categories.detail.introAiReviewPreserved')}
-                </p>
-                {aiReviewPreserved.length ? (
-                  <ul className="m-0 list-disc space-y-1 pl-4 text-sm text-foreground">
-                    {aiReviewPreserved.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                ) : <p className="m-0 text-sm text-muted-foreground">{t('categories.detail.introAiReviewNone')}</p>}
-              </div>
-              <div className="rounded-[var(--admin-radius-sm)] border border-border bg-surface-raised p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('categories.detail.introAiReviewIgnored')}
-                </p>
-                {aiReview.ignored.length ? (
-                  <ul className="m-0 list-disc space-y-1 pl-4 text-sm text-foreground">
-                    {aiReview.ignored.map((item, index) => <li key={`${item}-${index}`}>{formatIgnoredItem(item)}</li>)}
-                  </ul>
-                ) : <p className="m-0 text-sm text-muted-foreground">{t('categories.detail.introAiReviewNone')}</p>}
-              </div>
-            </div>
-            {aiReview.errors.length ? (
-              <Alert tone="danger" size="sm">
-                <p className="m-0">{t('categories.detail.introAiReviewTooLong')}</p>
-                <ul className="m-0 mt-1 list-disc space-y-1 pl-4">
-                  {aiReview.errors.map((error) => <li key={error}>{formatAiError(error)}</li>)}
-                </ul>
-              </Alert>
-            ) : null}
-          </div>
-        </Modal>
-      ) : null}
     </>
   )
 }

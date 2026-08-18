@@ -1,0 +1,4 @@
+interface:
+  display_name: "Admin Screen"
+  short_description: "Scaffold a BigBike admin screen"
+  default_prompt: "Use $admin-screen to scaffold a new bigbike-admin management screen and wire it into App.jsx."

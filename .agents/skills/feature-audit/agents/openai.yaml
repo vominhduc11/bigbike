@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Audit"
+  short_description: "Audit one BigBike business feature"
+  default_prompt: "Use $feature-audit to audit the checkout feature across web, admin, backend, and docs."

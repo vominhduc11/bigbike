@@ -86,7 +86,7 @@ describe('product-template canonical HTML contract', () => {
     })
   })
 
-  it('bốn nguồn dùng cùng khuôn specifications, size và suitability', () => {
+  it('khuôn cấu trúc giữ trình bày, còn prompt AI không thêm trình bày', () => {
     const specExamples = {
       vi: '<table class="shop_attributes"><tbody><tr><th scope="row">Tên thông số</th><td>Giá trị</td></tr>...</tbody></table>',
       en: '<table class="shop_attributes"><tbody><tr><th scope="row">Spec name</th><td>Value</td></tr>...</tbody></table>',
@@ -105,8 +105,12 @@ describe('product-template canonical HTML contract', () => {
     for (const language of ['vi', 'en']) {
       const sizePrompt = locales[language].products.detail.sizeGuide.aiBriefPrompt
       const suitabilityPrompt = locales[language].products.detail.suitability.aiBriefPrompt
-      generatedSizeStyles.forEach((style) => expect(sizePrompt).toContain(`style="${style}"`))
-      generatedSuitabilityStyles.forEach((style) => expect(suitabilityPrompt).toContain(`style="${style}"`))
+      expect(sizePrompt).toContain('<table><thead><tr><th>')
+      expect(suitabilityPrompt).toContain('<ul class="suitability-list">')
+      expect(sizePrompt).not.toContain('style="')
+      expect(suitabilityPrompt).not.toContain('style="')
+      expect(sizePrompt).not.toContain('var(--bb-')
+      expect(suitabilityPrompt).not.toContain('var(--bb-')
     }
     [...generatedSizeStyles]
       .filter((style) => !style.includes('font-weight:700'))

@@ -8,8 +8,8 @@ import { toast } from '@/lib/toast'
  * Khối "Yêu cầu cho AI" hiển thị dưới ô dán HTML của các khối PDP (Thông số kỹ
  * thuật / Bảng size / Phù hợp với ai…). Admin thường nhờ AI (ChatGPT/Claude) tạo
  * đoạn HTML rồi dán vào — nhưng AI không biết hệ thiết kế của trang sản phẩm.
- * Nút "Sao chép" đưa sẵn bản brief chứa font/màu/cỡ/khoảng cách thật của web để
- * admin dán kèm nội dung, giúp HTML sinh ra khớp giao diện.
+ * Nút "Sao chép" đưa sẵn bản brief về đúng khuôn HTML và hồ sơ dữ liệu hiện tại để
+ * admin dán sang AI; website tự chịu trách nhiệm về font, màu, cỡ và khoảng cách.
  *
  * `promptKey` trỏ tới nội dung brief riêng của từng khối PDP (ví dụ
  * `products.detail.specStats.aiBriefPrompt`); màn hình khác có thể truyền `prompt` động.
@@ -17,15 +17,19 @@ import { toast } from '@/lib/toast'
 export default function AiHtmlBrief({
   promptKey,
   prompt: promptValue,
+  getPrompt,
   title,
   copyLabel,
   copiedMessage,
   copyFailedMessage,
+  copyingMessage,
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
+  const [dynamicPrompt, setDynamicPrompt] = useState(null)
   const panelId = useId()
-  const prompt = promptValue ?? t(promptKey)
+  const prompt = dynamicPrompt ?? promptValue ?? (promptKey ? t(promptKey) : '')
 
   async function copyText(value) {
     if (navigator.clipboard?.writeText) {
@@ -44,11 +48,17 @@ export default function AiHtmlBrief({
   }
 
   async function handleCopy() {
+    if (isCopying) return
+    setIsCopying(true)
     try {
-      await copyText(prompt)
+      const nextPrompt = typeof getPrompt === 'function' ? await getPrompt() : prompt
+      setDynamicPrompt(nextPrompt)
+      await copyText(nextPrompt)
       toast.success(copiedMessage || t('products.detail.aiBrief.copied'))
     } catch {
       toast.error(copyFailedMessage || t('products.detail.aiBrief.copyFailed'))
+    } finally {
+      setIsCopying(false)
     }
   }
 
@@ -69,9 +79,9 @@ export default function AiHtmlBrief({
             : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
           {title || t('products.detail.aiBrief.title')}
         </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={handleCopy}>
+        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={handleCopy} disabled={isCopying}>
           <Copy className="size-3.5" aria-hidden="true" />
-          {copyLabel || t('products.detail.aiBrief.copy')}
+          {isCopying ? (copyingMessage || t('products.detail.aiBrief.copying')) : (copyLabel || t('products.detail.aiBrief.copy'))}
         </Button>
       </div>
       {open && (

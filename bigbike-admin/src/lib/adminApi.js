@@ -630,6 +630,21 @@ export async function fetchCategoryDetail(categoryId) {
   }
 }
 
+// Read-only catalog facts used by the AI content brief. The public facets
+// endpoint already applies the canonical PUBLISHED + non-discontinued gate,
+// counts descendants, deduplicates products, and returns effective prices.
+export async function fetchCatalogFacets({ category, lang } = {}) {
+  try {
+    const payload = await requestJson('/catalog/facets', {
+      query: { category, lang: lang ?? getContentLang() },
+      skipAuth: true,
+    })
+    return withLiveData(payload?.data ?? payload ?? {})
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function createCategory(input) {
   const payload = await requestJson('/admin/categories', {
     method: 'POST',

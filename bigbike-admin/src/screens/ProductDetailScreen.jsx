@@ -37,6 +37,7 @@ import { SeoIndexField } from '../components/SeoIndexField'
 import { parseSpecsFromHtml } from '../lib/specSheet'
 import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml } from '../lib/trustBadgesBlock'
+import { createProductAiPromptBuilder } from '../lib/aiContentProfile'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { SuitabilityBlockEditor, SizeGuideBlockEditor } from '../components/block-editor/blocks'
@@ -365,6 +366,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const selectedBrandLabel =
     findOptionById(brandOptions, form.brandId)?.name ||
     (form.brandId ? t('products.detail.optionNotFound', { id: form.brandId }) : undefined)
+
+  // All seven HTML editors use this one profile builder. It deliberately runs
+  // only when the editor's Copy button is pressed, so the profile reflects the
+  // latest server data plus the current unsaved form draft.
+  function getProductAiPrompt(blockType, basePrompt) {
+    return createProductAiPromptBuilder({
+      productId,
+      lang: contentLang,
+      form,
+      categoryOptions,
+      brandName: selectedBrandLabel,
+      fetchProductDetail,
+    })(blockType, basePrompt)
+  }
 
   // Product picker for the "Sản phẩm liên quan" section — debounced search,
   // self excluded so a product can't be added to its own related list.
@@ -1821,6 +1836,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   html={langValue('trustBadges')}
                   onHtmlChange={(v) => langChange('trustBadges', v)}
+                  aiPromptBuilder={getProductAiPrompt}
                 />
               </SectionCard>
 
@@ -1888,6 +1904,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   html={langValue('specStats')}
                   onHtmlChange={(v) => langChange('specStats', v)}
+                  aiPromptBuilder={getProductAiPrompt}
                 />
               </SectionCard>
 
@@ -1975,6 +1992,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       onChangeNegative={(next) => updateField('negativeNotes', next)}
                       disabled={isReadOnly}
                       contentLang={contentLang}
+                      aiPromptBuilder={getProductAiPrompt}
                     />
                   </div>
                 ) : (
@@ -2097,6 +2115,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     block={suitabilitySection}
                     disabled={isReadOnly}
                     contentLang={contentLang}
+                    aiPromptBuilder={getProductAiPrompt}
                     onChange={(patch) => updateField('suitabilitySection', { ...suitabilitySection, ...patch })}
                   />
                 )}
@@ -2120,6 +2139,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     block={sizeGuideSection}
                     disabled={isReadOnly}
                     contentLang={contentLang}
+                    aiPromptBuilder={getProductAiPrompt}
                     onChange={(patch) => updateField('sizeGuideSection', { ...sizeGuideSection, ...patch })}
                   />
                 )}
@@ -2142,6 +2162,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   html={langValue('specifications')}
                   onHtmlChange={(v) => langChange('specifications', v)}
+                  aiPromptBuilder={getProductAiPrompt}
                 />
               </SectionCard>
 
@@ -2170,6 +2191,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                   contentLang={contentLang}
+                  aiPromptBuilder={getProductAiPrompt}
                 />
               </SectionCard>
 

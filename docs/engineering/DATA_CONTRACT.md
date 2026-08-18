@@ -319,6 +319,14 @@ availability flag; it does not extend `PublishStatus` or `stockState`.
   `Discontinued`, and must not expose checkout/purchase controls.
 - A discontinued product remains `PUBLISHED`; `DRAFT`/`TRASH` behavior is unchanged.
 
+Owner display decision 2026-08-18: the `/sp/{slug}.html` page keeps the same URL and
+locale-resolved data. For a matching `PUBLISHED + discontinued=true` product, the web
+renders the complete existing detail payload (gallery, description, specifications, FAQs,
+videos, reviews and other PDP sections) and replaces only the price/variant/purchase area
+with the discontinued status panel. No mobile sticky purchase bar or alternate add-to-cart
+path may render. For a legacy-only row, the page uses its history fields and does not invent
+missing product data.
+
 Migration: `V1023__redirect_and_discontinued_catalog_rules.sql`.
 
 ### Legacy discontinued product history (`legacy_discontinued_products`)
@@ -334,7 +342,7 @@ có giá, SKU, tồn kho, trạng thái bán hay dữ liệu checkout.
 | `slug` | `VARCHAR(255)` | Legacy product slug, unique; web chỉ phục vụ qua `/sp/{slug}.html`. |
 | `name` / `name_en` | `VARCHAR(255)` | Tên hiển thị VI và EN; `name_en` rỗng được phép fallback VI. |
 | `brand_name` | `VARCHAR(255)` nullable | Nhãn lịch sử, không tạo hay yêu cầu brand còn public. |
-| `category_slug` | `VARCHAR(255)` | Danh mục public còn hiệu lực, dùng để gợi ý tối đa 3 hàng đang bán cùng nhóm. |
+| `category_slug` | `VARCHAR(255)` | Danh mục public còn hiệu lực, dùng để chọn 4–8 hàng đang bán phù hợp; web có thể dùng nhóm cha hoặc thứ tự bán chạy khi nhóm không còn hàng. |
 | `image_url` | `VARCHAR(2048)` nullable | Chỉ URL ảnh nguồn đã kiểm chứng; rỗng thì web dùng empty state, không gán ảnh sản phẩm khác. |
 | `enabled` | `BOOLEAN NOT NULL DEFAULT TRUE` | Tắt là URL không còn được nhận là trang lịch sử (để redirect/410 xử lý nếu có rule). |
 | `created_at` / `updated_at` | `TIMESTAMP` | Audit vận hành. |
@@ -673,6 +681,20 @@ suitability models and that structured edits preserve text and inline formatting
 Status: `CONFIRMED_FROM_OWNER_DECISION` — `BUSINESS_RULES.md` `PRODUCT_RULE_019`/`PRODUCT_RULE_020`, admin block
 editors and helpers under `bigbike-admin/src/screens/product-detail/`, `bigbike-admin/src/components/
 block-editor/`, and `bigbike-admin/src/lib/`.
+
+### Category intro HTML source and structured editor (owner decision 2026-08-18)
+
+`categories.intro_content` / `intro_content_en` are opaque rendered HTML fields and remain the only
+persisted source for the category intro. The admin structured tab parses recognized eyebrow, heading,
+intro, brand, FAQ and contact nodes as an editing convenience; it does not replace or normalize the
+whole field. A structured edit patches only the selected recognized node and preserves unknown
+standalone tables, images, columns, wrappers and their original order. Missing or extra recognized
+sections are valid states. FAQ question/answer pairing is positional by appearance, including legacy
+markup where all questions sit in one outer block.
+
+The category and product AI brief buttons are clipboard-only. They attach a fresh read-time profile to
+the existing localized prompt template. The profile is not persisted, does not change any API or
+database shape, and marks unavailable facts explicitly rather than guessing.
 
 **`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. **Không field nào bắt buộc riêng lẻ** — admin có thể lưu khối chỉ có ảnh, chỉ có chữ, hoặc cả hai; khối chỉ bị coi là rỗng và bị lọc bỏ trước khi gửi khi CẢ ảnh lẫn mọi phần chữ (VI **và** EN) đều trống (`cleanDescriptionBlocks` ở admin). Web tự chọn layout theo dữ liệu thực có (`featureHasImage`/`featureHasText` ở `description-blocks/grouping.ts`): đủ ảnh+chữ → 2 cột; chỉ chữ hoặc chỉ ảnh → full width, không chừa nửa cột trống. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 

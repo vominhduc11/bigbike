@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Audit All"
+  short_description: "Audit all BigBike business workflows"
+  default_prompt: "Use $workflow-audit-all to audit all remaining BigBike end-to-end workflows and update the workflow audit board."

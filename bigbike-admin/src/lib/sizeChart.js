@@ -11,8 +11,8 @@ import { hasHtmlInput, makeHtmlImportResult } from './htmlImport'
 
 export const SIZE_COL2_DEFAULT = 'Vòng đầu (cm)'
 
-/** Style inline chuẩn của bảng size trên PDP — đồng bộ với template trong aiBriefPrompt
- *  (locales `products.detail.sizeGuide.aiBriefPrompt`) để structured mode và AI ra cùng 1 giao diện. */
+/** Style inline chuẩn mà structured mode hiện có thể sinh ra cho bảng size trên PDP.
+ *  AI brief không yêu cầu các thuộc tính trình bày này; website tự lọc và áp dụng CSS. */
 const SIZE_TABLE_STYLE =
   'width:100%;min-width:520px;border-collapse:collapse;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-primary);margin:0 0 12px 0;'
 const SIZE_TH_STYLE =
