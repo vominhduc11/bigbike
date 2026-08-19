@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  * to surface whether the bug is in the write path or the read path.
  */
 @SpringBootTest
+@Sql(scripts = "/db/size-scale-test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @Transactional
 class VariantGalleryRoundtripTest {
 
@@ -740,6 +742,7 @@ class VariantGalleryRoundtripTest {
         req.setCategoryId(category.getId());
         req.setBrandId(brand.getId());
         req.setGender("Nam");
+        req.setSizeScaleId("size-scale-helmet-letter");
         req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
         req.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);

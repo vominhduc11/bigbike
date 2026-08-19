@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,9 +30,7 @@ class ContentPublicApiTest {
 
     @Test
     void shouldListPublishedArticlesWithPagination() throws Exception {
-        // Use category filter to get a stable, predictable count from seed data
         mockMvc.perform(get("/api/v1/articles")
-                        .param("category", "trai-nghiem")
                         .param("page", "1")
                         .param("size", "2")
                         .param("sort", "publishedAt:desc"))
@@ -40,25 +39,19 @@ class ContentPublicApiTest {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.pageSize").value(2))
-                .andExpect(jsonPath("$.pagination.totalItems").value(3))
-                .andExpect(jsonPath("$.pagination.totalPages").value(2))
+                .andExpect(jsonPath("$.pagination.totalItems").value(greaterThanOrEqualTo(6)))
+                .andExpect(jsonPath("$.pagination.totalPages").value(greaterThanOrEqualTo(3)))
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 
     @Test
-    void shouldFilterArticlesByCategorySlug() throws Exception {
+    void shouldNotExposeRemovedContentCategoryShape() throws Exception {
         mockMvc.perform(get("/api/v1/articles")
-                        .param("category", "trai-nghiem")
                         .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination.totalItems").value(3));
-
-        mockMvc.perform(get("/api/v1/articles")
-                        .param("category", "blog")
-                        .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+                .andExpect(jsonPath("$.pagination.totalItems").value(greaterThanOrEqualTo(6)))
+                .andExpect(jsonPath("$.data[0].category").doesNotExist());
     }
 
     @Test

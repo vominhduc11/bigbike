@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +26,32 @@ class HomepagePublicApiTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private CategoryJpaRepository categoryRepository;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        resetHomepageCategory("cat_helmet", "mu-bao-hiem", "Mu bao hiem", 2);
+        resetHomepageCategory("cat_jacket", "ao-giap-bao-ho", "Ao giap bao ho", 1);
+    }
+
+    private void resetHomepageCategory(String id, String slug, String name, int sortOrder) {
+        CategoryEntity category = categoryRepository.findById(id).orElseGet(CategoryEntity::new);
+        category.setId(id);
+        category.setSlug(slug);
+        category.setName(name);
+        category.setVisible(true);
+        category.setDeleted(false);
+        category.setShowOnHomepage(true);
+        category.setSortOrder(sortOrder);
+        if (category.getCreatedAt() == null) {
+            category.setCreatedAt(Instant.now());
+        }
+        category.setUpdatedAt(Instant.now());
+        categoryRepository.save(category);
     }
 
     // ── Product: homepage_block=FEATURED_GRID ────────────────────────────────
@@ -95,29 +119,16 @@ class HomepagePublicApiTest {
                 .andExpect(jsonPath("$.data[?(@.showOnHomepage != true)]").doesNotExist());
     }
 
-    // ── Article: category slug filter ────────────────────────────────────────
+    // ── Article: content categories were removed ─────────────────────────────
 
     @Test
-    void listArticlesByTraiNghiemCategory_returnsThreePublishedReviews() throws Exception {
+    void listArticles_doesNotExposeRemovedContentCategory() throws Exception {
         mockMvc.perform(get("/api/v1/articles")
-                        .param("category", "trai-nghiem")
                         .param("size", "3")
                         .param("sort", "publishedAt:desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(3)))
-                .andExpect(jsonPath("$.data[0].category.slug").value("trai-nghiem"))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void listArticlesByBlogCategory_returnsThreePublishedBlogPosts() throws Exception {
-        mockMvc.perform(get("/api/v1/articles")
-                        .param("category", "blog")
-                        .param("size", "3")
-                        .param("sort", "publishedAt:desc"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(3)))
-                .andExpect(jsonPath("$.data[0].category.slug").value("blog"))
+                .andExpect(jsonPath("$.data[0].category").doesNotExist())
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 

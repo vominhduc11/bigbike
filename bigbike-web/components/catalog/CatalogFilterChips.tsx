@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import type { CatalogFacets } from "@/lib/contracts/public";
-import { formatPriceInput } from "@/lib/utils/catalog-price-filter";
+import { formatPriceDisplay, getPriceDisplayRange } from "@/lib/utils/catalog-price-filter";
 import {
   countCatalogFilters,
   type CatalogFilterState,
@@ -41,13 +41,16 @@ export function CatalogFilterChips({ current, facets, onRemove, onClear, compact
     ...current.size.map((value) => ({ token: { group: "size" as const, value }, label: labels.get(value) ?? value })),
     ...(current.gender ? [{ token: { group: "gender" as const }, label: labels.get(current.gender) ?? current.gender }] : []),
     ...(current.minPrice != null || current.maxPrice != null
-      ? [{
-          token: { group: "price" as const },
-          label: t("activePrice", {
-            min: formatPriceInput(current.minPrice ?? facets?.priceRange?.minPrice ?? 0, locale),
-            max: current.maxPrice == null ? t("priceAndAbove") : `${formatPriceInput(current.maxPrice, locale)}₫`,
-          }),
-        }]
+      ? (() => {
+          const displayRange = facets?.priceRange ? getPriceDisplayRange(facets.priceRange) : null;
+          return [{
+            token: { group: "price" as const },
+            label: t("activePrice", {
+              min: formatPriceDisplay(current.minPrice ?? displayRange?.minPrice ?? 0, locale),
+              max: formatPriceDisplay(current.maxPrice ?? displayRange?.maxPrice ?? 0, locale),
+            }),
+          }];
+        })()
       : []),
     ...(current.inStock ? [{ token: { group: "stock" as const }, label: t("inStockOnly") }] : []),
   ];

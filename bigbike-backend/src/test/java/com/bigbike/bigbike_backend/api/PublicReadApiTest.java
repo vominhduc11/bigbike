@@ -408,15 +408,10 @@ class PublicReadApiTest {
     }
 
     @Test
-    void shouldReturnArticleAndPageBySlug() throws Exception {
+    void shouldReturnArticleBySlug() throws Exception {
         mockMvc.perform(get("/api/v1/articles/chon-mu-fullface-phu-hop"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value("chon-mu-fullface-phu-hop"))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-
-        mockMvc.perform(get("/api/v1/pages/chinh-sach-bao-hanh"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"))
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 

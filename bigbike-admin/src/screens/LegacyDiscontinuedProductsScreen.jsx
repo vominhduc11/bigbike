@@ -95,6 +95,7 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
     },
     onError: (error) => toast.error(error?.message || 'Không thể cập nhật trạng thái.'),
   })
+  const { mutate: toggleProduct, isPending: isTogglePending } = toggleMutation
 
   function closeForm() {
     setFormOpen(false)
@@ -147,7 +148,7 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
     ...(canUpdate ? [{
       key: 'actions', label: '', align: 'right',
       render: (item) => <span className="inline-flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={item.enabled ? 'Tắt hiển thị' : 'Bật hiển thị'} disabled={toggleMutation.isPending} onClick={() => toggleMutation.mutate({ id: item.id, enabled: !item.enabled })}>
+        <Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={item.enabled ? 'Tắt hiển thị' : 'Bật hiển thị'} disabled={isTogglePending} onClick={() => toggleProduct({ id: item.id, enabled: !item.enabled })}>
           {item.enabled ? <EyeOff size={16} /> : <Eye size={16} />}
         </Button>
         <Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={`Sửa ${item.name}`} onClick={() => openEdit(item)}>
@@ -155,7 +156,7 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
         </Button>
       </span>,
     }] : []),
-  ], [canUpdate, toggleMutation.isPending])
+  ], [canUpdate, isTogglePending, toggleProduct])
 
   if (state.status === 'error') {
     return <Screen><StatePanel tone="danger" title="Không tải được danh sách hàng ngừng bán" description={state.error} actionLabel="Thử lại" onAction={() => state.refetch()} /></Screen>

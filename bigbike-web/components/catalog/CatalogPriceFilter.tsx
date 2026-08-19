@@ -1,24 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
 import type { CatalogPriceRange } from "@/lib/contracts/public";
 import {
   buildPriceScale,
-  formatPriceInput,
   formatPriceAria,
-  normalizePriceSelection,
-  parsePriceInput,
+  formatPriceDisplay,
+  PRICE_TRACK_STEPS,
   priceRangeHasSelection,
-  priceSelectionToTickIndexes,
-  tickIndexesToPriceSelection,
-  type NormalizedPriceSelection,
+  priceSelectionToQueryBounds,
+  priceSelectionToSliderValues,
+  sliderValuesToPriceSelection,
+  snapPriceSelection,
 } from "@/lib/utils/catalog-price-filter";
 
 type CatalogPriceFilterProps = {
@@ -28,42 +25,6 @@ type CatalogPriceFilterProps = {
   queryHref: (override: Record<string, string | string[] | number | undefined>) => string;
   onCommit?: (minPrice: number | undefined, maxPrice: number | undefined) => void;
 };
-
-function countDigitsBeforeCaret(value: string, caret: number | null): number {
-  return (value.slice(0, caret ?? value.length).match(/\d/g) ?? []).length;
-}
-
-function updateInputWhileTyping(
-  event: ChangeEvent<HTMLInputElement>,
-  setValue: (value: string) => void,
-) {
-  const target = event.currentTarget;
-  const rawValue = target.value;
-  const selectionStart = target.selectionStart;
-  const selectionEnd = target.selectionEnd;
-  const digitsBeforeCaret = countDigitsBeforeCaret(rawValue, selectionStart);
-  const nextValue = rawValue.replace(/\D/g, "");
-  const nextCaret = selectionStart === selectionEnd
-    ? Math.min(digitsBeforeCaret, nextValue.length)
-    : nextValue.length;
-
-  setValue(nextValue);
-  queueMicrotask(() => {
-    if (document.activeElement === target) target.setSelectionRange(nextCaret, nextCaret);
-  });
-}
-
-function formatInputOnBlur(
-  value: string,
-  locale: string,
-  setValue: (value: string) => void,
-) {
-  setValue(formatPriceInput(value, locale));
-}
-
-function inputValue(value: number | undefined, locale: string): string {
-  return value == null ? "" : formatPriceInput(value, locale);
-}
 
 export function CatalogPriceFilter({
   range,
@@ -75,24 +36,19 @@ export function CatalogPriceFilter({
   const t = useTranslations("Catalog");
   const locale = useLocale();
   const router = useRouter();
+  const scale = useMemo(() => buildPriceScale(range), [range]);
   const committedSelection = useMemo(
-    () => normalizePriceSelection(range, currentMinPrice, currentMaxPrice)
-      ?? { minPrice: range.minPrice, maxPrice: range.maxPrice },
-    [currentMaxPrice, currentMinPrice, range],
-  );
-  const scale = useMemo(
-    () => buildPriceScale(range, [currentMinPrice, currentMaxPrice]),
-    [currentMaxPrice, currentMinPrice, range],
+    () => ({
+      minPrice: currentMinPrice ?? scale.minPrice,
+      maxPrice: currentMaxPrice ?? scale.maxPrice,
+    }),
+    [currentMaxPrice, currentMinPrice, scale.maxPrice, scale.minPrice],
   );
   const committedSliderValues = useMemo(
-    () => priceSelectionToTickIndexes(range, committedSelection, scale),
-    [committedSelection, range, scale],
+    () => priceSelectionToSliderValues(committedSelection, scale),
+    [committedSelection, scale],
   );
   const [sliderValues, setSliderValues] = useState<[number, number]>(() => committedSliderValues);
-  const [inputMin, setInputMin] = useState(() => inputValue(currentMinPrice, locale));
-  const [inputMax, setInputMax] = useState(() => inputValue(currentMaxPrice, locale));
-  const minInputRef = useRef<HTMLInputElement>(null);
-  const maxInputRef = useRef<HTMLInputElement>(null);
   const propsKey = useMemo(
     () => [
       range.minPrice,
@@ -100,9 +56,8 @@ export function CatalogPriceFilter({
       JSON.stringify(range.buckets ?? []),
       currentMinPrice ?? "",
       currentMaxPrice ?? "",
-      locale,
     ].join("|"),
-    [currentMaxPrice, currentMinPrice, locale, range.buckets, range.maxPrice, range.minPrice],
+    [currentMaxPrice, currentMinPrice, range.buckets, range.maxPrice, range.minPrice],
   );
   const previousPropsKey = useRef(propsKey);
 
@@ -110,207 +65,81 @@ export function CatalogPriceFilter({
     if (previousPropsKey.current === propsKey) return;
     previousPropsKey.current = propsKey;
     setSliderValues(committedSliderValues);
-    if (document.activeElement !== minInputRef.current) setInputMin(inputValue(currentMinPrice, locale));
-    if (document.activeElement !== maxInputRef.current) setInputMax(inputValue(currentMaxPrice, locale));
-  }, [committedSliderValues, currentMaxPrice, currentMinPrice, locale, propsKey]);
+  }, [committedSliderValues, propsKey]);
 
-  const syncInputs = useCallback((selection: NormalizedPriceSelection) => {
-    if (document.activeElement !== minInputRef.current) setInputMin(inputValue(selection.queryMinPrice, locale));
-    if (document.activeElement !== maxInputRef.current) setInputMax(inputValue(selection.queryMaxPrice, locale));
-  }, [locale]);
-
-  const commitSelection = useCallback((
-    rawMin: number | string | null | undefined,
-    rawMax: number | string | null | undefined,
-  ) => {
-    const normalized = normalizePriceSelection(range, rawMin, rawMax);
-    if (!normalized) return;
-    const nextScale = buildPriceScale(range, [normalized.minPrice, normalized.maxPrice]);
-    setSliderValues(priceSelectionToTickIndexes(range, normalized, nextScale));
-    syncInputs(normalized);
-    if (onCommit) {
-      onCommit(normalized.queryMinPrice, normalized.queryMaxPrice);
-    } else {
-      router.push(queryHref({
-        min_price: normalized.queryMinPrice,
-        max_price: normalized.queryMaxPrice,
-      }));
-    }
-  }, [onCommit, queryHref, range, router, syncInputs]);
-
-  const applyTypedInputs = useCallback(() => {
-    commitSelection(
-      parsePriceInput(inputMin, locale),
-      parsePriceInput(inputMax, locale),
-    );
-  }, [commitSelection, inputMax, inputMin, locale]);
-
-  const ticks = scale.ticks;
-  if (ticks.length < 2) return null;
-
+  const minPosition = Math.min(PRICE_TRACK_STEPS, Math.max(0, sliderValues[0] ?? 0));
+  const maxPosition = Math.min(PRICE_TRACK_STEPS, Math.max(0, sliderValues[1] ?? PRICE_TRACK_STEPS));
+  const liveSelection = sliderValuesToPriceSelection([minPosition, maxPosition], scale);
+  const liveMinPrice = Math.round(liveSelection.minPrice);
+  const liveMaxPrice = Math.round(liveSelection.maxPrice);
   const hasSelection = priceRangeHasSelection(range, currentMinPrice, currentMaxPrice);
-  const lastTickIndex = ticks.length - 1;
-  const minIndex = Math.min(lastTickIndex, Math.max(0, sliderValues[0] ?? 0));
-  const maxIndex = Math.min(lastTickIndex, Math.max(0, sliderValues[1] ?? lastTickIndex));
-  const minTick = ticks[minIndex] ?? ticks[0] ?? range.minPrice;
-  const maxTick = ticks[maxIndex] ?? ticks[lastTickIndex] ?? range.maxPrice;
-  const liveSelection = minIndex !== committedSliderValues[0] || maxIndex !== committedSliderValues[1];
-  const activeSlider = hasSelection || liveSelection;
-  const thumbsAreClose = Math.abs(maxIndex - minIndex) / Math.max(1, lastTickIndex) <= 0.16;
-  const maxIsOpenEnded = scale.openEndedIndex === maxIndex && currentMaxPrice == null;
-  const minLabel = formatPriceInput(minTick, locale);
-  const maxLabel = `${formatPriceInput(maxTick, locale)}${maxIsOpenEnded ? ` ${t("priceAndAbove")}` : ""}`;
-  const thumbLabelPosition = (index: number) => {
-    if (index === 0) return "translate-x-0";
-    if (index === lastTickIndex) return "-translate-x-full";
-    return "-translate-x-1/2";
-  };
-  const thumbAriaText = (value: number, openEnded: boolean) => (
-    `${formatPriceAria(value, locale)}${openEnded ? ` ${t("priceAndAbove")}` : ""}`
-  );
+  const isLiveSelection = minPosition !== committedSliderValues[0] || maxPosition !== committedSliderValues[1];
+  const activeSlider = hasSelection || isLiveSelection;
   const thumbProps = [
     {
       "aria-label": t("priceMinAria"),
-      "aria-valuemin": ticks[0],
-      "aria-valuemax": ticks[lastTickIndex],
-      "aria-valuenow": minTick,
-      "aria-valuetext": thumbAriaText(minTick, false),
+      "aria-valuemin": scale.minPrice,
+      "aria-valuemax": scale.maxPrice,
+      "aria-valuenow": liveMinPrice,
+      "aria-valuetext": formatPriceAria(liveMinPrice, locale),
     },
     {
       "aria-label": t("priceMaxAria"),
-      "aria-valuemin": ticks[0],
-      "aria-valuemax": ticks[lastTickIndex],
-      "aria-valuenow": maxTick,
-      "aria-valuetext": thumbAriaText(maxTick, maxIsOpenEnded),
+      "aria-valuemin": scale.minPrice,
+      "aria-valuemax": scale.maxPrice,
+      "aria-valuenow": liveMaxPrice,
+      "aria-valuetext": formatPriceAria(liveMaxPrice, locale),
     },
   ];
 
-  /** Enter is an explicit action; moving focus between boxes is not. */
-  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setInputMin(inputValue(currentMinPrice, locale));
-      setInputMax(inputValue(currentMaxPrice, locale));
-      event.currentTarget.blur();
+  function commitSliderValues(values: number[]) {
+    const snappedSelection = snapPriceSelection(sliderValuesToPriceSelection(values, scale), scale);
+    const nextSliderValues = priceSelectionToSliderValues(snappedSelection, scale);
+    const queryBounds = priceSelectionToQueryBounds(snappedSelection, scale);
+    setSliderValues(nextSliderValues);
+
+    if (onCommit) {
+      onCommit(queryBounds.minPrice, queryBounds.maxPrice);
       return;
     }
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    applyTypedInputs();
-    event.currentTarget.blur();
-  };
+
+    router.push(queryHref({
+      min_price: queryBounds.minPrice,
+      max_price: queryBounds.maxPrice,
+    }));
+  }
+
+  if (scale.minPrice >= scale.maxPrice) return null;
 
   return (
     <div
-      className="space-y-4"
+      className="space-y-2"
       data-price-filter="true"
       data-price-filter-active={activeSlider ? "true" : "false"}
-      data-price-scale-open-ended={scale.openEndedIndex == null ? "false" : "true"}
+      data-price-scale-density={scale.usesDensity ? "true" : "false"}
       role="group"
       aria-label={t("priceRangeAria")}
     >
-      <div className="relative h-12">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-12" aria-hidden="true">
-          <span
-            className={cn("absolute top-0 whitespace-nowrap text-a5-meta text-foreground", thumbLabelPosition(minIndex))}
-            data-price-thumb-label="min"
-            style={{ left: `${(minIndex / lastTickIndex) * 100}%` }}
-          >
-            {minLabel}
-          </span>
-          <span
-            className={cn(
-              "absolute whitespace-nowrap text-a5-meta text-foreground",
-              thumbsAreClose ? "top-6" : "top-0",
-              thumbLabelPosition(maxIndex),
-            )}
-            data-price-thumb-label="max"
-            style={{ left: `${(maxIndex / lastTickIndex) * 100}%` }}
-          >
-            {maxLabel}
-          </span>
-        </div>
-
-        <Slider
-          min={0}
-          max={lastTickIndex}
-          step={1}
-          value={[minIndex, maxIndex]}
-          thumbCount={2}
-          thumbProps={thumbProps}
-          trackClassName="bg-border-default"
-          rangeClassName={activeSlider ? "bg-brand" : "bg-transparent"}
-          aria-label={t("priceRangeAria")}
-          className="relative z-10 h-11"
-          onValueChange={(values) => setSliderValues([values[0] ?? 0, values[1] ?? lastTickIndex])}
-          onValueCommit={(values) => {
-            const indexes = [values[0] ?? 0, values[1] ?? lastTickIndex];
-            const selection = tickIndexesToPriceSelection(range, indexes, scale);
-            const openEndedMax = scale.openEndedIndex === Math.max(...indexes);
-            commitSelection(selection.minPrice, openEndedMax ? undefined : selection.maxPrice);
-          }}
-        />
+      <div className="flex items-center justify-between gap-3 whitespace-nowrap font-body text-a5-meta text-foreground" data-price-range-label="true">
+        <span>{formatPriceDisplay(liveMinPrice, locale)}</span>
+        <span aria-hidden className="shrink-0 text-muted-foreground">–</span>
+        <span className="text-right">{formatPriceDisplay(liveMaxPrice, locale)}</span>
       </div>
 
-      <div className="flex items-center justify-between gap-3 text-a5-meta text-muted-foreground">
-        <span>{formatPriceInput(range.minPrice, locale)}</span>
-        <span>{formatPriceInput(range.maxPrice, locale)}</span>
-      </div>
-
-      <div className="grid min-w-0 grid-cols-2 gap-3">
-        <label className="min-w-0 space-y-1">
-          <span className="font-body text-a5-meta text-muted-foreground">{t("priceFrom")}</span>
-          <Input
-            ref={minInputRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={inputMin}
-            placeholder={formatPriceInput(range.minPrice, locale)}
-            data-price-input="min"
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={(event) => updateInputWhileTyping(event, setInputMin)}
-            onBlur={() => formatInputOnBlur(inputMin, locale, setInputMin)}
-            onKeyDown={handleInputKeyDown}
-            aria-label={t("priceFrom")}
-          />
-        </label>
-        <label className="min-w-0 space-y-1">
-          <span className="font-body text-a5-meta text-muted-foreground">{t("priceTo")}</span>
-          <Input
-            ref={maxInputRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={inputMax}
-            placeholder={formatPriceInput(range.maxPrice, locale)}
-            data-price-input="max"
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={(event) => updateInputWhileTyping(event, setInputMax)}
-            onBlur={() => formatInputOnBlur(inputMax, locale, setInputMax)}
-            onKeyDown={handleInputKeyDown}
-            aria-label={t("priceTo")}
-          />
-        </label>
-      </div>
-
-      <p className="font-body text-a5-meta text-muted-foreground" data-price-range-hint="true">
-        {t("priceRangeHint", {
-          min: formatPriceInput(range.minPrice, locale),
-          max: formatPriceInput(range.maxPrice, locale),
-        })}
-      </p>
-
-      <Button
-        type="button"
-        variant="primary"
-        size="sm"
-        className="min-h-11 w-full rounded-none font-body normal-case tracking-normal"
-        data-price-apply="true"
-        onClick={applyTypedInputs}
-      >
-        {t("applyPrice")}
-      </Button>
+      <Slider
+        min={0}
+        max={PRICE_TRACK_STEPS}
+        step={1}
+        value={[minPosition, maxPosition]}
+        thumbCount={2}
+        thumbProps={thumbProps}
+        trackClassName="bg-border-default"
+        rangeClassName="bg-brand"
+        aria-label={t("priceRangeAria")}
+        className="relative z-10 h-11"
+        onValueChange={(values) => setSliderValues([values[0] ?? 0, values[1] ?? PRICE_TRACK_STEPS])}
+        onValueCommit={commitSliderValues}
+      />
     </div>
   );
 }

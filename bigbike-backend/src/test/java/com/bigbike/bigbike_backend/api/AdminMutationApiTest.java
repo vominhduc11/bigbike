@@ -43,7 +43,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
-@Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(
+        scripts = {"/db/test-seed.sql", "/db/size-scale-test-seed.sql"},
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS
+)
 class AdminMutationApiTest {
 
     private static final String MEDIA_PUBLIC_BASE_URL = "http://localhost:9000/bigbike-media";
@@ -636,6 +639,7 @@ class AdminMutationApiTest {
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
         create.setGender("Nam");
+        create.setSizeScaleId("size-scale-helmet-letter");
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");

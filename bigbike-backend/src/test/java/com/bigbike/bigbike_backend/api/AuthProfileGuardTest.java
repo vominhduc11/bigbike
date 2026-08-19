@@ -18,6 +18,10 @@ import org.springframework.web.context.WebApplicationContext;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.flyway.enabled=false",
         "spring.datasource.url=jdbc:h2:mem:bigbike-prod-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=VALUE",
+        "bigbike.rate-limit.enabled=true",
+        "bigbike.rate-limit.store=redis",
+        "bigbike.rate-limit.redis-url=redis://redis:6379",
+        "bigbike.rate-limit.hmac-secret=prod-rate-limit-test-secret-strong-enough-abc123",
         "bigbike.cors.allowed-origins=https://bigbike.vn,https://admin.bigbike.vn"
 })
 class AuthProfileGuardTest {

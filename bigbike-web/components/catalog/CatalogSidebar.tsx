@@ -11,10 +11,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { CatalogFacets, FacetBucket, SizeBucket } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/utils/format";
 import {
   clearCatalogFilters,
   countCatalogFilters,
@@ -30,6 +32,15 @@ export type { CatalogFilterState } from "@/lib/utils/catalog-filter-state";
 
 const DESKTOP_OPEN_KEY = "bb-catalog-filter-open-v2";
 const DEFAULT_DESKTOP_OPEN = ["brand", "price"];
+
+function brandInitials(label: string): string {
+  return label.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "—";
+}
+
+function internalMediaUrl(url: string | null | undefined): string | null {
+  const resolved = resolveMediaUrl(url?.trim());
+  return resolved?.startsWith("/") ? resolved : null;
+}
 
 type CatalogSidebarProps = {
   facets?: CatalogFacets | null;
@@ -69,6 +80,7 @@ function FacetList({
   onToggle,
   searchable,
   colorDots = false,
+  brandLogos = false,
   grid = false,
 }: {
   rows: FacetBucket[];
@@ -76,6 +88,7 @@ function FacetList({
   onToggle: (key: string) => void;
   searchable?: boolean;
   colorDots?: boolean;
+  brandLogos?: boolean;
   grid?: boolean;
 }) {
   const t = useTranslations("Catalog");
@@ -86,7 +99,7 @@ function FacetList({
   const hasMore = filtered.length > 8 && !query;
 
   return (
-    <div>
+    <div data-brand-filter={brandLogos ? "true" : undefined}>
       {searchable && rows.length > 10 ? (
         <label className="relative mb-3 block">
           <span className="sr-only">{t("brandSearchAria")}</span>
@@ -102,9 +115,13 @@ function FacetList({
       <ul className={cn("m-0 list-none p-0", grid ? "grid grid-cols-2 gap-2" : "space-y-1")}>
         {visible.map((row) => {
           const active = selected.includes(row.key);
+          const logoUrl = brandLogos ? internalMediaUrl(row.image?.url) : null;
+          const logoImage = logoUrl && row.image
+            ? { ...row.image, url: logoUrl, alt: "" }
+            : null;
           return (
             <li key={row.key}>
-              <label className={cn(
+              <label data-brand-filter-row={brandLogos ? "true" : undefined} className={cn(
                 "flex min-h-11 cursor-pointer items-center gap-3 py-1 text-a5-meta font-semibold text-muted-foreground",
                 grid && "border border-border px-3 transition-colors hover:border-brand hover:bg-brand-soft",
                 active && grid && "border-brand bg-brand-soft",
@@ -120,6 +137,21 @@ function FacetList({
                     className="h-5 w-5 shrink-0 rounded-full border border-border"
                     style={{ backgroundColor: row.swatch ?? "transparent" }}
                   />
+                ) : null}
+                {brandLogos ? (
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden border border-border bg-muted text-b5-label font-bold leading-none text-muted-foreground" data-brand-logo="true">
+                    {logoImage ? (
+                      <MediaImage
+                        image={logoImage}
+                        altFallback=""
+                        width={24}
+                        height={24}
+                        className="h-6 w-6 object-contain"
+                      />
+                    ) : (
+                      <span aria-hidden>{brandInitials(row.label)}</span>
+                    )}
+                  </span>
                 ) : null}
                 <span className={cn("min-w-0 flex-1", active && "text-brand")}>{row.label}</span>
                 <span aria-hidden>({row.count})</span>
@@ -297,7 +329,7 @@ export function CatalogSidebar({
 
   function content(group: CatalogFilterGroupKey, state: CatalogFilterState, change: (next: CatalogFilterState) => void, mobile: boolean) {
     if (group === "brand") return (
-      <FacetList rows={facets?.brands ?? []} selected={state.brand} searchable onToggle={(key) => change({ ...state, brand: toggleCatalogArrayValue(state.brand, key) })} />
+      <FacetList rows={facets?.brands ?? []} selected={state.brand} searchable brandLogos onToggle={(key) => change({ ...state, brand: toggleCatalogArrayValue(state.brand, key) })} />
     );
     if (group === "price" && facets?.priceRange) return (
       <CatalogPriceFilter

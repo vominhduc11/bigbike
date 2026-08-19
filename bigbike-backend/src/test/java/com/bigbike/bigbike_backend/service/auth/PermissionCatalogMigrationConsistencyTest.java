@@ -72,6 +72,11 @@ class PermissionCatalogMigrationConsistencyTest {
                 Matcher matcher = GRANT_TUPLE.matcher(statement);
                 while (matcher.find()) {
                     String permission = matcher.group(2);
+                    // V372 uses INSERT ... SELECT ... WHERE id IN ('ADMIN', 'EDITOR').
+                    // The tuple scanner must not mistake that role-id list for a permission grant.
+                    if (!permission.contains(".") && !WILDCARD.equals(permission)) {
+                        continue;
+                    }
                     if (WILDCARD.equals(permission)
                             || PermissionCatalog.ALL_KEYS.contains(permission)
                             || PERMISSIONS_FROM_REMOVED_FEATURES.contains(permission)) {

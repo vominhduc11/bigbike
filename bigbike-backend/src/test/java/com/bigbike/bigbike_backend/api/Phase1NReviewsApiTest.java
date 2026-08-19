@@ -773,7 +773,9 @@ class Phase1NReviewsApiTest {
                         .with(remoteAddress("127.0.0.1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(statusBody(pendingReviewId, "APPROVED"))
-                        .header("X-Forwarded-For", "198.51.100.77, 127.0.0.1")
+                        // The resolver accepts only the single canonical address emitted by the
+                        // trusted ingress; a forwarded chain is deliberately rejected.
+                        .header("X-Forwarded-For", "198.51.100.77")
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk());
 

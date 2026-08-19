@@ -1,13 +1,11 @@
 import { PRICE_PARAM_MAX } from "@/lib/constants/catalog";
 import type { CatalogPriceRange } from "@/lib/contracts/public";
 
-/**
- * Kept as response metadata for compatibility with the public facets contract.
- * The storefront deliberately does not use it as an offset from minPrice.
- */
-export const PRICE_FILTER_STEP = 50_000;
-export const PRICE_TICK_LIMIT = 64;
-export const PRICE_DENSITY_CUTOFF = 0.9;
+/** Number of logical positions used by the continuous slider. */
+export const PRICE_TRACK_STEPS = 1_000;
+
+/** Small linear contribution keeps empty histogram gaps reachable. */
+const LINEAR_SCALE_WEIGHT = 0.08;
 
 export type PriceSelection = {
   minPrice: number;
@@ -19,12 +17,14 @@ export type NormalizedPriceSelection = PriceSelection & {
   queryMaxPrice?: number;
 };
 
-export type PriceScale = {
-  ticks: number[];
-  /** Index of the rounded cap whose meaning is "this value and above". */
-  openEndedIndex: number | null;
-  /** The rounded cap value shown beside the open-ended tick. */
-  openEndedValue?: number;
+export type PriceDisplayRange = PriceSelection;
+
+export type PriceScale = PriceDisplayRange & {
+  actualMinPrice: number;
+  actualMaxPrice: number;
+  usesDensity: boolean;
+  priceToPosition: (price: number) => number;
+  positionToPrice: (position: number) => number;
 };
 
 function finiteInteger(value: number | string | null | undefined): number | undefined {
@@ -33,12 +33,7 @@ function finiteInteger(value: number | string | null | undefined): number | unde
 
   const trimmed = value.trim();
   if (!trimmed) return undefined;
-  const direct = Number(trimmed);
-  if (Number.isFinite(direct)) return Math.round(direct);
-
-  const digits = trimmed.replace(/[^\d-]/g, "");
-  if (!digits || digits === "-") return undefined;
-  const parsed = Number(digits);
+  const parsed = Number(trimmed.replace(/[^\d-]/g, ""));
   return Number.isFinite(parsed) ? Math.round(parsed) : undefined;
 }
 
@@ -50,154 +45,147 @@ function numberFormatLocale(locale: string): "vi-VN" | "en-US" {
   return locale === "vi" ? "vi-VN" : "en-US";
 }
 
-/** Parses the locale-formatted value used by the price inputs. */
-export function parsePriceInput(
-  value: number | string | null | undefined,
-  locale: string,
-): number | undefined {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? Math.round(value) : undefined;
-  }
-  if (value == null) return undefined;
-
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "-") return undefined;
-  const groupingSeparator = locale === "vi" ? "." : ",";
-  const normalized = trimmed.replaceAll(groupingSeparator, "").replace(/[^\d-]/g, "");
-  if (!normalized || normalized === "-") return undefined;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? Math.round(parsed) : undefined;
-}
-
-/** Formats a value without preventing an empty or in-progress negative edit. */
+/** Formats a full VND amount without shortening it to millions/billions. */
 export function formatPriceInput(
   value: number | string | null | undefined,
   locale: string,
 ): string {
-  if (value == null || value === "") return "";
-  if (value === "-") return "-";
-  const parsed = parsePriceInput(value, locale);
+  const parsed = finiteInteger(value);
   if (parsed == null) return "";
   return new Intl.NumberFormat(numberFormatLocale(locale), {
     maximumFractionDigits: 0,
   }).format(parsed);
 }
 
+/** Formats the amount together with the locale-appropriate currency unit. */
+export function formatPriceDisplay(value: number, locale: string): string {
+  const formatted = formatPriceInput(value, locale);
+  return locale === "vi" ? `${formatted}₫` : `${formatted} VND`;
+}
+
 function priceStepAt(value: number): number {
   if (value < 1_000_000) return 50_000;
-  if (value <= 5_000_000) return 100_000;
-  return 500_000;
+  if (value <= 5_000_000) return 500_000;
+  return 1_000_000;
+}
+
+function roundDown(value: number, step: number): number {
+  return Math.floor(value / step) * step;
 }
 
 function roundUp(value: number, step: number): number {
   return Math.ceil(value / step) * step;
 }
 
-function nextRoundTick(value: number): number {
-  if (value < 1_000_000) return Math.min(1_000_000, roundUp(value + 1, 50_000));
-  if (value < 5_000_000) return Math.min(5_000_000, roundUp(value + 1, 100_000));
-  return roundUp(value + 1, 500_000);
-}
-
-function densityCutoff(range: CatalogPriceRange): number {
-  const buckets = (Array.isArray(range.buckets) ? range.buckets : [])
-    .filter((bucket) => Number.isFinite(bucket.count) && bucket.count > 0)
-    .map((bucket) => ({
-      maxPrice: clamp(Math.round(bucket.maxPrice), range.minPrice, range.maxPrice),
-      count: bucket.count,
-    }))
-    .sort((left, right) => left.maxPrice - right.maxPrice);
-  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
-  if (!total) return range.maxPrice;
-
-  const target = total * PRICE_DENSITY_CUTOFF;
-  let cumulative = 0;
-  for (const bucket of buckets) {
-    cumulative += bucket.count;
-    if (cumulative >= target) return bucket.maxPrice;
-  }
-  return range.maxPrice;
-}
-
-function addRoundTicks(minPrice: number, maxPrice: number): number[] {
-  const ticks = [minPrice];
-  let next = nextRoundTick(minPrice);
-  while (next < maxPrice) {
-    if (next > ticks[ticks.length - 1]) ticks.push(next);
-    next = nextRoundTick(next);
-  }
-  if (ticks[ticks.length - 1] !== maxPrice) ticks.push(maxPrice);
-  return ticks;
-}
-
-function compressTicks(ticks: number[], requiredValues: number[]): number[] {
-  if (ticks.length <= PRICE_TICK_LIMIT) return ticks;
-
-  const required = new Set(requiredValues);
-  [1_000_000, 5_000_000].forEach((value) => {
-    if (ticks.includes(value)) required.add(value);
-  });
-
-  let stride = 2;
-  while (stride < ticks.length) {
-    const reduced = ticks.filter((value, index) => (
-      index === 0
-      || index === ticks.length - 1
-      || index % stride === 0
-      || required.has(value)
-    ));
-    if (reduced.length <= PRICE_TICK_LIMIT) return reduced;
-    stride += 1;
-  }
-  return [ticks[0], ...Array.from(required).filter((value) => value !== ticks[0] && value !== ticks.at(-1)).sort((a, b) => a - b), ticks.at(-1)!].slice(0, PRICE_TICK_LIMIT);
-}
-
-/**
- * Builds the visual scale independently from the true API endpoints. The first
- * endpoint stays exact, interior values are round money marks, and a long price
- * tail becomes one open-ended final mark. `extraValues` keeps a typed value
- * visible on the slider even when it is not one of the round marks.
- */
-export function buildPriceScale(
-  range: CatalogPriceRange,
-  extraValues: Array<number | undefined> = [],
-): PriceScale {
-  if (!Number.isFinite(range.minPrice) || !Number.isFinite(range.maxPrice) || range.minPrice >= range.maxPrice) {
-    return { ticks: [], openEndedIndex: null };
-  }
-
-  const cutoff = densityCutoff(range);
-  const roundedCutoff = clamp(roundUp(cutoff, priceStepAt(cutoff)), range.minPrice, range.maxPrice);
-  const hasOpenEndedMax = roundedCutoff < range.maxPrice;
-  const cappedMax = hasOpenEndedMax ? roundedCutoff : range.maxPrice;
-  const baseTicks = addRoundTicks(range.minPrice, cappedMax);
-  const extras = extraValues
-    .map((value) => finiteInteger(value))
-    .filter((value): value is number => value != null)
-    .map((value) => clamp(value, 0, PRICE_PARAM_MAX));
-  const merged = [...new Set([...baseTicks, ...extras])].sort((left, right) => left - right);
-  const ticks = compressTicks(merged, [range.minPrice, cappedMax, ...extras]);
-  const openEndedIndex = hasOpenEndedMax ? ticks.indexOf(cappedMax) : null;
+/** Rounds the true facet endpoints outward for a readable public scale. */
+export function getPriceDisplayRange(range: CatalogPriceRange): PriceDisplayRange {
+  const minStep = priceStepAt(range.minPrice);
+  const maxStep = priceStepAt(range.maxPrice);
+  const roundedMin = roundDown(range.minPrice, minStep);
+  const roundedMax = Math.min(PRICE_PARAM_MAX, roundUp(range.maxPrice, maxStep));
 
   return {
-    ticks,
-    openEndedIndex: openEndedIndex != null && openEndedIndex >= 0 ? openEndedIndex : null,
-    openEndedValue: hasOpenEndedMax ? cappedMax : undefined,
+    minPrice: roundedMin > 0 ? roundedMin : range.minPrice,
+    maxPrice: Math.max(range.maxPrice, roundedMax),
   };
 }
 
-/** Convenience API retained for callers/tests that only need the numeric ticks. */
-export function buildPriceTicks(
+function normalizedBuckets(range: CatalogPriceRange) {
+  return (Array.isArray(range.buckets) ? range.buckets : [])
+    .map((bucket) => ({
+      minPrice: clamp(Math.round(bucket.minPrice), range.minPrice, range.maxPrice),
+      maxPrice: clamp(Math.round(bucket.maxPrice), range.minPrice, range.maxPrice),
+      count: Number.isFinite(bucket.count) && bucket.count > 0 ? bucket.count : 0,
+    }))
+    .filter((bucket) => bucket.maxPrice >= bucket.minPrice)
+    .sort((left, right) => left.minPrice - right.minPrice || left.maxPrice - right.maxPrice);
+}
+
+function histogramCdf(
+  price: number,
   range: CatalogPriceRange,
-  extraValues: Array<number | undefined> = [],
-): number[] {
-  return buildPriceScale(range, extraValues).ticks;
+  buckets: ReturnType<typeof normalizedBuckets>,
+  total: number,
+): number {
+  if (!total) return (price - range.minPrice) / Math.max(1, range.maxPrice - range.minPrice);
+
+  let cumulative = 0;
+  for (const bucket of buckets) {
+    if (price >= bucket.maxPrice) {
+      cumulative += bucket.count;
+      continue;
+    }
+    if (price > bucket.minPrice && bucket.maxPrice > bucket.minPrice) {
+      cumulative += bucket.count * ((price - bucket.minPrice) / (bucket.maxPrice - bucket.minPrice));
+    }
+    break;
+  }
+  return clamp(cumulative / total, 0, 1);
+}
+
+function shouldUseDensityScale(
+  displayRange: PriceDisplayRange,
+  buckets: ReturnType<typeof normalizedBuckets>,
+): boolean {
+  const span = displayRange.maxPrice - displayRange.minPrice;
+  const narrowRange = span <= Math.max(1_000_000, displayRange.minPrice * 2);
+  return !narrowRange && buckets.some((bucket) => bucket.count > 0);
 }
 
 /**
- * Normalizes URL and typed values without snapping them to a display tick.
- * Missing bounds mean the true context endpoint; explicit values retain their
- * exact integer so the backend can honor a typed value outside the visual scale.
+ * Builds the complete visual price scale. Density mode blends the histogram
+ * quantile with a small linear component so even empty price gaps remain
+ * reachable instead of collapsing to one point.
+ */
+export function buildPriceScale(range: CatalogPriceRange): PriceScale {
+  const displayRange = getPriceDisplayRange(range);
+  const buckets = normalizedBuckets(range);
+  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+  const usesDensity = shouldUseDensityScale(displayRange, buckets);
+  const displaySpan = Math.max(1, displayRange.maxPrice - displayRange.minPrice);
+
+  const linearPosition = (price: number) => (
+    clamp((price - displayRange.minPrice) / displaySpan, 0, 1)
+  );
+
+  const priceToPosition = (price: number) => {
+    const normalizedPrice = clamp(price, displayRange.minPrice, displayRange.maxPrice);
+    const linear = linearPosition(normalizedPrice);
+    if (!usesDensity) return linear * PRICE_TRACK_STEPS;
+
+    const histogram = histogramCdf(normalizedPrice, range, buckets, total);
+    return (linear * LINEAR_SCALE_WEIGHT + histogram * (1 - LINEAR_SCALE_WEIGHT)) * PRICE_TRACK_STEPS;
+  };
+
+  const positionToPrice = (position: number) => {
+    const normalizedPosition = clamp(position, 0, PRICE_TRACK_STEPS) / PRICE_TRACK_STEPS;
+    if (!usesDensity) return displayRange.minPrice + normalizedPosition * displaySpan;
+    if (normalizedPosition <= 0) return displayRange.minPrice;
+    if (normalizedPosition >= 1) return displayRange.maxPrice;
+
+    let low = displayRange.minPrice;
+    let high = displayRange.maxPrice;
+    for (let iteration = 0; iteration < 36; iteration += 1) {
+      const middle = (low + high) / 2;
+      if (priceToPosition(middle) < normalizedPosition * PRICE_TRACK_STEPS) low = middle;
+      else high = middle;
+    }
+    return (low + high) / 2;
+  };
+
+  return {
+    ...displayRange,
+    actualMinPrice: range.minPrice,
+    actualMaxPrice: range.maxPrice,
+    usesDensity,
+    priceToPosition,
+    positionToPrice,
+  };
+}
+
+/**
+ * Normalizes URL price values against the actual facet endpoints. Explicit
+ * values remain exact so existing shared URLs continue to work.
  */
 export function normalizePriceSelection(
   range: CatalogPriceRange | null | undefined,
@@ -220,47 +208,64 @@ export function normalizePriceSelection(
   };
 }
 
-export function priceSelectionToTickIndexes(
-  range: CatalogPriceRange,
+/** Maps an explicit/current selection into continuous slider coordinates. */
+export function priceSelectionToSliderValues(
   selection: PriceSelection,
-  scale = buildPriceScale(range, [selection.minPrice, selection.maxPrice]),
+  scale: PriceScale,
 ): [number, number] {
-  const ticks = scale.ticks;
-  if (ticks.length < 2) return [0, 0];
-  const closest = (value: number) => {
-    let index = 0;
-    let distance = Math.abs(ticks[0] - value);
-    ticks.forEach((tick, candidate) => {
-      const candidateDistance = Math.abs(tick - value);
-      if (candidateDistance < distance) {
-        index = candidate;
-        distance = candidateDistance;
-      }
-    });
-    return index;
-  };
-  const indexes = [closest(selection.minPrice), closest(selection.maxPrice)].sort((left, right) => left - right);
-  return [indexes[0]!, indexes[1]!];
+  const values = [scale.priceToPosition(selection.minPrice), scale.priceToPosition(selection.maxPrice)]
+    .sort((left, right) => left - right);
+  return [values[0] ?? 0, values[1] ?? PRICE_TRACK_STEPS];
 }
 
-export function tickIndexesToPriceSelection(
-  range: CatalogPriceRange,
-  indexes: number[],
-  scale = buildPriceScale(range),
+/** Converts live slider coordinates back to unsnapped money values. */
+export function sliderValuesToPriceSelection(
+  values: number[],
+  scale: PriceScale,
 ): PriceSelection {
-  const ticks = scale.ticks;
-  const last = ticks.length - 1;
-  if (last < 1) return { minPrice: range.minPrice, maxPrice: range.maxPrice };
-  const minIndex = clamp(Math.round(indexes[0] ?? 0), 0, last);
-  const maxIndex = clamp(Math.round(indexes[1] ?? last), 0, last);
-  return minIndex <= maxIndex
-    ? { minPrice: ticks[minIndex]!, maxPrice: ticks[maxIndex]! }
-    : { minPrice: ticks[maxIndex]!, maxPrice: ticks[minIndex]! };
+  const prices = [
+    scale.positionToPrice(values[0] ?? 0),
+    scale.positionToPrice(values[1] ?? PRICE_TRACK_STEPS),
+  ].sort((left, right) => left - right);
+  return {
+    minPrice: prices[0] ?? scale.minPrice,
+    maxPrice: prices[1] ?? scale.maxPrice,
+  };
+}
+
+/** Snaps lower/upper bounds outward only after the user releases the handle. */
+export function snapPriceSelection(
+  selection: PriceSelection,
+  scale: PriceScale,
+): PriceSelection {
+  const minPrice = clamp(
+    roundDown(selection.minPrice, priceStepAt(selection.minPrice)),
+    scale.minPrice,
+    scale.maxPrice,
+  );
+  const maxPrice = clamp(
+    roundUp(selection.maxPrice, priceStepAt(selection.maxPrice)),
+    scale.minPrice,
+    scale.maxPrice,
+  );
+  return minPrice <= maxPrice
+    ? { minPrice, maxPrice }
+    : { minPrice: maxPrice, maxPrice: minPrice };
+}
+
+/** Converts a snapped visual range to the public URL bounds. */
+export function priceSelectionToQueryBounds(
+  selection: PriceSelection,
+  scale: PriceScale,
+): { minPrice?: number; maxPrice?: number } {
+  return {
+    minPrice: selection.minPrice <= scale.minPrice ? undefined : selection.minPrice,
+    maxPrice: selection.maxPrice >= scale.maxPrice ? undefined : selection.maxPrice,
+  };
 }
 
 export function formatPriceAria(value: number, locale: string): string {
-  const formatted = formatPriceInput(Math.max(0, Math.round(value)), locale);
-  return locale === "vi" ? `${formatted} đồng` : `${formatted} VND`;
+  return formatPriceDisplay(Math.max(0, Math.round(value)), locale);
 }
 
 export function priceRangeHasSelection(
