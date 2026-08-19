@@ -617,9 +617,9 @@ export const config = {
     // Locale routing only applies to document URLs. Public assets, media and
     // metadata files must retain their original paths instead of being rewritten
     // beneath /vi or /en.
-    // `xml` giữ cho /sitemap.xml + /brand/favicon/browserconfig.xml, `ttf|otf|eot`
-    // giữ cho 12 font trong public/fonts, còn `mp4|webm|mp3|wasm|mjs` là loại file
-    // tĩnh có thể thêm sau này. Thiếu chúng thì next-intl viết lại đường dẫn xuống
+    // `xml` giữ cho /sitemap.xml + /brand/favicon/browserconfig.xml; `ttf|otf|eot`
+    // và `mp4|webm|mp3|wasm|mjs` là loại file tĩnh có thể thêm sau này (public/fonts
+    // đã gỡ 2026-08-18 — toàn web dùng Arial hệ thống, không tự host font nào). Thiếu chúng thì next-intl viết lại đường dẫn xuống
     // /vi/... và file trả 404 (sitemap còn trả nhầm HTML) — đã đo 2026-08-06.
     "/((?!api|_next|_vercel|.*\\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|otf|pdf|png|svg|ttf|txt|wasm|webm|webmanifest|webp|woff2?|xml)$).*)",
   ],

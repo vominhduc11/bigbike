@@ -1,4 +1,4 @@
-package com.bigbike.bigbike_backend.migration.wordpress.normalizer;
+package com.bigbike.bigbike_backend.util;
 
 import java.text.Normalizer;
 import org.springframework.stereotype.Component;

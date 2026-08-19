@@ -10,7 +10,7 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.mapper.AttributeMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
+import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;

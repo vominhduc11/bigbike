@@ -59,3 +59,14 @@ vps-db-off.ps1
 Thumbs.db
 .vscode/
 .idea/
+
+# Ảnh/dump do Playwright & script chẩn đoán sinh ra — không commit (dọn 2026-08-18)
+.playwright-cli/
+bigbike-admin/.playwright-cli/
+bigbike-web/.playwright-cli/
+bigbike-admin/shots/
+bigbike-admin/output/
+bigbike-web/docs/audits/experience-section/
+test-results/
+playwright-report/
+.artifacts/

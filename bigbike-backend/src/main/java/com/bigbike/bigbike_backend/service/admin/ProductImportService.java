@@ -31,7 +31,7 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
 import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
-import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
+import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;

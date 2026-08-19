@@ -1,5 +1,13 @@
 # BigBike WordPress live migration runbook
 
+> **HISTORICAL RECORD — the tooling described here no longer exists (removed 2026-08-18).**
+> The WordPress → BigBike cutover completed in 2026-06. The whole `migration/wordpress/**` package —
+> `LiveMigrationPreflightCli`, `LiveMigrationExecutionCli`, every `Live*` planner, the Spring import/dry-run
+> runners, `MediaCopyRunner`, and the `bigbike.migration.wordpress.*` configuration — was deleted from the
+> repository during a codebase cleanup. This document is retained only to record what the one-time migration
+> was authorized to do. Do not treat any command or class name below as runnable. Recover from git history
+> (before 2026-08-18) if the migration ever needs to be re-run.
+
 This is the production contract for the one-time WordPress → BigBike migration. It implements the owner-approved safety rules in `bigbike-live-migration-prompt.md`; it does not authorize a cutover by itself.
 
 ## Allowed data and precedence

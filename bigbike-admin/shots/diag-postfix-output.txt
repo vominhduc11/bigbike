@@ -1,9 +1,0 @@
-﻿iter 0: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 1: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 2: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 3: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 4: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 5: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 6: revenue=OK(paths=2) pie=FAIL(sectors=0)
-iter 7: revenue=OK(paths=2) pie=FAIL(sectors=0)
-=== AT LEAST ONE ITERATION FAILED ===

@@ -17,8 +17,10 @@ function collectFiles(directory: string, extensions: Set<string>): string[] {
 }
 
 function readPublicCopy(): string {
-  const roots = ["messages", "content/pages"];
-  const files = roots.flatMap((root) => collectFiles(path.join(repoRoot, root), new Set([".json", ".mdx", ".ts", ".tsx"])));
+  // Nội dung trang tĩnh đã đóng băng vào lib/content/static-pages.json (liệt kê
+  // rõ bên dưới); thư mục content/pages (.mdx) bản cũ không còn tồn tại.
+  const roots = ["messages"];
+  const files = roots.flatMap((root) => collectFiles(path.join(repoRoot, root), new Set([".json", ".ts", ".tsx"])));
   const explicitFiles = [
     "components/contact/ContactPageContent.tsx",
     "lib/content/static-pages.json",
