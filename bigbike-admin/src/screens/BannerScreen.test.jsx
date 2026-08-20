@@ -1,5 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render as testingRender, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BannerScreen } from './BannerScreen'
 
@@ -56,7 +57,12 @@ const pageSettings = [
 
 function renderScreen(props = {}) {
   const navigate = vi.fn()
-  render(<BannerScreen canUpdate navigate={navigate} {...props} />)
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  testingRender(
+    <QueryClientProvider client={client}>
+      <BannerScreen canUpdate navigate={navigate} {...props} />
+    </QueryClientProvider>,
+  )
   return { navigate }
 }
 

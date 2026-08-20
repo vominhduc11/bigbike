@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderTree, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -284,8 +285,7 @@ function CrossLinksCard({ navigate, t }) {
 export function BannerScreen({ canUpdate = false, navigate, embedded = false, onEditorStateChange }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
-  const [fetchKey, setFetchKey] = useState(0)
+  const queryClient = useQueryClient()
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
   const [saving, setSaving] = useState(false)
@@ -295,13 +295,18 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
   const [fieldErrors, setFieldErrors] = useState({})
   const [fieldErrorsEn, setFieldErrorsEn] = useState({})
 
-  useEffect(() => {
-    let active = true
-    fetchSettings()
-      .then((r) => { if (active) setState({ status: 'success', items: r.items, warning: r.warning || '' }) })
-      .catch((e) => { if (active) setState({ status: 'error', items: [], error: e.message }) })
-    return () => { active = false }
-  }, [fetchKey])
+  const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: fetchSettings })
+  const settingsData = settingsQuery.data
+  const state = {
+    status: settingsQuery.isPending
+      ? 'loading'
+      : settingsQuery.isError && !settingsData
+        ? 'error'
+        : 'success',
+    items: settingsData?.items || [],
+    warning: settingsData?.warning || '',
+    error: settingsQuery.error?.message || '',
+  }
 
   const byKey = useMemo(() => {
     const m = new Map()
@@ -376,10 +381,11 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
         return u
       })
       const result = await batchUpdateSettings(updates)
-      setState((p) => {
+      queryClient.setQueryData(['settings'], (previous) => {
         const updated = new Map(result.items.map((item) => [item.key, item]))
-        return { ...p, items: p.items.map((s) => updated.get(s.key) || s) }
+        return { ...previous, items: (previous?.items || []).map((s) => updated.get(s.key) || s) }
       })
+      queryClient.invalidateQueries({ queryKey: ['settings'], refetchType: 'none' })
       setDrafts({})
       setDraftsEn({})
       setSaveSuccess(true)
@@ -404,7 +410,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
     } finally {
       setSaving(false)
     }
-  }, [dirtyKeys, drafts, draftsEn, t])
+  }, [dirtyKeys, drafts, draftsEn, queryClient, t])
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('banners.loading')} description={t('common.pleaseWait')} />
@@ -416,7 +422,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
         title={t('banners.loadError')}
         description={state.error}
         actionLabel={t('common.retry')}
-        onAction={() => setFetchKey((k) => k + 1)}
+        onAction={() => settingsQuery.refetch()}
       />
     )
   }
