@@ -1,5 +1,3 @@
-"use client";
-
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";

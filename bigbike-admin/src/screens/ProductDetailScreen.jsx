@@ -38,7 +38,7 @@ import { parseSpecsFromHtml } from '../lib/specSheet'
 import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml } from '../lib/trustBadgesBlock'
 import { createProductAiPromptBuilder } from '../lib/aiContentProfile'
-import { RichTextEditor } from '../components/RichTextEditor'
+import { DeferredRichTextEditor } from '../components/DeferredRichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { SuitabilityBlockEditor, SizeGuideBlockEditor } from '../components/block-editor/blocks'
 import { createBlock } from '../components/block-editor/constants'
@@ -1602,7 +1602,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     helper={t('products.detail.shortDescriptionHint')}
                     error={validationErrors.shortDescription}
                   >
-                    <RichTextEditor
+                    <DeferredRichTextEditor
                       key={`shortDescription-${contentLang}`}
                       value={langValue('shortDescription')}
                       onChange={(html) => langChange('shortDescription', html)}

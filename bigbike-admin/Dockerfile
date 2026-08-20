@@ -19,6 +19,10 @@ ENV VITE_MINIO_EXTRA_ORIGINS=${VITE_MINIO_EXTRA_ORIGINS}
 ENV VITE_STOREFRONT_BASE_URL=${VITE_STOREFRONT_BASE_URL}
 
 RUN npm run build
+# Keep each original artifact for clients without gzip, while adding an immutable
+# gzip sidecar that nginx can serve without compressing again for every request.
+RUN find dist -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.json' -o -name '*.svg' \) \
+    -exec sh -c 'gzip -9 -c "$1" > "$1.gz"' _ {} \;
 
 # ---- Serve stage ----
 FROM nginx:alpine AS runner

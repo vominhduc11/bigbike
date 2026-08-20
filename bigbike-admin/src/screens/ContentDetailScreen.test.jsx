@@ -60,8 +60,8 @@ vi.mock('../components/BlockEditor', () => ({
     />
   ),
 }))
-vi.mock('../components/RichTextEditor', () => ({
-  RichTextEditor: ({ value, onChange, disabled }) => (
+vi.mock('../components/DeferredRichTextEditor', () => ({
+  DeferredRichTextEditor: ({ value, onChange, disabled }) => (
     <textarea
       data-testid="rich-text-editor"
       value={value}

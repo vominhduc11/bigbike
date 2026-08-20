@@ -1,5 +1,3 @@
-"use client";
-
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -45,8 +43,12 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                         className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
                       />
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src="/brand/home/category-fallback.png" className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
+                      <MediaImage
+                        image={{ url: "/brand/home/category-fallback.png", width: 50, height: 60 }}
+                        altFallback=""
+                        sizes="50px"
+                        className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
+                      />
                     )}
                   </span>
                   <span className="mt-7.5 block line-clamp-2 font-cta text-a4-content font-semibold normal-case leading-body text-foreground group-hover:text-white">{name}</span>

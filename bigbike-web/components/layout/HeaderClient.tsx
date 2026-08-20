@@ -15,6 +15,7 @@ import { LanguageSwitch } from "@/components/layout/header/LanguageSwitch";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
+import { MediaImage } from "@/components/ui/MediaImage";
 import {
   Sheet,
   SheetContent,
@@ -171,21 +172,21 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
               }}
               className="relative flex h-full items-start"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}
-                alt="BigBike"
-                width={scrolled ? 150 : 210}
+              <MediaImage
+                image={scrolled
+                  ? { url: "/brand/header-mark.png", width: 120, height: 44 }
+                  : { url: "/brand/header-logo.png", width: 210, height: 190 }}
+                altFallback="BigBike"
+                sizes={scrolled ? "150px" : "210px"}
                 className={cn(
                   "hidden min-[1261px]:block!",
                   scrolled ? "my-auto w-37.5" : "mt-0 w-52.5",
                 )}
               />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brand/header-mark.png"
-                alt="BigBike"
-                width="150"
+              <MediaImage
+                image={{ url: "/brand/header-mark.png", width: 120, height: 44 }}
+                altFallback="BigBike"
+                sizes="150px"
                 className="my-auto w-20 min-[501px]:w-37.5 min-[1261px]:hidden"
               />
             </Link>
@@ -287,8 +288,12 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
           >
             <X className="h-6 w-6" aria-hidden />
           </Button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/header-mark.png" alt="BigBike" width="150" />
+          <MediaImage
+            image={{ url: "/brand/header-mark.png", width: 120, height: 44 }}
+            altFallback="BigBike"
+            sizes="150px"
+            className="h-auto w-37.5"
+          />
           <p className="mb-0 mt-7.5 text-a5-meta leading-6 text-muted-foreground">
             <LocalizedSetting
               vi={contact.descriptionVi}

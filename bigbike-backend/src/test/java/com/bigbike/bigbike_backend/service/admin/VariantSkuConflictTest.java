@@ -10,8 +10,12 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
@@ -66,6 +70,8 @@ class VariantSkuConflictTest {
     @Autowired CatalogReadRepository readRepository;
     @Autowired BrandJpaRepository brandRepo;
     @Autowired CategoryJpaRepository categoryRepo;
+    @Autowired AttributeJpaRepository attributeRepo;
+    @Autowired AttributeValueJpaRepository attributeValueRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
 
     private CategoryEntity category;
@@ -93,6 +99,9 @@ class VariantSkuConflictTest {
             entity.setUpdatedAt(Instant.now());
             return brandRepo.save(entity);
         });
+        ensureColorValue("Red", "red");
+        ensureColorValue("Blue", "blue");
+        ensureColorValue("Green", "green");
     }
 
     @Test
@@ -196,8 +205,30 @@ class VariantSkuConflictTest {
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(optionName);
         option.setOptionValue(optionValue);
+        option.setAttributeValueId(ensureColorValue(optionValue, optionValue.toLowerCase(java.util.Locale.ROOT)).getId());
         variant.setOptions(List.of(option));
         return variant;
+    }
+
+    private AttributeValueEntity ensureColorValue(String label, String slug) {
+        AttributeEntity color = attributeRepo.findByCode("color").orElseGet(() -> {
+            AttributeEntity attribute = new AttributeEntity();
+            attribute.setId("test-attribute-color-vsku");
+            attribute.setCode("color");
+            attribute.setName("Color");
+            attribute.setKind("select");
+            attribute.setVariation(true);
+            return attributeRepo.save(attribute);
+        });
+        return attributeValueRepo.findByAttributeIdAndSlug(color.getId(), slug).orElseGet(() -> {
+            AttributeValueEntity value = new AttributeValueEntity();
+            value.setId("test-attribute-value-color-vsku-" + slug);
+            value.setAttribute(color);
+            value.setSlug(slug);
+            value.setLabel(label);
+            value.setSortOrder(0);
+            return attributeValueRepo.save(value);
+        });
     }
 
     private ProductTranslationRequest englishName(String name) {

@@ -73,7 +73,7 @@ vi.mock('../components/ProductPickerCombobox', () => ({ ProductPickerCombobox: (
 vi.mock('./product-detail/BrandCombobox', () => ({
   BrandCombobox: ({ displayLabel }) => <span>{displayLabel}</span>,
 }))
-vi.mock('../components/RichTextEditor', () => ({ RichTextEditor: () => null }))
+vi.mock('../components/DeferredRichTextEditor', () => ({ DeferredRichTextEditor: () => null }))
 vi.mock('../components/BlockEditor', () => ({ BlockEditor: () => null }))
 vi.mock('../components/block-editor/blocks', () => ({
   SuitabilityBlockEditor: () => null,

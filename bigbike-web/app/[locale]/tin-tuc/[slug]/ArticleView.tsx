@@ -19,6 +19,7 @@ import { toArticleListPath, toCanonicalUrl, toHomePath } from "@/lib/utils/route
 import type { Locale } from "@/i18n/locale";
 import { ArticleImage } from "../ArticleImage";
 import { ArticleTableOfContents } from "./ArticleTableOfContents";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 const BLOG_THUMBNAIL = "/brand/news/article-cover.png";
 
@@ -79,8 +80,12 @@ export function ArticleView({
       <div id="main-content">
         <Container className="grid grid-cols-1 gap-8 pb-10 md:grid-cols-12">
         <article className={hasSidebar ? "min-w-0 md:col-span-8" : "min-w-0 md:col-span-12"}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BLOG_THUMBNAIL} alt="" className="h-auto w-full" />
+          <MediaImage
+            image={{ url: BLOG_THUMBNAIL, width: 870, height: 490 }}
+            altFallback=""
+            sizes="(min-width: 768px) 66vw, calc(100vw - 32px)"
+            className="h-auto w-full"
+          />
 
           {articleDate ? (
             <div className="my-5 text-a5-meta text-muted-foreground">

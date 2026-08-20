@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +18,7 @@ import {
 } from "./api";
 import { StarRatingInput } from "./stars";
 import type { PhotoItem } from "./types";
+import { createReviewSchema, type ReviewFormValues } from "@/lib/schemas/customer";
 
 // Customer review photos: max 10, ≤8MB each, images only — must mirror the backend caps.
 const MAX_PHOTOS = 10;
@@ -34,6 +37,7 @@ export function WriteReviewForm({
   variant?: "card" | "dialog";
 }) {
   const t = useTranslations("Product.reviews");
+  const tValidation = useTranslations("FormValidation");
   const isDialog = variant === "dialog";
   // Đã đăng nhập: lấy tên + email thẳng từ tài khoản, ẩn 2 ô nhập. Tên hiển thị khi đó
   // luôn khớp với ảnh đại diện resolve theo phiên đăng nhập (REVIEW_RULE_006) — nếu để
@@ -44,16 +48,18 @@ export function WriteReviewForm({
     ? signedInProfile.displayName?.trim() || signedInProfile.email?.split("@")[0] || ""
     : "";
   const [rating, setRating] = useState(0);
-  const [authorName, setAuthorName] = useState("");
-  const [authorEmail, setAuthorEmail] = useState("");
-  const [comment, setComment] = useState("");
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photoError, setPhotoError] = useState("");
-  const [website, setWebsite] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reviewValidation = (key: string) => key === "ratingInvalid"
+    ? t("errorPickStars")
+    : key === "required" ? t("errorPickName") : tValidation(key);
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<ReviewFormValues>({
+    resolver: zodResolver(createReviewSchema(reviewValidation, Boolean(signedInProfile))),
+    defaultValues: { rating: 0, authorName: "", authorEmail: "", comment: "", website: "" },
+  });
 
   const uploading = photos.some((p) => p.status === "uploading");
 
@@ -110,20 +116,10 @@ export function WriteReviewForm({
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (rating === 0) {
-      setError(t("errorPickStars"));
-      return;
-    }
-    const effectiveName = signedInProfile ? signedInName : authorName.trim();
-    const effectiveEmail = signedInProfile ? signedInProfile.email?.trim() : authorEmail.trim();
-    if (!effectiveName) {
-      setError(t("errorPickName"));
-      return;
-    }
+  async function submit(values: ReviewFormValues) {
+    const effectiveName = signedInProfile ? signedInName : values.authorName;
+    const effectiveEmail = signedInProfile ? signedInProfile.email?.trim() : values.authorEmail;
     setError("");
-    setSubmitting(true);
     try {
       const photoUrls = photos
         .filter((p) => p.status === "done" && p.url)
@@ -131,10 +127,10 @@ export function WriteReviewForm({
       await submitProductReview(productId, {
           authorName: effectiveName,
           authorEmail: effectiveEmail || undefined,
-          rating,
-          comment: comment.trim(),
+          rating: values.rating,
+          comment: values.comment,
           photos: photoUrls,
-          website,
+          website: values.website,
       });
       setDone(true);
       onSuccess();
@@ -150,9 +146,7 @@ export function WriteReviewForm({
       } else {
         setError(t("errorNetwork"));
       }
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { /* react-hook-form owns submitting state */ }
   }
 
   return (
@@ -168,16 +162,14 @@ export function WriteReviewForm({
           {t("thanks")}
         </p>
       ) : (
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(submit)} noValidate>
           {/* Honeypot — bots fill this, humans never see it. */}
           <input
             type="text"
-            name="website"
+            {...register("website")}
             tabIndex={-1}
             aria-hidden="true"
             autoComplete="off"
-            value={website}
-            onChange={(event) => setWebsite(event.target.value)}
             className="absolute -left-[9999px] h-0 w-0 opacity-0 [pointer-events:none]"
           />
 
@@ -185,7 +177,8 @@ export function WriteReviewForm({
             <Label className="text-a5-meta font-semibold text-[var(--bb-text-primary)]">
               {t("formStars")} <span className="text-brand">*</span>
             </Label>
-            <StarRatingInput value={rating} onChange={setRating} />
+            <StarRatingInput value={rating} onChange={(next) => { setRating(next); setValue("rating", next, { shouldValidate: true }); }} />
+            {errors.rating && <p className="m-0 text-a5-meta text-brand">{errors.rating.message}</p>}
           </div>
 
           {signedInProfile ? (
@@ -214,14 +207,12 @@ export function WriteReviewForm({
                 </Label>
                 <Input
                   id="review-author"
-                  name="author"
                   type="text"
-                  value={authorName}
-                  onChange={(event) => setAuthorName(event.target.value)}
+                  {...register("authorName")}
                   placeholder={t("formNamePlaceholder")}
                   maxLength={80}
-                  required
                 />
+                {errors.authorName && <p className="m-0 text-a5-meta text-brand">{errors.authorName.message}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -233,11 +224,10 @@ export function WriteReviewForm({
                 </Label>
                 <Input
                   id="review-email"
-                  name="email"
                   type="email"
-                  value={authorEmail}
-                  onChange={(event) => setAuthorEmail(event.target.value)}
+                  {...register("authorEmail")}
                 />
+                {errors.authorEmail && <p className="m-0 text-a5-meta text-brand">{errors.authorEmail.message}</p>}
               </div>
             </>
           )}
@@ -251,13 +241,12 @@ export function WriteReviewForm({
             </Label>
             <Textarea
               id="review-comment"
-              name="comment"
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
+              {...register("comment")}
               placeholder={t("formCommentPlaceholder")}
               maxLength={1000}
               rows={5}
             />
+            {errors.comment && <p className="m-0 text-a5-meta text-brand">{errors.comment.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -324,8 +313,8 @@ export function WriteReviewForm({
 
           {error && <p className="m-0 text-a5-meta text-brand">{error}</p>}
 
-          <Button type="submit" disabled={submitting || uploading} className="w-full">
-            {submitting ? t("submitting") : t("submit")}
+          <Button type="submit" disabled={isSubmitting || uploading} className="w-full">
+            {isSubmitting ? t("submitting") : t("submit")}
           </Button>
         </form>
       )}

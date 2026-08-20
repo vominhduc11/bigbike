@@ -28,13 +28,9 @@ export async function generateStaticParams() {
   return [];
 }
 
-// TẠM THỜI (2026-08-06): route này bail out `DYNAMIC_SERVER_USAGE` khi Next cố sinh
-// tĩnh trong bản production → MỌI trang bài viết trả 500 (dev mode thì render bình
-// thường). Lỗi có sẵn từ trước đợt chuyển dữ liệu: bản image dựng 2026-08-02 cũng lỗi
-// y hệt. Render theo từng request để mục tin tức hoạt động trở lại trước khi đổi tên
-// miền. Dữ liệu vẫn revalidate theo tag như cũ; chỉ mất bộ nhớ đệm tĩnh của route này.
-// TODO(thợ web): tìm đúng API động trong cây render rồi bỏ dòng này để lấy lại ISR.
-export const dynamic = "force-dynamic";
+// Do not prebuild the complete article catalog. A first request creates the page and
+// public API cache tags invalidate it after an admin edit; this preserves genuine ISR
+// while retaining the real 404 and canonical-slug redirect behavior below.
 
 type ArticleDetailPageProps = Readonly<{
   params: Promise<{ locale: string; slug: string }>;

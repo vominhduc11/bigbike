@@ -16,10 +16,11 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
 import { VariantPicker } from "./purchase/VariantPicker";
-import { QuantityStepper } from "./purchase/QuantityStepper";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { CommitmentsList } from "./purchase/CommitmentsList";
 import { RatingBlock } from "./purchase/RatingBlock";
 import { BuyButtons } from "./purchase/BuyButtons";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 type Props = {
   product: Product;
@@ -158,7 +159,8 @@ export function PurchaseSection({
     setAdding(true);
     try {
       await addToCart(product.id, quantity, selectedVariant?.id || undefined);
-    } catch {
+    } catch (error) {
+      reportStorefrontFailure("add_to_cart", error);
       setAddError(tb("addToCartFailed"));
     } finally {
       setAdding(false);
@@ -327,7 +329,25 @@ export function PurchaseSection({
               ) : null}
 
               <div className="mt-6">
-                <QuantityStepper quantity={quantity} setQuantity={setQuantity} />
+                <div>
+                  <div className="flex items-center gap-4">
+                    <label htmlFor="bb-qty" className="min-w-24 font-cta text-b4-action font-semibold uppercase text-foreground">
+                      {tb("quantity")}
+                    </label>
+                    <QuantityStepper
+                      variant="pdp"
+                      value={quantity}
+                      onDecrease={() => setQuantity((current) => Math.max(1, current - 1))}
+                      onIncrease={() => setQuantity((current) => current + 1)}
+                      onValueChange={(next) => setQuantity(Math.max(1, next || 1))}
+                      decreaseLabel={tb("decreaseQty")}
+                      increaseLabel={tb("increaseQty")}
+                      inputLabel={tb("quantity")}
+                      inputId="bb-qty"
+                      decreaseDisabled={quantity <= 1}
+                    />
+                  </div>
+                </div>
 
                 <BuyButtons
                   canBuy={canBuy}

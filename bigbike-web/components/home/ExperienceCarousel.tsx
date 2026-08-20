@@ -7,6 +7,7 @@ import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type Props = { articles: Article[] };
 
@@ -25,18 +26,22 @@ function expandForSwiperLoop(articles: Article[]): Article[] {
 
 function resolveArticleMedia(article: Article, fallbackTitle: string): {
   title: string;
-  bgSrc: string | null;
+  bgImage: Article["coverImage"] | null;
   bgAlt: string;
-  productSrc: string | null;
+  productImage: Article["productImage"] | null;
   productAlt: string;
 } {
   const title = safeText(article.title, fallbackTitle);
 
   return {
     title,
-    bgSrc: resolveMediaUrl(article.coverImage?.url?.trim()) ?? null,
+    bgImage: article.coverImage?.url
+      ? { ...article.coverImage, url: resolveMediaUrl(article.coverImage.url.trim()) ?? undefined }
+      : null,
     bgAlt: safeText(article.coverImage?.alt, title),
-    productSrc: normalizeLegacyUploadUrl(article.productImage?.url?.trim()),
+    productImage: article.productImage?.url
+      ? { ...article.productImage, url: normalizeLegacyUploadUrl(article.productImage.url.trim()) ?? undefined }
+      : null,
     productAlt: safeText(article.productImage?.alt, title),
   };
 }
@@ -55,15 +60,15 @@ function ExperienceSlide({
   return (
     <div className="select-none">
       <div className="bb-exp-slide-cover overflow-hidden bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]">
-        {media.bgSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element -- native img keeps the legacy cover sizing.
-          <img
-            src={media.bgSrc}
-            alt={media.bgAlt}
+        {media.bgImage ? (
+          <MediaImage
+            image={media.bgImage}
+            altFallback={media.bgAlt}
+            width={1200}
+            height={600}
+            sizes="(min-width: 768px) min(41vw, 590px), 83vw"
             className="block w-full max-h-94.5 max-[767px]:max-h-55 object-cover"
             loading={isActive ? "eager" : "lazy"}
-            decoding="async"
-            draggable={false}
           />
         ) : null}
       </div>
@@ -72,16 +77,16 @@ function ExperienceSlide({
         className="bb-exp-slide-content mt-[-32%] max-[768px]:mt-[-18%] max-[375px]:mt-[-14%] md:pb-8"
         aria-hidden={!isActive}
       >
-        {media.productSrc ? (
+        {media.productImage ? (
           <div className="text-center">
-            {/* eslint-disable-next-line @next/next/no-img-element -- transparent product art follows the legacy PNG sizing. */}
-            <img
-              src={media.productSrc}
-              alt={media.productAlt}
+            <MediaImage
+              image={media.productImage}
+              altFallback={media.productAlt}
+              width={600}
+              height={600}
+              sizes="(min-width: 992px) 295px, (min-width: 768px) 52vw, 64vw"
               className="mx-auto w-1/2 max-w-105 max-[991px]:w-[64%] max-[767px]:w-[52vw] max-[767px]:max-w-57.5 max-[374px]:max-w-52.5"
               loading={isActive ? "eager" : "lazy"}
-              decoding="async"
-              draggable={false}
             />
           </div>
         ) : null}

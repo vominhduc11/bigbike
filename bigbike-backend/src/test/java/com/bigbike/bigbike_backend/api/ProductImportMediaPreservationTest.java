@@ -13,9 +13,14 @@ import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.admin.ProductImportService;
 import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
+import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -56,6 +61,12 @@ class ProductImportMediaPreservationTest {
     @Autowired
     private CatalogReadRepository catalogReadRepository;
 
+    @Autowired
+    private AttributeJpaRepository attributeJpaRepository;
+
+    @Autowired
+    private AttributeValueJpaRepository attributeValueJpaRepository;
+
     private static MultipartFile jsonFile(String body) {
         return new MockMultipartFile("file", "products.json", "application/json",
                 body.getBytes(StandardCharsets.UTF_8));
@@ -72,11 +83,35 @@ class ProductImportMediaPreservationTest {
         return mapper.readTree(exported).get(0);
     }
 
-    private static VariantOptionRequest variantOption(String name, String value) {
+    private VariantOptionRequest variantOption(String name, String value) {
         return VariantOptionRequest.builder()
                 .optionName(name)
                 .optionValue(value)
+                .attributeValueId(ensureAttributeValue(name, value).getId())
                 .build();
+    }
+
+    private AttributeValueEntity ensureAttributeValue(String name, String label) {
+        String code = ProductSlugGenerator.toSlug(name);
+        AttributeEntity attribute = attributeJpaRepository.findByCode(code).orElseGet(() -> {
+            AttributeEntity created = new AttributeEntity();
+            created.setId("test-import-option-attribute-" + UUID.randomUUID());
+            created.setCode(code);
+            created.setName(name);
+            created.setKind("select");
+            created.setVariation(true);
+            return attributeJpaRepository.save(created);
+        });
+        String slug = ProductSlugGenerator.toSlug(label);
+        return attributeValueJpaRepository.findByAttributeIdAndSlug(attribute.getId(), slug).orElseGet(() -> {
+            AttributeValueEntity created = new AttributeValueEntity();
+            created.setId("test-import-option-value-" + UUID.randomUUID());
+            created.setAttribute(attribute);
+            created.setSlug(slug);
+            created.setLabel(label);
+            created.setSortOrder(0);
+            return attributeValueJpaRepository.save(created);
+        });
     }
 
     @Test

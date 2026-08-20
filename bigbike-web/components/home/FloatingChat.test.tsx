@@ -26,6 +26,13 @@ vi.mock("next-intl", () => ({
   ),
 }));
 
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({
+    fetchQuery: ({ queryFn }: { queryFn: () => Promise<unknown> }) => queryFn(),
+    invalidateQueries: () => Promise.resolve(),
+  }),
+}));
+
 vi.mock("@/lib/api/client-api", () => api);
 vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => auth.state }));
 vi.mock("@/lib/cart-context", () => ({

@@ -194,9 +194,14 @@ const nextConfig: NextConfig = {
   // Keep legacy WordPress `.html` URLs from being normalized before rewrites.
   // Proxy below still normalizes extensionless routes to trailing slash.
   skipTrailingSlashRedirect: true,
-  // Client router cache: keep static segments 3 min, dynamic 30 s.
-  // Avoids full server roundtrip when navigating back to a recently visited page.
+  // Client router cache: static segments may be revisited for 3 minutes;
+  // dynamic catalog routes deliberately remain at 0 seconds so price, stock,
+  // visibility, and URL filter results are never reused from a stale client cache.
   experimental: {
+    // Next 16 already includes lucide-react in its default optimized-import list.
+    // Keep the declaration explicit so the intent survives future Next upgrades;
+    // bundle measurement remains the source of truth for any actual byte savings.
+    optimizePackageImports: ["lucide-react"],
     staleTimes: {
       static: 180,
       dynamic: 0,

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -34,8 +35,10 @@ public class AdminAttributeService {
     private final AuditLogWriter auditLogWriter;
     private final AttributeMapper attributeMapper;
     private final AuditLogFactory auditLogFactory;
+    private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CatalogReferenceCacheEvictor.ATTRIBUTES, key = "'summary'")
     public List<AttributeSummaryResponse> listAttributes() {
         return attributeRepo.findAllByOrderByNameAsc().stream()
                 .map(a -> new AttributeSummaryResponse(
@@ -50,6 +53,7 @@ public class AdminAttributeService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CatalogReferenceCacheEvictor.ATTRIBUTES, key = "'values:' + #attributeId")
     public List<AttributeValueResponse> listValues(String attributeId) {
         attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
@@ -75,6 +79,7 @@ public class AdminAttributeService {
         AttributeEntity saved = attributeRepo.save(attribute);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_UPDATED", "ATTRIBUTE", null, before, attributeSnapshot(saved)));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -113,6 +118,7 @@ public class AdminAttributeService {
         AttributeEntity saved = attributeRepo.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_CREATED", "ATTRIBUTE", null, null, attributeSnapshot(saved)));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -143,6 +149,7 @@ public class AdminAttributeService {
         attributeRepo.delete(attribute);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_DELETED", "ATTRIBUTE", null, before, null));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
     }
 
     /**
@@ -164,6 +171,7 @@ public class AdminAttributeService {
         valueRepo.delete(value);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_DELETED", "ATTRIBUTE", null, before, null));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
     }
 
     /**
@@ -204,6 +212,7 @@ public class AdminAttributeService {
         AttributeValueEntity saved = valueRepo.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_CREATED", "ATTRIBUTE", null, null, attributeValueSnapshot(saved)));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
         return attributeMapper.toResponse(saved);
     }
 
@@ -224,6 +233,7 @@ public class AdminAttributeService {
         AttributeValueEntity saved = valueRepo.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_UPDATED", "ATTRIBUTE", null, before, attributeValueSnapshot(saved)));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
         return attributeMapper.toResponse(saved);
     }
 

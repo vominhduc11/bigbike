@@ -336,14 +336,11 @@
 }
 .bb-btn-ghost:hover:not(:disabled) { background: var(--bb-surface-hover); color: var(--bb-text); }
 .bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: var(--bb-r-xs); }
-.bb-btn-lg { height: 38px; padding: 0 16px; font-size: 13.5px; }
 
 /* ─── Focus visible (a11y — WCAG 2.4.7 Focus Visible, Level A) ──────────────────
    Các control bb-* trước đây chỉ có :hover, thiếu chỉ báo focus cho bàn phím. */
 .bb-btn:focus-visible,
 .bb-icon-btn:focus-visible,
-.bb-cb:focus-visible,
-.bb-pagination button:focus-visible,
 .bb-seg:focus-visible,
 .bb-user-chip:focus-visible,
 .bb-nav-link:focus-visible,
@@ -712,63 +709,6 @@
 .bb-table .mono { font-family: var(--bb-font-mono); font-size: 12px; }
 .bb-table .col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .bb-table .col-check { width: 32px; padding-right: 0; }
-.bb-table-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--bb-border-faint);
-  background: var(--bb-surface-muted);
-  font-size: 12px;
-  color: var(--bb-text-muted);
-}
-
-/* Bulk action bar */
-.bb-bulk-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--bb-sidebar);
-  color: var(--bb-text-onsidebar-strong);
-  border-radius: 8px;
-  font-size: 13px;
-  position: sticky;
-  bottom: 16px;
-  z-index: 5;
-  box-shadow: var(--bb-sh-md);
-  margin-top: 12px;
-}
-.bb-bulk-bar .count { font-weight: 600; }
-.bb-bulk-bar .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.18); }
-.bb-bulk-bar .bulk-btn {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.24);
-  color: var(--bb-text-onsidebar-strong);
-  font-size: 12px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: var(--admin-radius-control);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: inherit;
-}
-.bb-bulk-bar .bulk-btn:hover { background: rgba(255,255,255,0.08); }
-.bb-bulk-bar .bulk-btn.danger {
-  color: var(--bb-danger);
-  border-color: color-mix(in srgb, var(--bb-danger) 40%, transparent);
-}
-/* F7: nút hành động hàng loạt thiếu trạng thái :disabled — không có phản hồi
-   thị giác khi đang xử lý (bulkBusy). */
-.bb-bulk-bar .bulk-btn:disabled { opacity: .5; cursor: not-allowed; }
-.bb-bulk-bar .bulk-btn:disabled:hover { background: transparent; }
-.bb-bulk-bar .ml-auto { margin-left: auto; }
-
 /* ─── Empty / loading / error states ───────────────────────────────────────── */
 .bb-state {
   display: flex;
@@ -784,12 +724,6 @@
 
 .bb-state h4 { font-size: 14px; font-weight: 600; margin: 0 0 4px; color: var(--bb-text); }
 .bb-state p { font-size: 12.5px; color: var(--bb-text-muted); margin: 0 0 12px; max-width: 360px; }
-
-/* Skeleton */
-@keyframes bb-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 /* ─── Inline alert ──────────────────────────────────────────────────────────── */
 .bb-alert {
@@ -814,38 +748,6 @@
   min-width: 0;
 }
 
-
-/* ─── Pagination ────────────────────────────────────────────────────────────── */
-.bb-pagination {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.bb-pagination button {
-  height: 28px;
-  min-width: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--bb-border);
-  background: var(--bb-surface);
-  color: var(--bb-text);
-  border-radius: var(--bb-r-control);
-  font-size: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-}
-.bb-pagination button:hover:not(:disabled) { background: var(--bb-surface-hover); }
-.bb-pagination button.active {
-  background: var(--bb-primary);
-  border-color: var(--bb-primary);
-  color: var(--bb-on-primary);
-  font-weight: 600;
-}
-.bb-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
-.bb-pagination .info { font-size: 12px; color: var(--bb-text-muted); padding: 0 8px; }
 
 /* ─── Misc helpers ──────────────────────────────────────────────────────────── */
 .bb-row { display: flex; align-items: center; gap: 8px; }
@@ -1001,7 +903,6 @@
   padding: 0;
   margin: 0;
 }
-.bb-list-spaced { margin-bottom: 12px; }
 .bb-list-item {
   border-bottom: 1px solid var(--bb-border-faint);
   padding: 8px 0;
@@ -1216,27 +1117,9 @@
   justify-content: flex-end;
 }
 
-.bb-detail-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-.bb-detail-form-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 .bb-prewrap-strong {
   white-space: pre-wrap;
   font-weight: 600;
-}
-.bb-error-inline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--bb-danger);
 }
 
 .bb-role-badge {
@@ -1602,10 +1485,6 @@
   font-size: 13px;
   line-height: 1.6;
 }
-.bb-btn-full {
-  width: 100%;
-  text-align: center;
-}
 .bb-login-support {
   margin-top: 24px;
   padding-top: 20px;
@@ -1658,27 +1537,6 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   dl.bb-info-grid dt { border-bottom: 0; padding-bottom: 2px; }
   dl.bb-info-grid dd { padding-top: 2px; }
 }
-
-/* Table row checkbox */
-.bb-cb {
-  width: 16px; height: 16px;
-  border: 1.5px solid var(--bb-border-strong);
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: transparent;
-  background: var(--bb-surface);
-  transition: background 100ms, border-color 100ms;
-}
-.bb-cb.checked {
-  background: var(--bb-primary);
-  border-color: var(--bb-primary);
-  color: var(--bb-on-primary);
-}
-.bb-cb:hover:not(.checked) { border-color: var(--bb-primary); }
 
 /* Publish checklist */
 

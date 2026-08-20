@@ -10,6 +10,7 @@ import { resolveMediaUrl } from "@/lib/utils/format";
 import { toBrandPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { Container } from "@/components/layout/Container";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type Props = { brands: Brand[] };
 
@@ -71,12 +72,18 @@ export function BrandCarousel({ brands }: Props) {
           {brands.map((b) => {
             // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
             const logo = resolveMediaUrl(b.logo?.url?.trim());
+            const image = logo && b.logo ? { ...b.logo, url: logo } : { url: "/wp/logo-1.png", width: 120, height: 44 };
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
                 <Link href={toBrandPath(b.slug, locale)} className="flex h-32 items-center justify-center">
-                  {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} className="max-h-full max-w-full object-contain" loading="lazy" />
+                  <MediaImage
+                    image={image}
+                    altFallback={b.name}
+                    width={120}
+                    height={44}
+                    sizes="(min-width: 767px) 120px, 50vw"
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </Link>
               </SwiperSlide>
             );

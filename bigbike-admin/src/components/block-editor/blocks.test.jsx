@@ -15,7 +15,7 @@ vi.mock('react-i18next', () => ({
     }[key] || key),
   }),
 }))
-vi.mock('../RichTextEditor', () => ({ RichTextEditor: () => null }))
+vi.mock('../DeferredRichTextEditor', () => ({ DeferredRichTextEditor: () => null }))
 vi.mock('../AiHtmlBrief', () => ({ default: () => null }))
 vi.mock('../Sortable', () => ({ SortableList: () => null, DragHandle: () => null }))
 vi.mock('../../lib/confirm', () => ({ showConfirm: vi.fn().mockResolvedValue(true) }))

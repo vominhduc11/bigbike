@@ -238,6 +238,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
             breadcrumb={heroBreadcrumb}
             bgUrl={heroBgUrl}
             illustrationUrl={heroIllustrationUrl}
+            illustrationImage={category.icon ? { ...category.icon, url: heroIllustrationUrl ?? undefined } : null}
             illustrationAlt={category.icon?.alt ?? categoryName}
           />
 

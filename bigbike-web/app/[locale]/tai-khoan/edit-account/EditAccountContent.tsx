@@ -2,12 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AccountSectionHeading, useAccount, useAccountRefresh } from "@/components/account/AccountNav";
 import { updateCustomerProfile, uploadCustomerAvatar, removeCustomerAvatar } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormNotice } from "@/components/ui/FormNotice";
 import { Avatar } from "@/components/ui/Avatar";
+import { createProfileSchema, type ProfileFormValues } from "@/lib/schemas/customer";
 
 // 2020-mockup field label: gray, sentence-case.
 const LEGACY_LABEL = "text-a5-meta text-muted-foreground";
@@ -106,63 +109,47 @@ function AvatarEditor() {
 
 export function EditAccountContent() {
   const t = useTranslations("Account.edit");
+  const tValidation = useTranslations("FormValidation");
   const tNav = useTranslations("Account.nav");
   const profile = useAccount();
   const refreshProfile = useAccountRefresh();
   const oauthManaged = !!profile?.oauthManaged;
 
-  const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const profileValidation = (key: string) => key === "passwordLength"
+    ? t("errorPasswordShort")
+    : key === "passwordMismatch" ? t("errorPasswordMismatch")
+      : key === "currentPasswordRequired" ? t("errorMissingCurrentPassword") : tValidation(key);
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProfileFormValues>({
+    resolver: zodResolver(createProfileSchema(profileValidation, profile?.email ?? "")),
+    defaultValues: {
+      displayName: profile?.displayName ?? "",
+      email: profile?.email ?? "",
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function submit(values: ProfileFormValues) {
     setError("");
     setSuccess(false);
-    setPasswordError("");
+    const newEmailValue = values.email && values.email !== (profile?.email ?? "") ? values.email : undefined;
+    const isSensitiveChange = Boolean(values.newPassword || newEmailValue);
 
-    const fd = new FormData(e.currentTarget);
-    const displayName = (fd.get("displayName") as string).trim();
-    const email = (fd.get("email") as string).trim();
-    const currentPassword = ((fd.get("currentPassword") as string) ?? "").trim();
-    const newPassword = ((fd.get("newPassword") as string) ?? "").trim();
-    const confirmPassword = ((fd.get("confirmPassword") as string) ?? "").trim();
-
-    const newEmailValue = email && email !== (profile?.email ?? "") ? email : undefined;
-    const isSensitiveChange = !!newPassword || !!newEmailValue;
-
-    if (newPassword) {
-      if (newPassword.length < 8) {
-        setPasswordError(t("errorPasswordShort"));
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        setPasswordError(t("errorPasswordMismatch"));
-        return;
-      }
-    }
-
-    if (isSensitiveChange && !currentPassword) {
-      setPasswordError(t("errorMissingCurrentPassword"));
-      return;
-    }
-
-    setSaving(true);
     try {
       await updateCustomerProfile({
-        displayName: displayName || undefined,
+        displayName: values.displayName || undefined,
         email: newEmailValue,
-        currentPassword: isSensitiveChange ? currentPassword : undefined,
-        newPassword: newPassword || undefined,
+        currentPassword: isSensitiveChange ? values.currentPassword : undefined,
+        newPassword: values.newPassword || undefined,
       });
       await refreshProfile?.();
       setSuccess(true);
     } catch {
       setError(t("errorGeneric"));
-    } finally {
-      setSaving(false);
-    }
+    } finally { /* react-hook-form owns submitting state */ }
   }
 
   return (
@@ -199,15 +186,17 @@ export function EditAccountContent() {
             <FormNotice tone="danger" className="mb-5">{error}</FormNotice>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(submit)} noValidate>
             <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 md:grid-cols-2 xl:gap-x-8">
               <div className="flex flex-col gap-1.5">
                 <label className={LEGACY_LABEL}>{t("fullNameLabel")}</label>
-                <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={t("fullNamePlaceholder")} />
+                <Input {...register("displayName")} placeholder={t("fullNamePlaceholder")} />
+                {errors.displayName && <p className="text-a4-content text-destructive">{errors.displayName.message}</p>}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
-                <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder={t("emailPlaceholder")} />
+                <Input type="email" {...register("email")} placeholder={t("emailPlaceholder")} />
+                {errors.email && <p className="text-a4-content text-destructive">{errors.email.message}</p>}
               </div>
             </div>
 
@@ -222,7 +211,7 @@ export function EditAccountContent() {
                   <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
                   <Input
                     type="password"
-                    name="currentPassword"
+                    {...register("currentPassword")}
                     placeholder={t("currentPasswordPlaceholder")}
                     autoComplete="current-password"
                   />
@@ -231,7 +220,7 @@ export function EditAccountContent() {
                   <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
                   <Input
                     type="password"
-                    name="newPassword"
+                    {...register("newPassword")}
                     placeholder={t("newPasswordPlaceholder")}
                     autoComplete="new-password"
                   />
@@ -240,17 +229,17 @@ export function EditAccountContent() {
                   <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
                   <Input
                     type="password"
-                    name="confirmPassword"
+                    {...register("confirmPassword")}
                     placeholder={t("confirmPasswordPlaceholder")}
                     autoComplete="new-password"
                   />
                 </div>
               </div>
-              {passwordError && <p className="mt-2 text-a4-content text-destructive">{passwordError}</p>}
+              {(errors.currentPassword || errors.newPassword || errors.confirmPassword) && <p className="mt-2 text-a4-content text-destructive">{errors.currentPassword?.message ?? errors.newPassword?.message ?? errors.confirmPassword?.message}</p>}
             </fieldset>
 
-            <Button type="submit" variant="primary" disabled={saving} className="mt-6 w-full sm:w-auto sm:min-w-40">
-              {saving ? t("saving") : t("save")}
+            <Button type="submit" variant="primary" disabled={isSubmitting} className="mt-6 w-full sm:w-auto sm:min-w-40">
+              {isSubmitting ? t("saving") : t("save")}
             </Button>
           </form>
         </>

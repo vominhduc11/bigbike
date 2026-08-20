@@ -20,13 +20,18 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEnti
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
+import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -74,6 +79,12 @@ class AdminMutationApiTest {
 
     @Autowired
     private ProductVariantJpaRepository productVariantJpaRepository;
+
+    @Autowired
+    private AttributeJpaRepository attributeJpaRepository;
+
+    @Autowired
+    private AttributeValueJpaRepository attributeValueJpaRepository;
 
     @BeforeEach
     void setup() {
@@ -663,6 +674,7 @@ class AdminMutationApiTest {
         var saved = productMutationService.createProduct(create, DEV_ADMIN_ID);
         String productId = saved.id();
         String variantId = saved.variants().get(0).id();
+        String attributeValueId = saved.variants().get(0).options().get(0).attributeValueId();
 
         String updatePayload = """
                 {
@@ -686,13 +698,13 @@ class AdminMutationApiTest {
                       "isAvailable": true,
                       "sortOrder": 0,
                       "options": [
-                        { "optionName": "Size", "optionValue": "M" }
+                        { "optionName": "Size", "optionValue": "M", "attributeValueId": "%s" }
                       ],
                       "gallery": []
                     }
                   ]
                 }
-                """.formatted(suffix, suffix, variantId, suffix);
+                """.formatted(suffix, suffix, variantId, suffix, attributeValueId);
 
         mockMvc.perform(patch("/api/v1/admin/products/{id}", productId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -2038,10 +2050,34 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.data.brand.slug").value(brandSlug));
     }
 
-    private static VariantOptionRequest variantOption(String optionName, String optionValue) {
+    private VariantOptionRequest variantOption(String optionName, String optionValue) {
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(optionName);
         option.setOptionValue(optionValue);
+        option.setAttributeValueId(ensureAttributeValue(optionName, optionValue).getId());
         return option;
+    }
+
+    private AttributeValueEntity ensureAttributeValue(String name, String label) {
+        String code = ProductSlugGenerator.toSlug(name);
+        AttributeEntity attribute = attributeJpaRepository.findByCode(code).orElseGet(() -> {
+            AttributeEntity created = new AttributeEntity();
+            created.setId("test-admin-option-attribute-" + UUID.randomUUID());
+            created.setCode(code);
+            created.setName(name);
+            created.setKind("select");
+            created.setVariation(true);
+            return attributeJpaRepository.save(created);
+        });
+        String slug = ProductSlugGenerator.toSlug(label);
+        return attributeValueJpaRepository.findByAttributeIdAndSlug(attribute.getId(), slug).orElseGet(() -> {
+            AttributeValueEntity created = new AttributeValueEntity();
+            created.setId("test-admin-option-value-" + UUID.randomUUID());
+            created.setAttribute(attribute);
+            created.setSlug(slug);
+            created.setLabel(label);
+            created.setSortOrder(0);
+            return attributeValueJpaRepository.save(created);
+        });
     }
 }

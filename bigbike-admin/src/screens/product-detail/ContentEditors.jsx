@@ -5,7 +5,7 @@ import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
-import { RichTextEditor } from '../../components/RichTextEditor'
+import { DeferredRichTextEditor } from '../../components/DeferredRichTextEditor'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
@@ -639,7 +639,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
                />
             </div>
             <div className="flex flex-col gap-1">
-              <RichTextEditor
+              <DeferredRichTextEditor
                 key={`spec-value-${row._key}`}
                 value={row.value || ''}
                 onChange={(value) => updateRow(index, 'value', value)}
@@ -1032,7 +1032,7 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
                       {errQuestion && <small className="field-error">{errQuestion}</small>}
                     </div>
                     <div>
-                      <RichTextEditor
+                      <DeferredRichTextEditor
                         key={`faq-answer-${item._key}-${contentLang}`}
                         value={item[fAnswer] || ''}
                         onChange={(html) => updateItem(index, fAnswer, html)}

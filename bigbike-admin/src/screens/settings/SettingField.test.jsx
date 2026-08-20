@@ -15,8 +15,8 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../lib/contentLang', () => ({
   useContentLang: () => mocks.contentLang,
 }))
-vi.mock('../../components/RichTextEditor', () => ({
-  RichTextEditor: ({ value, onChange, placeholder, hasError }) => (
+vi.mock('../../components/DeferredRichTextEditor', () => ({
+  DeferredRichTextEditor: ({ value, onChange, placeholder, hasError }) => (
     <textarea
       aria-label="rich-editor"
       value={value}

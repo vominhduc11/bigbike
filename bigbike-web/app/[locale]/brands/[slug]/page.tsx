@@ -164,6 +164,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
             breadcrumb={heroBreadcrumb}
             bgUrl={heroBgUrl}
             illustrationUrl={heroIllustrationUrl}
+            illustrationImage={brand.logo ? { ...brand.logo, url: heroIllustrationUrl ?? undefined } : null}
             illustrationAlt={brand.logo?.alt ?? brandName}
           />
 

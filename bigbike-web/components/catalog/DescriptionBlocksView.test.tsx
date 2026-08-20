@@ -7,6 +7,7 @@ import { DescriptionBlocksView } from "./ProductDescriptionBlocks";
 vi.mock("@/lib/utils/format", () => ({
   resolveMediaUrl: (url: string | null | undefined) => url ?? null,
   formatPrice: (n: number) => String(n),
+  safeText: (value: string | null | undefined, fallback = "—") => value?.trim() || fallback,
 }));
 
 // next-intl không cần trong DescriptionBlocksView (không dùng hook localize).
@@ -63,7 +64,7 @@ describe("DescriptionBlocksView — khối feature adaptive", () => {
     expect(container.querySelector(".md\\:grid-cols-2")).toBeNull();
     const img = container.querySelector("img");
     expect(img).toBeTruthy();
-    expect(img?.getAttribute("src")).toBe("/media/anh.jpg");
+    expect(img?.getAttribute("src")).toContain("url=%2Fmedia%2Fanh.jpg");
     expect(img?.getAttribute("alt")).toBe("Ảnh mô tả");
   });
 

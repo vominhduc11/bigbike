@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { MediaImage } from "@/components/ui/MediaImage";
 import type { Review } from "./types";
 
 // Nội dung bình luận: chống tràn ngang (break-words cho chuỗi dài không khoảng
@@ -72,8 +73,12 @@ function ReviewPhotos({ photos, authorName }: { photos: string[]; authorName: st
               onClick={() => setActive(i)}
               className="block h-16 w-16 overflow-hidden border border-border bg-muted outline-none transition-opacity duration-[var(--bb-duration-fast)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={altFor(i)} loading="lazy" className="h-full w-full object-cover" />
+              <MediaImage
+                image={{ url, width: 64, height: 64 }}
+                altFallback={altFor(i)}
+                sizes="64px"
+                className="h-full w-full object-cover"
+              />
             </button>
           </li>
         ))}

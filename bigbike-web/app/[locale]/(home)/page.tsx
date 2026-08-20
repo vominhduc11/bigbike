@@ -5,15 +5,18 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { Tr } from "@/components/i18n/Tr";
-import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
-import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
-import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { toHeroSlide } from "@/components/home/heroSliderModel";
 import { Container } from "@/components/layout/Container";
-import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
+import {
+  DeferredBrandCarousel,
+  DeferredExperienceCarousel,
+  DeferredHomeFeaturedProducts,
+  DeferredHomeVideoCarousel,
+} from "@/components/home/DeferredHomeCarousels";
+import { MediaImage } from "@/components/ui/MediaImage";
 import {
   HomeAboutSection,
   HomeBlockHeading,
@@ -237,8 +240,14 @@ export default async function HomePage({ params }: HomePageProps) {
                       <div className="absolute bottom-0 right-8">
                         <Link href={href}>
                           {img ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={img} loading="lazy" className="max-h-45 w-auto max-w-full object-contain" alt={h.productName} />
+                            <MediaImage
+                              image={{ url: img }}
+                              altFallback={h.productName}
+                              width={360}
+                              height={180}
+                              sizes="(min-width: 768px) 33vw, 100vw"
+                              className="max-h-45 w-auto max-w-full object-contain"
+                            />
                           ) : null}
                         </Link>
                       </div>
@@ -271,7 +280,7 @@ export default async function HomePage({ params }: HomePageProps) {
             kicker={tHome("featuredKicker")}
             title={tHome("featuredTitle")}
           />
-          <HomeFeaturedProducts initialProducts={carouselProducts} />
+          <DeferredHomeFeaturedProducts initialProducts={carouselProducts} />
 
           <HomeCategoryGrid initialCategories={categories} />
         </Container>
@@ -281,8 +290,12 @@ export default async function HomePage({ params }: HomePageProps) {
       <section className="pt-15">
         <Container>
           <Link href={toProductListPath(locale)} title={PROMO_TITLE} className="block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="h-auto w-full" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
+            <MediaImage
+              image={{ url: PROMO_IMAGE_SRC, alt: PROMO_ALT, width: 1170, height: 501 }}
+              altFallback={PROMO_ALT}
+              className="h-auto w-full"
+              sizes="(min-width: 1200px) 1170px, calc(100vw - 32px)"
+            />
           </Link>
         </Container>
       </section>
@@ -296,7 +309,7 @@ export default async function HomePage({ params }: HomePageProps) {
             desc={tHome("experienceDescription")}
           />
           <div className="w-full">
-            <ExperienceCarousel articles={expArticles} />
+            <DeferredExperienceCarousel articles={expArticles} />
           </div>
         </section>
       )}
@@ -327,13 +340,13 @@ export default async function HomePage({ params }: HomePageProps) {
               className="pb-10 text-center [&_h2]:!text-white"
               title={tHome("videosTitle")}
             />
-            <HomeVideoCarousel videos={homeVideos} />
+            <DeferredHomeVideoCarousel videos={homeVideos} />
           </div>
         </section>
       )}
 
       {/* ===== 9. Partner slide (thương hiệu) ===== */}
-      <BrandCarousel brands={brands} />
+      <DeferredBrandCarousel brands={brands} />
 
       {/* ===== 10. Content bottom (SEO wyswyg) — client localizer ===== */}
       <div data-bb-focus="seo_home">

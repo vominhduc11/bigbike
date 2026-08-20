@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { captureChatLead } from "@/lib/api/client-api";
+import { createChatLeadSchema, type ChatLeadFormValues } from "@/lib/schemas/customer";
 
 export type BigBikeLeadDraft = {
   name: string;
@@ -47,11 +50,17 @@ export function BigBikeLeadForm({
   accountContact,
 }: BigBikeLeadFormProps) {
   const t = useTranslations("Support");
+  const tValidation = useTranslations("FormValidation");
   const [pendingAction, setPendingAction] = useState<"submit" | "decline" | null>(null);
   const [error, setError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [consentError, setConsentError] = useState("");
   const [useManualForm, setUseManualForm] = useState(false);
+  const leadValidation = (key: string) => key === "required"
+    ? t("leadPhoneRequired")
+    : key === "consentRequired" ? t("leadConsentRequired") : tValidation(key);
+  const { control, handleSubmit, formState: { errors } } = useForm<ChatLeadFormValues>({
+    resolver: zodResolver(createChatLeadSchema(leadValidation)),
+    values: draft,
+  });
 
   function update(patch: Partial<BigBikeLeadDraft>) {
     onDraftChange({ ...draft, ...patch });
@@ -86,24 +95,17 @@ export function BigBikeLeadForm({
     setError("");
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(values: ChatLeadFormValues) {
     if (pendingAction) return;
-
-    const nextPhoneError = draft.phone.trim() ? "" : t("leadPhoneRequired");
-    const nextConsentError = draft.consented ? "" : t("leadConsentRequired");
-    setPhoneError(nextPhoneError);
-    setConsentError(nextConsentError);
     setError("");
-    if (nextPhoneError || nextConsentError) return;
 
     setPendingAction("submit");
     try {
       await captureChatLead({
         conversationId,
-        name: draft.name.trim() || undefined,
-        phone: draft.phone.trim(),
-        note: draft.note.trim() || undefined,
+        name: values.name || undefined,
+        phone: values.phone,
+        note: values.note || undefined,
         contactSource: "FORM",
       });
       onCaptured();
@@ -191,7 +193,7 @@ export function BigBikeLeadForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3 border border-chat bg-background p-4">
+    <form onSubmit={handleSubmit(submit)} className="grid gap-3 border border-chat bg-background p-4" noValidate>
       <div>
         <h3 className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
           {t("leadTitle")}
@@ -203,63 +205,37 @@ export function BigBikeLeadForm({
 
       <div className="grid gap-1">
         <Label htmlFor="bigbike-lead-name">{t("leadName")}</Label>
-        <Input
-          id="bigbike-lead-name"
-          value={draft.name}
-          maxLength={100}
-          disabled={pendingAction !== null}
-          onChange={(event) => update({ name: event.target.value })}
-        />
+        <Controller name="name" control={control} render={({ field }) => (
+          <Input id="bigbike-lead-name" value={field.value} maxLength={100} disabled={pendingAction !== null} onChange={(event) => { field.onChange(event); update({ name: event.target.value }); }} />
+        )} />
       </div>
 
       <div className="grid gap-1">
         <Label htmlFor="bigbike-lead-phone">{t("leadPhone")}</Label>
-        <Input
-          id="bigbike-lead-phone"
-          type="tel"
-          value={draft.phone}
-          maxLength={32}
-          disabled={pendingAction !== null}
-          aria-invalid={Boolean(phoneError)}
-          aria-describedby={phoneError ? "bigbike-lead-phone-error" : undefined}
-          onChange={(event) => {
-            update({ phone: event.target.value });
-            if (phoneError) setPhoneError("");
-          }}
-        />
-        {phoneError ? <p id="bigbike-lead-phone-error" role="alert" className="text-a5-meta text-destructive">{phoneError}</p> : null}
+        <Controller name="phone" control={control} render={({ field }) => (
+          <Input id="bigbike-lead-phone" type="tel" value={field.value} maxLength={32} disabled={pendingAction !== null} aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? "bigbike-lead-phone-error" : undefined} onChange={(event) => { field.onChange(event); update({ phone: event.target.value }); }} />
+        )} />
+        {errors.phone ? <p id="bigbike-lead-phone-error" role="alert" className="text-a5-meta text-destructive">{errors.phone.message}</p> : null}
       </div>
 
       <div className="grid gap-1">
         <Label htmlFor="bigbike-lead-note">{t("leadNote")}</Label>
-        <Textarea
-          id="bigbike-lead-note"
-          value={draft.note}
-          maxLength={500}
-          disabled={pendingAction !== null}
-          className="min-h-24"
-          onChange={(event) => update({ note: event.target.value })}
-        />
+        <Controller name="note" control={control} render={({ field }) => (
+          <Textarea id="bigbike-lead-note" value={field.value} maxLength={500} disabled={pendingAction !== null} className="min-h-24" onChange={(event) => { field.onChange(event); update({ note: event.target.value }); }} />
+        )} />
+        {errors.note ? <p role="alert" className="text-a5-meta text-destructive">{errors.note.message}</p> : null}
       </div>
 
       <div className="grid gap-1">
         <div className="flex min-h-11 items-center gap-3">
-          <Checkbox
-            id="bigbike-lead-consent"
-            checked={draft.consented}
-            disabled={pendingAction !== null}
-            aria-invalid={Boolean(consentError)}
-            aria-describedby={consentError ? "bigbike-lead-consent-error" : undefined}
-            onCheckedChange={(checked) => {
-              update({ consented: checked === true });
-              if (consentError) setConsentError("");
-            }}
-          />
+          <Controller name="consented" control={control} render={({ field }) => (
+            <Checkbox id="bigbike-lead-consent" checked={field.value} disabled={pendingAction !== null} aria-invalid={Boolean(errors.consented)} aria-describedby={errors.consented ? "bigbike-lead-consent-error" : undefined} onCheckedChange={(checked) => { const consented = checked === true; field.onChange(consented); update({ consented }); }} />
+          )} />
           <Label htmlFor="bigbike-lead-consent" className="font-body text-a5-meta font-normal leading-relaxed">
             {t("leadConsent")}
           </Label>
         </div>
-        {consentError ? <p id="bigbike-lead-consent-error" role="alert" className="text-a5-meta text-destructive">{consentError}</p> : null}
+        {errors.consented ? <p id="bigbike-lead-consent-error" role="alert" className="text-a5-meta text-destructive">{errors.consented.message}</p> : null}
       </div>
 
       {error ? <p role="alert" className="border border-destructive bg-accent p-3 text-a5-meta text-destructive">{error}</p> : null}

@@ -1338,6 +1338,21 @@
     "hotlineLabel": "Hotline",
     "facebookLabel": "Facebook"
   },
+  "FormValidation": {
+    "required": "Vui lòng nhập thông tin này.",
+    "emailInvalid": "Vui lòng nhập đúng địa chỉ email.",
+    "phoneInvalid": "Vui lòng nhập đúng số điện thoại.",
+    "consentRequired": "Vui lòng đồng ý để tiếp tục.",
+    "ratingInvalid": "Vui lòng chọn số sao hợp lệ.",
+    "passwordLength": "Mật khẩu mới phải có từ 8 đến 256 ký tự.",
+    "passwordMismatch": "Xác nhận mật khẩu chưa khớp.",
+    "currentPasswordRequired": "Vui lòng nhập mật khẩu hiện tại để thay đổi thông tin này.",
+    "max80": "Thông tin không được quá 80 ký tự.",
+    "max100": "Thông tin không được quá 100 ký tự.",
+    "max255": "Thông tin không được quá 255 ký tự.",
+    "max500": "Thông tin không được quá 500 ký tự.",
+    "max1000": "Thông tin không được quá 1.000 ký tự."
+  },
   "Support": {
     "ariaPanel": "Trợ lý BigBike",
     "needHelp": "Hỏi trợ lý BigBike",

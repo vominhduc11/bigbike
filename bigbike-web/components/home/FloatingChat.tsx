@@ -9,6 +9,7 @@ import {
   type FormEvent,
   type UIEvent,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import {
@@ -42,6 +43,7 @@ import {
   type ChatProductCard,
 } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { queryKeys } from "@/lib/query/keys";
 import {
   CHAT_STORAGE_KEY,
   CHAT_STORAGE_TTL_MS,
@@ -242,6 +244,7 @@ export function FloatingChat({
   zaloDisplay,
   messengerDisplay,
 }: Readonly<FloatingChatProps>) {
+  const queryClient = useQueryClient();
   const t = useTranslations("Support");
   const pathname = usePathname();
   const activeLocale = useLocale() === "en" ? "en" : "vi";
@@ -562,7 +565,13 @@ export function FloatingChat({
     availabilityLocaleRef.current = activeLocale;
     if (!restoredSessionRef.current) setAvailabilityState("loading");
     try {
-      const availability = await fetchChatAvailability(activeLocale);
+      if (force) await queryClient.invalidateQueries({ queryKey: queryKeys.chatAvailability(activeLocale) });
+      const availability = await queryClient.fetchQuery({
+        queryKey: queryKeys.chatAvailability(activeLocale),
+        queryFn: () => fetchChatAvailability(activeLocale),
+        staleTime: 5 * 60 * 1000,
+        retry: false,
+      });
       if (!mountedRef.current) return;
       const nextContacts = mergeContacts(availability.contacts, fallbackContacts);
       const nextMaxTurns = validTurnCount(availability.maxTurns, DEFAULT_MAX_TURNS) || DEFAULT_MAX_TURNS;

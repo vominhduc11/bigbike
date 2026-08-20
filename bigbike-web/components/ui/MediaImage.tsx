@@ -35,7 +35,35 @@ type MediaImageProps = {
   /** Responsive sizes hint so next/image picks an appropriately scaled source
    *  for grid cells (without it, next/image assumes 100vw and over-fetches). */
   sizes?: string;
+  /** Use only inside a positioned box with a fixed, already-reserved aspect ratio. */
+  fill?: boolean;
 };
+
+/**
+ * Match the deliberately narrow `images.remotePatterns` allowlist in next.config.
+ * Legacy content can still contain arbitrary URLs; rendering those with native img
+ * is safer than letting next/image return a broken optimizer response. Relative
+ * paths stay on the current origin and are always safe to optimize.
+ */
+function canOptimizeWithNextImage(src: string): boolean {
+  if (src.startsWith("/")) return true;
+
+  try {
+    const url = new URL(src);
+    const host = url.hostname.toLowerCase();
+    const isGoogleCdn = host.endsWith(".googleusercontent.com");
+    const isFacebookCdn = host.endsWith(".fbcdn.net");
+    return (
+      (url.protocol === "https:" && host === "cdn.bigbike.vn" && url.pathname.startsWith("/uploads/")) ||
+      (url.protocol === "http:" && host === "localhost" && url.port === "9000") ||
+      (url.protocol === "https:" && host === "img.youtube.com" && url.pathname.startsWith("/vi/")) ||
+      (url.protocol === "https:" && (isGoogleCdn || isFacebookCdn || host === "platform-lookaside.fbsbx.com")) ||
+      (url.protocol === "https:" && host === "res.cloudinary.com" && url.pathname.startsWith("/daohufjec/image/upload/"))
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function MediaImage({
   image,
@@ -46,6 +74,7 @@ export function MediaImage({
   preload = false,
   loading,
   sizes,
+  fill = false,
 }: MediaImageProps) {
   const src = resolveMediaUrl(image?.url?.trim());
   const storedAlt = image?.alt;
@@ -63,12 +92,27 @@ export function MediaImage({
     );
   }
 
+  const resolvedWidth = image?.width ?? width;
+  const resolvedHeight = image?.height ?? height;
+  if (!canOptimizeWithNextImage(src)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- legacy source is outside the explicit Next image allowlist.
+      <img
+        src={src}
+        alt={alt}
+        width={resolvedWidth}
+        height={resolvedHeight}
+        className={className}
+        loading={preload ? "eager" : loading ?? "lazy"}
+      />
+    );
+  }
+
   return (
     <Image
       src={src}
       alt={alt}
-      width={image?.width ?? width}
-      height={image?.height ?? height}
+      {...(fill ? { fill: true } : { width: resolvedWidth, height: resolvedHeight })}
       className={className}
       preload={preload}
       loading={preload ? "eager" : loading ?? "lazy"}

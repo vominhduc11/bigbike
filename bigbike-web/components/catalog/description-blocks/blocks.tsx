@@ -6,6 +6,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { richContentClassName } from "@/components/layout/RichContent";
 import { cn } from "@/lib/utils";
 import { ClampableHtmlSection } from "@/components/catalog/ClampableHtmlSection";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT } from "./grouping";
 
@@ -26,13 +27,15 @@ export function MediaBlock({ block }: { block: DescriptionBlock }) {
     if (!src) return null;
     return (
       <figure className="m-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={block.alt || ""}
-          loading="lazy"
-          className="w-full border border-border object-cover"
-        />
+        <div className="relative aspect-[4/3] w-full overflow-hidden border border-border">
+          <MediaImage
+            image={{ url: src, alt: block.alt }}
+            altFallback=""
+            fill
+            sizes="(min-width: 1200px) 1200px, calc(100vw - 32px)"
+            className="object-cover"
+          />
+        </div>
         {block.caption ? (
           <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">{block.caption}</figcaption>
         ) : null}

@@ -20,6 +20,7 @@ import { telHref } from "@/lib/utils/format";
 import { toHomePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { pickSetting } from "@/lib/utils/settings";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 /**
  * Nội dung liên hệ/thương hiệu/menu chân trang — HARDCODE theo yêu cầu chủ shop
@@ -215,12 +216,11 @@ export async function Footer({ locale }: { locale: Locale }) {
       <div className="bg-footer-top md:hidden">
         <Container variant="blog" className="px-[15px]! pb-2.5">
           <a href={FOOTER_BCT_URL} className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/commerce-certification.png"
-              alt={t("commerceCertificationAlt")}
-              width="200"
-              height="74"
+            <MediaImage
+              image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
+              altFallback={t("commerceCertificationAlt")}
+              sizes="200px"
+              className="h-auto w-50"
             />
             <p className="mb-0 mt-[3px]! text-a4-content leading-body! text-[color:var(--bb-text-footer-legal)]">
               <Tr ns="Footer" k="businessRegistration" />
@@ -233,8 +233,12 @@ export async function Footer({ locale }: { locale: Locale }) {
               {t("copyright", { year: new Date().getFullYear() })}
             </p>
             <Link href={toHomePath(locale)} className="justify-self-end">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/footer-wordmark.png" alt="BigBike" width="100" height="37" />
+              <MediaImage
+                image={{ url: "/brand/footer-wordmark.png", width: 150, height: 55 }}
+                altFallback="BigBike"
+                sizes="100px"
+                className="h-auto w-25"
+              />
             </Link>
           </Container>
         </div>
@@ -244,8 +248,12 @@ export async function Footer({ locale }: { locale: Locale }) {
           <div className="grid grid-cols-12 items-center gap-x-7.5 pb-[31px] pt-7.5">
             <div className="col-span-2">
               <Link href={toHomePath(locale)} className="inline-block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand/footer-wordmark.png" alt="BigBike" width="150" height="56" />
+                <MediaImage
+                  image={{ url: "/brand/footer-wordmark.png", width: 150, height: 55 }}
+                  altFallback="BigBike"
+                  sizes="150px"
+                  className="h-auto w-37.5"
+                />
               </Link>
             </div>
             <div className="col-span-4">
@@ -253,12 +261,11 @@ export async function Footer({ locale }: { locale: Locale }) {
             </div>
             <div className="col-span-6 pl-34.5 pr-32.5">
               <a href={FOOTER_BCT_URL} className="flex flex-col items-start text-white! no-underline!">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/brand/commerce-certification.png"
-                  alt={t("commerceCertificationAlt")}
-                  width="200"
-                  height="74"
+                <MediaImage
+                  image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
+                  altFallback={t("commerceCertificationAlt")}
+                  sizes="200px"
+                  className="h-auto w-50"
                 />
                 <p className="mb-0 mt-2.5! leading-body!">
                   <Tr ns="Footer" k="businessRegistration" />

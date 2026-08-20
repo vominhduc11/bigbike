@@ -19,6 +19,7 @@ import ClothingSizeTool from "@/components/guide/ClothingSizeTool";
 import { HelmetSizeGuideContent } from "@/components/guide/HelmetSizeGuideContent";
 import { ClothingSizeGuideContent } from "@/components/guide/ClothingSizeGuideContent";
 import { RichContent } from "@/components/layout/RichContent";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 type GuidePageProps = {
   subSegments?: string[];
@@ -180,10 +181,8 @@ function EntryIcon({ icon, label }: { icon: string | null; label: string }) {
   if (!icon) return null;
   if (icon.startsWith("/") || icon.startsWith("http")) {
     const src = resolveMediaUrl(icon) ?? icon;
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={label} className="mb-3 h-10 w-10 object-contain" />;
+    return <MediaImage image={{ url: src, width: 40, height: 40 }} altFallback={label} sizes="40px" className="mb-3 h-10 w-10 object-contain" />;
   }
   const Lucide = ICONS[icon];
   return Lucide ? <Lucide size={32} className="mb-3 text-foreground" aria-hidden /> : null;
 }
-

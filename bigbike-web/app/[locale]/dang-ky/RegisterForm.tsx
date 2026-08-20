@@ -15,6 +15,7 @@ import { FormRootError } from "@/components/ui/FormRootError";
 import { Button } from "@/components/ui/button";
 import { AuthField } from "@/components/auth/AuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 /**
  * Form đăng ký theo theme WP — port `form.form` của page-register.php (lưới
@@ -47,7 +48,8 @@ export function RegisterForm({ returnTo, socialErrorKey }: { returnTo?: string; 
       await refreshAuth();
       setConfirmedEmail(values.email);
       setRegistered(true);
-    } catch {
+    } catch (error) {
+      reportStorefrontFailure("register", error);
       setError("root", { message: t("errorGeneric") });
     }
   }

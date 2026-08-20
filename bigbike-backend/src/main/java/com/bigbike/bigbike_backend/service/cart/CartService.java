@@ -19,6 +19,7 @@ import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class CartService {
                 .filter(c -> STATUS_ACTIVE.equals(c.getStatus()))
                 .toList();
         if (!active.isEmpty()) {
-            return active.get(0);
+            return touch(active.get(0));
         }
         Instant now = Instant.now();
         CartEntity cart = new CartEntity();
@@ -66,6 +67,7 @@ public class CartService {
         cart.setCurrency(CURRENCY_VND);
         cart.setCreatedAt(now);
         cart.setUpdatedAt(now);
+        cart.setExpiresAt(expiresAfterRetention(now));
         try {
             return cartRepo.save(cart);
         } catch (DataIntegrityViolationException ex) {
@@ -73,6 +75,7 @@ public class CartService {
             return cartRepo.findByCustomerId(customerId).stream()
                     .filter(c -> STATUS_ACTIVE.equals(c.getStatus()))
                     .findFirst()
+                    .map(this::touch)
                     .orElseThrow(() -> ex);
         }
     }
@@ -80,6 +83,7 @@ public class CartService {
     @Transactional
     public CartEntity getOrCreateGuestCart(String guestId) {
         return cartRepo.findBySessionIdAndStatus(guestId, STATUS_ACTIVE).stream().findFirst()
+                .map(this::touch)
                 .orElseGet(() -> {
                     Instant now = Instant.now();
                     CartEntity cart = new CartEntity();
@@ -88,6 +92,7 @@ public class CartService {
                     cart.setCurrency(CURRENCY_VND);
                     cart.setCreatedAt(now);
                     cart.setUpdatedAt(now);
+                    cart.setExpiresAt(expiresAfterRetention(now));
                     return cartRepo.save(cart);
                 });
     }
@@ -238,8 +243,7 @@ public class CartService {
             }
 
             guestCart.setStatus("MERGED");
-            guestCart.setUpdatedAt(Instant.now());
-            cartRepo.save(guestCart);
+            touch(guestCart);
 
             return refreshCartTotals(customerCart);
         }).orElse(customerCart);
@@ -315,8 +319,18 @@ public class CartService {
     private CartEntity refreshCartTotals(CartEntity cart) {
         List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
         calculator.recalculateCart(cart, items);
-        cart.setUpdatedAt(Instant.now());
+        return touch(cart);
+    }
+
+    private CartEntity touch(CartEntity cart) {
+        Instant now = Instant.now();
+        cart.setUpdatedAt(now);
+        cart.setExpiresAt(expiresAfterRetention(now));
         return cartRepo.save(cart);
+    }
+
+    private static Instant expiresAfterRetention(Instant interactionAt) {
+        return interactionAt.plus(30, ChronoUnit.DAYS);
     }
 
     private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {

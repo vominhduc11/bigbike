@@ -4,18 +4,17 @@ import type { ReactNode } from "react";
 import { Phone, Share2, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { MediaImage } from "@/components/ui/MediaImage";
+import type { ImageAsset } from "@/lib/contracts/public";
 import { telHref } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-
-/* eslint-disable @next/next/no-img-element */
 
 export type AboutBrandLogo = {
   id: string;
   name: string;
   slug: string;
   slugEn?: string | null;
-  logoUrl: string;
-  logoAlt: string;
+  logo: ImageAsset;
 };
 
 export type AboutContactInfo = {
@@ -31,7 +30,7 @@ function ServiceTile({
   body,
   highlight,
 }: {
-  image: string;
+  image: ImageAsset;
   title: string;
   body: string;
   highlight: boolean;
@@ -43,7 +42,7 @@ function ServiceTile({
         highlight ? "bg-brand text-white" : "bg-card text-foreground",
       )}
     >
-      <img src={image} alt={title} className="mb-6 block h-auto max-w-full" />
+      <MediaImage image={image} altFallback={title} className="mb-6 block h-auto max-w-full" sizes="64px" />
       <h3 className="mb-4 font-body text-a4-content font-bold leading-title">
         {title}
       </h3>
@@ -81,11 +80,11 @@ export function AboutPageContent({
 }) {
   const t = useTranslations("About");
   const services = [
-    { title: t("service1Title"), body: t("service1Body"), image: "/brand/about/service-1.png", highlight: true },
-    { title: t("service2Title"), body: t("service2Body"), image: "/brand/about/service-2.png", highlight: false },
-    { title: t("service3Title"), body: t("service3Body"), image: "/brand/about/service-3.png", highlight: false },
-    { title: t("service4Title"), body: t("service4Body"), image: "/brand/about/service-4.png", highlight: false },
-    { title: t("service5Title"), body: t("service5Body"), image: "/brand/about/service-5.png", highlight: true },
+    { title: t("service1Title"), body: t("service1Body"), image: { url: "/brand/about/service-1.png", width: 52, height: 42 }, highlight: true },
+    { title: t("service2Title"), body: t("service2Body"), image: { url: "/brand/about/service-2.png", width: 48, height: 43 }, highlight: false },
+    { title: t("service3Title"), body: t("service3Body"), image: { url: "/brand/about/service-3.png", width: 43, height: 43 }, highlight: false },
+    { title: t("service4Title"), body: t("service4Body"), image: { url: "/brand/about/service-4.png", width: 48, height: 43 }, highlight: false },
+    { title: t("service5Title"), body: t("service5Body"), image: { url: "/brand/about/service-5.png", width: 64, height: 42 }, highlight: true },
   ];
   const intro = [t("intro1"), t("intro2"), t("intro3"), t("intro4")].filter(
     (paragraph) => paragraph.trim().length > 0,
@@ -122,7 +121,7 @@ export function AboutPageContent({
                 title={brand.name}
                 className="flex items-center justify-center"
               >
-                <img src={brand.logoUrl} alt={brand.logoAlt} className="block h-auto max-w-full" />
+                <MediaImage image={brand.logo} altFallback={brand.name} className="block h-auto max-w-full" sizes="120px" />
               </LocalizedLink>
             ))}
           </div>

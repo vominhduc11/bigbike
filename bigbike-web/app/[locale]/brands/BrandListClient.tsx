@@ -15,8 +15,7 @@ import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toBrandListPath } from "@/lib/utils/routes";
-
-/* eslint-disable @next/next/no-img-element */
+import { MediaImage } from "@/components/ui/MediaImage";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_SORT = "name:asc";
@@ -125,9 +124,12 @@ export function BrandListClient({
               >
                 <span className="flex h-16 w-full items-center justify-center">
                   {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={brand.logo?.alt ?? name}
+                    <MediaImage
+                      image={{ ...brand.logo, url: logoUrl }}
+                      altFallback={name}
+                      width={256}
+                      height={128}
+                      sizes="(min-width: 1024px) 160px, calc((100vw - 48px) / 2)"
                       className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (

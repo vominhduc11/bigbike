@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
@@ -19,11 +20,9 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadRepository;
@@ -58,7 +57,6 @@ public class ProductMutationService {
 
     private final ProductJpaRepository productJpaRepository;
     private final ProductVariantJpaRepository productVariantJpaRepository;
-    private final AttributeJpaRepository attributeJpaRepository;
     private final AttributeValueJpaRepository attributeValueJpaRepository;
     private final CatalogReadRepository catalogReadRepository;
     private final JpaCatalogReadRepository jpaCatalogReadRepository;
@@ -70,11 +68,11 @@ public class ProductMutationService {
     private final InventoryPolicyService inventoryPolicyService;
     private final AdminInventoryWsService adminInventoryWsService;
     private final SlugRedirectHelper slugRedirectHelper;
+    private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
     public ProductMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             ObjectProvider<ProductVariantJpaRepository> productVariantJpaRepositoryProvider,
-            ObjectProvider<AttributeJpaRepository> attributeJpaRepositoryProvider,
             ObjectProvider<AttributeValueJpaRepository> attributeValueJpaRepositoryProvider,
             CatalogReadRepository catalogReadRepository,
             ObjectProvider<JpaCatalogReadRepository> jpaCatalogReadRepositoryProvider,
@@ -85,11 +83,11 @@ public class ProductMutationService {
             CatalogRequestValidator catalogRequestValidator,
             InventoryPolicyService inventoryPolicyService,
             SlugRedirectHelper slugRedirectHelper,
-            AdminInventoryWsService adminInventoryWsService
+            AdminInventoryWsService adminInventoryWsService,
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
-        this.attributeJpaRepository = attributeJpaRepositoryProvider.getIfAvailable();
         this.attributeValueJpaRepository = attributeValueJpaRepositoryProvider.getIfAvailable();
         this.catalogReadRepository = catalogReadRepository;
         this.jpaCatalogReadRepository = jpaCatalogReadRepositoryProvider.getIfAvailable();
@@ -101,6 +99,7 @@ public class ProductMutationService {
         this.inventoryPolicyService = inventoryPolicyService;
         this.slugRedirectHelper = slugRedirectHelper;
         this.adminInventoryWsService = adminInventoryWsService;
+        this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
     }
 
     @Transactional
@@ -373,6 +372,7 @@ public class ProductMutationService {
 
     private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, action, resourceType, null, before, after));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
     }
 
     private static String productJson(ProductEntity e) {
@@ -750,48 +750,41 @@ public class ProductMutationService {
         return parts.isEmpty() ? "Biến thể " + (index + 1) : String.join(" - ", parts);
     }
 
-    private void linkAttributeReferences(ProductVariantOptionEntity opt,
-                                          String optionName, String optionValue,
-                                          String attributeValueId) {
-        if (attributeValueId != null && attributeValueJpaRepository != null) {
-            AttributeValueEntity byId = attributeValueJpaRepository.findById(attributeValueId).orElse(null);
-            if (byId != null && matchesOptionValue(byId, optionValue)) {
-                opt.setAttribute(byId.getAttribute());
-                opt.setAttributeValue(byId);
-                return;
-            }
+    void linkAttributeReferences(ProductVariantOptionEntity opt,
+                                 String optionName, String optionValue,
+                                 String attributeValueId) {
+        if (attributeValueId == null || attributeValueJpaRepository == null) {
+            throw ValidationException.fromField(
+                    "variants.options.attributeValueId", "REQUIRED",
+                    "Phải chọn giá trị thuộc tính hợp lệ cho mỗi tuỳ chọn biến thể.");
         }
-
-        if (attributeJpaRepository == null) return;
-
-        AttributeEntity attribute = attributeJpaRepository.findByCode(optionName).orElse(null);
-        if (attribute == null) {
-            attribute = attributeJpaRepository.findByNameIgnoreCase(optionName).orElse(null);
+        AttributeValueEntity value = attributeValueJpaRepository.findById(attributeValueId)
+                .orElseThrow(() -> ValidationException.fromField(
+                        "variants.options.attributeValueId", "NOT_FOUND",
+                        "Giá trị thuộc tính đã chọn không còn tồn tại."));
+        if (value.getAttribute() == null
+                || !matchesAttributeName(value.getAttribute(), optionName)
+                || !matchesOptionValue(value, optionValue)) {
+            throw ValidationException.fromField(
+                    "variants.options.attributeValueId", "MISMATCH",
+                    "Giá trị thuộc tính không khớp với loại hoặc nhãn tuỳ chọn biến thể.");
         }
-        if (attribute == null) return;
-        opt.setAttribute(attribute);
-
-        if (attributeValueJpaRepository == null) return;
-        Optional<AttributeValueEntity> valueOpt =
-                attributeValueJpaRepository.findByAttributeIdAndSlug(attribute.getId(), optionValue);
-        if (valueOpt.isEmpty()) {
-            String normalizedSlug = normalizeVariantToken(optionValue);
-            if (!normalizedSlug.isEmpty()) {
-                valueOpt = attributeValueJpaRepository
-                        .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug);
-                if (valueOpt.isEmpty()) {
-                    valueOpt = attributeValueJpaRepository
-                            .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug.replace(' ', '-'));
-                }
-            }
-        }
-        valueOpt.ifPresent(opt::setAttributeValue);
+        opt.setAttribute(value.getAttribute());
+        opt.setAttributeValue(value);
     }
 
     private static boolean matchesOptionValue(AttributeValueEntity value, String optionValue) {
         String normalized = normalizeVariantToken(optionValue);
         return normalized.equals(normalizeVariantToken(value.getSlug()))
                 || normalized.equals(normalizeVariantToken(value.getLabel()));
+    }
+
+    private static boolean matchesAttributeName(
+            com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity attribute,
+            String optionName) {
+        String normalized = normalizeVariantToken(optionName);
+        return normalized.equals(normalizeVariantToken(attribute.getCode()))
+                || normalized.equals(normalizeVariantToken(attribute.getName()));
     }
 
     private static String generateId(String prefix) {

@@ -1338,6 +1338,21 @@
     "hotlineLabel": "Hotline",
     "facebookLabel": "Facebook"
   },
+  "FormValidation": {
+    "required": "Please enter this information.",
+    "emailInvalid": "Please enter a valid email address.",
+    "phoneInvalid": "Please enter a valid phone number.",
+    "consentRequired": "Please give your consent to continue.",
+    "ratingInvalid": "Please choose a valid star rating.",
+    "passwordLength": "The new password must be 8 to 256 characters.",
+    "passwordMismatch": "The password confirmation does not match.",
+    "currentPasswordRequired": "Please enter your current password to change this information.",
+    "max80": "This information cannot exceed 80 characters.",
+    "max100": "This information cannot exceed 100 characters.",
+    "max255": "This information cannot exceed 255 characters.",
+    "max500": "This information cannot exceed 500 characters.",
+    "max1000": "This information cannot exceed 1,000 characters."
+  },
   "Support": {
     "ariaPanel": "BigBike Assistant",
     "needHelp": "Ask the BigBike Assistant",

@@ -52,8 +52,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         name: brand.name,
         slug: brand.slug,
         slugEn: null,
-        logoUrl,
-        logoAlt: brand.logo?.alt ?? brand.name,
+        logo: { ...brand.logo, url: logoUrl },
       };
     })
     .filter((b): b is AboutBrandLogo => b !== null);

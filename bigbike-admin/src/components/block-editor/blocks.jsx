@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
-import { RichTextEditor } from '../RichTextEditor'
+import { DeferredRichTextEditor } from '../DeferredRichTextEditor'
 import { cn, generateId } from '@/lib/utils'
 import { parseSizeGuide, parseSizeGuideResult, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
 import { parseSuitabilityCards, parseSuitabilityResult, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
@@ -113,7 +113,7 @@ export function ParagraphBlockEditor({ block, onChange, disabled, contentLang = 
   const fHtml = isEn ? 'htmlEn' : 'html'
   return (
     <div className="flex-1">
-      <RichTextEditor
+      <DeferredRichTextEditor
         key={`${block._key}-${contentLang}`}
         value={block[fHtml] || ''}
         onChange={(html) => onChange({ [fHtml]: html })}
@@ -340,7 +340,7 @@ export function CalloutBlockEditor({ block, onChange, disabled, contentLang = 'v
           <SelectItem value="note">{t('products.detail.blocks.calloutVariantNote')}</SelectItem>
         </SelectContent>
       </Select>
-      <RichTextEditor
+      <DeferredRichTextEditor
         key={`${block._key}-${contentLang}`}
         value={block[fHtml] || ''}
         onChange={(html) => onChange({ [fHtml]: html })}
@@ -437,7 +437,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       />
 
       {/* Đoạn mô tả */}
-      <RichTextEditor
+      <DeferredRichTextEditor
         key={`${block._key}-${contentLang}`}
         value={block[fHtml] || ''}
         onChange={(html) => onChange({ [fHtml]: html })}
@@ -635,7 +635,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                   aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
               </div>
               <div className="flex flex-col gap-1">
-                <RichTextEditor
+                <DeferredRichTextEditor
                   key={`suitability-audience-${i}-${contentLang}`}
                   value={card.audience || ''}
                   onChange={(value) => updateCard(i, { audience: value })}

@@ -3,7 +3,8 @@
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { sectionHeading } from "@/lib/ui-classes";
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Locale } from "@/i18n/locale";
 import { toHomePath, toOrderConfirmPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
+import { createOrderLookupSchema, type OrderLookupFormValues } from "@/lib/schemas/customer";
 
 type Props = {
   orderNumber?: string;
@@ -93,37 +95,31 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
 function OrderLookupForm() {
   const locale = useLocale() as Locale;
   const t = useTranslations("OrderConfirm");
+  const tValidation = useTranslations("FormValidation");
   const router = useRouter();
-  const [orderNumber, setOrderNumber] = useState("");
-  const [orderKey, setOrderKey] = useState("");
-  const [error, setError] = useState("");
+  const lookupValidation = (key: string) => key === "required" ? t("lookupRequired") : tValidation(key);
+  const { register, handleSubmit, formState: { errors } } = useForm<OrderLookupFormValues>({
+    resolver: zodResolver(createOrderLookupSchema(lookupValidation)),
+  });
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const number = orderNumber.trim();
-    const key = orderKey.trim();
-    if (!number || !key) {
-      setError(t("lookupRequired"));
-      return;
-    }
-    setError("");
-    router.push(toOrderConfirmPath(number, key, locale));
+  function submit(values: OrderLookupFormValues) {
+    router.push(toOrderConfirmPath(values.orderNumber, values.orderKey, locale));
   }
 
   return (
     <section className="mx-auto max-w-120 border border-border bg-card p-6 sm:p-8">
       <h1 className="font-cta text-a2-heading uppercase text-foreground">{t("lookupTitle")}</h1>
       <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("lookupDescription")}</p>
-      <form onSubmit={submit} className="mt-6 grid gap-4">
+      <form onSubmit={handleSubmit(submit)} className="mt-6 grid gap-4" noValidate>
         <div className="grid gap-1.5">
           <Label htmlFor="order-lookup-number">{t("lookupOrderNumber")}</Label>
-          <Input id="order-lookup-number" value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} autoComplete="off" />
+          <Input id="order-lookup-number" {...register("orderNumber")} autoComplete="off" />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="order-lookup-key">{t("lookupVerificationCode")}</Label>
-          <Input id="order-lookup-key" value={orderKey} onChange={(event) => setOrderKey(event.target.value)} autoComplete="off" />
+          <Input id="order-lookup-key" {...register("orderKey")} autoComplete="off" />
         </div>
-        {error ? <p role="alert" className="text-a5-meta text-destructive">{error}</p> : null}
+        {(errors.orderNumber || errors.orderKey) ? <p role="alert" className="text-a5-meta text-destructive">{errors.orderNumber?.message ?? errors.orderKey?.message}</p> : null}
         <Button type="submit" className="w-full">{t("lookupSubmit")}</Button>
       </form>
       <p className="mt-4 text-center text-a5-meta text-muted-foreground">{t("lookupPrivacy")}</p>

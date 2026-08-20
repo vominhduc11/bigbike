@@ -174,6 +174,16 @@ inactive keys disappear automatically. Redis errors use the fail-closed/emergenc
 defined in `RATE_LIMITING.md`; the fallback is deliberately not distributed and must page
 operations. `OWNER_CONFIRMED_2026-08-12`
 
+## Catalog reference cache (Redis)
+
+Category, brand and attribute dictionaries are low-churn reference data and may use the existing
+shared Redis instance. Cache entries are immutable read projections, never managed JPA entities;
+their safety TTL is one hour. A Redis outage is non-fatal for these reads: the backend logs the
+cache error and reads PostgreSQL normally. After a successful committed product, category, brand
+or attribute mutation, the relevant reference-cache keys are evicted so customers never wait for
+the TTL to see a management change. This cache is separate from rate-limit state and adds no new
+Redis service. `OWNER_CONFIRMED_2026-08-20`
+
 ## Media Integration Policy
 
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`

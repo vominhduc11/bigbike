@@ -20,11 +20,15 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.chat.AiChatClient;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
@@ -81,6 +85,8 @@ public class ChatProductDiscoveryApiTest {
 
     @Autowired private WebApplicationContext webApplicationContext;
     @Autowired private ProductJpaRepository productRepository;
+    @Autowired private AttributeJpaRepository attributeRepository;
+    @Autowired private AttributeValueJpaRepository attributeValueRepository;
     @Autowired private CategoryJpaRepository categoryRepository;
     @Autowired private BrandJpaRepository brandRepository;
     @Autowired private ChatMessageJpaRepository messageRepository;
@@ -891,7 +897,16 @@ public class ChatProductDiscoveryApiTest {
         return acceptanceFixture;
     }
 
-    private static List<ProductVariantEntity> sellableSizeVariants(ProductEntity product, String marker) {
+    private List<ProductVariantEntity> sellableSizeVariants(ProductEntity product, String marker) {
+        AttributeEntity sizeAttribute = attributeRepository.findByCode("test-chat-size").orElseGet(() -> {
+            AttributeEntity created = new AttributeEntity();
+            created.setId("test-chat-size");
+            created.setCode("test-chat-size");
+            created.setName("Size");
+            created.setKind("select");
+            created.setVariation(true);
+            return attributeRepository.save(created);
+        });
         List<ProductVariantEntity> variants = new java.util.ArrayList<>();
         int order = 0;
         for (String size : List.of("S", "M", "L", "XL", "XXL")) {
@@ -911,6 +926,19 @@ public class ChatProductDiscoveryApiTest {
             option.setSortOrder(0);
             option.setOptionName("Size");
             option.setOptionValue(size);
+            AttributeValueEntity sizeValue = attributeValueRepository
+                    .findByAttributeIdAndSlug(sizeAttribute.getId(), size.toLowerCase(Locale.ROOT))
+                    .orElseGet(() -> {
+                        AttributeValueEntity created = new AttributeValueEntity();
+                        created.setId("test-chat-size-" + size.toLowerCase(Locale.ROOT));
+                        created.setAttribute(sizeAttribute);
+                        created.setSlug(size.toLowerCase(Locale.ROOT));
+                        created.setLabel(size);
+                        created.setSortOrder(0);
+                        return attributeValueRepository.save(created);
+                    });
+            option.setAttribute(sizeAttribute);
+            option.setAttributeValue(sizeValue);
             variant.setOptions(List.of(option));
             variant.setGallery(List.of());
             variants.add(variant);

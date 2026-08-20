@@ -17,6 +17,7 @@ import { toOrderConfirmPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import type { CheckoutPaymentMethod } from "./atoms";
 import { pickDefaultAddress } from "./helpers";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 type VnAddress = { province: string; ward: string };
 const EMPTY_VN_ADDRESS: VnAddress = { province: "", ward: "" };
@@ -355,7 +356,8 @@ export function useCheckout() {
       } else {
         router.push(toOrderConfirmPath(order.orderNumber, order.orderKey, locale));
       }
-    } catch {
+    } catch (error) {
+      reportStorefrontFailure("checkout", error);
       setSubmitError(t("submitFailed"));
     } finally {
       setSubmitting(false);

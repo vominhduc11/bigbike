@@ -4,6 +4,7 @@ import Link from "@/i18n/StorefrontLink";
 import { useTranslations } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
+import { MediaImage } from "@/components/ui/MediaImage";
 import type { ArticleSuggestion, SearchSuggestion } from "./types";
 import { SEARCH_PATH, resultItem, resultsLabel, sResults } from "./styles";
 
@@ -49,13 +50,13 @@ export function SuggestionResults({
                 onClick={() => { addSearch(trimmedQuery); handleClose(); }}
               >
                 {resolveMediaUrl(product.image?.url) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolveMediaUrl(product.image?.url)!}
-                    alt={product.name}
-                    className="h-12 w-12 shrink-0 object-contain"
+                  <MediaImage
+                    image={{ ...product.image, url: resolveMediaUrl(product.image?.url)! }}
+                    altFallback={product.name}
                     width={48}
                     height={48}
+                    sizes="48px"
+                    className="h-12 w-12 shrink-0 object-contain"
                   />
                 ) : (
                   <div className="h-12 w-12 shrink-0 object-contain" aria-hidden />

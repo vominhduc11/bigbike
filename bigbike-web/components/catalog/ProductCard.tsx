@@ -63,12 +63,10 @@ export function ProductCard({ product, className, layout = "grid", imageSizes }:
               className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105"
             />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/brand/header-mark.png"
-              alt={name}
-              width={160}
-              height={48}
+            <MediaImage
+              image={{ url: "/brand/header-mark.png", width: 120, height: 44 }}
+              altFallback={name}
+              sizes="120px"
               className="h-auto w-[55%] max-w-40 object-contain opacity-70"
             />
           )}

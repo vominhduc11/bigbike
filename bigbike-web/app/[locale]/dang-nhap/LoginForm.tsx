@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AuthField } from "@/components/auth/AuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 /**
  * Form đăng nhập theo theme WP — port `form.login-form` của page-login.php
@@ -56,6 +57,7 @@ export function LoginForm({ returnTo, socialErrorKey }: { returnTo?: string; soc
       await refreshAuth();
       router.push(resolvedReturnTo);
     } catch (err: unknown) {
+      reportStorefrontFailure("login", err);
       const message = err instanceof ApiClientError && [401, 403].includes(err.status)
         ? t("invalidCredentials")
         : t("errorGeneric");

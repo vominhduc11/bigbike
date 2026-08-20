@@ -7,6 +7,7 @@ import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import type { DescriptionBlock, SizeGuideSection, SuitabilitySection } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { groupBlocks, featureHasText, featureHasImage, type Group } from "./description-blocks/grouping";
 import {
   FeatureBody,
@@ -70,13 +71,15 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
             <div className="grid items-center gap-6 md:grid-cols-2 md:gap-9">
               <div className={cn("max-md:order-2", g.reverse && "md:order-2")}>
                 <figure className="m-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={resolveMediaUrl(g.block.url) || ""}
-                    alt={g.block.alt || ""}
-                    loading="lazy"
-                    className="aspect-[4/3] w-full border border-border object-cover"
-                  />
+                  <div className="relative aspect-[4/3] w-full overflow-hidden border border-border">
+                    <MediaImage
+                      image={{ url: resolveMediaUrl(g.block.url) || "", alt: g.block.alt }}
+                      altFallback=""
+                      fill
+                      sizes="(min-width: 768px) 50vw, calc(100vw - 32px)"
+                      className="object-cover"
+                    />
+                  </div>
                   {g.block.caption ? (
                     <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">
                       {g.block.caption}
@@ -94,13 +97,15 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
           ) : (
             // Chỉ có ảnh → full width.
             <figure className="m-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={resolveMediaUrl(g.block.url) || ""}
-                alt={g.block.alt || ""}
-                loading="lazy"
-                className="aspect-[4/3] w-full border border-border object-cover"
-              />
+              <div className="relative aspect-[4/3] w-full overflow-hidden border border-border">
+                <MediaImage
+                  image={{ url: resolveMediaUrl(g.block.url) || "", alt: g.block.alt }}
+                  altFallback=""
+                  fill
+                  sizes="(min-width: 1200px) 1200px, calc(100vw - 32px)"
+                  className="object-cover"
+                />
+              </div>
               {g.block.caption ? (
                 <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">
                   {g.block.caption}

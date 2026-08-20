@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FormField } from '@/components/layout/FormField'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import AiHtmlBrief from '@/components/AiHtmlBrief'
-import { RichTextEditor } from '@/components/RichTextEditor'
+import { DeferredRichTextEditor } from '@/components/DeferredRichTextEditor'
 import { showConfirm } from '../../lib/confirm'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { CATEGORY_INTRO_LIMITS, emptyIntro, emptyFaq, getIntroInputMode, parseIntro, patchIntroHtml } from '@/lib/categoryIntro'
@@ -154,7 +154,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', getA
         </label>
         <div className="flex flex-col gap-1">
           <span className={labelClass}>{t('categories.detail.introText')}</span>
-          <RichTextEditor
+          <DeferredRichTextEditor
             value={model.intro}
             onChange={(next) => setField('intro', next)}
             placeholder={t('categories.detail.introTextPlaceholder')}
@@ -268,7 +268,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', getA
               disabled={disabled}
               maxLength={300}
             />
-            <RichTextEditor
+            <DeferredRichTextEditor
               value={faq.answer}
               onChange={(next) => updateFaq(i, 'answer', next)}
               placeholder={t('categories.detail.introFaqAnswerPlaceholder')}

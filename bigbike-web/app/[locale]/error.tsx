@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 export default function GlobalRouteError({
   error,
@@ -15,6 +16,7 @@ export default function GlobalRouteError({
   const t = useTranslations("AppError");
 
   useEffect(() => {
+    reportStorefrontFailure("route_error", error);
     if (process.env.NODE_ENV !== "production") console.error(error);
   }, [error]);
 

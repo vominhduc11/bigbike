@@ -114,11 +114,30 @@ Evidence:
 
 ### Variant display name (derived, not admin-entered)
 
-`product_variants.name varchar(255)` is **not admin-entered free text**. It is derived server-side on every save from the variant's own attribute option values, joined in option order (e.g. `"Đen bóng - XL"`) — preferring the linked `attribute_values.label` (the human dictionary label) over the raw `product_variant_options.option_value` text when the option resolves to a dictionary entry, same precedence as the read path's `preferLabel`. A variant with no resolvable option value falls back to a positional placeholder, `"Biến thể N"` (1-based within the product) — this path exists for completeness but has no known occurrence in current data (every variant currently carries at least one option).
+`product_variants.name varchar(255)` is **not admin-entered free text**. It is derived server-side on every save from the variant's own linked attribute values, joined in option order (e.g. `"Đen bóng - XL"`). `product_variant_options.attribute_id` and `attribute_value_id` are both `NOT NULL`; the value must belong to that attribute. The read path uses these foreign keys directly and never repeats a text lookup. A variant with no option rows falls back to the positional placeholder `"Biến thể N"` (1-based within the product).
 
 The admin upsert request no longer accepts a `name` field for a variant (`VariantRequest` has no `name` property); the admin editor no longer renders a name input — it derives and displays the same value client-side for the accordion label, purely as a UI preview of what the backend will compute on save. Legacy rows (WordPress-imported, historically free text like `"color: do, size: m"`) were backfilled once to the derived convention (`V297__derive_variant_name_from_options.sql`).
 
 Status: `CONFIRMED_FROM_CODE`
+
+### Cart and audit retention data (V1045)
+
+`carts.expires_at` is the authoritative expiry for a cart in retention scope. Only `ACTIVE` and
+`MERGED` carts may have their expiry acted on; `CONVERTED` carts are never a purge candidate. The
+application writes expiry as the last valid cart interaction plus 30 days. For an historical
+`ACTIVE`/`MERGED` row whose expiry is null, V1045 sets it once to the last known
+`updated_at` (or `created_at` when necessary) plus 30 days; it never backfills or purges a
+`CONVERTED` row.
+
+`maintenance_cart_purge_runs` records a one-off operational purge (`id`, cutoff, start/finish,
+status, cart/item totals and optional failure reason). `maintenance_cart_purge_backup_carts` and
+`maintenance_cart_purge_backup_items` keep a row-for-row copy of the deleted cart and cart-item
+data under that run id. The backup has no customer/order mutation role; it exists solely to restore
+one verified purge run (completed, or stopped after at least one backed-up batch) and is eligible
+for deletion after 90 days.
+
+`audit_logs.created_at` is the retention timestamp for administrative audit rows; records older
+than 12 calendar months are eligible for the daily batch cleanup.
 
 Evidence:
 
@@ -181,6 +200,12 @@ existing rows are untouched.
 `SaveCustomerAddressRequest.district` is optional (`@Size` only, no `@NotBlank`) — kept for
 backward compatibility with clients that still send it, but no longer required. `ward` is the
 required sub-province field going forward.
+
+The request's remaining existing validation is: `type` = `BILLING|SHIPPING`; required
+`fullName`/`province`/`ward` ≤255 characters; required `addressLine1` ≤500 characters; required
+`phone` matching `^\\+?[0-9]{8,15}$`; optional valid `email` ≤255 characters. The storefront
+uses the same limits before submit. This records current server validation only; it does not alter
+address data, historical rows, or the public contract.
 
 `VN_PROVINCES` in `bigbike-web/lib/vn-address-data.ts` and `vn-address.json` (backend resource)
 share the same source dataset: 34 provinces, ~3.265 unique ward names (fetched from

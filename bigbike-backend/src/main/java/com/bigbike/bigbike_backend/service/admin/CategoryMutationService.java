@@ -44,6 +44,7 @@ public class CategoryMutationService {
     private final AuditLogFactory auditLogFactory;
     private final CatalogRequestValidator catalogRequestValidator;
     private final SlugRedirectHelper slugRedirectHelper;
+    private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
     public CategoryMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -53,7 +54,8 @@ public class CategoryMutationService {
             AuditLogWriter auditLogWriter,
             AuditLogFactory auditLogFactory,
             CatalogRequestValidator catalogRequestValidator,
-            SlugRedirectHelper slugRedirectHelper
+            SlugRedirectHelper slugRedirectHelper,
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
@@ -63,6 +65,7 @@ public class CategoryMutationService {
         this.auditLogFactory = auditLogFactory;
         this.catalogRequestValidator = catalogRequestValidator;
         this.slugRedirectHelper = slugRedirectHelper;
+        this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
     }
 
     @Transactional
@@ -247,6 +250,7 @@ public class CategoryMutationService {
 
     private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, action, resourceType, null, before, after));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
     }
 
     private static String categoryJson(CategoryEntity e) {

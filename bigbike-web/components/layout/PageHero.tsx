@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Container } from "@/components/layout/Container";
+import { MediaImage } from "@/components/ui/MediaImage";
+import type { ImageAsset } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
-
-/* eslint-disable @next/next/no-img-element */
 
 export type PageHeroCrumb = {
   label: string;
@@ -25,6 +25,7 @@ export function PageHero({
   breadcrumb,
   bgUrl,
   illustrationUrl,
+  illustrationImage,
   illustrationAlt,
   focusId,
   className,
@@ -35,6 +36,8 @@ export function PageHero({
   breadcrumb: PageHeroCrumb[];
   bgUrl?: string | null;
   illustrationUrl?: string | null;
+  /** Metadata-backed illustrations avoid guessing dimensions in next/image. */
+  illustrationImage?: ImageAsset | null;
   illustrationAlt?: string | null;
   focusId?: string;
   className?: string;
@@ -44,6 +47,7 @@ export function PageHero({
   const tBreadcrumb = useTranslations("Breadcrumb");
   const background = bgUrl?.trim() || DEFAULT_BG;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
+  const hasIllustrationMetadata = Boolean(illustrationImage?.url?.trim());
   const TitleTag = titleAs;
 
   return (
@@ -83,11 +87,23 @@ export function PageHero({
         </div>
 
         <div className="absolute bottom-0 right-[15px] hidden max-w-[50%] md:block!">
-          <img
-            src={illustration}
-            alt={illustrationAlt ?? title}
-            className="max-h-100 w-auto object-contain"
-          />
+          {hasIllustrationMetadata ? (
+            <MediaImage
+              image={{ ...illustrationImage, url: illustration }}
+              altFallback={illustrationAlt ?? title}
+              width={451}
+              height={400}
+              sizes="(min-width: 1200px) 451px, 40vw"
+              className="max-h-100 w-auto object-contain"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element -- settings-only and legacy URLs have no trustworthy dimensions.
+            <img
+              src={illustration}
+              alt={illustrationAlt ?? title}
+              className="max-h-100 w-auto object-contain"
+            />
+          )}
         </div>
       </Container>
     </section>

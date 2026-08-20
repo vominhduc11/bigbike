@@ -85,6 +85,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -100,6 +102,9 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Lint
+        env:
+          PRETTIER_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          PRETTIER_HEAD_REF: ${{ github.sha }}
         run: npm run lint
 
       - name: Build

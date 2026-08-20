@@ -62,6 +62,36 @@ const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighli
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
 const MaintenanceScreen  = lazyScreen(() => import('./screens/MaintenanceScreen'),  'MaintenanceScreen')
 
+const SCREEN_PRELOADERS = {
+  '/admin/dashboard': DashboardScreen,
+  '/admin/orders': OrderListScreen,
+  '/admin/customers': CustomerListScreen,
+  '/admin/reviews': ReviewListScreen,
+  '/admin/chat': ChatConversationListScreen,
+  '/admin/products': ProductListScreen,
+  '/admin/discontinued-products': LegacyDiscontinuedProductsScreen,
+  '/admin/featured-products': FeaturedProductsScreen,
+  '/admin/categories': CategoryListScreen,
+  '/admin/brands': BrandListScreen,
+  '/admin/content': ContentListScreen,
+  '/admin/sliders': SliderListScreen,
+  '/admin/home-videos': HomeVideoListScreen,
+  '/admin/home-highlights': HomeHighlightsScreen,
+  '/admin/redirects': RedirectListScreen,
+  '/admin/menus': MenuScreen,
+  '/admin/media': MediaLibraryScreen,
+  '/admin/reports': ReportsScreen,
+  '/admin/settings': SettingsScreen,
+  '/admin/admin-users': AdminUsersScreen,
+  '/admin/roles': RolesScreen,
+  '/admin/audit-logs': AuditLogListScreen,
+  '/admin/maintenance': MaintenanceScreen,
+}
+
+function preloadScreenForPath(path) {
+  SCREEN_PRELOADERS[path]?.preload()
+}
+
 // Dashboard: backend giới hạn theo VAI TRÒ (ADMIN/SUPER_ADMIN/SHOP_MANAGER) ngoài
 // quyền orders.read — mirror ở frontend để người có orders.read nhưng khác vai trò
 // không thấy mục rồi bị 403 (đồng bộ PERMISSION_MATRIX). Người có quyền '*' vẫn thấy.
@@ -382,6 +412,7 @@ function AdminApp() {
         user={authState.user}
         pageTitle={activePageLabel}
         homePath={fallbackPath}
+        preloadPath={preloadScreenForPath}
       >
         <StatePanel
           tone={fallbackPath ? 'info' : 'neutral'}
@@ -398,7 +429,7 @@ function AdminApp() {
 
   if (route.kind === 'not-found') {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath} preloadPath={preloadScreenForPath}>
         <StatePanel
           tone="neutral"
           title={t('app.routeNotFound')}
@@ -417,7 +448,7 @@ function AdminApp() {
   // Chặn cả khi gõ thẳng URL: nav đã ẩn nhưng route phải tự bảo vệ.
   if (route.name === 'maintenance' && !userRoles.includes('DEVELOPER')) {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath} preloadPath={preloadScreenForPath}>
         <StatePanel tone="warning" title={t('app.permissionDenied')} description={t('maintenance.developerOnly', { defaultValue: 'Chỉ tài khoản kỹ thuật (DEVELOPER) mới bật/tắt được chế độ bảo trì.' })}
           actionLabel={fallbackPath ? t('app.goToAllowedModule') : undefined}
           onAction={fallbackPath ? () => navigate(fallbackPath) : undefined} />
@@ -427,7 +458,7 @@ function AdminApp() {
 
   if (missingPermissions.length > 0) {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath} preloadPath={preloadScreenForPath}>
         <StatePanel tone="warning" title={t('app.permissionDenied')} description={t('app.missingPermissionDesc', { defaultValue: 'Tài khoản chưa được cấp quyền cần thiết để xem khu vực này. Hãy liên hệ người quản trị để được hỗ trợ.' })}
           actionLabel={fallbackPath ? t('app.goToAllowedModule') : undefined}
           onAction={fallbackPath ? () => navigate(fallbackPath) : undefined} />
@@ -512,7 +543,7 @@ function AdminApp() {
   }
 
   return (
-    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath}>
+    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel} homePath={fallbackPath} preloadPath={preloadScreenForPath}>
       <Suspense fallback={SCREEN_SUSPENSE_FALLBACK}>
         {screen}
       </Suspense>

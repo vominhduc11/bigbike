@@ -26,8 +26,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEnti
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -54,13 +52,13 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.isPresent;
-import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.normalizeVariantToken;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pick;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveDescriptionBlocksForPublic;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveSizeGuideSectionForPublic;
@@ -90,8 +88,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
-    private final AttributeJpaRepository attributeJpaRepository;
-    private final AttributeValueJpaRepository attributeValueJpaRepository;
 
     @Override
     public List<Product> findAllProducts() {
@@ -610,6 +606,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-categories", key = "'default'")
     public List<Category> findAllCategories() {
         return categoryJpaRepository.findAll().stream()
                 .filter(entity -> !entity.isDeleted())
@@ -618,6 +615,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-categories", key = "'locale:' + #locale")
     public List<Category> findAllCategories(String locale) {
         return categoryJpaRepository.findAll().stream()
                 .filter(entity -> !entity.isDeleted())
@@ -626,6 +624,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-categories", key = "'locale:' + #locale + ':strict:' + #strictEnglish")
     public List<Category> findAllCategories(String locale, boolean strictEnglish) {
         return categoryJpaRepository.findAll().stream()
                 .filter(entity -> !entity.isDeleted())
@@ -718,11 +717,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-brands", key = "'default'")
     public List<Brand> findAllBrands() {
         return brandJpaRepository.findAll().stream().map(this::toDomain).toList();
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-brands", key = "'locale:' + #locale")
     public List<Brand> findAllBrands(String locale) {
         return brandJpaRepository.findAll().stream()
                 .map(entity -> toDomain(entity, locale))
@@ -730,6 +731,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    @Cacheable(cacheNames = "catalog-reference-brands", key = "'locale:' + #locale + ':strict:' + #strictEnglish")
     public List<Brand> findAllBrands(String locale, boolean strictEnglish) {
         return brandJpaRepository.findAll().stream()
                 .map(entity -> toDomain(entity, locale))
@@ -1192,50 +1194,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // Discard a stale FK before the fallback chain runs, so a mismatch
-        // re-resolves exactly like a null FK instead of being trusted blindly.
-        if (value != null && !matchesOptionValue(value, option.getOptionValue())) {
-            value = null;
-        }
-
-        // Lazy resolution path: fires when the FK wasn't populated at write time,
-        // or was just discarded above as stale. Three fallbacks mirror
-        // AdminCatalogMutationService.linkAttributeReferences():
-        //   1. findByCode  — exact WP taxonomy slug (e.g. "pa_color")
-        //   2. findByNameIgnoreCase — human-typed label (e.g. "Màu sắc")
-        //   3. slug normalisation  — strips diacritics so "Đen" matches stored slug "den"
-        if (attribute == null && option.getOptionName() != null && !option.getOptionName().isBlank()) {
-            attribute = attributeJpaRepository.findByCode(option.getOptionName()).orElse(null);
-            if (attribute == null) {
-                attribute = attributeJpaRepository.findByNameIgnoreCase(option.getOptionName()).orElse(null);
-            }
-        }
-        if (value == null && attribute != null
-                && option.getOptionValue() != null && !option.getOptionValue().isBlank()) {
-            value = attributeValueJpaRepository
-                    .findByAttributeIdAndSlug(attribute.getId(), option.getOptionValue())
-                    .orElse(null);
-            if (value == null) {
-                String normalizedSlug = normalizeVariantToken(option.getOptionValue());
-                if (!normalizedSlug.isEmpty()) {
-                    value = attributeValueJpaRepository
-                            .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug)
-                            .orElse(null);
-                    if (value == null) {
-                        // Slugs are hyphenated ("den-bong"); the normalised token is
-                        // space-separated ("den bong"). Recover multi-word labels
-                        // ("Đen bóng") by trying the hyphenated slug shape.
-                        value = attributeValueJpaRepository
-                                .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug.replace(' ', '-'))
-                                .orElse(null);
-                    }
-                }
-            }
-        }
-
-        // Admin-only round-trip reference — the read path returns the human label,
-        // so the editor needs the raw dictionary id to re-save without losing the
-        // colour link. Omitted from the public response (@JsonInclude NON_NULL).
+        // V1046 bảo đảm cả hai khoá ngoại; không dò lại bằng văn bản tại đây.
         String attributeValueId = publicView || value == null ? null : value.getId();
 
         return new ProductVariantOption(
@@ -1249,21 +1208,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 attributeValueId
         );
-    }
-
-    /**
-     * True when {@code value}'s own {@code slug} or {@code label} (normalised)
-     * agrees with {@code optionValue} — guards {@link #toVariantOption} against
-     * trusting a persisted {@code attribute_value} FK that points at a sibling
-     * value under the same attribute (read-path twin of
-     * {@code AdminCatalogMutationService.linkAttributeReferences}'s own
-     * {@code matchesOptionValue}; duplicated per this file's existing
-     * {@code normalizeVariantToken} cross-layer precedent).
-     */
-    private static boolean matchesOptionValue(AttributeValueEntity value, String optionValue) {
-        String normalized = normalizeVariantToken(optionValue);
-        return normalized.equals(normalizeVariantToken(value.getSlug()))
-                || normalized.equals(normalizeVariantToken(value.getLabel()));
     }
 
     private List<CategorySummary> toCategorySummaries(List<CategoryEntity> entities, String locale) {

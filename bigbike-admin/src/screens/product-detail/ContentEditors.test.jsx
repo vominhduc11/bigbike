@@ -51,8 +51,8 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('../../components/RichTextEditor', () => ({
-  RichTextEditor: ({ value, onChange, placeholder, disabled }) => (
+vi.mock('../../components/DeferredRichTextEditor', () => ({
+  DeferredRichTextEditor: ({ value, onChange, placeholder, disabled }) => (
     <textarea
       data-testid="rich-text"
       value={value}

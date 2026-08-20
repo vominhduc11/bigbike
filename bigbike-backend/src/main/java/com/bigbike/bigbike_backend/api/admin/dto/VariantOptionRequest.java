@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,7 @@ public class VariantOptionRequest {
      * varchar(64) column attribute_values.id — so the bound must match the column, not a
      * bare 36-char UUID (the old max=36 rejected every real id with HTTP 400).
      */
-    @Size(max = 64, message = "attributeValueId is too long.")
+    @NotBlank(message = "Phải chọn giá trị thuộc tính cho biến thể.")
+    @Size(max = 64, message = "Mã giá trị thuộc tính quá dài.")
     private String attributeValueId;
 }

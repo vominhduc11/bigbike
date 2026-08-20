@@ -109,6 +109,7 @@ export function AdminShell({
   user,
   pageTitle,
   homePath,
+  preloadPath,
   children,
 }) {
   const { logout } = useAuth()
@@ -269,6 +270,7 @@ export function AdminShell({
                             href={item.path}
                             className={active ? 'bb-nav-link active' : 'bb-nav-link'}
                             onClick={(e) => handleNavClick(e, item.path)}
+                            onPointerEnter={() => preloadPath?.(item.path)}
                             aria-current={active ? 'page' : undefined}
                           >
                             {Icon && <Icon size={15} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />}

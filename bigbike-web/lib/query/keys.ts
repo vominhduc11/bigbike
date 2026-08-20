@@ -31,4 +31,6 @@ export const queryKeys = {
    * real-time source instead of drifting (see PurchaseSection.tsx comment).
    */
   productSnapshot: (slug: string, locale: string) => ["product-snapshot", slug, locale] as const,
+  searchSuggestions: (locale: string, query: string) => ["search-suggestions", locale, query] as const,
+  chatAvailability: (locale: string) => ["chat-availability", locale] as const,
 } as const;

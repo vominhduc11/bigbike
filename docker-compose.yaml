@@ -23,6 +23,14 @@ services:
       - effective_cache_size=300MB
       - -c
       - shared_buffers=128MB
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.max=5000
+      - -c
+      - pg_stat_statements.track=top
+      - -c
+      - idle_in_transaction_session_timeout=30000
     # Slow-query logging adds log volume that wasn't there before — cap it so it can't
     # fill the disk (host is already tight on space; see project ops notes).
     logging:

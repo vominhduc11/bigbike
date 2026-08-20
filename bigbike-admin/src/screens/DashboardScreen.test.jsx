@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DashboardScreen } from './DashboardScreen'
@@ -111,6 +111,61 @@ it('does not fetch or subscribe to inventory without inventory.read', async () =
 })
 
 describe('DashboardScreen', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('only mounts each chart after its own reserved area enters the viewport', async () => {
+    const observers = []
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback) {
+        this.callback = callback
+        this.observe = vi.fn()
+        this.disconnect = vi.fn()
+        observers.push(this)
+      }
+    })
+    mocks.fetchDashboardSummary.mockResolvedValue({
+      data: {
+        ...BASE_DASHBOARD,
+        revenueData: [{ date: '2026-07-29', revenue: 1_000_000, orders: 1 }],
+        orderStatusBreakdown: [{ status: 'PENDING', count: 1 }],
+      },
+    })
+
+    renderScreen()
+
+    await waitFor(() => expect(observers).toHaveLength(2))
+    expect(screen.queryByTestId('revenue-chart')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-chart')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dashboard-revenue-chart-slot').querySelector('.bb-skeleton-block')).not.toBeNull()
+    expect(screen.getByTestId('dashboard-status-chart-slot').querySelector('.bb-skeleton-block')).not.toBeNull()
+
+    await act(async () => observers[0].callback([{ isIntersecting: true }]))
+    expect(await screen.findByTestId('revenue-chart')).toHaveTextContent('1 points')
+    expect(screen.queryByTestId('status-chart')).not.toBeInTheDocument()
+
+    await act(async () => observers[1].callback([{ isIntersecting: true }]))
+    expect(await screen.findByTestId('status-chart')).toHaveTextContent('PENDING:1')
+    vi.unstubAllGlobals()
+  })
+
+  it('mounts charts immediately when the browser lacks IntersectionObserver', async () => {
+    vi.stubGlobal('IntersectionObserver', undefined)
+    mocks.fetchDashboardSummary.mockResolvedValue({
+      data: {
+        ...BASE_DASHBOARD,
+        revenueData: [{ date: '2026-07-29', revenue: 1_000_000, orders: 1 }],
+        orderStatusBreakdown: [{ status: 'PENDING', count: 1 }],
+      },
+    })
+
+    renderScreen()
+
+    expect(await screen.findByTestId('revenue-chart')).toHaveTextContent('1 points')
+    expect(await screen.findByTestId('status-chart')).toHaveTextContent('PENDING:1')
+  })
+
   it('opens the pending-order KPI with the matching status filter', async () => {
     const user = userEvent.setup()
     renderScreen()

@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
-import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { useResendEmailVerification, useVerifyEmail } from "@/lib/query/hooks";
 import { Button } from "@/components/ui/button";
 import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
 import type { Locale } from "@/i18n/locale";
@@ -26,6 +26,8 @@ export function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const auth = useAuth();
+  const verifyMutation = useVerifyEmail();
+  const resendMutation = useResendEmailVerification();
 
   const [status, setStatus] = useState<Status>(token ? "loading" : "missing");
   const [errorMsg, setErrorMsg] = useState("");
@@ -35,19 +37,21 @@ export function VerifyEmailContent() {
   useEffect(() => {
     if (!token) return;
 
-    verifyEmail(token)
+    verifyMutation.mutateAsync(token)
       .then(() => setStatus("success"))
       .catch(() => {
         setErrorMsg(t("errorGeneric"));
         setStatus("error");
       });
+  // Mutations are intentionally retry-free: an email token is a one-time action.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, t]);
 
   async function handleResend() {
     setResendStatus("sending");
     setResendMsg("");
     try {
-      await resendEmailVerification();
+      await resendMutation.mutateAsync();
       setResendStatus("sent");
       setResendMsg(t("resendSent"));
     } catch {

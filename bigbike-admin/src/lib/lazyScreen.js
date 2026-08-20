@@ -12,8 +12,10 @@ const CHUNK_RELOAD_KEY = 'bb-admin-chunk-reload'
 class ScreenExportError extends Error {}
 
 export function lazyScreen(factory, exportName) {
-  return lazy(() =>
-    factory()
+  let loadPromise
+  const load = () => {
+    if (loadPromise) return loadPromise
+    loadPromise = factory()
       .then((m) => {
         // Tải chunk thành công → xoá cờ chống-lặp để lần deploy sau vẫn được tự reload 1 lần.
         sessionStorage.removeItem(CHUNK_RELOAD_KEY)
@@ -39,5 +41,14 @@ export function lazyScreen(factory, exportName) {
         }
         throw err
       })
-  )
+    return loadPromise
+  }
+
+  const Screen = lazy(load)
+  // Hover-prefetching may call this repeatedly. Reusing the promise means the
+  // module is fetched once and React consumes that same work after navigation.
+  Screen.preload = () => {
+    void load().catch(() => {})
+  }
+  return Screen
 }

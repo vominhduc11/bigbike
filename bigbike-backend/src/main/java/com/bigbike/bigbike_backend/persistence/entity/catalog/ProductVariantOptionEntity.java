@@ -27,11 +27,11 @@ public class ProductVariantOptionEntity {
     private ProductVariantEntity variant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attribute_id")
+    @JoinColumn(name = "attribute_id", nullable = false)
     private AttributeEntity attribute;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attribute_value_id")
+    @JoinColumn(name = "attribute_value_id", nullable = false)
     private AttributeValueEntity attributeValue;
 
     @Column(nullable = false)

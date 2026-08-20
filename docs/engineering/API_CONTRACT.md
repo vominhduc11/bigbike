@@ -196,6 +196,15 @@ and no other link) — the storefront disables the button, and `DELETE` refuses 
 
 - **Changing `email` through the customer's own `PATCH /api/v1/customer/me` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The admin customer endpoint does not accept email changes (`CUSTOMER_RULE_004`).
 
+**Storefront validation mirror (2026-08-20):** `displayName` is optional and at most 255
+characters; a supplied `email` must be valid and at most 255 characters; a supplied
+`newPassword` is 8–256 characters. The browser also requires `currentPassword` whenever the
+customer actually changes email or password, matching the service-level sensitive-change rule
+above. The profile page does not write phone, gender, or date of birth. These are existing server
+constraints documented here so the browser can reject the same invalid values before submission;
+they do not change the API contract. `CONFIRMED_FROM_CODE` — `UpdateCustomerProfileRequest`,
+`CustomerAuthService.updateProfile`.
+
 ### Customer avatar upload/remove (2026-07-21, owner decision; locked for OAuth accounts 2026-08-07)
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
@@ -211,6 +220,13 @@ and no other link) — the storefront disables the button, and `DELETE` refuses 
 | `POST` | `/api/v1/customer/addresses` | Create own address | `ApiDataResponse<CustomerAddressResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `PATCH` | `/api/v1/customer/addresses/{id}` | Update own address | `ApiDataResponse<CustomerAddressResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `DELETE` | `/api/v1/customer/addresses/{id}` | Delete own address | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
+
+**Address validation mirror (2026-08-20):** `type` is `BILLING|SHIPPING`; `fullName`,
+`province`, and `ward` are required and at most 255 characters; `addressLine1` is required and at
+most 500 characters. `phone` is required and must match `^\\+?[0-9]{8,15}$`; optional `email`
+must be valid and at most 255 characters. `district` remains legacy-only and optional. These are
+existing server constraints documented for the storefront form; no endpoint or business rule
+changes. `CONFIRMED_FROM_CODE` — `SaveCustomerAddressRequest`.
 | `GET` | `/api/v1/orders/lookup?orderNumber=...&orderKey=...` | Public guest-order lookup — no auth, no CSRF (safe GET). Both params required (`400 VALIDATION_ERROR` when blank); returns the order detail only when `orderNumber` + secret `orderKey` match (`orderKey` được phát trong URL xác nhận sau checkout). Caller: trang xác nhận đơn `don-hang/xac-nhan` (`public-api.ts getOrderLookup` → `OrderConfirmClient.tsx`). *(Bổ sung vào contract 2026-07-15, AUD-076 — endpoint đã tồn tại từ trước.)* | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `OrderLookupController.java`, `OrderReadService.guestLookup` |
 | `GET` | `/api/v1/customer/orders` | List own orders. Each item includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail. Response includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). Response no longer includes `notes`; admin cancellation reason is not customer-visible. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
@@ -944,9 +960,9 @@ A variant option (`variants[].options[]`) is returned with these fields:
 | Field | Public (`GET /api/v1/products/{slug}`) | Admin (`GET /api/v1/admin/products/{id}`) |
 |---|---|---|
 | `name`, `value` | ✅ human label (e.g. `Màu sắc` / `Đen bóng`) | ✅ |
-| `attributeValueId` | ❌ omitted | ✅ the linked dictionary value id (when the option resolves to one) |
+| `attributeValueId` | ❌ omitted | ✅ the linked dictionary value id |
 
-`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`) — the read path prefers the dictionary label. The admin editor cannot reliably reconstruct the dictionary link from the label alone (some slugs carry WP dedup suffixes such as `xam-2` / `trang-2` that no label maps back to). Returning `attributeValueId` lets the admin form round-trip the exact reference, so re-saving a product preserves the colour link. It is **admin-only** (`@JsonInclude(NON_NULL)`, populated only when `publicView = false`); the public storefront response never carries it.
+`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`). `attributeValueId` is mandatory on every admin product-upsert option; the backend rejects a blank, unknown, or mismatched value/attribute reference with `400 VALIDATION_ERROR`. Returning the exact value id lets the admin form round-trip the dictionary link without reconstructing it from display text. It is **admin-only** (`@JsonInclude(NON_NULL)`); the public storefront response never carries it.
 
 Colour variants render on the storefront using the **variant's own gallery image** (the first image of the matching variant), not a per-term colour swatch or hex value. The swatch/hex feature (`colorHex`, `swatchImageUrl`, per-option `swatchImageId`, and the `attribute_values.color_hex` / `attribute_values.swatch_image_id` / `product_variant_options.swatch_image_id` columns) was removed.
 

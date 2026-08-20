@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
+import { createAddressSchema, type AddressFormValues } from "@/lib/schemas/customer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,35 +29,32 @@ type AddressFormProps = {
 /** Form thêm/sửa địa chỉ (trong popup). Validate tỉnh/huyện/xã ở client; ô "đặt mặc định" chỉ khi THÊM mới. */
 export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: AddressFormProps) {
   const t = useTranslations("Account.addresses");
-  const [vnAddress, setVnAddress] = useState({
-    province: editing?.province ?? "",
-    ward: editing?.ward ?? "",
+  const tValidation = useTranslations("FormValidation");
+  const addressValidation = (key: string) => key === "required" ? t("errorRequiredAddress") : tValidation(key);
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<AddressFormValues>({
+    resolver: zodResolver(createAddressSchema(addressValidation)),
+    defaultValues: {
+      type: editing?.type === "BILLING" ? "BILLING" : "SHIPPING",
+      fullName: editing?.fullName ?? "",
+      phone: editing?.phone ?? "",
+      email: editing?.email ?? accountEmail,
+      province: editing?.province ?? "",
+      ward: editing?.ward ?? "",
+      addressLine1: editing?.addressLine1 ?? "",
+      isDefault: false,
+    },
   });
-  const [vnError, setVnError] = useState("");
+  const vnAddress = useWatch({ control, name: ["province", "ward"] });
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!vnAddress.province || !vnAddress.ward) {
-      setVnError(t("errorRequiredAddress"));
-      return;
-    }
-    setVnError("");
-    const fd = new FormData(e.currentTarget);
-    const email = (fd.get("email") as string).trim();
+  function submit(values: AddressFormValues) {
     onSubmit({
-      type: editing?.type ?? "SHIPPING",
-      fullName: (fd.get("fullName") as string).trim(),
-      phone: (fd.get("phone") as string).trim(),
-      email: email || undefined,
-      province: vnAddress.province,
-      ward: vnAddress.ward,
-      addressLine1: (fd.get("addressLine1") as string).trim(),
-      isDefault: fd.get("isDefault") === "on",
+      ...values,
+      email: values.email || undefined,
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-6">
+    <form onSubmit={handleSubmit(submit)} className="p-6" noValidate>
       {error && (
         <FormNotice tone="danger" className="mb-4">{error}</FormNotice>
       )}
@@ -64,47 +63,44 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
         <div className="flex flex-col gap-1.5">
           <label className={LEGACY_LABEL}>{t("fullNameLabel")}<ReqMark /></label>
           <Input
-            name="fullName"
-            required
-            defaultValue={editing?.fullName ?? ""}
+            {...register("fullName")}
             placeholder={t("fullNamePlaceholder")}
           />
+          {errors.fullName && <p className="text-a4-content text-destructive">{errors.fullName.message}</p>}
         </div>
         <div className="flex flex-col gap-1.5">
           <label className={LEGACY_LABEL}>{t("phoneLabel")}<ReqMark /></label>
           <Input
-            name="phone"
+            {...register("phone")}
             type="tel"
-            required
-            defaultValue={editing?.phone ?? ""}
             placeholder={t("phonePlaceholder")}
           />
+          {errors.phone && <p className="text-a4-content text-destructive">{errors.phone.message}</p>}
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
           <Input
             type="email"
-            name="email"
-            defaultValue={editing?.email ?? accountEmail}
+            {...register("email")}
             placeholder={t("emailPlaceholder")}
           />
+          {errors.email && <p className="text-a4-content text-destructive">{errors.email.message}</p>}
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label className={LEGACY_LABEL}>{t("addressLabel")}<ReqMark /></label>
           <Input
-            name="addressLine1"
-            required
-            defaultValue={editing?.addressLine1 ?? ""}
+            {...register("addressLine1")}
             placeholder={t("addressPlaceholder")}
           />
+          {errors.addressLine1 && <p className="text-a4-content text-destructive">{errors.addressLine1.message}</p>}
         </div>
         <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-4.5 sm:grid-cols-3 xl:gap-x-8">
-          {vnError && (
-            <p className="sm:col-span-3 text-a4-content text-destructive">{vnError}</p>
+          {(errors.province || errors.ward) && (
+            <p className="sm:col-span-3 text-a4-content text-destructive">{errors.province?.message ?? errors.ward?.message}</p>
           )}
           <VnAddressFields
-            value={vnAddress}
-            onChange={(field, val) => setVnAddress((prev) => ({ ...prev, [field]: val }))}
+            value={{ province: vnAddress[0], ward: vnAddress[1] }}
+            onChange={(field, value) => setValue(field, value, { shouldValidate: true })}
             required
             labelClassName={LEGACY_LABEL}
             selectContentClassName="z-[var(--bb-z-modal-dropdown)]"
@@ -117,7 +113,9 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
             an existing address is made default via the card's "Đặt mặc định" button. */}
         {!editing && (
           <label className="flex items-center gap-2 text-a5-meta text-muted-foreground">
-            <Checkbox name="isDefault" defaultChecked={false} />
+            <Controller name="isDefault" control={control} render={({ field }) => (
+              <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
+            )} />
             {t("setDefault")}
           </label>
         )}

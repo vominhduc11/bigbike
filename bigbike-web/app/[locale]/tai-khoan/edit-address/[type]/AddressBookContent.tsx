@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, Loader2, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
 import { AccountSectionHeading, useAccount } from "@/components/account/AccountNav";
-import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
+import { useAddresses, useCreateAddress, useDeleteAddress, useUpdateAddress } from "@/lib/query/hooks";
 import { Button } from "@/components/ui/button";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { cn } from "@/lib/utils";
@@ -27,11 +27,14 @@ export function AddressBookContent() {
   const router = useRouter();
   const accountEmail = profile?.email ?? "";
 
-  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const { data: loadedAddresses, isLoading: loading, isError: isListError } = useAddresses({ enabled: true });
+  const addresses = loadedAddresses ?? [];
+  const createMutation = useCreateAddress();
+  const updateMutation = useUpdateAddress();
+  const deleteMutation = useDeleteAddress();
   // Address books are tiny in practice; paginate client-side so an unusually long
   // list keeps a fixed height instead of stretching the page.
   const [addrPage, setAddrPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -52,15 +55,6 @@ export function AddressBookContent() {
     });
   }
 
-  useEffect(() => {
-    let ignore = false;
-    fetchMyAddresses()
-      .then((all) => { if (!ignore) setAddresses(all); })
-      .catch(() => { if (!ignore) setListError(t("errorLoad")); })
-      .finally(() => { if (!ignore) setLoading(false); });
-    return () => { ignore = true; };
-  }, [t]);
-
   function openAdd() {
     setEditing(null);
     setFormError("");
@@ -78,16 +72,9 @@ export function AddressBookContent() {
     setFormError("");
     try {
       if (editing) {
-        const updated = await updateAddress(editing.id, payload);
-        setAddresses((prev) => prev.map((a) => (a.id === editing.id ? updated : a)));
+        await updateMutation.mutateAsync({ id: editing.id, payload });
       } else {
-        const created = await createAddress(payload);
-        setAddresses((prev) => [...prev, created]);
-      }
-      // Backend keeps a single default per type — re-sync if this one became default.
-      if (payload.isDefault) {
-        const all = await fetchMyAddresses();
-        setAddresses(all);
+        await createMutation.mutateAsync(payload);
       }
       setNotice(editing ? t("noticeUpdated") : t("noticeAdded"));
       setModalOpen(false);
@@ -102,7 +89,7 @@ export function AddressBookContent() {
     if (pendingIds.has(addr.id)) return;
     markPending(addr.id, true);
     try {
-      await updateAddress(addr.id, {
+      await updateMutation.mutateAsync({ id: addr.id, payload: {
         type: addr.type,
         fullName: addr.fullName ?? "",
         phone: addr.phone ?? "",
@@ -110,9 +97,7 @@ export function AddressBookContent() {
         ward: addr.ward ?? "",
         addressLine1: addr.addressLine1 ?? "",
         isDefault: true,
-      });
-      const all = await fetchMyAddresses();
-      setAddresses(all);
+      }});
       setNotice(t("noticeDefault"));
     } catch {
       setListError(t("errorSetDefault"));
@@ -126,8 +111,7 @@ export function AddressBookContent() {
     if (!window.confirm(t("confirmDelete"))) return;
     markPending(addr.id, true);
     try {
-      await deleteAddress(addr.id);
-      setAddresses((prev) => prev.filter((a) => a.id !== addr.id));
+      await deleteMutation.mutateAsync(addr.id);
       setNotice(t("noticeDeleted"));
     } catch {
       setListError(t("errorDelete"));
@@ -152,8 +136,8 @@ export function AddressBookContent() {
       {notice && (
         <FormNotice tone="success" className="mb-4">{notice}</FormNotice>
       )}
-      {listError && (
-        <FormNotice tone="danger" className="mb-4">{listError}</FormNotice>
+      {(listError || isListError) && (
+        <FormNotice tone="danger" className="mb-4">{listError || t("errorLoad")}</FormNotice>
       )}
 
       {loading ? (

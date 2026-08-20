@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@/lib/observability/sentry-privacy";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -14,9 +15,12 @@ Sentry.init({
   integrations: [
     Sentry.replayIntegration({
       maskAllText: true,
-      blockAllMedia: false,
+      blockAllMedia: true,
     }),
   ],
+
+  beforeBreadcrumb: () => null,
+  beforeSend: scrubSentryEvent,
 
   // Tắt Sentry khi không có DSN (dev không cấu hình)
   enabled: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),

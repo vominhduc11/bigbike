@@ -84,11 +84,33 @@ function SkeletonBlock({ height = 280 }) {
   return <div className="bb-skeleton-block" style={{ height }} />
 }
 
+function useViewportEntered() {
+  const [target, setTarget] = useState(null)
+  const [entered, setEntered] = useState(() => typeof IntersectionObserver === 'undefined')
+
+  useEffect(() => {
+    if (entered || !target) return undefined
+    if (typeof IntersectionObserver === 'undefined') return undefined
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return
+      setEntered(true)
+      observer.disconnect()
+    }, { threshold: 0.01 })
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [entered, target])
+
+  return [setTarget, entered]
+}
+
 export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [period, setPeriod] = useState('30d')
+  const [revenueChartRef, isRevenueChartVisible] = useViewportEntered()
+  const [statusChartRef, isStatusChartVisible] = useViewportEntered()
   const canReadInventory = user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
   const canReadProducts = user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
   const canReadReports = user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
@@ -393,11 +415,14 @@ export function DashboardScreen({ navigate }) {
                 </div>
               </div>
               <div className="bb-card-body">
+                <div ref={revenueChartRef} data-testid="dashboard-revenue-chart-slot">
                 {revenueData.length > 0 ? (
                   <>
-                    <Suspense fallback={<SkeletonBlock height={260} />}>
-                      <RevenueAreaChart revenueData={revenueData} />
-                    </Suspense>
+                    {isRevenueChartVisible ? (
+                      <Suspense fallback={<SkeletonBlock height={260} />}>
+                        <RevenueAreaChart revenueData={revenueData} />
+                      </Suspense>
+                    ) : <SkeletonBlock height={260} />}
                     {zeroRevenueDays > 0 && (
                       <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
                         <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -418,6 +443,7 @@ export function DashboardScreen({ navigate }) {
                     description={t('dashboard.revenueChart.emptyDesc')}
                   />
                 )}
+                </div>
               </div>
             </div>
 
@@ -439,11 +465,14 @@ export function DashboardScreen({ navigate }) {
                 )}
               </div>
               <div className="bb-card-body">
+                <div ref={statusChartRef} data-testid="dashboard-status-chart-slot">
                 {pieTotal > 0 ? (
                   <div>
-                    <Suspense fallback={<SkeletonBlock height={200} />}>
-                      <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
-                    </Suspense>
+                    {isStatusChartVisible ? (
+                      <Suspense fallback={<SkeletonBlock height={200} />}>
+                        <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
+                      </Suspense>
+                    ) : <SkeletonBlock height={200} />}
                     <div className="mt-3 flex flex-col gap-3">
                       {pieDataWithTotal.map((d, index) => {
                         const percentage = pieTotal > 0 ? (d.count / pieTotal) * 100 : 0
@@ -497,6 +526,7 @@ export function DashboardScreen({ navigate }) {
                     description={t('dashboard.orderStatusChart.emptyDesc')}
                   />
                 )}
+                </div>
               </div>
             </div>
           </div>

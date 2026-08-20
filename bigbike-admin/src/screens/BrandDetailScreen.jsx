@@ -30,7 +30,7 @@ import { Screen, StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
-import { RichTextEditor } from '../components/RichTextEditor'
+import { DeferredRichTextEditor } from '../components/DeferredRichTextEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -689,7 +689,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               label={t('brands.detail.description')}
               error={!isEnLang ? validationErrors.description : undefined}
             >
-              <RichTextEditor
+              <DeferredRichTextEditor
                 key={`description-${contentLang}`}
                 value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
                 onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}

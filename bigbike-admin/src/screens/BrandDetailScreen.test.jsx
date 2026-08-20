@@ -189,8 +189,8 @@ vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
-vi.mock('../components/RichTextEditor', () => ({
-  RichTextEditor: ({ value, onChange, placeholder, disabled }) => (
+vi.mock('../components/DeferredRichTextEditor', () => ({
+  DeferredRichTextEditor: ({ value, onChange, placeholder, disabled }) => (
     <textarea
       data-testid="rich-text"
       value={value}

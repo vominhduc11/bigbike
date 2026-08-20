@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, CheckCircle2, ImageOff, Lock, MapPin } from 'lucide-react'
-import { RichTextEditor } from '../../components/RichTextEditor'
+import { DeferredRichTextEditor } from '../../components/DeferredRichTextEditor'
 import { ImageUrlInput } from '../../components/ImageUrlInput'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
@@ -158,7 +158,7 @@ export function SettingField({
         />
       ) : canUpdate ? (
         isHtml ? (
-          <RichTextEditor
+          <DeferredRichTextEditor
             value={activeValue}
             onChange={handleActiveChange}
             placeholder={isEnLang ? t('settings.englishPlaceholder') : t('settings.htmlPlaceholder')}

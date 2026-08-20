@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
+import { useSearchSuggestions } from "@/lib/query/search-suggestions";
 import { cn } from "@/lib/utils";
 import { toSearchPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { iconBtn } from "@/lib/ui-classes";
-import type { ArticleSuggestion, PopularCategory, SearchSuggestion } from "./search/types";
+import type { PopularCategory } from "./search/types";
 import {
   sClose,
   sForm,
@@ -46,12 +47,8 @@ export function SearchToggle({
   const router = useRouter();
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const wasOpenRef = useRef(false);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [articleSuggestions, setArticleSuggestions] = useState<ArticleSuggestion[]>([]);
-  const [suggestLoading, setSuggestLoading] = useState(false);
   const debouncedQuery = useDebounce(query.trim(), 300);
   const { isPanelOpen, togglePanel, closePanel } = useHeaderUi();
   const open = isPanelOpen("search");
@@ -67,6 +64,10 @@ export function SearchToggle({
     : localCategories.map(name => ({ name, slug: "" }));
 
   const trimmedQuery = query.trim();
+  const suggestQuery = open && debouncedQuery.length >= 1;
+  const { data: suggestionResult, isFetching: suggestLoading } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
+  const suggestions = suggestionResult?.products ?? [];
+  const articleSuggestions = suggestionResult?.articles ?? [];
   const isDebouncing = trimmedQuery.length >= 1 && trimmedQuery !== debouncedQuery;
   const isLoading = isDebouncing || suggestLoading;
   const showSuggestions = open && debouncedQuery.length >= 1 && !isLoading;
@@ -89,41 +90,8 @@ export function SearchToggle({
 
   useMediaQueryChange("(min-width: 1261px)", closePanel);
 
-  useEffect(() => {
-    if (!open || debouncedQuery.length < 1) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear suggestions state synchronously on empty query or closed panel
-      setSuggestions([]);
-      setSuggestLoading(false);
-      return;
-    }
-
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
-    const { signal } = abortRef.current;
-
-    setSuggestLoading(true);
-
-    fetch(`/api/search-suggest?q=${encodeURIComponent(debouncedQuery)}&lang=${encodeURIComponent(locale)}`, { signal })
-      .then((res) => res.json())
-      .then((data: { products: SearchSuggestion[]; articles: ArticleSuggestion[] }) => {
-        setSuggestions(data.products ?? []);
-        setArticleSuggestions(data.articles ?? []);
-      })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setSuggestions([]);
-        setArticleSuggestions([]);
-      })
-      .finally(() => setSuggestLoading(false));
-
-    return () => abortRef.current?.abort();
-  }, [debouncedQuery, open, locale]);
-
   function handleClose() {
     setQuery("");
-    setSuggestions([]);
-    setArticleSuggestions([]);
-    setSuggestLoading(false);
     closePanel();
   }
 

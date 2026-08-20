@@ -100,6 +100,23 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 - Web and admin have container healthchecks. `CONFIRMED_FROM_CONFIG`
 - The web container self-revalidates its storefront ISR cache on startup via `docker-entrypoint.mjs`: after `next build` bakes a data snapshot into the prerendered pages, the entrypoint waits for the server then POSTs the catalog/content tags to `/api/revalidate` so a fresh start serves backend-fresh data. This runs on every container start — including partial `docker compose up --no-deps` rebuilds — and replaces the former external `bigbike-web-init` one-shot container. `CONFIRMED_FROM_CONFIG`
 - Backend mail sending is optional when SMTP env vars are empty. `CONFIRMED_FROM_CONFIG`
+- **Backend memory and garbage collection** — the backend container remains capped at `1g`; Java
+  uses G1GC with `MaxRAMPercentage=75.0`, so the JVM heap stays within that existing container
+  limit. Do not raise the backend to 4 GB on the shared 8 GB server. This setting is designed to
+  let collection work use the host's available CPU cores without changing the memory allocation.
+  Java emits its G1 collection identification to the backend log, so the shop owner can verify the
+  active collector after deployment. The runtime also uses UTF-8 so Vietnamese operational logs
+  remain readable.
+- **Database connections** — the pool reports a checked-out connection held over 5 seconds,
+  validates connections before use, keeps idle connections alive, and uses TCP keepalive to detect
+  dead network sessions. PostgreSQL's
+  `idle_in_transaction_session_timeout=30000` only terminates abandoned transactions; it does not
+  impose a statement timeout on valid long-running queries.
+- **Prometheus and PostgreSQL slow-query evidence** — the internal-only
+  `/actuator/prometheus` endpoint requires the Prometheus registry dependency. PostgreSQL keeps
+  statement logging at 200 ms and is configured with `shared_preload_libraries=pg_stat_statements`.
+  The latter takes effect only after the shop owner redeploys/restarts PostgreSQL. Never expose
+  Prometheus through the public nginx host.
 - Multi-replica ISR currently uses deploy-time fan-out, not a shared Next.js cache handler. If
   more than one `bigbike-web` replica is deployed, `WEB_REVALIDATE_URL` must list every
   replica's `/api/revalidate` URL. Leave `WEB_REDIRECT_CACHE_CLEAR_URL` blank to derive every
@@ -125,7 +142,56 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
   on that node. Do not scale backend replicas for this feature without adding a shared broker/event
   bus for the access-change event and WebSocket routing. `OWNER_CONFIRMED_2026-07-31`
 
+### Admin static delivery: cache and gzip
+
+The admin container (`bigbike-admin/Dockerfile` + `bigbike-admin/nginx.conf`) has two deliberately
+different cache policies:
+
+- `index.html`, including every SPA fallback route, is returned with `Cache-Control: no-cache`.
+  A browser may keep a local copy, but must ask the server to validate it each time it opens the
+  panel. This prevents an old HTML shell from referencing chunk hashes that a newer deployment has
+  removed.
+- Versioned static assets under `/assets/` keep `Cache-Control: public, immutable` for one year.
+  Vite puts a content hash in every asset filename, so a new deployment safely receives a new URL
+  while repeat visits reuse unchanged code, styles and fonts.
+
+During the image build, gzip sidecars are generated for text delivery artifacts (`.js`, `.css`,
+`.html`, `.json`, `.svg`). Nginx uses `gzip_static on` to send the prebuilt `.gz` file when the
+request accepts gzip, avoiding per-request compression CPU. The original file remains in the image
+and is returned unchanged to clients that do not advertise gzip. No Brotli module or serving stack
+change is part of this contract. `CONFIRMED_FROM_CONFIG`
+
+Verify a local or deployed admin container after a rebuild with all of the following:
+
+1. `curl -I http://localhost:4000/` returns `Cache-Control: no-cache` for the HTML shell.
+2. `curl -I http://localhost:4000/assets/<current-hash>.js` returns
+   `Cache-Control: public, immutable`.
+3. The same asset request with `Accept-Encoding: gzip` returns `Content-Encoding: gzip`; without
+   that request header it still returns `200` without a gzip content encoding.
+
+The host Nginx remains a pass-through proxy for the admin container. Before changing an actual VPS,
+inspect the active configuration, run `nginx -t`, and reload only after it passes; see
+“Deployment Caveats”.
+
 ## Security Hardening Config
+
+### Storefront error reporting (Sentry)
+
+`bigbike-web` has Sentry wired for browser, server, edge, and Next request errors. It is disabled
+when the browser DSN is blank; server and edge reporting are also disabled when both DSNs are
+blank, so local development does not send events. To enable a deployment, set
+the same project DSN in `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` in that deployment's env file,
+then rebuild the web image because the public value is baked into the browser bundle. The root
+`.env.example` carries the blank placeholders; never commit the populated env file.
+
+Storefront events carry only the operation name, HTTP failure class, and page pathname. The client
+must not send customer identity, passwords, email, phone, order keys, payment data, chat text,
+request bodies, query strings, cookies, or authorization headers. Expected customer outcomes
+(`4xx`, including invalid credentials, validation, unavailable stock, duplicate review, rate
+limit, and no-result states) are not reported; network failures and `5xx` failures are. The Sentry
+build upload values (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`) are optional deployment
+credentials for the build operator only, never browser configuration. `CONFIRMED_FROM_CODE` —
+`sentry.*.config.ts`, `instrumentation.ts`, storefront reporting helper.
 
 - **Public Review CSRF boundary** — `CustomerCsrfFilter` exempts CSRF validation only for `POST /api/v1/products/{productId}/reviews` and `POST /api/v1/products/{productId}/reviews/photos`. These two endpoints intentionally support guests, and the storefront calls them directly on the API host with credentials so an existing customer session can supply authoritative identity. The exemption must match the HTTP method and complete path shape; it must never use the broad `/api/v1/products/` prefix or exempt neighboring/future product mutations. Exact-origin credentialed CORS and the dedicated per-IP `REVIEW` / `REVIEW_PHOTO` limits remain mandatory. `CONFIRMED_FROM_CODE_AND_SECURITY_REVIEW_2026-07-28`
 - **`BIGBIKE_TRUSTED_PROXIES`** — comma-separated exact proxy addresses or narrow, private CIDRs (minimum IPv4 `/24`, IPv6 `/64`) trusted to set `X-Forwarded-For`. Per-IP rate limiting consumes forwarding data only when the direct peer matches this list and the header contains exactly one IP. The minimum prefix is enforced at startup, so a `/16` or `/12` bridge range fails the boot — the checked-in Compose default `172.20.0.0/16` is therefore **not** bootable as-is and every environment must set an explicit narrow value. The `bigbike-dev` bridge allocates `172.20.0.x`, so `172.20.0.0/24` is the correct entry for the single-VPS Compose deployment. Do not use broad Docker ranges such as `172.16.0.0/12`; first verify the real ingress/container hop with `docker inspect` and `nginx -T`. Every public nginx proxy location must remove client-provided forwarding data and emit one canonical client address; BFF/admin internal proxies may forward only that single canonical value. `CONFIRMED_FROM_CODE_AND_CONFIG_2026-08-12`
@@ -139,7 +205,7 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 
 ## Schema And Migration Notes
 
-- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V377` (2026-08-07). Do not use an older documentation note as a schema baseline—verify the migration directory and `flyway_schema_history` for the deployed environment. `CONFIRMED_FROM_CONFIG`
+- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V1047` after the performance change. `V1045` creates the cart-purge backup/restore ledger, `V1046` deterministically repairs and then requires variant attribute links, and `V1047` enables `pg_stat_statements`. Do not edit an existing migration; verify both the migration directory and `flyway_schema_history` for the deployed environment. `OWNER_CONFIRMED_2026-08-20`
 - The one-time WordPress live migration must follow [LIVE_MIGRATION_RUNBOOK.md](LIVE_MIGRATION_RUNBOOK.md). The normal Spring `mode=import` runner is legacy rehearsal tooling and is not an authorized production write path. `CONFIRMED_FROM_CODE_2026-08-03`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
 

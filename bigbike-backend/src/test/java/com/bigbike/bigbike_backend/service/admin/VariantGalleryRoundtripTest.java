@@ -19,6 +19,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValue
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
+import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
@@ -525,12 +526,9 @@ class VariantGalleryRoundtripTest {
     }
 
     @Test
-    void staleAttributeValueId_relinksAfterFreeTextValueEdit() {
-        // Reproduces the reported bug end-to-end: VariantEditors.jsx's free-text
-        // Input for a non-color option (e.g. "Size") sends the new text on edit but
-        // does not clear the stale attributeValueId already sitting in local state
-        // from the last load - before the fix this made Path 1 blindly trust the
-        // old id, so the "Size" badge stayed stuck on the old value forever.
+    void staleAttributeValueIdIsRejectedAfterFreeTextValueEdit() {
+        // Một yêu cầu sửa mang nhãn mới nhưng giữ mã giá trị cũ phải bị từ chối:
+        // liên kết bây giờ là bắt buộc và không được tự đoán lại theo văn bản.
         AttributeEntity attr = attributeRepo.findByCode("test-size-stale").orElseGet(() -> {
             AttributeEntity a = new AttributeEntity();
             a.setId("test-size-stale");
@@ -560,10 +558,7 @@ class VariantGalleryRoundtripTest {
         }
         entityManager.flush();
 
-        // -- 1. Create sending only the free-text value "XXL" (no explicit id - this
-        //    is exactly what the non-color Input in VariantEditors.jsx sends). Path
-        //    2/3 auto-links to the XXL dictionary entry by slug match, and the read
-        //    response hands the admin form that id back for round-tripping. --
+        // -- 1. Tạo với giá trị từ điển XXL rồi nhận lại mã đó để round-trip. --
         UpsertProductRequest create = createProductRequest("stale-size-product", "Stale Size Product");
         create.setTranslations(englishName("Stale Size Product EN"));
 
@@ -579,7 +574,7 @@ class VariantGalleryRoundtripTest {
         Product afterCreate = readRepository.findProductById(saved.id()).orElseThrow();
         String staleId = afterCreate.variants().get(0).options().get(0).attributeValueId();
         assertThat(staleId)
-                .as("initial save auto-links via slug match, so the read round-trips the XXL dictionary id")
+                .as("lưu ban đầu giữ đúng mã giá trị XXL")
                 .isEqualTo("test-size-stale-xxl");
 
         // A real edit is a separate HTTP request/session from the create, which always
@@ -589,10 +584,7 @@ class VariantGalleryRoundtripTest {
         entityManager.flush();
         entityManager.clear();
 
-        // -- 2. Re-save simulating the free-text-edit bug: NEW text "XXXL" but the
-        //    SAME stale attributeValueId the read handed back for "XXL" - exactly
-        //    what onUpdate({ value: e.target.value }) without clearing
-        //    attributeValueId produces. --
+        // -- 2. Gửi nhãn mới XXXL cùng mã XXL cũ: backend phải từ chối. --
         UpsertProductRequest update = createProductRequest("stale-size-product", "Stale Size Product");
         update.setTranslations(englishName("Stale Size Product EN"));
 
@@ -603,34 +595,15 @@ class VariantGalleryRoundtripTest {
         v2.setOptions(List.of(colorOption("test-size-stale", "XXXL", staleId)));
         update.setVariants(List.of(v2));
 
-        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
-
-        entityManager.flush();
-        entityManager.clear();
-        ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
-        assertThat(storedVariant.getOptions())
-                .as("update must fully replace the option, not append a second row")
-                .hasSize(1);
-        assertThat(storedVariant.getOptions().get(0).getAttributeValue())
-                .as("stale XXL FK must not stick once the free-text value says XXXL")
-                .isNotNull();
-        assertThat(storedVariant.getOptions().get(0).getAttributeValue().getId())
-                .as("must re-link to the XXXL dictionary entry instead of keeping the stale XXL FK")
-                .isEqualTo("test-size-stale-xxxl");
-
-        Product afterUpdate = readRepository.findProductById(saved.id()).orElseThrow();
-        assertThat(afterUpdate.variants().get(0).options().get(0).value())
-                .as("read-back label must reflect the new value, not the stale XXL label")
-                .isEqualTo("XXXL");
+        assertThatThrownBy(() -> mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Validation failed");
     }
 
     @Test
-    void readPath_discardsStalePersistedAttributeValue() {
-        // Site 3 (read-path self-heal): construct a corrupted row directly via JPA,
-        // bypassing the (now-fixed) write path - this is the shape a pre-fix save
-        // could have left behind, or that any future write path bypassing
-        // AdminCatalogMutationService could still produce. The read path must not
-        // trust an attribute_value FK that disagrees with the option's own text.
+    void readPathUsesTheStoredDictionaryReferenceWithoutTextLookupFallback() {
+        // Tạo một dòng bị hỏng trực tiếp bằng JPA để xác nhận đường đọc chỉ sử dụng
+        // liên kết từ điển đã bảo đảm, không quay lại dò theo văn bản.
         AttributeEntity attr = attributeRepo.findByCode("test-size-corrupt").orElseGet(() -> {
             AttributeEntity a = new AttributeEntity();
             a.setId("test-size-corrupt");
@@ -689,11 +662,11 @@ class VariantGalleryRoundtripTest {
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
         var rereadOption = reread.variants().get(0).options().get(0);
         assertThat(rereadOption.value())
-                .as("read path must discard the stale XXL FK and resolve XXXL from the dictionary")
-                .isEqualTo("XXXL");
+                .as("đường đọc dùng liên kết từ điển đã lưu, không dò lại theo văn bản")
+                .isEqualTo("XXL");
         assertThat(rereadOption.attributeValueId())
-                .as("admin read must round-trip the re-resolved XXXL id, not the stale XXL id")
-                .isEqualTo("test-size-corrupt-xxxl");
+                .as("màn quản trị nhận đúng mã liên kết đã lưu")
+                .isEqualTo("test-size-corrupt-xxl");
     }
 
     private VariantOptionRequest colorOption(String name, String value, String attributeValueId) {
@@ -714,7 +687,31 @@ class VariantGalleryRoundtripTest {
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(name);
         option.setOptionValue(value);
+        option.setAttributeValueId(ensureAttributeValue(name, value).getId());
         return option;
+    }
+
+    private AttributeValueEntity ensureAttributeValue(String name, String label) {
+        String code = ProductSlugGenerator.toSlug(name);
+        AttributeEntity attribute = attributeRepo.findByCode(code).orElseGet(() -> {
+            AttributeEntity created = new AttributeEntity();
+            created.setId("test-option-attribute-" + UUID.randomUUID());
+            created.setCode(code);
+            created.setName(name);
+            created.setKind("select");
+            created.setVariation(true);
+            return attributeRepo.save(created);
+        });
+        String slug = ProductSlugGenerator.toSlug(label);
+        return attributeValueRepo.findByAttributeIdAndSlug(attribute.getId(), slug).orElseGet(() -> {
+            AttributeValueEntity created = new AttributeValueEntity();
+            created.setId("test-option-value-" + UUID.randomUUID());
+            created.setAttribute(attribute);
+            created.setSlug(slug);
+            created.setLabel(label);
+            created.setSortOrder(0);
+            return attributeValueRepo.save(created);
+        });
     }
 
     private GalleryImageRequest galleryItem(String url, String alt, int sortOrder) {

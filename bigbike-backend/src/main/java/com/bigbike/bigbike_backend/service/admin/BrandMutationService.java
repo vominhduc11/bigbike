@@ -41,6 +41,7 @@ public class BrandMutationService {
     private final AuditLogFactory auditLogFactory;
     private final CatalogRequestValidator catalogRequestValidator;
     private final SlugRedirectHelper slugRedirectHelper;
+    private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
     public BrandMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -50,7 +51,8 @@ public class BrandMutationService {
             AuditLogWriter auditLogWriter,
             AuditLogFactory auditLogFactory,
             CatalogRequestValidator catalogRequestValidator,
-            SlugRedirectHelper slugRedirectHelper
+            SlugRedirectHelper slugRedirectHelper,
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
@@ -60,6 +62,7 @@ public class BrandMutationService {
         this.auditLogFactory = auditLogFactory;
         this.catalogRequestValidator = catalogRequestValidator;
         this.slugRedirectHelper = slugRedirectHelper;
+        this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
     }
 
     @Transactional
@@ -204,6 +207,7 @@ public class BrandMutationService {
 
     private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, action, resourceType, null, before, after));
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
     }
 
     private static String brandJson(BrandEntity e) {

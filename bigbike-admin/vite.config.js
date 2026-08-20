@@ -35,10 +35,6 @@ export default defineConfig({
               test: /node_modules[\\/](react|react-dom|scheduler|react-redux|redux|redux-thunk|@reduxjs|@tanstack)[\\/]/,
             },
             {
-              name: 'vendor-editor',
-              test: /node_modules[\\/](@tiptap|prosemirror|orderedmap)[\\/]/,
-            },
-            {
               name: 'vendor-ui',
               test: /node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/,
             },
@@ -46,11 +42,13 @@ export default defineConfig({
               name: 'vendor-dnd',
               test: /node_modules[\\/](@dnd-kit)[\\/]/,
             },
+            // Rich-text and chart dependencies only belong to lazy screens. If
+            // either is admitted to the catch-all vendor group, Vite preloads
+            // it with the login shell despite its dynamic import.
             {
-              name: 'vendor-charts',
-              test: /node_modules[\\/](recharts|d3-[^\\/]+)[\\/]/,
+              name: 'vendor',
+              test: /node_modules[\\/](?!(?:@tiptap|prosemirror-[^\\/]+|orderedmap|linkifyjs|rope-sequence|w3c-keyname|fast-equals|zod|dompurify|es-toolkit|immer|decimal\.js-light|recharts|d3-[^\\/]+|internmap|victory-vendor|eventemitter3|react-is|tiny-invariant|use-callback-ref|use-sidecar|detect-node-es)[\\/])/,
             },
-            { name: 'vendor', test: /node_modules/ },
           ],
         },
       },

@@ -22,7 +22,7 @@ import { setContentLang, useContentLang } from '../lib/contentLang'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { createContentSchema, zodErrors } from '../lib/schemas'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
-import { RichTextEditor } from '../components/RichTextEditor'
+import { DeferredRichTextEditor } from '../components/DeferredRichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -871,7 +871,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 >
                   <div role="group">
                     {isEnLang ? (
-                      <RichTextEditor
+                      <DeferredRichTextEditor
                         key={`body-${contentLang}`}
                         value={form.translations?.en?.body ?? ''}
                         onChange={(html) => updateTranslation('body', html)}

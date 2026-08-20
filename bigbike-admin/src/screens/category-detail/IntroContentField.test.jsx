@@ -40,8 +40,8 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('../../lib/confirm', () => confirm)
-vi.mock('@/components/RichTextEditor', () => ({
-  RichTextEditor: ({ value, onChange, placeholder, disabled }) => (
+vi.mock('@/components/DeferredRichTextEditor', () => ({
+  DeferredRichTextEditor: ({ value, onChange, placeholder, disabled }) => (
     <textarea aria-label={placeholder} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
   ),
 }))

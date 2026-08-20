@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run check:no-runtime-mock && vite build",
-    "analyze": "npm run check:no-runtime-mock && ANALYZE=1 vite build",
+    "analyze": "npm run check:no-runtime-mock && node scripts/analyze-build.mjs",
     "lint": "npm run check:no-runtime-mock && eslint .",
     "check:no-runtime-mock": "node scripts/check-no-admin-runtime-mock.mjs",
     "test": "vitest run",

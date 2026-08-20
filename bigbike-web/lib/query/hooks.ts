@@ -3,14 +3,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelMyOrder,
+  createAddress,
+  deleteAddress,
   fetchCart,
+  fetchChatAvailability,
   fetchMe,
   fetchMyAddresses,
   fetchMyOrder,
   fetchMyOrders,
   removeCartItem,
+  resendEmailVerification,
   updateCartItem,
+  updateAddress,
+  verifyEmail,
 } from "@/lib/api/client-api";
+import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
 import { hasCustomerSessionHint } from "@/lib/auth/auth-store";
 import { queryKeys } from "./keys";
 
@@ -68,6 +75,59 @@ export function useAddresses(options: CustomerQueryOptions = {}) {
     enabled,
     retry: false,
   });
+}
+
+function writeAddress(qc: ReturnType<typeof useQueryClient>, address: CustomerAddress) {
+  qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) => {
+    const withoutCurrent = current.filter((item) => item.id !== address.id);
+    const normalized = address.isDefault
+      ? withoutCurrent.map((item) => item.type === address.type ? { ...item, isDefault: false } : item)
+      : withoutCurrent;
+    return [...normalized, address];
+  });
+}
+
+export function useCreateAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SaveAddressPayload) => createAddress(payload),
+    onSuccess: (address) => writeAddress(qc, address),
+  });
+}
+
+export function useUpdateAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: SaveAddressPayload }) => updateAddress(id, payload),
+    onSuccess: (address) => writeAddress(qc, address),
+  });
+}
+
+export function useDeleteAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAddress(id),
+    onSuccess: (_, id) => qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) => current.filter((item) => item.id !== id)),
+  });
+}
+
+export function useChatAvailability(locale: "vi" | "en", enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.chatAvailability(locale),
+    queryFn: () => fetchChatAvailability(locale),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
+/** One-time actions deliberately do not write a query cache or retry themselves. */
+export function useVerifyEmail() {
+  return useMutation({ mutationFn: (token: string) => verifyEmail(token), retry: false });
+}
+
+export function useResendEmailVerification() {
+  return useMutation({ mutationFn: resendEmailVerification, retry: false });
 }
 
 // ── Orders ──────────────────────────────────────────────────────────────────

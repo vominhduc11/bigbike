@@ -11,6 +11,7 @@ import type { Locale } from "@/i18n/locale";
 import { Button } from "@/components/ui/button";
 import { cartToDrafts } from "./parts/helpers";
 import { CartItemRow } from "./parts/CartItemRow";
+import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 import { CartSummary } from "./parts/CartSummary";
 import { CartSkeleton } from "./parts/CartSkeleton";
 
@@ -77,7 +78,8 @@ export function CartClient() {
         if (serverQty != null && serverQty !== nextQty) {
           setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
         }
-      } catch {
+      } catch (error) {
+        reportStorefrontFailure("add_to_cart", error);
         setError(t("updateFailed"));
       } finally {
         setItemMutating(itemId, false);
@@ -98,7 +100,8 @@ export function CartClient() {
         if (serverQty != null && serverQty !== nextQty) {
           setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
         }
-      } catch {
+      } catch (error) {
+        reportStorefrontFailure("add_to_cart", error);
         setError(t("updateFailed"));
       } finally {
         setItemMutating(itemId, false);
