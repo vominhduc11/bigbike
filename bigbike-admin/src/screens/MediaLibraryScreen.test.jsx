@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -102,8 +103,13 @@ beforeEach(() => {
   mocks.query = {}
 })
 
-function renderScreen(props = {}) {
-  render(<MediaLibraryScreen canUpdate canHardDelete={false} {...props} />)
+function renderScreen(props = {}, client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
+  const result = render(
+    <QueryClientProvider client={client}>
+      <MediaLibraryScreen canUpdate canHardDelete={false} {...props} />
+    </QueryClientProvider>,
+  )
+  return { ...result, client }
 }
 
 describe('MediaLibraryScreen — thanh lọc đã tinh gọn', () => {
@@ -308,12 +314,46 @@ describe('MediaLibraryScreen — upload', () => {
 })
 
 describe('MediaLibraryScreen — trạng thái', () => {
+  it('hiện dữ liệu cache ngay khi quay lại thư viện ảnh', () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    })
+    client.setQueryData(['media', {
+      page: 1,
+      pageSize: 24,
+      search: '',
+      mimeType: 'ALL',
+      status: 'ACTIVE',
+      folderFilter: '',
+      tag: '',
+      usageFilter: 'ALL',
+      sort: 'createdAt',
+      dir: 'desc',
+    }], listResponse([activeMedia]))
+
+    renderScreen({}, client)
+
+    expect(screen.getByTitle('catalog/mu-bao-hiem.jpg')).toBeInTheDocument()
+    expect(mocks.fetchMedia).not.toHaveBeenCalled()
+  })
+
   it('hiện lỗi kèm nút thử lại khi không tải được danh sách', async () => {
     mocks.fetchMedia.mockRejectedValue(new Error('Mất kết nối'))
     renderScreen()
 
     expect(await screen.findByText('media.loadError')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.retry' })).toBeInTheDocument()
+  })
+
+  it('nút thử lại gọi lại truy vấn danh sách đang lỗi', async () => {
+    const user = userEvent.setup()
+    mocks.fetchMedia.mockRejectedValueOnce(new Error('Mất kết nối'))
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'common.retry' }))
+
+    expect(await screen.findByTitle('catalog/mu-bao-hiem.jpg')).toBeInTheDocument()
+    expect(mocks.fetchMedia).toHaveBeenCalledTimes(2)
   })
 
   it('kho trống thì mời tải lên thay vì gợi ý xoá bộ lọc', async () => {

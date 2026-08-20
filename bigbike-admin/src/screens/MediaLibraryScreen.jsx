@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { RefreshCw, Trash2, Upload } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
@@ -64,8 +65,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const [query, setQuery] = useUrlSyncedState(DEFAULT_QUERY, {
     deserialize: { page: Number, pageSize: Number },
   })
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, error: '', refreshError: '' })
-  const [stats, setStats] = useState(null)
+  const queryClient = useQueryClient()
   const [deleting, setDeleting] = useState(null)
   const [uploadQueue, setUploadQueue] = useState([]) // {id, name, progress, status, error}
   const [editingMedia, setEditingMedia] = useState(null)
@@ -73,16 +73,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false)
-  const [folders, setFolders] = useState([])
-  const [dataRevision, setDataRevision] = useState(0)
-
-  // Sidebar refresh signal — bumped when folder list might have changed (after bulk move, etc.)
-  const [folderRefreshKey, setFolderRefreshKey] = useState(0)
-  useEffect(() => {
-    fetchMediaFolders()
-      .then(setFolders)
-      .catch((e) => toast.error(e.message || t('common.error')))
-  }, [folderRefreshKey, t])
   const fileInputRef = useRef(null)
   const screenRef = useRef(null)
   const dropZoneRef = useRef(null)
@@ -104,47 +94,61 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   }, [query.search])
 
   const apiQuery = query
+  const mediaQuery = useQuery({
+    queryKey: ['media', apiQuery],
+    queryFn: () => fetchMedia(apiQuery),
+    placeholderData: keepPreviousData,
+  })
+  const statsQuery = useQuery({
+    queryKey: ['media', 'stats', {
+      search: apiQuery.search,
+      mimeType: apiQuery.mimeType,
+      status: apiQuery.status,
+      folderFilter: apiQuery.folderFilter,
+      tag: apiQuery.tag,
+    }],
+    queryFn: () => fetchMediaStats(apiQuery),
+    placeholderData: keepPreviousData,
+  })
+  const foldersQuery = useQuery({
+    queryKey: ['media', 'folders'],
+    queryFn: fetchMediaFolders,
+  })
+  const mediaData = mediaQuery.data
+  const state = {
+    status: mediaQuery.isPending
+      ? 'loading'
+      : mediaQuery.isError && !mediaData
+        ? 'error'
+        : mediaQuery.isFetching
+          ? 'refreshing'
+          : 'success',
+    items: mediaData?.items ?? [],
+    pagination: mediaData?.pagination ?? null,
+    error: mediaQuery.error?.message || '',
+    refreshError: mediaQuery.isError && mediaData ? mediaQuery.error?.message || 'refresh-failed' : '',
+  }
+  const stats = statsQuery.data ?? null
+  const folders = foldersQuery.data ?? []
 
   useEffect(() => {
-    let active = true
-    setState((p) => ({
-      ...p,
-      status: p.items.length > 0 ? 'refreshing' : 'loading',
-      error: '',
-      refreshError: '',
-    }))
     setSelectedIds(new Set())
-    fetchMedia(apiQuery)
-      .then((r) => {
-        if (!active) return
-        const totalPages = Math.max(1, Number(r.pagination?.totalPages) || 1)
-        if (apiQuery.page > totalPages) {
-          setQuery((p) => ({ ...p, page: totalPages }))
-          return
-        }
-        setState({ status: 'success', items: r.items, pagination: r.pagination, error: '', refreshError: '' })
-      })
-      .catch((e) => {
-        if (!active) return
-        setState((p) => p.items.length > 0
-          ? { ...p, status: 'success', refreshError: e.message || 'refresh-failed', error: '' }
-          : { status: 'error', items: [], pagination: null, error: e.message || '', refreshError: '' })
-      })
-    return () => { active = false }
-  }, [apiQuery, dataRevision, setQuery])
+  }, [apiQuery])
 
   useEffect(() => {
-    let active = true
-    fetchMediaStats(apiQuery)
-      .then((s) => { if (active) setStats(s) })
-      .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
-    return () => { active = false }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.folderFilter, apiQuery.tag, dataRevision, t])
+    const totalPages = Math.max(1, Number(mediaData?.pagination?.totalPages) || 1)
+    if (mediaData && apiQuery.page > totalPages) {
+      setQuery((previous) => ({ ...previous, page: totalPages }))
+    }
+  }, [apiQuery.page, mediaData, setQuery])
+
+  useEffect(() => {
+    if (foldersQuery.isError) toast.error(foldersQuery.error?.message || t('common.error'))
+  }, [foldersQuery.error, foldersQuery.isError, t])
 
   function refreshData({ foldersChanged = false } = {}) {
-    setDataRevision((revision) => revision + 1)
-    if (foldersChanged) setFolderRefreshKey((key) => key + 1)
+    queryClient.invalidateQueries({ queryKey: ['media'] })
+    if (foldersChanged) queryClient.invalidateQueries({ queryKey: ['media', 'folders'] })
   }
 
   function updateQuery(partial, options = { resetPage: true }) {
@@ -360,12 +364,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
   function handleMediaSaved(updated) {
     const folderChanged = editingMedia && editingMedia.folderId !== updated.folderId
-    setState((p) => ({ ...p, items: p.items.map((m) => m.id === updated.id ? updated : m) }))
     setEditingMedia(null)
     // Đổi folder qua panel chi tiết: nếu đang lọc theo 1 thư mục, item có thể không còn
     // khớp filter nữa — cần refetch để nó biến mất khỏi view, giống hành vi bulk-move.
-    if (folderChanged) refreshData({ foldersChanged: true })
-    else setFolderRefreshKey((k) => k + 1)
+    refreshData({ foldersChanged: folderChanged })
   }
 
   // ── Render helpers ───────────────────────────────────────────
@@ -467,7 +469,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           tag={query.tag}
           canUpdate={canUpdate}
           folders={folders}
-          onFoldersChanged={() => setFolderRefreshKey((k) => k + 1)}
+          onFoldersChanged={() => queryClient.invalidateQueries({ queryKey: ['media', 'folders'] })}
           onSelectFolder={(v) => updateQuery({ folderFilter: v })}
           onSelectTag={(v) => updateQuery({ tag: v })}
         />
