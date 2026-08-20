@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Download,
   ListFilter,
@@ -46,14 +47,6 @@ export function AuditLogListScreen() {
   const initialDetailIdRef = useRef(new URLSearchParams(window.location.search).get('detail'))
   const [query, setQuery] = useState(initialQuery)
   const [searchInput, setSearchInput] = useState(() => initialQuery.q)
-  const [state, setState] = useState({
-    status: 'loading',
-    items: [],
-    pagination: null,
-    error: '',
-    isFetching: true,
-  })
-  const [reloadKey, setReloadKey] = useState(0)
   const [activePreset, setActivePreset] = useState(null)
   const [showMobileFilter, setShowMobileFilter] = useState(false)
   const [selectedLog, setSelectedLog] = useState(null)
@@ -81,53 +74,42 @@ export function AuditLogListScreen() {
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
+  }, [query])
 
-    if (dateRangeError) {
-      return undefined
+  const auditQuery = useQuery({
+    queryKey: ['audit-logs', query],
+    queryFn: () => fetchAuditLogs(query),
+    enabled: !dateRangeError,
+    placeholderData: keepPreviousData,
+  })
+  const auditData = auditQuery.data
+  const state = {
+    status: auditQuery.isPending
+      ? 'loading'
+      : auditQuery.isError && !auditData
+        ? 'error'
+        : 'success',
+    items: auditData?.items ?? [],
+    pagination: auditData?.pagination ?? null,
+    error: auditQuery.error?.message || t('auditLog.errorLoadTitle'),
+    isFetching: auditQuery.isFetching,
+  }
+
+  useEffect(() => {
+    if (!auditData) return
+    const initialDetailId = initialDetailIdRef.current
+    if (!initialDetailId) return
+    initialDetailIdRef.current = null
+    const match = auditData.items.find((item) => item.id === initialDetailId)
+    if (match) {
+      setSelectedLog(match)
+    } else {
+      setDetailParam(null)
+      setDetailNotice(t('auditLog.deepLinkNotFound', {
+        defaultValue: 'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
+      }))
     }
-
-    let active = true
-    fetchAuditLogs(query)
-      .then((response) => {
-        if (!active) return
-        setState({
-          status: 'success',
-          items: response.items,
-          pagination: response.pagination,
-          error: '',
-          isFetching: false,
-        })
-
-        const initialDetailId = initialDetailIdRef.current
-        if (initialDetailId) {
-          initialDetailIdRef.current = null
-          const match = response.items.find((item) => item.id === initialDetailId)
-          if (match) {
-            setSelectedLog(match)
-          } else {
-            setDetailParam(null)
-            setDetailNotice(t('auditLog.deepLinkNotFound', {
-              defaultValue: 'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
-            }))
-          }
-        }
-      })
-      .catch((error) => {
-        if (!active) return
-        setState((current) => ({
-          ...current,
-          status: 'error',
-          error: error?.message || t('auditLog.errorLoadTitle'),
-          isFetching: false,
-        }))
-      })
-
-    return () => {
-      active = false
-    }
-    // `t` is intentionally omitted: language changes already re-render the screen,
-    // while a new translator function must not re-fetch the same server data.
-  }, [query, dateRangeError, reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auditData, t])
 
   const columns = useMemo(() => [
     {
@@ -175,9 +157,6 @@ export function AuditLogListScreen() {
   } = useColumnVisibility(columns, 'columns:audit-logs')
 
   const updateQuery = useCallback((partial, options = { resetPage: false }) => {
-    setState((current) => current.status === 'success'
-      ? { ...current, isFetching: true }
-      : { ...current, status: 'loading', isFetching: true })
     setQuery((current) => {
       const next = { ...current, ...partial }
       if (options.resetPage) next.page = 1
@@ -214,9 +193,6 @@ export function AuditLogListScreen() {
     setSearchInput('')
     setActivePreset(null)
     setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
-    setState((current) => current.status === 'success'
-      ? { ...current, isFetching: true }
-      : { ...current, status: 'loading', isFetching: true })
   }
 
   function handlePreset(preset) {
@@ -236,13 +212,7 @@ export function AuditLogListScreen() {
   }
 
   function handleRetry() {
-    setState((current) => ({
-      ...current,
-      status: current.items.length > 0 ? 'success' : 'loading',
-      error: '',
-      isFetching: true,
-    }))
-    setReloadKey((current) => current + 1)
+    auditQuery.refetch()
   }
 
   function handleExport() {
