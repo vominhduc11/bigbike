@@ -36,6 +36,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { useAdminList } from '../lib/useAdminList'
+import { validateRedirectSource, validateRedirectTarget } from '../lib/urlPolicies'
 
 const INITIAL_QUERY = {
   search: '',
@@ -252,17 +253,31 @@ export function RedirectListScreen({ canUpdate }) {
     || toggleEnabledMutation.isPending
     || bulkBusy
 
-  const trimmedSource = form.sourcePattern.trim()
-  const sourceError = !trimmedSource
-    ? t('redirects.errorSourceRequired', { defaultValue: 'Địa chỉ cũ là bắt buộc.' })
-    : trimmedSource.startsWith('//')
-      || trimmedSource.includes('?')
-      || trimmedSource.includes('#')
-      || /^[a-z][a-z0-9+.-]*:/i.test(trimmedSource)
-      ? t('redirects.errorSourceInvalid', { defaultValue: 'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.' })
-      : ''
-  const targetError = !form.targetUrl.trim()
-    ? t('redirects.errorTargetRequired', { defaultValue: 'Địa chỉ mới là bắt buộc.' })
+  const sourceValidation = validateRedirectSource(form.sourcePattern)
+  const targetValidation = validateRedirectTarget(form.targetUrl)
+  const sourceError = !sourceValidation.valid
+    ? t(
+      sourceValidation.reason === 'required'
+        ? 'redirects.errorSourceRequired'
+        : 'redirects.errorSourceInvalid',
+      {
+        defaultValue: sourceValidation.reason === 'required'
+          ? 'Địa chỉ cũ là bắt buộc.'
+          : 'Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.',
+      },
+    )
+    : ''
+  const targetError = !targetValidation.valid
+    ? t(
+      targetValidation.reason === 'required'
+        ? 'redirects.errorTargetRequired'
+        : 'redirects.errorTargetInvalid',
+      {
+        defaultValue: targetValidation.reason === 'required'
+          ? 'Địa chỉ mới là bắt buộc.'
+          : 'Địa chỉ mới phải là đường dẫn nội bộ hoặc URL thuộc BigBike.',
+      },
+    )
     : ''
 
   function updateFormField(field, value) {

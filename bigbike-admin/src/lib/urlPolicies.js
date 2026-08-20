@@ -82,6 +82,68 @@ export function validateSafePublicLink(value) {
   return { valid: true, normalized }
 }
 
+/** Ảnh ghi mới chỉ được phép từ kho media của BigBike hoặc đường legacy đã được server duyệt. */
+export function validateSafeMediaImageUrl(value) {
+  const normalized = trimToNull(value)
+  if (!normalized) return { valid: true, normalized: '' }
+  if (hasUnsafePrefix(normalized)) return { valid: false, normalized, reason: 'unsafe' }
+  if (
+    normalized.startsWith('/media/')
+    || normalized.startsWith('/media-proxy/')
+    || normalized.startsWith('/wp-content/uploads/')
+    || normalized.startsWith('/wp-content/themes/bigbike/')
+  ) return { valid: true, normalized }
+
+  const parsed = parseUrl(normalized)
+  if (!parsed || !['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+    return { valid: false, normalized, reason: 'malformed' }
+  }
+  const allowedPath = parsed.pathname.includes('/bigbike-media/')
+    || parsed.pathname.startsWith('/media/')
+    || parsed.pathname.startsWith('/media-proxy/')
+    || parsed.pathname.startsWith('/wp-content/uploads/')
+  return allowedPath
+    ? { valid: true, normalized }
+    : { valid: false, normalized, reason: 'unsupported' }
+}
+
+export function validateRedirectSource(value) {
+  const normalized = trimToNull(value)
+  if (!normalized) return { valid: false, normalized: '', reason: 'required' }
+  if (
+    !normalized.startsWith('/')
+    || normalized.startsWith('//')
+    || normalized.includes('?')
+    || normalized.includes('#')
+  ) {
+    return { valid: false, normalized, reason: 'invalid' }
+  }
+  return { valid: true, normalized }
+}
+
+/** Hợp đồng Redirect: đường dẫn nội bộ hoặc URL http(s) cùng tên miền BigBike. */
+export function validateRedirectTarget(value) {
+  const normalized = trimToNull(value)
+  if (!normalized) return { valid: false, normalized: '', reason: 'required' }
+  if (hasUnsafePrefix(normalized)) return { valid: false, normalized, reason: 'unsafe' }
+  if (normalized.startsWith('/')) return { valid: true, normalized }
+
+  const parsed = parseUrl(normalized)
+  const storefront = parseUrl(APP_BASE_URL)
+  if (
+    !parsed
+    || !storefront
+    || !['http:', 'https:'].includes(parsed.protocol)
+    || parsed.username
+    || parsed.password
+  ) {
+    return { valid: false, normalized, reason: 'malformed' }
+  }
+  return parsed.origin === storefront.origin
+    ? { valid: true, normalized }
+    : { valid: false, normalized, reason: 'external' }
+}
+
 export function extractAllowedYouTubeId(value) {
   const normalized = trimToNull(value)
   if (!normalized || hasUnsafePrefix(normalized)) {

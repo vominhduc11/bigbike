@@ -6,6 +6,9 @@ import {
   isAllowedFacebookVideoUrl,
   isAllowedMediaVideoUrl,
   validateHomeVideoUrl,
+  validateRedirectSource,
+  validateRedirectTarget,
+  validateSafeMediaImageUrl,
 } from './urlPolicies'
 
 // Module an toàn URL/video dùng chung cho Slider, Menu, Video trang chủ, PDP, nội dung —
@@ -100,5 +103,23 @@ describe('validateHomeVideoUrl chỉ cho phép nguồn ghi mới', () => {
     expect(validateHomeVideoUrl('https://fb.watch/abc123/').valid).toBe(false)
     expect(validateHomeVideoUrl('https://vimeo.com/123').valid).toBe(false)
     expect(validateHomeVideoUrl('').reason).toBe('required')
+  })
+})
+
+describe('chính sách ảnh và chuyển hướng theo hợp đồng máy chủ', () => {
+  it('chỉ nhận ảnh từ kho media hoặc đường legacy được duyệt', () => {
+    expect(validateSafeMediaImageUrl('/media/products/helmet.webp').valid).toBe(true)
+    expect(validateSafeMediaImageUrl('/media-proxy/products/helmet.webp').valid).toBe(true)
+    expect(validateSafeMediaImageUrl('/wp-content/uploads/legacy.jpg').valid).toBe(true)
+    expect(validateSafeMediaImageUrl('https://cdn.example.com/hotlink.jpg').valid).toBe(false)
+  })
+
+  it('chỉ nhận đích chuyển hướng nội bộ hoặc cùng tên miền BigBike', () => {
+    expect(validateRedirectSource('/san-pham-cu').valid).toBe(true)
+    expect(validateRedirectSource('/san-pham-cu?x=1').valid).toBe(false)
+    expect(validateRedirectTarget('/san-pham-moi').valid).toBe(true)
+    expect(validateRedirectTarget('https://bigbike.vn/san-pham-moi').valid).toBe(true)
+    expect(validateRedirectTarget('https://evil.example/x').valid).toBe(false)
+    expect(validateRedirectTarget('javascript:alert(1)').valid).toBe(false)
   })
 })
