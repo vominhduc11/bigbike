@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
@@ -25,16 +26,12 @@ import { RoleSidebar } from './roles/RoleSidebar'
 import { RoleDetail } from './roles/RoleDetail'
 
 // ── Main screen ──────────────────────────────────────────────────────────────
+const EMPTY_ROLES = []
 
 export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
 
-  const [roles, setRoles]                 = useState([])
-  const [catalog, setCatalog]             = useState(() => groupCatalogByModule(BUILTIN_CATALOG))
-  const [loading, setLoading]             = useState(true)
-  const [loadError, setLoadError]         = useState(null)
-  // Lỗi tải RIÊNG danh mục quyền — không chặn cả trang (vẫn dùng danh mục mặc định).
-  const [catalogError, setCatalogError]   = useState(false)
   const [selectedId, setSelectedId]       = useState(null)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [editMode, setEditMode]           = useState(false)
@@ -46,41 +43,31 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const [savePending, setSavePending]     = useState(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [createSaving, setCreateSaving]   = useState(false)
-  // Tăng để buộc tải lại (nút "Thử lại" khi tải danh sách vai trò thất bại).
-  const [reloadKey, setReloadKey]         = useState(0)
+  // Danh mục quyền lỗi KHÔNG được kéo sập cả trang: vẫn dùng danh mục mặc định.
+  const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: fetchRoles })
+  const catalogQuery = useQuery({ queryKey: ['permission-catalog'], queryFn: fetchPermissionCatalog })
+  const roles = rolesQuery.data?.items ?? EMPTY_ROLES
+  const catalog = groupCatalogByModule(catalogQuery.data || BUILTIN_CATALOG)
+  const loading = rolesQuery.isPending
+  const loadError = rolesQuery.isError ? rolesQuery.error?.message || t('roles.loadError') : null
+  const catalogError = catalogQuery.isError
 
   useEffect(() => {
-    let cancelled = false
-    // allSettled: danh mục quyền lỗi KHÔNG được kéo sập cả trang. Danh sách vai trò là
-    // thiết yếu (lỗi → error state); danh mục quyền không tải được thì lùi về danh mục
-    // mặc định (BUILTIN_CATALOG) và chỉ báo cảnh báo mềm.
-    Promise.allSettled([fetchRoles(), fetchPermissionCatalog()])
-      .then(([rolesRes, catalogRes]) => {
-        if (cancelled) return
-        if (rolesRes.status === 'rejected') {
-          setLoadError(rolesRes.reason?.message || t('roles.loadError'))
-          return
-        }
-        const rolesResult = rolesRes.value
-        setRoles(rolesResult.items)
-        if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
-        if (catalogRes.status === 'fulfilled' && catalogRes.value) {
-          setCatalog(groupCatalogByModule(catalogRes.value))
-          setCatalogError(false)
-        } else {
-          setCatalog(groupCatalogByModule(BUILTIN_CATALOG))
-          setCatalogError(true)
-        }
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [t, reloadKey])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!selectedId && roles.length > 0) setSelectedId(roles[0].id)
+  }, [roles, selectedId])
 
   function handleRetryLoad() {
-    setLoading(true)
-    setLoadError(null)
-    setCatalogError(false)
-    setReloadKey(k => k + 1)
+    rolesQuery.refetch()
+    catalogQuery.refetch()
+  }
+
+  function updateCachedRoles(update) {
+    queryClient.setQueryData(['roles'], (previous) => ({
+      ...previous,
+      items: update(previous?.items || []),
+    }))
+    queryClient.invalidateQueries({ queryKey: ['roles'], refetchType: 'none' })
   }
 
   useEffect(() => {
@@ -263,7 +250,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setSaving(true)
     try {
       const result = await updateRolePermissions(selected.id, Array.from(draft))
-      setRoles(prev => prev.map(r => r.id === selected.id ? result.item : r))
+      updateCachedRoles((previous) => previous.map((role) => role.id === selected.id ? result.item : role))
       setEditMode(false)
       setDraft(null)
       setAutoAdded(new Set())
@@ -283,7 +270,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setCreateSaving(true)
     try {
       const result = await createRole(input)
-      setRoles(prev => [...prev, result.item])
+      updateCachedRoles((previous) => [...previous, result.item])
       setSelectedId(result.item.id)
       setMobileShowDetail(true)
       setShowCreateDialog(false)
@@ -301,7 +288,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       await deleteRole(role.id)
       const deletedName = getRoleDisplayName(role, t)
       const remaining = roles.filter(r => r.id !== role.id)
-      setRoles(remaining)
+      updateCachedRoles(() => remaining)
       if (selectedId === role.id) {
         setSelectedId(remaining.length > 0 ? remaining[0].id : null)
         setMobileShowDetail(false)
