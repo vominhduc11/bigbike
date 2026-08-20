@@ -2,10 +2,13 @@
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
+import { useLocale } from "next-intl";
 import Link from "@/i18n/StorefrontLink";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
+import { toBrandPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { Container } from "@/components/layout/Container";
 
 type Props = { brands: Brand[] };
@@ -32,6 +35,11 @@ type Props = { brands: Brand[] };
  * component để không phụ thuộc CSS chết.
  */
 export function BrandCarousel({ brands }: Props) {
+  // Đường dẫn phải đi qua toBrandPath: helper tự thêm dấu "/" cuối (next.config
+  // đặt trailingSlash: true) và tự gắn tiền tố /en cho bản tiếng Anh. Viết tay
+  // `/brands/${slug}` như trước làm mỗi cú bấm tốn thêm một nhịp 308 và đẩy khách
+  // EN sang trang tiếng Việt.
+  const locale = useLocale() as Locale;
   if (brands.length === 0) return null;
   const hasMultipleBrands = brands.length > 1;
 
@@ -65,7 +73,7 @@ export function BrandCarousel({ brands }: Props) {
             const logo = resolveMediaUrl(b.logo?.url?.trim());
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
-                <Link href={`/brands/${b.slug}`} className="flex h-32 items-center justify-center">
+                <Link href={toBrandPath(b.slug, locale)} className="flex h-32 items-center justify-center">
                   {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={logo ?? "/wp/logo-1.png"} alt={b.name} className="max-h-full max-w-full object-contain" loading="lazy" />

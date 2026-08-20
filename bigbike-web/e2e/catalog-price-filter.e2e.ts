@@ -75,8 +75,8 @@ async function expectBrandLogos(brandFilter: Locator) {
   }));
   expect(logoBoxes.length).toBe(await rows.count());
   for (const box of logoBoxes) {
-    expect(Math.round(box.width)).toBe(24);
-    expect(Math.round(box.height)).toBe(24);
+    expect(Math.round(box.width)).toBe(40);
+    expect(Math.round(box.height)).toBe(40);
   }
 
   const imageSources = await brandFilter.locator('[data-brand-logo="true"] img').evaluateAll((elements) => (

@@ -252,4 +252,64 @@ describe("legacy redirect proxy", () => {
 
     expect(activeCalls).toBe(2);
   });
+
+  // SEO_RULE_005: bài viết không tồn tại phải trả 404 thật. Route bài viết không tự
+  // phát được 404 (loading.tsx của /tin-tuc bọc Suspense → Next stream 200 trước khi
+  // notFound() chạy), nên proxy phải chặn trước — giống cách xử lý thương hiệu.
+  function mockArticleLookup(existingSlugs: string[]) {
+    return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input.toString());
+      const match = url.pathname.match(/^\/api\/v1\/articles\/(.+)$/);
+      if (match) {
+        return existingSlugs.includes(decodeURIComponent(match[1]))
+          ? new Response(JSON.stringify({ data: { slug: match[1] } }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          })
+          : new Response(null, { status: 404 });
+      }
+      if (init?.method === "POST") return new Response(null, { status: 204 });
+      return new Response(null, { status: 404 });
+    });
+  }
+
+  it.each([
+    ["https://bigbike.vn/tin-tuc/bai-khong-ton-tai/", "vi"],
+    ["https://bigbike.vn/en/tin-tuc/bai-khong-ton-tai/", "en"],
+  ])("serves a real 404 page for a missing article at %s", async (source, locale) => {
+    mockArticleLookup([]);
+
+    const response = await proxy(new NextRequest(source));
+
+    const rewrite = response.headers.get("x-middleware-rewrite");
+    expect(rewrite).toContain("/seo/not-found/");
+    expect(rewrite).toContain("entity=article");
+    expect(rewrite).toContain(`locale=${locale}`);
+  });
+
+  it("keeps serving an article that still exists", async () => {
+    mockArticleLookup(["bai-con-song"]);
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc/bai-con-song/"));
+
+    expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("/seo/not-found/");
+  });
+
+  it("looks the article up without the legacy .html suffix", async () => {
+    const fetchSpy = mockArticleLookup(["bai-con-song"]);
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc/bai-con-song.html"));
+
+    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("/api/v1/articles/bai-con-song"))).toBe(true);
+    expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("/seo/not-found/");
+  });
+
+  it("does not treat the article list page as a missing article", async () => {
+    const fetchSpy = mockArticleLookup([]);
+
+    const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc/"));
+
+    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("/api/v1/articles/"))).toBe(false);
+    expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("/seo/not-found/");
+  });
 });

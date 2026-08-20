@@ -375,6 +375,38 @@ async function lookupPublicBrandExists(slug: string, locale: "vi" | "en"): Promi
   }
 }
 
+// Bài viết không tồn tại phải trả 404 thật (SEO_RULE_005). Route
+// `/[locale]/tin-tuc/[slug]` không tự làm được: `app/[locale]/tin-tuc/loading.tsx`
+// bọc cả nhánh con trong Suspense nên Next đã stream shell (status 200) trước khi
+// `notFound()` chạy — y hệt lý do thương hiệu phải đi đường vòng này. Chặn ở proxy
+// để Google nhận 404 thay vì "soft 404".
+function articleSlugFromPath(pathname: string): string | null {
+  const normalized = pathname.replace(/\/+$/, "");
+  const match = normalized.match(/^(?:\/en|\/vi)?\/tin-tuc\/([^/]+)$/i);
+  const slug = match?.[1];
+  if (!slug) return null;
+  // `/tin-tuc/{slug}.html` đời cũ đã qua bảng redirect ở trên mà không khớp luật nào:
+  // tra bằng slug sạch để bài còn sống không bị 404 oan.
+  return slug.toLowerCase().endsWith(".html") ? slug.slice(0, -".html".length) : slug;
+}
+
+async function lookupPublicArticleExists(slug: string, locale: "vi" | "en"): Promise<boolean | null> {
+  if (!slug) return null;
+  const url = new URL(`/api/v1/articles/${encodeURIComponent(slug)}`, API_BASE_URL);
+  url.searchParams.set("lang", locale);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (response.status === 404) return false;
+    return response.ok ? true : null;
+  } catch {
+    return null;
+  }
+}
+
 function goneCategoryPath(sourcePath: string): string {
   const source = sourcePath.toLowerCase();
   if (source.includes("of606")) return "/danh-muc/mu-bao-hiem-3-4/";
@@ -596,6 +628,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         const notFoundUrl = new URL("/seo/not-found/", request.url);
         notFoundUrl.searchParams.set("locale", locale);
         notFoundUrl.searchParams.set("entity", "brand");
+        return NextResponse.rewrite(notFoundUrl);
+      }
+    }
+    const articleSlug = articleSlugFromPath(pathname);
+    if (articleSlug) {
+      const articleExists = await lookupPublicArticleExists(articleSlug, locale);
+      if (articleExists === false) {
+        const notFoundUrl = new URL("/seo/not-found/", request.url);
+        notFoundUrl.searchParams.set("locale", locale);
+        notFoundUrl.searchParams.set("entity", "article");
         return NextResponse.rewrite(notFoundUrl);
       }
     }

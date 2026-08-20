@@ -64,9 +64,9 @@ describe("CatalogSidebar brand logos", () => {
 
     const slots = document.querySelectorAll('[data-brand-logo="true"]');
     expect(slots).toHaveLength(3);
-    expect(slots[0]).toHaveClass("h-6", "w-6");
-    expect(slots[1]).toHaveClass("h-6", "w-6");
-    expect(slots[2]).toHaveClass("h-6", "w-6");
+    expect(slots[0]).toHaveClass("h-10", "w-10");
+    expect(slots[1]).toHaveClass("h-10", "w-10");
+    expect(slots[2]).toHaveClass("h-10", "w-10");
     expect(slots[0]?.querySelector("img")).toHaveAttribute("src", "/media/brand-logos/agv.png");
     expect(slots[1]).toHaveTextContent("AL");
     expect(slots[2]).toHaveTextContent("EX");
