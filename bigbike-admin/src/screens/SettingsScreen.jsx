@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { AlertTriangle, Lock, RefreshCw, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
@@ -32,13 +33,7 @@ const AssignmentRolesScreen = lazyScreen(() => import('./AssignmentRolesScreen')
 
 export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const { t } = useTranslation()
-  const [state, setState] = useState({
-    status: 'loading',
-    items: [],
-    warning: '',
-    isRefreshing: false,
-    refreshError: '',
-  })
+  const queryClient = useQueryClient()
   const [activeTabOverride, setActiveTabOverride] = useState(null)
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
@@ -53,61 +48,41 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   // Danh mục/Nội dung. Cài đặt là màn đơn nên key cố định, gộp mọi tab.
   const autosaveKey = getAutosaveKey()
   const [draftRecovery, setDraftRecovery] = useState(null)
-  const requestIdRef = useRef(0)
-  const tRef = useRef(t)
-  tRef.current = t
-
-  const loadSettings = useCallback(async ({ refresh = false } = {}) => {
-    const requestId = ++requestIdRef.current
-    if (refresh) {
-      setState((previous) => ({ ...previous, isRefreshing: true, refreshError: '' }))
-    } else {
-      setState((previous) => ({ ...previous, status: 'loading', refreshError: '' }))
-    }
-    try {
-      const result = await fetchSettings()
-      if (requestId !== requestIdRef.current) return
-      setState({
-        status: 'success',
-        items: result.items,
-        warning: '',
-        isRefreshing: false,
-        refreshError: '',
-      })
-      if (!refresh) {
-        // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
-        const draft = loadFormFromStorage(autosaveKey)
-        const hasDraftValues = draft?.form && (
-          Object.keys(draft.form.drafts || {}).length > 0 ||
-          Object.keys(draft.form.draftsEn || {}).length > 0
-        )
-        if (hasDraftValues) setDraftRecovery(draft)
-      }
-    } catch (error) {
-      if (requestId !== requestIdRef.current) return
-      if (refresh) {
-        setState((previous) => ({
-          ...previous,
-          isRefreshing: false,
-          refreshError: error.message || tRef.current('settings.refreshError'),
-        }))
-      } else {
-        setState({
-          status: 'error',
-          items: [],
-          warning: '',
-          error: error.message,
-          isRefreshing: false,
-          refreshError: '',
-        })
-      }
-    }
-  }, [autosaveKey])
+  const hasCheckedDraftRef = useRef(false)
+  const settingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: fetchSettings,
+    placeholderData: keepPreviousData,
+  })
+  const settingsData = settingsQuery.data
+  const state = {
+    status: settingsQuery.isPending
+      ? 'loading'
+      : settingsQuery.isError && !settingsData
+        ? 'error'
+        : 'success',
+    items: settingsData?.items ?? [],
+    warning: '',
+    isRefreshing: settingsQuery.isFetching && Boolean(settingsData),
+    refreshError: settingsQuery.isError && settingsData
+      ? settingsQuery.error?.message || t('settings.refreshError')
+      : '',
+    error: settingsQuery.error?.message || '',
+  }
 
   useEffect(() => {
-    loadSettings()
-    return () => { requestIdRef.current += 1 }
-  }, [loadSettings])
+    if (!settingsData || hasCheckedDraftRef.current) return
+    hasCheckedDraftRef.current = true
+    // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
+    const draft = loadFormFromStorage(autosaveKey)
+    const hasDraftValues = draft?.form && (
+      Object.keys(draft.form.drafts || {}).length > 0 ||
+      Object.keys(draft.form.draftsEn || {}).length > 0
+    )
+    // Khôi phục bản nháp là phản hồi một lần cho dữ liệu vừa có từ server.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (hasDraftValues) setDraftRecovery(draft)
+  }, [autosaveKey, settingsData])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -164,6 +139,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   useEffect(() => {
     if (activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisitedTabs((previous) => {
       if (previous.has(activeTab)) return previous
       const next = new Set(previous)
@@ -290,11 +266,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           return u
         })
       )
-      // Update state with fresh items from server
-      setState((p) => {
+      // Cập nhật cache ngay để tab hiện tại không chớp rồi làm mới cache chung cho Banner.
+      queryClient.setQueryData(['settings'], (previous) => {
         const updated = new Map(result.items.map((item) => [item.key, item]))
-        return { ...p, items: p.items.map((s) => updated.get(s.key) || s) }
+        return { ...previous, items: (previous?.items || []).map((s) => updated.get(s.key) || s) }
       })
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
       // Clear drafts for saved keys
       const savedKeys = dirty.map((s) => s.key)
       const dropSaved = (obj) => {
@@ -323,7 +300,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, drafts, draftsEn, activeTab, autosaveKey, t])
+  }, [activeItems, activeTab, autosaveKey, drafts, draftsEn, queryClient, t])
 
   // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
   // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất
@@ -433,7 +410,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
         <Button
           variant="secondary"
           className="min-h-11"
-          onClick={() => loadSettings({ refresh: state.status === 'success' })}
+          onClick={() => settingsQuery.refetch()}
           disabled={state.status === 'loading' || state.isRefreshing || anySaving}
         >
           <RefreshCw size={16} className={state.isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
@@ -461,7 +438,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           title={t('settings.loadError')}
           description={state.error}
           actionLabel={t('common.retry')}
-          onAction={() => loadSettings()}
+          onAction={() => settingsQuery.refetch()}
         />
       </div>
     )
@@ -475,7 +452,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
         <div className="bb-alert danger" role="alert">
           <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
           <span className="bb-alert-main">{state.refreshError}</span>
-          <Button variant="secondary" size="sm" onClick={() => loadSettings({ refresh: true })}>
+          <Button variant="secondary" size="sm" onClick={() => settingsQuery.refetch()}>
             {t('common.retry')}
           </Button>
         </div>

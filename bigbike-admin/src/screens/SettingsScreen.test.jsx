@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -65,13 +66,16 @@ const settings = [
 ]
 
 function renderScreen(props = {}) {
-  render(
-    <SettingsScreen
-      canUpdate
-      isSuperAdmin={false}
-      navigate={vi.fn()}
-      {...props}
-    />,
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <SettingsScreen
+        canUpdate
+        isSuperAdmin={false}
+        navigate={vi.fn()}
+        {...props}
+      />
+    </QueryClientProvider>,
   )
 }
 
