@@ -357,8 +357,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         label,
         defaultValue: 'Xoá mục "{{label}}"? Khách sẽ không còn thấy mục này trên menu.',
       }),
-      t('menus.deleteItemTitle'),
-      { variant: 'danger', confirmLabel: t('common.delete') },
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (!confirmed) return
     deleteItemMutation.mutate(itemId)
@@ -412,8 +412,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         count: deletable.length,
         defaultValue: 'Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.',
       }),
-      t('menus.bulkDeleteConfirmTitle', { defaultValue: 'Xoá nhiều mục menu' }),
-      { variant: 'danger', confirmLabel: t('common.delete') },
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (!confirmed) return
     setBulkDeleting(true)

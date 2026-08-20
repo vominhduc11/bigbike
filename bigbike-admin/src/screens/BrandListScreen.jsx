@@ -110,10 +110,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('brands.hideConfirm', {
         name: formatText(brand.name),
-        defaultValue: 'Chuyển thương hiệu "{{name}}" vào Thùng rác? Đây là xóa mềm và có thể khôi phục sau.',
+        defaultValue: 'Chuyển thương hiệu "{{name}}" vào Thùng rác. Đây là xoá mềm và có thể khôi phục sau.',
       }),
-      t('brands.hideConfirmTitle', { defaultValue: 'Chuyển vào Thùng rác?' }),
-      { variant: 'danger', confirmLabel: t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' }) },
+      t('common.moveToTrashTitle'),
+      { variant: 'default', confirmLabel: t('common.moveToTrash') },
     )
     if (!confirmed) return
 
@@ -160,10 +160,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('brands.permanentDeleteConfirm', {
         name: formatText(brand.name),
-        defaultValue: 'Xóa vĩnh viễn thương hiệu "{{name}}"? Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
+        defaultValue: 'Xoá vĩnh viễn thương hiệu "{{name}}". Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
       }),
-      t('brands.permanentDeleteConfirmTitle', { defaultValue: 'Xóa vĩnh viễn thương hiệu?' }),
-      { variant: 'danger', confirmLabel: t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' }) },
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (!confirmed) return
 
@@ -176,7 +176,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       ])
       toast.success(t('brands.permanentDeleteSuccessWithProducts', {
         count: reassignedProductCount,
-        defaultValue: 'Đã xóa vĩnh viễn thương hiệu. {{count}} sản phẩm đã được chuyển sang “Chưa phân loại”.',
+        defaultValue: 'Đã xoá vĩnh viễn thương hiệu. {{count}} sản phẩm đã được chuyển sang “Chưa phân loại”.',
       }))
     } catch (error) {
       toast.error(brandActionError(t, error, t('common.error')))
@@ -211,8 +211,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
             variant="ghost"
             size="icon"
             className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-            title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
-            aria-label={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+            title={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
+            aria-label={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
             aria-busy={actionForBrand || undefined}
             disabled={isActionBusy}
             onClick={() => permanentlyDeleteBrand(brand)}

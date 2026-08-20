@@ -20,11 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.invocation.Invocation;
 
 /**
- * Locks in how Bi turns a customer sentence into catalogue filters
+ * Locks in how BigBike Assistant turns a customer sentence into catalogue filters
  * (CHAT_RULE_015 price direction, CHAT_RULE_016 ordering, CHAT_RULE_017 category/brand,
  * CHAT_RULE_018 no silent whole-catalogue sweep).
  */
-class BiSearchDecisionTest {
+class BigBikeSearchDecisionTest {
 
     private static final ChatAssistantSettings.Snapshot SETTINGS = new ChatAssistantSettings.Snapshot(
             true, 60, "Xin chào", List.of("A", "B", "C"),

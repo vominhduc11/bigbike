@@ -3,7 +3,7 @@ import type { ChatAction, ChatProductCard } from "@/lib/api/client-api";
 export const CHAT_STORAGE_KEY = "bb_ai_chat_session_v1";
 export const CHAT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-const CHAT_SNAPSHOT_VERSION = 1 as const;
+const CHAT_SNAPSHOT_VERSION = 2 as const;
 const MAX_MESSAGES = 64;
 const MAX_CONTENT_LENGTH = 4000;
 const MAX_PRODUCT_FIELDS_LENGTH = 500;
@@ -19,6 +19,7 @@ export type ChatPersistenceMessage = {
   answerFormat?: "PLAIN_TEXT" | "MARKDOWN";
   resultKind?: string;
   requestId?: string;
+  originInteractionId?: string;
   failed?: boolean;
 };
 
@@ -30,7 +31,9 @@ export type ChatPersistenceSnapshot = {
   messages: ChatPersistenceMessage[];
   remainingTurns: number;
   serviceMode: "AI" | "CONTACT";
-  leadPrompt: boolean;
+  leadPromptSequence: 0 | 1 | 2;
+  leadPromptMessageId?: string;
+  viewedLeadSequences: Array<1 | 2>;
   leadCaptured: boolean;
   leadDeclined: boolean;
   pendingRequestId?: string;
@@ -75,7 +78,12 @@ function readProduct(value: unknown): ChatProductCard | undefined {
 function readAction(value: unknown): ChatAction | undefined {
   if (!isRecord(value)) return undefined;
   const type = value.type;
-  return type === "LOGIN" || type === "ORDER_HISTORY" || type === "ORDER_LOOKUP" ? { type } : undefined;
+  const allowed = new Set([
+    "COMPARE_PRODUCTS", "CHECK_SIZE", "CHECK_STOCK", "CHANGE_BUDGET", "FIND_SIMILAR",
+    "VIEW_POLICY", "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION", "CHANGE_NEEDS", "CONTACT_STAFF",
+    "LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP", "CALL_HOTLINE", "OPEN_ZALO", "OPEN_MESSENGER",
+  ]);
+  return typeof type === "string" && allowed.has(type) ? { type: type as ChatAction["type"] } : undefined;
 }
 
 function readMessage(value: unknown): ChatPersistenceMessage | undefined {
@@ -116,6 +124,11 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     if (!requestId) return undefined;
     message.requestId = requestId;
   }
+  if (value.originInteractionId != null) {
+    const originInteractionId = boundedString(value.originInteractionId, 120);
+    if (!originInteractionId) return undefined;
+    message.originInteractionId = originInteractionId;
+  }
   if (value.failed != null) {
     if (typeof value.failed !== "boolean") return undefined;
     message.failed = value.failed;
@@ -146,7 +159,7 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)
-      || parsed.version !== CHAT_SNAPSHOT_VERSION
+      || (parsed.version !== 1 && parsed.version !== CHAT_SNAPSHOT_VERSION)
       || typeof parsed.expiresAt !== "number"
       || !Number.isFinite(parsed.expiresAt)
       || parsed.expiresAt <= now
@@ -162,12 +175,37 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       || parsed.remainingTurns < 0
       || parsed.remainingTurns > 100
       || (parsed.serviceMode !== "AI" && parsed.serviceMode !== "CONTACT")
-      || typeof parsed.leadPrompt !== "boolean"
       || typeof parsed.leadCaptured !== "boolean"
       || typeof parsed.leadDeclined !== "boolean") {
       removeSnapshot();
       return null;
     }
+    const legacy = parsed.version === 1;
+    if (legacy && typeof parsed.leadPrompt !== "boolean") {
+      removeSnapshot();
+      return null;
+    }
+    const leadPromptSequence = legacy
+      ? (parsed.leadPrompt === true ? 1 : 0)
+      : parsed.leadPromptSequence;
+    if (leadPromptSequence !== 0 && leadPromptSequence !== 1 && leadPromptSequence !== 2) {
+      removeSnapshot();
+      return null;
+    }
+    const leadPromptMessageId = parsed.leadPromptMessageId == null
+      ? undefined
+      : boundedString(parsed.leadPromptMessageId, 120);
+    if (parsed.leadPromptMessageId != null && !leadPromptMessageId) {
+      removeSnapshot();
+      return null;
+    }
+    const rawViewedSequences = legacy ? [] : parsed.viewedLeadSequences;
+    if (!Array.isArray(rawViewedSequences)
+      || rawViewedSequences.some((item) => item !== 1 && item !== 2)) {
+      removeSnapshot();
+      return null;
+    }
+    const viewedLeadSequences = Array.from(new Set(rawViewedSequences)) as Array<1 | 2>;
     const pendingRequestId = parsed.pendingRequestId == null
       ? undefined
       : boundedString(parsed.pendingRequestId, 120);
@@ -190,7 +228,9 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       messages: messages as ChatPersistenceMessage[],
       remainingTurns: parsed.remainingTurns,
       serviceMode: parsed.remainingTurns === 0 ? "CONTACT" : parsed.serviceMode,
-      leadPrompt: parsed.leadPrompt,
+      leadPromptSequence: parsed.leadCaptured || parsed.leadDeclined ? 0 : leadPromptSequence,
+      leadPromptMessageId,
+      viewedLeadSequences,
       leadCaptured: parsed.leadCaptured,
       leadDeclined: parsed.leadDeclined,
       pendingRequestId,

@@ -167,9 +167,9 @@ class ChatConcurrencyTest {
                 """
                 insert into chat_conversations (
                     id, locale, turn_count, ai_call_count, consecutive_off_topic,
-                    lead_offer_status, started_at, last_message_at, expires_at,
+                    lead_offer_status, lead_offer_count, started_at, last_message_at, expires_at,
                     created_at, updated_at)
-                values (?, 'en', 0, 0, 0, 'NONE', current_timestamp, current_timestamp,
+                values (?, 'en', 0, 0, 0, 'NONE', 0, current_timestamp, current_timestamp,
                         dateadd('DAY', 90, current_timestamp), current_timestamp, current_timestamp)
                 """,
                 id);

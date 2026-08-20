@@ -87,7 +87,7 @@ class ChatToolServiceTest {
     }
 
     @Test
-    @DisplayName("greeting, news and ambiguous comparison or budget requests are deterministic fast paths")
+    @DisplayName("greeting and ambiguous comparison or budget requests are deterministic fast paths")
     void nonCatalogConversationDoesNotFallIntoProductSearch() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -96,10 +96,8 @@ class ChatToolServiceTest {
                 "Bạn có thể giúp tôi những gì?", "vi", null, settings()).orElseThrow();
         assertThat(help.localAnswer()).contains("em", "anh/chị");
 
-        ChatToolService.ToolOutcome news = tools.resolveFastPath(
-                "có những bài tin tức nào", "vi", null, settings()).orElseThrow();
-        assertThat(news.offTopic()).isTrue();
-        assertThat(news.localAnswer()).contains("ngoài phạm vi");
+        assertThat(tools.resolveFastPath(
+                "có những bài tin tức nào", "vi", null, settings())).isEmpty();
 
         assertThat(tools.resolveFastPath("So sánh các mẫu", "vi", null, settings())
                 .orElseThrow().localAnswer()).contains("hai hoặc ba mẫu nào");

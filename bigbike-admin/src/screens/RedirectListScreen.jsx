@@ -152,9 +152,9 @@ export function RedirectListScreen({ canUpdate }) {
     mutationFn: (redirectId) => deleteRedirect(redirectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['redirects'] })
-      toast.success(t('redirects.deleteSuccess', { defaultValue: 'Đã xóa chuyển hướng.' }))
+      toast.success(t('redirects.deleteSuccess', { defaultValue: 'Đã xoá chuyển hướng.' }))
     },
-    onError: (err) => toast.error(err?.message || t('redirects.deleteError', { defaultValue: 'Không thể xóa chuyển hướng.' })),
+    onError: (err) => toast.error(err?.message || t('redirects.deleteError', { defaultValue: 'Không thể xoá chuyển hướng.' })),
   })
 
   // O4: toggle nhanh Bật/Tắt ngay trên bảng — cập nhật lạc quan (onMutate + rollback),
@@ -217,8 +217,8 @@ export function RedirectListScreen({ canUpdate }) {
     if (!canUpdate || bulkBusy || count === 0) return
     const confirmed = await showConfirm(
       t('redirects.bulkDeleteConfirm', { count, defaultValue: `Xoá ${count} chuyển hướng đã chọn? Thao tác này không thể hoàn tác.` }),
-      t('redirects.bulkDeleteConfirmTitle', { defaultValue: 'Xoá hàng loạt' }),
-      { confirmLabel: t('common.delete'), variant: 'danger' },
+      t('common.permanentDeleteTitle'),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' },
     )
     if (!confirmed) return
     setBulkBusy(true)
@@ -346,11 +346,11 @@ export function RedirectListScreen({ canUpdate }) {
     if (deleteMutation.isPending) return
     const confirmed = await showConfirm(
       t('redirects.deleteConfirm', {
-        defaultValue: `Xóa vĩnh viễn chuyển hướng "${redirect.sourcePattern}"? Thao tác này không thể hoàn tác.`,
+        defaultValue: `Xoá vĩnh viễn chuyển hướng "${redirect.sourcePattern}". Thao tác này không thể hoàn tác.`,
         source: redirect.sourcePattern,
       }),
-      t('redirects.deleteConfirmTitle', { defaultValue: 'Xóa chuyển hướng' }),
-      { confirmLabel: t('common.delete'), variant: 'danger' },
+      t('common.permanentDeleteTitle'),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' },
     )
     if (!confirmed) return
     deleteMutation.mutate(redirect.id)
@@ -464,7 +464,7 @@ export function RedirectListScreen({ canUpdate }) {
         type="button"
         className="min-h-11 min-w-11 rounded-sm"
         title={t('common.delete')}
-        aria-label={t('redirects.deleteNamed', { source: redirect.sourcePattern, defaultValue: `Xóa chuyển hướng ${redirect.sourcePattern}` })}
+        aria-label={t('redirects.deleteNamed', { source: redirect.sourcePattern, defaultValue: `Xoá chuyển hướng ${redirect.sourcePattern}` })}
         disabled={isActionBusy}
         onClick={() => handleDelete(redirect)}
       >

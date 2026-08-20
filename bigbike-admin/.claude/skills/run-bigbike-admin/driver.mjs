@@ -27,6 +27,8 @@
  *   ADMIN_BASE      (default http://localhost:4000)
  *   ADMIN_EMAIL     (default admin@bigbike.vn)
  *   ADMIN_PASSWORD  (default admin123)
+ *   ADMIN_VIEWPORT_WIDTH / ADMIN_VIEWPORT_HEIGHT (default 1440x900)
+ *   ADMIN_CHAT_FIXTURE=1 use isolated read-only chat data for visual review
  *   HEADED=1        run with a visible window (default headless)
  */
 import { chromium } from 'playwright'
@@ -40,6 +42,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const BASE = process.env.ADMIN_BASE || 'http://localhost:4000'
 const EMAIL = process.env.ADMIN_EMAIL || 'admin@bigbike.vn'
 const PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
+const VIEWPORT_WIDTH = Number.parseInt(process.env.ADMIN_VIEWPORT_WIDTH || '1440', 10)
+const VIEWPORT_HEIGHT = Number.parseInt(process.env.ADMIN_VIEWPORT_HEIGHT || '900', 10)
+const USE_CHAT_FIXTURE = process.env.ADMIN_CHAT_FIXTURE === '1'
 const API = '/api/v1'
 const REFRESH_COOKIE = 'bb_admin_refresh'
 
@@ -78,7 +83,7 @@ const context = await browser.newContext({
   baseURL: BASE,
   locale: 'vi-VN',
   timezoneId: 'Asia/Ho_Chi_Minh',
-  viewport: { width: 1440, height: 900 },
+  viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
 })
 
 const host = new URL(BASE).hostname
@@ -103,6 +108,44 @@ page.on('response', (r) => {
     apiErrors.push(`${r.request().method()} ${u} -> ${s}`)
   }
 })
+
+if (USE_CHAT_FIXTURE) {
+  await page.route('**/api/v1/admin/maintenance', (r) => r.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ data: { enabled: false } }),
+  }))
+  await page.route('**/api/v1/admin/chat/stats**', (r) => r.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ data: {
+      date: '2026-08-20', aiCalls: 286, conversations: 94, leads: 18, unanswered: 7,
+      dailyLimit: 400, remainingAiCalls: 114, inputTokens: 188420, outputTokens: 64110,
+      thinkingTokens: 23480, providerRequests: 312, averageLatencyMs: 1840,
+      estimatedCostUsd: 1.84, contentRefusals: 5, assistedOrders: 12, assistedRevenue: 28650000,
+      quality: { answers: 168, productResults: 83, clarifications: 21, outOfScope: 9, contentRefusals: 5 },
+      leadFunnel: { sequence1Viewed: 46, sequence2Viewed: 19, accepted: 18, declined: 11 },
+      actionStats: [
+        { actionType: 'CHECK_SIZE', clicks: 42, cartLines: 19, orders: 8, revenue: 18700000, conversionRate: 0.1905 },
+        { actionType: 'CHECK_STOCK', clicks: 31, cartLines: 12, orders: 4, revenue: 9950000, conversionRate: 0.129 },
+        { actionType: 'CHANGE_BUDGET', clicks: 17, cartLines: 3, orders: 0, revenue: 0, conversionRate: 0 },
+      ],
+      monthlyCostUsd: 12.46, monthlyCostWarningUsd: 10, monthlyCostWarningExceeded: true,
+    } }),
+  }))
+  await page.route('**/api/v1/admin/chat/conversations**', (r) => r.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ data: {
+      items: [
+        { id: 'chat-e2e-1', locale: 'vi', customerDisplayName: 'Khách thử nghiệm A', turnCount: 8, aiCallCount: 7, hasLead: true, startedAt: '2026-08-20T02:10:00Z', lastMessageAt: '2026-08-20T02:18:00Z', providerRequests: 8, averageLatencyMs: 1720, estimatedCostUsd: 0.042, assistedOrders: 1, assistedRevenue: 3150000 },
+        { id: 'chat-e2e-2', locale: 'vi', customerDisplayName: '', turnCount: 5, aiCallCount: 5, hasLead: false, startedAt: '2026-08-20T03:20:00Z', lastMessageAt: '2026-08-20T03:24:00Z', providerRequests: 5, averageLatencyMs: 1960, estimatedCostUsd: 0.031, assistedOrders: 0, assistedRevenue: 0 },
+        { id: 'chat-e2e-3', locale: 'en', customerDisplayName: 'Test customer B', turnCount: 12, aiCallCount: 10, hasLead: true, startedAt: '2026-08-20T04:05:00Z', lastMessageAt: '2026-08-20T04:16:00Z', providerRequests: 11, averageLatencyMs: 1810, estimatedCostUsd: 0.057, assistedOrders: 2, assistedRevenue: 5720000 },
+      ],
+      page: 1, pageSize: 20, totalItems: 3, totalPages: 1,
+    } }),
+  }))
+}
 
 console.error(`[drive] ${BASE}${route}`)
 await page.goto(route, { waitUntil: 'domcontentloaded' })

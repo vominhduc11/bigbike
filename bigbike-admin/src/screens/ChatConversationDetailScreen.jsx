@@ -115,7 +115,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                     {!isUser ? <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden="true"><Icon size={17} /></span> : null}
                     <article className={`max-w-2xl rounded-md border p-4 ${isUser ? 'border-primary/30 bg-primary/5' : 'border-border bg-surface'}`}>
                       <header className="mb-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground">{isUser ? t('chatAdmin.detail.customer') : t('chatAdmin.detail.bi')}</span>
+                        <span className="font-semibold text-foreground">{isUser ? t('chatAdmin.detail.customer') : t('chatAdmin.detail.bigbike')}</span>
                         <time dateTime={message.createdAt}>{formatDateTime(message.createdAt)}</time>
                       </header>
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content || t('common.unknown')}</p>

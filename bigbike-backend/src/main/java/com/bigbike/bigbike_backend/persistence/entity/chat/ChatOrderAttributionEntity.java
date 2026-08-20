@@ -34,6 +34,12 @@ public class ChatOrderAttributionEntity {
     @Column(name = "conversation_id")
     private UUID conversationId;
 
+    @Column(name = "interaction_id")
+    private UUID interactionId;
+
+    @Column(name = "action_type", length = 48)
+    private String actionType;
+
     @Column(name = "attributed_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal attributedAmount;
 

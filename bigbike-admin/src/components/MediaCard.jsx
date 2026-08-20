@@ -12,7 +12,7 @@ const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
 const isAudio = (m) => m && m.startsWith('audio/')
 
-// Xoá vĩnh viễn cố ý KHÔNG có ở đây — chỉ trong bảng chi tiết ở thùng rác.
+// Xoá vĩnh viễn cố ý KHÔNG có ở đây — chỉ trong bảng chi tiết ở Thùng rác.
 export function MediaCard({
   media, selected, focused, deleting,
   onToggleSelect, onPreview,
@@ -139,7 +139,7 @@ export function MediaCard({
                 </Button>
               )}
               {onDelete && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDelete() }}
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDelete(media) }}
                   className="medialib-icon-btn medialib-btn-danger" disabled={deleting}
                   title={t('common.delete')} aria-label={t('common.delete')}>
                   <Trash2 size={14} />

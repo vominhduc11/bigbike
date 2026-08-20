@@ -110,7 +110,7 @@ describe('MediaDetailPanel — tải file', () => {
 })
 
 describe('MediaDetailPanel — xoá vĩnh viễn', () => {
-  it('chỉ hiện khi ở thùng rác và có quyền xoá vĩnh viễn', () => {
+  it('chỉ hiện khi ở Thùng rác và có quyền xoá vĩnh viễn', () => {
     renderPanel({ canUpdate: true, canHardDelete: true, media: { status: 'DELETED' }, onHardDelete: vi.fn() })
     expect(screen.getByRole('button', { name: /media\.hardDelete/ })).toBeInTheDocument()
   })
@@ -121,7 +121,7 @@ describe('MediaDetailPanel — xoá vĩnh viễn', () => {
     expect(screen.getByRole('button', { name: /common\.delete/ })).toBeInTheDocument()
   })
 
-  it('không hiện khi ở thùng rác nhưng không có quyền xoá vĩnh viễn', () => {
+  it('không hiện khi ở Thùng rác nhưng không có quyền xoá vĩnh viễn', () => {
     renderPanel({ canUpdate: true, canHardDelete: false, media: { status: 'DELETED' }, onRestore: vi.fn() })
     expect(screen.queryByRole('button', { name: /media\.hardDelete/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /media\.restore/ })).toBeInTheDocument()

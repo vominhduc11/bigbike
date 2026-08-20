@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin.dto.chat;
 
 import java.time.LocalDate;
 import java.math.BigDecimal;
+import java.util.List;
 
 public record AdminChatStatsResponse(
         LocalDate date,
@@ -19,5 +20,11 @@ public record AdminChatStatsResponse(
         Long averageLatencyMs,
         BigDecimal estimatedCostUsd,
         long assistedOrders,
-        BigDecimal assistedRevenue
+        BigDecimal assistedRevenue,
+        AdminChatQualityStatsResponse quality,
+        AdminChatLeadFunnelResponse leadFunnel,
+        List<AdminChatActionStatsResponse> actionStats,
+        BigDecimal monthlyCostUsd,
+        BigDecimal monthlyCostWarningUsd,
+        boolean monthlyCostWarningExceeded
 ) {}

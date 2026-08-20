@@ -87,7 +87,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', getA
     const ok = await showConfirm(
       t('categories.detail.introFaqRemoveConfirm', { defaultValue: 'Xoá câu hỏi này? Nội dung câu hỏi và câu trả lời sẽ bị xoá khỏi phần giới thiệu.' }),
       t('categories.detail.introFaqRemoveTitle', { defaultValue: 'Xoá câu hỏi thường gặp?' }),
-      { variant: 'danger', confirmLabel: t('common.delete') },
+      { variant: 'default', confirmLabel: t('common.delete') },
     )
     if (!ok) return
     commitField('faqs', model.faqs.filter((_, idx) => idx !== i))

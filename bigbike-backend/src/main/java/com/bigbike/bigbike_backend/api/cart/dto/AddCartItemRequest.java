@@ -8,9 +8,15 @@ public record AddCartItemRequest(
         @NotBlank String productId,
         String productVariantId,
         @Min(1) int quantity,
-        UUID assistantConversationId
+        UUID assistantConversationId,
+        UUID assistantInteractionId
 ) {
     public AddCartItemRequest(String productId, String productVariantId, int quantity) {
-        this(productId, productVariantId, quantity, null);
+        this(productId, productVariantId, quantity, null, null);
+    }
+
+    public AddCartItemRequest(
+            String productId, String productVariantId, int quantity, UUID assistantConversationId) {
+        this(productId, productVariantId, quantity, assistantConversationId, null);
     }
 }

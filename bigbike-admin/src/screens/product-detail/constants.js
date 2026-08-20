@@ -300,7 +300,7 @@ export function buildEmptyForm() {
     descriptionBlocks: null,
     brandId: '',
     categoryIds: [],
-    // Giữ snapshot để PATCH không gửi lại các liên kết cũ đã bị ẩn/xóa mềm
+    // Giữ snapshot để PATCH không gửi lại các liên kết cũ đã bị ẩn/xoá mềm
     // khi quản trị viên chỉ sửa nội dung khác của sản phẩm.
     initialCategoryIds: [],
     retailPrice: '',

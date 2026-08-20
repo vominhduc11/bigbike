@@ -276,7 +276,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
                 className="text-destructive hover:text-destructive"
                 onClick={() => removeItem(index)}
                 disabled={disabled}
-                aria-label={t('products.detail.trustBadges.remove', { defaultValue: 'Xóa nhãn' })}
+                aria-label={t('products.detail.trustBadges.remove', { defaultValue: 'Xoá nhãn' })}
               >
                 <X size={14} aria-hidden="true" />
               </Button>
@@ -496,7 +496,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
           </Button>
           {rows.length >= SPEC_STAT_MAX && (
             <p className="text-xs text-muted-foreground">
-              {t('products.detail.specStats.maxHint', { defaultValue: 'Đã đạt tối đa {{max}} ô số liệu. Xóa bớt một ô nếu muốn thêm ô khác.', max: SPEC_STAT_MAX })}
+              {t('products.detail.specStats.maxHint', { defaultValue: 'Đã đạt tối đa {{max}} ô số liệu. Xoá bớt một ô nếu muốn thêm ô khác.', max: SPEC_STAT_MAX })}
             </p>
           )}
         </div>

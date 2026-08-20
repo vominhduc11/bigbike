@@ -175,10 +175,10 @@ test.describe("Effects — desktop @1440", () => {
       return;
     }
     const mainFrameBefore = await readMainFrame(page);
-    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bi-launcher-ready", "true");
+    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bigbike-launcher-ready", "true");
     await fab.focus();
     await fab.press("Enter");
-    const chatDialog = page.locator("[data-bi-assistant]");
+    const chatDialog = page.locator("[data-bigbike-assistant]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "floating chat open");
     await page.keyboard.press("Escape");
@@ -355,10 +355,10 @@ test.describe("Effects — mobile @390", () => {
     }
 
     const mainFrameBefore = await readMainFrame(page);
-    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bi-launcher-ready", "true");
+    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bigbike-launcher-ready", "true");
     await fab.focus();
     await fab.press("Enter");
-    const chatDialog = page.locator("[data-bi-assistant]");
+    const chatDialog = page.locator("[data-bigbike-assistant]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "mobile floating chat open");
     await page.keyboard.press("Escape");

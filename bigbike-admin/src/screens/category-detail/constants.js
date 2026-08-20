@@ -133,8 +133,8 @@ export function toPayload(form, { isCreate = false } = {}) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     // Luôn gửi mô tả + khối giới thiệu đầu trang, kể cả khi rỗng: backend dùng presence-flag
-    // (thiếu khóa = giữ nguyên giá trị cũ, chuỗi rỗng = xóa). Bỏ khóa khi rỗng khiến admin
-    // không thể xóa nội dung cũ, trong khi bản tiếng Anh vẫn gửi null nên xóa được — hai bên
+    // (thiếu khóa = giữ nguyên giá trị cũ, chuỗi rỗng = xoá). Bỏ khóa khi rỗng khiến admin
+    // không thể xoá nội dung cũ, trong khi bản tiếng Anh vẫn gửi null nên xoá được — hai bên
     // phải nhất quán. Cùng lỗi đã vá cho Thương hiệu ngày 2026-07-28.
     description: form.description.trim(),
     introContent: form.introContent.trim(),

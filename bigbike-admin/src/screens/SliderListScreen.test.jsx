@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
     t: (key, values = {}) => ({
       'common.edit': 'Sửa',
       'common.update': 'Cập nhật',
-      'common.delete': 'Xóa',
+      'common.delete': 'Xoá',
       'common.cancel': 'Hủy',
       'sliders.formMobileUrl': 'Ảnh mobile',
       'sliders.formMobileUrlHint': 'Ảnh mobile tùy chọn',
@@ -95,7 +95,7 @@ vi.mock('../components/ImageUrlInput', () => ({
             onAltChange?.('')
           }}
         >
-          Xóa {kind}
+          Xoá {kind}
         </button>
       </div>
     )
@@ -206,12 +206,12 @@ describe('SliderListScreen mobile image', () => {
     ))
   })
 
-  it('gửi mobileImage null khi admin xóa ảnh mobile', async () => {
+  it('gửi mobileImage null khi admin xoá ảnh mobile', async () => {
     const user = userEvent.setup()
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'Sửa' }))
-    await user.click(screen.getByRole('button', { name: 'Xóa mobile' }))
+    await user.click(screen.getByRole('button', { name: 'Xoá mobile' }))
     await user.click(screen.getByRole('button', { name: 'Cập nhật' }))
 
     await waitFor(() => expect(mocks.updateSlider).toHaveBeenCalledWith(

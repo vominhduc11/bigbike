@@ -128,13 +128,13 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang
   const deleteMut = useMutation({
     mutationFn: () => deleteAttribute(attribute.id),
     onSuccess: () => {
-      toast.success(t('products.detail.variant.attrDeleted', { defaultValue: 'Đã xóa loại thuộc tính.' }))
+      toast.success(t('products.detail.variant.attrDeleted', { defaultValue: 'Đã xoá loại thuộc tính.' }))
       queryClient.invalidateQueries({ queryKey: ['attributes'] })
       onDeleted?.()
       onClose()
     },
     onError: (err) =>
-      toast.error(err?.message || t('products.detail.variant.attrDeleteError', { defaultValue: 'Không xóa được thuộc tính.' })),
+      toast.error(err?.message || t('products.detail.variant.attrDeleteError', { defaultValue: 'Không xoá được thuộc tính.' })),
   })
 
   const trimmed = name.trim()
@@ -147,9 +147,10 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang
     const confirmed = await showConfirm(
       t('products.detail.variant.attrDeleteConfirm', {
         name: displayName,
-        defaultValue: `Xóa hẳn loại thuộc tính "${displayName}" khỏi hệ thống? Không thể hoàn tác.`,
+        defaultValue: `Xoá hẳn loại thuộc tính "${displayName}" khỏi hệ thống? Không thể hoàn tác.`,
       }),
-      t('products.detail.variant.attrDeleteTitle', { defaultValue: 'Xóa loại thuộc tính' }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (confirmed) deleteMut.mutate()
   }
@@ -167,7 +168,7 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang
             onClick={handleDelete}
             disabled={busy}
           >
-            <Trash2 size={15} /> {t('common.delete', { defaultValue: 'Xóa' })}
+            <Trash2 size={15} /> {t('common.delete', { defaultValue: 'Xoá' })}
           </Button>
           <Button variant="outline" onClick={onClose} disabled={busy}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
           <Button onClick={saveRename} disabled={busy || !dirty}>
@@ -303,8 +304,8 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
           className="text-destructive hover:text-destructive shrink-0"
           onClick={onDelete}
           disabled={busy}
-          aria-label={t('common.delete', { defaultValue: 'Xóa' })}
-          title={t('common.delete', { defaultValue: 'Xóa' })}
+          aria-label={t('common.delete', { defaultValue: 'Xoá' })}
+          title={t('common.delete', { defaultValue: 'Xoá' })}
         >
           <Trash2 size={15} />
         </Button>
@@ -358,12 +359,12 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
   const deleteMut = useMutation({
     mutationFn: (id) => deleteAttributeValue(id),
     onSuccess: (_, id) => {
-      toast.success(t('products.detail.variant.colorDeleted', { defaultValue: 'Đã xóa màu.' }))
+      toast.success(t('products.detail.variant.colorDeleted', { defaultValue: 'Đã xoá màu.' }))
       invalidate()
       onValueDeleted?.(id)
     },
     onError: (err) =>
-      toast.error(err?.message || t('products.detail.variant.colorDeleteError', { defaultValue: 'Không xóa được màu.' })),
+      toast.error(err?.message || t('products.detail.variant.colorDeleteError', { defaultValue: 'Không xoá được màu.' })),
   })
 
   const handleDelete = async (v) => {
@@ -371,9 +372,10 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
     const confirmed = await showConfirm(
       t('products.detail.variant.colorDeleteConfirm', {
         label: displayLabel,
-        defaultValue: `Xóa hẳn màu "${displayLabel}" khỏi hệ thống? Không thể hoàn tác.`,
+        defaultValue: `Xoá hẳn màu "${displayLabel}" khỏi hệ thống? Không thể hoàn tác.`,
       }),
-      t('products.detail.variant.colorDeleteTitle', { defaultValue: 'Xóa màu' }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (confirmed) deleteMut.mutate(v.id)
   }
@@ -433,207 +435,6 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
     </Modal>
   )
 }
-
-function LegacySizeScaleManagerModal({ open: _open, onClose: _onClose, scales: _scales, contentLang: _contentLang }) {
-  return null
-}
-
-/*
-  const { t } = useTranslation()
-  const queryClient = useQueryClient()
-  const { data: groups = [], isLoading: groupsLoading } = useQuery({
-    queryKey: ['size-scale-groups'],
-    queryFn: fetchSizeScaleGroups,
-    enabled: open,
-    staleTime: 5 * 60 * 1000,
-  })
-  const [selectedScaleId, setSelectedScaleId] = useState('')
-  const [draft, setDraft] = useState({ code: '', name: '', nameEn: '', groupId: '', filterNamespace: '', sortOrder: '100' })
-  const [newValue, setNewValue] = useState({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
-  const selectedScale = scales.find((scale) => scale.id === selectedScaleId) || null
-
-  useEffect(() => {
-    if (!open) return
-    if (selectedScaleId === '__new__') return
-    const next = selectedScaleId && scales.some((scale) => scale.id === selectedScaleId)
-      ? selectedScaleId
-      : scales[0]?.id || ''
-    setSelectedScaleId(next)
-  }, [open, scales, selectedScaleId])
-
-  useEffect(() => {
-    if (!selectedScale) return
-    setDraft({
-      code: selectedScale.code || '',
-      name: selectedScale.name || '',
-      nameEn: selectedScale.nameEn || '',
-      groupId: selectedScale.group?.id || '',
-      filterNamespace: selectedScale.filterNamespace || '',
-      sortOrder: String(selectedScale.sortOrder ?? 100),
-    })
-  }, [selectedScale])
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['size-scales'] })
-  }
-  const createScaleMut = useMutation({
-    mutationFn: (input) => createSizeScale(input),
-    onSuccess: (created) => {
-      toast.success(t('products.detail.sizeScale.created', { defaultValue: 'Đã tạo scale kích cỡ.' }))
-      invalidate()
-      setSelectedScaleId(created?.id || '')
-    },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' })),
-  })
-  const updateScaleMut = useMutation({
-    mutationFn: ({ id, input }) => updateSizeScale(id, input),
-    onSuccess: () => {
-      toast.success(t('products.detail.sizeScale.saved', { defaultValue: 'Đã lưu scale kích cỡ.' }))
-      invalidate()
-    },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được scale kích cỡ.' })),
-  })
-  const deleteScaleMut = useMutation({
-    mutationFn: (id) => deleteSizeScale(id),
-    onSuccess: () => {
-      toast.success(t('products.detail.sizeScale.deleted', { defaultValue: 'Đã xóa scale kích cỡ.' }))
-      invalidate()
-      setSelectedScaleId('')
-    },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được scale kích cỡ.' })),
-  })
-  const createValueMut = useMutation({
-    mutationFn: ({ scaleId, input }) => createSizeScaleValue(scaleId, input),
-    onSuccess: () => {
-      toast.success(t('products.detail.sizeScale.valueCreated', { defaultValue: 'Đã thêm giá trị cỡ.' }))
-      setNewValue({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
-      invalidate()
-    },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được giá trị cỡ.' })),
-  })
-  const updateValueMut = useMutation({
-    mutationFn: ({ id, input }) => updateSizeScaleValue(id, input),
-    onSuccess: () => { toast.success(t('products.detail.sizeScale.saved', { defaultValue: 'Đã lưu scale kích cỡ.' })); invalidate() },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.saveError', { defaultValue: 'Không lưu được giá trị cỡ.' })),
-  })
-  const deleteValueMut = useMutation({
-    mutationFn: (id) => deleteSizeScaleValue(id),
-    onSuccess: () => { toast.success(t('products.detail.sizeScale.valueDeleted', { defaultValue: 'Đã xóa giá trị cỡ.' })); invalidate() },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được giá trị cỡ.' })),
-  })
-
-  const scaleInput = {
-    ...draft,
-    sortOrder: Number(draft.sortOrder) || 100,
-    active: true,
-  }
-  const valueInput = {
-    ...newValue,
-    sortOrder: Number(newValue.sortOrder) || 100,
-    active: true,
-  }
-  const busy = createScaleMut.isPending || updateScaleMut.isPending || deleteScaleMut.isPending
-    || createValueMut.isPending || updateValueMut.isPending || deleteValueMut.isPending
-
-  const createNewScale = () => {
-    setSelectedScaleId('__new__')
-    setDraft({ code: '', name: '', nameEn: '', groupId: groups[0]?.id || '', filterNamespace: '', sortOrder: '100' })
-    setNewValue({ valueKey: '', label: '', labelEn: '', subgroupKey: '', subgroupLabel: '', subgroupLabelEn: '', sortOrder: '100' })
-  }
-  const saveScale = () => {
-    if (!draft.code.trim() || !draft.name.trim() || !draft.nameEn.trim() || !draft.groupId || !draft.filterNamespace.trim()) return
-    if (selectedScale) updateScaleMut.mutate({ id: selectedScale.id, input: scaleInput })
-    else createScaleMut.mutate(scaleInput)
-  }
-  const confirmDeleteScale = async () => {
-    if (!selectedScale) return
-    const ok = await showConfirm(
-      t('products.detail.sizeScale.deleteConfirm', { name: selectedScale.name, defaultValue: `Xóa scale "${selectedScale.name}"? Chỉ scale chưa được sản phẩm sử dụng mới xóa được.` }),
-      t('products.detail.sizeScale.deleteTitle', { defaultValue: 'Xóa scale kích cỡ' }),
-    )
-    if (ok) deleteScaleMut.mutate(selectedScale.id)
-  }
-
-  const handleClose = () => {
-    setSelectedScaleId(selectedScale?.id || '')
-    setDraftState({ scaleId: '', name: '', groupId: '', valuesText: '' })
-    setValueError('')
-    onClose()
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      wide
-      title={t('products.detail.sizeScale.managerTitle', { defaultValue: 'Quản lý scale kích cỡ' })}
-      description={t('products.detail.sizeScale.managerDescription', { defaultValue: 'Mỗi sản phẩm có option cỡ phải gắn một scale rõ ràng; không dùng suy luận từ số.' })}
-      actions={<Button variant="outline" onClick={handleClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>}
-    >
-      <div className="grid gap-5 @xl:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">{t('products.detail.sizeScale.listTitle', { defaultValue: 'Scale hiện có' })}</h3>
-            <Button variant="outline" size="sm" onClick={createNewScale} disabled={busy}><Plus size={14} />{t('common.create', { defaultValue: 'Tạo' })}</Button>
-          </div>
-          {scales.map((scale) => (
-            <Button key={scale.id} variant={scale.id === selectedScale?.id ? 'secondary' : 'ghost'} className="h-auto justify-start whitespace-normal text-left" onClick={() => setSelectedScaleId(scale.id)}>
-              <span className="min-w-0"><span className="block font-semibold">{contentLang === 'en' ? scale.nameEn || scale.name : scale.name}</span><span className="block font-mono text-xs text-muted-foreground">{scale.code}</span></span>
-            </Button>
-          ))}
-          {!scales.length ? <p className="text-sm text-muted-foreground">{t('products.detail.sizeScale.empty', { defaultValue: 'Chưa có scale kích cỡ.' })}</p> : null}
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="grid gap-3 @xl:grid-cols-2">
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.code', { defaultValue: 'Mã scale' })}<Input value={draft.code} onChange={(e) => setDraft((v) => ({ ...v, code: e.target.value }))} disabled={busy} /></label>
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.namespace', { defaultValue: 'Namespace lọc' })}<Input value={draft.filterNamespace} onChange={(e) => setDraft((v) => ({ ...v, filterNamespace: e.target.value }))} disabled={busy} /></label>
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.name', { defaultValue: 'Tên tiếng Việt' })}<Input value={draft.name} onChange={(e) => setDraft((v) => ({ ...v, name: e.target.value }))} disabled={busy} /></label>
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.nameEn', { defaultValue: 'Tên tiếng Anh' })}<Input value={draft.nameEn} onChange={(e) => setDraft((v) => ({ ...v, nameEn: e.target.value }))} disabled={busy} /></label>
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.group', { defaultValue: 'Nhóm hiển thị' })}
-              <Select value={draft.groupId || '__none__'} onValueChange={(value) => setDraft((v) => ({ ...v, groupId: value === '__none__' ? '' : value }))} disabled={busy || groupsLoading}>
-                <SelectTrigger><SelectValue placeholder={t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })} /></SelectTrigger>
-                <SelectContent><SelectItem value="__none__">{t('products.detail.sizeScale.groupPlaceholder', { defaultValue: 'Chọn nhóm' })}</SelectItem>{groups.map((group) => <SelectItem key={group.id} value={group.id}>{contentLang === 'en' ? group.labelEn || group.label : group.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </label>
-            <label className="text-sm font-medium">{t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })}<Input type="number" value={draft.sortOrder} onChange={(e) => setDraft((v) => ({ ...v, sortOrder: e.target.value }))} disabled={busy} /></label>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={saveScale} disabled={busy || !draft.code.trim() || !draft.name.trim() || !draft.nameEn.trim() || !draft.groupId || !draft.filterNamespace.trim()}>{t('common.save', { defaultValue: 'Lưu' })}</Button>
-            {selectedScale ? <Button variant="danger" onClick={confirmDeleteScale} disabled={busy}><Trash2 size={14} />{t('common.delete', { defaultValue: 'Xóa' })}</Button> : null}
-          </div>
-
-          {selectedScale ? (
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <h3 className="text-sm font-semibold">{t('products.detail.sizeScale.valuesTitle', { defaultValue: 'Giá trị trong scale' })}</h3>
-              <div className="grid gap-2 @xl:grid-cols-[minmax(90px,0.6fr)_minmax(120px,1fr)_minmax(120px,1fr)_72px_auto] text-xs font-semibold text-muted-foreground">
-                <span>{t('products.detail.sizeScale.valueKey', { defaultValue: 'Mã giá trị' })}</span><span>{t('products.detail.sizeScale.valueLabel', { defaultValue: 'Nhãn tiếng Việt' })}</span><span>{t('products.detail.sizeScale.valueLabelEn', { defaultValue: 'Nhãn tiếng Anh' })}</span><span>{t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })}</span><span />
-              </div>
-              {(selectedScale.values || []).map((value) => (
-                <SizeScaleValueEditRow key={value.id} value={value} saving={updateValueMut.isPending && updateValueMut.variables?.id === value.id} deleting={deleteValueMut.isPending && deleteValueMut.variables === value.id} onSave={(input) => updateValueMut.mutate({ id: value.id, input: { ...input, active: value.active } })} onDelete={() => deleteValueMut.mutate(value.id)} />
-              ))}
-              <div className="flex flex-col gap-2 border border-dashed border-border p-2">
-                <div className="grid gap-2 @xl:grid-cols-[minmax(90px,0.6fr)_minmax(120px,1fr)_minmax(120px,1fr)_72px_auto]">
-                <Input value={newValue.valueKey} onChange={(e) => setNewValue((v) => ({ ...v, valueKey: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueKey', { defaultValue: 'Mã giá trị' })} disabled={busy} />
-                <Input value={newValue.label} onChange={(e) => setNewValue((v) => ({ ...v, label: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueLabel', { defaultValue: 'Nhãn tiếng Việt' })} disabled={busy} />
-                <Input value={newValue.labelEn} onChange={(e) => setNewValue((v) => ({ ...v, labelEn: e.target.value }))} placeholder="M" aria-label={t('products.detail.sizeScale.valueLabelEn', { defaultValue: 'Nhãn tiếng Anh' })} disabled={busy} />
-                <Input type="number" value={newValue.sortOrder} onChange={(e) => setNewValue((v) => ({ ...v, sortOrder: e.target.value }))} aria-label={t('products.detail.sizeScale.sortOrder', { defaultValue: 'Thứ tự' })} disabled={busy} />
-                <Button variant="outline" size="sm" onClick={() => createValueMut.mutate({ scaleId: selectedScale.id, input: valueInput })} disabled={busy || !newValue.valueKey.trim() || !newValue.label.trim() || !newValue.labelEn.trim()}><Plus size={14} />{t('common.create', { defaultValue: 'Tạo' })}</Button>
-                </div>
-                <div className="grid gap-2 @xl:grid-cols-3">
-                  <Input value={newValue.subgroupKey} onChange={(e) => setNewValue((v) => ({ ...v, subgroupKey: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupKey', { defaultValue: 'Mã nhóm phụ' })} aria-label={t('products.detail.sizeScale.subgroupKey', { defaultValue: 'Mã nhóm phụ' })} disabled={busy} />
-                  <Input value={newValue.subgroupLabel} onChange={(e) => setNewValue((v) => ({ ...v, subgroupLabel: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupLabel', { defaultValue: 'Tên nhóm phụ tiếng Việt' })} aria-label={t('products.detail.sizeScale.subgroupLabel', { defaultValue: 'Tên nhóm phụ tiếng Việt' })} disabled={busy} />
-                  <Input value={newValue.subgroupLabelEn} onChange={(e) => setNewValue((v) => ({ ...v, subgroupLabelEn: e.target.value }))} placeholder={t('products.detail.sizeScale.subgroupLabelEn', { defaultValue: 'Tên nhóm phụ tiếng Anh' })} aria-label={t('products.detail.sizeScale.subgroupLabelEn', { defaultValue: 'Tên nhóm phụ tiếng Anh' })} disabled={busy} />
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </Modal>
-  )
-}
-*/
 
 function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
   const { t } = useTranslation()
@@ -701,11 +502,11 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
   const deleteScaleMut = useMutation({
     mutationFn: (id) => deleteSizeScale(id),
     onSuccess: () => {
-      toast.success(t('products.detail.sizeScale.deleted', { defaultValue: 'Đã xóa scale kích cỡ.' }))
+      toast.success(t('products.detail.sizeScale.deleted', { defaultValue: 'Đã xoá scale kích cỡ.' }))
       invalidate()
       setSelectedScaleId('')
     },
-    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xóa được scale kích cỡ.' })),
+    onError: (error) => toast.error(error?.message || t('products.detail.sizeScale.deleteError', { defaultValue: 'Không xoá được scale kích cỡ.' })),
   })
 
   const busy = createScaleMut.isPending || updateScaleMut.isPending || deleteScaleMut.isPending
@@ -738,8 +539,9 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
   const confirmDeleteScale = async () => {
     if (!selectedScale) return
     const ok = await showConfirm(
-      t('products.detail.sizeScale.deleteConfirm', { name: selectedScale.name, defaultValue: `Xóa scale "${selectedScale.name}"? Chỉ scale chưa được sản phẩm sử dụng mới xóa được.` }),
-      t('products.detail.sizeScale.deleteTitle', { defaultValue: 'Xóa scale kích cỡ' }),
+      t('products.detail.sizeScale.deleteConfirm', { name: selectedScale.name, defaultValue: `Xoá scale "${selectedScale.name}"? Chỉ scale chưa được sản phẩm sử dụng mới xoá được.` }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (ok) deleteScaleMut.mutate(selectedScale.id)
   }
@@ -827,7 +629,7 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
           {valueError ? <p className="text-sm text-destructive" role="alert">{valueError}</p> : null}
           <div className="flex flex-wrap gap-2">
             <Button onClick={saveScale} disabled={busy || !draft.name.trim() || !draft.groupId || !draft.valuesText.trim()}>{t('common.save', { defaultValue: 'Lưu' })}</Button>
-            {selectedScale ? <Button variant="danger" onClick={confirmDeleteScale} disabled={busy}><Trash2 size={14} />{t('common.delete', { defaultValue: 'Xóa' })}</Button> : null}
+            {selectedScale ? <Button variant="danger" onClick={confirmDeleteScale} disabled={busy}><Trash2 size={14} />{t('common.delete', { defaultValue: 'Xoá' })}</Button> : null}
           </div>
         </div>
       </div>
@@ -1775,6 +1577,7 @@ export function VariantsEditor({
     const confirmed = await showConfirm(
       t('products.detail.variant.removeConfirm', { label }),
       t('products.detail.variant.remove'),
+      { variant: 'default', confirmLabel: t('products.detail.variant.remove') },
     )
     if (!confirmed) return
     onChange(items.filter((v) => v._key !== key))
@@ -1804,7 +1607,7 @@ export function VariantsEditor({
     const confirmed = await showConfirm(
       t('products.detail.variant.bulkDeleteConfirm', { count }),
       t('products.detail.variant.bulkDelete'),
-      { variant: 'danger', confirmLabel: t('products.detail.variant.bulkDelete') },
+      { variant: 'default', confirmLabel: t('products.detail.variant.bulkDelete') },
     )
     if (!confirmed) return
 
@@ -2173,7 +1976,7 @@ export function VariantsEditor({
             checked={bulkClearSale}
             onCheckedChange={(checked) => setBulkClearSale(checked === true)}
           />
-          <span>{t('products.detail.variant.bulkClearSale', { defaultValue: 'Xóa giá khuyến mãi (đưa về trống) cho các biến thể đã chọn' })}</span>
+          <span>{t('products.detail.variant.bulkClearSale', { defaultValue: 'Xoá giá khuyến mãi (đưa về trống) cho các biến thể đã chọn' })}</span>
         </label>
       </Modal>
     </div>

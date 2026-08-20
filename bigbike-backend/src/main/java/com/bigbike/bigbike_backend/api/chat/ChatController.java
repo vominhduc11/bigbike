@@ -5,6 +5,8 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatInteractionRequest;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatInteractionResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -14,6 +16,7 @@ import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
 import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.chat.ChatService;
+import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -36,12 +39,25 @@ import java.util.concurrent.CompletableFuture;
 @Validated
 @RestController
 @RequestMapping("/api/v1/chat")
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatInteractionService chatInteractionService;
     private final ApiResponseFactory apiResponseFactory;
     private final RateLimitService rateLimitService;
+
+    /** Compatibility constructor used by focused controller tests that do not call interactions. */
+    public ChatController(
+            ChatService chatService,
+            ApiResponseFactory apiResponseFactory,
+            RateLimitService rateLimitService
+    ) {
+        this.chatService = chatService;
+        this.chatInteractionService = null;
+        this.apiResponseFactory = apiResponseFactory;
+        this.rateLimitService = rateLimitService;
+    }
 
     @GetMapping("/availability")
     public ApiDataResponse<ChatAvailabilityResponse> availability(
@@ -99,6 +115,17 @@ public class ChatController {
 
     private static void sendProgress(SseEmitter emitter, String code) throws java.io.IOException {
         emitter.send(SseEmitter.event().name("progress").data(Map.of("code", code)));
+    }
+
+    @PostMapping("/interactions")
+    public ApiDataResponse<ChatInteractionResponse> recordInteraction(
+            @Valid @RequestBody ChatInteractionRequest body,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkOrThrow(
+                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.conversationId().toString());
+        return apiResponseFactory.data(
+                chatInteractionService.record(body, currentCustomerId()), request);
     }
 
     @PostMapping("/leads")

@@ -61,6 +61,7 @@ File này liên quan trực tiếp đến:
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. An automatic moderator may additionally drive `PENDING → SPAM\|TRASH` (never `APPROVED`) — §15A "Automatic moderation actor". | Backend service + optimistic version | `OWNER_CONFIRMED_2026-08-08` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`/`012`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
+| Chat lead invitation | `lead_offer_status` + `lead_offer_count` | `NONE`, `OFFERED`, `ACCEPTED`, `DECLINED`; count `0..2` | Lời mời 1 phát theo câu trả lời đủ điều kiện; lời mời 2 chỉ sau viewed/ignored và trigger xác minh; accept/decline kết thúc. | Backend service + DB constraints + idempotent interaction | `OWNER_CONFIRMED_2026-08-20` | `CHAT_RULE_012`, `CHAT_RULE_029`, V1041 |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
 ## 4. Product State Machine
@@ -820,6 +821,32 @@ only distinct successful changes in `affected`, and exposes deterministic
 
 Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 `BUSINESS_RULES.md` `REVIEW_RULE_009` and `REVIEW_RULE_010`.
+
+## 15B. Trợ lý BigBike — vòng đời lời mời liên hệ
+
+### State fields
+
+- `lead_offer_status`: `NONE|OFFERED|ACCEPTED|DECLINED`.
+- `lead_offer_count`: số sequence backend đã phát, từ `0` đến `2`.
+- Tương tác `LEAD_PROMPT_VIEWED` ghi việc sequence thật sự được hiển thị; mã sự kiện client là idempotent và không chứa nội dung/PII.
+
+### Allowed transitions
+
+| From | To | Preconditions | Side effects |
+|---|---|---|---|
+| `NONE`, count `0` | `OFFERED`, count `1` | Một assistant response đủ điều kiện; không phải greeting/out-of-scope/handoff. | Response trả `leadPromptSequence=1`; chưa lưu lead. |
+| `OFFERED`, count `1` | `OFFERED`, count `2` | Sequence 1 đã có `LEAD_PROMPT_VIEWED`, chưa accept/decline; lượt sau hỏi size/còn hàng của đúng một mẫu đã xác minh hoặc thêm giỏ từ chat. | Response/cart result trả `leadPromptSequence=2`; chưa lưu lead. |
+| `OFFERED`, count `1..2` | `ACCEPTED` | Khách consent rõ ràng; backend xác minh quyền sở hữu conversation. | Lưu đúng một `chat_leads` record và phát thông báo admin. |
+| `OFFERED`, count `1..2` | `DECLINED` | Khách bấm “Không, cảm ơn”; backend xác minh quyền sở hữu conversation. | Không lưu PII/lead; decline retry là idempotent. |
+
+### Forbidden transitions
+
+- `ACCEPTED` hoặc `DECLINED` không được quay lại `OFFERED`, kể cả khách vào lại trang sản phẩm.
+- Count không vượt `2`; sequence 2 không phát nếu sequence 1 chưa được ghi nhận viewed hoặc trigger liên quan nhiều/không có sản phẩm xác minh.
+- `LEAD_PROMPT_VIEWED` giả mạo message, sequence hoặc conversation bị từ chối; cùng client event id không ghi hai lần.
+- Không có consent thì không được chuyển sang `ACCEPTED` và không được lưu lead.
+
+Status: `OWNER_CONFIRMED_2026-08-20`; backend/test evidence được bổ sung cùng V1041.
 
 ## 16. Cross-Entity State Dependencies
 

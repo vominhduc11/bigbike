@@ -15,11 +15,13 @@ import { cn } from "@/lib/utils";
 import { collectAttributeNames, findMatchingVariant } from "@/lib/utils/variant-match";
 import type { Locale } from "@/i18n/locale";
 
-type BiProductCardProps = {
+type BigBikeProductCardProps = {
   product: ChatProductCard;
   locale: Locale;
   compact?: boolean;
   conversationId?: string;
+  assistantInteractionId?: string;
+  onLeadPrompt?: (sequence: 1 | 2) => void;
 };
 
 function effectivePrice(product: ChatProductCard): number | null {
@@ -39,7 +41,14 @@ function formatPrice(product: ChatProductCard, locale: Locale): string | null {
   }).format(price);
 }
 
-export function BiProductCard({ product, locale, compact = false, conversationId }: BiProductCardProps) {
+export function BigBikeProductCard({
+  product,
+  locale,
+  compact = false,
+  conversationId,
+  assistantInteractionId,
+  onLeadPrompt,
+}: BigBikeProductCardProps) {
   const t = useTranslations("Support");
   const { addToCart } = useCart();
   const [detail, setDetail] = useState<Product | null>(null);
@@ -114,7 +123,12 @@ export function BiProductCard({ product, locale, compact = false, conversationId
     setAdding(true);
     setNotice("");
     try {
-      await addToCart(loaded.id, 1, variant?.id, conversationId);
+      const cart = assistantInteractionId
+        ? await addToCart(loaded.id, 1, variant?.id, conversationId, assistantInteractionId)
+        : await addToCart(loaded.id, 1, variant?.id, conversationId);
+      if (cart?.leadPromptSequence === 1 || cart?.leadPromptSequence === 2) {
+        onLeadPrompt?.(cart.leadPromptSequence);
+      }
       setNoticeKind("success");
       setNotice(t("addedToCart"));
     } catch {
@@ -134,7 +148,7 @@ export function BiProductCard({ product, locale, compact = false, conversationId
 
   return (
     <article
-      data-bi-product-card
+      data-bigbike-product-card
       className={cn(
         "group flex min-w-0 flex-col border border-border bg-background transition-colors hover:border-brand focus-within:border-brand",
         compact ? "w-72 shrink-0 snap-start" : "w-full",

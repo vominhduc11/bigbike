@@ -73,7 +73,7 @@ describe('Category payload contract', () => {
     })
   })
 
-  it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xóa được nội dung cũ', () => {
+  it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xoá được nội dung cũ', () => {
     const payload = toPayload({ ...buildEmptyForm(), description: '', introContent: '' })
 
     expect(payload).toHaveProperty('description')
@@ -106,7 +106,7 @@ describe('Category payload contract', () => {
     expect(payload.translations.en.introContent).toBe(enHtml)
   })
 
-  it('gửi rỗng ảnh thành url null để xóa từng vai trò ảnh riêng biệt', () => {
+  it('gửi rỗng ảnh thành url null để xoá từng vai trò ảnh riêng biệt', () => {
     const payload = toPayload(buildEmptyForm())
 
     expect(payload.image).toEqual({ url: null })

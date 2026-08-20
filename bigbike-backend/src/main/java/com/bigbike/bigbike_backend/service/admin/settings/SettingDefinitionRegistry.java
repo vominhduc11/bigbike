@@ -267,6 +267,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
+                SettingDefinition.builder("ai_assistant_monthly_cost_warning_usd", "ai_assistant", SettingValueType.DECIMAL)
+                        .min(0).max(1_000_000)
+                        .description("Ngưỡng cảnh báo chi phí AI theo tháng dương lịch bằng USD; 0 để tắt cảnh báo.").build(),
                 SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(12)
                         .description("Số cặp hỏi–đáp gần nhất gửi cho Trợ lý BigBike để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 12.").build(),
@@ -275,7 +278,11 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)
                         .description("Câu chào đầu khung chat của Trợ lý BigBike; có thể nhập riêng bản tiếng Anh.").build(),
                 SettingDefinition.builder("ai_assistant_quick_prompts", "ai_assistant", SettingValueType.LONG_TEXT)
-                        .description("Mỗi dòng là một nút gợi ý nhanh; widget dùng tối đa 4 dòng và có thể nhập riêng bản tiếng Anh.").build()
+                        .description("Mỗi dòng là một nút gợi ý nhanh; widget dùng tối đa 4 dòng và có thể nhập riêng bản tiếng Anh.").build(),
+                SettingDefinition.builder("ai_assistant_abbreviations", "ai_assistant", SettingValueType.JSON)
+                        .description("Tối đa 100 từ/cụm viết tắt; khớp nguyên cụm, ưu tiên cụm dài và không được va chạm catalog.").build(),
+                SettingDefinition.builder("ai_assistant_answer_templates", "ai_assistant", SettingValueType.JSON)
+                        .description("Tối đa 50 câu mẫu song ngữ; trigger dài nhất duy nhất và câu trả lời phải an toàn.").build()
         );
     }
 }

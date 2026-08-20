@@ -35,7 +35,7 @@ function formWithSeo(overrides = {}) {
 describe('BrandDetailScreen toPayload', () => {
   // canonicalUrl không còn gửi từ form (SEO_RULE_003 — tự sinh từ slug ở tầng web);
   // noIndex/noIndexEn thêm ở V371 (SEO_RULE_001 — cờ tách riêng VI/EN).
-  it('gửi khối SEO rỗng rõ ràng để xóa dữ liệu cũ', () => {
+  it('gửi khối SEO rỗng rõ ràng để xoá dữ liệu cũ', () => {
     expect(toBrandPayload(formWithSeo()).seo).toEqual({
       title: null,
       description: null,
@@ -77,7 +77,7 @@ describe('BrandDetailScreen toPayload', () => {
     expect(payload.translations.en.description).toBe('English description')
   })
 
-  it('gửi cờ hiện ở trang chủ và không gửi cờ thùng rác', () => {
+  it('gửi cờ hiện ở trang chủ và không gửi cờ Thùng rác', () => {
     const payload = toBrandPayload(formWithSeo({ showOnHomepage: false }))
     expect(payload.showOnHomepage).toBe(false)
     expect(payload).not.toHaveProperty('visible')
@@ -103,7 +103,7 @@ describe('BrandDetailScreen toPayload', () => {
     expect(payload.banner).toEqual({ url: '/media/brands/ls2-banner.jpg', alt: 'Ảnh bìa thương hiệu LS2' })
   })
 
-  it('gửi alt rỗng thành null khi admin xóa hết chữ alt', () => {
+  it('gửi alt rỗng thành null khi admin xoá hết chữ alt', () => {
     const payload = toBrandPayload(formWithSeo({ logoUrl: '/media/brands/ls2-logo.png', logoAlt: '   ' }))
     expect(payload.logo).toEqual({
       url: '/media/brands/ls2-logo.png',
@@ -114,7 +114,7 @@ describe('BrandDetailScreen toPayload', () => {
     })
   })
 
-  it('luôn gửi mô tả kể cả khi rỗng để admin xóa được mô tả cũ', () => {
+  it('luôn gửi mô tả kể cả khi rỗng để admin xoá được mô tả cũ', () => {
     const payload = toBrandPayload(formWithSeo({ description: '' }))
     expect(payload).toHaveProperty('description')
     expect(payload.description).toBe('')

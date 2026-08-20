@@ -199,7 +199,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           <Button type="button" variant="secondary" size="sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
           </Button>
-          <Button type="button" variant="secondary" size="sm" className="text-danger" onClick={() => onDelete(video.id)}>
+          <Button type="button" variant="secondary" size="sm" className="text-danger" onClick={() => onDelete(video)}>
             {t('common.delete')}
           </Button>
         </div>
@@ -389,10 +389,16 @@ export function HomeVideoListScreen({ canUpdate }) {
     setShowForm(true)
   }
 
-  async function handleDelete(id) {
-    const confirmed = await showConfirm(t('homeVideos.deleteConfirm'), t('homeVideos.deleteConfirmTitle'))
+  async function handleDelete(video) {
+    if (!video?.id) return
+    const name = video.title || video.titleEn || video.id
+    const confirmed = await showConfirm(
+      t('homeVideos.deleteConfirm', { name }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
     if (!confirmed) return
-    deleteMutation.mutate(id)
+    deleteMutation.mutate(video.id)
   }
 
   function handleToggleActive(video) {
@@ -574,7 +580,11 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   async function handleBulkDelete() {
     const count = selectedIds.size
-    const confirmed = await showConfirm(t('homeVideos.bulkDeleteConfirm', { count }), t('homeVideos.bulkDeleteConfirmTitle'))
+    const confirmed = await showConfirm(
+      t('homeVideos.bulkDeleteConfirm', { count }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
     if (!confirmed) return
     setIsBulkBusy(true)
     try {

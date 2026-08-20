@@ -130,9 +130,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
     item,
     action: 'trash',
     confirmKey: 'content.deleteConfirm',
-    titleKey: 'content.deleteConfirmTitle',
-    confirmLabel: 'common.delete',
-    variant: 'danger',
+    titleKey: 'common.moveToTrashTitle',
+    confirmLabel: 'common.moveToTrash',
+    variant: 'default',
     successKey: 'content.deleteSuccess',
   })
 
@@ -150,7 +150,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
     item,
     action: 'permanent',
     confirmKey: 'content.permanentDeleteConfirm',
-    titleKey: 'content.permanentDeleteConfirmTitle',
+    titleKey: 'common.permanentDeleteTitle',
     confirmLabel: 'common.permanentDelete',
     variant: 'danger',
     successKey: 'content.permanentDeleteSuccess',
@@ -242,7 +242,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
               onClick: () => runBulk({
                 action: 'permanent',
                 confirmKey: 'content.bulkHardDeleteConfirm',
-                titleKey: 'content.bulkHardDeleteTitle',
+                titleKey: 'common.permanentDeleteTitle',
                 confirmLabel: 'common.permanentDelete',
                 variant: 'danger',
               }),
@@ -266,9 +266,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
               onClick: () => runBulk({
                 action: 'trash',
                 confirmKey: 'content.bulkTrashConfirm',
-                titleKey: 'content.bulkTrashTitle',
-                confirmLabel: 'content.bulkTrashConfirmCta',
-                variant: 'danger',
+                titleKey: 'common.moveToTrashTitle',
+                confirmLabel: 'common.moveToTrash',
+                variant: 'default',
               }),
             },
           ])

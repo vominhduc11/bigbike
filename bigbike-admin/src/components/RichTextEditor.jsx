@@ -375,7 +375,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               </label>
             </div>
             <DropdownMenuItem onSelect={() => editor.chain().focus().unsetColor().unsetBackgroundColor().run()}>
-              <span className="text-xs font-semibold line-through">A</span> {t('richEditor.clearColor', { defaultValue: 'Xóa màu' })}
+              <span className="text-xs font-semibold line-through">A</span> {t('richEditor.clearColor', { defaultValue: 'Xoá màu' })}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
@@ -390,13 +390,13 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
                   {t('richEditor.addRow', { defaultValue: 'Thêm dòng' })}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteColumn().run()}>
-                  {t('richEditor.deleteColumn', { defaultValue: 'Xóa cột' })}
+                  {t('richEditor.deleteColumn', { defaultValue: 'Xoá cột' })}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteRow().run()}>
-                  {t('richEditor.deleteRow', { defaultValue: 'Xóa dòng' })}
+                  {t('richEditor.deleteRow', { defaultValue: 'Xoá dòng' })}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteTable().run()}>
-                  {t('richEditor.deleteTable', { defaultValue: 'Xóa bảng' })}
+                  {t('richEditor.deleteTable', { defaultValue: 'Xoá bảng' })}
                 </DropdownMenuItem>
               </>
             )}

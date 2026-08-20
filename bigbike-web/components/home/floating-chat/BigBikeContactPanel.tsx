@@ -26,7 +26,7 @@ function validExternalUrl(value: string | null | undefined): string | null {
   }
 }
 
-export function BiContactPanel({
+export function BigBikeContactPanel({
   contacts,
   onRequestCallback,
 }: {
@@ -73,16 +73,16 @@ export function BiContactPanel({
   }, [contacts, t]);
 
   return (
-    <section aria-labelledby="bi-contact-heading" className="border border-border bg-background p-4">
+    <section aria-labelledby="bigbike-contact-heading" className="border border-border bg-background p-4">
       <div className="border-l-4 border-chat pl-3">
-        <h3 id="bi-contact-heading" className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
+        <h3 id="bigbike-contact-heading" className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
           {t("contactTitle")}
         </h3>
         <p className="mt-2 font-body text-a5-meta leading-relaxed text-muted-foreground">
           {t("contactDescription")}
         </p>
       </div>
-      <div id="bi-contact-options" className="mt-4 grid gap-3">
+      <div id="bigbike-contact-options" className="mt-4 grid gap-3">
         {items.length > 0 ? items.map((item) => (
           <a
             key={item.key}

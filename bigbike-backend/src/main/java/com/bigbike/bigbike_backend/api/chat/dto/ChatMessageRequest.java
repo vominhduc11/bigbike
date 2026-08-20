@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.chat.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
@@ -21,6 +22,12 @@ public class ChatMessageRequest {
 
     /** Optional for legacy clients; new clients reuse it when retrying one logical turn. */
     private UUID requestId;
+
+    @Valid
+    private ChatPageContextRequest pageContext;
+
+    /** Optional source action click; accepted only after backend verification. */
+    private UUID originInteractionId;
 
     @NotBlank(message = "Tin nhắn không được để trống.")
     @Size(max = 1000, message = "Tin nhắn không được dài quá 1.000 ký tự.")

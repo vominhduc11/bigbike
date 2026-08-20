@@ -121,8 +121,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
   const handleDelete = useCallback(async (product) => {
     const confirmed = await showConfirm(
       t('products.deleteConfirm', { name: product.name }),
-      t('products.deleteConfirmTitle'),
-      { confirmLabel: t('products.deleteConfirmTitle') },
+      t('common.moveToTrashTitle'),
+      { confirmLabel: t('common.moveToTrash'), variant: 'default' },
     )
     if (!confirmed) return
 
@@ -168,9 +168,9 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
 
   const handlePermanentDelete = useCallback(async (product) => {
     const confirmed = await showConfirm(
-      t('products.permanentDeleteConfirm', { name: product.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm ${product.name}? Thao tác này không thể hoàn tác.` }),
-      t('products.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
-      { confirmLabel: t('products.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' }), variant: 'danger' },
+      t('products.permanentDeleteConfirm', { name: product.name, defaultValue: `Xoá vĩnh viễn sản phẩm ${product.name}. Thao tác này không thể hoàn tác.` }),
+      t('common.permanentDeleteTitle'),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' },
     )
     if (!confirmed) return
 
@@ -179,11 +179,11 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       await permanentDeleteProduct(product.id)
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-      toast.success(t('products.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn sản phẩm thành công.' }))
+      toast.success(t('products.permanentDeleteSuccess', { defaultValue: 'Xoá vĩnh viễn sản phẩm thành công.' }))
     } catch (error) {
       const message = error instanceof ApiClientError
         ? error.message
-        : (error?.message || t('products.permanentDeleteError', { defaultValue: 'Không thể xóa vĩnh viễn sản phẩm.' }))
+        : (error?.message || t('products.permanentDeleteError', { defaultValue: 'Không thể xoá vĩnh viễn sản phẩm.' }))
       toast.error(message)
     } finally {
       setDeletingId(null)
@@ -270,7 +270,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
 
   const emptyState = query.publishStatus === 'TRASH'
     ? {
-        title: t('products.emptyTrash', { defaultValue: 'Không có sản phẩm trong thùng rác' }),
+        title: t('products.emptyTrash', { defaultValue: 'Không có sản phẩm trong Thùng rác' }),
         description: t('products.emptyTrashDesc', { defaultValue: 'Xoá bộ lọc hoặc chuyển sang trạng thái khác.' }),
       }
     : {
@@ -366,9 +366,9 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
 
   const handleBulkDelete = useCallback(() => runBulk({
     confirmKey: 'products.bulkDeleteConfirm',
-    titleKey: 'products.deleteConfirmTitle',
-    confirmLabel: 'products.deleteConfirmTitle',
-    variant: 'danger',
+    titleKey: 'common.moveToTrashTitle',
+    confirmLabel: 'common.moveToTrash',
+    variant: 'default',
     action: softDeleteProduct,
     successKey: 'products.bulkDeleteSuccess',
   }), [runBulk])
@@ -384,7 +384,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
 
   const handleBulkPermanentDelete = useCallback(() => runBulk({
     confirmKey: 'products.bulkPermanentDeleteConfirm',
-    titleKey: 'products.bulkPermanentDeleteTitle',
+    titleKey: 'common.permanentDeleteTitle',
     confirmLabel: 'common.permanentDelete',
     variant: 'danger',
     action: permanentDeleteProduct,
@@ -395,7 +395,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     ? (isTrashView
         ? [
             { label: t('products.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy },
-            { label: t('products.bulkPermanentDelete', { defaultValue: 'Xóa vĩnh viễn' }), tone: 'danger', onClick: handleBulkPermanentDelete, disabled: bulkBusy },
+            { label: t('products.bulkPermanentDelete', { defaultValue: 'Xoá vĩnh viễn' }), tone: 'danger', onClick: handleBulkPermanentDelete, disabled: bulkBusy },
           ]
         : [{ label: t('products.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy }])
     : []
@@ -620,7 +620,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem disabled={isBusy} onSelect={() => handlePermanentDelete(product)} className="text-danger focus:text-danger">
-                      <Trash2 size={13} className="mr-2" />{t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                      <Trash2 size={13} className="mr-2" />{t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -775,8 +775,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
                 type="button"
                 className="min-h-11 min-w-11 text-destructive hover:text-destructive"
                 disabled={isBusy}
-                title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
-                aria-label={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                title={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
+                aria-label={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
                 onClick={() => handlePermanentDelete(product)}
               >
                 <Trash2 size={16} aria-hidden="true" />

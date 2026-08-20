@@ -15,7 +15,7 @@ export function lazyScreen(factory, exportName) {
   return lazy(() =>
     factory()
       .then((m) => {
-        // Tải chunk thành công → xóa cờ chống-lặp để lần deploy sau vẫn được tự reload 1 lần.
+        // Tải chunk thành công → xoá cờ chống-lặp để lần deploy sau vẫn được tự reload 1 lần.
         sessionStorage.removeItem(CHUNK_RELOAD_KEY)
         const Screen = m[exportName]
         // Không có export đúng tên thì React chỉ ném "Minified React error #306 … resolves to

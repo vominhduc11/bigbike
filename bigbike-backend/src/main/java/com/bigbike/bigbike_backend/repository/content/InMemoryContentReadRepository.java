@@ -112,6 +112,24 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
+    public List<ContentReadRepository.ArticleKnowledge> searchPublishedArticleKnowledge(
+            java.util.List<String> tokens, String locale, int limit) {
+        if ("en".equalsIgnoreCase(locale)) return List.of();
+        return articles.stream()
+                .filter(article -> article.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(article -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(token -> {
+                    String term = token.toLowerCase(Locale.ROOT);
+                    return containsLower(article.title(), term)
+                            || containsLower(article.excerpt(), term)
+                            || containsLower(article.body(), term);
+                }))
+                .limit(Math.min(3, limit))
+                .map(article -> new ContentReadRepository.ArticleKnowledge(
+                        article.title(), article.excerpt(), article.body()))
+                .toList();
+    }
+
+    @Override
     public Optional<Article> findArticleBySlug(String slug) {
         return articles.stream().filter(a -> a.slug().equals(slug)).findFirst();
     }

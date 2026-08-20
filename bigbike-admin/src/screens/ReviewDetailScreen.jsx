@@ -96,13 +96,13 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate, isSuperAdmin
         message: t('reviews.spamConfirmMany', { count: 1 }),
         title: t('reviews.spamConfirmTitle'),
         label: t('reviews.spam'),
-        variant: 'danger',
+        variant: 'default',
       },
       TRASH: {
         message: t('reviews.trashConfirmMany', { count: 1 }),
         title: t('reviews.trashConfirmTitle'),
         label: t('reviews.moveToTrash'),
-        variant: 'danger',
+        variant: 'default',
       },
     }[nextStatus]
     if (!confirmation) return false
@@ -145,9 +145,9 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate, isSuperAdmin
   const handleDelete = useCallback(async () => {
     if (pendingAction || stale || !canPermanentlyDeleteReview(state.item, isSuperAdmin)) return
     const confirmed = await showConfirm(
-      t('reviews.deleteConfirmPermanent', { count: 1, defaultValue: 'Xóa vĩnh viễn đánh giá này? Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xóa.' }),
-      t('reviews.deleteConfirmTitle'),
-      { variant: 'danger', confirmLabel: t('reviews.deletePermanent'), cancelLabel: t('common.cancel') },
+      t('reviews.deleteConfirmPermanent', { count: 1, defaultValue: 'Xoá vĩnh viễn đánh giá này. Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xoá.' }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete'), cancelLabel: t('common.cancel') },
     )
     if (!confirmed) return
     setActionError('')

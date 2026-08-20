@@ -16,6 +16,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaR
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
+import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ public class CartService {
     private final CartCalculator calculator;
     private final ChatConversationJpaRepository chatConversationRepo;
     private final ChatMessageJpaRepository chatMessageRepo;
+    private final ChatInteractionService chatInteractionService;
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {
@@ -96,6 +98,8 @@ public class CartService {
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
         UUID assistantConversationId = validateAssistantAttribution(
                 cart, product, req.assistantConversationId());
+        UUID assistantInteractionId = chatInteractionService.verifiedCartInteraction(
+                req.assistantInteractionId(), assistantConversationId, product.getSlug());
 
         if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
             throw new ConflictException("Product is not available.");
@@ -140,6 +144,7 @@ public class CartService {
             item.setQuantity(newQuantity);
             item.setUnitPrice(unitPrice);
             if (assistantConversationId != null) item.setAssistantConversationId(assistantConversationId);
+            if (assistantInteractionId != null) item.setAssistantInteractionId(assistantInteractionId);
             applyImageSnapshot(item, product, variant);
         } else {
             item = new CartItemEntity();
@@ -157,6 +162,7 @@ public class CartService {
             item.setRegularPrice(VariantPricing.regularPrice(product, variant));
             item.setSalePrice(VariantPricing.salePrice(product, variant));
             item.setAssistantConversationId(assistantConversationId);
+            item.setAssistantInteractionId(assistantInteractionId);
             item.setCreatedAt(Instant.now());
         }
         item.setUpdatedAt(Instant.now());
@@ -218,6 +224,9 @@ public class CartService {
                     calculator.recalculateItem(ci);
                     if (ci.getAssistantConversationId() == null) {
                         ci.setAssistantConversationId(guestItem.getAssistantConversationId());
+                    }
+                    if (ci.getAssistantInteractionId() == null) {
+                        ci.setAssistantInteractionId(guestItem.getAssistantInteractionId());
                     }
                     cartItemRepo.save(ci);
                     cartItemRepo.delete(guestItem);

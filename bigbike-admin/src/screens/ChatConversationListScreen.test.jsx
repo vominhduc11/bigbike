@@ -15,6 +15,13 @@ vi.mock('react-i18next', () => ({
       'chatAdmin.stats.estimatedCost': 'Chi phí ước tính',
       'chatAdmin.stats.contentRefusals': 'Nội dung bị từ chối',
       'chatAdmin.stats.assistedOrders': 'Đơn được trợ lý hỗ trợ',
+      'chatAdmin.monthlyWarning.title': 'Chi phí AI tháng này đã chạm ngưỡng cảnh báo',
+      'chatAdmin.quality.title': 'Chất lượng trả lời',
+      'chatAdmin.quality.direct': 'Trả lời thẳng',
+      'chatAdmin.leadFunnel.title': 'Phễu liên hệ',
+      'chatAdmin.leadFunnel.sequence2': 'Lời mời lần 2 đã hiện',
+      'chatAdmin.actions.title': 'Hiệu quả nút gợi ý',
+      'chatAdmin.actions.types.CHECK_SIZE': 'Kiểm tra size',
     }[key] || values.defaultValue || key),
   }),
 }))
@@ -56,6 +63,12 @@ vi.mock('../lib/adminApi', () => ({
     contentRefusals: 2,
     assistedOrders: 1,
     assistedRevenue: 1590000,
+    quality: { answers: 3, productResults: 2, clarifications: 1, outOfScope: 1, contentRefusals: 2 },
+    leadFunnel: { sequence1Viewed: 4, sequence2Viewed: 2, accepted: 1, declined: 1 },
+    actionStats: [{ actionType: 'CHECK_SIZE', clicks: 3, cartLines: 2, orders: 1, revenue: 1590000, conversionRate: 1 / 3 }],
+    monthlyCostUsd: 12,
+    monthlyCostWarningUsd: 10,
+    monthlyCostWarningExceeded: true,
     hasTelemetry: true,
   }),
 }))
@@ -85,10 +98,17 @@ describe('ChatConversationListScreen', () => {
     expect(screen.getAllByText('Lượt hỏi').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Lượt gọi AI').length).toBeGreaterThan(0)
     expect(screen.getByText('Câu chưa trả lời được trong ngày')).toBeInTheDocument()
-    expect(screen.getByText('4')).toBeInTheDocument()
+    expect(screen.getAllByText('4').length).toBeGreaterThan(0)
     expect(screen.getByText('Thời gian trả lời trung bình')).toBeInTheDocument()
     expect(screen.getByText('Chi phí ước tính')).toBeInTheDocument()
     expect(screen.getByText('Nội dung bị từ chối')).toBeInTheDocument()
     expect(screen.getByText('Đơn được trợ lý hỗ trợ')).toBeInTheDocument()
+    expect(screen.getByText('Chi phí AI tháng này đã chạm ngưỡng cảnh báo')).toBeInTheDocument()
+    expect(screen.getByText('Chất lượng trả lời')).toBeInTheDocument()
+    expect(screen.getByText('Trả lời thẳng')).toBeInTheDocument()
+    expect(screen.getByText('Phễu liên hệ')).toBeInTheDocument()
+    expect(screen.getByText('Lời mời lần 2 đã hiện')).toBeInTheDocument()
+    expect(screen.getByText('Hiệu quả nút gợi ý')).toBeInTheDocument()
+    expect(screen.getAllByText('Kiểm tra size').length).toBeGreaterThan(0)
   })
 })

@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.mapper.CartMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.service.cart.CartService;
+import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -40,6 +41,7 @@ public class CartController {
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
     private final CartMapper cartMapper;
+    private final ChatInteractionService chatInteractionService;
     // Guest cookies go through the shared builder so they carry the same Domain/Secure/SameSite
     // attributes as the session cookies — a host-only bb_csrf breaks the storefront's CSRF header.
     private final CustomerAuthCookies cookies;
@@ -61,8 +63,11 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
+        int leadPromptSequence = chatInteractionService.offerSecondLeadAfterVerifiedCart(
+                req.assistantConversationId(), updated.getCustomerId());
         return apiResponseFactory.data(
-                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+                cartMapper.toResponse(
+                        updated, items, cartService.findUnavailableItemIds(items), leadPromptSequence), request);
     }
 
     @PatchMapping("/items/{itemId}")

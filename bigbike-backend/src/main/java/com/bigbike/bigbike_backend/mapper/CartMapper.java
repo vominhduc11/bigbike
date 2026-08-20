@@ -18,6 +18,15 @@ import org.mapstruct.ReportingPolicy;
 public interface CartMapper {
 
     default CartResponse toResponse(CartEntity cart, List<CartItemEntity> items, Set<UUID> unavailableIds) {
+        return toResponse(cart, items, unavailableIds, 0);
+    }
+
+    default CartResponse toResponse(
+            CartEntity cart,
+            List<CartItemEntity> items,
+            Set<UUID> unavailableIds,
+            int leadPromptSequence
+    ) {
         List<CartItemResponse> itemResponses = items.stream()
                 .map(item -> toItemResponse(item, unavailableIds))
                 .toList();
@@ -26,7 +35,9 @@ public interface CartMapper {
                 cart.getStatus(),
                 cart.getCurrency(),
                 itemResponses,
-                toTotalsResponse(cart)
+                toTotalsResponse(cart),
+                leadPromptSequence > 0,
+                leadPromptSequence
         );
     }
 

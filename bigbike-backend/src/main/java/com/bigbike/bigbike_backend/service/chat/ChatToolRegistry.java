@@ -23,9 +23,11 @@ public class ChatToolRegistry {
     public static final String GET_POLICY = "get_policy";
     public static final String GET_SHOP_INFO = "get_shop_info";
     public static final String GET_MY_ORDERS = "get_my_orders";
+    public static final String SEARCH_ARTICLES = "search_articles";
 
     private static final List<String> TOOL_ORDER = List.of(
-            SEARCH_PRODUCTS, LIST_CATEGORIES, GET_PRODUCT, GET_POLICY, GET_SHOP_INFO, GET_MY_ORDERS);
+            SEARCH_PRODUCTS, LIST_CATEGORIES, GET_PRODUCT, GET_POLICY, GET_SHOP_INFO,
+            GET_MY_ORDERS, SEARCH_ARTICLES);
     private static final Set<String> SEARCH_FIELDS = Set.of(
             "query", "category", "brand", "color", "size",
             "minPrice", "maxPrice", "sort", "lang");
@@ -35,7 +37,7 @@ public class ChatToolRegistry {
             "price:asc", "price:desc", "createdAt:desc");
     private static final Set<String> LANG_VALUES = Set.of("vi", "en");
     private static final Set<String> POLICY_TOPICS = Set.of(
-            "warranty", "return_exchange", "payment", "shipping", "size");
+            "warranty", "return_exchange", "payment", "shipping", "size", "privacy");
     private static final Set<String> ORDER_SCOPES = Set.of("latest", "recent");
     private static final Pattern SLUG = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern SQL_SHAPE = Pattern.compile(
@@ -70,6 +72,7 @@ public class ChatToolRegistry {
             case GET_POLICY -> validateEnumCall(name, arguments, "topic", POLICY_TOPICS);
             case GET_SHOP_INFO -> validateNoArguments(name, arguments);
             case GET_MY_ORDERS -> validateEnumCall(name, arguments, "scope", ORDER_SCOPES);
+            case SEARCH_ARTICLES -> validateArticleSearch(arguments);
             default -> throw new ToolValidationException("Unknown tool");
         };
     }
@@ -110,6 +113,14 @@ public class ChatToolRegistry {
         String slug = requiredText(arguments, "slug", 255);
         if (!SLUG.matcher(slug).matches()) throw new ToolValidationException("Invalid slug");
         return new ValidatedCall(GET_PRODUCT, Map.of("slug", slug));
+    }
+
+    private static ValidatedCall validateArticleSearch(JsonNode arguments) {
+        rejectUnknown(arguments, Set.of("query", "lang"));
+        String query = requiredText(arguments, "query", 200);
+        String lang = requiredText(arguments, "lang", 2);
+        if (!LANG_VALUES.contains(lang)) throw new ToolValidationException("Invalid language");
+        return new ValidatedCall(SEARCH_ARTICLES, Map.of("query", query, "lang", lang));
     }
 
     private static ValidatedCall validateNoArguments(String name, JsonNode arguments) {
@@ -172,6 +183,11 @@ public class ChatToolRegistry {
             case GET_MY_ORDERS -> function(name,
                     "Read minimal order summaries for the currently signed-in customer. Never ask for identity arguments.",
                     objectSchema(Map.of("scope", stringSchema(null, ORDER_SCOPES)), List.of("scope")));
+            case SEARCH_ARTICLES -> function(name,
+                    "Search up to three published BigBike articles for general product-use knowledge. Article results never provide live price, promotion, stock, variants, contact details, delivery promises or store policy, and never include a URL. Use only when general article knowledge is relevant.",
+                    objectSchema(Map.of(
+                            "query", stringSchema(200, null),
+                            "lang", stringSchema(null, LANG_VALUES)), List.of("query", "lang")));
             default -> throw new IllegalArgumentException("Unknown declaration");
         };
     }

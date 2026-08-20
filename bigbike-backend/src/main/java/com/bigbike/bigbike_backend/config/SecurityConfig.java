@@ -82,7 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home/category-highlights").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search-suggest").permitAll()
-                        // Bi assistant supports guests and optionally reads the server-resolved
+                        // BigBike Assistant supports guests and optionally reads the server-resolved
                         // customer session. No client-supplied customer identity is accepted.
                         .requestMatchers("/api/v1/chat/**").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter

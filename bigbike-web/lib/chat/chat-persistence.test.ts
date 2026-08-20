@@ -9,7 +9,7 @@ import {
 } from "./chat-persistence";
 
 const snapshot: ChatPersistenceSnapshot = {
-  version: 1,
+  version: 2,
   expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
   locale: "vi",
   conversationId: "conversation-persistence",
@@ -26,7 +26,9 @@ const snapshot: ChatPersistenceSnapshot = {
   ],
   remainingTurns: 7,
   serviceMode: "AI",
-  leadPrompt: true,
+  leadPromptSequence: 1,
+  leadPromptMessageId: "assistant-1",
+  viewedLeadSequences: [1],
   leadCaptured: false,
   leadDeclined: false,
 };
@@ -48,6 +50,28 @@ describe("chat persistence", () => {
 
     expect(readChatSnapshot()).toBeNull();
     expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+  });
+
+  it("upgrades a valid version-one snapshot without losing its active lead prompt", () => {
+    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
+      locale: "vi",
+      conversationId: "legacy-conversation",
+      messages: [{ id: "assistant-old", role: "ASSISTANT", content: "Nội dung cũ" }],
+      remainingTurns: 5,
+      serviceMode: "AI",
+      leadPrompt: true,
+      leadCaptured: false,
+      leadDeclined: false,
+    }));
+
+    expect(readChatSnapshot()).toMatchObject({
+      version: 2,
+      conversationId: "legacy-conversation",
+      leadPromptSequence: 1,
+      viewedLeadSequences: [],
+    });
   });
 
   it("clears the snapshot immediately", () => {

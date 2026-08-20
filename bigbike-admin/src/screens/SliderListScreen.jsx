@@ -134,7 +134,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
               className="text-danger"
               disabled={deleting}
               aria-busy={deleting}
-              onClick={() => onDelete(slider.id)}
+              onClick={() => onDelete(slider)}
             >
               {deleting ? t('common.deleting', { defaultValue: 'Đang xoá...' }) : t('common.delete')}
             </Button>
@@ -363,16 +363,20 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
     if (productTouched) setProductFieldError(validateSliderProduct(next, t))
   }
 
-  async function handleDelete(sliderId) {
+  async function handleDelete(slider) {
+    if (!slider?.id) return
+    const bannerName = `${locationLabel(t, slider.location)} (#${slider.sortOrder ?? 0})`
     const confirmed = await showConfirm(
       t('sliders.deleteConfirmDetail', {
-        defaultValue: 'Banner sẽ bị xoá vĩnh viễn và không còn hiển thị trên trang web. Thao tác này không thể hoàn tác.',
+        name: bannerName,
+        defaultValue: `Xoá vĩnh viễn banner "${bannerName}". Banner sẽ không còn hiển thị trên trang web và thao tác này không thể hoàn tác.`,
       }),
-      t('sliders.deleteConfirmTitle'),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (!confirmed) return
-    setDeletingId(sliderId)
-    deleteMutation.mutate(sliderId)
+    setDeletingId(slider.id)
+    deleteMutation.mutate(slider.id)
   }
 
   function handleToggleActive(slider) {

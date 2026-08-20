@@ -97,12 +97,6 @@ vi.mock('./roles/CreateRoleDialog', () => ({
     </div>
   ),
 }))
-vi.mock('./roles/DeleteRoleDialog', () => ({
-  DeleteRoleDialog: ({ role, onConfirm }) => role
-    ? <button type="button" onClick={onConfirm}>confirm-delete-{role.id}</button>
-    : null,
-}))
-
 const CATALOG = [
   {
     groupKey: 'roles.groupSystem',
@@ -254,14 +248,18 @@ describe('RolesScreen', () => {
     ))
   })
 
-  it('does not open deletion for a custom role that still has assigned staff', async () => {
+  it('shows a blocked shared confirmation for a custom role that still has assigned staff', async () => {
     const user = userEvent.setup()
     render(<RolesScreen canUpdate />)
     await screen.findByText('selected-ADMIN')
     await user.click(screen.getByRole('button', { name: 'role-WAREHOUSE' }))
     await user.click(screen.getByRole('button', { name: 'request-delete' }))
 
-    expect(screen.queryByRole('button', { name: 'confirm-delete-WAREHOUSE' })).not.toBeInTheDocument()
+    expect(mocks.showConfirm).toHaveBeenCalledWith(
+      expect.stringContaining('roles.deleteRoleBlocked'),
+      'common.confirm',
+      expect.objectContaining({ variant: 'default', confirmLabel: 'common.close' }),
+    )
     expect(mocks.deleteRole).not.toHaveBeenCalled()
   })
 
@@ -272,8 +270,12 @@ describe('RolesScreen', () => {
     await screen.findByText('selected-ADMIN')
     await user.click(screen.getByRole('button', { name: 'role-EMPTY_ROLE' }))
     await user.click(screen.getByRole('button', { name: 'request-delete' }))
-    await user.click(screen.getByRole('button', { name: 'confirm-delete-EMPTY_ROLE' }))
 
+    await waitFor(() => expect(mocks.showConfirm).toHaveBeenCalledWith(
+      expect.stringContaining('roles.deleteRoleConfirm'),
+      'common.permanentDeleteTitle',
+      expect.objectContaining({ variant: 'danger', confirmLabel: 'common.permanentDelete' }),
+    ))
     await waitFor(() => expect(mocks.deleteRole).toHaveBeenCalledWith('EMPTY_ROLE'))
     expect(screen.queryByRole('button', { name: 'role-EMPTY_ROLE' })).not.toBeInTheDocument()
   })

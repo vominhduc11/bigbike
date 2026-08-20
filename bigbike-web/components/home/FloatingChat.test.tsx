@@ -13,9 +13,11 @@ const api = vi.hoisted(() => ({
   streamChatMessage: vi.fn(),
   captureChatLead: vi.fn(),
   declineChatLead: vi.fn(),
+  recordChatInteraction: vi.fn(),
 }));
 
 const auth = vi.hoisted(() => ({ state: { status: "anonymous" } as TestAuthState }));
+const navigation = vi.hoisted(() => ({ pathname: "/" }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "vi",
@@ -29,6 +31,7 @@ vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => auth.state }));
 vi.mock("@/lib/cart-context", () => ({
   useCart: () => ({ addToCart: vi.fn() }),
 }));
+vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
 vi.mock("@/components/ui/MediaImage", () => ({
   MediaImage: ({ altFallback }: { altFallback: string }) => <div aria-label={altFallback} />,
 }));
@@ -37,6 +40,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   window.localStorage.clear();
   auth.state = { status: "anonymous" };
+  navigation.pathname = "/";
   vi.stubGlobal("ResizeObserver", class {
     observe() {}
     unobserve() {}
@@ -72,6 +76,7 @@ beforeEach(() => {
   });
   api.declineChatLead.mockResolvedValue({ declined: true });
   api.captureChatLead.mockResolvedValue({ captured: true });
+  api.recordChatInteraction.mockResolvedValue({ recorded: true, interactionId: "interaction-1" });
 });
 
 afterEach(() => {
@@ -113,11 +118,11 @@ describe("FloatingChat", () => {
 
     await user.click(screen.getByRole("button", { name: "open" }));
     expect(await screen.findByText("Xin chào từ Trợ lý BigBike")).toBeInTheDocument();
-    expect(document.body.querySelector("[data-bi-onboarding]")).toBeInTheDocument();
-    expect(document.body.querySelectorAll("[data-bi-onboarding] button")).toHaveLength(4);
+    expect(document.body.querySelector("[data-bigbike-onboarding]")).toBeInTheDocument();
+    expect(document.body.querySelectorAll("[data-bigbike-onboarding] button")).toHaveLength(4);
     expect(screen.getByRole("button", { name: "talkToStaff" })).toBeInTheDocument();
 
-    const avatar = document.body.querySelector("[data-bi-avatar] svg");
+    const avatar = document.body.querySelector("[data-bigbike-avatar] svg");
     expect(avatar).toBeInTheDocument();
   });
 
@@ -145,7 +150,7 @@ describe("FloatingChat", () => {
     expect(await screen.findByText("contactTitle")).toBeInTheDocument();
     expect(screen.getByText("0901234567")).toBeInTheDocument();
     expect(screen.getByText("messenger")).toBeInTheDocument();
-    expect(document.querySelector("[data-bi-contact-view]")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-bigbike-contact-view]")).not.toBeInTheDocument();
     await waitFor(() => expect(api.streamChatMessage).not.toHaveBeenCalled());
   });
 
@@ -175,7 +180,7 @@ describe("FloatingChat", () => {
     expect(input).toBeDisabled();
     expect(input).toHaveAttribute("placeholder", "messagePlaceholderLocked");
     expect(screen.getByRole("button", { name: "send" })).toBeDisabled();
-    expect(document.querySelector("[data-bi-contact-view]")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-bigbike-contact-view]")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "talkToStaff" }));
     expect(await screen.findByText("contactTitle")).toBeInTheDocument();
@@ -251,6 +256,8 @@ describe("FloatingChat", () => {
       firstRequestId,
       expect.any(Function),
       expect.any(AbortSignal),
+      null,
+      undefined,
     );
     expect(screen.getAllByText("Em đã kiểm tra lại được yêu cầu này.")).not.toHaveLength(0);
   });
@@ -326,9 +333,148 @@ describe("FloatingChat", () => {
     await user.type(await screen.findByLabelText("messageLabel"), "Đơn hàng của tôi");
     await user.click(screen.getByRole("button", { name: "send" }));
 
-    expect(await screen.findByRole("link", { name: "orderLogin" })).toHaveAttribute("href", expect.stringContaining("/dang-nhap/"));
-    expect(screen.getByRole("link", { name: "orderHistory" })).toHaveAttribute("href", expect.stringContaining("/tai-khoan/don-hang/"));
-    expect(screen.getByRole("link", { name: "orderLookup" })).toHaveAttribute("href", expect.stringContaining("/don-hang/xac-nhan/"));
+    expect(await screen.findByRole("button", { name: "orderLogin" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "orderHistory" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "orderLookup" })).toBeInTheDocument();
+  });
+
+  it("shows the lead invitation proactively and records each displayed sequence once", async () => {
+    api.streamChatMessage
+      .mockResolvedValueOnce({
+        conversationId: "conversation-lead-sequences",
+        assistantMessageId: "assistant-sequence-1",
+        mode: "AI",
+        answer: "Em đã tìm được lựa chọn phù hợp.",
+        turnCount: 1,
+        maxTurns: 12,
+        remainingTurns: 11,
+        products: [],
+        handoffRecommended: false,
+        leadPrompt: true,
+        leadPromptSequence: 1,
+        actions: [],
+        contacts: {},
+      })
+      .mockResolvedValueOnce({
+        conversationId: "conversation-lead-sequences",
+        assistantMessageId: "assistant-sequence-2",
+        mode: "AI",
+        answer: "Em đã kiểm tra size của đúng mẫu này.",
+        turnCount: 2,
+        maxTurns: 12,
+        remainingTurns: 10,
+        products: [],
+        handoffRecommended: false,
+        leadPrompt: true,
+        leadPromptSequence: 2,
+        actions: [],
+        contacts: {},
+      });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Tìm mẫu phù hợp");
+    await user.click(screen.getByRole("button", { name: "send" }));
+
+    expect(await screen.findByRole("button", { name: "leadPromptAccept" })).toBeInTheDocument();
+    await waitFor(() => expect(api.recordChatInteraction).toHaveBeenCalledWith(expect.objectContaining({
+      assistantMessageId: "assistant-sequence-1",
+      type: "LEAD_PROMPT_VIEWED",
+      leadPromptSequence: 1,
+    })));
+
+    await user.type(screen.getByLabelText("messageLabel"), "Mẫu này còn size M không?");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(api.recordChatInteraction).toHaveBeenCalledWith(expect.objectContaining({
+      assistantMessageId: "assistant-sequence-2",
+      leadPromptSequence: 2,
+    })));
+    expect(document.querySelectorAll("[data-bigbike-lead-prompt]")).toHaveLength(1);
+    expect(api.recordChatInteraction.mock.calls.filter((call) =>
+      call[0]?.type === "LEAD_PROMPT_VIEWED")).toHaveLength(2);
+  });
+
+  it("records a fixed suggestion click before sending the attributed follow-up", async () => {
+    api.streamChatMessage
+      .mockResolvedValueOnce({
+        conversationId: "conversation-action-chain",
+        assistantMessageId: "assistant-action-source",
+        mode: "AI",
+        answer: "Anh/chị có thể kiểm tra size tiếp.",
+        turnCount: 1,
+        maxTurns: 12,
+        remainingTurns: 11,
+        products: [],
+        handoffRecommended: false,
+        leadPrompt: false,
+        leadPromptSequence: 0,
+        actions: [{ type: "CHECK_SIZE" as const }],
+        contacts: {},
+      })
+      .mockResolvedValueOnce({
+        conversationId: "conversation-action-chain",
+        assistantMessageId: "assistant-action-result",
+        mode: "AI",
+        answer: "Anh/chị cho em biết mẫu cần kiểm tra.",
+        turnCount: 2,
+        maxTurns: 12,
+        remainingTurns: 10,
+        products: [],
+        handoffRecommended: false,
+        leadPrompt: false,
+        leadPromptSequence: 0,
+        actions: [],
+        contacts: {},
+      });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Tư vấn giúp tôi");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await user.click(await screen.findByRole("button", { name: "actionCheckSize" }));
+
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalledTimes(2));
+    expect(api.recordChatInteraction).toHaveBeenCalledWith(expect.objectContaining({
+      conversationId: "conversation-action-chain",
+      assistantMessageId: "assistant-action-source",
+      type: "ACTION_CLICKED",
+      actionType: "CHECK_SIZE",
+    }));
+    expect(api.streamChatMessage).toHaveBeenLastCalledWith(
+      "actionCheckSize",
+      "vi",
+      "conversation-action-chain",
+      expect.any(String),
+      expect.any(Function),
+      expect.any(AbortSignal),
+      null,
+      "interaction-1",
+    );
+    expect(api.recordChatInteraction.mock.invocationCallOrder[0])
+      .toBeLessThan(api.streamChatMessage.mock.invocationCallOrder[1]);
+  });
+
+  it("sends verified product page context only from a product route", async () => {
+    navigation.pathname = "/product/mu-agv-k3/";
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Mẫu này còn hàng không?");
+    await user.click(screen.getByRole("button", { name: "send" }));
+
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalledWith(
+      "Mẫu này còn hàng không?",
+      "vi",
+      undefined,
+      expect.any(String),
+      expect.any(Function),
+      expect.any(AbortSignal),
+      { type: "PRODUCT", productSlug: "mu-agv-k3" },
+      undefined,
+    ));
   });
 
   it("disables new questions when the backend reports no remaining turns", async () => {
@@ -413,7 +559,7 @@ describe("FloatingChat", () => {
     await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
     await user.click(await screen.findByRole("button", { name: "requestCallback" }));
 
-    expect(await screen.findByTestId("bi-lead-quick")).toBeInTheDocument();
+    expect(await screen.findByTestId("bigbike-lead-quick")).toBeInTheDocument();
     expect(screen.getByText("Nguyễn Minh")).toBeInTheDocument();
     expect(screen.getByText("090 ••••• 56")).toBeInTheDocument();
     expect(api.captureChatLead).not.toHaveBeenCalled();
@@ -453,7 +599,7 @@ describe("FloatingChat", () => {
     await user.click(await screen.findByRole("button", { name: "requestCallback" }));
     await user.click(await screen.findByRole("button", { name: "leadUseOther" }));
 
-    expect(screen.queryByTestId("bi-lead-quick")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("bigbike-lead-quick")).not.toBeInTheDocument();
     expect(screen.getByLabelText("leadName")).toHaveValue("Nguyễn Minh");
     expect(screen.getByLabelText("leadPhone")).toHaveValue("0909123456");
     await user.click(screen.getByLabelText("leadConsent"));
@@ -527,7 +673,7 @@ describe("FloatingChat", () => {
     await user.click(await screen.findByRole("button", { name: "talkToStaff" }));
     await user.click(await screen.findByRole("button", { name: "requestCallback" }));
 
-    expect(screen.queryByTestId("bi-lead-quick")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("bigbike-lead-quick")).not.toBeInTheDocument();
     expect(screen.getByLabelText("leadPhone")).toBeInTheDocument();
     expect(screen.getByLabelText("leadName")).toHaveValue("");
   });
@@ -571,6 +717,8 @@ describe("FloatingChat", () => {
       expect.any(String),
       expect.any(Function),
       expect.any(AbortSignal),
+      null,
+      undefined,
     ));
   });
 
@@ -599,13 +747,13 @@ describe("FloatingChat", () => {
 
     await user.click(screen.getByRole("button", { name: "deleteConversation" }));
     expect(screen.queryByText("Nội dung cần xoá ngay.")).not.toBeInTheDocument();
-    expect(document.querySelector("[data-bi-onboarding]")).toBeInTheDocument();
+    expect(document.querySelector("[data-bigbike-onboarding]")).toBeInTheDocument();
     expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
   it("restores a finished conversation as locked and does not show a declined lead offer again", async () => {
     writeChatSnapshot({
-      version: 1,
+      version: 2,
       expiresAt: Date.now() + 60_000,
       locale: "vi",
       conversationId: "conversation-finished",
@@ -615,7 +763,8 @@ describe("FloatingChat", () => {
       ],
       remainingTurns: 0,
       serviceMode: "CONTACT",
-      leadPrompt: false,
+      leadPromptSequence: 0,
+      viewedLeadSequences: [],
       leadCaptured: false,
       leadDeclined: true,
     });

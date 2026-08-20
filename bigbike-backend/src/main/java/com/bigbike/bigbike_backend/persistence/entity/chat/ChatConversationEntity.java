@@ -46,6 +46,9 @@ public class ChatConversationEntity {
     @Column(name = "lead_offer_status", nullable = false, length = 16)
     private String leadOfferStatus = "NONE";
 
+    @Column(name = "lead_offer_count", nullable = false)
+    private int leadOfferCount;
+
     /** Server-only, non-PII catalog/order follow-up context; see DATA_CONTRACT.md. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "context_json", columnDefinition = "jsonb")

@@ -26,7 +26,7 @@ export function isSettingDirty(setting, drafts, draftsEn) {
 }
 
 export function isWideSetting(setting) {
-  return ['HTML', 'IMAGE_URL', 'LONG_TEXT'].includes(setting.valueType)
+  return ['HTML', 'IMAGE_URL', 'LONG_TEXT', 'JSON'].includes(setting.valueType)
 }
 
 const INPUT_TYPE_MAP = {
@@ -117,10 +117,44 @@ export function validateValue(key, value) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
   // Money / stock thresholds must be non-negative numbers.
-  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')) {
+  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount') || k === 'ai_assistant_monthly_cost_warning_usd') {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
+    }
+  }
+  if (k === 'ai_assistant_abbreviations' || k === 'ai_assistant_answer_templates') {
+    try {
+      const items = JSON.parse(value)
+      if (!Array.isArray(items)) return 'settings.assistantConfig.invalid'
+      if (k === 'ai_assistant_abbreviations') {
+        if (items.length > 100) return 'settings.assistantConfig.invalid'
+        const seen = new Set()
+        for (const item of items) {
+          const locale = String(item?.locale || '').toLowerCase()
+          const phrase = String(item?.phrase || '').trim().toLowerCase()
+          if (!['vi', 'en'].includes(locale) || !phrase || !String(item?.expansion || '').trim()) return 'settings.assistantConfig.invalid'
+          const signature = `${locale}|${phrase}`
+          if (seen.has(signature)) return 'settings.assistantConfig.duplicate'
+          seen.add(signature)
+        }
+      } else {
+        if (items.length > 50) return 'settings.assistantConfig.invalid'
+        const ids = new Set()
+        for (const item of items) {
+          const id = String(item?.id || '').trim()
+          if (!id || !String(item?.topic || '').trim()
+            || !Array.isArray(item?.triggersVi) || item.triggersVi.length === 0
+            || !Array.isArray(item?.triggersEn) || item.triggersEn.length === 0
+            || !String(item?.answerVi || '').trim() || !String(item?.answerEn || '').trim()) {
+            return 'settings.assistantConfig.invalid'
+          }
+          if (ids.has(id)) return 'settings.assistantConfig.duplicate'
+          ids.add(id)
+        }
+      }
+    } catch {
+      return 'settings.assistantConfig.invalid'
     }
   }
   return null
@@ -137,7 +171,7 @@ export function isTranslatableSetting(setting) {
   if (!TRANSLATABLE_GROUPS.has(group)) return false
   if (setting.valueType === 'IMAGE_URL' || setting.valueType === 'BOOLEAN'
       || setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL'
-      || setting.valueType === 'MONEY') return false
+      || setting.valueType === 'MONEY' || setting.valueType === 'JSON') return false
   if (setting.valueType === 'HTML' || setting.valueType === 'LONG_TEXT') return true
   return inputTypeFor(setting.key) === 'text'
 }
@@ -190,7 +224,7 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 // - PRODUCT_ASSIGN: banner Phân công (product_assign_title + product_assign_roles, JSON động
 //   1-6 vai trò từ V318) render bằng trình riêng AssignmentRolesScreen (nhúng làm tab "Phân công"
 //   NGAY TRONG màn Cài đặt, xem ASSIGN_TAB_ID) — ẩn khỏi luồng SettingTabPanel/SettingField chung
-//   vì cần UI thêm/xóa vai trò động mà form field tĩnh không đáp ứng được.
+//   vì cần UI thêm/xoá vai trò động mà form field tĩnh không đáp ứng được.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
 export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'])
 
@@ -267,10 +301,13 @@ export const KEY_LABELS_VI = {
   // ai_assistant (Trợ lý BigBike — CHAT_RULE_001..024)
   ai_assistant_enabled: 'Bật Trợ lý BigBike',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
+  ai_assistant_monthly_cost_warning_usd: 'Ngưỡng cảnh báo chi phí tháng (USD)',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled: 'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
   ai_assistant_greeting: 'Câu chào đầu khung chat',
   ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
+  ai_assistant_abbreviations: 'Từ và cụm viết tắt',
+  ai_assistant_answer_templates: 'Câu trả lời mẫu song ngữ',
   // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
   bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
   bank_account_number: 'Số tài khoản nhận chuyển khoản',
@@ -320,7 +357,9 @@ export const KEY_HINTS_VI = {
   ai_assistant_enabled:
     'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
   ai_assistant_daily_limit:
-    'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 120 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+    'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+  ai_assistant_monthly_cost_warning_usd:
+    'Cảnh báo trong quản trị khi tổng chi phí tháng đạt ngưỡng này. Đặt 0 để tắt cảnh báo; không tự khoá Trợ lý BigBike.',
   ai_assistant_recent_turn_pairs:
     'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
@@ -329,6 +368,10 @@ export const KEY_HINTS_VI = {
     'Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Trợ lý BigBike là trợ lý ảo AI.',
   ai_assistant_quick_prompts:
     'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
+  ai_assistant_abbreviations:
+    'Tối đa 100 mục. Hệ thống khớp nguyên cụm, ưu tiên cụm dài hơn và sẽ từ chối mục trùng hoặc va chạm tên hàng.',
+  ai_assistant_answer_templates:
+    'Tối đa 50 mẫu, mỗi mẫu phải có trigger và câu trả lời đầy đủ bằng tiếng Việt lẫn tiếng Anh.',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -425,6 +468,14 @@ export const SECTION_GUIDE = {
     title: 'Nội dung đầu khung chat',
     description: 'Câu chào và các câu hỏi gợi ý có bản tiếng Việt và tiếng Anh riêng.',
   },
+  ai_assistant_language: {
+    title: 'Cách hiểu từ viết tắt',
+    description: 'Chủ shop tự quản các cách viết ngắn mà khách thường dùng khi hỏi hàng.',
+  },
+  ai_assistant_templates: {
+    title: 'Câu trả lời mẫu an toàn',
+    description: 'Câu mẫu song ngữ cho các chủ đề ổn định; máy chủ vẫn kiểm tra an toàn trước khi lưu.',
+  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -488,10 +539,13 @@ export const KEY_GUIDE = {
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_monthly_cost_warning_usd: ['ai_assistant_switch', 'ngưỡng cảnh báo tổng chi phí tháng bằng USD; 0 để tắt'],
   ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
   ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
   ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
+  ai_assistant_abbreviations:           ['ai_assistant_language', 'danh sách từ/cụm viết tắt do chủ shop quản lý'],
+  ai_assistant_answer_templates:        ['ai_assistant_templates', 'danh sách câu trả lời mẫu song ngữ do chủ shop quản lý'],
 }
 
 export function groupBySection(items) {

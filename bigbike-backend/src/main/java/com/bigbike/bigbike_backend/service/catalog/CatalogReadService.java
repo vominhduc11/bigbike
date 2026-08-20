@@ -280,7 +280,7 @@ public class CatalogReadService {
     }
 
     /**
-     * Internal Bi discovery path. It deliberately has its own repository predicate so the
+     * Internal BigBike Assistant discovery path. It deliberately has its own repository predicate so the
      * public {@code q} endpoint keeps its established response and matching contract.
      * Returned products retain listing variants because the chat service must verify sellability
      * before it creates a product card.
@@ -416,7 +416,7 @@ public class CatalogReadService {
     }
 
     /**
-     * Internal read-only vocabulary for Bi. It intentionally exposes only public category
+     * Internal read-only vocabulary for BigBike Assistant. It intentionally exposes only public category
      * metadata to backend query recognition; nothing from this list is sent to the AI model.
      */
     public List<Category> listAssistantCategories(String lang) {
@@ -428,7 +428,7 @@ public class CatalogReadService {
 
     /**
      * Read-only source for BigBike Assistant's category-listing tool. A category remains visible even with zero
-     * current products, while the count itself includes only the same sellable product shape Bi
+     * current products, while the count itself includes only the same sellable product shape BigBike Assistant
      * is allowed to show in a product card.
      */
     public List<AssistantCategorySummary> listAssistantCategorySummaries(String lang) {
@@ -498,7 +498,7 @@ public class CatalogReadService {
                 .anyMatch(category -> categorySlugs.contains(category.slug()));
     }
 
-    /** Mirrors Bi card eligibility: published, in-stock, VND and a positive effective price. */
+    /** Mirrors BigBike Assistant card eligibility: published, in-stock, VND and a positive effective price. */
     private static boolean assistantSellable(Product product) {
         if (product == null
                 || product.publishStatus() != PublishStatus.PUBLISHED
@@ -552,7 +552,7 @@ public class CatalogReadService {
         return paginationService.paginate(result, page, size);
     }
 
-    /** Internal read-only brand vocabulary for Bi; this is not a public API surface. */
+    /** Internal read-only brand vocabulary for BigBike Assistant; this is not a public API surface. */
     public List<Brand> listAssistantBrands() {
         return catalogReadRepository.findAllBrands("vi").stream()
                 .filter(Brand::isVisible)

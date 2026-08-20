@@ -100,6 +100,44 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 .toList();
     }
 
+    @Override
+    public List<ContentReadRepository.ArticleKnowledge> searchPublishedArticleKnowledge(
+            java.util.List<String> tokens, String locale, int limit) {
+        boolean english = "en".equalsIgnoreCase(locale);
+        org.springframework.data.jpa.domain.Specification<ArticleEntity> spec = (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+            predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            if (english) {
+                predicates.add(cb.isNotNull(root.get("titleEn")));
+                predicates.add(cb.notEqual(cb.trim(root.get("titleEn")), ""));
+                predicates.add(cb.isNotNull(root.get("bodyEn")));
+                predicates.add(cb.notEqual(cb.trim(root.get("bodyEn")), ""));
+            }
+            jakarta.persistence.criteria.Expression<String> title = english
+                    ? root.get("titleEn") : root.get("title");
+            jakarta.persistence.criteria.Expression<String> excerpt = english
+                    ? root.get("excerptEn") : root.get("excerpt");
+            jakarta.persistence.criteria.Expression<String> body = english
+                    ? root.get("bodyEn") : root.get("body");
+            for (String token : tokens) {
+                String like = "%" + token.toLowerCase(java.util.Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(title), like),
+                        cb.like(cb.lower(cb.coalesce(excerpt, "")), like),
+                        cb.like(cb.lower(cb.coalesce(body, "")), like)));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        return articleJpaRepository
+                .findAll(spec, org.springframework.data.domain.PageRequest.of(0, Math.min(3, limit)))
+                .getContent().stream()
+                .map(entity -> new ContentReadRepository.ArticleKnowledge(
+                        english ? entity.getTitleEn() : entity.getTitle(),
+                        english ? entity.getExcerptEn() : entity.getExcerpt(),
+                        english ? entity.getBodyEn() : entity.getBody()))
+                .toList();
+    }
+
     // --- DB-paginated public listing ---
 
     @Override

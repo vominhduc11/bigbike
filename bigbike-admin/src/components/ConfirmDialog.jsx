@@ -16,9 +16,9 @@ export function ConfirmDialogProvider() {
         setDialog({
           message,
           title,
-          // Default to 'danger' so existing destructive confirms are unchanged;
-          // callers pass variant 'default' for non-destructive actions.
-          variant: options?.variant === 'default' ? 'default' : 'danger',
+          // Keep the shared dialog neutral by default. Permanent destructive
+          // actions must opt in explicitly so colour communicates risk.
+          variant: options?.variant === 'danger' ? 'danger' : 'default',
           confirmLabel: options?.confirmLabel || t('common.confirm'),
           cancelLabel: options?.cancelLabel || t('common.cancel'),
         })

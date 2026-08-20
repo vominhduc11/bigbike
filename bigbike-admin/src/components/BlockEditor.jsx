@@ -45,7 +45,7 @@ function blockHasContent(block) {
  *   fallbackHtml — string | undefined; legacy HTML shown when value is null/empty
  *   showFallbackHtml — bool; false hides the legacy HTML reference block
  *   productMode  — bool; true ⇒ chỉ 4 khối cho mô tả sản phẩm (V238), mặc định đầy đủ (Content)
- *   contentLang  — 'vi' | 'en'; 'en' ⇒ mỗi khối hiện field *En (không đổi cấu trúc — thêm/xóa/kéo
+ *   contentLang  — 'vi' | 'en'; 'en' ⇒ mỗi khối hiện field *En (không đổi cấu trúc — thêm/xoá/kéo
  *                  thả khối bị khóa, giống FaqEditor). Mặc định 'vi' nên chỗ dùng cho Content không
  *                  cần truyền (không song ngữ).
  */

@@ -28,6 +28,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLi
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
+import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import static com.bigbike.bigbike_backend.service.checkout.CheckoutSupport.*;
@@ -71,6 +72,7 @@ public class CheckoutService {
     private final JdbcTemplate jdbcTemplate;
     private final WebRevalidationService webRevalidationService;
     private final ChatOrderAttributionJpaRepository chatOrderAttributionRepo;
+    private final ChatInteractionService chatInteractionService;
 
     // ── Checkout from cart ────────────────────────────────────────────────────
 
@@ -164,7 +166,10 @@ public class CheckoutService {
                 ChatOrderAttributionEntity attribution = new ChatOrderAttributionEntity();
                 attribution.setOrderId(savedOrder.getId());
                 attribution.setOrderLineItemId(lineItem.getId());
-                attribution.setConversationId(cartItem.getAssistantConversationId());
+                    attribution.setConversationId(cartItem.getAssistantConversationId());
+                    attribution.setInteractionId(cartItem.getAssistantInteractionId());
+                    attribution.setActionType(chatInteractionService.actionType(
+                            cartItem.getAssistantInteractionId()));
                 attribution.setAttributedAmount(lineItem.getLineTotal());
                 attribution.setCurrency(savedOrder.getCurrency());
                 attribution.setCreatedAt(now);

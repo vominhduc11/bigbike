@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
-import { BiProductCard } from "./BiProductCard";
+import { BigBikeProductCard } from "./BigBikeProductCard";
 
 const mocks = vi.hoisted(() => ({
   fetchPublicProduct: vi.fn(),
@@ -43,7 +43,7 @@ const detail = {
   updatedAt: "",
 } as Product;
 
-describe("BiProductCard", () => {
+describe("BigBikeProductCard", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.fetchPublicProduct.mockResolvedValue(detail);
@@ -52,7 +52,7 @@ describe("BiProductCard", () => {
 
   it("requires every variant choice and attributes the cart line to the conversation", async () => {
     const user = userEvent.setup();
-    render(<BiProductCard
+    render(<BigBikeProductCard
       product={{ slug: "mu-test", name: "Mũ test", retailPrice: 1_590_000, currency: "VND", stockState: "IN_STOCK" }}
       locale="vi"
       conversationId="conversation-1"
@@ -70,5 +70,28 @@ describe("BiProductCard", () => {
       "product-1", 1, "variant-red-m", "conversation-1",
     ));
     expect(await screen.findByText("addedToCart")).toBeInTheDocument();
+  });
+
+  it("keeps a verified action source on the cart line and forwards the second lead invitation", async () => {
+    mocks.addToCart.mockResolvedValue({ leadPromptSequence: 2 });
+    const onLeadPrompt = vi.fn();
+    const user = userEvent.setup();
+    render(<BigBikeProductCard
+      product={{ slug: "mu-test", name: "Mũ test", retailPrice: 1_590_000, currency: "VND", stockState: "IN_STOCK" }}
+      locale="vi"
+      conversationId="conversation-1"
+      assistantInteractionId="interaction-1"
+      onLeadPrompt={onLeadPrompt}
+    />);
+
+    await user.click(screen.getByRole("button", { name: "chooseVariant" }));
+    await user.click(screen.getByRole("button", { name: "Màu đỏ" }));
+    await user.click(screen.getByRole("button", { name: "Size M" }));
+    await user.click(screen.getByRole("button", { name: "addToCart" }));
+
+    await waitFor(() => expect(mocks.addToCart).toHaveBeenCalledWith(
+      "product-1", 1, "variant-red-m", "conversation-1", "interaction-1",
+    ));
+    expect(onLeadPrompt).toHaveBeenCalledWith(2);
   });
 });

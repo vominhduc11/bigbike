@@ -10,6 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
+  AssistantConfigEditor,
+  ASSISTANT_ABBREVIATIONS_KEY,
+  ASSISTANT_TEMPLATES_KEY,
+} from './AssistantConfigEditor'
+import {
   displayValue, inputTypeFor, placeholderFor, isTranslatableSetting,
   settingLabel, settingHint, KEY_RECO,
 } from './constants'
@@ -34,6 +39,7 @@ export function SettingField({
   const isBoolean = setting.valueType === 'BOOLEAN'
   const isEnum = setting.valueType === 'ENUM' && Array.isArray(setting.allowedValues) && setting.allowedValues.length > 0
   const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
+  const isAssistantConfig = setting.key === ASSISTANT_ABBREVIATIONS_KEY || setting.key === ASSISTANT_TEMPLATES_KEY
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = isEnLang
     ? t('settings.englishPlaceholder')
@@ -54,7 +60,7 @@ export function SettingField({
 
   const activeValue = isEnLang ? currentValueEn : currentValue
   const activeRawValue = isEnLang ? rawValueEn : rawValue
-  const LabelElement = isHtml || isImage ? 'span' : 'label'
+  const LabelElement = isHtml || isImage || isAssistantConfig ? 'span' : 'label'
   function handleActiveChange(value) {
     if (isEnLang) onChangeEn(setting.key, value)
     else onChange(setting.key, value)
@@ -109,14 +115,14 @@ export function SettingField({
   return (
     <div
       className="h-full rounded-md border border-border bg-surface p-4"
-      role={isHtml || isImage ? 'group' : undefined}
-      aria-labelledby={isHtml || isImage ? labelId : undefined}
-      aria-describedby={isHtml || isImage ? describedBy : undefined}
+      role={isHtml || isImage || isAssistantConfig ? 'group' : undefined}
+      aria-labelledby={isHtml || isImage || isAssistantConfig ? labelId : undefined}
+      aria-describedby={isHtml || isImage || isAssistantConfig ? describedBy : undefined}
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
         <LabelElement
           id={labelId}
-          htmlFor={isHtml || isImage ? undefined : controlId}
+          htmlFor={isHtml || isImage || isAssistantConfig ? undefined : controlId}
           className="text-sm font-semibold leading-5 text-foreground"
         >
           {label}
@@ -143,7 +149,14 @@ export function SettingField({
         </p>
       ) : null}
 
-      {canUpdate ? (
+      {isAssistantConfig ? (
+        <AssistantConfigEditor
+          settingKey={setting.key}
+          value={currentValue}
+          readOnly={!canUpdate}
+          onChange={(value) => onChange(setting.key, value)}
+        />
+      ) : canUpdate ? (
         isHtml ? (
           <RichTextEditor
             value={activeValue}

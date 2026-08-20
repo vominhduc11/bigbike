@@ -177,7 +177,7 @@ describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
     )
   })
 
-  it('hộp xác nhận xóa mềm nói rõ là Thùng rác và ảnh hưởng danh mục con', async () => {
+  it('hộp xác nhận xoá mềm nói rõ là Thùng rác và ảnh hưởng danh mục con', async () => {
     const user = userEvent.setup()
     renderScreen()
 
@@ -193,7 +193,7 @@ describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
     expect(mocks.softDeleteCategory).not.toHaveBeenCalled()
   })
 
-  it('gọi xóa mềm sau khi xác nhận', async () => {
+  it('gọi xoá mềm sau khi xác nhận', async () => {
     const user = userEvent.setup()
     mocks.showConfirm.mockResolvedValue(true)
     renderScreen()
@@ -228,7 +228,7 @@ describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
   })
 })
 
-describe('CategoryListScreen — xóa vĩnh viễn có xem trước ảnh hưởng', () => {
+describe('CategoryListScreen — xoá vĩnh viễn có xem trước ảnh hưởng', () => {
   // Chuyển sang view Thùng rác qua đúng ô lọc trên giao diện (không đặt URL thủ công,
   // vì bộ đọc query trên URL chưa hiểu giá trị đúng/sai — xem ghi chú việc xuyên module).
   async function switchToTrashView(user) {
@@ -245,13 +245,13 @@ describe('CategoryListScreen — xóa vĩnh viễn có xem trước ảnh hưở
     await user.click(within(row).getByRole('button', { name: 'Thao tác' }))
   }
 
-  it('lấy số liệu ảnh hưởng TRƯỚC hộp xác nhận và chỉ xóa sau khi đồng ý', async () => {
+  it('lấy số liệu ảnh hưởng TRƯỚC hộp xác nhận và chỉ xoá sau khi đồng ý', async () => {
     const user = userEvent.setup()
     mocks.showConfirm.mockResolvedValue(true)
     renderScreen({ items: [{ ...helmet, deleted: true, isVisible: false }] })
 
     await openTrashRowMenu(user)
-    await user.click(await screen.findByRole('menuitem', { name: /Xóa vĩnh viễn/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Xoá vĩnh viễn/ }))
 
     await waitFor(() => expect(mocks.previewCategoryPermanentDelete).toHaveBeenCalledWith(['cat_helmet']))
     // Xem trước phải chạy trước khi hỏi xác nhận.
@@ -260,12 +260,12 @@ describe('CategoryListScreen — xóa vĩnh viễn có xem trước ảnh hưở
     await waitFor(() => expect(mocks.hardDeleteCategory).toHaveBeenCalledWith('cat_helmet'))
   })
 
-  it('không xóa gì khi hủy hộp xác nhận dù đã lấy được số liệu', async () => {
+  it('không xoá gì khi hủy hộp xác nhận dù đã lấy được số liệu', async () => {
     const user = userEvent.setup()
     renderScreen({ items: [{ ...helmet, deleted: true, isVisible: false }] })
 
     await openTrashRowMenu(user)
-    await user.click(await screen.findByRole('menuitem', { name: /Xóa vĩnh viễn/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Xoá vĩnh viễn/ }))
 
     await waitFor(() => expect(mocks.showConfirm).toHaveBeenCalled())
     expect(mocks.hardDeleteCategory).not.toHaveBeenCalled()
@@ -277,7 +277,7 @@ describe('CategoryListScreen — xóa vĩnh viễn có xem trước ảnh hưở
     renderScreen({ items: [{ ...helmet, deleted: true, isVisible: false }] })
 
     await openTrashRowMenu(user)
-    await user.click(await screen.findByRole('menuitem', { name: /Xóa vĩnh viễn/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Xoá vĩnh viễn/ }))
 
     await waitFor(() => expect(mocks.toast.error).toHaveBeenCalledWith('Không tải được số liệu.'))
     expect(mocks.showConfirm).not.toHaveBeenCalled()

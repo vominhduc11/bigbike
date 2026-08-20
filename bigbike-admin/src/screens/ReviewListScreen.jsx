@@ -238,13 +238,13 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
         message: t('reviews.spamConfirmMany', { count }),
         title: t('reviews.spamConfirmTitle'),
         label: t('reviews.spam'),
-        variant: 'danger',
+        variant: 'default',
       },
       TRASH: {
         message: t('reviews.trashConfirmMany', { count }),
         title: t('reviews.trashConfirmTitle'),
         label: t('reviews.moveToTrash'),
-        variant: 'danger',
+        variant: 'default',
       },
     }[nextStatus]
     if (!confirmation) return false
@@ -256,9 +256,9 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
   }, [t])
 
   const confirmDelete = useCallback(async (count) => showConfirm(
-    t('reviews.deleteConfirmPermanent', { count, defaultValue: `Xóa vĩnh viễn ${count} đánh giá? Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xóa.` }),
-    t('reviews.deleteConfirmTitle'),
-    { variant: 'danger', confirmLabel: t('reviews.deletePermanent'), cancelLabel: t('common.cancel') },
+    t('reviews.deleteConfirmPermanent', { count, defaultValue: `Xoá vĩnh viễn ${count} đánh giá. Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xoá.` }),
+    t('common.permanentDeleteTitle'),
+    { variant: 'danger', confirmLabel: t('common.permanentDelete'), cancelLabel: t('common.cancel') },
   ), [t])
 
   const handleStatusChange = useCallback(async (review, nextStatus) => {

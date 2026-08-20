@@ -10,6 +10,7 @@ import {
   type UIEvent,
 } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import {
   Loader2,
   MessageCircle,
@@ -33,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import {
   declineChatLead,
   fetchChatAvailability,
+  recordChatInteraction,
   streamChatMessage,
   type ChatAction,
   type ChatContact,
@@ -50,9 +52,9 @@ import {
 } from "@/lib/chat/chat-persistence";
 import { toLoginPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
-import { BiContactPanel } from "./floating-chat/BiContactPanel";
-import { BiLeadForm, type BiAccountContact, type BiLeadDraft } from "./floating-chat/BiLeadForm";
-import { BiProductCard } from "./floating-chat/BiProductCard";
+import { BigBikeContactPanel } from "./floating-chat/BigBikeContactPanel";
+import { BigBikeLeadForm, type BigBikeAccountContact, type BigBikeLeadDraft } from "./floating-chat/BigBikeLeadForm";
+import { BigBikeProductCard } from "./floating-chat/BigBikeProductCard";
 import { SafeChatMarkdown } from "./floating-chat/SafeChatMarkdown";
 
 type FloatingChatProps = {
@@ -78,6 +80,7 @@ type ChatMessage = {
   resultKind?: string;
   animate?: boolean;
   requestId?: string;
+  originInteractionId?: string;
   failed?: boolean;
 };
 
@@ -97,14 +100,14 @@ class ChatMessageTimeoutError extends Error {
     this.name = "ChatMessageTimeoutError";
   }
 }
-const EMPTY_LEAD_DRAFT: BiLeadDraft = {
+const EMPTY_LEAD_DRAFT: BigBikeLeadDraft = {
   name: "",
   phone: "",
   note: "",
   consented: false,
 };
 
-function accountContactFromProfile(profile: { displayName: string | null; phone: string | null }): BiAccountContact | undefined {
+function accountContactFromProfile(profile: { displayName: string | null; phone: string | null }): BigBikeAccountContact | undefined {
   const name = profile.displayName?.trim();
   const phone = profile.phone?.trim();
   const digits = phone?.replace(/\D/g, "") || "";
@@ -155,21 +158,21 @@ function AssistantAnswer({ message }: { message: ChatMessage }) {
   );
 }
 
-type BiAvatarSize = "launcher" | "header" | "message" | "minimized";
+type BigBikeAvatarSize = "launcher" | "header" | "message" | "minimized";
 
-const BI_AVATAR_SIZES: Record<BiAvatarSize, { className: string }> = {
+const BIGBIKE_AVATAR_SIZES: Record<BigBikeAvatarSize, { className: string }> = {
   launcher: { className: "size-14 md:size-16" },
   header: { className: "size-11" },
   message: { className: "size-9" },
   minimized: { className: "size-8" },
 };
 
-function BiAvatar({ size }: { size: BiAvatarSize }) {
-  const avatar = BI_AVATAR_SIZES[size];
+function BigBikeAvatar({ size }: { size: BigBikeAvatarSize }) {
+  const avatar = BIGBIKE_AVATAR_SIZES[size];
 
   return (
     <span
-      data-bi-avatar
+      data-bigbike-avatar
       aria-hidden="true"
       className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full! bg-chat text-primary-foreground ${avatar.className}`}
     >
@@ -200,29 +203,34 @@ function mergeContacts(primary: ChatContact | undefined, fallback: ChatContact):
   };
 }
 
-function ActionButtons({ actions, locale }: { actions: ChatAction[]; locale: Locale }) {
-  const t = useTranslations("Support");
+function ActionButtons({
+  actions,
+  disabled,
+  labelFor,
+  onAction,
+}: {
+  actions: ChatAction[];
+  disabled: boolean;
+  labelFor: (type: ChatAction["type"]) => string;
+  onAction: (action: ChatAction) => void;
+}) {
   if (!actions.length) return null;
 
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((action) => {
-        const href = action.type === "LOGIN"
-          ? toLoginPath(toOrderLookupPath(locale), locale)
-          : action.type === "ORDER_HISTORY"
-            ? toOrderHistoryPath(locale)
-            : toOrderLookupPath(locale);
-        const label = action.type === "LOGIN"
-          ? t("orderLogin")
-          : action.type === "ORDER_HISTORY"
-            ? t("orderHistory")
-            : t("orderLookup");
-        return (
-          <Button key={action.type} asChild variant="outline" size="sm" className="min-h-11 px-3">
-            <a href={href}>{label}</a>
-          </Button>
-        );
-      })}
+      {actions.map((action) => (
+        <Button
+          key={action.type}
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-11 px-3"
+          disabled={disabled}
+          onClick={() => onAction(action)}
+        >
+          {labelFor(action.type)}
+        </Button>
+      ))}
     </div>
   );
 }
@@ -235,8 +243,18 @@ export function FloatingChat({
   messengerDisplay,
 }: Readonly<FloatingChatProps>) {
   const t = useTranslations("Support");
+  const pathname = usePathname();
   const activeLocale = useLocale() === "en" ? "en" : "vi";
   const locale = activeLocale as Locale;
+  const pageContext = useMemo(() => {
+    const match = pathname?.match(/^\/(?:en\/)?product\/([^/]+)\/?$/i);
+    if (!match) return null;
+    try {
+      return { type: "PRODUCT" as const, productSlug: decodeURIComponent(match[1]) };
+    } catch {
+      return null;
+    }
+  }, [pathname]);
   const auth = useAuth();
   const accountContact = auth.status === "authenticated"
     ? accountContactFromProfile(auth.profile)
@@ -282,14 +300,21 @@ export function FloatingChat({
   const [contactNotice, setContactNotice] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
   const [retryAvailable, setRetryAvailable] = useState(false);
-  const [retryMessage, setRetryMessage] = useState<{ message: string; intent: PromptIntent; requestId: string } | null>(null);
+  const [retryMessage, setRetryMessage] = useState<{
+    message: string;
+    intent: PromptIntent;
+    requestId: string;
+    originInteractionId?: string;
+  } | null>(null);
   const [progressCode, setProgressCode] = useState<ChatProgressCode | null>(null);
   const [pendingRequestId, setPendingRequestId] = useState<string>();
-  const [leadPrompt, setLeadPrompt] = useState(false);
+  const [leadPromptSequence, setLeadPromptSequence] = useState<0 | 1 | 2>(0);
+  const [leadPromptMessageId, setLeadPromptMessageId] = useState<string>();
+  const [viewedLeadSequences, setViewedLeadSequences] = useState<Array<1 | 2>>([]);
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [leadDeclined, setLeadDeclined] = useState(false);
   const [showContactLead, setShowContactLead] = useState(false);
-  const [leadDraft, setLeadDraft] = useState<BiLeadDraft>({
+  const [leadDraft, setLeadDraft] = useState<BigBikeLeadDraft>({
     name: "",
     phone: "",
     note: "",
@@ -316,6 +341,7 @@ export function FloatingChat({
   const expiryTimerRef = useRef<number | null>(null);
   const previousAuthStatusRef = useRef(auth.status);
   const conversationGenerationRef = useRef(0);
+  const viewedLeadSequencesRef = useRef<Set<1 | 2>>(new Set());
 
   const effectiveContacts = useMemo(
     () => mergeContacts(contacts, fallbackContacts),
@@ -349,7 +375,10 @@ export function FloatingChat({
     setRetryMessage(null);
     setProgressCode(null);
     setPendingRequestId(undefined);
-    setLeadPrompt(false);
+    setLeadPromptSequence(0);
+    setLeadPromptMessageId(undefined);
+    setViewedLeadSequences([]);
+    viewedLeadSequencesRef.current = new Set();
     setLeadCaptured(false);
     setLeadDeclined(false);
     setShowContactLead(false);
@@ -361,7 +390,7 @@ export function FloatingChat({
   useEffect(() => {
     mountedRef.current = true;
     hydratedRef.current = true;
-    launcherContainerRef.current?.setAttribute("data-bi-launcher-ready", "true");
+    launcherContainerRef.current?.setAttribute("data-bigbike-launcher-ready", "true");
 
     const snapshot = readChatSnapshot();
     persistenceReadyRef.current = true;
@@ -375,7 +404,10 @@ export function FloatingChat({
         setConversationId(snapshot.conversationId);
         setRemainingTurns(snapshot.remainingTurns);
         setServiceMode(snapshot.serviceMode);
-        setLeadPrompt(snapshot.leadPrompt && !snapshot.leadCaptured && !snapshot.leadDeclined);
+        setLeadPromptSequence(snapshot.leadPromptSequence);
+        setLeadPromptMessageId(snapshot.leadPromptMessageId);
+        setViewedLeadSequences(snapshot.viewedLeadSequences);
+        viewedLeadSequencesRef.current = new Set(snapshot.viewedLeadSequences);
         setLeadCaptured(snapshot.leadCaptured);
         setLeadDeclined(snapshot.leadDeclined);
         setAvailabilityState("ready");
@@ -385,7 +417,12 @@ export function FloatingChat({
             item.role === "USER" && item.failed && item.requestId === snapshot.pendingRequestId);
           if (failedMessage) {
             setRetryAvailable(true);
-            setRetryMessage({ message: failedMessage.content, intent: "UNKNOWN", requestId: snapshot.pendingRequestId });
+            setRetryMessage({
+              message: failedMessage.content,
+              intent: "UNKNOWN",
+              requestId: snapshot.pendingRequestId,
+              originInteractionId: failedMessage.originInteractionId,
+            });
           }
         }
       });
@@ -425,20 +462,34 @@ export function FloatingChat({
     }
 
     const snapshot: ChatPersistenceSnapshot = {
-      version: 1,
+      version: 2,
       expiresAt: persistenceExpiresAtRef.current,
       locale: activeLocale,
       conversationId,
       messages: messages.slice(-64),
       remainingTurns,
       serviceMode,
-      leadPrompt: leadPrompt && !leadCaptured && !leadDeclined,
+      leadPromptSequence: leadCaptured || leadDeclined ? 0 : leadPromptSequence,
+      leadPromptMessageId,
+      viewedLeadSequences,
       leadCaptured,
       leadDeclined,
       pendingRequestId,
     };
     writeChatSnapshot(snapshot);
-  }, [activeLocale, conversationId, leadCaptured, leadDeclined, leadPrompt, messages, pendingRequestId, remainingTurns, serviceMode]);
+  }, [
+    activeLocale,
+    conversationId,
+    leadCaptured,
+    leadDeclined,
+    leadPromptMessageId,
+    leadPromptSequence,
+    messages,
+    pendingRequestId,
+    remainingTurns,
+    serviceMode,
+    viewedLeadSequences,
+  ]);
 
   useEffect(() => {
     if (!persistenceReadyRef.current || !conversationId || persistenceExpiresAtRef.current == null) return;
@@ -465,7 +516,35 @@ export function FloatingChat({
       listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     });
     return () => cancelAnimationFrame(frame);
-  }, [contactOpen, leadPrompt, messages, panelState, sending]);
+  }, [contactOpen, leadPromptSequence, messages, panelState, sending, showContactLead]);
+
+  useEffect(() => {
+    if (panelState !== "expanded"
+      || !conversationId
+      || !leadPromptMessageId
+      || leadPromptSequence === 0
+      || leadCaptured
+      || leadDeclined
+      || viewedLeadSequencesRef.current.has(leadPromptSequence)) return;
+
+    const sequence = leadPromptSequence;
+    viewedLeadSequencesRef.current.add(sequence);
+    setViewedLeadSequences((current) => current.includes(sequence) ? current : [...current, sequence]);
+    void recordChatInteraction({
+      clientEventId: createRequestId(),
+      conversationId,
+      assistantMessageId: leadPromptMessageId,
+      type: "LEAD_PROMPT_VIEWED",
+      leadPromptSequence: sequence,
+    }).catch(() => undefined);
+  }, [
+    conversationId,
+    leadCaptured,
+    leadDeclined,
+    leadPromptMessageId,
+    leadPromptSequence,
+    panelState,
+  ]);
 
   function promptIntent(label: string): PromptIntent {
     const normalized = normalizedLabel(label);
@@ -571,7 +650,7 @@ export function FloatingChat({
   }
 
   function announceAssistant(content: string, products: ChatProductCard[] = []) {
-    const message = `${t("biTitle")}: ${content}`;
+    const message = `${t("bigbikeTitle")}: ${content}`;
     setAnnouncement(products.length > 0
       ? `${message} ${t("productCountAnnouncement", { count: products.length })}`
       : message);
@@ -587,7 +666,12 @@ export function FloatingChat({
     announceAssistant(content);
   }
 
-  async function submitMessage(raw: string, intent: PromptIntent = "UNKNOWN", existingRequestId?: string) {
+  async function submitMessage(
+    raw: string,
+    intent: PromptIntent = "UNKNOWN",
+    existingRequestId?: string,
+    originInteractionId?: string,
+  ) {
     const message = raw.trim();
     if (!message || sending || serviceMode !== "AI" || remainingTurns <= 0) return;
 
@@ -598,7 +682,13 @@ export function FloatingChat({
     setDraft("");
     setMessages((current) => isRetry && current.some((item) => item.requestId === requestId)
       ? current.map((item) => item.requestId === requestId ? { ...item, failed: false } : item)
-      : [...current, { id: userMessageId, role: "USER", content: message, requestId }]);
+      : [...current, {
+        id: userMessageId,
+        role: "USER",
+        content: message,
+        requestId,
+        originInteractionId,
+      }]);
     setSending(true);
     setRetryAvailable(false);
     setRetryMessage(null);
@@ -627,6 +717,8 @@ export function FloatingChat({
             if (mountedRef.current && conversationGeneration === conversationGenerationRef.current) setProgressCode(code);
           },
           controller.signal,
+          pageContext,
+          originInteractionId,
         ),
         timeout,
       ]).finally(() => {
@@ -637,8 +729,9 @@ export function FloatingChat({
       const nextRemainingTurns = validTurnCount(response.remainingTurns, 0);
       const answer = response.answer?.trim()
         || (response.mode === "CONTACT" ? t("inputLockedExplanation") : t("noInformation"));
+      const assistantMessageId = response.assistantMessageId || nextMessageId("assistant");
       const assistantMessage: ChatMessage = {
-        id: nextMessageId("assistant"),
+        id: assistantMessageId,
         role: "ASSISTANT",
         content: answer,
         products: nextProducts,
@@ -646,6 +739,7 @@ export function FloatingChat({
         noResults: intent === "PRODUCT_FINDING" && nextProducts.length === 0,
         answerFormat: response.answerFormat,
         resultKind: response.resultKind,
+        originInteractionId,
         animate: true,
       };
 
@@ -654,7 +748,14 @@ export function FloatingChat({
       setContacts(mergeContacts(response.contacts, fallbackContacts));
       if (response.conversationId) setConversationId(response.conversationId);
       setRemainingTurns(nextRemainingTurns);
-      setLeadPrompt(Boolean(response.leadPrompt) && !leadCaptured && !leadDeclined);
+      const nextLeadSequence = response.leadPromptSequence === 1 || response.leadPromptSequence === 2
+        ? response.leadPromptSequence
+        : (response.leadPrompt ? 1 : 0);
+      if (!leadCaptured && !leadDeclined && nextLeadSequence > 0) {
+        setLeadPromptSequence(nextLeadSequence);
+        setLeadPromptMessageId(assistantMessageId);
+        setShowContactLead(false);
+      }
       setRetryAvailable(false);
       setPendingRequestId(undefined);
 
@@ -676,7 +777,7 @@ export function FloatingChat({
       setDraft(message);
       setAvailabilityState("error");
       setRetryAvailable(true);
-      setRetryMessage({ message, intent, requestId });
+      setRetryMessage({ message, intent, requestId, originInteractionId });
       setPendingRequestId(requestId);
       const notice = error instanceof ChatMessageTimeoutError
         ? t("timeoutNotice")
@@ -702,60 +803,98 @@ export function FloatingChat({
 
   function handleLeadCaptured() {
     setLeadCaptured(true);
-    setLeadPrompt(false);
+    setLeadPromptSequence(0);
+    setLeadPromptMessageId(undefined);
     setShowContactLead(false);
     appendAssistantMessage(t("leadSuccess"));
   }
 
   async function handleLeadDeclined() {
     if (!conversationId) return;
-    await declineChatLead(conversationId);
-    if (!mountedRef.current) return;
-    setLeadDeclined(true);
-    setLeadPrompt(false);
-    setShowContactLead(false);
-    appendAssistantMessage(t("leadDeclined"));
+    try {
+      await declineChatLead(conversationId);
+      if (!mountedRef.current) return;
+      setLeadDeclined(true);
+      setLeadPromptSequence(0);
+      setLeadPromptMessageId(undefined);
+      setShowContactLead(false);
+      appendAssistantMessage(t("leadDeclined"));
+    } catch {
+      if (mountedRef.current) setContactNotice(t("leadDeclineError"));
+      throw new Error("LEAD_DECLINE_FAILED");
+    }
   }
 
   const displayMessages = messages;
-  const latestAssistant = [...messages].reverse().find((message) => message.role === "ASSISTANT");
 
-  const composerActions = useMemo<ComposerAction[]>(() => {
-    if (messages.length === 0) return [];
-    if (latestAssistant?.noResults) {
-      const actions: ComposerAction[] = [];
-      if (serviceMode === "AI") {
-        actions.push(
-          { id: "no-results-budget", label: t("changeBudget"), kind: "MESSAGE", intent: "PRODUCT_FINDING" },
-          { id: "no-results-needs", label: t("changeNeeds"), kind: "MESSAGE", intent: "PRODUCT_FINDING" },
-        );
-      }
-      actions.push({
-        id: "no-results-contact",
-        label: contactOpen ? t("contactToggleClose") : t("talkToStaff"),
-        kind: "CONTACT",
-        intent: "UNKNOWN",
+  function actionLabel(type: ChatAction["type"]): string {
+    switch (type) {
+      case "COMPARE_PRODUCTS": return t("actionCompareProducts");
+      case "CHECK_SIZE": return t("actionCheckSize");
+      case "CHECK_STOCK": return t("actionCheckStock");
+      case "CHANGE_BUDGET": return t("actionChangeBudget");
+      case "FIND_SIMILAR": return t("actionFindSimilar");
+      case "VIEW_POLICY": return t("actionViewPolicy");
+      case "FIND_PRODUCTS": return t("actionFindProducts");
+      case "RELATED_ARTICLE_QUESTION": return t("actionRelatedArticle");
+      case "CHANGE_NEEDS": return t("actionChangeNeeds");
+      case "CONTACT_STAFF": return t("talkToStaff");
+      case "LOGIN": return t("orderLogin");
+      case "ORDER_HISTORY": return t("orderHistory");
+      case "ORDER_LOOKUP": return t("orderLookup");
+      case "CALL_HOTLINE": return t("actionCallHotline");
+      case "OPEN_ZALO": return t("openZalo");
+      case "OPEN_MESSENGER": return t("openMessenger");
+    }
+  }
+
+  function actionIntent(type: ChatAction["type"]): PromptIntent {
+    if (type === "COMPARE_PRODUCTS") return "PRODUCT_ACTION";
+    if (["CHECK_SIZE", "CHECK_STOCK", "CHANGE_BUDGET", "FIND_SIMILAR", "FIND_PRODUCTS", "CHANGE_NEEDS"]
+      .includes(type)) return "PRODUCT_FINDING";
+    return "UNKNOWN";
+  }
+
+  async function handleIssuedAction(message: ChatMessage, action: ChatAction) {
+    if (!conversationId || sending) return;
+    setContactNotice("");
+    try {
+      const interaction = await recordChatInteraction({
+        clientEventId: createRequestId(),
+        conversationId,
+        assistantMessageId: message.id,
+        type: "ACTION_CLICKED",
+        actionType: action.type,
       });
-      return actions;
-    }
-    if (latestAssistant?.products?.length) {
-      const actions: ComposerAction[] = [];
-      if (latestAssistant.products.length > 1) {
-        actions.push({ id: "products-compare", label: t("compareProducts"), kind: "MESSAGE", intent: "PRODUCT_ACTION" });
+      const originInteractionId = interaction.interactionId;
+      if (action.type === "LOGIN") {
+        window.location.assign(toLoginPath(toOrderLookupPath(locale), locale));
+      } else if (action.type === "ORDER_HISTORY") {
+        window.location.assign(toOrderHistoryPath(locale));
+      } else if (action.type === "ORDER_LOOKUP") {
+        window.location.assign(toOrderLookupPath(locale));
+      } else if (action.type === "CALL_HOTLINE" && effectiveContacts.hotline) {
+        window.location.assign(`tel:${effectiveContacts.hotline.replace(/[^+\d]/g, "")}`);
+      } else if (action.type === "OPEN_ZALO" && effectiveContacts.zaloUrl) {
+        window.open(effectiveContacts.zaloUrl, "_blank", "noopener,noreferrer");
+      } else if (action.type === "OPEN_MESSENGER" && effectiveContacts.messengerUrl) {
+        window.open(effectiveContacts.messengerUrl, "_blank", "noopener,noreferrer");
+      } else if (action.type === "CONTACT_STAFF") {
+        setContactOpen(true);
+      } else {
+        await submitMessage(actionLabel(action.type), actionIntent(action.type), undefined, originInteractionId);
       }
-      actions.push(
-        { id: "products-budget", label: t("changeBudget"), kind: "MESSAGE", intent: "PRODUCT_FINDING" },
-        {
-          id: "products-contact",
-          label: contactOpen ? t("contactToggleClose") : t("talkToStaff"),
-          kind: "CONTACT",
-          intent: "UNKNOWN",
-        },
-      );
-      return actions.slice(0, 4);
+    } catch {
+      if (mountedRef.current) setContactNotice(t("actionRecordError"));
     }
-    return [];
-  }, [contactOpen, latestAssistant, messages.length, serviceMode, t]);
+  }
+
+  function handleCartLeadPrompt(messageId: string, sequence: 1 | 2) {
+    if (leadCaptured || leadDeclined) return;
+    setLeadPromptSequence(sequence);
+    setLeadPromptMessageId(messageId);
+    setShowContactLead(false);
+  }
 
   function runComposerAction(action: ComposerAction) {
     if (action.kind === "CONTACT") {
@@ -765,11 +904,10 @@ export function FloatingChat({
     void submitMessage(action.label, action.intent);
   }
 
-  const hasContactComposerAction = composerActions.some((action) => action.kind === "CONTACT");
   const statusLabel = serviceMode === "CONTACT" ? t("contactStatus") : t("aiStatus");
 
   function renderFab(mobileOnly = false, includeTriggerId = true) {
-    const tooltipId = mobileOnly ? "bi-fab-tooltip-mobile" : "bi-fab-tooltip";
+    const tooltipId = mobileOnly ? "bigbike-fab-tooltip-mobile" : "bigbike-fab-tooltip";
     return (
       <div
         ref={includeTriggerId ? registerLauncherContainer : undefined}
@@ -799,7 +937,7 @@ export function FloatingChat({
               aria-hidden="true"
             />
           ) : null}
-          <BiAvatar
+          <BigBikeAvatar
             size="launcher"
           />
         </Button>
@@ -809,7 +947,7 @@ export function FloatingChat({
 
   function registerLauncherContainer(node: HTMLDivElement | null) {
     launcherContainerRef.current = node;
-    if (node && hydratedRef.current) node.setAttribute("data-bi-launcher-ready", "true");
+    if (node && hydratedRef.current) node.setAttribute("data-bigbike-launcher-ready", "true");
   }
 
   return (
@@ -833,7 +971,7 @@ export function FloatingChat({
               aria-label={t("reopen")}
               onClick={openPanel}
             >
-              <BiAvatar
+              <BigBikeAvatar
                 size="minimized"
               />
               <span className="truncate font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
@@ -856,7 +994,7 @@ export function FloatingChat({
 
       <Dialog open={panelState === "expanded"} onOpenChange={handleDialogOpenChange}>
         <DialogContent
-          data-bi-assistant
+          data-bigbike-assistant
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             focusLauncherSoon();
@@ -865,12 +1003,12 @@ export function FloatingChat({
         >
           <DialogHeader className="shrink-0 border-x-0 border-t-0 border-b-4 border-chat bg-surface-dark px-4 pb-4 pt-[max(var(--bb-space-4),env(safe-area-inset-top))] text-primary-foreground md:pt-4">
             <div className="flex min-w-0 items-start gap-3">
-              <BiAvatar
+              <BigBikeAvatar
                 size="header"
               />
               <div className="min-w-0 flex-1">
                 <DialogTitle className="font-cta text-b4-action font-semibold uppercase tracking-wide text-primary-foreground">
-                  {t("biTitle")}
+                  {t("bigbikeTitle")}
                 </DialogTitle>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="size-2 rounded-full! bg-chat" aria-hidden="true" />
@@ -922,7 +1060,7 @@ export function FloatingChat({
 
           {availabilityState === "loading" ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center" role="status">
-              <BiAvatar
+              <BigBikeAvatar
                 size="header"
               />
               <Loader2 className="size-5 animate-spin text-chat" aria-hidden="true" />
@@ -932,20 +1070,20 @@ export function FloatingChat({
             <>
               <div
                 ref={listRef}
-                data-bi-conversation
+                data-bigbike-conversation
                 className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
                 onScroll={onConversationScroll}
               >
                 <div className="grid gap-4">
                   {messages.length === 0 ? (
-                    <section data-bi-onboarding aria-labelledby="bi-onboarding-heading" className="border border-border bg-background p-4">
+                    <section data-bigbike-onboarding aria-labelledby="bigbike-onboarding-heading" className="border border-border bg-background p-4">
                       <div className="flex items-start gap-3">
-                        <BiAvatar
+                        <BigBikeAvatar
                           size="header"
                         />
                         <div className="min-w-0">
-                          <p className="font-cta text-b5-label font-semibold uppercase tracking-wide text-chat">{t("biTitle")}</p>
-                          <h2 id="bi-onboarding-heading" className="mt-1 font-body text-a3-section font-semibold leading-title text-foreground">
+                          <p className="font-cta text-b5-label font-semibold uppercase tracking-wide text-chat">{t("bigbikeTitle")}</p>
+                          <h2 id="bigbike-onboarding-heading" className="mt-1 font-body text-a3-section font-semibold leading-title text-foreground">
                             {greeting || defaultGreeting}
                           </h2>
                           <p className="mt-2 font-body text-a5-meta leading-relaxed text-muted-foreground">
@@ -981,7 +1119,7 @@ export function FloatingChat({
                       <div key={message.id} className={`flex gap-3 ${message.role === "USER" ? "justify-end" : "justify-start"}`}>
                         {message.role === "ASSISTANT" ? (
                           showAssistantAvatar ? (
-                            <BiAvatar
+                            <BigBikeAvatar
                               size="message"
                             />
                           ) : <span className="size-9 shrink-0" aria-hidden="true" />
@@ -992,21 +1130,30 @@ export function FloatingChat({
                           </div>
                           {products.length > 0 ? (
                             <div
-                              data-bi-product-list
+                              data-bigbike-product-list
                               className={products.length > 1 ? "flex gap-3 overflow-x-auto snap-x pb-2" : "grid"}
                             >
                               {products.map((product) => (
-                                <BiProductCard
+                                <BigBikeProductCard
                                   key={product.slug}
                                   product={product}
                                   locale={locale}
                                   compact={products.length > 1}
                                   conversationId={conversationId}
+                                  assistantInteractionId={message.originInteractionId}
+                                  onLeadPrompt={(sequence) => handleCartLeadPrompt(message.id, sequence)}
                                 />
                               ))}
                             </div>
                           ) : null}
-                          {message.actions?.length ? <ActionButtons actions={message.actions} locale={locale} /> : null}
+                          {message.actions?.length ? (
+                            <ActionButtons
+                              actions={message.actions}
+                              disabled={sending}
+                              labelFor={actionLabel}
+                              onAction={(action) => void handleIssuedAction(message, action)}
+                            />
+                          ) : null}
                           {message.noResults ? (
                             <div className="border-l-4 border-chat bg-background p-4">
                               <p className="font-body text-a4-content font-semibold text-foreground">{t("noResults")}</p>
@@ -1019,7 +1166,7 @@ export function FloatingChat({
 
                   {sending ? (
                     <div className="flex items-start gap-3" role="status">
-                      <BiAvatar
+                      <BigBikeAvatar
                         size="message"
                       />
                       <div className="flex items-center gap-2 border border-border bg-background px-4 py-3 font-body text-a5-meta text-muted-foreground">
@@ -1033,36 +1180,70 @@ export function FloatingChat({
                     </div>
                   ) : null}
 
+                  {conversationId
+                    && leadPromptSequence > 0
+                    && !leadCaptured
+                    && !leadDeclined ? (
+                      <section
+                        data-bigbike-lead-prompt
+                        aria-labelledby="bigbike-lead-prompt-title"
+                        className="ml-12 grid gap-3 border border-chat bg-background p-4"
+                      >
+                        <div>
+                          <h3 id="bigbike-lead-prompt-title" className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
+                            {t("leadTitle")}
+                          </h3>
+                          <p className="mt-1 font-body text-a5-meta leading-relaxed text-muted-foreground">
+                            {t("leadPromptDescription")}
+                          </p>
+                        </div>
+                        {!showContactLead ? (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <Button type="button" className="min-h-11" onClick={() => setShowContactLead(true)}>
+                              {t("leadPromptAccept")}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-h-11"
+                              onClick={() => void handleLeadDeclined().catch(() => undefined)}
+                            >
+                              {t("leadPromptDecline")}
+                            </Button>
+                          </div>
+                        ) : conversationId ? (
+                          <BigBikeLeadForm
+                            conversationId={conversationId}
+                            draft={leadDraft}
+                            onDraftChange={setLeadDraft}
+                            onCaptured={handleLeadCaptured}
+                            onDeclined={handleLeadDeclined}
+                            accountContact={accountContact}
+                          />
+                        ) : null}
+                      </section>
+                    ) : null}
+
                   {contactOpen ? (
-                    <div id="bi-contact-inline" data-bi-contact-inline className="grid gap-3">
+                    <div id="bigbike-contact-inline" data-bigbike-contact-inline className="grid gap-3">
                       {messages.length > 0 ? (
                         <p className="border-l-4 border-chat bg-background p-3 font-body text-a5-meta leading-relaxed text-muted-foreground">
                           {t("contactContextPreserved")}
                         </p>
                       ) : null}
-                      <BiContactPanel
+                      <BigBikeContactPanel
                         contacts={effectiveContacts}
-                        onRequestCallback={conversationId && leadPrompt && !leadCaptured && !leadDeclined
+                        onRequestCallback={conversationId && leadPromptSequence > 0 && !leadCaptured && !leadDeclined
                           ? () => setShowContactLead(true)
                           : undefined}
                       />
-                      {showContactLead && conversationId && leadPrompt && !leadCaptured && !leadDeclined ? (
-                        <BiLeadForm
-                          conversationId={conversationId}
-                          draft={leadDraft}
-                          onDraftChange={setLeadDraft}
-                          onCaptured={handleLeadCaptured}
-                          onDeclined={handleLeadDeclined}
-                          accountContact={accountContact}
-                        />
-                      ) : null}
                     </div>
                   ) : null}
                 </div>
               </div>
 
               <div
-                data-bi-composer
+                data-bigbike-composer
                 className="shrink-0 border-t border-border bg-background px-4 pt-4 pb-[max(var(--bb-space-4),env(safe-area-inset-bottom))] md:pb-4"
               >
                 {contactNotice ? (
@@ -1077,30 +1258,17 @@ export function FloatingChat({
                       type="button"
                       className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
                       onClick={() => retryMessage
-                        ? void submitMessage(retryMessage.message, retryMessage.intent, retryMessage.requestId)
+                        ? void submitMessage(
+                          retryMessage.message,
+                          retryMessage.intent,
+                          retryMessage.requestId,
+                          retryMessage.originInteractionId,
+                        )
                         : void requestAvailability(true)}
                     >
                       <RefreshCw className="size-4" aria-hidden="true" />
                       {t("retry")}
                     </Button>
-                  </div>
-                ) : null}
-
-                {composerActions.length > 0 ? (
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {composerActions.slice(0, 5).map((action) => (
-                      <Button
-                        key={action.id}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="min-h-11 max-w-full whitespace-normal px-3 text-center hover:scale-100"
-                        disabled={sending || (action.kind === "MESSAGE" && serviceMode !== "AI")}
-                        onClick={() => runComposerAction(action)}
-                      >
-                        {action.label}
-                      </Button>
-                    ))}
                   </div>
                 ) : null}
 
@@ -1111,10 +1279,10 @@ export function FloatingChat({
                 ) : null}
 
                 <form onSubmit={handleSubmit} className="flex items-end gap-2">
-                  <Label htmlFor="bi-chat-message" className="sr-only">{t("messageLabel")}</Label>
+                  <Label htmlFor="bigbike-chat-message" className="sr-only">{t("messageLabel")}</Label>
                   <Input
                     ref={messageInputRef}
-                    id="bi-chat-message"
+                    id="bigbike-chat-message"
                     value={draft}
                     maxLength={1000}
                     disabled={sending || serviceMode !== "AI" || remainingTurns <= 0}
@@ -1134,24 +1302,22 @@ export function FloatingChat({
                   </Button>
                 </form>
 
-                {!hasContactComposerAction ? (
-                  <div className="mt-3 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="min-h-11 px-3"
-                      aria-label={contactOpen ? t("contactToggleClose") : t("talkToStaff")}
-                      title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                      aria-expanded={contactOpen}
-                      aria-controls="bi-contact-inline"
-                      onClick={toggleContact}
-                    >
-                      <Phone className="size-4" aria-hidden="true" />
-                      {contactOpen ? t("contactToggleClose") : t("talkToStaff")}
-                    </Button>
-                  </div>
-                ) : null}
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11 px-3"
+                    aria-label={contactOpen ? t("contactToggleClose") : t("talkToStaff")}
+                    title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                    aria-expanded={contactOpen}
+                aria-controls="bigbike-contact-inline"
+                    onClick={toggleContact}
+                  >
+                    <Phone className="size-4" aria-hidden="true" />
+                    {contactOpen ? t("contactToggleClose") : t("talkToStaff")}
+                  </Button>
+                </div>
               </div>
             </>
           )}

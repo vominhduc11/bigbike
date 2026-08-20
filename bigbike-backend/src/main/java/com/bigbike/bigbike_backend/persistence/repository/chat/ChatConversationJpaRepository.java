@@ -17,6 +17,9 @@ public interface ChatConversationJpaRepository
 
     long countByStartedAtGreaterThanEqualAndStartedAtLessThan(Instant from, Instant to);
 
+    long countByLeadOfferStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+            String leadOfferStatus, Instant from, Instant to);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select conversation from ChatConversationEntity conversation where conversation.id = :id")
     Optional<ChatConversationEntity> findByIdForUpdate(@Param("id") UUID id);

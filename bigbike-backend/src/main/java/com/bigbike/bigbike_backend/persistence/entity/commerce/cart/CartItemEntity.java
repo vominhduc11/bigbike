@@ -47,6 +47,9 @@ public class CartItemEntity {
     @Column(name = "assistant_conversation_id")
     private UUID assistantConversationId;
 
+    @Column(name = "assistant_interaction_id")
+    private UUID assistantInteractionId;
+
     @Column(length = 255)
     private String sku;
 

@@ -42,6 +42,9 @@ public class ChatMessageEntity {
     @Column(name = "request_id")
     private UUID requestId;
 
+    @Column(name = "origin_interaction_id")
+    private UUID originInteractionId;
+
     @Column(name = "answer_format", nullable = false, length = 24)
     private String answerFormat = "PLAIN_TEXT";
 

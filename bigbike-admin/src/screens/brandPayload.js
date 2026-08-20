@@ -3,8 +3,8 @@ export function toBrandPayload(form) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     // Luôn gửi mô tả, kể cả khi rỗng: backend dùng presence-flag (thiếu khóa = giữ
-    // nguyên giá trị cũ, chuỗi rỗng = xóa). Bỏ khóa khi rỗng khiến admin không thể
-    // xóa mô tả cũ — mô tả tiếng Anh đã gửi null nên hai bên phải nhất quán.
+    // nguyên giá trị cũ, chuỗi rỗng = xoá). Bỏ khóa khi rỗng khiến admin không thể
+    // xoá mô tả cũ — mô tả tiếng Anh đã gửi null nên hai bên phải nhất quán.
     description: form.description.trim(),
     showOnHomepage: Boolean(form.showOnHomepage),
   }

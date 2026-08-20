@@ -24,7 +24,8 @@ type CartContextValue = {
     quantity: number,
     variantId?: string,
     assistantConversationId?: string,
-  ) => Promise<void>;
+    assistantInteractionId?: string,
+  ) => Promise<import("@/lib/contracts/commerce").Cart>;
   showToast: (title: string, message: string) => void;
   refreshCount: () => void;
 };
@@ -68,10 +69,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToCart = useCallback(
-    async (productId: string, quantity: number, variantId?: string, assistantConversationId?: string) => {
-      const updated = await addCartItem(productId, quantity, variantId, assistantConversationId);
+    async (productId: string, quantity: number, variantId?: string, assistantConversationId?: string, assistantInteractionId?: string) => {
+      const updated = await addCartItem(
+        productId, quantity, variantId, assistantConversationId, assistantInteractionId,
+      );
       qc.setQueryData(queryKeys.cart(), updated);
       showToast(t("toastAddedTitle"), t("toastAddedBody"));
+      return updated;
     },
     [qc, showToast, t],
   );

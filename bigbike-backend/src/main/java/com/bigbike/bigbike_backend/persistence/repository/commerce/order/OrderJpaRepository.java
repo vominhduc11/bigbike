@@ -29,7 +29,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     /**
      * Chat-only projection. It deliberately avoids line items, addresses,
-     * payment rows and the full order entity so Bi cannot accidentally receive
+ * payment rows and the full order entity so BigBike Assistant cannot accidentally receive
      * customer-sensitive order detail.
      */
     @Query("SELECT o.orderNumber, o.status, o.placedAt, o.createdAt, o.totalAmount, o.currency "

@@ -40,7 +40,7 @@ describe('featuredSaveErrorMessage', () => {
     expect(message).toContain('Mũ LS2 FF390, Găng tay Hevik')
   })
 
-  it('phân biệt sản phẩm đã bị xóa với sản phẩm ngừng bán', () => {
+  it('phân biệt sản phẩm đã bị xoá với sản phẩm ngừng bán', () => {
     const message = featuredSaveErrorMessage(t, {
       details: [{ field: 'featuredGrid[0]', code: 'NOT_FOUND' }],
     }, items)
@@ -144,7 +144,7 @@ describe('FeaturedProductsScreen', () => {
     renderScreen({ grid: [published(1), published(2), published(3)] })
 
     await screen.findByText('Sản phẩm 2')
-    await user.click(screen.getAllByRole('button', { name: 'Xóa khỏi danh sách' })[1])
+    await user.click(screen.getAllByRole('button', { name: 'Xoá khỏi danh sách' })[1])
 
     const saveButton = screen.getByRole('button', { name: 'featuredProducts.saveButton' })
     await waitFor(() => expect(saveButton).toBeEnabled())
@@ -218,7 +218,7 @@ describe('FeaturedProductsScreen', () => {
     renderScreen({ grid: [published(1), published(2), published(3)] })
 
     await screen.findByText('Sản phẩm 3')
-    await user.click(screen.getAllByRole('button', { name: 'Xóa khỏi danh sách' })[2])
+    await user.click(screen.getAllByRole('button', { name: 'Xoá khỏi danh sách' })[2])
     const saveButton = screen.getByRole('button', { name: 'featuredProducts.saveButton' })
     await waitFor(() => expect(saveButton).toBeEnabled())
     await user.click(saveButton)

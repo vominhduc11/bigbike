@@ -79,7 +79,7 @@ const trashArticle = {
   ...draftArticle,
   id: 'article-trash',
   slug: 'bai-thung-rac',
-  title: 'Bài trong thùng rác',
+  title: 'Bài trong Thùng rác',
   publishStatus: 'TRASH',
 }
 

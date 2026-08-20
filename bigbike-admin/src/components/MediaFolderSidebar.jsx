@@ -80,7 +80,9 @@ export function MediaFolderSidebar({
   async function handleDelete(folder) {
     const confirmed = await showConfirm(
       t('media.folderDeleteConfirm', { name: folder.name }),
-      t('media.folderDeleteConfirmTitle'))
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
     if (!confirmed) return
     try {
       await deleteMediaFolder(folder.id)

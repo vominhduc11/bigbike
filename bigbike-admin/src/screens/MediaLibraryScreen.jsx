@@ -229,12 +229,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const { isDragging } = useDragDropUpload(dropZoneRef, uploadFiles)
 
   // ── Single delete / restore / hard delete ────────────────────
-  async function handleDelete(mediaId) {
-    const confirmed = await showConfirm(t('media.deleteConfirm'), t('media.deleteConfirmTitle'))
+  async function handleDelete(media) {
+    if (!media?.id) return false
+    const name = (media.title || media.filename || media.id).split('/').pop()
+    const confirmed = await showConfirm(
+      t('media.deleteConfirm', { name }),
+      t('common.moveToTrashTitle'),
+      { variant: 'default', confirmLabel: t('common.moveToTrash') },
+    )
     if (!confirmed) return false
-    setDeleting(mediaId)
+    setDeleting(media.id)
     try {
-      await deleteMedia(mediaId)
+      await deleteMedia(media.id)
       toast.success(t('media.deleteSuccess'))
       refreshData({ foldersChanged: true })
       return true
@@ -283,7 +289,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       toast.error(t('media.hardDeleteBlockedInUse', { name, count: refCount }))
       return false
     }
-    const confirmed = await showConfirm(t('media.hardDeleteConfirm', { name }), t('media.hardDeleteConfirmTitle'))
+    const confirmed = await showConfirm(
+      t('media.hardDeleteConfirm', { name }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
     if (!confirmed) return false
     setDeleting(media.id)
     try {
@@ -304,7 +314,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     if (selectedIds.size === 0) return
     const confirmed = await showConfirm(
       t('media.bulkDeleteConfirm', { count: selectedIds.size }),
-      t('media.bulkDeleteConfirmTitle'))
+      t('common.moveToTrashTitle'),
+      { variant: 'default', confirmLabel: t('common.moveToTrash') },
+    )
     if (!confirmed) return
     setBulkBusy(true)
     try {
@@ -375,12 +387,12 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onSelect: (i) => { const m = state.items[i]; if (m && canUpdate) toggleSelected(m.id) },
     onDelete: (i) => {
       const m = state.items[i]; if (!m || !canUpdate || isTrash) return
-      handleDelete(m.id)
+      handleDelete(m)
     },
   })
 
   // Xoá vĩnh viễn KHÔNG có mặt trên thẻ ảnh — chỉ trong bảng chi tiết khi đang ở
-  // thùng rác, để hành động không hoàn tác được luôn đi kèm cảnh báo "đang dùng ở đâu".
+  // Thùng rác, để hành động không hoàn tác được luôn đi kèm cảnh báo "đang dùng ở đâu".
   const cardProps = (media, idx) => ({
     media,
     selected: selectedIds.has(media.id),
@@ -390,7 +402,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onPreview: () => { setPreviewIndex(idx); setFocusIndex(idx) },
     onEdit: canUpdate && !isRefreshing && !isTrash ? () => setEditingMedia(media) : null,
     onViewDetail: !isRefreshing && (isTrash || !canUpdate) ? () => setEditingMedia(media) : null,
-    onDelete: canUpdate && !isRefreshing && !isTrash ? () => handleDelete(media.id) : null,
+    onDelete: canUpdate && !isRefreshing && !isTrash ? () => handleDelete(media) : null,
     onRestore: canUpdate && !isRefreshing && isTrash ? () => handleRestore(media.id) : null,
     onDownload: !isRefreshing && isDownloadableMedia(media) ? () => handleDownload(media) : null,
   })
@@ -657,7 +669,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             const idx = state.items.findIndex((m) => m.id === editingMedia.id)
             if (idx >= 0) setPreviewIndex(idx)
           }}
-          onDelete={async () => { if (await handleDelete(editingMedia.id)) setEditingMedia(null) }}
+          onDelete={async () => { if (await handleDelete(editingMedia)) setEditingMedia(null) }}
           onRestore={async () => { if (await handleRestore(editingMedia.id)) setEditingMedia(null) }}
           onHardDelete={async () => { if (await handleHardDelete(editingMedia)) setEditingMedia(null) }}
         />

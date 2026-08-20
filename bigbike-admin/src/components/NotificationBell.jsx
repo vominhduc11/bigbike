@@ -18,7 +18,7 @@ import {
 const MAX_ITEMS = 30
 
 // Cache localStorage tách theo TỪNG tài khoản admin (AUD-017): trước đây mọi tài khoản
-// dùng chung 1 key 'bb-admin-notifications', logout không xóa → đăng nhập tài khoản khác
+// dùng chung 1 key 'bb-admin-notifications', logout không xoá → đăng nhập tài khoản khác
 // trên cùng trình duyệt đọc được thông báo (số đơn/khách/giá trị) của tài khoản trước,
 // kể cả khi tài khoản mới không có quyền orders.read. Namespace theo email → cô lập.
 function storageKeyFor(identity) {

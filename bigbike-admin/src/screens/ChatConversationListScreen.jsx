@@ -5,6 +5,7 @@ import { BadgeDollarSign, Bot, CircleAlert, Clock3, MessageCircle, PhoneCall, Re
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
@@ -38,6 +39,10 @@ function formatVnd(value) {
 
 function formatLatency(value) {
   return value == null ? '—' : value >= 1_000 ? `${(value / 1_000).toFixed(1)} s` : `${Math.round(value)} ms`
+}
+
+function formatPercent(value) {
+  return value == null ? '—' : new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(value)
 }
 
 function SummaryCard({ icon, label, value, detail }) {
@@ -85,6 +90,19 @@ export function ChatConversationListScreen({ navigate }) {
   const items = state.items || []
   const stats = statsQuery.data
   const isFiltered = Boolean(query.from || query.to || query.hasLead !== 'ALL')
+
+  const actionColumns = useMemo(() => [
+    {
+      key: 'actionType',
+      label: t('chatAdmin.actions.action'),
+      render: (item) => t(`chatAdmin.actions.types.${item.actionType}`, { defaultValue: item.actionType }),
+    },
+    { key: 'clicks', label: t('chatAdmin.actions.clicks'), align: 'right' },
+    { key: 'cartLines', label: t('chatAdmin.actions.cartLines'), align: 'right' },
+    { key: 'orders', label: t('chatAdmin.actions.orders'), align: 'right' },
+    { key: 'revenue', label: t('chatAdmin.actions.revenue'), align: 'right', render: (item) => formatVnd(item.revenue) },
+    { key: 'conversionRate', label: t('chatAdmin.actions.conversion'), align: 'right', render: (item) => formatPercent(item.conversionRate) },
+  ], [t])
 
   const columns = useMemo(() => [
     {
@@ -155,6 +173,29 @@ export function ChatConversationListScreen({ navigate }) {
         actions={<Button variant="secondary" onClick={() => navigate('/admin/settings')}>{t('chatAdmin.openSettings')}</Button>}
       />
 
+      {stats?.monthlyCostWarningExceeded && stats.monthlyCostWarningUsd > 0 ? (
+        <div className="mb-4 flex items-start gap-3 rounded-md border border-warning bg-warning-bg p-4 text-warning" role="alert">
+          <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="m-0 font-semibold">{t('chatAdmin.monthlyWarning.title')}</p>
+            <p className="mb-0 mt-1 text-sm">{t('chatAdmin.monthlyWarning.description', {
+              cost: formatUsd(stats.monthlyCostUsd),
+              threshold: formatUsd(stats.monthlyCostWarningUsd),
+            })}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {statsQuery.isError ? (
+        <StatePanel
+          tone="danger"
+          title={t('chatAdmin.statsLoadError')}
+          description={statsQuery.error?.message}
+          actionLabel={t('common.retry')}
+          onAction={statsQuery.refetch}
+        />
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard icon={<Sparkles size={20} />} label={t('chatAdmin.stats.aiCalls')} value={stats?.aiCalls ?? '—'} detail={stats ? t('chatAdmin.stats.limit', { count: stats.dailyLimit }) : ''} />
         <SummaryCard icon={<Bot size={20} />} label={t('chatAdmin.stats.remaining')} value={stats?.remainingAiCalls ?? '—'} />
@@ -172,6 +213,62 @@ export function ChatConversationListScreen({ navigate }) {
         <SummaryCard icon={<ShieldAlert size={20} />} label={t('chatAdmin.stats.contentRefusals')} value={formatNumber(stats?.contentRefusals)} />
         <SummaryCard icon={<ReceiptText size={20} />} label={t('chatAdmin.stats.assistedOrders')} value={formatNumber(stats?.assistedOrders)} detail={stats ? formatVnd(stats.assistedRevenue) : ''} />
       </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <DetailSection
+          title={t('chatAdmin.quality.title')}
+          description={t('chatAdmin.quality.description')}
+          contentClassName="grid gap-3 sm:grid-cols-2"
+        >
+          <SummaryCard
+            icon={<MessageCircle size={20} />}
+            label={t('chatAdmin.quality.direct')}
+            value={stats ? formatNumber((stats.quality?.answers ?? 0) + (stats.quality?.productResults ?? 0)) : '—'}
+            detail={stats ? t('chatAdmin.quality.productResults', { count: stats.quality?.productResults ?? 0 }) : ''}
+          />
+          <SummaryCard icon={<CircleAlert size={20} />} label={t('chatAdmin.quality.clarifications')} value={stats ? formatNumber(stats.quality?.clarifications) : '—'} />
+          <SummaryCard icon={<ShieldAlert size={20} />} label={t('chatAdmin.quality.outOfScope')} value={stats ? formatNumber(stats.quality?.outOfScope) : '—'} />
+          <SummaryCard icon={<ShieldAlert size={20} />} label={t('chatAdmin.quality.refusals')} value={stats ? formatNumber(stats.quality?.contentRefusals) : '—'} />
+        </DetailSection>
+
+        <DetailSection
+          title={t('chatAdmin.leadFunnel.title')}
+          description={t('chatAdmin.leadFunnel.description')}
+          contentClassName="grid gap-3 sm:grid-cols-2"
+        >
+          <SummaryCard icon={<PhoneCall size={20} />} label={t('chatAdmin.leadFunnel.sequence1')} value={stats ? formatNumber(stats.leadFunnel?.sequence1Viewed) : '—'} />
+          <SummaryCard icon={<PhoneCall size={20} />} label={t('chatAdmin.leadFunnel.sequence2')} value={stats ? formatNumber(stats.leadFunnel?.sequence2Viewed) : '—'} />
+          <SummaryCard icon={<PhoneCall size={20} />} label={t('chatAdmin.leadFunnel.accepted')} value={stats ? formatNumber(stats.leadFunnel?.accepted) : '—'} />
+          <SummaryCard icon={<CircleAlert size={20} />} label={t('chatAdmin.leadFunnel.declined')} value={stats ? formatNumber(stats.leadFunnel?.declined) : '—'} />
+        </DetailSection>
+      </div>
+
+      <DetailSection
+        className="mt-6"
+        title={t('chatAdmin.actions.title')}
+        description={t('chatAdmin.actions.description')}
+      >
+        <AdminTable
+          caption={t('chatAdmin.actions.caption')}
+          columns={actionColumns}
+          rows={(stats?.actionStats ?? []).map((item) => ({ ...item, id: item.actionType }))}
+          loading={statsQuery.isLoading}
+          pageSize={5}
+          mobileCard={(item) => ({
+            title: t(`chatAdmin.actions.types.${item.actionType}`, { defaultValue: item.actionType }),
+            meta: [
+              { label: t('chatAdmin.actions.clicks'), value: item.clicks },
+              { label: t('chatAdmin.actions.cartLines'), value: item.cartLines },
+              { label: t('chatAdmin.actions.orders'), value: item.orders },
+              { label: t('chatAdmin.actions.revenue'), value: formatVnd(item.revenue) },
+              { label: t('chatAdmin.actions.conversion'), value: formatPercent(item.conversionRate) },
+            ],
+          })}
+        />
+        {!statsQuery.isLoading && !statsQuery.isError && (stats?.actionStats?.length ?? 0) === 0 ? (
+          <StatePanel tone="neutral" title={t('chatAdmin.actions.empty')} description={t('chatAdmin.actions.emptyDescription')} />
+        ) : null}
+      </DetailSection>
 
       <FilterBar ariaLabel={t('chatAdmin.filters.label')}>
         <label className="grid gap-1 text-sm text-muted-foreground">

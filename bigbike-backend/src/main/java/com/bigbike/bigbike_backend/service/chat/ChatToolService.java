@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms;
+import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.order.OrderReadService;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -39,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Fixed, read-only tool allowlist for Trợ lý BigBike. No tool accepts SQL, table names or customer identity. */
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatToolService {
 
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -130,6 +132,8 @@ public class ChatToolService {
      * such as "mu bh" take priority over their shorter components.
      */
     private static final Map<String, String> APPROVED_ABBREVIATIONS = approvedAbbreviations();
+    private static final ThreadLocal<Map<String, String>> ACTIVE_ABBREVIATIONS =
+            ThreadLocal.withInitial(() -> APPROVED_ABBREVIATIONS);
     /**
      * An approved product-type text filter prevents a product merely co-categorized with
      * headsets (for example a camera) from being counted or shown as a headset. This is an
@@ -147,7 +151,18 @@ public class ChatToolService {
 
     private final CatalogReadService catalogReadService;
     private final OrderReadService orderReadService;
+    private final ContentReadRepository contentReadRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** Compatibility constructor for unit tests that predate article grounding. */
+    public ChatToolService(
+            CatalogReadService catalogReadService,
+            OrderReadService orderReadService
+    ) {
+        this.catalogReadService = catalogReadService;
+        this.orderReadService = orderReadService;
+        this.contentReadRepository = null;
+    }
 
     public ToolOutcome resolve(
             String question,
@@ -170,18 +185,23 @@ public class ChatToolService {
             ChatAssistantSettings.Snapshot settings,
             ConversationContext conversationContext
     ) {
-        String normalized = normalizeIntent(question);
-        boolean english = "en".equals(lang);
+        Map<String, String> previousAbbreviations = activateAbbreviations(settings, lang);
+        try {
+            String normalized = normalizeIntent(question);
+            boolean english = "en".equals(lang);
 
-        Optional<ToolOutcome> fastPath = resolveFastPath(
-                question, lang, customerId, settings, conversationContext);
-        if (fastPath.isPresent()) return fastPath.get();
-        // Kept for direct service callers and legacy regression tests. Production chat uses
-        // resolveFastPath followed by Gemini function selection for signed-in orders.
-        if (isOrderQuestion(normalized)) {
-            return orderOutcome(customerId, english, orderScope(normalized));
+            Optional<ToolOutcome> fastPath = resolveFastPathActive(
+                    question, lang, customerId, settings, conversationContext);
+            if (fastPath.isPresent()) return fastPath.get();
+            // Kept for direct service callers and legacy regression tests. Production chat uses
+            // resolveFastPath followed by Gemini function selection for signed-in orders.
+            if (isOrderQuestion(normalized)) {
+                return orderOutcome(customerId, english, orderScope(normalized));
+            }
+            return productOutcome(question, normalized, lang, english, true, conversationContext);
+        } finally {
+            ACTIVE_ABBREVIATIONS.set(previousAbbreviations);
         }
-        return productOutcome(question, normalized, lang, english, true, conversationContext);
     }
 
     /** Local answers that are deterministic and do not need Gemini or a data-bearing tool. */
@@ -199,6 +219,21 @@ public class ChatToolService {
      * "tôi đăng nhập rồi" and for the next allow-listed product tool, never as model history.
      */
     public Optional<ToolOutcome> resolveFastPath(
+            String question,
+            String lang,
+            UUID customerId,
+            ChatAssistantSettings.Snapshot settings,
+            ConversationContext conversationContext
+    ) {
+        Map<String, String> previousAbbreviations = activateAbbreviations(settings, lang);
+        try {
+            return resolveFastPathActive(question, lang, customerId, settings, conversationContext);
+        } finally {
+            ACTIVE_ABBREVIATIONS.set(previousAbbreviations);
+        }
+    }
+
+    private Optional<ToolOutcome> resolveFastPathActive(
             String question,
             String lang,
             UUID customerId,
@@ -264,6 +299,12 @@ public class ChatToolService {
         }
         if (isOrderQuestion(normalized)) {
             return Optional.of(orderOutcome(customerId, english, orderScope(normalized)));
+        }
+        Optional<String> configuredTemplate = settings == null
+                ? Optional.empty() : settings.matchAnswerTemplate(question, lang);
+        if (configuredTemplate.isPresent()) {
+            return Optional.of(ToolOutcome.local(
+                    configuredTemplate.get(), "TEMPLATE", false, false, false));
         }
         if (isShopInfoQuestion(normalized)) {
             return Optional.of(shopInfoOutcome(settings, english));
@@ -882,6 +923,7 @@ public class ChatToolService {
             case ChatToolRegistry.GET_POLICY -> executePolicy(call, context);
             case ChatToolRegistry.GET_SHOP_INFO -> executeShopInfo(context);
             case ChatToolRegistry.GET_MY_ORDERS -> executeOrders(call, context);
+            case ChatToolRegistry.SEARCH_ARTICLES -> executeArticleSearch(call, context);
             default -> throw new IllegalArgumentException("Unsupported chat tool");
         };
         session.complete(call.name(), result.products());
@@ -2632,6 +2674,7 @@ public class ChatToolService {
             case "payment" -> "payment";
             case "shipping" -> "shipping";
             case "size" -> "size guide";
+            case "privacy" -> "privacy";
             default -> throw new IllegalArgumentException("Unsupported policy topic");
         };
         ToolOutcome policy = policyOutcome(policyQuestion, "en".equals(context.lang()));
@@ -2702,7 +2745,7 @@ public class ChatToolService {
 
     /**
      * Ordered search attempts, narrowest first. CHAT_RULE_018: an attempt that drops the
-     * price filter or widens the keyword is flagged so Bi has to admit it to the customer;
+     * price filter or widens the keyword is flagged so BigBike Assistant has to admit it to the customer;
      * there is deliberately no "empty keyword, no filter" whole-catalogue sweep.
      */
     private static List<Attempt> buildAttempts(
@@ -2768,7 +2811,7 @@ public class ChatToolService {
         attempts.add(new Attempt(freeText, category, brand, color, price, sort, false, false, List.of()));
         if (freeText != null && filtered) {
             // A category/brand filter makes this fallback safe, but removing a customer word is
-            // still broader than the original request. Flag it so Bi keeps useful cards while
+        // still broader than the original request. Flag it so BigBike Assistant keeps useful cards while
             // clearly labelling them as close alternatives.
             attempts.add(new Attempt(null, category, brand, color, price, sort, true, false, List.of()));
         }
@@ -2848,6 +2891,78 @@ public class ChatToolService {
                 .filter(ChatToolService::hasSellableCurrency)
                 .filter(ChatToolService::isCurrentlySellable)
                 .toList();
+    }
+
+    private ToolExecution executeArticleSearch(
+            ChatToolRegistry.ValidatedCall call, ToolContext context) {
+        String query = (String) call.arguments().get("query");
+        String lang = (String) call.arguments().get("lang");
+        List<String> tokens = normalize(query).split("\\s+").length == 0
+                ? List.of()
+                : java.util.Arrays.stream(normalize(query).split("\\s+"))
+                        .filter(token -> token.length() >= 2)
+                        .distinct()
+                        .limit(6)
+                        .toList();
+        if (tokens.isEmpty() || !tokens.stream().anyMatch(
+                token -> containsWholePhrase(normalize(context.question()), token))) {
+            throw new IllegalArgumentException("Article search is not grounded in the question");
+        }
+        List<Map<String, Object>> articles = (contentReadRepository == null
+                ? java.util.stream.Stream.<ContentReadRepository.ArticleKnowledge>empty()
+                : contentReadRepository.searchPublishedArticleKnowledge(tokens, lang, 3).stream())
+                .map(article -> {
+                    Map<String, Object> value = new LinkedHashMap<>();
+                    value.put("title", sanitizeArticleText(article.title(), 180));
+                    value.put("content", sanitizeArticleText(
+                            String.join(" ", nullToEmpty(article.excerpt()), nullToEmpty(article.body())), 900));
+                    return value;
+                })
+                .filter(value -> !((String) value.get("title")).isBlank()
+                        && !((String) value.get("content")).isBlank())
+                .limit(3)
+                .toList();
+        return new ToolExecution(
+                ChatToolRegistry.SEARCH_ARTICLES,
+                toJson(Map.of("tool", ChatToolRegistry.SEARCH_ARTICLES, "articles", articles)),
+                List.of(), List.of());
+    }
+
+    private static String sanitizeArticleText(String raw, int maxLength) {
+        if (raw == null || raw.isBlank()) return "";
+        String plain = Jsoup.parse(raw).text().replaceAll("\\s+", " ").trim();
+        List<String> safeSentences = java.util.Arrays.stream(
+                        plain.split("(?<=[.!?])\\s+|\\R+"))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .filter(value -> !ARTICLE_UNSAFE_SENTENCE.matcher(normalize(value)).find())
+                .toList();
+        String joined = String.join(" ", safeSentences)
+                .replaceAll("(?i)https?://\\S+|www\\.\\S+", "")
+                .replaceAll("\\s+", " ").trim();
+        if (joined.length() <= maxLength) return joined;
+        int boundary = joined.lastIndexOf(' ', maxLength);
+        return joined.substring(0, boundary > 0 ? boundary : maxLength).trim();
+    }
+
+    private static final Pattern ARTICLE_UNSAFE_SENTENCE = Pattern.compile(
+            "(?i)(?:https?://|www\\.|\\b(?:email|hotline|zalo|messenger)\\b|"
+                    + "(?<!\\d)(?:\\+?84|0)\\d{8,10}(?!\\d)|"
+                    + "\\b\\d[\\d.,]*\\s*(?:vnd|d|dong|trieu|million|k)\\b|"
+                    + "\\b(?:con hang|het hang|in stock|out of stock|khuyen mai|promotion|discount)\\b|"
+                    + "\\b(?:bao hanh|doi tra|tra hang|privacy policy|warranty|return policy|shipping policy|payment policy)\\b|"
+                    + "\\b(?:giao trong|giao ngay|same day delivery|guaranteed delivery)\\b|"
+                    + "\\b(?:ignore previous|system prompt|developer message|bo qua chi dan|lenh he thong)\\b)");
+
+    /** Verifies the storefront page context against the current live public catalogue. */
+    public boolean isPublicSellableProductSlug(String slug, String lang) {
+        if (slug == null || slug.isBlank()) return false;
+        try {
+            Product product = catalogReadService.getProductBySlug(slug.trim(), lang);
+            return product != null && !sellable(List.of(product)).isEmpty();
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     private static List<Product> mergeProducts(List<Product> first, List<Product> second) {
@@ -3123,7 +3238,7 @@ public class ChatToolService {
 
     /**
      * Fetches a sufficiently wide allow-listed page for effective-price validation. The
-     * catalogue's SQL range is based on retail price, while Bi must apply the effective sale
+     * catalogue's SQL range is based on retail price, while BigBike Assistant must apply the effective sale
      * price locally; a ten-row page could otherwise hide a valid discounted product behind
      * retail-priced rows that are outside the customer's requested range.
      */
@@ -3274,6 +3389,10 @@ public class ChatToolService {
             answer = english
                     ? "BigBike provides genuine manufacturer warranty under each brand’s policy, and the exact period is shown on each product page. Impact damage, modification and normal wear are not automatically covered. For a complex warranty case, please choose Talk to staff and send photos or video."
                     : "Dạ, em xác nhận BigBike bảo hành chính hãng theo chính sách từng thương hiệu; thời hạn cụ thể hiển thị trên trang sản phẩm. Va đập, tự ý sửa đổi và hao mòn tự nhiên không mặc nhiên thuộc diện bảo hành. Trường hợp phức tạp, anh/chị bấm Gặp nhân viên và gửi ảnh/video giúp shop kiểm tra.";
+        } else if (hasWord(normalized, "privacy", "rieng tu", "du lieu ca nhan")) {
+            answer = english
+                    ? "BigBike’s published Privacy Policy explains what customer information the store collects, why it is used and how customers can contact staff about their data. I will not infer legal rights or handling details that are not present in the current policy; please choose Talk to staff for a case-specific request."
+                    : "Dạ, Chính sách riêng tư đã công bố của BigBike nêu loại thông tin khách hàng được thu thập, mục đích sử dụng và cách liên hệ shop về dữ liệu cá nhân. Em không tự suy diễn quyền hoặc cách xử lý ngoài nội dung chính sách hiện hành; anh/chị bấm Gặp nhân viên nếu có yêu cầu cụ thể.";
         } else if (hasWord(normalized, "size", "sizes", "kich co", "do size", "size guide")) {
             answer = english
                     ? "Please use the helmet or protective-clothing size guide and compare your actual measurement with the product’s own size table when available. Some products do not yet have a size table, so I won’t infer a size from height or weight alone. Choose Talk to staff if you want BigBike to confirm the fit."
@@ -3777,7 +3896,7 @@ public class ChatToolService {
                 .trim();
         if (normalized.isBlank()) return normalized;
         String expanded = " " + normalized + " ";
-        for (Map.Entry<String, String> entry : APPROVED_ABBREVIATIONS.entrySet()) {
+        for (Map.Entry<String, String> entry : ACTIVE_ABBREVIATIONS.get().entrySet()) {
             String expression = "(?<![\\p{Alnum}])" + Pattern.quote(entry.getKey())
                     + "(?![\\p{Alnum}])";
             expanded = expanded.replaceAll(expression, entry.getValue());
@@ -3788,6 +3907,21 @@ public class ChatToolService {
             contextual = contextual.replaceFirst("\\bhong(?=(?:\\s+(?:shop|ad|anh chi))?$)", "khong");
         }
         return contextual;
+    }
+
+    private static boolean containsWholePhrase(String value, String phrase) {
+        return (" " + value + " ").contains(" " + phrase + " ");
+    }
+
+    private static Map<String, String> activateAbbreviations(
+            ChatAssistantSettings.Snapshot settings, String lang) {
+        Map<String, String> previous = ACTIVE_ABBREVIATIONS.get();
+        if (settings == null) return previous;
+        Map<String, String> configured = settings.abbreviationMap(lang);
+        ACTIVE_ABBREVIATIONS.set(configured.isEmpty() && !"en".equals(lang)
+                ? APPROVED_ABBREVIATIONS
+                : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(configured)));
+        return previous;
     }
 
     private static boolean isPriceScopeReset(String normalized) {
@@ -3855,7 +3989,7 @@ public class ChatToolService {
         return hasWord(value, "bao hanh", "doi tra", "doi hang", "tra hang", "phi ship", "ship",
                 "giao hang", "van chuyen", "thanh toan", "chon size", "do size", "kich co",
                 "warranty", "return", "returns", "exchange", "shipping", "delivery", "payment",
-                "size guide");
+                "size guide", "rieng tu", "du lieu ca nhan", "privacy", "personal data");
     }
 
     private static boolean policyTopicMatchesQuestion(String value, String topic) {
@@ -3868,6 +4002,8 @@ public class ChatToolService {
                     value, "phi ship", "giao hang", "van chuyen", "shipping", "delivery");
             case "size" -> hasWord(
                     value, "chon size", "do size", "kich co", "size", "sizes", "size guide");
+            case "privacy" -> hasWord(
+                    value, "rieng tu", "du lieu ca nhan", "privacy", "personal data");
             default -> false;
         };
     }
@@ -3885,9 +4021,7 @@ public class ChatToolService {
         boolean productContext = matchKeyword(value, CATEGORY_KEYWORDS) != null
                 || matchKeyword(value, BRAND_KEYWORDS) != null
                 || hasWord(value, "san pham", "product", "products", "phu kien", "accessory");
-        boolean newsTopic = hasWord(value, "tin tuc", "bai viet", "news", "article", "articles");
-        return newsTopic
-                || hasWord(value, "chinh tri", "politic", "politics", "bau cu", "election", "elections",
+        return hasWord(value, "chinh tri", "politic", "politics", "bau cu", "election", "elections",
                 "tu van xe", "mua xe nao", "sua xe", "engine repair")
                 || (motorcycleTopic && !productContext);
     }

@@ -630,8 +630,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   async function handleArchive() {
     const confirmed = await showConfirm(
-      t('content.detail.archiveConfirm'),
-      t('content.detail.archiveConfirmTitle'),
+      t('content.detail.archiveConfirm', { title: form.title }),
+      t('common.moveToTrashTitle'),
+      { variant: 'default', confirmLabel: t('common.moveToTrash') },
     )
     if (!confirmed) return
     setIsSubmitting(true)
@@ -641,7 +642,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   async function handlePermanentDelete() {
     const confirmed = await showConfirm(
       t('content.permanentDeleteConfirm', { title: form.title }),
-      t('content.permanentDeleteConfirmTitle'),
+      t('common.permanentDeleteTitle'),
       { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
     if (!confirmed) return

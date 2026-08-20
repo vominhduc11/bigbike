@@ -30,4 +30,22 @@ public interface ChatOrderAttributionJpaRepository
     java.math.BigDecimal sumAssistedRevenueBetween(
             @Param("from") Instant from,
             @Param("to") Instant to);
+
+    @Query("""
+            select attribution.actionType as actionType,
+                   count(distinct attribution.orderId) as orders,
+                   coalesce(sum(attribution.attributedAmount), 0) as revenue
+            from ChatOrderAttributionEntity attribution
+            where attribution.actionType is not null
+              and attribution.createdAt >= :from and attribution.createdAt < :to
+            group by attribution.actionType
+            """)
+    List<ActionOrderSummary> summarizeActionsBetween(
+            @Param("from") Instant from, @Param("to") Instant to);
+
+    interface ActionOrderSummary {
+        String getActionType();
+        Long getOrders();
+        java.math.BigDecimal getRevenue();
+    }
 }

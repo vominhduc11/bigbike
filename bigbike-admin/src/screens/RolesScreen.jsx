@@ -21,7 +21,6 @@ import { Toast } from './roles/Toast'
 import { ConfirmSensitiveDialog } from './roles/ConfirmSensitiveDialog'
 import { SaveSummaryDialog } from './roles/SaveSummaryDialog'
 import { CreateRoleDialog } from './roles/CreateRoleDialog'
-import { DeleteRoleDialog } from './roles/DeleteRoleDialog'
 import { RoleSidebar } from './roles/RoleSidebar'
 import { RoleDetail } from './roles/RoleDetail'
 
@@ -47,8 +46,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const [savePending, setSavePending]     = useState(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [createSaving, setCreateSaving]   = useState(false)
-  const [deletingRole, setDeletingRole]   = useState(null)
-  const [deleteSaving, setDeleteSaving]   = useState(false)
   // Tăng để buộc tải lại (nút "Thử lại" khi tải danh sách vai trò thất bại).
   const [reloadKey, setReloadKey]         = useState(0)
 
@@ -209,7 +206,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       const confirmed = await showConfirm(
         `Quyền này đang được dùng bởi: ${dependents.map(key => permLabels[key] || key).join(', ')}. Tiếp tục sẽ gỡ tất cả các quyền trên.`,
         'Gỡ quyền bắt buộc?',
-        { variant: 'danger', confirmLabel: 'Gỡ tất cả' },
+        { variant: 'default', confirmLabel: 'Gỡ tất cả' },
       )
       if (!confirmed) return
     }
@@ -242,9 +239,23 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     })
   }
 
-  function handleRequestDelete(role) {
-    if (!role || Number(role.assignedUserCount) > 0) return
-    setDeletingRole(role)
+  async function handleRequestDelete(role) {
+    if (!role) return
+    const name = getRoleDisplayName(role, t)
+    if (Number(role.assignedUserCount) > 0) {
+      await showConfirm(
+        t('roles.deleteRoleBlocked', { name, count: role.assignedUserCount }),
+        t('common.confirm'),
+        { variant: 'default', confirmLabel: t('common.close') },
+      )
+      return
+    }
+    const confirmed = await showConfirm(
+      t('roles.deleteRoleConfirm', { name }),
+      t('common.permanentDeleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
+    if (confirmed) await handleDeleteRole(role)
   }
 
   async function handleSave() {
@@ -284,27 +295,23 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     }
   }
 
-  async function handleDeleteRole() {
-    if (!deletingRole || Number(deletingRole.assignedUserCount) > 0) return
-    setDeleteSaving(true)
+  async function handleDeleteRole(role) {
+    if (!role || Number(role.assignedUserCount) > 0) return
     try {
-      await deleteRole(deletingRole.id)
-      const deletedName = getRoleDisplayName(deletingRole, t)
-      const remaining = roles.filter(r => r.id !== deletingRole.id)
+      await deleteRole(role.id)
+      const deletedName = getRoleDisplayName(role, t)
+      const remaining = roles.filter(r => r.id !== role.id)
       setRoles(remaining)
-      if (selectedId === deletingRole.id) {
+      if (selectedId === role.id) {
         setSelectedId(remaining.length > 0 ? remaining[0].id : null)
         setMobileShowDetail(false)
       }
-      setDeletingRole(null)
       setToast({ kind: 'success', msg: t('roles.deleteRoleSuccess', { name: deletedName }) })
     } catch (e) {
       const msg = e?.status === 409
         ? t('roles.deleteRoleConflict')
         : (e.message || t('roles.deleteRoleError'))
       setToast({ kind: 'error', msg })
-    } finally {
-      setDeleteSaving(false)
     }
   }
 
@@ -349,13 +356,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           catalog={catalog}
         />
       )}
-
-      <DeleteRoleDialog
-        role={deletingRole}
-        onConfirm={handleDeleteRole}
-        onCancel={() => setDeletingRole(null)}
-        saving={deleteSaving}
-      />
 
       {/* Loading — skeleton mirroring the two-panel roles-layout */}
       {loading && (

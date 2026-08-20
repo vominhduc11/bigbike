@@ -6,6 +6,9 @@ import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatLeadResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatMessageResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatStatsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatOrderAttributionResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatActionStatsResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatLeadFunnelResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatQualityStatsResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.mapper.ChatMapper;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
@@ -14,6 +17,8 @@ import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJ
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatInteractionJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatOrderAttributionEntity;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
@@ -27,8 +32,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -46,6 +54,8 @@ public class AdminChatService {
     private final ChatMessageJpaRepository messageRepo;
     private final ChatLeadJpaRepository leadRepo;
     private final ChatOrderAttributionJpaRepository attributionRepo;
+    private final ChatInteractionJpaRepository interactionRepo;
+    private final CartItemJpaRepository cartItemRepo;
     private final ChatAssistantSettings assistantSettings;
     private final ChatAiQuotaService chatAiQuotaService;
     private final ChatMapper chatMapper;
@@ -104,7 +114,8 @@ public class AdminChatService {
                 messageRepo.findByConversationIdOrderByCreatedAtAsc(id), attributions);
         List<AdminChatOrderAttributionResponse> attributionResponses = attributions.stream()
                 .map(item -> new AdminChatOrderAttributionResponse(
-                        item.getOrderId(), item.getOrderLineItemId(), item.getAttributedAmount(),
+                        item.getOrderId(), item.getOrderLineItemId(),
+                        item.getInteractionId(), item.getActionType(), item.getAttributedAmount(),
                         item.getCurrency(), item.getCreatedAt()))
                 .toList();
         return new AdminChatConversationDetailResponse(
@@ -128,16 +139,70 @@ public class AdminChatService {
         long leads = leadRepo.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);
         long unanswered = messageRepo.countFallbackMessagesBetween(from, to);
         ChatMessageJpaRepository.TelemetrySummary telemetry = messageRepo.summarizeBetween(from, to);
+        ChatMessageJpaRepository.QualitySummary quality = messageRepo.summarizeQualityBetween(from, to);
         long assistedOrders = attributionRepo.countAssistedOrdersBetween(from, to);
         BigDecimal assistedRevenue = zero(attributionRepo.sumAssistedRevenueBetween(from, to));
-        int limit = assistantSettings.load("vi").dailyLimit();
+        ChatAssistantSettings.Snapshot settings = assistantSettings.load("vi");
+        int limit = settings.dailyLimit();
+        Instant monthFrom = date.withDayOfMonth(1).atStartOfDay(VN_ZONE).toInstant();
+        Instant monthTo = date.withDayOfMonth(1).plusMonths(1).atStartOfDay(VN_ZONE).toInstant();
+        BigDecimal monthlyCost = zero(messageRepo.summarizeBetween(
+                monthFrom, monthTo).getEstimatedCostUsd());
+        BigDecimal warning = settings.monthlyCostWarningUsd();
+        List<AdminChatActionStatsResponse> actionStats = actionStats(from, to);
         return new AdminChatStatsResponse(
                 date, aiCalls, conversations, leads, unanswered,
                 value(telemetry.getContentRefusals()), limit, Math.max(0, limit - aiCalls),
                 value(telemetry.getInputTokens()), value(telemetry.getOutputTokens()),
                 value(telemetry.getThinkingTokens()), value(telemetry.getProviderRequests()),
                 rounded(telemetry.getAverageLatencyMs()), zero(telemetry.getEstimatedCostUsd()),
-                assistedOrders, assistedRevenue);
+                assistedOrders, assistedRevenue,
+                new AdminChatQualityStatsResponse(
+                        value(quality.getAnswers()), value(quality.getProductResults()),
+                        value(quality.getClarifications()), value(quality.getOutOfScope()),
+                        value(telemetry.getContentRefusals())),
+                new AdminChatLeadFunnelResponse(
+                        interactionRepo.countLeadPromptViewsBetween(1, from, to),
+                        interactionRepo.countLeadPromptViewsBetween(2, from, to),
+                        leads,
+                        conversationRepo.countByLeadOfferStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+                                "DECLINED", from, to)),
+                actionStats,
+                monthlyCost,
+                warning,
+                warning.signum() > 0 && monthlyCost.compareTo(warning) >= 0);
+    }
+
+    private List<AdminChatActionStatsResponse> actionStats(Instant from, Instant to) {
+        Map<String, MutableActionStats> values = new LinkedHashMap<>();
+        interactionRepo.summarizeActionClicksBetween(from, to).forEach(item ->
+                values.computeIfAbsent(item.getActionType(), ignored -> new MutableActionStats())
+                        .clicks = value(item.getClicks()));
+        cartItemRepo.summarizeAssistantCartLinesBetween(from, to).forEach(item ->
+                values.computeIfAbsent(item.getActionType(), ignored -> new MutableActionStats())
+                        .cartLines = value(item.getCartLines()));
+        attributionRepo.summarizeActionsBetween(from, to).forEach(item -> {
+            MutableActionStats stats = values.computeIfAbsent(
+                    item.getActionType(), ignored -> new MutableActionStats());
+            stats.orders = value(item.getOrders());
+            stats.revenue = zero(item.getRevenue());
+        });
+        return values.entrySet().stream().map(entry -> {
+            MutableActionStats stats = entry.getValue();
+            BigDecimal conversion = stats.clicks == 0 ? BigDecimal.ZERO
+                    : BigDecimal.valueOf(stats.orders)
+                            .divide(BigDecimal.valueOf(stats.clicks), 4, RoundingMode.HALF_UP);
+            return new AdminChatActionStatsResponse(
+                    entry.getKey(), stats.clicks, stats.cartLines, stats.orders,
+                    stats.revenue, conversion);
+        }).toList();
+    }
+
+    private static final class MutableActionStats {
+        private long clicks;
+        private long cartLines;
+        private long orders;
+        private BigDecimal revenue = BigDecimal.ZERO;
     }
 
     private AdminChatConversationResponse toListItem(

@@ -10,25 +10,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { captureChatLead } from "@/lib/api/client-api";
 
-export type BiLeadDraft = {
+export type BigBikeLeadDraft = {
   name: string;
   phone: string;
   note: string;
   consented: boolean;
 };
 
-export type BiAccountContact = {
+export type BigBikeAccountContact = {
   name: string;
   phone: string;
 };
 
-type BiLeadFormProps = {
+type BigBikeLeadFormProps = {
   conversationId: string;
-  draft: BiLeadDraft;
-  onDraftChange: (draft: BiLeadDraft) => void;
+  draft: BigBikeLeadDraft;
+  onDraftChange: (draft: BigBikeLeadDraft) => void;
   onCaptured: () => void;
   onDeclined: () => Promise<void>;
-  accountContact?: BiAccountContact;
+  accountContact?: BigBikeAccountContact;
 };
 
 function maskPhone(phone: string): string {
@@ -38,14 +38,14 @@ function maskPhone(phone: string): string {
   return `${digits.slice(0, 3)} ${"•".repeat(hiddenCount)} ${digits.slice(-2)}`;
 }
 
-export function BiLeadForm({
+export function BigBikeLeadForm({
   conversationId,
   draft,
   onDraftChange,
   onCaptured,
   onDeclined,
   accountContact,
-}: BiLeadFormProps) {
+}: BigBikeLeadFormProps) {
   const t = useTranslations("Support");
   const [pendingAction, setPendingAction] = useState<"submit" | "decline" | null>(null);
   const [error, setError] = useState("");
@@ -53,7 +53,7 @@ export function BiLeadForm({
   const [consentError, setConsentError] = useState("");
   const [useManualForm, setUseManualForm] = useState(false);
 
-  function update(patch: Partial<BiLeadDraft>) {
+  function update(patch: Partial<BigBikeLeadDraft>) {
     onDraftChange({ ...draft, ...patch });
   }
 
@@ -129,7 +129,7 @@ export function BiLeadForm({
 
   if (accountContact && !useManualForm) {
     return (
-      <div data-bi-lead-quick data-testid="bi-lead-quick" className="grid gap-3 border border-chat bg-background p-4">
+      <div data-bigbike-lead-quick data-testid="bigbike-lead-quick" className="grid gap-3 border border-chat bg-background p-4">
         <div>
           <h3 className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
             {t("leadTitle")}
@@ -202,9 +202,9 @@ export function BiLeadForm({
       </div>
 
       <div className="grid gap-1">
-        <Label htmlFor="bi-lead-name">{t("leadName")}</Label>
+        <Label htmlFor="bigbike-lead-name">{t("leadName")}</Label>
         <Input
-          id="bi-lead-name"
+          id="bigbike-lead-name"
           value={draft.name}
           maxLength={100}
           disabled={pendingAction !== null}
@@ -213,27 +213,27 @@ export function BiLeadForm({
       </div>
 
       <div className="grid gap-1">
-        <Label htmlFor="bi-lead-phone">{t("leadPhone")}</Label>
+        <Label htmlFor="bigbike-lead-phone">{t("leadPhone")}</Label>
         <Input
-          id="bi-lead-phone"
+          id="bigbike-lead-phone"
           type="tel"
           value={draft.phone}
           maxLength={32}
           disabled={pendingAction !== null}
           aria-invalid={Boolean(phoneError)}
-          aria-describedby={phoneError ? "bi-lead-phone-error" : undefined}
+          aria-describedby={phoneError ? "bigbike-lead-phone-error" : undefined}
           onChange={(event) => {
             update({ phone: event.target.value });
             if (phoneError) setPhoneError("");
           }}
         />
-        {phoneError ? <p id="bi-lead-phone-error" role="alert" className="text-a5-meta text-destructive">{phoneError}</p> : null}
+        {phoneError ? <p id="bigbike-lead-phone-error" role="alert" className="text-a5-meta text-destructive">{phoneError}</p> : null}
       </div>
 
       <div className="grid gap-1">
-        <Label htmlFor="bi-lead-note">{t("leadNote")}</Label>
+        <Label htmlFor="bigbike-lead-note">{t("leadNote")}</Label>
         <Textarea
-          id="bi-lead-note"
+          id="bigbike-lead-note"
           value={draft.note}
           maxLength={500}
           disabled={pendingAction !== null}
@@ -245,21 +245,21 @@ export function BiLeadForm({
       <div className="grid gap-1">
         <div className="flex min-h-11 items-center gap-3">
           <Checkbox
-            id="bi-lead-consent"
+            id="bigbike-lead-consent"
             checked={draft.consented}
             disabled={pendingAction !== null}
             aria-invalid={Boolean(consentError)}
-            aria-describedby={consentError ? "bi-lead-consent-error" : undefined}
+            aria-describedby={consentError ? "bigbike-lead-consent-error" : undefined}
             onCheckedChange={(checked) => {
               update({ consented: checked === true });
               if (consentError) setConsentError("");
             }}
           />
-          <Label htmlFor="bi-lead-consent" className="font-body text-a5-meta font-normal leading-relaxed">
+          <Label htmlFor="bigbike-lead-consent" className="font-body text-a5-meta font-normal leading-relaxed">
             {t("leadConsent")}
           </Label>
         </div>
-        {consentError ? <p id="bi-lead-consent-error" role="alert" className="text-a5-meta text-destructive">{consentError}</p> : null}
+        {consentError ? <p id="bigbike-lead-consent-error" role="alert" className="text-a5-meta text-destructive">{consentError}</p> : null}
       </div>
 
       {error ? <p role="alert" className="border border-destructive bg-accent p-3 text-a5-meta text-destructive">{error}</p> : null}

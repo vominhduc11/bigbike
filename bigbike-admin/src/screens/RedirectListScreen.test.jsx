@@ -186,7 +186,7 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     expect(screen.getByText('Hãy đổi từ khóa hoặc bộ lọc để xem kết quả khác.')).toBeInTheDocument()
   })
 
-  it('chỉ xóa sau khi người dùng xác nhận thao tác không thể hoàn tác', async () => {
+  it('chỉ xoá sau khi người dùng xác nhận thao tác không thể hoàn tác', async () => {
     const user = userEvent.setup()
     mocks.fetchRedirects.mockResolvedValue({
       items: [{
@@ -199,16 +199,16 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     mocks.deleteRedirect.mockResolvedValue(undefined)
     renderScreen()
 
-    const deleteButton = await screen.findByRole('button', { name: 'Xóa chuyển hướng /old-delete' })
+    const deleteButton = await screen.findByRole('button', { name: 'Xoá chuyển hướng /old-delete' })
     await user.click(deleteButton)
     expect(mocks.deleteRedirect).not.toHaveBeenCalled()
 
     await user.click(deleteButton)
     await waitFor(() => expect(mocks.deleteRedirect).toHaveBeenCalledWith('rd_delete'))
     expect(mocks.showConfirm).toHaveBeenLastCalledWith(
-      'Xóa vĩnh viễn chuyển hướng "/old-delete"? Thao tác này không thể hoàn tác.',
-      'Xóa chuyển hướng',
-      { confirmLabel: 'common.delete', variant: 'danger' },
+      'Xoá vĩnh viễn chuyển hướng "/old-delete". Thao tác này không thể hoàn tác.',
+      'common.permanentDeleteTitle',
+      { confirmLabel: 'common.permanentDelete', variant: 'danger' },
     )
   })
 })

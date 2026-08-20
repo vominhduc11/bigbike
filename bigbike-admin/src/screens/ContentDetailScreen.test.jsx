@@ -284,7 +284,7 @@ describe('ContentDetailScreen', () => {
     )
   })
 
-  it('xóa vĩnh viễn bài trong Thùng rác sau xác nhận', async () => {
+  it('xoá vĩnh viễn bài trong Thùng rác sau xác nhận', async () => {
     const user = userEvent.setup()
     const trash = { ...baseArticle, publishStatus: 'TRASH' }
     mocks.fetchContentDetail.mockResolvedValue({ item: trash })

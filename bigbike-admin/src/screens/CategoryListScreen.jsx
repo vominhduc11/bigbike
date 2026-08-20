@@ -263,7 +263,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         ? t('categories.showConfirmTitle', { defaultValue: 'Xác nhận hiện trên website' })
         : t('categories.hideConfirmTitle', { defaultValue: 'Xác nhận ẩn khỏi website' }),
       {
-        variant: willBeVisible ? 'default' : 'danger',
+        variant: 'default',
         confirmLabel: willBeVisible ? t('categories.showAction') : t('categories.hideAction'),
       },
     )
@@ -291,14 +291,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // has visible children. Show has no such constraint, so any order works.
   async function runBulkVisibility(targetVisible) {
     if (!canUpdate || bulkProgress) return
-    // Hiding is destructive (categories disappear from the storefront) and has
-    // no per-row Undo on the bulk path, so gate it behind a confirm dialog.
-    // The show path is non-destructive and stays unconfirmed.
+    // Hiding is reversible visibility state, so the confirmation stays neutral.
     if (!targetVisible) {
       const confirmed = await showConfirm(
         t('categories.bulkHideConfirm', { count: selectedIds.size }),
         t('categories.bulkHideConfirmTitle'),
-        { variant: 'danger' },
+        { variant: 'default', confirmLabel: t('categories.hideAction') },
       )
       if (!confirmed) return
     }
@@ -346,9 +344,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     }
   }
 
-  // Bulk khôi phục / xóa vĩnh viễn khi đang xem Thùng rác — bọc API single-item
+  // Bulk khôi phục / xoá vĩnh viễn khi đang xem Thùng rác — bọc API single-item
   // sẵn có (restoreCategory / hardDeleteCategory), cùng khuôn runBulkVisibility.
-  // Chạy tuần tự vì xóa vĩnh viễn cha kéo theo con (như runBulkVisibility).
+  // Chạy tuần tự vì xoá vĩnh viễn cha kéo theo con (như runBulkVisibility).
   async function runBulkTrash(action) {
     if (!canUpdate || bulkProgress) return
     const byId = new Map([...allItems, ...paginatedState.items].map((c) => [c.id, c]))
@@ -370,7 +368,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           affectedProductCount: impact.affectedProductCount,
           reassignedProductCount: impact.reassignedProductCount,
         }),
-        t('categories.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các danh mục đã chọn?' }),
+        t('common.permanentDeleteTitle'),
         { variant: 'danger', confirmLabel: t('common.permanentDelete') },
       )
       if (!confirmed) return
@@ -520,9 +518,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const handleSoftDelete = async (category) => {
     if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
-      t('categories.deleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa danh mục ${category.name}? Các danh mục con cũng sẽ bị xóa mềm.` }),
-      t('categories.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
-      { confirmLabel: t('common.delete'), variant: 'danger' }
+      t('categories.deleteConfirm', { name: category.name, defaultValue: `Chuyển danh mục ${category.name} vào Thùng rác. Các danh mục con cũng sẽ được xoá mềm và có thể khôi phục.` }),
+      t('common.moveToTrashTitle'),
+      { confirmLabel: t('common.moveToTrash'), variant: 'default' }
     )
     if (!confirmed) return
 
@@ -579,7 +577,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         affectedProductCount: impact.affectedProductCount,
         reassignedProductCount: impact.reassignedProductCount,
       }),
-      t('categories.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
+      t('common.permanentDeleteTitle'),
       { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
     )
     if (!confirmed) {
@@ -591,7 +589,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       await hardDeleteCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
-      toast.success(t('categories.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn danh mục thành công.' }))
+      toast.success(t('categories.permanentDeleteSuccess', { defaultValue: 'Xoá vĩnh viễn danh mục thành công.' }))
     } catch (error) {
       toast.error(error.message || t('common.error'))
     } finally {
@@ -777,7 +775,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                     className="text-danger focus:text-danger"
                   >
                     <Trash2 size={14} className="mr-2" aria-hidden="true" />
-                    {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                    {t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
                   </DropdownMenuItem>
                 </>
               )}

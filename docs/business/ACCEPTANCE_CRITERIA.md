@@ -13,6 +13,10 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Vietnam address | Địa chỉ mới dùng đúng hai cấp tỉnh/thành → phường/xã; web chọn từ dữ liệu tích hợp sẵn. API đọc công khai chỉ còn provinces và wards-by-province, không có district tier. | `VnAddressController.java`, `VnAddressFields.tsx`, `vn-address-data.ts` | `PASS` |
 | WebSocket admin feed | Admin clients can connect with JWT and subscribe to admin order topic. | `WebSocketConfig.java`, `adminWebSocket.js` | `PASS` |
 | Stock receipt workflow | Receipt-based receiving was dropped in V120 — feature never built. (Inventory is now a boolean availability toggle — no receiving flow, V261.) | `V120__drop_stock_receipt_tables.sql` | `REMOVED` |
+| Trợ lý BigBike — lượt và lead | Trang thường dừng ở 12 lượt; PDP hợp lệ cho 20 lượt theo từng request. Lời mời 1 tự hiện, lời mời 2 chỉ sau viewed/ignored và trigger một mẫu hoặc thêm giỏ; accept/decline kết thúc, tối đa hai lời mời và chỉ consent mới lưu lead. | `CHAT_RULE_009`, `CHAT_RULE_012`, backend/web/E2E tests | `REQUIRED_FOR_V1041` |
+| Trợ lý BigBike — hành động và chuyển đổi | Mỗi câu trả lời có 2–3 action cố định khi phù hợp; click idempotent và chỉ chuỗi action → response/card → cart → order đã xác minh được tính click, dòng giỏ, đơn, doanh thu. | `CHAT_RULE_029`, `CHAT_RULE_030`, backend/web/E2E tests | `REQUIRED_FOR_V1041` |
+| Trợ lý BigBike — nguồn kiến thức | `search_articles` chỉ đọc tối đa 3 bài `PUBLISHED` đúng locale và loại dữ kiện động/prompt injection; `get_policy` hỗ trợ privacy. Giá/tồn kho/màu/size/thông số/chính sách động vẫn đọc nguồn sống. | `CHAT_RULE_003`, `CHAT_RULE_031`, backend tests | `REQUIRED_FOR_V1041` |
+| Trợ lý BigBike — cấu hình và báo cáo | Owner chỉnh ngưỡng cảnh báo USD, tối đa 100 viết tắt và 50 câu mẫu bằng quyền settings hiện có. Stats phân nhóm chất lượng, phễu lead, action conversion và chi phí tháng; ngưỡng 0 không cảnh báo và không tự khóa. | `CHAT_RULE_010`, `CHAT_RULE_017`, `CHAT_RULE_029`, `CHAT_RULE_032`, backend/admin tests | `REQUIRED_FOR_V1041` |
 
 ## Release Caveats
 

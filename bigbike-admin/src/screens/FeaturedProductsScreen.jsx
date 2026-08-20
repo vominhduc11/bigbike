@@ -104,7 +104,7 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           variant="unstyled"
           className="flex-shrink-0 text-muted-foreground hover:text-foreground p-1"
           onClick={() => onRemove(product.id)}
-          aria-label={t('featuredProducts.removeItem', { defaultValue: 'Xóa khỏi danh sách' })}
+          aria-label={t('featuredProducts.removeItem', { defaultValue: 'Xoá khỏi danh sách' })}
         >
           <X size={14} />
         </Button>
@@ -200,7 +200,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
     const removed = items[index]
     setItems((prev) => prev.filter((p) => p.id !== productId))
     toast.success(
-      t('featuredProducts.removedFromList', { defaultValue: 'Đã xóa khỏi danh sách' }),
+      t('featuredProducts.removedFromList', { defaultValue: 'Đã xoá khỏi danh sách' }),
       {
         action: {
           label: t('common.undo', { defaultValue: 'Hoàn tác' }),

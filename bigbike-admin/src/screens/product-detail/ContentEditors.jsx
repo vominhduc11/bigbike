@@ -327,7 +327,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
     if (item?.type === nextType) return
     if ((item?.url || '').trim()) {
       const confirmed = await showConfirm(
-        t('products.detail.video.switchProviderConfirm', { defaultValue: 'Đổi nguồn video sẽ xóa liên kết đã nhập. Bạn có chắc muốn tiếp tục?' }),
+        t('products.detail.video.switchProviderConfirm', { defaultValue: 'Đổi nguồn video sẽ xoá liên kết đã nhập. Bạn có chắc muốn tiếp tục?' }),
         t('products.detail.video.switchProviderTitle', { defaultValue: 'Đổi nguồn video' }),
       )
       if (!confirmed) return
@@ -839,7 +839,7 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
               className="text-destructive hover:text-destructive"
               onClick={() => removeItem(index)}
               disabled={disabled || isEn}
-              aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xóa mục' })}
+              aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xoá mục' })}
             >
               <X size={14} aria-hidden="true" />
             </Button>

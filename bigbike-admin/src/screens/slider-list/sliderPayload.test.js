@@ -87,7 +87,7 @@ describe('buildSliderPayload', () => {
     })
   })
 
-  it('gửi mobileImage null khi ảnh mobile bị xóa hoặc banner mới không có ảnh mobile', () => {
+  it('gửi mobileImage null khi ảnh mobile bị xoá hoặc banner mới không có ảnh mobile', () => {
     expect(buildSliderPayload(baseForm()).mobileImage).toBeNull()
     expect(buildSliderPayload(baseForm({
       mobileImageUrl: '   ',

@@ -18,6 +18,9 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
 
     Optional<ChatMessageEntity> findFirstByRequestIdAndRole(UUID requestId, String role);
 
+    Optional<ChatMessageEntity> findByIdAndConversationIdAndRole(
+            UUID id, UUID conversationId, String role);
+
     @Query(value = """
             select count(*)
             from chat_messages message
@@ -30,6 +33,34 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
     long countShownProduct(
             @Param("conversationId") UUID conversationId,
             @Param("slug") String slug);
+
+    @Query(value = """
+            select count(*)
+            from chat_messages message
+            where message.conversation_id = :conversationId
+              and message.role = 'ASSISTANT'
+              and message.origin_interaction_id = :interactionId
+              and message.products_json is not null
+              and lower(cast(message.products_json as varchar))
+                  like lower(concat('%\"slug\":\"', :slug, '\"%'))
+            """, nativeQuery = true)
+    long countShownProductFromInteraction(
+            @Param("conversationId") UUID conversationId,
+            @Param("interactionId") UUID interactionId,
+            @Param("slug") String slug);
+
+    @Query("""
+            select
+              coalesce(sum(case when message.resultKind = 'ANSWER' then 1 else 0 end), 0) as answers,
+              coalesce(sum(case when message.resultKind = 'PRODUCT_RESULTS' then 1 else 0 end), 0) as productResults,
+              coalesce(sum(case when message.resultKind = 'CLARIFICATION' then 1 else 0 end), 0) as clarifications,
+              coalesce(sum(case when message.resultKind = 'OUT_OF_SCOPE' then 1 else 0 end), 0) as outOfScope,
+              coalesce(sum(case when message.resultKind = 'REFUSAL' then 1 else 0 end), 0) as refusals
+            from ChatMessageEntity message
+            where message.role = 'ASSISTANT'
+              and message.createdAt >= :from and message.createdAt < :to
+            """)
+    QualitySummary summarizeQualityBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("""
             select coalesce(sum(case when message.aiCalled = true then 1 else 0 end), 0)
@@ -70,5 +101,13 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
         Double getAverageLatencyMs();
         java.math.BigDecimal getEstimatedCostUsd();
         Long getContentRefusals();
+    }
+
+    interface QualitySummary {
+        Long getAnswers();
+        Long getProductResults();
+        Long getClarifications();
+        Long getOutOfScope();
+        Long getRefusals();
     }
 }

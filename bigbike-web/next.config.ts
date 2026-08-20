@@ -252,7 +252,7 @@ const nextConfig: NextConfig = {
         hostname: "platform-lookaside.fbsbx.com",
         pathname: "/**",
       },
-      // BI assistant avatar hosted on the owner-provided Cloudinary asset.
+      // BigBike Assistant avatar hosted on the owner-provided Cloudinary asset.
       {
         protocol: "https",
         hostname: "res.cloudinary.com",

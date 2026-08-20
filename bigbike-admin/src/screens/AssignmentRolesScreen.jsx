@@ -60,7 +60,7 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
             className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
             onClick={onRemove}
             disabled={!canUpdate || atMin}
-            aria-label={t('settings.assign.removeRole', { defaultValue: 'Xóa vai trò' })}
+            aria-label={t('settings.assign.removeRole', { defaultValue: 'Xoá vai trò' })}
           >
             <Trash2 size={15} />
           </Button>
@@ -170,8 +170,8 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
     const hasContent = Boolean(role?.name?.trim()) || Boolean(role?.items?.trim())
     if (hasContent) {
       const ok = await showConfirm(
-        t('settings.assign.removeConfirmMessage', { defaultValue: 'Xóa vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.' }),
-        t('settings.assign.removeConfirmTitle', { defaultValue: 'Xóa vai trò' }),
+        t('settings.assign.removeConfirmMessage', { defaultValue: 'Xoá vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.' }),
+        t('settings.assign.removeConfirmTitle', { defaultValue: 'Xoá vai trò' }),
       )
       if (!ok) return
     }

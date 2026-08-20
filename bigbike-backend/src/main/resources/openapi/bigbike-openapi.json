@@ -8138,9 +8138,9 @@
         "operationId": "sendChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["message","lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","minLength":1,"maxLength":1000},"lang":{"type":"string","enum":["vi","en"]}}}}}
+          "content": {"application/json":{"schema":{"type":"object","required":["message","lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","minLength":1,"maxLength":1000},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"originInteractionId":{"type":"string","format":"uuid","nullable":true,"description":"Accepted only for a verified action click from this conversation."}}}}}
         },
-        "responses": {"200":{"description":"Guarded chat answer with answerFormat, resultKind and at most 8 products"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 messages/minute/IP)"}}
+        "responses": {"200":{"description":"Guarded answer with assistantMessageId, 12 or 20 maxTurns, leadPromptSequence 0..2, fixed actions and at most 8 products"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
       }
     },
     "/api/v1/chat/messages/stream": {
@@ -8150,9 +8150,21 @@
         "operationId": "streamChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["message","lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","minLength":1,"maxLength":1000},"lang":{"type":"string","enum":["vi","en"]}}}}}
+          "content": {"application/json":{"schema":{"type":"object","required":["message","lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","minLength":1,"maxLength":1000},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"originInteractionId":{"type":"string","format":"uuid","nullable":true}}}}}
         },
         "responses": {"200":{"description":"text/event-stream: UNDERSTANDING, optional CHECKING_PRODUCTS, FINALIZING, then one guarded result; never model draft"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded"}}
+      }
+    },
+    "/api/v1/chat/interactions": {
+      "post": {
+        "tags": ["AI Assistant"],
+        "summary": "Record a verified lead-prompt view or fixed action click idempotently",
+        "operationId": "recordChatInteraction",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"type":"object","required":["clientEventId","conversationId","assistantMessageId","type"],"properties":{"clientEventId":{"type":"string","format":"uuid"},"conversationId":{"type":"string","format":"uuid"},"assistantMessageId":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["LEAD_PROMPT_VIEWED","ACTION_CLICKED"]},"leadPromptSequence":{"type":"integer","minimum":0,"maximum":2},"actionType":{"type":"string","maxLength":48,"nullable":true}}}}}
+        },
+        "responses": {"200":{"description":"Recorded or replayed interaction id"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"429":{"description":"CHAT tier exceeded"}}
       }
     },
     "/api/v1/chat/leads": {
@@ -8208,11 +8220,11 @@
     "/api/v1/admin/chat/stats": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get daily AI usage, telemetry, refusals and assistant-attributed revenue",
+        "summary": "Get daily quality, lead funnel, action conversion, monthly cost warning and attributed revenue",
         "operationId": "getChatStats",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"}}],
-        "responses": {"200":{"description":"Daily stats in Asia/Ho_Chi_Minh"},"403":{"$ref":"#/components/responses/Forbidden"}}
+        "responses": {"200":{"description":"Daily stats plus calendar-month USD totals in Asia/Ho_Chi_Minh"},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     }
   },
@@ -9587,6 +9599,15 @@
           },
           "itemCount": {
             "type": "integer"
+          },
+          "leadPrompt": {
+            "type": "boolean",
+            "description": "Compatibility flag; true when this cart mutation emits lead prompt sequence 2."
+          },
+          "leadPromptSequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
           }
         }
       },
@@ -9624,6 +9645,12 @@
             "format": "uuid",
             "nullable": true,
             "description": "Accepted only when this product was shown in the caller's assistant conversation."
+          },
+          "assistantInteractionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Accepted only for a verified action -> assistant response/card -> cart chain."
           }
         }
       },

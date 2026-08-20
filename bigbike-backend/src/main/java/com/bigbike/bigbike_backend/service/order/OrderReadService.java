@@ -93,7 +93,7 @@ public class OrderReadService {
     }
 
     /**
-     * Minimal customer-owned order projection for Bi. This method must remain
+     * Minimal customer-owned order projection for BigBike Assistant. This method must remain
      * separate from the account order list because chat is only allowed to
      * expose the order number, state, placed date and total.
      */

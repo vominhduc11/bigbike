@@ -224,7 +224,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void replayOfReportedBiConversationKeepsCountsResolvesPronounsAndClearsOldScope() throws Exception {
+    void replayOfReportedBigBikeConversationKeepsCountsResolvesPronounsAndClearsOldScope() throws Exception {
         AcceptanceFixture acceptance = acceptanceFixture();
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
@@ -278,7 +278,7 @@ public class ChatProductDiscoveryApiTest {
 
     @Test
     void apiBrandDiscoveryKeepsLs2AsABrandFilterForAccentedAndPlainWording() throws Exception {
-        String marker = "bi-ls2-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bigbike-ls2-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         BrandEntity ls2 = brand(marker, "ls2-" + marker, "LS2", now);
         ProductEntity product = product(
@@ -301,7 +301,7 @@ public class ChatProductDiscoveryApiTest {
 
     @Test
     void apiHelmetDiscoveryExcludesAccessoriesWhoseNamesContainHelmetWords() throws Exception {
-        String marker = "bi-helmet-scope-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bigbike-helmet-scope-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         CategoryEntity accessoryCategory = category(
                 marker + "-category", "trum-dau-" + marker, "Trùm đầu", null, now);
@@ -342,7 +342,7 @@ public class ChatProductDiscoveryApiTest {
 
     @Test
     void discoveryReturnsUpToEightVerifiedSellableCards() throws Exception {
-        String marker = "bi-card-limit-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bigbike-card-limit-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         CategoryEntity category = fixture.tanami().getCategories().get(0);
         BrandEntity brand = fixture.tanami().getBrand();
@@ -697,7 +697,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     private Fixture createFixture() {
-        String marker = "bi-discovery-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bigbike-discovery-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
 
         CategoryEntity helmets = categoryRepository.findBySlug("mu-bao-hiem")
@@ -741,17 +741,17 @@ public class ChatProductDiscoveryApiTest {
     private AcceptanceFixture acceptanceFixture() {
         if (acceptanceFixture != null) return acceptanceFixture;
 
-        String marker = "bi-acceptance-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bigbike-acceptance-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
         CategoryEntity helmets = category(
                 marker + "-helmets",
-                "mu-bao-hiem-bi-acceptance-" + marker,
+                "mu-bao-hiem-bigbike-acceptance-" + marker,
                 "Mũ bảo hiểm nghiệm thu trợ lý",
                 null,
                 now);
         CategoryEntity headsets = category(
                 marker + "-headsets",
-                "tai-nghe-bi-acceptance-" + marker,
+                "tai-nghe-bigbike-acceptance-" + marker,
                 "Tai nghe nghiệm thu trợ lý",
                 null,
                 now);

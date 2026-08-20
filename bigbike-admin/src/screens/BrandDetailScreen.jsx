@@ -441,19 +441,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   const requiredProgress = getBrandRequiredProgress(form)
 
-  // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xóa thông tin SEO".
+  // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xoá thông tin SEO".
   const hasSeoData = Boolean(
     form.seoTitle?.trim() || form.seoDescription?.trim() ||
     form.seoOgImageUrl?.trim() || form.seoOgImageAlt?.trim() ||
     form.translations?.en?.seoTitle?.trim() || form.translations?.en?.seoDescription?.trim()
   )
 
-  // Xóa toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
+  // Xoá toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
   async function handleClearSeo() {
     const ok = await showConfirm(
-      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
-      t('brands.detail.clearSeoTitle', { defaultValue: 'Xóa thông tin hiển thị trên Google?' }),
-      { variant: 'danger', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin hiển thị trên Google' }), cancelLabel: t('common.cancel', { defaultValue: 'Hủy' }) },
+      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xoá toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
+      t('brands.detail.clearSeoTitle', { defaultValue: 'Xoá thông tin hiển thị trên Google?' }),
+      { variant: 'default', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xoá thông tin hiển thị trên Google' }), cancelLabel: t('common.cancel') },
     )
     if (!ok) return
     setForm((prev) => ({
@@ -463,7 +463,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       seoTitle: '', seoDescription: '', seoOgImageUrl: '', seoOgImageAlt: '',
       translations: { ...prev.translations, en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' } },
     }))
-    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xóa thông tin hiển thị trên Google.' }))
+    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xoá thông tin hiển thị trên Google.' }))
   }
 
   return (
@@ -514,8 +514,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 onClick={async () => {
                   const confirmed = await showConfirm(
                     t('brands.detail.hideConfirm', { name: formatText(form.name || state.item?.name) }),
-                    t('brands.detail.hideConfirmTitle'),
-                    { variant: 'danger', confirmLabel: t('brands.detail.hideBtn') },
+                    t('common.moveToTrashTitle'),
+                    { variant: 'default', confirmLabel: t('common.moveToTrash') },
                   )
                   if (!confirmed) return
                   setIsSubmitting(true)
@@ -751,12 +751,12 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           onToggle={() => setSeoOpen((v) => !v)}
         />
 
-        {/* Xóa SEO có xác nhận — tránh mất nhầm nội dung đã nhập; chỉ hiện khi SEO đang mở & có dữ liệu. */}
+        {/* Xoá SEO có xác nhận — tránh mất nhầm nội dung đã nhập; chỉ hiện khi SEO đang mở & có dữ liệu. */}
         {seoOpen && !isReadOnly && hasSeoData && (
           <div className="mb-4 flex justify-end">
             <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleClearSeo}>
               <Trash2 size={14} aria-hidden="true" />
-              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin hiển thị trên Google' })}
+              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xoá thông tin hiển thị trên Google' })}
             </Button>
           </div>
         )}

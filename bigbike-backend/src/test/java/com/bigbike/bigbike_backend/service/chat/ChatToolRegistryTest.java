@@ -21,13 +21,13 @@ class ChatToolRegistryTest {
     private final ChatToolRegistry registry = new ChatToolRegistry();
 
     @Test
-    void declarationsExposeOnlyTheSixReadOnlyTools() {
+    void declarationsExposeOnlyTheSevenReadOnlyTools() {
         List<Map<String, Object>> declarations = registry.functionDeclarations();
 
         assertThat(declarations).extracting(value -> value.get("name"))
                 .containsExactly(
                         "search_products", "list_categories", "get_product", "get_policy",
-                        "get_shop_info", "get_my_orders")
+                        "get_shop_info", "get_my_orders", "search_articles")
                 .doesNotContain("capture_lead");
         assertThat(MAPPER.valueToTree(declarations).toString())
                 .doesNotContain("additionalProperties")

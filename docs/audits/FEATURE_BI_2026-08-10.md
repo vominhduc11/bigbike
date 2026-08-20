@@ -1,5 +1,7 @@
 # Feature audit — Trợ lý Bi theo mô hình lai (2026-08-10)
 
+> Tính năng này nay mang tên “Trợ lý BigBike”.
+
 ## Phạm vi
 
 Audit và tái cấu trúc toàn bộ lượt chat storefront của Bi: fast-path, Gemini function calling, backend tool validation/execution, catalog, đơn hàng của customer đã đăng nhập, lead consent, quota/persistence, response guard, storefront fallback và admin read-only history/stats. Public request/response của `POST /api/v1/chat/messages` không đổi vì function call là chi tiết nội bộ backend.

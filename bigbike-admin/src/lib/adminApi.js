@@ -1910,6 +1910,30 @@ export async function fetchChatStats(date) {
       contentRefusals: nullableChatNumber(data.contentRefusals),
       assistedOrders: nullableChatNumber(data.assistedOrders),
       assistedRevenue: nullableChatNumber(data.assistedRevenue),
+      quality: {
+        answers: safeChatCount(data.quality?.answers),
+        productResults: safeChatCount(data.quality?.productResults),
+        clarifications: safeChatCount(data.quality?.clarifications),
+        outOfScope: safeChatCount(data.quality?.outOfScope),
+        contentRefusals: safeChatCount(data.quality?.contentRefusals),
+      },
+      leadFunnel: {
+        sequence1Viewed: safeChatCount(data.leadFunnel?.sequence1Viewed),
+        sequence2Viewed: safeChatCount(data.leadFunnel?.sequence2Viewed),
+        accepted: safeChatCount(data.leadFunnel?.accepted),
+        declined: safeChatCount(data.leadFunnel?.declined),
+      },
+      actionStats: Array.isArray(data.actionStats) ? data.actionStats.map((row) => ({
+        actionType: safeChatString(row?.actionType),
+        clicks: safeChatCount(row?.clicks),
+        cartLines: safeChatCount(row?.cartLines),
+        orders: safeChatCount(row?.orders),
+        revenue: nullableChatNumber(row?.revenue) ?? 0,
+        conversionRate: nullableChatNumber(row?.conversionRate) ?? 0,
+      })).filter((row) => row.actionType) : [],
+      monthlyCostUsd: nullableChatNumber(data.monthlyCostUsd) ?? 0,
+      monthlyCostWarningUsd: nullableChatNumber(data.monthlyCostWarningUsd) ?? 0,
+      monthlyCostWarningExceeded: data.monthlyCostWarningExceeded === true,
       hasTelemetry: safeChatCount(data.aiCalls) === 0 || (nullableChatNumber(data.providerRequests) ?? 0) > 0,
     })
   } catch (error) {

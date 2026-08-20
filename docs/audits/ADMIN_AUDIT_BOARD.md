@@ -1,6 +1,6 @@
 # Bảng theo dõi audit bigbike-admin
 
-Cập nhật lần cuối: 2026-07-29
+Cập nhật lần cuối: 2026-08-20
 
 | Module | Màn hình | Đợt | Trạng thái | Ai đang làm | Ngày | Vitest | E2E | Ghi chú / nợ lại |
 |---|---|---:|---|---|---|---|---|---|
@@ -33,6 +33,7 @@ Cập nhật lần cuối: 2026-07-29
 
 ## Việc xuyên module
 
+- ✅ Đã chuẩn hoá hộp thoại xoá (2026-08-20): rà 31 luồng trên Thư viện ảnh, Banner, Video trang chủ, Sản phẩm, Tin tức, Danh mục, Thương hiệu, Menu, Chuyển hướng, Đánh giá và Vai trò. `ConfirmDialogProvider` mặc định trung tính; chỉ xoá vĩnh viễn truyền `variant: 'danger'`, với tiêu đề/nút `Chuyển vào Thùng rác` hoặc `Xoá vĩnh viễn`, nội dung luôn nêu mục/số lượng và khả năng hoàn tác. Vai trò đã chuyển sang xác nhận dùng chung nhưng vẫn giữ cảnh báo chặn khi còn nhân sự được gán; đã xoá `LegacySizeScaleManagerModal` và bảng cỡ đời cũ bị vô hiệu hoá. Đồng bộ `vi.json`/`en.json`, bổ sung kiểm tra parity i18n và test huỷ/xác nhận/màu nút. Không thay đổi API, quyền hoặc nghiệp vụ xoá.
 - ✅ Đã dọn (2026-08-18): audit toàn bộ ô nhập tiền trong admin — inventory gồm giá sản phẩm `retailPrice`/`salePrice`, giá niêm yết/khuyến mãi riêng của biến thể ở desktop/mobile, bulk edit và matrix wizard; các giá trị phí/cost/discount/amount còn lại chỉ đọc hoặc không phải tiền hiện hành. Gom logic vào `bigbike-admin/src/components/MoneyInput.jsx` + `src/lib/moneyInput.js`: không format trong lúc gõ, giữ caret, nhận paste có/không dấu phân cách, blur format `vi-VN`, payload số/null. Bổ sung 14 ca regression helper/component/payload/screen; E2E chạy 1440/768/375, không mutation trước Lưu/Áp dụng. `salePrice = 0` được chuẩn hóa thành `null` theo `BUSINESS_RULES.md`/`DATA_CONTRACT.md`; không khôi phục `costPrice`/`compareAtPrice`/phí đã gỡ khỏi contract.
 - ✅ Đã dọn (2026-07-29): checkbox của `MobileCardList` nhận nhãn theo đúng tên từng bài viết/chuyển hướng/đánh giá; 2 kiểm thử component đạt.
 - ✅ Đã dọn (2026-07-29): `contracts.js` dùng fallback “Sản phẩm không xác định” và không còn dựng `updatedAt` ngoài hợp đồng chi tiết đơn; 2 kiểm thử contract đạt.

@@ -139,7 +139,23 @@ export type ChatAvailability = {
   contacts: ChatContact;
 };
 
-export type ChatActionType = "LOGIN" | "ORDER_HISTORY" | "ORDER_LOOKUP";
+export type ChatActionType =
+  | "COMPARE_PRODUCTS"
+  | "CHECK_SIZE"
+  | "CHECK_STOCK"
+  | "CHANGE_BUDGET"
+  | "FIND_SIMILAR"
+  | "VIEW_POLICY"
+  | "FIND_PRODUCTS"
+  | "RELATED_ARTICLE_QUESTION"
+  | "CHANGE_NEEDS"
+  | "CONTACT_STAFF"
+  | "LOGIN"
+  | "ORDER_HISTORY"
+  | "ORDER_LOOKUP"
+  | "CALL_HOTLINE"
+  | "OPEN_ZALO"
+  | "OPEN_MESSENGER";
 
 export type ChatAction = {
   type: ChatActionType;
@@ -157,6 +173,7 @@ export type ChatProductCard = {
 
 export type ChatMessageResult = {
   conversationId?: string | null;
+  assistantMessageId?: string | null;
   mode: "AI" | "CONTACT";
   reason?: string | null;
   answer?: string | null;
@@ -166,6 +183,7 @@ export type ChatMessageResult = {
   products: ChatProductCard[];
   handoffRecommended: boolean;
   leadPrompt: boolean;
+  leadPromptSequence: 0 | 1 | 2;
   actions: ChatAction[];
   contacts: ChatContact;
   answerFormat: "PLAIN_TEXT" | "MARKDOWN";
@@ -174,7 +192,11 @@ export type ChatMessageResult = {
 
 export type ChatProgressCode = "UNDERSTANDING" | "CHECKING_PRODUCTS" | "FINALIZING";
 
-const CHAT_ACTION_TYPES = new Set<ChatActionType>(["LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP"]);
+const CHAT_ACTION_TYPES = new Set<ChatActionType>([
+  "COMPARE_PRODUCTS", "CHECK_SIZE", "CHECK_STOCK", "CHANGE_BUDGET", "FIND_SIMILAR",
+  "VIEW_POLICY", "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION", "CHANGE_NEEDS", "CONTACT_STAFF",
+  "LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP", "CALL_HOTLINE", "OPEN_ZALO", "OPEN_MESSENGER",
+]);
 const CHAT_FORBIDDEN_TEXT = /(?:\b(?:api|endpoint|database|session|quota|gemini|json|tool|sql|function\s*call|functioncall|stack\s*trace|exception|error(?:\s*(?:code|id|message))?)\b|\berror\s*[:#])/i;
 const CHAT_RAW_CODES = /\b(?:CANCELLED|COMPLETED|PENDING|PROCESSING|IN_STOCK|OUT_OF_STOCK|AI_UNAVAILABLE|CONTACT_FALLBACK|NO_MATCH_IN_REQUESTED_PRICE_RANGE|SEARCH_WAS_BROADENED)\b/;
 const CHAT_RAW_CURRENCY = /(?:\b\d[\d.,]*\s*(?:VND|VNĐ)\b|\b(?:VND|VNĐ)\b|\b\d[\d.,]*[.,]\d{1,2}\s*₫)/i;
@@ -211,7 +233,7 @@ function normalizeChatActions(value: unknown): ChatAction[] {
     .map((item) => item && typeof item === "object" ? (item as Record<string, unknown>).type : null)
     .filter((type): type is ChatActionType => typeof type === "string" && CHAT_ACTION_TYPES.has(type as ChatActionType))
     .map((type) => ({ type }))
-    .slice(0, 2);
+    .slice(0, 3);
 }
 
 function normalizeChatProducts(value: unknown): { products: ChatProductCard[]; unsafe: boolean } {
@@ -260,6 +282,7 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
   const mode = source.mode === "AI" && safeAnswer && !unsafe ? "AI" : "CONTACT";
   return {
     conversationId: typeof source.conversationId === "string" ? source.conversationId : null,
+    assistantMessageId: typeof source.assistantMessageId === "string" ? source.assistantMessageId : null,
     mode,
     reason: mode,
     answer: unsafe ? null : answer || null,
@@ -269,6 +292,9 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
     products: unsafe ? [] : normalizedProducts.products,
     handoffRecommended: mode === "CONTACT" || source.handoffRecommended === true,
     leadPrompt: !unsafe && source.leadPrompt === true,
+    leadPromptSequence: !unsafe && (source.leadPromptSequence === 1 || source.leadPromptSequence === 2)
+      ? source.leadPromptSequence
+      : (!unsafe && source.leadPrompt === true ? 1 : 0),
     actions: unsafe || !answer ? [] : normalizeChatActions(source.actions),
     contacts: normalizeChatContacts(source.contacts),
     answerFormat: source.answerFormat === "MARKDOWN" ? "MARKDOWN" : "PLAIN_TEXT",
@@ -301,12 +327,16 @@ export function sendChatMessage(
   conversationId?: string,
   signal?: AbortSignal,
   requestId?: string,
+  pageContext?: { type: "PRODUCT"; productSlug: string } | null,
+  originInteractionId?: string,
 ): Promise<ChatMessageResult> {
   return clientRequest<unknown>("POST", "/api/v1/chat/messages", {
     conversationId: conversationId || null,
     message,
     lang,
     requestId: requestId || null,
+    pageContext: pageContext ?? null,
+    originInteractionId: originInteractionId || null,
   }, undefined, signal).then((value) => normalizeChatMessageResult(value, lang));
 }
 
@@ -331,6 +361,8 @@ export async function streamChatMessage(
   requestId: string,
   onProgress: (code: ChatProgressCode) => void,
   signal?: AbortSignal,
+  pageContext?: { type: "PRODUCT"; productSlug: string } | null,
+  originInteractionId?: string,
 ): Promise<ChatMessageResult> {
   const headers: Record<string, string> = {
     Accept: "text/event-stream",
@@ -348,6 +380,8 @@ export async function streamChatMessage(
       message,
       lang,
       requestId,
+      pageContext: pageContext ?? null,
+      originInteractionId: originInteractionId || null,
     }),
     signal,
   });
@@ -390,6 +424,24 @@ export async function streamChatMessage(
   return result;
 }
 
+export function recordChatInteraction(input: {
+  clientEventId: string;
+  conversationId: string;
+  assistantMessageId: string;
+  type: "LEAD_PROMPT_VIEWED" | "ACTION_CLICKED";
+  leadPromptSequence?: 1 | 2;
+  actionType?: ChatActionType;
+}): Promise<{ recorded: boolean; interactionId: string }> {
+  return clientRequest("POST", "/api/v1/chat/interactions", {
+    clientEventId: input.clientEventId,
+    conversationId: input.conversationId,
+    assistantMessageId: input.assistantMessageId,
+    type: input.type,
+    leadPromptSequence: input.leadPromptSequence ?? null,
+    actionType: input.actionType ?? null,
+  });
+}
+
 export function captureChatLead(input: {
   conversationId: string;
   name?: string;
@@ -413,12 +465,14 @@ export function addCartItem(
   quantity: number,
   variantId?: string,
   assistantConversationId?: string,
+  assistantInteractionId?: string,
 ): Promise<Cart> {
   return clientRequest("POST", "/api/v1/cart/items", {
     productId,
     quantity,
     productVariantId: variantId ?? null,
     assistantConversationId: assistantConversationId ?? null,
+    assistantInteractionId: assistantInteractionId ?? null,
   });
 }
 

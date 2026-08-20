@@ -81,6 +81,10 @@ describe('admin chat read contract', () => {
         contentRefusals: '2', dailyLimit: 120, remainingAiCalls: 118,
         inputTokens: 100, outputTokens: 50, thinkingTokens: 20, providerRequests: 3,
         averageLatencyMs: 2400, estimatedCostUsd: 0.0005, assistedOrders: 1, assistedRevenue: 1590000,
+        quality: { answers: 5, productResults: 2, clarifications: 1, outOfScope: 3, contentRefusals: 2 },
+        leadFunnel: { sequence1Viewed: 8, sequence2Viewed: 4, accepted: 2, declined: 1 },
+        actionStats: [{ actionType: 'CHECK_SIZE', clicks: 5, cartLines: 3, orders: 2, revenue: 3180000, conversionRate: 0.4 }],
+        monthlyCostUsd: 12.5, monthlyCostWarningUsd: 10, monthlyCostWarningExceeded: true,
       },
     }))
 
@@ -90,6 +94,10 @@ describe('admin chat read contract', () => {
       aiCalls: 0, conversations: 2, leads: 3, unanswered: 4, contentRefusals: 2,
       dailyLimit: 120, remainingAiCalls: 118, providerRequests: 3, averageLatencyMs: 2400,
       assistedOrders: 1, assistedRevenue: 1590000, hasTelemetry: true,
+      quality: { answers: 5, productResults: 2, clarifications: 1, outOfScope: 3, contentRefusals: 2 },
+      leadFunnel: { sequence1Viewed: 8, sequence2Viewed: 4, accepted: 2, declined: 1 },
+      actionStats: [expect.objectContaining({ actionType: 'CHECK_SIZE', clicks: 5, orders: 2, conversionRate: 0.4 })],
+      monthlyCostUsd: 12.5, monthlyCostWarningUsd: 10, monthlyCostWarningExceeded: true,
     })
   })
 })

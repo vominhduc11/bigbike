@@ -364,9 +364,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
     // Nút xác nhận phải nêu rõ hành động (Xoá vĩnh viễn) thay vì "Xác nhận"
     // chung chung, để người dùng biết chính xác việc sắp làm (tiêu chí 7.5).
-    const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'), {
+    const confirmed = await showConfirm(message, t('common.permanentDeleteTitle'), {
       variant: 'danger',
-      confirmLabel: t('categories.detail.hardDeleteBtn'),
+      confirmLabel: t('common.permanentDelete'),
       cancelLabel: t('common.cancel'),
     })
     if (!confirmed) return
@@ -390,7 +390,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const name = form.name || categoryId
     const confirmed = await showConfirm(
       t('categories.restoreConfirm', { name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${name}? Các danh mục con cũng sẽ được khôi phục.` }),
-      t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
+      t('categories.restoreConfirmTitle', { defaultValue: 'Khôi phục' }),
       { confirmLabel: t('products.restore'), variant: 'default' }
     )
     if (!confirmed) return
@@ -754,7 +754,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       {isDeleted ? (
         <StatePanel
           tone="warning"
-          title={t('categories.detail.trashedTitle', { defaultValue: 'Danh mục đã ở thùng rác.' })}
+          title={t('categories.detail.trashedTitle', { defaultValue: 'Danh mục đã ở Thùng rác.' })}
           description={t('categories.detail.trashedDesc', { defaultValue: 'Khôi phục danh mục để tiếp tục chỉnh sửa.' })}
         />
       ) : null}

@@ -6,7 +6,7 @@ export const HOME_LOCATION = 'home'
 
 // Dựng payload gửi lên khi tạo/sửa slider. Ảnh desktop chỉ gửi khi có URL (backend
 // whitelist qua SafeMediaAssetUrlPolicy). Ảnh mobile được quản lý rõ trong form:
-// có URL thì gửi URL + alt, không có URL thì gửi null để backend xóa thật.
+// có URL thì gửi URL + alt, không có URL thì gửi null để backend xoá thật.
 export function buildSliderPayload(form) {
   const payload = {
     location: form.location,

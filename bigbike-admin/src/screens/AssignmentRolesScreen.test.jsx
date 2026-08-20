@@ -58,7 +58,7 @@ describe('AssignmentRolesScreen', () => {
     expect(await screen.findByLabelText('Tiêu đề banner')).toBeDisabled()
     expect(screen.getByLabelText('settings.assign.roleNameLabel')).toBeDisabled()
     expect(screen.queryByRole('button', { name: /Thêm vai trò/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Xóa vai trò' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Xoá vai trò' })).toBeDisabled()
   })
 
   it('requires every role to have a name before saving', async () => {
