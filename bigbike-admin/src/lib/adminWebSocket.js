@@ -7,7 +7,8 @@ const RECONNECT_MAX_MS = 30000
 // STOMP ERROR frame bodies thrown by WebSocketConfig's interceptor for a rejected admin —
 // these are permanent (bad/expired token, inactive account, missing permission), not a
 // transient network blip, so reconnecting on a fixed timer would just hammer the server.
-const AUTH_REJECTION_PATTERN = /Admin (JWT required|role required|account is not active)|Invalid or expired token|Not permitted to subscribe/i
+const AUTH_REJECTION_PATTERN =
+  /Admin (JWT required|role required|account is not active)|Invalid or expired token|Not permitted to subscribe/i
 
 function parseFrame(raw) {
   const nullIdx = raw.indexOf('\0')
@@ -41,18 +42,21 @@ function buildFrame(command, headers, body) {
 let ws = null
 let alive = false
 let getToken = null
-let subscriptions = {}   // destination → Set<handler>
-let subIdMap = {}        // destination → subId string (e.g. 'sub-0')
+let subscriptions = {} // destination → Set<handler>
+let subIdMap = {} // destination → subId string (e.g. 'sub-0')
 let subCounter = 0
 let reconnectTimer = null
 let reconnectAttempt = 0
 let authRejected = false
-let onReconnect = null   // callback fired on every CONNECTED (initial + reconnect)
+let onReconnect = null // callback fired on every CONNECTED (initial + reconnect)
 let onAuthRejected = null
 const reconnectListeners = new Set()
 
 function clearReconnect() {
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 }
 
 function scheduleReconnect() {
@@ -68,20 +72,28 @@ function openConnection() {
   if (!alive || typeof getToken !== 'function') return
 
   const token = getToken()
-  if (!token) { scheduleReconnect(); return }
+  if (!token) {
+    scheduleReconnect()
+    return
+  }
 
-  const apiBase = (import.meta.env.VITE_ADMIN_API_BASE || 'http://localhost:8080/api/v1').replace(/\/$/, '')
+  const apiBase = (import.meta.env.VITE_ADMIN_API_BASE || 'http://localhost:8080/api/v1').replace(
+    /\/$/,
+    '',
+  )
   const origin = apiBase.replace(/\/api\/v1$/, '')
   const wsUrl = origin.replace(/^http/, 'ws') + '/ws'
 
   ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
-    ws.send(buildFrame('CONNECT', {
-      'accept-version': '1.2,1.1,1.0',
-      'heart-beat': '0,0',
-      'Authorization': `Bearer ${token}`,
-    }))
+    ws.send(
+      buildFrame('CONNECT', {
+        'accept-version': '1.2,1.1,1.0',
+        'heart-beat': '0,0',
+        Authorization: `Bearer ${token}`,
+      }),
+    )
   }
 
   ws.onmessage = (e) => {
@@ -100,7 +112,11 @@ function openConnection() {
       // Notify caller so stale React Query caches can be invalidated after any (re-)connect
       if (typeof onReconnect === 'function') onReconnect()
       reconnectListeners.forEach((listener) => {
-        try { listener() } catch { /* a screen listener must not break the shared connection */ }
+        try {
+          listener()
+        } catch {
+          /* a screen listener must not break the shared connection */
+        }
       })
     }
 
@@ -111,7 +127,9 @@ function openConnection() {
         try {
           const payload = JSON.parse(frame.body)
           handlers.forEach((h) => h(payload))
-        } catch { /* malformed JSON — ignore */ }
+        } catch {
+          /* malformed JSON — ignore */
+        }
       }
     }
 
@@ -120,7 +138,11 @@ function openConnection() {
       if (AUTH_REJECTION_PATTERN.test(frame.body || '')) {
         authRejected = true
         if (typeof onAuthRejected === 'function') {
-          try { onAuthRejected() } catch { /* auth recovery must not break socket cleanup */ }
+          try {
+            onAuthRejected()
+          } catch {
+            /* auth recovery must not break socket cleanup */
+          }
         }
       }
       ws.close()
@@ -152,7 +174,10 @@ export function disconnectAdminWs() {
   onReconnect = null
   onAuthRejected = null
   reconnectListeners.clear()
-  if (ws) { ws.close(); ws = null }
+  if (ws) {
+    ws.close()
+    ws = null
+  }
 }
 
 export function setWsReconnectCallback(fn) {
@@ -172,10 +197,16 @@ export function registerAdminWsReconnectListener(listener) {
 export function sendAdminWs(destination, payload) {
   if (!ws || ws.readyState !== WebSocket.OPEN || !destination) return false
   try {
-    ws.send(buildFrame('SEND', {
-      destination,
-      'content-type': 'application/json',
-    }, JSON.stringify(payload)))
+    ws.send(
+      buildFrame(
+        'SEND',
+        {
+          destination,
+          'content-type': 'application/json',
+        },
+        JSON.stringify(payload),
+      ),
+    )
     return true
   } catch {
     return false

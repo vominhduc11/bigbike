@@ -9,12 +9,14 @@ export function Badge({ isSystem, assignedUserCount = 0 }) {
     : 0
   return (
     <>
-      <span className={cn(
-        'inline-flex items-center px-2 py-px rounded-full text-xs font-bold tracking-wide border whitespace-nowrap',
-        isSystem
-          ? 'bg-primary/10 text-primary border-primary/25'
-          : 'bg-surface-raised text-muted-foreground border-border'
-      )}>
+      <span
+        className={cn(
+          'inline-flex items-center px-2 py-px rounded-full text-xs font-bold tracking-wide border whitespace-nowrap',
+          isSystem
+            ? 'bg-primary/10 text-primary border-primary/25'
+            : 'bg-surface-raised text-muted-foreground border-border',
+        )}
+      >
         {label}
       </span>
       {userCount > 0 && (

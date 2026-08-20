@@ -31,7 +31,11 @@ function PickerImageThumbnail({ src, alt }) {
 
   if (!src || failed) {
     return (
-      <div className="mpicker-thumb mpicker-thumb-placeholder" role="img" aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}>
+      <div
+        className="mpicker-thumb mpicker-thumb-placeholder"
+        role="img"
+        aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}
+      >
         <ImageIcon size={28} strokeWidth={1.5} aria-hidden="true" />
       </div>
     )
@@ -81,7 +85,13 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   const [tags, setTags] = useState([])
   const [filtersError, setFiltersError] = useState(false)
   const [page, setPage] = useState(1)
-  const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1, error: '', refreshError: '' })
+  const [state, setState] = useState({
+    status: 'loading',
+    items: [],
+    totalPages: 1,
+    error: '',
+    refreshError: '',
+  })
   const [selectedUrl, setSelectedUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadQueue, setUploadQueue] = useState([]) // { name, progress, error }
@@ -111,7 +121,9 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       if (tRes.status === 'fulfilled') setTags(tRes.value ?? [])
       setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [canRead])
 
   useEffect(() => {
@@ -123,7 +135,14 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       error: '',
       refreshError: '',
     }))
-    fetchMedia({ search: debouncedSearch, mimeType: `${kind}/`, page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+    fetchMedia({
+      search: debouncedSearch,
+      mimeType: `${kind}/`,
+      page,
+      pageSize: PAGE_SIZE,
+      folderFilter: folderFilter || undefined,
+      tag: tag || undefined,
+    })
       .then((r) => {
         if (!active) return
         const items = r.items ?? []
@@ -143,11 +162,26 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       })
       .catch((e) => {
         if (!active) return
-        setState((previous) => previous.items.length > 0
-          ? { ...previous, status: 'success', refreshError: e.message || 'refresh-failed', error: '' }
-          : { status: 'error', items: [], totalPages: 1, error: e.message || '', refreshError: '' })
+        setState((previous) =>
+          previous.items.length > 0
+            ? {
+                ...previous,
+                status: 'success',
+                refreshError: e.message || 'refresh-failed',
+                error: '',
+              }
+            : {
+                status: 'error',
+                items: [],
+                totalPages: 1,
+                error: e.message || '',
+                refreshError: '',
+              },
+        )
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [canRead, debouncedSearch, page, refreshKey, kind, folderFilter, tag])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
@@ -166,7 +200,12 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         continue
       }
       if (file.size > MAX_FILE_SIZE) {
-        validationErrors.push(t('media.fileTooLarge', { size: formatBytes(file.size), limit: formatBytes(MAX_FILE_SIZE) }))
+        validationErrors.push(
+          t('media.fileTooLarge', {
+            size: formatBytes(file.size),
+            limit: formatBytes(MAX_FILE_SIZE),
+          }),
+        )
         continue
       }
       valid.push(file)
@@ -184,30 +223,57 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     for (const file of valid) {
       // Khoá theo id duy nhất, KHÔNG theo tên: hai file trùng tên sẽ không còn bị
       // cập nhật nhầm tiến trình lẫn nhau.
-      const itemId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
-      setUploadQueue((q) => [...q, { id: itemId, name: file.name, progress: 0, error: null, status: 'pending' }])
+      const itemId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+      setUploadQueue((q) => [
+        ...q,
+        { id: itemId, name: file.name, progress: 0, error: null, status: 'pending' },
+      ])
       sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'PENDING' })
       sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'UPLOADING' })
       try {
-        const result = await uploadMedia(file, '', (pct) => {
-          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: pct } : item))
-        }, targetFolderId, targetClearFolder)
+        const result = await uploadMedia(
+          file,
+          '',
+          (pct) => {
+            setUploadQueue((q) =>
+              q.map((item) => (item.id === itemId ? { ...item, progress: pct } : item)),
+            )
+          },
+          targetFolderId,
+          targetClearFolder,
+        )
         const url = result?.item?.publicUrl
         if (url) {
           uploadedUrls.push(url)
           mediaCacheRef.current.set(url, result.item)
-          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100, status: 'done' } : item))
+          setUploadQueue((q) =>
+            q.map((item) =>
+              item.id === itemId ? { ...item, progress: 100, status: 'done' } : item,
+            ),
+          )
           sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'DONE' })
         } else {
-          setUploadQueue((q) => q.map((item) => item.id === itemId
-            ? { ...item, error: t('media.picker.uploadFailed'), status: 'error' }
-            : item))
+          setUploadQueue((q) =>
+            q.map((item) =>
+              item.id === itemId
+                ? { ...item, error: t('media.picker.uploadFailed'), status: 'error' }
+                : item,
+            ),
+          )
           sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
         }
       } catch (uploadFailure) {
-        setUploadQueue((q) => q.map((item) => item.id === itemId
-          ? { ...item, error: uploadFailure?.message || t('media.picker.uploadFailed'), status: 'error' }
-          : item))
+        setUploadQueue((q) =>
+          q.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  error: uploadFailure?.message || t('media.picker.uploadFailed'),
+                  status: 'error',
+                }
+              : item,
+          ),
+        )
         sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
       }
     }
@@ -222,18 +288,41 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     // ảnh/video vừa tải chắc chắn hiện ra ngay, không bị lần fetch đầu vẫn lọc theo
     // từ khoá tìm kiếm cũ.
     if (canRead) {
-      setState((p) => ({ ...p, status: p.items.length > 0 ? 'refreshing' : 'loading', error: '', refreshError: '' }))
+      setState((p) => ({
+        ...p,
+        status: p.items.length > 0 ? 'refreshing' : 'loading',
+        error: '',
+        refreshError: '',
+      }))
       try {
-        const r = await fetchMedia({ search: '', mimeType: `${kind}/`, page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+        const r = await fetchMedia({
+          search: '',
+          mimeType: `${kind}/`,
+          page: 1,
+          pageSize: PAGE_SIZE,
+          folderFilter: folderFilter || undefined,
+          tag: tag || undefined,
+        })
         const items = r.items ?? []
         items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
-        setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })
-      } catch { /* effect bên dưới (refreshKey bump) sẽ tự thử lại */ }
+        setState({
+          status: 'success',
+          items,
+          totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1),
+          error: '',
+          refreshError: '',
+        })
+      } catch {
+        /* effect bên dưới (refreshKey bump) sẽ tự thử lại */
+      }
     }
     setRefreshKey((k) => k + 1)
     // Auto-select uploaded image
     if (uploadedUrls.length > 0) setSelectedUrl(uploadedUrls[uploadedUrls.length - 1])
-    setTimeout(() => setUploadQueue((queue) => queue.filter((item) => item.status !== 'done')), 3000)
+    setTimeout(
+      () => setUploadQueue((queue) => queue.filter((item) => item.status !== 'done')),
+      3000,
+    )
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -275,7 +364,8 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   const hasSelection = Boolean(selectedUrl)
   const isLoading = state.status === 'loading'
   const isRefreshing = state.status === 'refreshing'
-  const canConfirm = hasSelection && !isRefreshing && !validation.blocked && validation.status !== 'loading'
+  const canConfirm =
+    hasSelection && !isRefreshing && !validation.blocked && validation.status !== 'loading'
 
   // Hỏi xác nhận khi đóng lúc đang tải lên hoặc đã chọn để tránh mất lựa chọn/tiến
   // trình. Dùng cho backdrop, nút đóng, Huỷ và Escape (qua useModalFocusTrap).
@@ -286,7 +376,9 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     }
     if (hasSelection) {
       const ok = await showConfirm(
-        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang có tệp đã chọn. Đóng sẽ bỏ lựa chọn này. Tiếp tục?' }),
+        t('media.picker.closeConfirm', {
+          defaultValue: 'Bạn đang có tệp đã chọn. Đóng sẽ bỏ lựa chọn này. Tiếp tục?',
+        }),
         t('media.picker.closeConfirmTitle', { defaultValue: 'Đóng cửa sổ chọn?' }),
       )
       if (!ok) return
@@ -298,14 +390,21 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     return createPortal(
       <>
         <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-        <div ref={modalRef} tabIndex={-1} className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('media.permissionDeniedTitle')}>
+        <div
+          ref={modalRef}
+          tabIndex={-1}
+          className="mpicker-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('media.permissionDeniedTitle')}
+        >
           <div className="mpicker-header">
             <h3 className="mpicker-title">{t('media.permissionDeniedTitle')}</h3>
-            <Button variant="secondary" size="sm" type="button" onClick={onClose}>{t('common.close')}</Button>
+            <Button variant="secondary" size="sm" type="button" onClick={onClose}>
+              {t('common.close')}
+            </Button>
           </div>
-          <div className="p-4 text-sm text-muted-foreground">
-            {t('media.permissionDeniedDesc')}
-          </div>
+          <div className="p-4 text-sm text-muted-foreground">{t('media.permissionDeniedDesc')}</div>
         </div>
       </>,
       document.body,
@@ -351,7 +450,9 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                   onChange={handleFileChange}
                   disabled={uploading}
                 />
-                <Button variant="secondary" size="sm"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
@@ -362,7 +463,13 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                 </Button>
               </>
             )}
-            <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('common.close')}>
+            <Button
+              variant="secondary"
+              size="icon"
+              type="button"
+              onClick={attemptClose}
+              aria-label={t('common.close')}
+            >
               <X size={18} strokeWidth={2.2} aria-hidden="true" />
             </Button>
           </div>
@@ -370,9 +477,11 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
 
         {/* Gợi ý kích thước — ảnh đăng lên web nên đúng kích thước/tỉ lệ theo vị trí dùng */}
         <div className="px-4 pt-1">
-          {recommend
-            ? <MediaRequirementHint recommend={recommend} />
-            : <p className="text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>}
+          {recommend ? (
+            <MediaRequirementHint recommend={recommend} />
+          ) : (
+            <p className="text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>
+          )}
           {selectedUrl && (
             <MediaValidationError
               reasons={validation.reasons}
@@ -388,24 +497,35 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         {uploadQueue.length > 0 && (
           <div className="mpicker-upload-queue">
             {uploadQueue.map((item) => (
-              <div key={item.id} className={`mpicker-upload-item${item.error ? ' mpicker-upload-item--error' : ''}`}>
+              <div
+                key={item.id}
+                className={`mpicker-upload-item${item.error ? ' mpicker-upload-item--error' : ''}`}
+              >
                 <span className="mpicker-upload-name">{item.name}</span>
-                {item.error
-                  ? <>
-                      <span className="mpicker-upload-err">{item.error}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setUploadQueue((queue) => queue.filter((entry) => entry.id !== item.id))}
-                        aria-label={t('notifications.close')}
-                      >
-                        <X size={18} strokeWidth={2.2} aria-hidden="true" />
-                      </Button>
-                    </>
-                  : <progress className="h-1 flex-1 accent-primary" value={item.progress} max="100" aria-label={t('media.uploadProgress', { name: item.name })} />
-                }
+                {item.error ? (
+                  <>
+                    <span className="mpicker-upload-err">{item.error}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() =>
+                        setUploadQueue((queue) => queue.filter((entry) => entry.id !== item.id))
+                      }
+                      aria-label={t('notifications.close')}
+                    >
+                      <X size={18} strokeWidth={2.2} aria-hidden="true" />
+                    </Button>
+                  </>
+                ) : (
+                  <progress
+                    className="h-1 flex-1 accent-primary"
+                    value={item.progress}
+                    max="100"
+                    aria-label={t('media.uploadProgress', { name: item.name })}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -418,7 +538,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
             placeholder={t('media.picker.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-           />
+          />
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <FilterSelect
               value={folderFilter}
@@ -444,7 +564,9 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           </div>
           {filtersError && (
             <p className="mt-1 text-xs text-danger">
-              {t('media.picker.filtersError', { defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.' })}
+              {t('media.picker.filtersError', {
+                defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.',
+              })}
             </p>
           )}
         </div>
@@ -452,26 +574,51 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><X size={18} strokeWidth={2.2} aria-hidden="true" /></Button>
+            <Button
+              variant="unstyled"
+              onClick={() => setUploadError('')}
+              aria-label={t('media.picker.dismissError')}
+            >
+              <X size={18} strokeWidth={2.2} aria-hidden="true" />
+            </Button>
           </div>
         )}
 
         {/* Grid */}
         <div className="mpicker-body">
-          {isLoading && (
-            <div className="mpicker-state">{t('common.loading')}</div>
-          )}
+          {isLoading && <div className="mpicker-state">{t('common.loading')}</div>}
           {state.status === 'error' && (
             <div className="mpicker-state mpicker-state-error">
               <p>{t('media.loadError')}</p>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setRefreshKey((key) => key + 1)}>{t('common.retry')}</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setRefreshKey((key) => key + 1)}
+              >
+                {t('common.retry')}
+              </Button>
             </div>
           )}
-          {isRefreshing && <p className="px-4 py-2 text-sm text-muted-foreground" role="status">{t('media.refreshing')}</p>}
+          {isRefreshing && (
+            <p className="px-4 py-2 text-sm text-muted-foreground" role="status">
+              {t('media.refreshing')}
+            </p>
+          )}
           {state.refreshError && (
-            <div className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-sm bg-danger-bg px-3 py-2 text-sm text-danger" role="alert">
+            <div
+              className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-sm bg-danger-bg px-3 py-2 text-sm text-danger"
+              role="alert"
+            >
               <span>{t('media.refreshError')}</span>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setRefreshKey((key) => key + 1)}>{t('common.retry')}</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setRefreshKey((key) => key + 1)}
+              >
+                {t('common.retry')}
+              </Button>
             </div>
           )}
           {state.status === 'success' && state.items.length === 0 && (
@@ -480,13 +627,14 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
               <p>{search ? t('media.picker.emptySearch') : t('media.picker.empty')}</p>
             </div>
           )}
-          {(state.status === 'success' || state.status === 'refreshing') && state.items.length > 0 && (
-            <div className="mpicker-grid" aria-busy={isRefreshing || undefined}>
-              {state.items.map((media) => {
-                const url = media.publicUrl
-                const thumbUrl = resolveThumbUrl(media)
-                const sel = selectedUrl === url
-                return (
+          {(state.status === 'success' || state.status === 'refreshing') &&
+            state.items.length > 0 && (
+              <div className="mpicker-grid" aria-busy={isRefreshing || undefined}>
+                {state.items.map((media) => {
+                  const url = media.publicUrl
+                  const thumbUrl = resolveThumbUrl(media)
+                  const sel = selectedUrl === url
+                  return (
                     <Button
                       key={media.id}
                       variant="unstyled"
@@ -504,31 +652,39 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                       )}
                       <div className="mpicker-item-info">
                         <span className="mpicker-item-name">
-                          {(media.filename?.split('/').pop() ?? t('media.picker.defaultItemName')).replace(/\.[^.]+$/, '')}
+                          {(
+                            media.filename?.split('/').pop() ?? t('media.picker.defaultItemName')
+                          ).replace(/\.[^.]+$/, '')}
                         </span>
                         {media.fileSize ? (
                           <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
                         ) : null}
                       </div>
                     </Button>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )}
         </div>
 
         {/* Pagination */}
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <Button variant="secondary" size="sm"
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || isLoading || isRefreshing}
             >
               {t('media.picker.prev')}
             </Button>
-            <span className="mpicker-page-info">{t('media.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
-            <Button variant="secondary" size="sm"
+            <span className="mpicker-page-info">
+              {t('media.picker.pageInfo', { page, totalPages: state.totalPages })}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => setPage((p) => Math.min(state.totalPages, p + 1))}
               disabled={page >= state.totalPages || isLoading || isRefreshing}
@@ -551,11 +707,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
             <Button variant="secondary" type="button" onClick={attemptClose}>
               {t('common.cancel')}
             </Button>
-            <Button
-              type="button"
-              onClick={handleConfirm}
-              disabled={!canConfirm}
-            >
+            <Button type="button" onClick={handleConfirm} disabled={!canConfirm}>
               {t('media.picker.confirmSingle')}
             </Button>
           </div>

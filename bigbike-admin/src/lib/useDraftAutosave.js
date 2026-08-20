@@ -31,11 +31,14 @@ export function readDraft(key, { ttlMs = DEFAULT_TTL_MS } = {}) {
 export function writeDraft(key, value) {
   if (!key || !canUseStorage()) return false
   try {
-    window.localStorage.setItem(key, JSON.stringify({
-      version: DRAFT_VERSION,
-      savedAt: Date.now(),
-      value,
-    }))
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: DRAFT_VERSION,
+        savedAt: Date.now(),
+        value,
+      }),
+    )
     return true
   } catch {
     return false
@@ -44,7 +47,11 @@ export function writeDraft(key, value) {
 
 export function clearDraft(key) {
   if (!key || !canUseStorage()) return
-  try { window.localStorage.removeItem(key) } catch { /* storage may be blocked */ }
+  try {
+    window.localStorage.removeItem(key)
+  } catch {
+    /* storage may be blocked */
+  }
 }
 
 /**

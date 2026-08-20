@@ -28,8 +28,6 @@
    Custom CSS breakpoints:               640px · 900px · 901–1200px · 1920px
    ───────────────────────────────────────────────────────────────────────────*/
 
-
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Segmented tabs
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -53,8 +51,9 @@
   padding: 6px var(--admin-space-3);
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  transition: background-color var(--admin-transition-fast),
-              color var(--admin-transition-fast);
+  transition:
+    background-color var(--admin-transition-fast),
+    color var(--admin-transition-fast);
   min-height: 32px;
   display: inline-flex;
   align-items: center;
@@ -102,8 +101,12 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  .seg-tabs::-webkit-scrollbar { display: none; }
-  .seg-tabs-tab { white-space: nowrap; }
+  .seg-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .seg-tabs-tab {
+    white-space: nowrap;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -204,11 +207,17 @@
    Responsive table → cards switch
    Desktop & tablet show tables; mobile shows cards.
    ═══════════════════════════════════════════════════════════════════════════ */
-.show-on-mobile { display: none; }
+.show-on-mobile {
+  display: none;
+}
 
 @media (max-width: 640px) {
-  .show-on-mobile { display: revert; }
-  .hide-on-mobile { display: none !important; }
+  .show-on-mobile {
+    display: revert;
+  }
+  .hide-on-mobile {
+    display: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -252,8 +261,12 @@
     padding: var(--admin-space-3);
   }
   .sticky-action-bar > button,
-  .sticky-action-bar > .btn { flex: 1 1 auto; }
-  .sticky-action-bar-info { flex-basis: 100%; }
+  .sticky-action-bar > .btn {
+    flex: 1 1 auto;
+  }
+  .sticky-action-bar-info {
+    flex-basis: 100%;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -299,11 +312,14 @@
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-
-
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -335,8 +351,9 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: background-color var(--admin-transition-fast),
-              border-color var(--admin-transition-fast);
+  transition:
+    background-color var(--admin-transition-fast),
+    border-color var(--admin-transition-fast);
 }
 
 .dash-attention-item:hover {
@@ -348,8 +365,12 @@
   box-shadow: 0 0 0 3px var(--admin-color-primary-muted);
 }
 
-.dash-attention-item--danger  { border-left-color: var(--admin-color-status-danger-text); }
-.dash-attention-item--warning { border-left-color: var(--admin-color-status-warning-text); }
+.dash-attention-item--danger {
+  border-left-color: var(--admin-color-status-danger-text);
+}
+.dash-attention-item--warning {
+  border-left-color: var(--admin-color-status-warning-text);
+}
 
 .dash-attention-icon {
   display: inline-flex;
@@ -361,9 +382,14 @@
   flex-shrink: 0;
 }
 
-.dash-attention-item--danger  .dash-attention-icon { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text); }
-.dash-attention-item--warning .dash-attention-icon { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); }
-
+.dash-attention-item--danger .dash-attention-icon {
+  background: var(--admin-color-status-danger-bg);
+  color: var(--admin-color-status-danger-text);
+}
+.dash-attention-item--warning .dash-attention-icon {
+  background: var(--admin-color-status-warning-bg);
+  color: var(--admin-color-status-warning-text);
+}
 
 .dash-attention-body {
   flex: 1;
@@ -406,8 +432,6 @@
 /* Top products: rank / product(flex) / units / revenue */
 
 /* On tablet/mobile a minimum width keeps columns legible; the wrap scrolls. */
-
-
 
 /* ── Settings card footer (save / discard action bar) ─────────────────────── */
 .card-foot {

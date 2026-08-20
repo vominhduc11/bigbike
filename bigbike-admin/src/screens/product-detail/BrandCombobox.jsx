@@ -38,7 +38,9 @@ export function BrandCombobox({ displayLabel, options = [], onChange, disabled, 
     const needle = trimmedSearch.toLowerCase()
     return options.filter((o) => (o.name || '').toLowerCase().includes(needle))
   }, [options, trimmedSearch])
-  const hasExactMatch = options.some((o) => (o.name || '').trim().toLowerCase() === trimmedSearch.toLowerCase())
+  const hasExactMatch = options.some(
+    (o) => (o.name || '').trim().toLowerCase() === trimmedSearch.toLowerCase(),
+  )
   const showCreateRow = canCreate && trimmedSearch.length > 0 && !hasExactMatch
   const rows = showCreateRow ? [...filteredOptions, CREATE_ROW] : filteredOptions
 
@@ -46,7 +48,12 @@ export function BrandCombobox({ displayLabel, options = [], onChange, disabled, 
     mutationFn: (name) => createBrand({ name, slug: toSlug(name) }),
     onSuccess: (result) => {
       const brand = result.item
-      toast.success(t('products.detail.brandCreated', { name: brand.name, defaultValue: `Đã tạo thương hiệu ${brand.name}.` }))
+      toast.success(
+        t('products.detail.brandCreated', {
+          name: brand.name,
+          defaultValue: `Đã tạo thương hiệu ${brand.name}.`,
+        }),
+      )
       queryClient.invalidateQueries({ queryKey: queryKeys.brandsAll('vi') })
       queryClient.invalidateQueries({ queryKey: queryKeys.brandsAll('en') })
       onChange(brand.id)
@@ -54,7 +61,10 @@ export function BrandCombobox({ displayLabel, options = [], onChange, disabled, 
       setSearch('')
     },
     onError: (err) =>
-      toast.error(err?.message || t('products.detail.brandCreateError', { defaultValue: 'Không tạo được thương hiệu.' })),
+      toast.error(
+        err?.message ||
+          t('products.detail.brandCreateError', { defaultValue: 'Không tạo được thương hiệu.' }),
+      ),
   })
 
   useEffect(() => {
@@ -102,7 +112,10 @@ export function BrandCombobox({ displayLabel, options = [], onChange, disabled, 
             // Radix's DismissableLayer (mounted via PopoverAnchor, not Trigger) into treating
             // the still-in-flight click as "outside" and closing immediately after opening.
             // A 0ms defer lets that cycle finish first.
-            setTimeout(() => { setOpen(true); setSearch('') }, 0)
+            setTimeout(() => {
+              setOpen(true)
+              setSearch('')
+            }, 0)
           }}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
@@ -136,7 +149,10 @@ export function BrandCombobox({ displayLabel, options = [], onChange, disabled, 
               )}
             >
               {row.__create__
-                ? t('products.detail.brandCreateOption', { name: trimmedSearch, defaultValue: `+ Tạo thương hiệu mới "${trimmedSearch}"` })
+                ? t('products.detail.brandCreateOption', {
+                    name: trimmedSearch,
+                    defaultValue: `+ Tạo thương hiệu mới "${trimmedSearch}"`,
+                  })
                 : row.name}
             </li>
           ))}

@@ -17,8 +17,22 @@ import {
 } from './constants'
 
 export function SettingTabPanel({
-  title, description, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
-  onDraftBlur, onSave, onDiscard, saving, saveSuccess, saveError, isSuperAdmin = false,
+  title,
+  description,
+  items,
+  canUpdate,
+  drafts,
+  draftsEn,
+  errors,
+  onDraftChange,
+  onDraftChangeEn,
+  onDraftBlur,
+  onSave,
+  onDiscard,
+  saving,
+  saveSuccess,
+  saveError,
+  isSuperAdmin = false,
 }) {
   const { t } = useTranslation()
   const isDirtyField = (setting) => isSettingDirty(setting, drafts, draftsEn)
@@ -27,20 +41,22 @@ export function SettingTabPanel({
 
   const sections = useMemo(() => groupBySection(items), [items])
   const errorSections = useMemo(
-    () => new Set(
-      sections
-        .slice(1)
-        .filter(({ fields }) => fields.some((setting) => errors[setting.key]))
-        .map(({ sec }) => sec),
-    ),
+    () =>
+      new Set(
+        sections
+          .slice(1)
+          .filter(({ fields }) => fields.some((setting) => errors[setting.key]))
+          .map(({ sec }) => sec),
+      ),
     [errors, sections],
   )
   const [openOverride, setOpenOverride] = useState({})
   const isOpen = (sec) => errorSections.has(sec) || (openOverride[sec] ?? false)
-  const toggle = (sec) => setOpenOverride((previous) => ({
-    ...previous,
-    [sec]: !(previous[sec] ?? false),
-  }))
+  const toggle = (sec) =>
+    setOpenOverride((previous) => ({
+      ...previous,
+      [sec]: !(previous[sec] ?? false),
+    }))
 
   const renderFields = (fields) => (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -103,14 +119,26 @@ export function SettingTabPanel({
               <h3>{title}</h3>
               {dirtyCount > 0 ? (
                 <span className="bb-badge bb-badge-warning">
-                  {t('settings.unsavedShort', { count: dirtyCount, defaultValue: '{{count}} chưa lưu' })}
+                  {t('settings.unsavedShort', {
+                    count: dirtyCount,
+                    defaultValue: '{{count}} chưa lưu',
+                  })}
                 </span>
               ) : null}
             </div>
-            <p>{description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}</p>
+            <p>
+              {description ||
+                t('settings.panelSummary', {
+                  count: items.length,
+                  defaultValue: '{{count}} mục cài đặt',
+                })}
+            </p>
           </div>
           <span className="bb-badge bb-badge-neutral">
-            {t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
+            {t('settings.panelSummary', {
+              count: items.length,
+              defaultValue: '{{count}} mục cài đặt',
+            })}
           </span>
         </div>
 
@@ -120,11 +148,15 @@ export function SettingTabPanel({
             const secTitle = sectionTitle(sec, t)
             const secDescription = sectionDescription(sec, t)
             const dirtyInSec = fields.filter(isDirtyField).length
-            const dirtyBadge = dirtyInSec > 0 ? (
-              <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInSec })}>
-                {dirtyInSec}
-              </span>
-            ) : null
+            const dirtyBadge =
+              dirtyInSec > 0 ? (
+                <span
+                  className="bb-badge bb-badge-warning"
+                  aria-label={t('settings.tabChangeCount', { count: dirtyInSec })}
+                >
+                  {dirtyInSec}
+                </span>
+              ) : null
 
             if (idx === 0) {
               return (
@@ -175,12 +207,7 @@ export function SettingTabPanel({
             </Button>
           ) : null}
           {dirtyCount > 0 ? (
-            <Button
-              className="min-h-11"
-              loading={saving}
-              disabled={hasError}
-              onClick={onSave}
-            >
+            <Button className="min-h-11" loading={saving} disabled={hasError} onClick={onSave}>
               {t('settings.saveCount', { count: dirtyCount })}
             </Button>
           ) : null}

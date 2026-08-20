@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -35,7 +36,9 @@ vi.mock('../components/AdminTable', () => ({
     <div data-testid="brand-table">
       {rows.map((row) => (
         <div key={row.id}>
-          {columns.map((column) => <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>)}
+          {columns.map((column) => (
+            <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
+          ))}
         </div>
       ))}
     </div>
@@ -88,7 +91,9 @@ describe('BrandListScreen', () => {
 
     expect(await screen.findByText('LS2')).toBeInTheDocument()
     expect(screen.queryByText('Chưa phân loại')).not.toBeInTheDocument()
-    expect(mocks.fetchBrands).toHaveBeenLastCalledWith(expect.objectContaining({ visibility: 'VISIBLE' }))
+    expect(mocks.fetchBrands).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visibility: 'VISIBLE' }),
+    )
   })
 
   it('uses the read-only banner and hides write actions', async () => {
@@ -115,7 +120,9 @@ describe('BrandListScreen', () => {
 
     await user.click(await screen.findByRole('button', { name: 'brands.hideAction' }))
     await waitFor(() => expect(mocks.deleteBrand).toHaveBeenCalledWith('brand_ls2'))
-    expect(mocks.fetchBrands).toHaveBeenLastCalledWith(expect.objectContaining({ visibility: 'VISIBLE' }))
+    expect(mocks.fetchBrands).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visibility: 'VISIBLE' }),
+    )
   })
 
   it('hiện dải "Vừa xem gần đây" từ thương hiệu đã mở ở màn chi tiết', async () => {
@@ -126,7 +133,9 @@ describe('BrandListScreen', () => {
     const chip = await screen.findByRole('button', { name: 'LS2' })
     const recentItems = screen.getByRole('group', { name: 'common.recentItems' })
     const filterBar = screen.getByRole('region', { name: 'brands.filterAria' })
-    expect(recentItems.compareDocumentPosition(filterBar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      recentItems.compareDocumentPosition(filterBar) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
 
     await user.click(chip)
     expect(navigate).toHaveBeenCalledWith('/admin/brands/brand_ls2')

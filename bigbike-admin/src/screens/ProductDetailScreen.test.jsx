@@ -26,7 +26,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -104,10 +105,20 @@ vi.mock('./product-detail/Layout', () => ({
   AssignmentBanner: () => null,
 }))
 vi.mock('../components/SectionCard', () => ({
-  SectionCard: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,
+  SectionCard: ({ title, children }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
 }))
 vi.mock('@/components/CollapsibleSection', () => ({
-  CollapsibleSection: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,
+  CollapsibleSection: ({ title, children }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
 }))
 
 vi.mock('@/components/ui/popover', () => ({
@@ -134,7 +145,9 @@ vi.mock('@/components/ui/checkbox', () => ({
   ),
 }))
 vi.mock('@/components/ui/switch', () => ({
-  Switch: ({ checked, disabled }) => <input type="checkbox" checked={Boolean(checked)} disabled={disabled} readOnly />,
+  Switch: ({ checked, disabled }) => (
+    <input type="checkbox" checked={Boolean(checked)} disabled={disabled} readOnly />
+  ),
 }))
 vi.mock('@/components/ui/tabs', () => ({
   Tabs: ({ children }) => <div>{children}</div>,
@@ -151,7 +164,9 @@ const product = {
   description: '',
   brandId: 'brand-agv',
   brand: { id: 'brand-agv', name: 'AGV', slug: 'agv' },
-  categories: [{ id: 'helmet', name: 'Mũ bảo hiểm', slug: 'helmet', visible: true, deleted: false }],
+  categories: [
+    { id: 'helmet', name: 'Mũ bảo hiểm', slug: 'helmet', visible: true, deleted: false },
+  ],
   price: { retailPrice: 5900000, salePrice: 5500000 },
   available: true,
   publishStatus: 'DRAFT',
@@ -174,14 +189,16 @@ const product = {
       mimeType: 'image/png',
     },
   },
-  gallery: [{
-    mediaType: 'image',
-    rawUrl: '/media/gallery-1.webp',
-    alt: 'Mặt trước mũ',
-    width: 1600,
-    height: 1200,
-    mimeType: 'image/webp',
-  }],
+  gallery: [
+    {
+      mediaType: 'image',
+      rawUrl: '/media/gallery-1.webp',
+      alt: 'Mặt trước mũ',
+      width: 1600,
+      height: 1200,
+      mimeType: 'image/webp',
+    },
+  ],
   variants: [],
   translations: { en: { name: 'AGV K1S Helmet' } },
   updatedAt: '2026-07-28T00:00:00Z',
@@ -192,11 +209,7 @@ function renderScreen({ canUpdate = true } = {}) {
   const navigate = vi.fn()
   render(
     <QueryClientProvider client={client}>
-      <ProductDetailScreen
-        productId={product.id}
-        navigate={navigate}
-        canUpdate={canUpdate}
-      />
+      <ProductDetailScreen productId={product.id} navigate={navigate} canUpdate={canUpdate} />
     </QueryClientProvider>,
   )
   return { navigate }
@@ -225,7 +238,9 @@ describe('ProductDetailScreen', () => {
     renderScreen({ canUpdate: false })
 
     expect(await screen.findByText('products.detail.permissionDesc')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'products.detail.preview.open' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'products.detail.preview.open' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'products.publishAction' })).not.toBeInTheDocument()
     expect(screen.getByDisplayValue('Mũ AGV K1S')).toBeDisabled()
     expect(screen.getByRole('button', { name: 'products.detail.saveDraft' })).toBeDisabled()
@@ -256,7 +271,9 @@ describe('ProductDetailScreen', () => {
     await user.click(await screen.findByRole('button', { name: 'products.publishAction' }))
 
     expect(screen.getByText('products.detail.checklist.image')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'products.detail.checklist.publishNow' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'products.detail.checklist.publishNow' }),
+    ).not.toBeInTheDocument()
     expect(mocks.publishProduct).not.toHaveBeenCalled()
   })
 
@@ -307,7 +324,9 @@ describe('ProductDetailScreen', () => {
 
     const nameInput = await screen.findByDisplayValue('Mũ AGV K1S')
     expect(screen.queryByRole('button', { name: 'products.publishAction' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'products.unpublishAction' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'products.unpublishAction' }),
+    ).not.toBeInTheDocument()
 
     await user.type(nameInput, ' cập nhật')
     await user.click(screen.getByRole('button', { name: 'products.detail.restoreAndSave' }))
@@ -349,13 +368,15 @@ describe('ProductDetailScreen', () => {
       height: 630,
       mimeType: 'image/png',
     })
-    expect(payload.gallery[0]).toEqual(expect.objectContaining({
-      url: '/media/gallery-1.webp',
-      alt: 'Mặt trước mũ',
-      width: 1600,
-      height: 1200,
-      mimeType: 'image/webp',
-    }))
+    expect(payload.gallery[0]).toEqual(
+      expect.objectContaining({
+        url: '/media/gallery-1.webp',
+        alt: 'Mặt trước mũ',
+        width: 1600,
+        height: 1200,
+        mimeType: 'image/webp',
+      }),
+    )
   })
 
   it('giữ caret khi sửa giá, chưa gọi mutation trước Lưu và gửi số/null cuối cùng', async () => {
@@ -483,7 +504,9 @@ describe('ProductDetailScreen — đường dẫn tiếng Anh (tab EN)', () => {
     await user.type(slugInput, EN_SLUG)
     await user.click(screen.getByRole('button', { name: 'products.detail.saveDraft' }))
 
-    await waitFor(() => expect(mocks.toast.success).toHaveBeenCalledWith('products.detail.successUpdate'))
+    await waitFor(() =>
+      expect(mocks.toast.success).toHaveBeenCalledWith('products.detail.successUpdate'),
+    )
     expect(await screen.findByLabelText('products.detail.slug')).toHaveValue(EN_SLUG)
   })
 

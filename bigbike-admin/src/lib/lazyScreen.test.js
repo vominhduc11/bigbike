@@ -15,9 +15,11 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
  */
 describe('lazyScreen registrations in App.jsx', () => {
   const app = readFileSync(resolve(SRC, 'App.jsx'), 'utf8')
-  const registrations = [...app.matchAll(
-    /lazyScreen\(\s*\(\)\s*=>\s*import\(\s*'([^']+)'\s*\)\s*,\s*'([^']+)'\s*\)/g,
-  )].map(([, path, exportName]) => ({ path, exportName }))
+  const registrations = [
+    ...app.matchAll(
+      /lazyScreen\(\s*\(\)\s*=>\s*import\(\s*'([^']+)'\s*\)\s*,\s*'([^']+)'\s*,?\s*\)/g,
+    ),
+  ].map(([, path, exportName]) => ({ path, exportName }))
 
   it('finds every registration (guards against the regex silently matching nothing)', () => {
     expect(registrations.length).toBeGreaterThan(20)
@@ -28,9 +30,10 @@ describe('lazyScreen registrations in App.jsx', () => {
     expect(existsSync(file), `${file} không tồn tại`).toBe(true)
 
     const source = readFileSync(file, 'utf8')
-    const named = new RegExp(`export\\s+(?:default\\s+)?function\\s+${exportName}\\b`).test(source)
-      || new RegExp(`export\\s*\\{[^}]*\\b${exportName}\\b`).test(source)
-      || new RegExp(`export\\s+const\\s+${exportName}\\b`).test(source)
+    const named =
+      new RegExp(`export\\s+(?:default\\s+)?function\\s+${exportName}\\b`).test(source) ||
+      new RegExp(`export\\s*\\{[^}]*\\b${exportName}\\b`).test(source) ||
+      new RegExp(`export\\s+const\\s+${exportName}\\b`).test(source)
 
     expect(named, `${path} phải có "export function ${exportName}"`).toBe(true)
     expect(

@@ -27,9 +27,15 @@ export function useMediaReferences(media) {
         setRefs(items)
         setRefsError(false)
       })
-      .catch(() => { if (active) setRefsError(true) })
-      .finally(() => { if (active) setRefsLoading(false) })
-    return () => { active = false }
+      .catch(() => {
+        if (active) setRefsError(true)
+      })
+      .finally(() => {
+        if (active) setRefsLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [media.id, revision]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {

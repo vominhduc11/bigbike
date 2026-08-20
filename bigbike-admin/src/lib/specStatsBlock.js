@@ -112,12 +112,17 @@ function readBox(box) {
   if (marker) {
     const clone = box.cloneNode(true)
     clone.querySelectorAll('strong, b').forEach((element) => element.remove())
-    const remainder = text(clone).replace(/^[|:：→—–-]+\s*/, '').trim()
+    const remainder = text(clone)
+      .replace(/^[|:：→—–-]+\s*/, '')
+      .trim()
     return { value: text(marker), label: remainder }
   }
   if (spans.length === 1) return { value: text(spans[0]), label: '' }
   // fallback: tách theo dòng text
-  const lines = text(box).split(/\n|\s+[|→—–-]\s+/).map((l) => l.trim()).filter(Boolean)
+  const lines = text(box)
+    .split(/\n|\s+[|→—–-]\s+/)
+    .map((l) => l.trim())
+    .filter(Boolean)
   return { value: lines[0] || '', label: lines.at(-1) || '' }
 }
 
@@ -130,7 +135,11 @@ export function parseSpecStatsResult(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const headingPairs = headingStatPairs(doc)
     if (headingPairs.length) {
-      const items = headingPairs.map(({ value, metric }) => ({ _key: generateId(), value, label: metric }))
+      const items = headingPairs.map(({ value, metric }) => ({
+        _key: generateId(),
+        value,
+        label: metric,
+      }))
       return makeHtmlImportResult({ items, hasInput: true })
     }
     const boxes = findStatBoxes(doc)
@@ -138,7 +147,11 @@ export function parseSpecStatsResult(html) {
       .filter(isStatCandidate)
       .map((box) => ({ _key: generateId(), ...readBox(box) }))
       .filter(statHasContent)
-    return makeHtmlImportResult({ items, skippedCount: boxes.length - items.length + (items.length ? 0 : 1), hasInput: true })
+    return makeHtmlImportResult({
+      items,
+      skippedCount: boxes.length - items.length + (items.length ? 0 : 1),
+      hasInput: true,
+    })
   } catch {
     return makeHtmlImportResult({ skippedCount: 1, hasInput: true })
   }
@@ -152,7 +165,9 @@ export function parseSpecStatsFromHtml(html) {
 /** Đặt text {value,label} vào 1 ô, GIỮ style span value & label sẵn có; gỡ span giữa nếu còn sót. */
 function applyStatToBox(doc, box, s) {
   let spans = [...box.children]
-  const directTextNodes = [...box.childNodes].filter((node) => node.nodeType === 3 && node.textContent.trim())
+  const directTextNodes = [...box.childNodes].filter(
+    (node) => node.nodeType === 3 && node.textContent.trim(),
+  )
   if (spans.length === 0) {
     box.textContent = s.label ? `${s.value} — ${s.label}` : s.value
     return
@@ -160,7 +175,9 @@ function applyStatToBox(doc, box, s) {
   directTextNodes.forEach((node) => node.remove())
   // Đảm bảo có span value (đầu) + span label (cuối).
   if (spans.length === 1) {
-    const l = doc.createElement('span'); l.setAttribute('style', LABEL_STYLE); box.appendChild(l)
+    const l = doc.createElement('span')
+    l.setAttribute('style', LABEL_STYLE)
+    box.appendChild(l)
     spans = [...box.children]
   }
   const valueSpan = spans[0]

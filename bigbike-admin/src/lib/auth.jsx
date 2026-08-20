@@ -43,44 +43,50 @@ export function AuthProvider({ children }) {
     channelRef.current?.postMessage({ type })
   }, [])
 
-  const invalidateSession = useCallback(({ broadcast = false } = {}) => {
-    clearTokens()
-    queryClient.clear()
-    setUnauthenticated()
-    if (broadcast) broadcastAccessSignal('FORCE_REAUTH')
-  }, [broadcastAccessSignal, setUnauthenticated])
+  const invalidateSession = useCallback(
+    ({ broadcast = false } = {}) => {
+      clearTokens()
+      queryClient.clear()
+      setUnauthenticated()
+      if (broadcast) broadcastAccessSignal('FORCE_REAUTH')
+    },
+    [broadcastAccessSignal, setUnauthenticated],
+  )
 
-  const reconcileAccess = useCallback(async ({ broadcast = true } = {}) => {
-    if (stateRef.current.status !== 'authenticated') return false
-    if (reconcileInFlightRef.current) return reconcileInFlightRef.current
+  const reconcileAccess = useCallback(
+    async ({ broadcast = true } = {}) => {
+      if (stateRef.current.status !== 'authenticated') return false
+      if (reconcileInFlightRef.current) return reconcileInFlightRef.current
 
-    reconcileInFlightRef.current = (async () => {
-      try {
-        const response = await fetchCurrentAdminUser()
-        if (!aliveRef.current) return false
-        // Keep the React Query cache warm here.
-        // This path runs on focus and on a 30s interval, so clearing the entire
-        // cache would turn a harmless access refresh into visible full-screen flicker.
-        setState({
-          status: 'authenticated',
-          user: response.user,
-          mode: response.mode || 'live',
-          error: '',
-        })
-        if (broadcast) broadcastAccessSignal('PROFILE_REFRESH')
-        return true
-      } catch (error) {
-        // Network failures must not incorrectly sign an operator out. Authentication failures do.
-        if (error?.status === 401 || error?.status === 403) {
-          invalidateSession({ broadcast })
+      reconcileInFlightRef.current = (async () => {
+        try {
+          const response = await fetchCurrentAdminUser()
+          if (!aliveRef.current) return false
+          // Keep the React Query cache warm here.
+          // This path runs on focus and on a 30s interval, so clearing the entire
+          // cache would turn a harmless access refresh into visible full-screen flicker.
+          setState({
+            status: 'authenticated',
+            user: response.user,
+            mode: response.mode || 'live',
+            error: '',
+          })
+          if (broadcast) broadcastAccessSignal('PROFILE_REFRESH')
+          return true
+        } catch (error) {
+          // Network failures must not incorrectly sign an operator out. Authentication failures do.
+          if (error?.status === 401 || error?.status === 403) {
+            invalidateSession({ broadcast })
+          }
+          return false
+        } finally {
+          reconcileInFlightRef.current = null
         }
-        return false
-      } finally {
-        reconcileInFlightRef.current = null
-      }
-    })()
-    return reconcileInFlightRef.current
-  }, [broadcastAccessSignal, invalidateSession])
+      })()
+      return reconcileInFlightRef.current
+    },
+    [broadcastAccessSignal, invalidateSession],
+  )
 
   // Wired into the fetch interceptor: when refresh ultimately fails, kick the
   // user back to the login screen. We do not call clearTokens here because the
@@ -102,7 +108,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     aliveRef.current = true
-    return () => { aliveRef.current = false }
+    return () => {
+      aliveRef.current = false
+    }
   }, [])
 
   // Bootstrap: on page load the in-memory access token is gone, so try a

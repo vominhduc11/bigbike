@@ -15,21 +15,21 @@ npm run lint
 
 ## Routes
 
-| Route | Permission |
-|-------|-----------|
-| `/admin/products` | `products.read` |
-| `/admin/categories` | `catalog.read` |
-| `/admin/brands` | `catalog.read` |
-| `/admin/content` | `content.read` |
-| `/admin/orders` | `orders.read` |
-| `/admin/customers` | `customers.read` |
-| `/admin/media` | `media.read` |
-| `/admin/redirects` | `redirects.read / redirects.write` |
-| `/admin/menus` | `menus.read` |
-| `/admin/sliders` | `sliders.read` |
-| `/admin/reviews` | `reviews.read` |
-| `/admin/admin-users` | `admin-users.read` |
-| `/admin/settings` | `settings.read` |
+| Route                | Permission                         |
+| -------------------- | ---------------------------------- |
+| `/admin/products`    | `products.read`                    |
+| `/admin/categories`  | `catalog.read`                     |
+| `/admin/brands`      | `catalog.read`                     |
+| `/admin/content`     | `content.read`                     |
+| `/admin/orders`      | `orders.read`                      |
+| `/admin/customers`   | `customers.read`                   |
+| `/admin/media`       | `media.read`                       |
+| `/admin/redirects`   | `redirects.read / redirects.write` |
+| `/admin/menus`       | `menus.read`                       |
+| `/admin/sliders`     | `sliders.read`                     |
+| `/admin/reviews`     | `reviews.read`                     |
+| `/admin/admin-users` | `admin-users.read`                 |
+| `/admin/settings`    | `settings.read`                    |
 
 Default landing: `/admin/products`.
 

@@ -45,7 +45,9 @@ describe('serializeSizeGuide', () => {
       columns: cols('Size', 'X'),
       rows: [row('M', '57')],
     })
-    const [, firstTd, secondTd] = html.match(/<td style="([^"]+)">M<\/td><td style="([^"]+)">57<\/td>/)
+    const [, firstTd, secondTd] = html.match(
+      /<td style="([^"]+)">M<\/td><td style="([^"]+)">57<\/td>/,
+    )
     expect(firstTd).toContain('font-weight:700')
     expect(secondTd).not.toContain('font-weight:700')
   })
@@ -61,7 +63,10 @@ describe('serializeSizeGuide', () => {
   })
 
   it('escape ký tự HTML', () => {
-    const html = serializeSizeGuide({ columns: cols('Size', 'X'), rows: [row('M', '<b>x</b> & y')] })
+    const html = serializeSizeGuide({
+      columns: cols('Size', 'X'),
+      rows: [row('M', '<b>x</b> & y')],
+    })
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt; &amp; y')
     expect(html).not.toContain('<b>x</b>')
   })
@@ -71,8 +76,12 @@ describe('serializeSizeGuide', () => {
       columns: cols('Size', 'Vòng đầu', 'Vòng ngực', 'Chiều cao', 'Cân nặng'),
       rows: [row('M', '57', '90', '165', '60')],
     })
-    expect(html).toMatch(/<th style="[^"]+">Size<\/th><th style="[^"]+">Vòng đầu<\/th><th style="[^"]+">Vòng ngực<\/th><th style="[^"]+">Chiều cao<\/th><th style="[^"]+">Cân nặng<\/th>/)
-    expect(html).toMatch(/<td style="[^"]+">M<\/td><td style="[^"]+">57<\/td><td style="[^"]+">90<\/td><td style="[^"]+">165<\/td><td style="[^"]+">60<\/td>/)
+    expect(html).toMatch(
+      /<th style="[^"]+">Size<\/th><th style="[^"]+">Vòng đầu<\/th><th style="[^"]+">Vòng ngực<\/th><th style="[^"]+">Chiều cao<\/th><th style="[^"]+">Cân nặng<\/th>/,
+    )
+    expect(html).toMatch(
+      /<td style="[^"]+">M<\/td><td style="[^"]+">57<\/td><td style="[^"]+">90<\/td><td style="[^"]+">165<\/td><td style="[^"]+">60<\/td>/,
+    )
   })
 
   it('ô thiếu trong dòng → bù <td> rỗng cho đủ số cột', () => {
@@ -80,7 +89,9 @@ describe('serializeSizeGuide', () => {
       columns: cols('Size', 'A', 'B'),
       rows: [{ _key: 'r', cells: ['M', '1'] }],
     })
-    expect(html).toMatch(/<td style="[^"]+">M<\/td><td style="[^"]+">1<\/td><td style="[^"]+"><\/td>/)
+    expect(html).toMatch(
+      /<td style="[^"]+">M<\/td><td style="[^"]+">1<\/td><td style="[^"]+"><\/td>/,
+    )
   })
 })
 
@@ -99,8 +110,15 @@ describe('parseSizeGuide', () => {
       note: '',
     }
     const parsed = parseSizeGuide(serializeSizeGuide(model))
-    expect(parsed.columns.map((c) => c.label)).toEqual(['Size', 'Vòng đầu (cm)', 'Kích cỡ vỏ', 'Ghi chú'])
-    expect(parsed.rows.map((r) => r.cells)).toEqual([['M', '57 – 58', 'Shell nhỏ (XS–M)', 'Bán chạy nhất']])
+    expect(parsed.columns.map((c) => c.label)).toEqual([
+      'Size',
+      'Vòng đầu (cm)',
+      'Kích cỡ vỏ',
+      'Ghi chú',
+    ])
+    expect(parsed.rows.map((r) => r.cells)).toEqual([
+      ['M', '57 – 58', 'Shell nhỏ (XS–M)', 'Bán chạy nhất'],
+    ])
     expect(parsed.rows.every((r) => r._key)).toBe(true)
   })
 
@@ -112,26 +130,33 @@ describe('parseSizeGuide', () => {
     }
     const parsed = parseSizeGuide(serializeSizeGuide(model))
     expect(parsed.columns.map((c) => c.label)).toEqual(['Size', 'Vòng ngực (cm)'])
-    expect(parsed.rows.map((r) => r.cells)).toEqual([['M', '88 – 92'], ['L', '96 – 100']])
+    expect(parsed.rows.map((r) => r.cells)).toEqual([
+      ['M', '88 – 92'],
+      ['L', '96 – 100'],
+    ])
     expect(parsed.note).toBe('Đo nơi rộng nhất.')
   })
 
-	it('nhận bảng AI dùng token và thead/tbody chuẩn', () => {
-    const html = '<table style="font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);color:var(--bb-text-primary)"><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr></tbody></table>'
+  it('nhận bảng AI dùng token và thead/tbody chuẩn', () => {
+    const html =
+      '<table style="font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);color:var(--bb-text-primary)"><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr></tbody></table>'
     const result = parseSizeGuideResult(html)
     expect(result.acceptedCount).toBe(1)
     expect(result.model.columns.map((c) => c.label)).toEqual(['Size', 'Vòng đầu'])
     expect(result.model.rows[0].cells).toEqual(['M', '57–58'])
-	})
+  })
 
-	it('nhận bảng có thead nhưng không có tbody', () => {
-		const result = parseSizeGuideResult('<table><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tr><td>M</td><td>57–58</td></tr></table>')
-		expect(result.acceptedCount).toBe(1)
-		expect(result.model.rows[0].cells).toEqual(['M', '57–58'])
-	})
+  it('nhận bảng có thead nhưng không có tbody', () => {
+    const result = parseSizeGuideResult(
+      '<table><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tr><td>M</td><td>57–58</td></tr></table>',
+    )
+    expect(result.acceptedCount).toBe(1)
+    expect(result.model.rows[0].cells).toEqual(['M', '57–58'])
+  })
 
-	it('fallback: văn bản thuần kiểu "- M: 57-58 cm" → tách thành dòng + ghi chú', () => {
-    const legacy = 'Đo chu vi vòng đầu (cm) tại vị trí lớn nhất, rồi đối chiếu:\n- M: 57-58 cm\n- L: 59-60 cm\n- XL: 61-62 cm\nNếu số đo nằm giữa hai size, nên chọn size lớn hơn.'
+  it('fallback: văn bản thuần kiểu "- M: 57-58 cm" → tách thành dòng + ghi chú', () => {
+    const legacy =
+      'Đo chu vi vòng đầu (cm) tại vị trí lớn nhất, rồi đối chiếu:\n- M: 57-58 cm\n- L: 59-60 cm\n- XL: 61-62 cm\nNếu số đo nằm giữa hai size, nên chọn size lớn hơn.'
     const parsed = parseSizeGuide(legacy)
     expect(parsed.rows.map((r) => r.cells)).toEqual([
       ['M', '57-58 cm'],
@@ -140,20 +165,23 @@ describe('parseSizeGuide', () => {
     ])
     expect(parsed.note).toContain('Đo chu vi vòng đầu')
     expect(parsed.note).toContain('Nếu số đo nằm giữa hai size')
-	})
+  })
 
-	it('đọc HTML thông thường dạng size ở tiêu đề + số đo ở đoạn văn', () => {
-		const result = parseSizeGuideResult('<h3>M</h3><p>57–58 cm</p><h3>L</h3><p>59–60 cm</p>')
-		expect(result.model.rows.map((item) => item.cells)).toEqual([['M', '57–58 cm'], ['L', '59–60 cm']])
-	})
+  it('đọc HTML thông thường dạng size ở tiêu đề + số đo ở đoạn văn', () => {
+    const result = parseSizeGuideResult('<h3>M</h3><p>57–58 cm</p><h3>L</h3><p>59–60 cm</p>')
+    expect(result.model.rows.map((item) => item.cells)).toEqual([
+      ['M', '57–58 cm'],
+      ['L', '59–60 cm'],
+    ])
+  })
 
-	it('đọc bảng size dạng danh sách gạch đầu dòng', () => {
-		const result = parseSizeGuide('<ul><li>Small: 54–55 cm</li><li>Large - 58–59 cm</li></ul>')
-		expect(result.rows.map((row) => row.cells)).toEqual([
-			['Small', '54–55 cm'],
-			['Large', '58–59 cm'],
-		])
-	})
+  it('đọc bảng size dạng danh sách gạch đầu dòng', () => {
+    const result = parseSizeGuide('<ul><li>Small: 54–55 cm</li><li>Large - 58–59 cm</li></ul>')
+    expect(result.rows.map((row) => row.cells)).toEqual([
+      ['Small', '54–55 cm'],
+      ['Large', '58–59 cm'],
+    ])
+  })
 
   it('emptySizeGuide có _key duy nhất cho mỗi cột', () => {
     const e = emptySizeGuide()
@@ -184,7 +212,11 @@ describe('mergeSizeGuideIntoHtml', () => {
   it('thêm dòng → nhân bản giữ style của dòng cuối', () => {
     const styled =
       '<table><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tbody><tr class="r"><td style="padding:4px">M</td><td>57</td></tr></tbody></table>'
-    const model = { columns: cols('Size', 'Vòng đầu'), rows: [row('M', '57'), row('L', '59')], note: '' }
+    const model = {
+      columns: cols('Size', 'Vòng đầu'),
+      rows: [row('M', '57'), row('L', '59')],
+      note: '',
+    }
     const out = mergeSizeGuideIntoHtml(model, styled)
     expect(out).toContain('L')
     expect(out).toContain('59')
@@ -202,28 +234,36 @@ describe('mergeSizeGuideIntoHtml', () => {
   })
 
   it('bảng hết nội dung → gỡ bảng, giữ/đặt ghi chú', () => {
-    const styled = '<table><thead><tr><th>Size</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>'
+    const styled =
+      '<table><thead><tr><th>Size</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>'
     const out = mergeSizeGuideIntoHtml({ columns: cols('Size'), rows: [], note: 'Ghi chú' }, styled)
     expect(out).not.toContain('<table')
     expect(out).toContain('Ghi chú')
   })
 
-	it('html không phải bảng → sinh mặc định', () => {
+  it('html không phải bảng → sinh mặc định', () => {
     const model = { columns: cols('Size', 'X'), rows: [row('M', '57')], note: '' }
     expect(mergeSizeGuideIntoHtml(model, '<div>tùy biến</div>')).toBe(serializeSizeGuide(model))
-	})
+  })
 
-	it('sửa HTML size dạng tiêu đề + đoạn văn vẫn giữ khung trình bày', () => {
-		const existing = '<h3 style="color:blue">M</h3><p class="measure">57</p>'
-		const out = mergeSizeGuideIntoHtml({ columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] }, existing)
-		expect(out).toContain('style="color:blue"')
-		expect(out).toContain('class="measure"')
-		expect(out).toContain('>58</p>')
-	})
+  it('sửa HTML size dạng tiêu đề + đoạn văn vẫn giữ khung trình bày', () => {
+    const existing = '<h3 style="color:blue">M</h3><p class="measure">57</p>'
+    const out = mergeSizeGuideIntoHtml(
+      { columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] },
+      existing,
+    )
+    expect(out).toContain('style="color:blue"')
+    expect(out).toContain('class="measure"')
+    expect(out).toContain('>58</p>')
+  })
 
   it('bảng không có thead vẫn giữ được bảng khi sửa biểu mẫu', () => {
-    const existing = '<table><tr><th>Size</th><th>Vòng đầu</th></tr><tr><td>M</td><td>57</td></tr></table>'
-    const out = mergeSizeGuideIntoHtml({ columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] }, existing)
+    const existing =
+      '<table><tr><th>Size</th><th>Vòng đầu</th></tr><tr><td>M</td><td>57</td></tr></table>'
+    const out = mergeSizeGuideIntoHtml(
+      { columns: cols('Size', 'Vòng đầu'), rows: [row('M', '58')] },
+      existing,
+    )
     expect(out).toContain('<thead>')
     expect(out).toContain('>58<')
     expect(out).not.toContain('>57<')

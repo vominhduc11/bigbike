@@ -1,273 +1,273 @@
 :root {
   /* ─── Brand ─────────────────────────────────────────────────────────────── */
-  --admin-color-brand-red:         var(--admin-color-primary);
-  --admin-color-brand-red-hover:   var(--admin-color-primary-hover);
-  --admin-color-brand-red-active:  var(--admin-color-primary-active);
-  --admin-color-brand-red-subtle:  var(--admin-color-primary-subtle);
-  --admin-color-brand-red-muted:   var(--admin-color-primary-muted);
+  --admin-color-brand-red: var(--admin-color-primary);
+  --admin-color-brand-red-hover: var(--admin-color-primary-hover);
+  --admin-color-brand-red-active: var(--admin-color-primary-active);
+  --admin-color-brand-red-subtle: var(--admin-color-primary-subtle);
+  --admin-color-brand-red-muted: var(--admin-color-primary-muted);
 
   /* ─── Backgrounds ───────────────────────────────────────────────────────── */
-  --admin-color-background-app:     #f2f3f5;
-  --admin-color-background-page:    #f6f7f9;
+  --admin-color-background-app: #f2f3f5;
+  --admin-color-background-page: #f6f7f9;
   --admin-color-background-sidebar: #0d1117;
-  --admin-color-background-header:  #ffffff;
-  --admin-color-overlay:            rgba(0, 0, 0, 0.48);
+  --admin-color-background-header: #ffffff;
+  --admin-color-overlay: rgba(0, 0, 0, 0.48);
 
   /* ─── Surfaces ──────────────────────────────────────────────────────────── */
-  --admin-color-surface-base:     #ffffff;
-  --admin-color-surface-muted:    #f8f9fa;
-  --admin-color-surface-raised:   #f1f3f5;
-  --admin-color-surface-hover:    #f3f4f6;
+  --admin-color-surface-base: #ffffff;
+  --admin-color-surface-muted: #f8f9fa;
+  --admin-color-surface-raised: #f1f3f5;
+  --admin-color-surface-hover: #f3f4f6;
   /* "Selected" surfaces follow primary (đỏ), not the brand-red chrome token */
   --admin-color-surface-selected: var(--admin-color-primary-subtle);
   /* Glass — nền bán trong suốt cho sticky action bar (backdrop-filter blur) */
-  --admin-color-surface-glass:    rgba(255, 255, 255, 0.85);
+  --admin-color-surface-glass: rgba(255, 255, 255, 0.85);
 
   /* ─── Rating stars ───────────────────────────────────────────────────── */
   --admin-color-rating-star: #fbbf24;
 
   /* ─── Rank badges (top-products) ─────────────────────────────────────── */
-  --admin-rank-1-bg:   #fef3c7;
+  --admin-rank-1-bg: #fef3c7;
   --admin-rank-1-text: #d97706;
-  --admin-rank-2-bg:   #f3f4f6;
+  --admin-rank-2-bg: #f3f4f6;
   --admin-rank-2-text: #6b7280;
-  --admin-rank-3-bg:   #ffedd5;
+  --admin-rank-3-bg: #ffedd5;
   --admin-rank-3-text: #c2410c;
 
   /* ─── Borders ───────────────────────────────────────────────────────────── */
-  --admin-color-border-subtle:  #e8eaed;
+  --admin-color-border-subtle: #e8eaed;
   --admin-color-border-default: #d1d5db;
-  --admin-color-border-strong:  #9ca3af;
+  --admin-color-border-strong: #9ca3af;
 
   /* ─── Text ──────────────────────────────────────────────────────────────── */
-  --admin-color-text-primary:     #111827;
-  --admin-color-text-secondary:   #374151;
-  --admin-color-text-muted:       #6b7280;
+  --admin-color-text-primary: #111827;
+  --admin-color-text-secondary: #374151;
+  --admin-color-text-muted: #6b7280;
   --admin-color-text-placeholder: #adb5bd;
-  --admin-color-text-inverse:     #ffffff;
+  --admin-color-text-inverse: #ffffff;
 
   /* ─── Status: Success ───────────────────────────────────────────────────── */
-  --admin-color-status-success-bg:     #f0fdf4;
+  --admin-color-status-success-bg: #f0fdf4;
   --admin-color-status-success-border: #bbf7d0;
-  --admin-color-status-success-text:   #15803d;
+  --admin-color-status-success-text: #15803d;
 
   /* ─── Status: Warning ───────────────────────────────────────────────────── */
-  --admin-color-status-warning-bg:     #fffbeb;
+  --admin-color-status-warning-bg: #fffbeb;
   --admin-color-status-warning-border: #fde68a;
-  --admin-color-status-warning-text:   #92400e;
+  --admin-color-status-warning-text: #92400e;
 
   /* ─── Status: Warning Orange ────────────────────────────────────────────── */
-  --admin-color-status-warning-orange-bg:     #fff7ed;
+  --admin-color-status-warning-orange-bg: #fff7ed;
   --admin-color-status-warning-orange-border: #fdd7aa;
-  --admin-color-status-warning-orange-text:   #9a3412;
+  --admin-color-status-warning-orange-text: #9a3412;
 
   /* ─── Status: Danger ────────────────────────────────────────────────────── */
-  --admin-color-status-danger-bg:     #fef2f2;
+  --admin-color-status-danger-bg: #fef2f2;
   --admin-color-status-danger-border: #fecaca;
-  --admin-color-status-danger-text:   #b91c1c;
+  --admin-color-status-danger-text: #b91c1c;
 
   /* ─── Status: Info ──────────────────────────────────────────────────────── */
-  --admin-color-status-info-bg:     #eff6ff;
+  --admin-color-status-info-bg: #eff6ff;
   --admin-color-status-info-border: #bfdbfe;
-  --admin-color-status-info-text:   #1d4ed8;
+  --admin-color-status-info-text: #1d4ed8;
 
   /* ─── Status: Neutral ───────────────────────────────────────────────────── */
-  --admin-color-status-neutral-bg:   #f3f4f6;
+  --admin-color-status-neutral-bg: #f3f4f6;
   --admin-color-status-neutral-text: #374151;
 
   /* ─── Google SERP Preview ───────────────────────────────────────────────── */
   --admin-color-google-title: #1a0dab;
-  --admin-color-google-url:   #5f6368;
+  --admin-color-google-url: #5f6368;
   --admin-color-google-crumb: #70757a;
   --admin-color-google-description: #4d5156;
 
   /* ─── Typography ────────────────────────────────────────────────────────── */
-  --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;
+  --admin-font-body: Inter, system-ui, -apple-system, sans-serif;
   --admin-font-display: Oswald, Inter, system-ui, sans-serif;
-  --admin-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  --admin-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 
   /* Type scale — aligned to the redesign prototype (--t-*) */
-  --admin-text-xs:   0.75rem;    /* 12px   */
-  --admin-text-sm:   0.8125rem;  /* 13px   */
-  --admin-text-base: 0.9375rem;  /* 15px   */
-  --admin-text-md:   1rem;       /* 16px   */
-  --admin-text-lg:   1.125rem;   /* 18px   */
-  --admin-text-xl:   1.375rem;   /* 22px   */
-  --admin-text-2xl:  1.6875rem;  /* 27px   */
-  --admin-text-3xl:  2.125rem;   /* 34px   */
+  --admin-text-xs: 0.75rem; /* 12px   */
+  --admin-text-sm: 0.8125rem; /* 13px   */
+  --admin-text-base: 0.9375rem; /* 15px   */
+  --admin-text-md: 1rem; /* 16px   */
+  --admin-text-lg: 1.125rem; /* 18px   */
+  --admin-text-xl: 1.375rem; /* 22px   */
+  --admin-text-2xl: 1.6875rem; /* 27px   */
+  --admin-text-3xl: 2.125rem; /* 34px   */
 
   /* ─── Spacing ───────────────────────────────────────────────────────────── */
-  --admin-space-1:  4px;
-  --admin-space-2:  8px;
-  --admin-space-3:  12px;
-  --admin-space-4:  16px;
-  --admin-space-5:  20px;
-  --admin-space-6:  24px;
-  --admin-space-8:  32px;
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-space-5: 20px;
+  --admin-space-6: 24px;
+  --admin-space-8: 32px;
   --admin-space-10: 40px;
   --admin-space-12: 48px;
 
   /* ─── Radius (aligned to prototype --r-*) ───────────────────────────────── */
-  --admin-radius-xs:   5px;
-  --admin-radius-sm:   8px;
-  --admin-radius-md:   12px;
-  --admin-radius-lg:   16px;
+  --admin-radius-xs: 5px;
+  --admin-radius-sm: 8px;
+  --admin-radius-md: 12px;
+  --admin-radius-lg: 16px;
   --admin-radius-full: 9999px;
 
   /* Semantic radius — dùng cho từng nhóm component (đừng hardcode px) */
-  --admin-radius-card:    var(--admin-radius-md);  /* card / panel / KPI / table-wrap / filter-bar */
-  --admin-radius-control: var(--admin-radius-sm);  /* button / input / select / menu / dropdown */
-  --admin-radius-thumb:   var(--admin-radius-xs);  /* ảnh thumbnail trong dòng bảng */
+  --admin-radius-card: var(--admin-radius-md); /* card / panel / KPI / table-wrap / filter-bar */
+  --admin-radius-control: var(--admin-radius-sm); /* button / input / select / menu / dropdown */
+  --admin-radius-thumb: var(--admin-radius-xs); /* ảnh thumbnail trong dòng bảng */
 
   /* ─── Shadows ───────────────────────────────────────────────────────────── */
   --admin-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
   --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
-  --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
   --admin-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
 
   /* ─── Z-index layers ───────────────────────────────────────────────────── */
-  --admin-z-sticky:  1;
-  --admin-z-header:  100;
+  --admin-z-sticky: 1;
+  --admin-z-header: 100;
   --admin-z-overlay: 200;
-  --admin-z-modal:   201;
-  --admin-z-popup:   300;  /* dropdowns / popovers inside modals */
-  --admin-z-toast:   400;  /* notification toasts — always on top */
+  --admin-z-modal: 201;
+  --admin-z-popup: 300; /* dropdowns / popovers inside modals */
+  --admin-z-toast: 400; /* notification toasts — always on top */
 
   /* ─── Transitions ───────────────────────────────────────────────────────── */
   --admin-transition-fast: 100ms ease;
   --admin-transition-base: 160ms ease;
 
   /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
-  --admin-scrollbar-size:        6px;
-  --admin-scrollbar-thumb:       var(--admin-color-border-default);
+  --admin-scrollbar-size: 6px;
+  --admin-scrollbar-thumb: var(--admin-color-border-default);
   --admin-scrollbar-thumb-hover: var(--admin-color-border-strong);
-  --admin-scrollbar-track:       transparent;
+  --admin-scrollbar-track: transparent;
 
   /* ─── Primary (đỏ thương hiệu #ff0c09, approved) ─────────────────────────
      Used for CTA / active / selected / focus / links across the admin.
      Brand red (--admin-color-brand-red) is reserved for brand chrome only:
      sidebar active bar, nav badge, notification pip, logo. ──────────────── */
-  --admin-color-primary:             #ff0c09;
-  --admin-color-primary-hover:       #e50a07;
-  --admin-color-primary-active:      #cc0906;
-  --admin-color-primary-subtle:      #fff1f0;
+  --admin-color-primary: #ff0c09;
+  --admin-color-primary-hover: #e50a07;
+  --admin-color-primary-active: #cc0906;
+  --admin-color-primary-subtle: #fff1f0;
   --admin-color-primary-subtle-text: #cc0906;
-  --admin-color-primary-muted:       rgba(255, 12, 9, 0.12);
-  --admin-color-primary-ring:        rgba(255, 12, 9, 0.40);
-  --admin-color-on-primary:          #ffffff;
+  --admin-color-primary-muted: rgba(255, 12, 9, 0.12);
+  --admin-color-primary-ring: rgba(255, 12, 9, 0.4);
+  --admin-color-on-primary: #ffffff;
 
   /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
-  --c-text-primary:  var(--admin-color-text-primary);
-  --c-text-muted:    var(--admin-color-text-muted);
-  --c-danger:        var(--admin-color-status-danger-text);
-  --c-success:       var(--admin-color-status-success-text);
-  --c-warning:       var(--admin-color-status-warning-text);
-  --c-border:        var(--admin-color-border-subtle);
-  --c-surface:       var(--admin-color-surface-base);
-  --c-bg-subtle:     var(--admin-color-surface-muted);
-  --c-primary:       var(--admin-color-primary);
+  --c-text-primary: var(--admin-color-text-primary);
+  --c-text-muted: var(--admin-color-text-muted);
+  --c-danger: var(--admin-color-status-danger-text);
+  --c-success: var(--admin-color-status-success-text);
+  --c-warning: var(--admin-color-status-warning-text);
+  --c-border: var(--admin-color-border-subtle);
+  --c-surface: var(--admin-color-surface-base);
+  --c-bg-subtle: var(--admin-color-surface-muted);
+  --c-primary: var(--admin-color-primary);
   --c-primary-subtle: var(--admin-color-primary-subtle);
 
   /* ─── Prototype bb-* aliases — light mode ─────────────────────────────────
      The bb-* component CSS (admin-prototype.css) references these variables.
      They alias the canonical --admin-* tokens so dark mode flows automatically.
      ─────────────────────────────────────────────────────────────────────────── */
-  --bb-brand:           var(--admin-color-brand-red);
-  --bb-brand-hover:     var(--admin-color-brand-red-hover);
-  --bb-brand-active:    var(--admin-color-brand-red-active);
-  --bb-brand-subtle:    var(--admin-color-brand-red-subtle);
-  --bb-brand-muted:     var(--admin-color-brand-red-muted);
+  --bb-brand: var(--admin-color-brand-red);
+  --bb-brand-hover: var(--admin-color-brand-red-hover);
+  --bb-brand-active: var(--admin-color-brand-red-active);
+  --bb-brand-subtle: var(--admin-color-brand-red-subtle);
+  --bb-brand-muted: var(--admin-color-brand-red-muted);
 
   /* Primary (đỏ) — CTA / active / selected / focus for the bb-* system */
-  --bb-primary:             var(--admin-color-primary);
-  --bb-primary-hover:       var(--admin-color-primary-hover);
-  --bb-primary-active:      var(--admin-color-primary-active);
-  --bb-primary-subtle:      var(--admin-color-primary-subtle);
+  --bb-primary: var(--admin-color-primary);
+  --bb-primary-hover: var(--admin-color-primary-hover);
+  --bb-primary-active: var(--admin-color-primary-active);
+  --bb-primary-subtle: var(--admin-color-primary-subtle);
   --bb-primary-subtle-text: var(--admin-color-primary-subtle-text);
-  --bb-primary-muted:       var(--admin-color-primary-muted);
-  --bb-on-primary:          var(--admin-color-on-primary);
+  --bb-primary-muted: var(--admin-color-primary-muted);
+  --bb-on-primary: var(--admin-color-on-primary);
 
-  --bb-bg:              var(--admin-color-background-app);
-  --bb-page:            var(--admin-color-background-page);
-  --bb-surface:         var(--admin-color-surface-base);
-  --bb-surface-muted:   var(--admin-color-surface-muted);
-  --bb-surface-raised:  var(--admin-color-surface-raised);
-  --bb-surface-hover:   var(--admin-color-surface-hover);
-  --bb-surface-selected:var(--admin-color-surface-selected);
-  --bb-surface-glass:   var(--admin-color-surface-glass);
-  --bb-sidebar:         var(--admin-color-background-sidebar);
-  --bb-sidebar-hover:   #1a2230;
-  --bb-sidebar-active:  #20293a;
-  --bb-sidebar-border:  #1c2230; /* viền/scrollbar trên chrome sidebar tối — cố định 2 theme */
+  --bb-bg: var(--admin-color-background-app);
+  --bb-page: var(--admin-color-background-page);
+  --bb-surface: var(--admin-color-surface-base);
+  --bb-surface-muted: var(--admin-color-surface-muted);
+  --bb-surface-raised: var(--admin-color-surface-raised);
+  --bb-surface-hover: var(--admin-color-surface-hover);
+  --bb-surface-selected: var(--admin-color-surface-selected);
+  --bb-surface-glass: var(--admin-color-surface-glass);
+  --bb-sidebar: var(--admin-color-background-sidebar);
+  --bb-sidebar-hover: #1a2230;
+  --bb-sidebar-active: #20293a;
+  --bb-sidebar-border: #1c2230; /* viền/scrollbar trên chrome sidebar tối — cố định 2 theme */
 
-  --bb-border:          var(--admin-color-border-subtle);
-  --bb-border-strong:   var(--admin-color-border-default);
-  --bb-border-faint:    #eef0f3;
+  --bb-border: var(--admin-color-border-subtle);
+  --bb-border-strong: var(--admin-color-border-default);
+  --bb-border-faint: #eef0f3;
 
-  --bb-text:                var(--admin-color-text-primary);
-  --bb-text-secondary:      var(--admin-color-text-secondary);
-  --bb-text-muted:          var(--admin-color-text-muted);
-  --bb-text-faint:          var(--admin-color-text-placeholder);
-  --bb-text-inverse:        var(--admin-color-text-inverse);
-  --bb-text-onsidebar:      #c9d1d9;
-  --bb-text-onsidebar-dim:  #7d8590;
+  --bb-text: var(--admin-color-text-primary);
+  --bb-text-secondary: var(--admin-color-text-secondary);
+  --bb-text-muted: var(--admin-color-text-muted);
+  --bb-text-faint: var(--admin-color-text-placeholder);
+  --bb-text-inverse: var(--admin-color-text-inverse);
+  --bb-text-onsidebar: #c9d1d9;
+  --bb-text-onsidebar-dim: #7d8590;
   --bb-text-onsidebar-strong: #ffffff; /* chữ nhấn/active trên chrome tối — trắng cố định, không flip theme */
-  --bb-on-brand:            #ffffff; /* chữ/icon trên nền đỏ brand chrome (logo, badge) — trắng cố định 2 theme */
+  --bb-on-brand: #ffffff; /* chữ/icon trên nền đỏ brand chrome (logo, badge) — trắng cố định 2 theme */
 
-  --bb-success:         var(--admin-color-status-success-text);
-  --bb-success-bg:      var(--admin-color-status-success-bg);
-  --bb-success-border:  var(--admin-color-status-success-border);
-  --bb-warning:         var(--admin-color-status-warning-text);
-  --bb-warning-bg:      var(--admin-color-status-warning-bg);
-  --bb-warning-border:  var(--admin-color-status-warning-border);
-  --bb-danger:          var(--admin-color-status-danger-text);
-  --bb-danger-bg:       var(--admin-color-status-danger-bg);
-  --bb-danger-border:   var(--admin-color-status-danger-border);
-  --bb-info:            var(--admin-color-status-info-text);
-  --bb-info-bg:         var(--admin-color-status-info-bg);
-  --bb-info-border:     var(--admin-color-status-info-border);
-  --bb-neutral:         var(--admin-color-text-muted);
-  --bb-neutral-bg:      var(--admin-color-status-neutral-bg);
-  --bb-neutral-border:  var(--admin-color-border-subtle);
+  --bb-success: var(--admin-color-status-success-text);
+  --bb-success-bg: var(--admin-color-status-success-bg);
+  --bb-success-border: var(--admin-color-status-success-border);
+  --bb-warning: var(--admin-color-status-warning-text);
+  --bb-warning-bg: var(--admin-color-status-warning-bg);
+  --bb-warning-border: var(--admin-color-status-warning-border);
+  --bb-danger: var(--admin-color-status-danger-text);
+  --bb-danger-bg: var(--admin-color-status-danger-bg);
+  --bb-danger-border: var(--admin-color-status-danger-border);
+  --bb-info: var(--admin-color-status-info-text);
+  --bb-info-bg: var(--admin-color-status-info-bg);
+  --bb-info-border: var(--admin-color-status-info-border);
+  --bb-neutral: var(--admin-color-text-muted);
+  --bb-neutral-bg: var(--admin-color-status-neutral-bg);
+  --bb-neutral-border: var(--admin-color-border-subtle);
 
-  --bb-font:      var(--admin-font-body);
+  --bb-font: var(--admin-font-body);
   --bb-font-mono: var(--admin-font-mono);
 
-  --bb-text-xs:   11.5px;
-  --bb-text-sm:   12.5px;
+  --bb-text-xs: 11.5px;
+  --bb-text-sm: 12.5px;
   --bb-text-base: 13.5px;
-  --bb-text-md:   14.5px;
-  --bb-text-lg:   16px;
-  --bb-text-xl:   19px;
-  --bb-text-2xl:  23px;
-  --bb-text-3xl:  28px;
+  --bb-text-md: 14.5px;
+  --bb-text-lg: 16px;
+  --bb-text-xl: 19px;
+  --bb-text-2xl: 23px;
+  --bb-text-3xl: 28px;
 
-  --bb-s-1:  var(--admin-space-1);
-  --bb-s-2:  var(--admin-space-2);
-  --bb-s-3:  var(--admin-space-3);
-  --bb-s-4:  var(--admin-space-4);
-  --bb-s-5:  var(--admin-space-5);
-  --bb-s-6:  var(--admin-space-6);
-  --bb-s-8:  var(--admin-space-8);
+  --bb-s-1: var(--admin-space-1);
+  --bb-s-2: var(--admin-space-2);
+  --bb-s-3: var(--admin-space-3);
+  --bb-s-4: var(--admin-space-4);
+  --bb-s-5: var(--admin-space-5);
+  --bb-s-6: var(--admin-space-6);
+  --bb-s-8: var(--admin-space-8);
   --bb-s-10: var(--admin-space-10);
 
-  --bb-r-xs:   var(--admin-radius-xs);
-  --bb-r-sm:   var(--admin-radius-sm);
-  --bb-r-md:   var(--admin-radius-md);
-  --bb-r-lg:   var(--admin-radius-lg);
+  --bb-r-xs: var(--admin-radius-xs);
+  --bb-r-sm: var(--admin-radius-sm);
+  --bb-r-md: var(--admin-radius-md);
+  --bb-r-lg: var(--admin-radius-lg);
   --bb-r-pill: var(--admin-radius-full);
-  --bb-r-card:    var(--admin-radius-card);
+  --bb-r-card: var(--admin-radius-card);
   --bb-r-control: var(--admin-radius-control);
-  --bb-r-thumb:   var(--admin-radius-thumb);
+  --bb-r-thumb: var(--admin-radius-thumb);
 
   --bb-sh-xs: var(--admin-shadow-xs);
   --bb-sh-sm: var(--admin-shadow-sm);
   --bb-sh-md: var(--admin-shadow-md);
   --bb-sh-lg: var(--admin-shadow-lg);
 
-  --bb-sidebar-w:  248px;
-  --bb-topbar-h:   56px;
-  --bb-row-h:      48px;
+  --bb-sidebar-w: 248px;
+  --bb-topbar-h: 56px;
+  --bb-row-h: 48px;
 
   /* Max width of the centred content column. Below ~1750px viewport the content
      fills the available space; on large / ultra-wide monitors (4xl) it caps here
@@ -280,127 +280,126 @@
    All semantic variables point to these primitives so every CSS class
    that already uses var(--admin-color-*) switches automatically.
    ─────────────────────────────────────────────────────────────────────────── */
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
 
-
   /* ─── Primary — dark ─── */
-  --admin-color-primary:             #ff5a4d;
-  --admin-color-primary-hover:       #ff7a6f;
-  --admin-color-primary-active:      #e8402f;
-  --admin-color-primary-subtle:      #2a1310;
+  --admin-color-primary: #ff5a4d;
+  --admin-color-primary-hover: #ff7a6f;
+  --admin-color-primary-active: #e8402f;
+  --admin-color-primary-subtle: #2a1310;
   --admin-color-primary-subtle-text: #ff9184;
-  --admin-color-primary-muted:       rgba(255, 90, 77, 0.18);
-  --admin-color-primary-ring:        rgba(255, 90, 77, 0.45);
-  --admin-color-on-primary:          #2a0805;
+  --admin-color-primary-muted: rgba(255, 90, 77, 0.18);
+  --admin-color-primary-ring: rgba(255, 90, 77, 0.45);
+  --admin-color-on-primary: #2a0805;
 
   /* ─── Backgrounds ─── */
-  --admin-color-background-app:     #010409;
-  --admin-color-background-page:    #0d1117;
+  --admin-color-background-app: #010409;
+  --admin-color-background-page: #0d1117;
   --admin-color-background-sidebar: #0d1117;
-  --admin-color-background-header:  #161b22;
-  --admin-color-overlay:            rgba(1, 4, 9, 0.80);
+  --admin-color-background-header: #161b22;
+  --admin-color-overlay: rgba(1, 4, 9, 0.8);
 
   /* ─── Surfaces ─── */
-  --admin-color-surface-base:     #161b22;
-  --admin-color-surface-muted:    #1c2128;
-  --admin-color-surface-raised:   #21262d;
-  --admin-color-surface-hover:    #21262d;
-  --admin-color-surface-glass:    rgba(22, 27, 34, 0.85);
+  --admin-color-surface-base: #161b22;
+  --admin-color-surface-muted: #1c2128;
+  --admin-color-surface-raised: #21262d;
+  --admin-color-surface-hover: #21262d;
+  --admin-color-surface-glass: rgba(22, 27, 34, 0.85);
 
   /* ─── Rank badges ─── */
-  --admin-rank-1-bg:   rgba(251, 191, 36, 0.15);
+  --admin-rank-1-bg: rgba(251, 191, 36, 0.15);
   --admin-rank-1-text: #fbbf24;
-  --admin-rank-2-bg:   rgba(110, 118, 129, 0.15);
+  --admin-rank-2-bg: rgba(110, 118, 129, 0.15);
   --admin-rank-2-text: #8b949e;
-  --admin-rank-3-bg:   rgba(234, 88, 12, 0.15);
+  --admin-rank-3-bg: rgba(234, 88, 12, 0.15);
   --admin-rank-3-text: #fb923c;
 
   /* ─── Borders ─── */
-  --admin-color-border-subtle:  #21262d;
+  --admin-color-border-subtle: #21262d;
   --admin-color-border-default: #30363d;
-  --admin-color-border-strong:  #484f58;
+  --admin-color-border-strong: #484f58;
 
   /* ─── Text ─── */
-  --admin-color-text-primary:     #e6edf3;
-  --admin-color-text-secondary:   #8b949e;
-  --admin-color-text-muted:       #848e99; /* WCAG AA (A2): #6e7681 chỉ đạt 3.8–4.1:1 trên nền tối → nâng lên ~5.2:1 */
+  --admin-color-text-primary: #e6edf3;
+  --admin-color-text-secondary: #8b949e;
+  --admin-color-text-muted: #848e99; /* WCAG AA (A2): #6e7681 chỉ đạt 3.8–4.1:1 trên nền tối → nâng lên ~5.2:1 */
   --admin-color-text-placeholder: #484f58;
-  --admin-color-text-inverse:     #0d1117;
+  --admin-color-text-inverse: #0d1117;
 
   /* ─── Status: Success ─── */
-  --admin-color-status-success-bg:     rgba(35, 134, 54, 0.15);
-  --admin-color-status-success-border: rgba(35, 134, 54, 0.40);
-  --admin-color-status-success-text:   #3fb950;
+  --admin-color-status-success-bg: rgba(35, 134, 54, 0.15);
+  --admin-color-status-success-border: rgba(35, 134, 54, 0.4);
+  --admin-color-status-success-text: #3fb950;
 
   /* ─── Status: Warning ─── */
-  --admin-color-status-warning-bg:     rgba(187, 128, 9, 0.15);
-  --admin-color-status-warning-border: rgba(187, 128, 9, 0.40);
-  --admin-color-status-warning-text:   #d29922;
+  --admin-color-status-warning-bg: rgba(187, 128, 9, 0.15);
+  --admin-color-status-warning-border: rgba(187, 128, 9, 0.4);
+  --admin-color-status-warning-text: #d29922;
 
   /* ─── Status: Warning Orange ─── */
-  --admin-color-status-warning-orange-bg:     rgba(154, 73, 7, 0.15);
-  --admin-color-status-warning-orange-border: rgba(154, 73, 7, 0.40);
-  --admin-color-status-warning-orange-text:   #e3b341;
+  --admin-color-status-warning-orange-bg: rgba(154, 73, 7, 0.15);
+  --admin-color-status-warning-orange-border: rgba(154, 73, 7, 0.4);
+  --admin-color-status-warning-orange-text: #e3b341;
 
   /* ─── Status: Danger ─── */
-  --admin-color-status-danger-bg:     rgba(218, 54, 51, 0.15);
-  --admin-color-status-danger-border: rgba(218, 54, 51, 0.40);
-  --admin-color-status-danger-text:   #f85149;
+  --admin-color-status-danger-bg: rgba(218, 54, 51, 0.15);
+  --admin-color-status-danger-border: rgba(218, 54, 51, 0.4);
+  --admin-color-status-danger-text: #f85149;
 
   /* ─── Status: Info ─── */
-  --admin-color-status-info-bg:     rgba(31, 111, 235, 0.15);
-  --admin-color-status-info-border: rgba(31, 111, 235, 0.40);
-  --admin-color-status-info-text:   #58a6ff;
+  --admin-color-status-info-bg: rgba(31, 111, 235, 0.15);
+  --admin-color-status-info-border: rgba(31, 111, 235, 0.4);
+  --admin-color-status-info-text: #58a6ff;
 
   /* ─── Status: Neutral ─── */
-  --admin-color-status-neutral-bg:   rgba(110, 118, 129, 0.12);
+  --admin-color-status-neutral-bg: rgba(110, 118, 129, 0.12);
   --admin-color-status-neutral-text: #8b949e;
 
   /* ─── Shadows — heavier on dark to keep elevation readable ─── */
-  --admin-shadow-xs: 0 1px 2px rgba(1, 4, 9, 0.30);
-  --admin-shadow-sm: 0 1px 3px rgba(1, 4, 9, 0.40), 0 1px 2px rgba(1, 4, 9, 0.30);
-  --admin-shadow-md: 0 4px 16px rgba(1, 4, 9, 0.50), 0 2px 4px rgba(1, 4, 9, 0.30);
-  --admin-shadow-lg: 0 20px 40px rgba(1, 4, 9, 0.70), 0 4px 12px rgba(1, 4, 9, 0.40);
+  --admin-shadow-xs: 0 1px 2px rgba(1, 4, 9, 0.3);
+  --admin-shadow-sm: 0 1px 3px rgba(1, 4, 9, 0.4), 0 1px 2px rgba(1, 4, 9, 0.3);
+  --admin-shadow-md: 0 4px 16px rgba(1, 4, 9, 0.5), 0 2px 4px rgba(1, 4, 9, 0.3);
+  --admin-shadow-lg: 0 20px 40px rgba(1, 4, 9, 0.7), 0 4px 12px rgba(1, 4, 9, 0.4);
 
   /* ── bb-* overrides for dark mode ─── */
-  --bb-bg:               #010409;
-  --bb-page:             #0d1117;
-  --bb-surface:          var(--admin-color-surface-base);
-  --bb-surface-muted:    var(--admin-color-surface-muted);
-  --bb-surface-raised:   var(--admin-color-surface-raised);
-  --bb-surface-hover:    var(--admin-color-surface-hover);
+  --bb-bg: #010409;
+  --bb-page: #0d1117;
+  --bb-surface: var(--admin-color-surface-base);
+  --bb-surface-muted: var(--admin-color-surface-muted);
+  --bb-surface-raised: var(--admin-color-surface-raised);
+  --bb-surface-hover: var(--admin-color-surface-hover);
   --bb-surface-selected: var(--admin-color-surface-selected);
-  --bb-sidebar:          #0a0d12;
-  --bb-sidebar-hover:    #161b22;
-  --bb-sidebar-active:   #21262d;
-  --bb-border:           var(--admin-color-border-subtle);
-  --bb-border-strong:    var(--admin-color-border-default);
-  --bb-border-faint:     #1a1f25;
-  --bb-text:             var(--admin-color-text-primary);
-  --bb-text-secondary:   #b1bac4;
-  --bb-text-muted:       var(--admin-color-text-muted);
-  --bb-text-faint:       #6e7681;
-  --bb-text-inverse:     #0d1117;
-  --bb-success:          var(--admin-color-status-success-text);
-  --bb-success-bg:       var(--admin-color-status-success-bg);
-  --bb-success-border:   var(--admin-color-status-success-border);
-  --bb-warning:          var(--admin-color-status-warning-text);
-  --bb-warning-bg:       var(--admin-color-status-warning-bg);
-  --bb-warning-border:   var(--admin-color-status-warning-border);
-  --bb-danger:           var(--admin-color-status-danger-text);
-  --bb-danger-bg:        var(--admin-color-status-danger-bg);
-  --bb-danger-border:    var(--admin-color-status-danger-border);
-  --bb-info:             var(--admin-color-status-info-text);
-  --bb-info-bg:          var(--admin-color-status-info-bg);
-  --bb-info-border:      var(--admin-color-status-info-border);
-  --bb-neutral:          var(--admin-color-text-muted);
-  --bb-neutral-bg:       var(--admin-color-status-neutral-bg);
-  --bb-neutral-border:   var(--admin-color-border-subtle);
-  --bb-sh-xs: 0 1px 2px rgba(0,0,0,0.40);
-  --bb-sh-sm: 0 1px 3px rgba(0,0,0,0.50), 0 1px 2px rgba(0,0,0,0.30);
-  --bb-sh-md: 0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
-  --bb-sh-lg: 0 16px 32px rgba(0,0,0,0.70), 0 4px 8px rgba(0,0,0,0.40);
+  --bb-sidebar: #0a0d12;
+  --bb-sidebar-hover: #161b22;
+  --bb-sidebar-active: #21262d;
+  --bb-border: var(--admin-color-border-subtle);
+  --bb-border-strong: var(--admin-color-border-default);
+  --bb-border-faint: #1a1f25;
+  --bb-text: var(--admin-color-text-primary);
+  --bb-text-secondary: #b1bac4;
+  --bb-text-muted: var(--admin-color-text-muted);
+  --bb-text-faint: #6e7681;
+  --bb-text-inverse: #0d1117;
+  --bb-success: var(--admin-color-status-success-text);
+  --bb-success-bg: var(--admin-color-status-success-bg);
+  --bb-success-border: var(--admin-color-status-success-border);
+  --bb-warning: var(--admin-color-status-warning-text);
+  --bb-warning-bg: var(--admin-color-status-warning-bg);
+  --bb-warning-border: var(--admin-color-status-warning-border);
+  --bb-danger: var(--admin-color-status-danger-text);
+  --bb-danger-bg: var(--admin-color-status-danger-bg);
+  --bb-danger-border: var(--admin-color-status-danger-border);
+  --bb-info: var(--admin-color-status-info-text);
+  --bb-info-bg: var(--admin-color-status-info-bg);
+  --bb-info-border: var(--admin-color-status-info-border);
+  --bb-neutral: var(--admin-color-text-muted);
+  --bb-neutral-bg: var(--admin-color-status-neutral-bg);
+  --bb-neutral-border: var(--admin-color-border-subtle);
+  --bb-sh-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --bb-sh-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --bb-sh-md: 0 4px 12px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.35);
+  --bb-sh-lg: 0 16px 32px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.4);
   --bb-brand-subtle: #2a1010;
-  --bb-brand-muted:  rgba(232,40,30,0.18);
+  --bb-brand-muted: rgba(232, 40, 30, 0.18);
 }

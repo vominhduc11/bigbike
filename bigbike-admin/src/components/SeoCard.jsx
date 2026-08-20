@@ -19,10 +19,20 @@ import { Button } from '@/components/ui/button'
 // `collapsible`/`open`/`onToggle`: gập thẻ để chống ngợp form (audit P0-2). Khi gập,
 // chỉ hiện tiêu đề + chevron, ẩn body.
 export function SeoCard({
-  form, isEnLang, isReadOnly, validationErrors,
-  updateField, updateTranslation, onFieldBlur,
-  i18nPrefix, descKey, previewBase, previewSlugDefault,
-  collapsible = false, open = true, onToggle,
+  form,
+  isEnLang,
+  isReadOnly,
+  validationErrors,
+  updateField,
+  updateTranslation,
+  onFieldBlur,
+  i18nPrefix,
+  descKey,
+  previewBase,
+  previewSlugDefault,
+  collapsible = false,
+  open = true,
+  onToggle,
   // SEO_RULE_002 — bản tiếng Anh đã đủ nội dung để được khai báo với Google chưa.
   // Ngưỡng do backend quyết (SeoIndexPolicy); truyền vào đây chỉ để báo trước cho
   // người vận hành, tránh cảnh bật ô mà trang vẫn không lên Google.
@@ -41,7 +51,8 @@ export function SeoCard({
   const previewTitle = stripHtml(seoTitleVal || nameVal, '')
   const seoDescriptionPlain = stripHtml(seoDescVal, '')
   const previewDescription = normalizeSeoText(seoDescriptionPlain)
-  const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || previewSlugDefault
+  const previewSlug =
+    (isEnLang ? form.translations?.en?.slug || form.slug : form.slug) || previewSlugDefault
   // SEO_RULE_003: canonical LUÔN tự sinh từ slug theo locale. Ô nhập tay đã gỡ (2026-08-06) —
   // web chưa bao giờ đọc `seo.canonicalUrl` để dựng thẻ canonical, nên đó là trường chết
   // khiến người vận hành tưởng mình đang điều khiển địa chỉ chuẩn.
@@ -54,7 +65,9 @@ export function SeoCard({
   )
 
   const title = p('sectionSeo', 'Hiển thị trên Google & mạng xã hội')
-  const desc = t(descKey, { defaultValue: 'Tinh chỉnh tiêu đề, mô tả và ảnh khi được tìm kiếm hoặc chia sẻ.' })
+  const desc = t(descKey, {
+    defaultValue: 'Tinh chỉnh tiêu đề, mô tả và ảnh khi được tìm kiếm hoặc chia sẻ.',
+  })
   const bodyVisible = !collapsible || open
 
   return (
@@ -70,7 +83,10 @@ export function SeoCard({
             <ChevronDown
               size={18}
               aria-hidden="true"
-              className={cn('mt-0.5 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
+              className={cn(
+                'mt-0.5 shrink-0 text-muted-foreground transition-transform',
+                !open && '-rotate-90',
+              )}
             />
             <div>
               <h2>{title}</h2>
@@ -87,92 +103,129 @@ export function SeoCard({
         </div>
       )}
       {bodyVisible && (
-      <div className="bb-card-body">
-        <div className="mb-4 rte-canvas-frame">
-          {/* Nền trắng cố ý: đây là bản mô phỏng thẻ kết quả Google (luôn nền trắng),
+        <div className="bb-card-body">
+          <div className="mb-4 rte-canvas-frame">
+            {/* Nền trắng cố ý: đây là bản mô phỏng thẻ kết quả Google (luôn nền trắng),
               các màu chữ google-* chỉ hợp trên nền sáng — không đổi theo theme admin. */}
-          <div className="p-3 border border-border bg-white">
-            <div className="text-xs text-google-url mb-1">{p('seoPreviewLabel', 'Xem thử trên Google')}</div>
-            <div className="text-xs text-google-url break-all mb-1">{previewUrl}</div>
-            <div className="text-lg leading-snug text-google-title break-words mb-1">
-              {(previewTitle || p('seoPreviewFallbackTitle', 'Tiêu đề')).slice(0, 60)}
-            </div>
-            <div className="text-sm leading-relaxed text-google-description break-words">
-              {previewDescription || p('seoPreviewFallbackDesc', 'Mô tả ngắn sẽ hiển thị ở đây.')}
+            <div className="p-3 border border-border bg-white">
+              <div className="text-xs text-google-url mb-1">
+                {p('seoPreviewLabel', 'Xem thử trên Google')}
+              </div>
+              <div className="text-xs text-google-url break-all mb-1">{previewUrl}</div>
+              <div className="text-lg leading-snug text-google-title break-words mb-1">
+                {(previewTitle || p('seoPreviewFallbackTitle', 'Tiêu đề')).slice(0, 60)}
+              </div>
+              <div className="text-sm leading-relaxed text-google-description break-words">
+                {previewDescription || p('seoPreviewFallbackDesc', 'Mô tả ngắn sẽ hiển thị ở đây.')}
+              </div>
             </div>
           </div>
-        </div>
 
-        <label className="form-field">
-          <span className="flex items-center justify-between">
-            <span>{p('seoTitle', 'Tiêu đề khi xuất hiện trên Google')}{enHint}</span>
-            <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
-          </span>
-          <Input
-            value={seoTitleVal}
-            onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
-            onBlur={!isEnLang ? () => onFieldBlur?.('seoTitle') : undefined}
-            disabled={isReadOnly}
-            maxLength={255}
-            placeholder={p('seoTitlePlaceholder', 'Để trống sẽ tự dùng tên')}
-            aria-invalid={validationErrors.seoTitle ? true : undefined}
-            aria-describedby={validationErrors.seoTitle ? errId('seoTitle') : undefined}
-          />
-          {validationErrors.seoTitle && (
-            <span id={errId('seoTitle')} role="alert" className="hint text-danger flex items-center gap-1">
-              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoTitle}
+          <label className="form-field">
+            <span className="flex items-center justify-between">
+              <span>
+                {p('seoTitle', 'Tiêu đề khi xuất hiện trên Google')}
+                {enHint}
+              </span>
+              <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>
+                {seoTitleVal.length} / 60
+              </span>
             </span>
-          )}
-        </label>
-        <label className="form-field">
-          <span className="flex items-center justify-between">
-            <span>{p('seoDescription', 'Mô tả khi xuất hiện trên Google')}{enHint}</span>
-            <span className={`hint ${seoDescriptionPlain.length > 165 ? 'text-danger' : ''}`}>{seoDescriptionPlain.length} / 165</span>
-          </span>
-          <Textarea
-            rows={3}
-            value={seoDescVal}
-            onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
-            onBlur={!isEnLang ? () => onFieldBlur?.('seoDescription') : undefined}
-            disabled={isReadOnly}
-            placeholder={p('seoDescriptionPlaceholder', 'Mô tả ngắn hiển thị dưới tiêu đề trên Google')}
-            aria-invalid={validationErrors.seoDescription ? true : undefined}
-            aria-describedby={validationErrors.seoDescription ? errId('seoDescription') : undefined}
-          />
-          {validationErrors.seoDescription && (
-            <span id={errId('seoDescription')} role="alert" className="hint text-danger flex items-center gap-1">
-              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoDescription}
+            <Input
+              value={seoTitleVal}
+              onChange={(e) =>
+                isEnLang
+                  ? updateTranslation('seoTitle', e.target.value)
+                  : updateField('seoTitle', e.target.value)
+              }
+              onBlur={!isEnLang ? () => onFieldBlur?.('seoTitle') : undefined}
+              disabled={isReadOnly}
+              maxLength={255}
+              placeholder={p('seoTitlePlaceholder', 'Để trống sẽ tự dùng tên')}
+              aria-invalid={validationErrors.seoTitle ? true : undefined}
+              aria-describedby={validationErrors.seoTitle ? errId('seoTitle') : undefined}
+            />
+            {validationErrors.seoTitle && (
+              <span
+                id={errId('seoTitle')}
+                role="alert"
+                className="hint text-danger flex items-center gap-1"
+              >
+                <AlertCircle size={13} aria-hidden="true" />
+                {validationErrors.seoTitle}
+              </span>
+            )}
+          </label>
+          <label className="form-field">
+            <span className="flex items-center justify-between">
+              <span>
+                {p('seoDescription', 'Mô tả khi xuất hiện trên Google')}
+                {enHint}
+              </span>
+              <span className={`hint ${seoDescriptionPlain.length > 165 ? 'text-danger' : ''}`}>
+                {seoDescriptionPlain.length} / 165
+              </span>
             </span>
-          )}
-        </label>
-        <SeoIndexField
-          noIndexVi={form.seoNoIndex}
-          noIndexEn={form.seoNoIndexEn}
-          isEnLang={isEnLang}
-          isReadOnly={isReadOnly}
-          englishReady={englishReady}
-          onChange={updateField}
-        />
-        {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
-        <div className="form-field" data-field="seoOgImageUrl">
-          <span>{p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}</span>
-          <ImageUrlInput
-            value={form.seoOgImageUrl}
-            onChange={(url, media) => {
-              updateField('seoOgImageUrl', url)
-              updateField('seoOgImageWidth', media?.width ?? null)
-              updateField('seoOgImageHeight', media?.height ?? null)
-              updateField('seoOgImageMimeType', media?.mimeType ?? '')
-            }}
-            alt={form.seoOgImageAlt}
-            onAltChange={(v) => updateField('seoOgImageAlt', v)}
-            disabled={isReadOnly}
-            error={validationErrors.seoOgImageUrl}
-            recommend={IMAGE_RECO.cover}
+            <Textarea
+              rows={3}
+              value={seoDescVal}
+              onChange={(e) =>
+                isEnLang
+                  ? updateTranslation('seoDescription', e.target.value)
+                  : updateField('seoDescription', e.target.value)
+              }
+              onBlur={!isEnLang ? () => onFieldBlur?.('seoDescription') : undefined}
+              disabled={isReadOnly}
+              placeholder={p(
+                'seoDescriptionPlaceholder',
+                'Mô tả ngắn hiển thị dưới tiêu đề trên Google',
+              )}
+              aria-invalid={validationErrors.seoDescription ? true : undefined}
+              aria-describedby={
+                validationErrors.seoDescription ? errId('seoDescription') : undefined
+              }
+            />
+            {validationErrors.seoDescription && (
+              <span
+                id={errId('seoDescription')}
+                role="alert"
+                className="hint text-danger flex items-center gap-1"
+              >
+                <AlertCircle size={13} aria-hidden="true" />
+                {validationErrors.seoDescription}
+              </span>
+            )}
+          </label>
+          <SeoIndexField
+            noIndexVi={form.seoNoIndex}
+            noIndexEn={form.seoNoIndexEn}
+            isEnLang={isEnLang}
+            isReadOnly={isReadOnly}
+            englishReady={englishReady}
+            onChange={updateField}
           />
-          <span className="hint">{p('seoOgImageUrlHint', 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.')}</span>
+          {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
+          <div className="form-field" data-field="seoOgImageUrl">
+            <span>{p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}</span>
+            <ImageUrlInput
+              value={form.seoOgImageUrl}
+              onChange={(url, media) => {
+                updateField('seoOgImageUrl', url)
+                updateField('seoOgImageWidth', media?.width ?? null)
+                updateField('seoOgImageHeight', media?.height ?? null)
+                updateField('seoOgImageMimeType', media?.mimeType ?? '')
+              }}
+              alt={form.seoOgImageAlt}
+              onAltChange={(v) => updateField('seoOgImageAlt', v)}
+              disabled={isReadOnly}
+              error={validationErrors.seoOgImageUrl}
+              recommend={IMAGE_RECO.cover}
+            />
+            <span className="hint">
+              {p('seoOgImageUrlHint', 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.')}
+            </span>
+          </div>
         </div>
-      </div>
       )}
     </div>
   )

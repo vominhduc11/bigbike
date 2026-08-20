@@ -29,7 +29,8 @@ const {
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -57,28 +58,46 @@ vi.mock('../components/AdminTable', () => ({
       {loading ? <span>review-table-loading</span> : null}
       {rows.map((row) => (
         <div key={row.id}>
-          <button type="button" onClick={() => onRowClick(row)}>{row.authorName}</button>
+          <button type="button" onClick={() => onRowClick(row)}>
+            {row.authorName}
+          </button>
           {columns.find((column) => column.key === 'author')?.render(row)}
           {columns.find((column) => column.key === 'rating')?.render(row)}
           {columns.find((column) => column.key === 'actions')?.render(row)}
         </div>
       ))}
-      {selectable ? <button type="button" onClick={() => onSelectionChange([rows[0]?.id])}>select review</button> : null}
+      {selectable ? (
+        <button type="button" onClick={() => onSelectionChange([rows[0]?.id])}>
+          select review
+        </button>
+      ) : null}
     </div>
   ),
 }))
 
 vi.mock('../components/FilterSelect', () => ({
   FilterSelect: ({ value, onValueChange, ariaLabel, options }) => (
-    <select aria-label={ariaLabel} value={value} onChange={(event) => onValueChange(event.target.value)}>
-      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </select>
   ),
 }))
 
 function renderScreen(canUpdate = false, isSuperAdmin = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={client}><ReviewListScreen navigate={vi.fn()} canUpdate={canUpdate} isSuperAdmin={isSuperAdmin} /></QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={client}>
+      <ReviewListScreen navigate={vi.fn()} canUpdate={canUpdate} isSuperAdmin={isSuperAdmin} />
+    </QueryClientProvider>,
+  )
 }
 
 const review = {
@@ -100,9 +119,16 @@ beforeEach(() => {
   vi.clearAllMocks()
   window.history.replaceState({}, '', '/admin/reviews')
   mocks.wsHandler = null
-  fetchReviews.mockResolvedValue({ items: [review], pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } })
+  fetchReviews.mockResolvedValue({
+    items: [review],
+    pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
+  })
   fetchReviewSummary.mockResolvedValue({
-    approved: { averageRating: 4.2, totalReviews: 8, ratingBreakdown: { 1: 1, 1.5: 0, 2: 0, 2.5: 0, 3: 1, 3.5: 0, 4: 2, 4.5: 0, 5: 4 } },
+    approved: {
+      averageRating: 4.2,
+      totalReviews: 8,
+      ratingBreakdown: { 1: 1, 1.5: 0, 2: 0, 2.5: 0, 3: 1, 3.5: 0, 4: 2, 4.5: 0, 5: 4 },
+    },
     pending: { totalReviews: 3, oneStarReviews: 1 },
   })
   showConfirm.mockResolvedValue(false)
@@ -122,7 +148,9 @@ describe('ReviewListScreen', () => {
     expect(screen.getByText('reviews.filteredResults')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'select review' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.approve' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'reviews.deletePermanent' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('minh@example.com')).not.toBeInTheDocument()
     expect(fetchReviewSummary).toHaveBeenCalledTimes(1)
   })
@@ -147,7 +175,11 @@ describe('ReviewListScreen', () => {
     const pendingButton = await screen.findByRole('button', { name: /reviews\.pendingCount/ })
     await user.click(pendingButton)
 
-    await waitFor(() => expect(fetchReviews).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'PENDING', rating: '' })))
+    await waitFor(() =>
+      expect(fetchReviews).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'PENDING', rating: '' }),
+      ),
+    )
   })
 
   it('sends an exact half-star filter and resets to page one', async () => {
@@ -155,9 +187,16 @@ describe('ReviewListScreen', () => {
     window.history.replaceState({}, '', '/admin/reviews?page=3')
     renderScreen(true)
 
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'reviews.filterRating' }), '4.5')
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'reviews.filterRating' }),
+      '4.5',
+    )
 
-    await waitFor(() => expect(fetchReviews).toHaveBeenLastCalledWith(expect.objectContaining({ rating: '4.5', page: 1 })))
+    await waitFor(() =>
+      expect(fetchReviews).toHaveBeenLastCalledWith(
+        expect.objectContaining({ rating: '4.5', page: 1 }),
+      ),
+    )
   })
 
   it('requires confirmation before bulk permanent deletion and respects cancel', async () => {
@@ -169,14 +208,22 @@ describe('ReviewListScreen', () => {
     renderScreen(true, true)
 
     await user.click(await screen.findByRole('button', { name: 'select review' }))
-    const deleteButton = (await screen.findAllByRole('button', { name: 'reviews.deletePermanent' }))[0]
+    const deleteButton = (
+      await screen.findAllByRole('button', { name: 'reviews.deletePermanent' })
+    )[0]
     await user.click(deleteButton)
-    expect(showConfirm).toHaveBeenCalledWith(expect.stringContaining('reviews.deleteConfirmPermanent'), expect.any(String), expect.any(Object))
+    expect(showConfirm).toHaveBeenCalledWith(
+      expect.stringContaining('reviews.deleteConfirmPermanent'),
+      expect.any(String),
+      expect.any(Object),
+    )
     expect(bulkDeleteReviews).not.toHaveBeenCalled()
 
     showConfirm.mockResolvedValue(true)
     await user.click(deleteButton)
-    await waitFor(() => expect(bulkDeleteReviews).toHaveBeenCalledWith([{ id: 12, expectedVersion: 3 }]))
+    await waitFor(() =>
+      expect(bulkDeleteReviews).toHaveBeenCalledWith([{ id: 12, expectedVersion: 3 }]),
+    )
   })
 
   it('sends versioned bulk items and explains skipped conflicts', async () => {
@@ -192,10 +239,9 @@ describe('ReviewListScreen', () => {
     const bulk = screen.getByRole('region', { name: 'common.bulkActions' })
     await user.click(within(bulk).getByRole('button', { name: 'reviews.spam' }))
 
-    await waitFor(() => expect(bulkUpdateReviewStatus).toHaveBeenCalledWith(
-      [{ id: 12, expectedVersion: 3 }],
-      'SPAM',
-    ))
+    await waitFor(() =>
+      expect(bulkUpdateReviewStatus).toHaveBeenCalledWith([{ id: 12, expectedVersion: 3 }], 'SPAM'),
+    )
     expect(await screen.findByText('reviews.bulkResultSummary')).toBeInTheDocument()
     expect(screen.getByText('reviews.bulkSkippedItem')).toBeInTheDocument()
   })
@@ -206,12 +252,17 @@ describe('ReviewListScreen', () => {
 
     expect((await screen.findAllByText('reviews.summaryError')).length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: /reviews\.pendingCount/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /reviews\.lowRatingPending/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /reviews\.lowRatingPending/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('distinguishes filtered empty state and can reset it', async () => {
     window.history.replaceState({}, '', '/admin/reviews?status=PENDING')
-    fetchReviews.mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 } })
+    fetchReviews.mockResolvedValue({
+      items: [],
+      pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+    })
     renderScreen(false)
 
     expect(await screen.findByText('reviews.empty')).toBeInTheDocument()
@@ -259,10 +310,15 @@ describe('ReviewListScreen', () => {
 
   it('clamps an empty out-of-range page back to page one', async () => {
     window.history.replaceState({}, '', '/admin/reviews?page=3')
-    fetchReviews.mockResolvedValue({ items: [], pagination: { page: 3, pageSize: 20, totalItems: 0, totalPages: 0 } })
+    fetchReviews.mockResolvedValue({
+      items: [],
+      pagination: { page: 3, pageSize: 20, totalItems: 0, totalPages: 0 },
+    })
     renderScreen(false)
 
-    await waitFor(() => expect(fetchReviews).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 })))
+    await waitFor(() =>
+      expect(fetchReviews).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 })),
+    )
   })
 
   it('sends the rendered version and reloads before unlocking a stale review', async () => {
@@ -270,8 +326,14 @@ describe('ReviewListScreen', () => {
     const staleError = Object.assign(new Error('stale review'), { status: 409 })
     updateReviewStatus.mockRejectedValue(staleError)
     fetchReviews
-      .mockResolvedValueOnce({ items: [review], pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } })
-      .mockResolvedValue({ items: [{ ...review, version: 4 }], pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } })
+      .mockResolvedValueOnce({
+        items: [review],
+        pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
+      })
+      .mockResolvedValue({
+        items: [{ ...review, version: 4 }],
+        pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
+      })
     showConfirm.mockResolvedValue(true)
     renderScreen(true)
 
@@ -280,7 +342,9 @@ describe('ReviewListScreen', () => {
     await waitFor(() => expect(updateReviewStatus).toHaveBeenCalledWith(12, 'APPROVED', 3))
     expect(await screen.findByText('reviews.staleConflict')).toBeInTheDocument()
     await waitFor(() => expect(fetchReviews.mock.calls.length).toBeGreaterThanOrEqual(2))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'reviews.approve' })).toBeEnabled())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'reviews.approve' })).toBeEnabled(),
+    )
   })
 
   it('sends the rendered version with a confirmed permanent delete', async () => {
@@ -304,7 +368,9 @@ describe('ReviewListScreen', () => {
     expect(screen.getByRole('button', { name: 'reviews.spam' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'reviews.moveToTrash' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.returnPending' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'reviews.deletePermanent' }),
+    ).not.toBeInTheDocument()
     unmount()
 
     fetchReviews.mockResolvedValue({

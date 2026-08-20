@@ -16,23 +16,50 @@ function ImagePreview({ url, alt }) {
   const trimmed = resolveDisplayUrl((url ?? '').trim())
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!trimmed) { setOk(false); return }
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOk(false)
+      return
+    }
     setLoading(true)
     const img = new Image()
     img.loading = 'eager'
-    img.onload = () => { setOk(true); setLoading(false) }
-    img.onerror = () => { setOk(false); setLoading(false) }
+    img.onload = () => {
+      setOk(true)
+      setLoading(false)
+    }
+    img.onerror = () => {
+      setOk(false)
+      setLoading(false)
+    }
     img.src = trimmed
   }, [trimmed])
 
   if (!trimmed) return null
-  if (loading) return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
-  if (!ok) return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
-  return <img src={trimmed} alt={alt || t('imageInput.previewAlt')} className="img-preview" loading="eager" />
+  if (loading)
+    return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
+  if (!ok)
+    return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
+  return (
+    <img
+      src={trimmed}
+      alt={alt || t('imageInput.previewAlt')}
+      className="img-preview"
+      loading="eager"
+    />
+  )
 }
 
-export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, disabled, error, recommend }) {
+export function ImageUrlInput({
+  value,
+  onChange,
+  alt,
+  onAltChange,
+  previewAlt,
+  disabled,
+  error,
+  recommend,
+}) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasPermission = useHasPermission()
@@ -44,9 +71,14 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
   return (
     <div className="image-url-input">
       <div className="image-url-input-row">
-        <Button variant="secondary" size="sm" className="image-url-pick-btn"
+        <Button
+          variant="secondary"
+          size="sm"
+          className="image-url-pick-btn"
           type="button"
-          onClick={() => { if (canReadMedia) setPickerOpen(true) }}
+          onClick={() => {
+            if (canReadMedia) setPickerOpen(true)
+          }}
           disabled={disabled || !canReadMedia}
           title={!canReadMedia ? t('media.permissionDeniedDesc') : undefined}
           aria-invalid={error ? true : undefined}
@@ -56,9 +88,15 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           {hasImage ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
         </Button>
         {hasImage && (
-          <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-danger hover:bg-danger-bg"
             type="button"
-            onClick={() => { onChange(''); onAltChange?.('') }}
+            onClick={() => {
+              onChange('')
+              onAltChange?.('')
+            }}
             disabled={disabled}
             aria-label={t('imageInput.removeImage')}
           >
@@ -67,11 +105,13 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
         )}
       </div>
       {!canReadMedia ? (
-        <small className="text-xs text-muted-foreground">
-          {t('media.permissionDeniedDesc')}
-        </small>
+        <small className="text-xs text-muted-foreground">{t('media.permissionDeniedDesc')}</small>
       ) : null}
-      {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
+      {error && (
+        <small id={errorId} role="alert" className="field-error">
+          {error}
+        </small>
+      )}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} alt={previewAlt || alt} />
 

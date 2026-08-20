@@ -12,13 +12,31 @@ import { Button } from '@/components/ui/button'
 // `keepMounted`: khi true, children luôn render nhưng ẩn qua thuộc tính `hidden` lúc
 // đóng — dùng cho section chứa editor có state cục bộ hoặc field có validation, để
 // KHÔNG mất state/không giấu lỗi khi đóng. Mặc định false (unmount khi đóng cho nhẹ).
-export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMounted = false, className, bodyClassName, children }) {
+export function CollapsibleSection({
+  title,
+  hint,
+  open,
+  onToggle,
+  badge,
+  keepMounted = false,
+  className,
+  bodyClassName,
+  children,
+}) {
   const panelId = useId()
   let body = null
   if (keepMounted) {
-    body = <div id={panelId} className={cn('bb-section-group-body', bodyClassName)} hidden={!open}>{children}</div>
+    body = (
+      <div id={panelId} className={cn('bb-section-group-body', bodyClassName)} hidden={!open}>
+        {children}
+      </div>
+    )
   } else if (open) {
-    body = <div id={panelId} className={cn('bb-section-group-body', bodyClassName)}>{children}</div>
+    body = (
+      <div id={panelId} className={cn('bb-section-group-body', bodyClassName)}>
+        {children}
+      </div>
+    )
   }
   return (
     <section className={cn('bb-section-group', className)}>
@@ -32,7 +50,10 @@ export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMou
         <ChevronDown
           size={18}
           aria-hidden="true"
-          className={cn('shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
+          className={cn(
+            'shrink-0 text-muted-foreground transition-transform',
+            !open && '-rotate-90',
+          )}
         />
         <span className="bb-section-group-title">{title}</span>
         {hint && <span className="bb-section-group-hint">· {hint}</span>}

@@ -44,13 +44,15 @@ describe('buildSliderPayload', () => {
   })
 
   it('giữ đầy đủ metadata ảnh desktop khi sửa banner hiện có', () => {
-    const payload = buildSliderPayload(baseForm({
-      desktopImageUrl: '/media/sliders/hero.jpg',
-      desktopImageAlt: 'Banner chính',
-      desktopImageWidth: 3840,
-      desktopImageHeight: 1536,
-      desktopImageMimeType: 'image/webp',
-    }))
+    const payload = buildSliderPayload(
+      baseForm({
+        desktopImageUrl: '/media/sliders/hero.jpg',
+        desktopImageAlt: 'Banner chính',
+        desktopImageWidth: 3840,
+        desktopImageHeight: 1536,
+        desktopImageMimeType: 'image/webp',
+      }),
+    )
     expect(payload.desktopImage).toEqual({
       url: '/media/sliders/hero.jpg',
       alt: 'Banner chính',
@@ -61,10 +63,14 @@ describe('buildSliderPayload', () => {
   })
 
   it('gửi rõ URL và alt của ảnh mobile', () => {
-    expect(buildSliderPayload(baseForm({
-      mobileImageUrl: '  /media/sliders/hero-mobile.jpg ',
-      mobileImageAlt: '  Banner mobile mùa hè ',
-    })).mobileImage).toEqual({
+    expect(
+      buildSliderPayload(
+        baseForm({
+          mobileImageUrl: '  /media/sliders/hero-mobile.jpg ',
+          mobileImageAlt: '  Banner mobile mùa hè ',
+        }),
+      ).mobileImage,
+    ).toEqual({
       url: '/media/sliders/hero-mobile.jpg',
       alt: 'Banner mobile mùa hè',
       width: null,
@@ -89,16 +95,24 @@ describe('buildSliderPayload', () => {
 
   it('gửi mobileImage null khi ảnh mobile bị xoá hoặc banner mới không có ảnh mobile', () => {
     expect(buildSliderPayload(baseForm()).mobileImage).toBeNull()
-    expect(buildSliderPayload(baseForm({
-      mobileImageUrl: '   ',
-      mobileImageAlt: 'Alt không được giữ khi thiếu URL',
-    })).mobileImage).toBeNull()
+    expect(
+      buildSliderPayload(
+        baseForm({
+          mobileImageUrl: '   ',
+          mobileImageAlt: 'Alt không được giữ khi thiếu URL',
+        }),
+      ).mobileImage,
+    ).toBeNull()
   })
 
   it('gửi alt null khi ảnh mobile không có alt', () => {
-    expect(buildSliderPayload(baseForm({
-      mobileImageUrl: '/media/sliders/hero-mobile.jpg',
-    })).mobileImage).toEqual({
+    expect(
+      buildSliderPayload(
+        baseForm({
+          mobileImageUrl: '/media/sliders/hero-mobile.jpg',
+        }),
+      ).mobileImage,
+    ).toEqual({
       url: '/media/sliders/hero-mobile.jpg',
       alt: null,
       width: null,

@@ -28,7 +28,8 @@ const sourceExtensions = new Set([
   '.yml',
 ])
 
-const allowedFixturePath = /(^|[/\\])(__tests__|tests?|fixtures?)([/\\]|$)|\.(test|spec)\.[cm]?[jt]sx?$/
+const allowedFixturePath =
+  /(^|[/\\])(__tests__|tests?|fixtures?)([/\\]|$)|\.(test|spec)\.[cm]?[jt]sx?$/
 
 const forbiddenPatterns = [
   { pattern: /VITE_USE_ADMIN_MOCK/g, reason: 'old admin mock build flag' },

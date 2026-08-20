@@ -12,7 +12,16 @@ import { cn } from '@/lib/utils'
  * @param {string} value
  * @param {(v:string)=>void} onChange - nhận giá trị thô (đã rút từ e.target.value).
  */
-export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, autoFocus, className, wrapperClassName, disabled }) {
+export function FilterSearchInput({
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+  autoFocus,
+  className,
+  wrapperClassName,
+  disabled,
+}) {
   return (
     <div className={cn('relative', wrapperClassName)}>
       <Search
@@ -32,7 +41,7 @@ export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, aut
           'h-9 w-full pl-9 pr-3 text-sm shadow-none',
           'rounded-sm border-border bg-background text-foreground',
           'focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
-          className
+          className,
         )}
       />
     </div>

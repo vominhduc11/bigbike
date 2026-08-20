@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "npm run check:no-runtime-mock && vite build",
     "analyze": "npm run check:no-runtime-mock && ANALYZE=1 vite build",
-    "lint": "npm run check:no-runtime-mock && eslint .",
+    "lint": "npm run check:no-runtime-mock && npm run format:check && eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "check:no-runtime-mock": "node scripts/check-no-admin-runtime-mock.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -19,7 +21,8 @@
     "test:e2e:report": "playwright show-report e2e/report",
     "test:e2e:responsive": "playwright test responsive",
     "test:e2e:effects": "playwright test effects",
-    "test:e2e:admin": "playwright test"
+    "test:e2e:admin": "playwright test",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -81,9 +84,18 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^8.0.4",
     "vitest": "^4.1.8"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,css,json}": [
+      "prettier --write",
+      "eslint --max-warnings=0"
+    ]
   }
 }

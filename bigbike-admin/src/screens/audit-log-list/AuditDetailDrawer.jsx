@@ -1,11 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ChevronDown,
-  ChevronUp,
-  CircleDot,
-  FileJson2,
-} from 'lucide-react'
+import { ChevronDown, ChevronUp, CircleDot, FileJson2 } from 'lucide-react'
 import { Modal } from '../../components/layout'
 import { DetailSection } from '../../components/DetailSection'
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
@@ -38,49 +33,52 @@ export function AuditDetailDrawer({ log, onClose }) {
   const moduleTone = getModuleTone(log.resourceType)
   const moduleLabel = getModuleLabel(t, log.resourceType)
   const actionLabel = getActionLabel(t, log.action)
-  const actorName = log.actorDisplayName
-    || log.actorEmail
-    || t(`auditLog.actorType.${log.actorType}`, {
+  const actorName =
+    log.actorDisplayName ||
+    log.actorEmail ||
+    t(`auditLog.actorType.${log.actorType}`, {
       defaultValue: t('auditLog.actorType.ADMIN'),
     })
   const actorTypeLabel = t(`auditLog.actorType.${log.actorType}`, {
     defaultValue: log.actorType || t('auditLog.actorType.ADMIN'),
   })
-  const resourceLabel = log.resourceCode
-    || log.resourceDisplayName
-    || (log.resourceId ? log.resourceId.slice(0, 8) : '—')
+  const resourceLabel =
+    log.resourceCode ||
+    log.resourceDisplayName ||
+    (log.resourceId ? log.resourceId.slice(0, 8) : '—')
 
   const diff = useMemo(() => {
     const before = log.beforeData ? tryParse(log.beforeData) : null
     const after = log.afterData ? tryParse(log.afterData) : null
-    const comparable = before && after
-      && typeof before === 'object'
-      && typeof after === 'object'
-      && !Array.isArray(before)
-      && !Array.isArray(after)
+    const comparable =
+      before &&
+      after &&
+      typeof before === 'object' &&
+      typeof after === 'object' &&
+      !Array.isArray(before) &&
+      !Array.isArray(after)
 
     if (!comparable) return null
 
     const allKeys = new Set([...Object.keys(before), ...Object.keys(after)])
     return [...allKeys].flatMap((key) => {
-      const beforeSerialized = typeof before[key] === 'object'
-        ? JSON.stringify(before[key])
-        : String(before[key])
-      const afterSerialized = typeof after[key] === 'object'
-        ? JSON.stringify(after[key])
-        : String(after[key])
+      const beforeSerialized =
+        typeof before[key] === 'object' ? JSON.stringify(before[key]) : String(before[key])
+      const afterSerialized =
+        typeof after[key] === 'object' ? JSON.stringify(after[key]) : String(after[key])
 
       if (beforeSerialized === afterSerialized) return []
 
-      return [{
-        key,
-        label: t(`auditLog.field.${key}`, { defaultValue: key }),
-        before: displayValue(before[key], t),
-        after: displayValue(after[key], t),
-        rawAfter: after[key] !== null && typeof after[key] === 'object'
-          ? ''
-          : String(after[key] ?? ''),
-      }]
+      return [
+        {
+          key,
+          label: t(`auditLog.field.${key}`, { defaultValue: key }),
+          before: displayValue(before[key], t),
+          after: displayValue(after[key], t),
+          rawAfter:
+            after[key] !== null && typeof after[key] === 'object' ? '' : String(after[key] ?? ''),
+        },
+      ]
     })
   }, [log.beforeData, log.afterData, t])
 
@@ -115,9 +113,7 @@ export function AuditDetailDrawer({ log, onClose }) {
             <DetailRow label={t('auditLog.drawerActorLabel')}>
               <span className="font-semibold">{actorName}</span>
               {log.actorDisplayName && log.actorEmail ? (
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {log.actorEmail}
-                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{log.actorEmail}</span>
               ) : null}
               {log.actorType ? (
                 <Badge variant="muted" className="mt-2">
@@ -138,12 +134,13 @@ export function AuditDetailDrawer({ log, onClose }) {
 
             <DetailRow label={t('auditLog.drawerEntityLabel')}>
               <span className="font-semibold">{resourceLabel}</span>
-              {log.resourceCode && log.resourceDisplayName
-                && log.resourceCode !== log.resourceDisplayName ? (
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {log.resourceDisplayName}
-                  </span>
-                ) : null}
+              {log.resourceCode &&
+              log.resourceDisplayName &&
+              log.resourceCode !== log.resourceDisplayName ? (
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {log.resourceDisplayName}
+                </span>
+              ) : null}
             </DetailRow>
 
             {log.ipAddress ? (
@@ -193,10 +190,12 @@ export function AuditDetailDrawer({ log, onClose }) {
                       <span className="text-xs font-semibold text-muted-foreground sm:hidden">
                         {t('auditLog.drawerAfter')}
                       </span>
-                      <p className={cn(
-                        'mt-0.5 break-words text-sm font-semibold text-success sm:mt-0',
-                        isDangerousAfter && 'text-danger',
-                      )}>
+                      <p
+                        className={cn(
+                          'mt-0.5 break-words text-sm font-semibold text-success sm:mt-0',
+                          isDangerousAfter && 'text-danger',
+                        )}
+                      >
                         {row.after}
                       </p>
                     </div>
@@ -224,9 +223,11 @@ export function AuditDetailDrawer({ log, onClose }) {
                 <FileJson2 size={16} aria-hidden="true" />
                 {t('auditLog.drawerTechData')}
               </span>
-              {showRaw
-                ? <ChevronUp size={16} aria-hidden="true" />
-                : <ChevronDown size={16} aria-hidden="true" />}
+              {showRaw ? (
+                <ChevronUp size={16} aria-hidden="true" />
+              ) : (
+                <ChevronDown size={16} aria-hidden="true" />
+              )}
             </Button>
 
             {showRaw ? (

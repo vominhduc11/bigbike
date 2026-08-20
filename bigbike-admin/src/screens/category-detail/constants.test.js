@@ -42,10 +42,14 @@ describe('Category payload contract', () => {
   it('keeps the alt text of each persisted media role separate', () => {
     const payload = toPayload({
       ...buildEmptyForm(),
-      imageUrl: '/media/category-thumb.jpg', imageAlt: 'Ảnh thumbnail',
-      heroImageUrl: '/media/category-hero.jpg', heroImageAlt: 'Ảnh hero',
-      bannerImageUrl: '/media/category-banner.jpg', bannerImageAlt: 'Ảnh banner',
-      mobileBannerImageUrl: '/media/category-banner-mobile.jpg', mobileBannerImageAlt: 'Ảnh banner mobile',
+      imageUrl: '/media/category-thumb.jpg',
+      imageAlt: 'Ảnh thumbnail',
+      heroImageUrl: '/media/category-hero.jpg',
+      heroImageAlt: 'Ảnh hero',
+      bannerImageUrl: '/media/category-banner.jpg',
+      bannerImageAlt: 'Ảnh banner',
+      mobileBannerImageUrl: '/media/category-banner-mobile.jpg',
+      mobileBannerImageAlt: 'Ảnh banner mobile',
     })
 
     expect(payload.image.alt).toBe('Ảnh thumbnail')
@@ -56,20 +60,52 @@ describe('Category payload contract', () => {
 
   it('giữ metadata ảnh thumbnail, ảnh hero và ảnh chia sẻ qua vòng đọc rồi lưu', () => {
     const form = buildFormFromItem({
-      image: { url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp' },
-      icon: { url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png' },
-      seo: { ogImage: { url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg' } },
+      image: {
+        url: '/media/category-thumb.webp',
+        alt: 'Thumbnail',
+        width: 520,
+        height: 520,
+        mimeType: 'image/webp',
+      },
+      icon: {
+        url: '/media/category-hero.png',
+        alt: 'Hero',
+        width: 900,
+        height: 800,
+        mimeType: 'image/png',
+      },
+      seo: {
+        ogImage: {
+          url: '/media/category-og.jpg',
+          alt: 'OG',
+          width: 1200,
+          height: 630,
+          mimeType: 'image/jpeg',
+        },
+      },
     })
     const payload = toPayload(form)
 
     expect(payload.image).toEqual({
-      url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp',
+      url: '/media/category-thumb.webp',
+      alt: 'Thumbnail',
+      width: 520,
+      height: 520,
+      mimeType: 'image/webp',
     })
     expect(payload.icon).toEqual({
-      url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png',
+      url: '/media/category-hero.png',
+      alt: 'Hero',
+      width: 900,
+      height: 800,
+      mimeType: 'image/png',
     })
     expect(payload.seo.ogImage).toEqual({
-      url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg',
+      url: '/media/category-og.jpg',
+      alt: 'OG',
+      width: 1200,
+      height: 630,
+      mimeType: 'image/jpeg',
     })
   })
 

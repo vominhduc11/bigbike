@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -50,8 +51,16 @@ vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('../lib/useRecentItems', () => ({ useRecentItems: () => [] }))
 vi.mock('../components/FilterSelect', () => ({
   FilterSelect: ({ ariaLabel, value, options, onValueChange }) => (
-    <select aria-label={ariaLabel} value={value} onChange={(event) => onValueChange(event.target.value)}>
-      {options.map((option) => <option key={String(option.value)} value={option.value}>{option.label}</option>)}
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={String(option.value)} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </select>
   ),
 }))
@@ -63,10 +72,14 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuTrigger: ({ children }) => <>{children}</>,
   DropdownMenuContent: ({ children }) => <div>{children}</div>,
   DropdownMenuItem: ({ children, onSelect, disabled }) => (
-    <button type="button" disabled={disabled} onClick={onSelect}>{children}</button>
+    <button type="button" disabled={disabled} onClick={onSelect}>
+      {children}
+    </button>
   ),
   DropdownMenuCheckboxItem: ({ children, disabled }) => (
-    <button type="button" disabled={disabled}>{children}</button>
+    <button type="button" disabled={disabled}>
+      {children}
+    </button>
   ),
   DropdownMenuLabel: ({ children }) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
@@ -82,7 +95,11 @@ vi.mock('../components/AdminTable', () => ({
     return (
       <div data-testid="product-table">
         {selectable ? (
-          <button type="button" data-testid="select-first-product" onClick={() => onSelectionChange([row.id])}>
+          <button
+            type="button"
+            data-testid="select-first-product"
+            onClick={() => onSelectionChange([row.id])}
+          >
             select first
           </button>
         ) : null}
@@ -93,7 +110,9 @@ vi.mock('../components/AdminTable', () => ({
         </div>
         <div data-testid="desktop-actions">{actionColumn.render(row)}</div>
         <div data-testid="mobile-meta">
-          {card.meta.map((entry) => <div key={entry.label}>{entry.value}</div>)}
+          {card.meta.map((entry) => (
+            <div key={entry.label}>{entry.value}</div>
+          ))}
         </div>
         <div data-testid="mobile-actions">{card.actions}</div>
       </div>
@@ -154,32 +173,46 @@ describe('ProductListScreen', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'common.exportCsv' }))
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ })).toBeChecked()
-    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeSelectedEmpty/ })).toBeDisabled()
+    expect(
+      screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ }),
+    ).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /products\.exportDialog\.scopeSelectedEmpty/ }),
+    ).toBeDisabled()
     expect(mocks.exportFullProductCatalogCsv).not.toHaveBeenCalled()
   })
 
   it('gọi API kèm bộ lọc màn hình và cho phép chọn dòng sau khi tick', async () => {
-    window.history.replaceState({}, '', '/admin/products?search=AGV&publishStatus=DRAFT&stockState=OUT_OF_STOCK')
+    window.history.replaceState(
+      {},
+      '',
+      '/admin/products?search=AGV&publishStatus=DRAFT&stockState=OUT_OF_STOCK',
+    )
     renderScreen()
 
     await screen.findByTestId('select-first-product')
     fireEvent.click(screen.getByTestId('select-first-product'))
     fireEvent.click(screen.getByRole('button', { name: 'common.exportCsv' }))
     await screen.findByRole('dialog')
-    expect(screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ })).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /products\.exportDialog\.scopeFiltered/ }),
+    ).toBeChecked()
 
     fireEvent.click(screen.getByRole('radio', { name: /products\.exportDialog\.scopeSelected/ }))
     fireEvent.click(screen.getByRole('button', { name: 'products.exportDialog.confirm' }))
 
-    await waitFor(() => expect(mocks.exportFullProductCatalogCsv).toHaveBeenCalledWith(expect.objectContaining({
-      scope: 'SELECTED',
-      q: 'AGV',
-      publishStatus: 'DRAFT',
-      stockState: 'OUT_OF_STOCK',
-      ids: ['product-1'],
-      preset: 'PRICING',
-    })))
+    await waitFor(() =>
+      expect(mocks.exportFullProductCatalogCsv).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scope: 'SELECTED',
+          q: 'AGV',
+          publishStatus: 'DRAFT',
+          stockState: 'OUT_OF_STOCK',
+          ids: ['product-1'],
+          preset: 'PRICING',
+        }),
+      ),
+    )
   }, 10000)
 
   it('vô hiệu hoá nút xuất và giải thích khi thiếu quyền reports.export', async () => {
@@ -204,7 +237,9 @@ describe('ProductListScreen', () => {
       const viewButton = actions.getByRole('button', { name: 'common.view' })
       expect(viewButton).toHaveClass('min-h-11', 'min-w-11')
       expect(actions.queryByRole('button', { name: 'common.edit' })).not.toBeInTheDocument()
-      expect(actions.queryByRole('button', { name: 'products.publishAction' })).not.toBeInTheDocument()
+      expect(
+        actions.queryByRole('button', { name: 'products.publishAction' }),
+      ).not.toBeInTheDocument()
       expect(actions.queryByRole('button', { name: 'products.exportJson' })).not.toBeInTheDocument()
     }
   })
@@ -215,19 +250,24 @@ describe('ProductListScreen', () => {
 
     for (const testId of ['desktop-actions', 'mobile-actions']) {
       const actions = within(screen.getByTestId(testId))
-      expect(actions.getByRole('button', { name: 'products.publishAction' }))
-        .toHaveClass('min-h-11', 'min-w-11')
+      expect(actions.getByRole('button', { name: 'products.publishAction' })).toHaveClass(
+        'min-h-11',
+        'min-w-11',
+      )
       expect(actions.getByRole('button', { name: 'products.exportJson' })).toBeInTheDocument()
     }
   })
 
   it('tự đưa trang vượt quá tổng số trang về trang cuối hợp lệ', async () => {
     window.history.replaceState({}, '', '/admin/products?page=3')
-    mocks.fetchProducts.mockImplementation(async (query) => (
+    mocks.fetchProducts.mockImplementation(async (query) =>
       query.page === 3
-        ? productResponse(3, { items: [], pagination: { page: 3, pageSize: 20, totalItems: 1, totalPages: 1 } })
-        : productResponse(1)
-    ))
+        ? productResponse(3, {
+            items: [],
+            pagination: { page: 3, pageSize: 20, totalItems: 1, totalPages: 1 },
+          })
+        : productResponse(1),
+    )
 
     renderScreen()
 
@@ -241,9 +281,17 @@ describe('ProductListScreen', () => {
     renderScreen()
 
     const genderFilter = await screen.findByLabelText('products.filterGender')
-    expect(Array.from(genderFilter.options).map((option) => option.value)).toEqual(['ALL', 'Nam', 'Nữ'])
+    expect(Array.from(genderFilter.options).map((option) => option.value)).toEqual([
+      'ALL',
+      'Nam',
+      'Nữ',
+    ])
 
     fireEvent.change(genderFilter, { target: { value: 'Nam' } })
-    await waitFor(() => expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({ gender: 'Nam' })))
+    await waitFor(() =>
+      expect(mocks.fetchProducts).toHaveBeenLastCalledWith(
+        expect.objectContaining({ gender: 'Nam' }),
+      ),
+    )
   })
 })

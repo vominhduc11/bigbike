@@ -50,7 +50,11 @@ const REFRESH_COOKIE = 'bb_admin_refresh'
 
 const route = process.argv[2] || '/admin/dashboard'
 const outArg = process.argv[3]
-const slug = route.replace(/^\/+/, '').replace(/\/+$/, '').replace(/[/?=&]+/g, '-') || 'root'
+const slug =
+  route
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+    .replace(/[/?=&]+/g, '-') || 'root'
 const outPath = outArg ? resolve(outArg) : resolve(HERE, 'shots', `${slug}.png`)
 mkdirSync(dirname(outPath), { recursive: true })
 
@@ -88,21 +92,34 @@ const context = await browser.newContext({
 
 const host = new URL(BASE).hostname
 const cookieVal = await loginCookie(context.request)
-await context.addCookies([{
-  name: REFRESH_COOKIE, value: cookieVal, domain: host,
-  path: '/api/v1/auth', httpOnly: true, secure: false, sameSite: 'Lax',
-}])
+await context.addCookies([
+  {
+    name: REFRESH_COOKIE,
+    value: cookieVal,
+    domain: host,
+    path: '/api/v1/auth',
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Lax',
+  },
+])
 
 const page = await context.newPage()
 page.on('console', (m) => {
   if (m.type() !== 'error') return
   const t = m.text()
-  if (/Download the React DevTools|\[vite\]|ERR_ABORTED|favicon|WebSocket connection to .* failed|Failed to load resource/i.test(t)) return
+  if (
+    /Download the React DevTools|\[vite\]|ERR_ABORTED|favicon|WebSocket connection to .* failed|Failed to load resource/i.test(
+      t,
+    )
+  )
+    return
   consoleErrors.push(t)
 })
 page.on('pageerror', (e) => pageErrors.push(`${e.name}: ${e.message}`))
 page.on('response', (r) => {
-  const u = r.url(); const s = r.status()
+  const u = r.url()
+  const s = r.status()
   if (s >= 400 && u.includes(API)) {
     if (s === 401 && /\/auth\/(me|refresh)/.test(u)) return
     apiErrors.push(`${r.request().method()} ${u} -> ${s}`)
@@ -110,41 +127,137 @@ page.on('response', (r) => {
 })
 
 if (USE_CHAT_FIXTURE) {
-  await page.route('**/api/v1/admin/maintenance', (r) => r.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ data: { enabled: false } }),
-  }))
-  await page.route('**/api/v1/admin/chat/stats**', (r) => r.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ data: {
-      date: '2026-08-20', aiCalls: 286, conversations: 94, leads: 18, unanswered: 7,
-      dailyLimit: 400, remainingAiCalls: 114, inputTokens: 188420, outputTokens: 64110,
-      thinkingTokens: 23480, providerRequests: 312, averageLatencyMs: 1840,
-      estimatedCostUsd: 1.84, contentRefusals: 5, assistedOrders: 12, assistedRevenue: 28650000,
-      quality: { answers: 168, productResults: 83, clarifications: 21, outOfScope: 9, contentRefusals: 5 },
-      leadFunnel: { sequence1Viewed: 46, sequence2Viewed: 19, accepted: 18, declined: 11 },
-      actionStats: [
-        { actionType: 'CHECK_SIZE', clicks: 42, cartLines: 19, orders: 8, revenue: 18700000, conversionRate: 0.1905 },
-        { actionType: 'CHECK_STOCK', clicks: 31, cartLines: 12, orders: 4, revenue: 9950000, conversionRate: 0.129 },
-        { actionType: 'CHANGE_BUDGET', clicks: 17, cartLines: 3, orders: 0, revenue: 0, conversionRate: 0 },
-      ],
-      monthlyCostUsd: 12.46, monthlyCostWarningUsd: 10, monthlyCostWarningExceeded: true,
-    } }),
-  }))
-  await page.route('**/api/v1/admin/chat/conversations**', (r) => r.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ data: {
-      items: [
-        { id: 'chat-e2e-1', locale: 'vi', customerDisplayName: 'Khách thử nghiệm A', turnCount: 8, aiCallCount: 7, hasLead: true, startedAt: '2026-08-20T02:10:00Z', lastMessageAt: '2026-08-20T02:18:00Z', providerRequests: 8, averageLatencyMs: 1720, estimatedCostUsd: 0.042, assistedOrders: 1, assistedRevenue: 3150000 },
-        { id: 'chat-e2e-2', locale: 'vi', customerDisplayName: '', turnCount: 5, aiCallCount: 5, hasLead: false, startedAt: '2026-08-20T03:20:00Z', lastMessageAt: '2026-08-20T03:24:00Z', providerRequests: 5, averageLatencyMs: 1960, estimatedCostUsd: 0.031, assistedOrders: 0, assistedRevenue: 0 },
-        { id: 'chat-e2e-3', locale: 'en', customerDisplayName: 'Test customer B', turnCount: 12, aiCallCount: 10, hasLead: true, startedAt: '2026-08-20T04:05:00Z', lastMessageAt: '2026-08-20T04:16:00Z', providerRequests: 11, averageLatencyMs: 1810, estimatedCostUsd: 0.057, assistedOrders: 2, assistedRevenue: 5720000 },
-      ],
-      page: 1, pageSize: 20, totalItems: 3, totalPages: 1,
-    } }),
-  }))
+  await page.route('**/api/v1/admin/maintenance', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: { enabled: false } }),
+    }),
+  )
+  await page.route('**/api/v1/admin/chat/stats**', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          date: '2026-08-20',
+          aiCalls: 286,
+          conversations: 94,
+          leads: 18,
+          unanswered: 7,
+          dailyLimit: 400,
+          remainingAiCalls: 114,
+          inputTokens: 188420,
+          outputTokens: 64110,
+          thinkingTokens: 23480,
+          providerRequests: 312,
+          averageLatencyMs: 1840,
+          estimatedCostUsd: 1.84,
+          contentRefusals: 5,
+          assistedOrders: 12,
+          assistedRevenue: 28650000,
+          quality: {
+            answers: 168,
+            productResults: 83,
+            clarifications: 21,
+            outOfScope: 9,
+            contentRefusals: 5,
+          },
+          leadFunnel: { sequence1Viewed: 46, sequence2Viewed: 19, accepted: 18, declined: 11 },
+          actionStats: [
+            {
+              actionType: 'CHECK_SIZE',
+              clicks: 42,
+              cartLines: 19,
+              orders: 8,
+              revenue: 18700000,
+              conversionRate: 0.1905,
+            },
+            {
+              actionType: 'CHECK_STOCK',
+              clicks: 31,
+              cartLines: 12,
+              orders: 4,
+              revenue: 9950000,
+              conversionRate: 0.129,
+            },
+            {
+              actionType: 'CHANGE_BUDGET',
+              clicks: 17,
+              cartLines: 3,
+              orders: 0,
+              revenue: 0,
+              conversionRate: 0,
+            },
+          ],
+          monthlyCostUsd: 12.46,
+          monthlyCostWarningUsd: 10,
+          monthlyCostWarningExceeded: true,
+        },
+      }),
+    }),
+  )
+  await page.route('**/api/v1/admin/chat/conversations**', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          items: [
+            {
+              id: 'chat-e2e-1',
+              locale: 'vi',
+              customerDisplayName: 'Khách thử nghiệm A',
+              turnCount: 8,
+              aiCallCount: 7,
+              hasLead: true,
+              startedAt: '2026-08-20T02:10:00Z',
+              lastMessageAt: '2026-08-20T02:18:00Z',
+              providerRequests: 8,
+              averageLatencyMs: 1720,
+              estimatedCostUsd: 0.042,
+              assistedOrders: 1,
+              assistedRevenue: 3150000,
+            },
+            {
+              id: 'chat-e2e-2',
+              locale: 'vi',
+              customerDisplayName: '',
+              turnCount: 5,
+              aiCallCount: 5,
+              hasLead: false,
+              startedAt: '2026-08-20T03:20:00Z',
+              lastMessageAt: '2026-08-20T03:24:00Z',
+              providerRequests: 5,
+              averageLatencyMs: 1960,
+              estimatedCostUsd: 0.031,
+              assistedOrders: 0,
+              assistedRevenue: 0,
+            },
+            {
+              id: 'chat-e2e-3',
+              locale: 'en',
+              customerDisplayName: 'Test customer B',
+              turnCount: 12,
+              aiCallCount: 10,
+              hasLead: true,
+              startedAt: '2026-08-20T04:05:00Z',
+              lastMessageAt: '2026-08-20T04:16:00Z',
+              providerRequests: 11,
+              averageLatencyMs: 1810,
+              estimatedCostUsd: 0.057,
+              assistedOrders: 2,
+              assistedRevenue: 5720000,
+            },
+          ],
+          page: 1,
+          pageSize: 20,
+          totalItems: 3,
+          totalPages: 1,
+        },
+      }),
+    }),
+  )
 }
 
 console.error(`[drive] ${BASE}${route}`)
@@ -154,28 +267,52 @@ await page.goto(route, { waitUntil: 'domcontentloaded' })
 if (await page.locator('.bb-login-shell').count()) {
   console.error('[drive] landed on login shell, re-seeding cookie')
   const v = await loginCookie(context.request)
-  await context.addCookies([{
-    name: REFRESH_COOKIE, value: v, domain: host,
-    path: '/api/v1/auth', httpOnly: true, secure: false, sameSite: 'Lax',
-  }])
+  await context.addCookies([
+    {
+      name: REFRESH_COOKIE,
+      value: v,
+      domain: host,
+      path: '/api/v1/auth',
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Lax',
+    },
+  ])
   await page.goto(route, { waitUntil: 'domcontentloaded' })
 }
 
-await page.locator('.bb-app').waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {
-  console.error('[drive] WARNING: .bb-app shell never attached (still on login? bad route?)')
-})
-await page.locator('.bb-page-content').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
+await page
+  .locator('.bb-app')
+  .waitFor({ state: 'attached', timeout: 20_000 })
+  .catch(() => {
+    console.error('[drive] WARNING: .bb-app shell never attached (still on login? bad route?)')
+  })
+await page
+  .locator('.bb-page-content')
+  .waitFor({ state: 'visible', timeout: 15_000 })
+  .catch(() => {})
 await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {})
 
 await page.screenshot({ path: outPath, fullPage: true })
 console.error(`[drive] screenshot -> ${outPath}`)
 
 const title = await page.title()
-console.log(JSON.stringify({
-  route, url: page.url(), title, screenshot: outPath,
-  consoleErrors, pageErrors, apiErrors,
-  clean: consoleErrors.length === 0 && pageErrors.length === 0 && apiErrors.length === 0,
-}, null, 2))
+console.log(
+  JSON.stringify(
+    {
+      route,
+      url: page.url(),
+      title,
+      screenshot: outPath,
+      consoleErrors,
+      pageErrors,
+      apiErrors,
+      clean: consoleErrors.length === 0 && pageErrors.length === 0 && apiErrors.length === 0,
+    },
+    null,
+    2,
+  ),
+)
 
 await browser.close()
 process.exit(pageErrors.length || consoleErrors.length ? 1 : 0)

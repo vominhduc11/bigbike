@@ -16,7 +16,9 @@ async function findBrandRow(page: Page, name: string) {
   const search = page.locator('input[type="search"]')
   await search.fill(name)
   const row = page.locator('tbody tr').filter({ hasText: name })
-  await expect(row, `Không tìm thấy thương hiệu thử nghiệm ${name}`).toHaveCount(1, { timeout: 10_000 })
+  await expect(row, `Không tìm thấy thương hiệu thử nghiệm ${name}`).toHaveCount(1, {
+    timeout: 10_000,
+  })
   return row
 }
 
@@ -59,14 +61,20 @@ async function captureResponsiveDetail(page: Page, testInfo: TestInfo, brandId: 
     await expectNoHorizontalOverflow(page, `Brand detail ${viewport.name}px`)
     const path = testInfo.outputPath(`brand-detail-after-${viewport.name}.png`)
     await page.screenshot({ path, fullPage: true })
-    await testInfo.attach(`Brand detail after ${viewport.name}px`, { path, contentType: 'image/png' })
+    await testInfo.attach(`Brand detail after ${viewport.name}px`, {
+      path,
+      contentType: 'image/png',
+    })
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 })
 }
 
 test.describe('brand-lifecycle', () => {
-  test('tạo, ẩn, khôi phục và xóa vĩnh viễn thương hiệu thử nghiệm', async ({ adminPage, collect }, testInfo) => {
+  test('tạo, ẩn, khôi phục và xóa vĩnh viễn thương hiệu thử nghiệm', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(120_000)
 
     const name = brandName(testInfo.retry)
@@ -85,7 +93,10 @@ test.describe('brand-lifecycle', () => {
       await expect(homepageCheckbox).toHaveAttribute('data-state', 'unchecked')
 
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/brands')),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/brands'),
+        ),
         adminPage.getByRole('button', { name: 'Tạo thương hiệu', exact: true }).click(),
       ])
       expect(response.status(), 'API tạo thương hiệu phải trả 2xx').toBeLessThan(300)
@@ -108,7 +119,11 @@ test.describe('brand-lifecycle', () => {
       await expect(adminPage.getByRole('dialog')).toContainText('xóa mềm')
       await expect(adminPage.getByRole('dialog')).toContainText('Thùng rác')
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}`),
+        ),
         confirmDialog(adminPage, 'Chuyển vào Thùng rác'),
       ])
       expect(response.status(), 'API ẩn mềm phải trả 2xx').toBeLessThan(300)
@@ -119,7 +134,11 @@ test.describe('brand-lifecycle', () => {
       const row = await findBrandRow(adminPage, name)
       await row.getByRole('button', { name: 'Khôi phục', exact: true }).click()
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}/restore`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'POST' &&
+            new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}/restore`),
+        ),
         confirmDialog(adminPage, 'Khôi phục'),
       ])
       expect(response.status(), 'API khôi phục phải trả 2xx').toBeLessThan(300)
@@ -130,10 +149,16 @@ test.describe('brand-lifecycle', () => {
       let row = await findBrandRow(adminPage, name)
       await row.getByRole('button', { name: 'Chuyển vào Thùng rác', exact: true }).click()
       const [hideResponse] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}`),
+        ),
         confirmDialog(adminPage, 'Chuyển vào Thùng rác'),
       ])
-      expect(hideResponse.status(), 'API ẩn mềm trước khi xóa vĩnh viễn phải trả 2xx').toBeLessThan(300)
+      expect(hideResponse.status(), 'API ẩn mềm trước khi xóa vĩnh viễn phải trả 2xx').toBeLessThan(
+        300,
+      )
 
       await selectVisibility(adminPage, 'Thùng rác')
       row = await findBrandRow(adminPage, name)
@@ -141,7 +166,11 @@ test.describe('brand-lifecycle', () => {
       await expect(adminPage.getByRole('dialog')).toContainText('Không thể hoàn tác')
       await expect(adminPage.getByRole('dialog')).toContainText('Chưa phân loại')
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}/permanent`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/brands/${brandId}/permanent`),
+        ),
         confirmDialog(adminPage, 'Xóa vĩnh viễn'),
       ])
       expect(response.status(), 'API xóa vĩnh viễn phải trả 2xx').toBeLessThan(300)

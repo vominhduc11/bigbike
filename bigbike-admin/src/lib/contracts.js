@@ -4,10 +4,7 @@
  */
 
 export const PUBLISH_STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH']
-export const STOCK_STATE_VALUES = [
-  'IN_STOCK',
-  'OUT_OF_STOCK',
-]
+export const STOCK_STATE_VALUES = ['IN_STOCK', 'OUT_OF_STOCK']
 export const CONTENT_TYPE_VALUES = ['ARTICLE']
 
 export function isKnownPublishStatus(value) {
@@ -64,18 +61,12 @@ function normalizeGenderValue(value) {
  * only for reading older API responses that still expose scalar `gender`.
  */
 export function normalizeGenders(value, legacyValue) {
-  const source = value !== undefined
-    ? value
-    : legacyValue
-  const values = Array.isArray(source)
-    ? source
-    : toTrimmedString(source).split('|')
+  const source = value !== undefined ? value : legacyValue
+  const values = Array.isArray(source) ? source : toTrimmedString(source).split('|')
 
   if (!values.length) return []
 
-  const normalized = values
-    .map(normalizeGenderValue)
-    .filter(Boolean)
+  const normalized = values.map(normalizeGenderValue).filter(Boolean)
 
   // `Unisex` was a removed legacy option. Old records/imports represent it as
   // no gender; unknown values are also ignored at the display boundary.
@@ -88,7 +79,6 @@ export function normalizeGenders(value, legacyValue) {
 export function normalizeGender(value) {
   return normalizeGenderValue(value)
 }
-
 
 function toInteger(value, fallback = 0) {
   if (typeof value === 'number' && Number.isInteger(value)) {
@@ -242,7 +232,9 @@ export function normalizeSeoMeta(input) {
   }
 
   // noIndex=false là giá trị mặc định "rỗng", không tính là có dữ liệu SEO.
-  const hasValues = seo.noIndex || ['title', 'description', 'canonicalUrl', 'ogImage'].some((k) => seo[k] !== undefined)
+  const hasValues =
+    seo.noIndex ||
+    ['title', 'description', 'canonicalUrl', 'ogImage'].some((k) => seo[k] !== undefined)
   return hasValues ? seo : undefined
 }
 
@@ -387,27 +379,30 @@ export function normalizeProduct(input) {
   const id = toTrimmedString(source.id) || 'unknown-product'
   const slug = toTrimmedString(source.slug) || id
   const brandSource = source.brand && typeof source.brand === 'object' ? source.brand : null
-  const categorySource = source.category && typeof source.category === 'object' ? source.category : null
+  const categorySource =
+    source.category && typeof source.category === 'object' ? source.category : null
   const responseCategories = Array.isArray(source.categories)
     ? source.categories.map(normalizeCategorySummary).filter(Boolean)
     : []
   const brandId =
-    toTrimmedString(source.brandId) ||
-    (brandSource ? toTrimmedString(brandSource.id) : '')
+    toTrimmedString(source.brandId) || (brandSource ? toTrimmedString(brandSource.id) : '')
   const legacyCategory = normalizeCategorySummary(categorySource)
-  const categories = responseCategories.length > 0
-    ? responseCategories
-    : legacyCategory
-      ? [legacyCategory]
-      : toTrimmedString(source.categoryId)
-        ? [{
-            id: toTrimmedString(source.categoryId),
-            name: toTrimmedString(categorySource?.name) || toTrimmedString(source.categoryId),
-            slug: toTrimmedString(categorySource?.slug) || toTrimmedString(source.categoryId),
-            visible: true,
-            deleted: false,
-          }]
-        : []
+  const categories =
+    responseCategories.length > 0
+      ? responseCategories
+      : legacyCategory
+        ? [legacyCategory]
+        : toTrimmedString(source.categoryId)
+          ? [
+              {
+                id: toTrimmedString(source.categoryId),
+                name: toTrimmedString(categorySource?.name) || toTrimmedString(source.categoryId),
+                slug: toTrimmedString(categorySource?.slug) || toTrimmedString(source.categoryId),
+                visible: true,
+                deleted: false,
+              },
+            ]
+          : []
   const category = categories[0]
   const categoryId = category?.id || undefined
 
@@ -436,16 +431,26 @@ export function normalizeProduct(input) {
     // ngay ở đây, phần còn lại của form/UI vẫn dùng field phẳng như cũ.
     positiveNotes: Array.isArray(source.highlights?.positiveNotes)
       ? source.highlights.positiveNotes
-          .map((h) => (h && typeof h === 'object'
-            ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
-            : null))
+          .map((h) =>
+            h && typeof h === 'object'
+              ? {
+                  content: toTrimmedString(h.content),
+                  contentEn: toTrimmedString(h.contentEn) || undefined,
+                }
+              : null,
+          )
           .filter((h) => h && h.content)
       : [],
     negativeNotes: Array.isArray(source.highlights?.negativeNotes)
       ? source.highlights.negativeNotes
-          .map((h) => (h && typeof h === 'object'
-            ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
-            : null))
+          .map((h) =>
+            h && typeof h === 'object'
+              ? {
+                  content: toTrimmedString(h.content),
+                  contentEn: toTrimmedString(h.contentEn) || undefined,
+                }
+              : null,
+          )
           .filter((h) => h && h.content)
       : [],
     brand: normalizeBrandSummary(brandSource),
@@ -464,9 +469,7 @@ export function normalizeProduct(input) {
     variants: Array.isArray(source.variants)
       ? source.variants.map(normalizeVariant).filter(Boolean)
       : [],
-    faqs: Array.isArray(source.faqs)
-      ? source.faqs.map(normalizeFaq).filter(Boolean)
-      : [],
+    faqs: Array.isArray(source.faqs) ? source.faqs.map(normalizeFaq).filter(Boolean) : [],
     commitments: Array.isArray(source.commitments)
       ? source.commitments.map(normalizeCommitment).filter(Boolean)
       : [],
@@ -482,28 +485,32 @@ export function normalizeProduct(input) {
     // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
     relatedProducts: Array.isArray(source.relatedProducts)
       ? source.relatedProducts
-          .map((p) => (p && typeof p === 'object'
-            ? {
-                id: toTrimmedString(p.id),
-                name: toTrimmedString(p.name),
-                slug: toTrimmedString(p.slug),
-                image: normalizeImageAsset(p.image),
-              }
-            : null))
+          .map((p) =>
+            p && typeof p === 'object'
+              ? {
+                  id: toTrimmedString(p.id),
+                  name: toTrimmedString(p.name),
+                  slug: toTrimmedString(p.slug),
+                  image: normalizeImageAsset(p.image),
+                }
+              : null,
+          )
           .filter((p) => p && p.id)
       : [],
     // Admin-curated accessory products ("Phụ kiện" — sản phẩm bán kèm) — list-view
     // refs used to render product chips in the editor and the PDP "Phụ kiện" section.
     accessoryProducts: Array.isArray(source.accessoryProducts)
       ? source.accessoryProducts
-          .map((p) => (p && typeof p === 'object'
-            ? {
-                id: toTrimmedString(p.id),
-                name: toTrimmedString(p.name),
-                slug: toTrimmedString(p.slug),
-                image: normalizeImageAsset(p.image),
-              }
-            : null))
+          .map((p) =>
+            p && typeof p === 'object'
+              ? {
+                  id: toTrimmedString(p.id),
+                  name: toTrimmedString(p.name),
+                  slug: toTrimmedString(p.slug),
+                  image: normalizeImageAsset(p.image),
+                }
+              : null,
+          )
           .filter((p) => p && p.id)
       : [],
     price: normalizePrice(source.price),
@@ -597,9 +604,10 @@ export function normalizeBrand(input) {
 // EN translations for the content editor's VI/EN toggle. Mirrors the backend
 // AdminContentItem.translations (V138) superset shape; missing fields default to ''.
 function normalizeContentTranslations(source) {
-  const en = source && typeof source === 'object' && source.en && typeof source.en === 'object'
-    ? source.en
-    : {}
+  const en =
+    source && typeof source === 'object' && source.en && typeof source.en === 'object'
+      ? source.en
+      : {}
   return {
     en: {
       title: toTrimmedString(en.title) || '',
@@ -685,9 +693,7 @@ export function normalizeLegacyDiscontinuedProduct(input) {
   }
 }
 
-export const ORDER_STATUS_VALUES = [
-  'PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED',
-]
+export const ORDER_STATUS_VALUES = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']
 
 function toTrimmedStringLocal(value) {
   return typeof value === 'string' ? value.trim() : ''
@@ -759,7 +765,7 @@ export function normalizeOrder(input) {
     toTrimmedStringLocal(
       Array.isArray(s.addresses)
         ? (s.addresses.find((a) => a?.type === 'SHIPPING') ?? s.addresses[0])?.fullName
-        : undefined
+        : undefined,
     ) ||
     undefined
 
@@ -817,10 +823,11 @@ export function normalizeCustomer(input) {
     id: toTrimmedStringLocal(s.id) || 'unknown-customer',
     email: toTrimmedStringLocal(s.email) || undefined,
     displayName: toTrimmedStringLocal(s.displayName) || undefined,
-    fullName: toTrimmedStringLocal(s.displayName)
-      || toTrimmedStringLocal(s.fullName)
-      || toTrimmedStringLocal(s.name)
-      || undefined,
+    fullName:
+      toTrimmedStringLocal(s.displayName) ||
+      toTrimmedStringLocal(s.fullName) ||
+      toTrimmedStringLocal(s.name) ||
+      undefined,
     firstName: toTrimmedStringLocal(s.firstName) || undefined,
     lastName: toTrimmedStringLocal(s.lastName) || undefined,
     phone: toTrimmedStringLocal(s.phone) || undefined,
@@ -851,9 +858,8 @@ export function normalizeCustomer(input) {
 export function normalizeMediaItem(input) {
   const s = input && typeof input === 'object' ? input : {}
   const filePath = toTrimmedStringLocal(s.filePath) || undefined
-  const storedName = toTrimmedStringLocal(s.originalFilename)
-    || toTrimmedStringLocal(s.filename)
-    || filePath
+  const storedName =
+    toTrimmedStringLocal(s.originalFilename) || toTrimmedStringLocal(s.filename) || filePath
   const filename = storedName?.split(/[\\/]/).pop() || 'unknown'
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown-media',
@@ -886,7 +892,11 @@ export function isDownloadableMedia(media) {
 function parseSizesJson(raw) {
   if (!raw) return null
   if (typeof raw === 'object') return raw
-  try { return JSON.parse(raw) } catch { return null }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
@@ -947,19 +957,14 @@ export function normalizePagination(input, defaultPageSize = 10) {
   const pageSize = Math.max(1, toInteger(source.pageSize, defaultPageSize))
   const totalItems = Math.max(0, toInteger(source.totalItems, 0))
   const totalPages =
-    Math.max(1, toInteger(source.totalPages, 0)) ||
-    Math.max(1, Math.ceil(totalItems / pageSize))
+    Math.max(1, toInteger(source.totalPages, 0)) || Math.max(1, Math.ceil(totalItems / pageSize))
 
   return {
     page,
     pageSize,
     totalItems,
     totalPages,
-    hasNext:
-      typeof source.hasNext === 'boolean'
-        ? source.hasNext
-        : page < totalPages,
-    hasPrevious:
-      typeof source.hasPrevious === 'boolean' ? source.hasPrevious : page > 1,
+    hasNext: typeof source.hasNext === 'boolean' ? source.hasNext : page < totalPages,
+    hasPrevious: typeof source.hasPrevious === 'boolean' ? source.hasPrevious : page > 1,
   }
 }

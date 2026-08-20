@@ -38,15 +38,7 @@ function formatTooltipDate(isoDate, locale) {
   })
 }
 
-function RevenueTooltip({
-  active,
-  payload,
-  label,
-  locale,
-  revenueLabel,
-  ordersLabel,
-  ordersUnit,
-}) {
+function RevenueTooltip({ active, payload, label, locale, revenueLabel, ordersLabel, ordersUnit }) {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload ?? {}
   return (
@@ -70,14 +62,7 @@ function RevenueTooltip({
   )
 }
 
-function PieTooltip({
-  active,
-  payload,
-  locale,
-  countLabel,
-  shareLabel,
-  orderUnit,
-}) {
+function PieTooltip({ active, payload, locale, countLabel, shareLabel, orderUnit }) {
   if (!active || !payload?.length) return null
   const d = payload[0]
   const total = d.payload?.total || 1
@@ -131,10 +116,7 @@ export function RevenueAreaChart({ revenueData }) {
   // Biểu đồ recharts (SVG) không tự phát ra số liệu, tooltip lại chỉ hiện khi
   // rê chuột — nên cung cấp bản đọc-được không cần hover.
   const totalRevenue = revenueData.reduce((s, d) => s + (d.revenue || 0), 0)
-  const peak = revenueData.reduce(
-    (best, d) => (d.revenue > (best?.revenue ?? -1) ? d : best),
-    null,
-  )
+  const peak = revenueData.reduce((best, d) => (d.revenue > (best?.revenue ?? -1) ? d : best), null)
   const summary = t('dashboard.revenueChart.a11ySummary', {
     total: formatVndShort(totalRevenue),
     peakDate: peak ? fmtIsoDateShort(peak.date) : '—',
@@ -146,53 +128,51 @@ export function RevenueAreaChart({ revenueData }) {
       <p className="sr-only">{summary}</p>
       <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-        <defs>
-          <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--bb-primary)" stopOpacity={0.18} />
-            <stop offset="95%" stopColor="var(--bb-primary)" stopOpacity={0.01} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--bb-border-faint)" vertical={false} />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
-          tickLine={false}
-          axisLine={false}
-          interval={Math.max(0, Math.floor(revenueData.length / 6))}
-          tickFormatter={fmtIsoDateShort}
-        />
-        <YAxis
-          tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
-          tickLine={false}
-          axisLine={false}
-          domain={[0, maxRevenue === 0 ? 1_000_000 : 'auto']}
-          tickFormatter={(value) => fmtAxisMillions(
-            value,
-            locale,
-            t('dashboard.revenueChart.millionUnit'),
-          )}
-          width={62}
-        />
-        <Tooltip
-          content={(
-            <RevenueTooltip
-              locale={locale}
-              revenueLabel={t('dashboard.revenueChart.revenue')}
-              ordersLabel={t('dashboard.revenueChart.orders')}
-              ordersUnit={t('dashboard.revenueChart.ordersAxis')}
-            />
-          )}
-        />
-        <Area
-          type="monotone"
-          dataKey="revenue"
-          name={t('dashboard.revenueChart.revenue')}
-          stroke="var(--bb-primary)"
-          strokeWidth={2}
-          fill="url(#grad-revenue)"
-          dot={false}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
+          <defs>
+            <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--bb-primary)" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="var(--bb-primary)" stopOpacity={0.01} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--bb-border-faint)" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
+            tickLine={false}
+            axisLine={false}
+            interval={Math.max(0, Math.floor(revenueData.length / 6))}
+            tickFormatter={fmtIsoDateShort}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
+            tickLine={false}
+            axisLine={false}
+            domain={[0, maxRevenue === 0 ? 1_000_000 : 'auto']}
+            tickFormatter={(value) =>
+              fmtAxisMillions(value, locale, t('dashboard.revenueChart.millionUnit'))
+            }
+            width={62}
+          />
+          <Tooltip
+            content={
+              <RevenueTooltip
+                locale={locale}
+                revenueLabel={t('dashboard.revenueChart.revenue')}
+                ordersLabel={t('dashboard.revenueChart.orders')}
+                ordersUnit={t('dashboard.revenueChart.ordersAxis')}
+              />
+            }
+          />
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            name={t('dashboard.revenueChart.revenue')}
+            stroke="var(--bb-primary)"
+            strokeWidth={2}
+            fill="url(#grad-revenue)"
+            dot={false}
+            activeDot={{ r: 5, strokeWidth: 0 }}
+          />
         </AreaChart>
       </ResponsiveContainer>
     </figure>
@@ -210,57 +190,58 @@ export function OrderStatusPie({ pieDataWithTotal }) {
   return (
     <div role="group" aria-label={label}>
       {mounted && (
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie
-            data={pieDataWithTotal}
-            cx="50%" cy="50%"
-            innerRadius={58}
-            outerRadius={88}
-            paddingAngle={2}
-            dataKey="count"
-            nameKey="name"
-          >
-            {pieDataWithTotal.map((entry) => (
-              <Cell key={entry.status} fill={entry.color} stroke="transparent" />
-            ))}
-          </Pie>
-          <text
-            x="50%"
-            y="45%"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="var(--bb-text)"
-            fontFamily="var(--admin-font-display)"
-            fontSize="24"
-            fontWeight="600"
-            aria-hidden="true"
-          >
-            {total.toLocaleString(locale)}
-          </text>
-          <text
-            x="50%"
-            y="58%"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="var(--bb-text-muted)"
-            fontSize="11"
-            aria-hidden="true"
-          >
-            {t('dashboard.orderStatusChart.total')}
-          </text>
-          <Tooltip
-            content={(
-              <PieTooltip
-                locale={locale}
-                countLabel={t('dashboard.orderStatusChart.count')}
-                shareLabel={t('dashboard.orderStatusChart.share')}
-                orderUnit={t('dashboard.orderStatusChart.orderUnit')}
-              />
-            )}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={pieDataWithTotal}
+              cx="50%"
+              cy="50%"
+              innerRadius={58}
+              outerRadius={88}
+              paddingAngle={2}
+              dataKey="count"
+              nameKey="name"
+            >
+              {pieDataWithTotal.map((entry) => (
+                <Cell key={entry.status} fill={entry.color} stroke="transparent" />
+              ))}
+            </Pie>
+            <text
+              x="50%"
+              y="45%"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="var(--bb-text)"
+              fontFamily="var(--admin-font-display)"
+              fontSize="24"
+              fontWeight="600"
+              aria-hidden="true"
+            >
+              {total.toLocaleString(locale)}
+            </text>
+            <text
+              x="50%"
+              y="58%"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="var(--bb-text-muted)"
+              fontSize="11"
+              aria-hidden="true"
+            >
+              {t('dashboard.orderStatusChart.total')}
+            </text>
+            <Tooltip
+              content={
+                <PieTooltip
+                  locale={locale}
+                  countLabel={t('dashboard.orderStatusChart.count')}
+                  shareLabel={t('dashboard.orderStatusChart.share')}
+                  orderUnit={t('dashboard.orderStatusChart.orderUnit')}
+                />
+              }
+            />
+          </PieChart>
+        </ResponsiveContainer>
       )}
     </div>
   )

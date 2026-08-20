@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
+import {
+  fetchRoles,
+  fetchPermissionCatalog,
+  updateRolePermissions,
+  createRole,
+  deleteRole,
+} from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -32,20 +38,23 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
-  const [selectedId, setSelectedId]       = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
-  const [editMode, setEditMode]           = useState(false)
-  const [draft, setDraft]                 = useState(null)
-  const [autoAdded, setAutoAdded]         = useState(() => new Set())
-  const [saving, setSaving]               = useState(false)
-  const [toast, setToast]                 = useState(null)
+  const [editMode, setEditMode] = useState(false)
+  const [draft, setDraft] = useState(null)
+  const [autoAdded, setAutoAdded] = useState(() => new Set())
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState(null)
   const [pendingToggle, setPendingToggle] = useState(null)
-  const [savePending, setSavePending]     = useState(null)
+  const [savePending, setSavePending] = useState(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [createSaving, setCreateSaving]   = useState(false)
+  const [createSaving, setCreateSaving] = useState(false)
   // Danh mục quyền lỗi KHÔNG được kéo sập cả trang: vẫn dùng danh mục mặc định.
   const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: fetchRoles })
-  const catalogQuery = useQuery({ queryKey: ['permission-catalog'], queryFn: fetchPermissionCatalog })
+  const catalogQuery = useQuery({
+    queryKey: ['permission-catalog'],
+    queryFn: fetchPermissionCatalog,
+  })
   const roles = rolesQuery.data?.items ?? EMPTY_ROLES
   const catalog = groupCatalogByModule(catalogQuery.data || BUILTIN_CATALOG)
   const loading = rolesQuery.isPending
@@ -79,25 +88,34 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   const { sensitiveKeys: SENSITIVE_PERMS } = buildCatalogHelpers(catalog)
 
-  const selected      = roles.find(r => r.id === selectedId) || null
+  const selected = roles.find((r) => r.id === selectedId) || null
   // True when the admin is editing a role they themselves are assigned —
   // removing role-management perms here would lock them out.
-  const isOwnRole     = !!selected && Array.isArray(currentUserRoles) && currentUserRoles.includes(selected.id)
+  const isOwnRole =
+    !!selected && Array.isArray(currentUserRoles) && currentUserRoles.includes(selected.id)
   const originalPerms = selected ? new Set(selected.permissions) : new Set()
-  const isDirty       = editMode && draft ? !setsEqual(draft, originalPerms) : false
+  const isDirty = editMode && draft ? !setsEqual(draft, originalPerms) : false
 
   // Build label lookup for summary dialogs
   const permLabels = {}
-  catalog.forEach(g => g.permissions.forEach(p => {
-    const lk = PERM_LABEL_KEY_MAP[p.key]
-    permLabels[p.key] = lk ? t(lk, { defaultValue: p.key }) : p.key
-  }))
+  catalog.forEach((g) =>
+    g.permissions.forEach((p) => {
+      const lk = PERM_LABEL_KEY_MAP[p.key]
+      permLabels[p.key] = lk ? t(lk, { defaultValue: p.key }) : p.key
+    }),
+  )
 
   const selectedDisplayName = selected ? getRoleDisplayName(selected, t) : ''
 
   async function handleSelectRole(id) {
     if (editMode && isDirty) {
-      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
+      if (
+        !(await showConfirm(
+          t('roles.discardChanges'),
+          t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }),
+        ))
+      )
+        return
     }
     setSelectedId(id)
     setEditMode(false)
@@ -108,7 +126,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   async function handleMobileBack() {
     if (editMode && isDirty) {
-      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
+      if (
+        !(await showConfirm(
+          t('roles.discardChanges'),
+          t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }),
+        ))
+      )
+        return
     }
     setMobileShowDetail(false)
     setEditMode(false)
@@ -127,7 +151,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   async function handleCancelEdit() {
     // Dirty guard: bấm Hủy khi có thay đổi chưa lưu phải xác nhận, tránh mất draft.
     if (isDirty) {
-      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
+      if (
+        !(await showConfirm(
+          t('roles.discardChanges'),
+          t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }),
+        ))
+      )
+        return
     }
     setDraft(null)
     setAutoAdded(new Set())
@@ -142,7 +172,8 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       setToast({
         kind: 'error',
         msg: t('roles.selfLockoutBlocked', {
-          defaultValue: 'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
+          defaultValue:
+            'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
         }),
       })
       return
@@ -160,51 +191,53 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       const requested = new Set(draft)
       requested.add(permKey)
       const closed = closePermissionDependencies(requested, catalog)
-      const dependenciesAdded = [...closed.permissions]
-        .filter(key => !requested.has(key) && !draft.has(key))
+      const dependenciesAdded = [...closed.permissions].filter(
+        (key) => !requested.has(key) && !draft.has(key),
+      )
       setDraft(closed.permissions)
-      setAutoAdded(prev => {
+      setAutoAdded((prev) => {
         const next = new Set(prev)
         next.delete(permKey)
-        dependenciesAdded.forEach(key => next.add(key))
+        dependenciesAdded.forEach((key) => next.add(key))
         return next
       })
       if (dependenciesAdded.length > 0) {
         setToast({
           kind: 'info',
-          msg: `Đã tự thêm ${dependenciesAdded.map(key => permLabels[key] || key).join(', ')} vì là quyền bắt buộc.`,
+          msg: `Đã tự thêm ${dependenciesAdded.map((key) => permLabels[key] || key).join(', ')} vì là quyền bắt buộc.`,
         })
       }
       return
     }
 
     const removals = dependentClosure(permKey, draft, catalog)
-    if (isOwnRole && [...removals].some(key => SELF_PROTECTED_PERMS.has(key))) {
+    if (isOwnRole && [...removals].some((key) => SELF_PROTECTED_PERMS.has(key))) {
       setToast({
         kind: 'error',
         msg: t('roles.selfLockoutBlocked', {
-          defaultValue: 'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
+          defaultValue:
+            'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
         }),
       })
       return
     }
-    const dependents = [...removals].filter(key => key !== permKey)
+    const dependents = [...removals].filter((key) => key !== permKey)
     if (dependents.length > 0) {
       const confirmed = await showConfirm(
-        `Quyền này đang được dùng bởi: ${dependents.map(key => permLabels[key] || key).join(', ')}. Tiếp tục sẽ gỡ tất cả các quyền trên.`,
+        `Quyền này đang được dùng bởi: ${dependents.map((key) => permLabels[key] || key).join(', ')}. Tiếp tục sẽ gỡ tất cả các quyền trên.`,
         'Gỡ quyền bắt buộc?',
         { variant: 'default', confirmLabel: 'Gỡ tất cả' },
       )
       if (!confirmed) return
     }
-    setDraft(prev => {
+    setDraft((prev) => {
       const next = new Set(prev)
-      removals.forEach(key => next.delete(key))
+      removals.forEach((key) => next.delete(key))
       return next
     })
-    setAutoAdded(prev => {
+    setAutoAdded((prev) => {
       const next = new Set(prev)
-      removals.forEach(key => next.delete(key))
+      removals.forEach((key) => next.delete(key))
       return next
     })
   }
@@ -216,13 +249,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   function handleRequestSave() {
     if (!selected || !draft) return
-    const added   = [...draft].filter(k => !originalPerms.has(k))
-    const removed = [...originalPerms].filter(k => !draft.has(k))
+    const added = [...draft].filter((k) => !originalPerms.has(k))
+    const removed = [...originalPerms].filter((k) => !draft.has(k))
     setSavePending({
       added,
       removed,
-      autoAdded: added.filter(key => autoAdded.has(key)),
-      userAdded: added.filter(key => !autoAdded.has(key)),
+      autoAdded: added.filter((key) => autoAdded.has(key)),
+      userAdded: added.filter((key) => !autoAdded.has(key)),
     })
   }
 
@@ -250,7 +283,9 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setSaving(true)
     try {
       const result = await updateRolePermissions(selected.id, Array.from(draft))
-      updateCachedRoles((previous) => previous.map((role) => role.id === selected.id ? result.item : role))
+      updateCachedRoles((previous) =>
+        previous.map((role) => (role.id === selected.id ? result.item : role)),
+      )
       setEditMode(false)
       setDraft(null)
       setAutoAdded(new Set())
@@ -287,7 +322,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     try {
       await deleteRole(role.id)
       const deletedName = getRoleDisplayName(role, t)
-      const remaining = roles.filter(r => r.id !== role.id)
+      const remaining = roles.filter((r) => r.id !== role.id)
       updateCachedRoles(() => remaining)
       if (selectedId === role.id) {
         setSelectedId(remaining.length > 0 ? remaining[0].id : null)
@@ -295,9 +330,8 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       }
       setToast({ kind: 'success', msg: t('roles.deleteRoleSuccess', { name: deletedName }) })
     } catch (e) {
-      const msg = e?.status === 409
-        ? t('roles.deleteRoleConflict')
-        : (e.message || t('roles.deleteRoleError'))
+      const msg =
+        e?.status === 409 ? t('roles.deleteRoleConflict') : e.message || t('roles.deleteRoleError')
       setToast({ kind: 'error', msg })
     }
   }
@@ -376,7 +410,10 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       {/* Danh mục quyền tải lỗi từng phần — cảnh báo mềm, trang vẫn dùng được */}
       {!loading && !loadError && catalogError && (
         <Alert tone="warning" size="sm" className="mb-3">
-          {t('roles.catalogLoadWarning', { defaultValue: 'Không tải được danh mục quyền mới nhất — đang dùng danh sách quyền mặc định, một số quyền có thể chưa đầy đủ. Hãy thử tải lại.' })}
+          {t('roles.catalogLoadWarning', {
+            defaultValue:
+              'Không tải được danh mục quyền mới nhất — đang dùng danh sách quyền mặc định, một số quyền có thể chưa đầy đủ. Hãy thử tải lại.',
+          })}
         </Alert>
       )}
 
@@ -396,7 +433,9 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         <>
           {/* Mobile: back to list */}
           {mobileShowDetail && selected && (
-            <Button variant="ghost" size="sm"
+            <Button
+              variant="ghost"
+              size="sm"
               className="roles-back-btn flex items-center gap-1.5 mb-3"
               onClick={handleMobileBack}
             >

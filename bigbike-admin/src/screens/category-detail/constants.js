@@ -39,7 +39,16 @@ export function buildEmptyForm() {
     seoOgImageWidth: null,
     seoOgImageHeight: null,
     seoOgImageMimeType: '',
-    translations: { en: { slug: '', name: '', description: '', introContent: '', seoTitle: '', seoDescription: '' } },
+    translations: {
+      en: {
+        slug: '',
+        name: '',
+        description: '',
+        introContent: '',
+        seoTitle: '',
+        seoDescription: '',
+      },
+    },
   }
 }
 
@@ -104,7 +113,9 @@ export function getAutosaveKey(categoryId, isCreate) {
 export function saveFormToStorage(key, form) {
   try {
     localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
-  } catch { /* quota */ }
+  } catch {
+    /* quota */
+  }
 }
 
 export function loadFormFromStorage(key) {
@@ -117,11 +128,17 @@ export function loadFormFromStorage(key) {
       return null
     }
     return parsed
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function clearFormFromStorage(key) {
-  try { localStorage.removeItem(key) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function toPayload(form, { isCreate = false } = {}) {
@@ -158,7 +175,9 @@ export function toPayload(form, { isCreate = false } = {}) {
     : { url: null }
 
   const bannerImageUrl = form.bannerImageUrl.trim()
-  payload.banner = bannerImageUrl ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null } : { url: null }
+  payload.banner = bannerImageUrl
+    ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null }
+    : { url: null }
 
   const mobileBannerImageUrl = form.mobileBannerImageUrl.trim()
   payload.mobileBanner = mobileBannerImageUrl

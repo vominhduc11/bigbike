@@ -70,7 +70,9 @@ vi.mock('../components/FilterSelect', () => ({
       onChange={(event) => onValueChange(event.target.value)}
     >
       {options.map((option) => (
-        <option key={String(option.value)} value={option.value}>{option.label}</option>
+        <option key={String(option.value)} value={option.value}>
+          {option.label}
+        </option>
       ))}
     </select>
   ),
@@ -85,7 +87,9 @@ vi.mock('../components/PageSizeSelect', () => ({
       onChange={(event) => onChange(Number(event.target.value))}
     >
       {[20, 50, 100].map((pageSize) => (
-        <option key={pageSize} value={pageSize}>{pageSize}</option>
+        <option key={pageSize} value={pageSize}>
+          {pageSize}
+        </option>
       ))}
     </select>
   ),
@@ -96,41 +100,34 @@ vi.mock('../components/ColumnVisibilityToggle', () => ({
 }))
 
 vi.mock('../components/AdminTable', () => ({
-  AdminTable: ({
-    caption,
-    columns,
-    rows,
-    loading,
-    selectable,
-    selectedIds,
-    onSelectionChange,
-  }) => (
+  AdminTable: ({ caption, columns, rows, loading, selectable, selectedIds, onSelectionChange }) => (
     <section
       data-testid="order-table"
       data-loading={loading ? 'true' : 'false'}
       aria-label={caption}
     >
-      {!loading && rows.map((row) => (
-        <article key={row.id} data-testid={`order-row-${row.id}`}>
-          {selectable ? (
-            <input
-              type="checkbox"
-              aria-label={`select-${row.id}`}
-              checked={selectedIds.includes(row.id)}
-              onChange={() => onSelectionChange(
-                selectedIds.includes(row.id)
-                  ? selectedIds.filter((id) => id !== row.id)
-                  : [...selectedIds, row.id],
-              )}
-            />
-          ) : null}
-          {columns.map((column) => (
-            <div key={column.key}>
-              {column.render ? column.render(row) : row[column.key]}
-            </div>
-          ))}
-        </article>
-      ))}
+      {!loading &&
+        rows.map((row) => (
+          <article key={row.id} data-testid={`order-row-${row.id}`}>
+            {selectable ? (
+              <input
+                type="checkbox"
+                aria-label={`select-${row.id}`}
+                checked={selectedIds.includes(row.id)}
+                onChange={() =>
+                  onSelectionChange(
+                    selectedIds.includes(row.id)
+                      ? selectedIds.filter((id) => id !== row.id)
+                      : [...selectedIds, row.id],
+                  )
+                }
+              />
+            ) : null}
+            {columns.map((column) => (
+              <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
+            ))}
+          </article>
+        ))}
     </section>
   ),
 }))
@@ -278,11 +275,13 @@ describe('OrderListScreen', () => {
   })
 
   it('phân biệt danh sách chưa từng có đơn với kết quả lọc rỗng', async () => {
-    mocks.fetchOrders.mockResolvedValue(orderResponse({
-      items: [],
-      totalItems: 0,
-      totalPages: 0,
-    }))
+    mocks.fetchOrders.mockResolvedValue(
+      orderResponse({
+        items: [],
+        totalItems: 0,
+        totalPages: 0,
+      }),
+    )
 
     const first = renderScreen()
     expect(await screen.findByText('orders.emptyAll')).toBeInTheDocument()
@@ -293,54 +292,64 @@ describe('OrderListScreen', () => {
 
   it('gửi đúng bộ lọc trạng thái và tìm kiếm, đồng thời cho phép xoá bộ lọc', async () => {
     const user = userEvent.setup()
-    mocks.fetchOrders.mockImplementation(async (query) => (
+    mocks.fetchOrders.mockImplementation(async (query) =>
       query.orderStatus === 'PROCESSING' || query.search
         ? orderResponse({ items: [], totalItems: 0, totalPages: 0 })
-        : orderResponse()
-    ))
+        : orderResponse(),
+    )
 
     renderScreen()
     await screen.findByText('BB-2026-0001')
 
     await user.selectOptions(screen.getByLabelText('orders.filterStatus'), 'PROCESSING')
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({ orderStatus: 'PROCESSING', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ orderStatus: 'PROCESSING', page: 1 }),
+      ),
+    )
 
     await user.type(screen.getByRole('searchbox', { name: 'orders.searchPlaceholder' }), 'BB-0009')
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        search: 'BB-0009',
-        orderStatus: 'PROCESSING',
-        page: 1,
-      }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          search: 'BB-0009',
+          orderStatus: 'PROCESSING',
+          page: 1,
+        }),
+      ),
+    )
     expect(await screen.findByText('orders.empty')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'common.clearAllFilters' }))
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({ search: '', orderStatus: 'ALL', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: '', orderStatus: 'ALL', page: 1 }),
+      ),
+    )
   })
 
   it('đổi trang và giữ nguyên bộ lọc hiện tại', async () => {
     const user = userEvent.setup()
-    mocks.fetchOrders.mockImplementation(async (query) => orderResponse({
-      items: [pendingOrder],
-      page: query.page,
-      pageSize: query.pageSize,
-      totalItems: 21,
-      totalPages: 2,
-    }))
+    mocks.fetchOrders.mockImplementation(async (query) =>
+      orderResponse({
+        items: [pendingOrder],
+        page: query.page,
+        pageSize: query.pageSize,
+        totalItems: 21,
+        totalPages: 2,
+      }),
+    )
 
     renderScreen({ search: '?orderStatus=PENDING' })
     await screen.findByText('BB-2026-0001')
 
     await user.click(screen.getByRole('button', { name: 'pagination.next' }))
 
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 2, orderStatus: 'PENDING' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2, orderStatus: 'PENDING' }),
+      ),
+    )
   })
 
   it.each([
@@ -383,10 +392,9 @@ describe('OrderListScreen', () => {
 
     await user.click(await screen.findByLabelText('orders.processingOrderLabel'))
 
-    await waitFor(() => expect(mocks.updateOrderStatus).toHaveBeenCalledWith(
-      'order-pending',
-      'PROCESSING',
-    ))
+    await waitFor(() =>
+      expect(mocks.updateOrderStatus).toHaveBeenCalledWith('order-pending', 'PROCESSING'),
+    )
     expect(mocks.toast.success).toHaveBeenCalledWith('orders.detail.statusUpdated')
   })
 
@@ -396,7 +404,9 @@ describe('OrderListScreen', () => {
     [409, 'orders.detail.errorConflict'],
   ])('báo lỗi rõ ràng khi đổi trạng thái nhanh nhận HTTP %s', async (status, expectedMessage) => {
     const user = userEvent.setup()
-    mocks.updateOrderStatus.mockRejectedValueOnce(Object.assign(new Error('Backend message'), { status }))
+    mocks.updateOrderStatus.mockRejectedValueOnce(
+      Object.assign(new Error('Backend message'), { status }),
+    )
 
     renderScreen()
     await user.click(await screen.findByLabelText('orders.processingOrderLabel'))
@@ -415,7 +425,9 @@ describe('OrderListScreen', () => {
     renderScreen()
     await user.click(await screen.findByLabelText('orders.processingOrderLabel'))
 
-    await waitFor(() => expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorNetwork'))
+    await waitFor(() =>
+      expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorNetwork'),
+    )
   })
 
   it('hành động hàng loạt chỉ chuyển các đơn đang chờ sau khi xác nhận', async () => {
@@ -437,7 +449,11 @@ describe('OrderListScreen', () => {
   it('không mở lặp xác nhận hàng loạt khi lần xác nhận đầu còn chờ', async () => {
     const user = userEvent.setup()
     let resolveConfirm
-    mocks.showConfirm.mockReturnValue(new Promise((resolve) => { resolveConfirm = resolve }))
+    mocks.showConfirm.mockReturnValue(
+      new Promise((resolve) => {
+        resolveConfirm = resolve
+      }),
+    )
     renderScreen()
     await screen.findByText('BB-2026-0001')
 
@@ -458,23 +474,27 @@ describe('OrderListScreen', () => {
       search: '?search=0909&orderStatus=PROCESSING&from=2026-07-20&to=2026-07-24',
     })
 
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        search: '0909',
-        orderStatus: 'PROCESSING',
-        from: '2026-07-20',
-        to: '2026-07-24',
-      }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          search: '0909',
+          orderStatus: 'PROCESSING',
+          from: '2026-07-20',
+          to: '2026-07-24',
+        }),
+      ),
+    )
 
     await user.click(await screen.findByRole('button', { name: 'common.exportCsv' }))
 
-    await waitFor(() => expect(mocks.exportOrdersCsv).toHaveBeenCalledWith({
-      q: '0909',
-      status: 'PROCESSING',
-      from: '2026-07-20',
-      to: '2026-07-24',
-    }))
+    await waitFor(() =>
+      expect(mocks.exportOrdersCsv).toHaveBeenCalledWith({
+        q: '0909',
+        status: 'PROCESSING',
+        from: '2026-07-20',
+        to: '2026-07-24',
+      }),
+    )
     expect(mocks.toast.success).toHaveBeenCalledWith('common.exportCsvDone')
     expect(mocks.toast.warning).not.toHaveBeenCalled()
   })
@@ -491,16 +511,20 @@ describe('OrderListScreen', () => {
       target: { value: '2026-07-25' },
     })
 
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({ from: '2026-07-21', to: '2026-07-25', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ from: '2026-07-21', to: '2026-07-25', page: 1 }),
+      ),
+    )
     expect(window.location.search).toContain('from=2026-07-21')
     expect(window.location.search).toContain('to=2026-07-25')
 
     await user.click(screen.getByRole('button', { name: 'common.clearAllFilters' }))
-    await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
-      expect.objectContaining({ from: '', to: '', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ from: '', to: '', page: 1 }),
+      ),
+    )
     expect(window.location.search).not.toContain('from=')
     expect(window.location.search).not.toContain('to=')
   })
@@ -511,7 +535,9 @@ describe('OrderListScreen', () => {
     await screen.findByText('BB-2026-0001')
 
     const filterBar = screen.getByRole('region', { name: 'orders.filterAria' })
-    expect(filterBar).toContainElement(screen.getByRole('searchbox', { name: 'orders.searchPlaceholder' }))
+    expect(filterBar).toContainElement(
+      screen.getByRole('searchbox', { name: 'orders.searchPlaceholder' }),
+    )
     expect(filterBar).toContainElement(screen.getByLabelText('orders.filterStatus'))
     expect(filterBar).toContainElement(screen.getByLabelText('orders.filterSort'))
     expect(filterBar).toContainElement(screen.getByLabelText('orders.filterFrom'))
@@ -520,30 +546,33 @@ describe('OrderListScreen', () => {
 
     const callsBeforeRefresh = mocks.fetchOrders.mock.calls.length
     await user.click(screen.getByRole('button', { name: 'common.refresh' }))
-    await waitFor(() => expect(mocks.fetchOrders.mock.calls.length).toBeGreaterThan(callsBeforeRefresh))
+    await waitFor(() =>
+      expect(mocks.fetchOrders.mock.calls.length).toBeGreaterThan(callsBeforeRefresh),
+    )
   })
 
   it('làm mới dữ liệu khi có thông báo đơn hàng thời gian thực ở mọi bộ lọc', async () => {
-    mocks.fetchOrders.mockImplementation(async (query) => orderResponse({
-      items: [pendingOrder],
-      page: query.page,
-      pageSize: query.pageSize,
-      totalItems: 21,
-      totalPages: 2,
-    }))
+    mocks.fetchOrders.mockImplementation(async (query) =>
+      orderResponse({
+        items: [pendingOrder],
+        page: query.page,
+        pageSize: query.pageSize,
+        totalItems: 21,
+        totalPages: 2,
+      }),
+    )
     renderScreen({ search: '?orderStatus=PROCESSING&page=2' })
     await screen.findByText('BB-2026-0001')
 
-    expect(mocks.subscribeAdminWs).toHaveBeenCalledWith(
-      '/topic/admin/orders',
-      expect.any(Function),
-    )
+    expect(mocks.subscribeAdminWs).toHaveBeenCalledWith('/topic/admin/orders', expect.any(Function))
     const callsBeforeMessage = mocks.fetchOrders.mock.calls.length
 
     await act(async () => {
       mocks.wsHandler()
     })
 
-    await waitFor(() => expect(mocks.fetchOrders.mock.calls.length).toBeGreaterThan(callsBeforeMessage))
+    await waitFor(() =>
+      expect(mocks.fetchOrders.mock.calls.length).toBeGreaterThan(callsBeforeMessage),
+    )
   })
 })

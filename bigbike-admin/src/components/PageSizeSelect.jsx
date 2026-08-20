@@ -12,7 +12,13 @@ const DEFAULT_OPTIONS = [20, 50, 100]
  * @param {(n:number)=>void} onChange  nhận số nguyên (đã ép từ chuỗi)
  * @param {number[]} [options]      danh sách lựa chọn (mặc định 20/50/100)
  */
-export function PageSizeSelect({ value, onChange, options = DEFAULT_OPTIONS, disabled, className }) {
+export function PageSizeSelect({
+  value,
+  onChange,
+  options = DEFAULT_OPTIONS,
+  disabled,
+  className,
+}) {
   const { t } = useTranslation()
   return (
     <FilterSelect

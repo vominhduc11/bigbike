@@ -105,12 +105,19 @@ export function ContentListScreen({ navigate, canUpdate }) {
     }
   }
 
-  async function runSingle({ item, action, confirmKey, titleKey, confirmLabel, variant, successKey }) {
-    const confirmed = await showConfirm(
-      t(confirmKey, { title: item.title }),
-      t(titleKey),
-      { confirmLabel: t(confirmLabel), variant },
-    )
+  async function runSingle({
+    item,
+    action,
+    confirmKey,
+    titleKey,
+    confirmLabel,
+    variant,
+    successKey,
+  }) {
+    const confirmed = await showConfirm(t(confirmKey, { title: item.title }), t(titleKey), {
+      confirmLabel: t(confirmLabel),
+      variant,
+    })
     if (!confirmed) return
     setRowBusy(`${action}:${item.id}`)
     try {
@@ -126,40 +133,47 @@ export function ContentListScreen({ navigate, canUpdate }) {
     }
   }
 
-  const handleSoftDelete = (item) => runSingle({
-    item,
-    action: 'trash',
-    confirmKey: 'content.deleteConfirm',
-    titleKey: 'common.moveToTrashTitle',
-    confirmLabel: 'common.moveToTrash',
-    variant: 'default',
-    successKey: 'content.deleteSuccess',
-  })
+  const handleSoftDelete = (item) =>
+    runSingle({
+      item,
+      action: 'trash',
+      confirmKey: 'content.deleteConfirm',
+      titleKey: 'common.moveToTrashTitle',
+      confirmLabel: 'common.moveToTrash',
+      variant: 'default',
+      successKey: 'content.deleteSuccess',
+    })
 
-  const handleRestore = (item) => runSingle({
-    item,
-    action: 'restore',
-    confirmKey: 'content.restoreConfirm',
-    titleKey: 'content.restoreConfirmTitle',
-    confirmLabel: 'content.restore',
-    variant: 'default',
-    successKey: 'content.restoreSuccess',
-  })
+  const handleRestore = (item) =>
+    runSingle({
+      item,
+      action: 'restore',
+      confirmKey: 'content.restoreConfirm',
+      titleKey: 'content.restoreConfirmTitle',
+      confirmLabel: 'content.restore',
+      variant: 'default',
+      successKey: 'content.restoreSuccess',
+    })
 
-  const handlePermanentDelete = (item) => runSingle({
-    item,
-    action: 'permanent',
-    confirmKey: 'content.permanentDeleteConfirm',
-    titleKey: 'common.permanentDeleteTitle',
-    confirmLabel: 'common.permanentDelete',
-    variant: 'danger',
-    successKey: 'content.permanentDeleteSuccess',
-  })
+  const handlePermanentDelete = (item) =>
+    runSingle({
+      item,
+      action: 'permanent',
+      confirmKey: 'content.permanentDeleteConfirm',
+      titleKey: 'common.permanentDeleteTitle',
+      confirmLabel: 'common.permanentDelete',
+      variant: 'danger',
+      successKey: 'content.permanentDeleteSuccess',
+    })
 
   async function publishFullArticle(item) {
     const detail = await fetchContentDetail(item.type, item.id)
     const form = buildFormFromItem(item.type, detail.item)
-    await updateContent(item.type, item.id, toPayload({ ...form, publishStatus: 'PUBLISHED' }, false))
+    await updateContent(
+      item.type,
+      item.id,
+      toPayload({ ...form, publishStatus: 'PUBLISHED' }, false),
+    )
   }
 
   async function runBulk({ action, confirmKey, titleKey, confirmLabel, variant }) {
@@ -175,11 +189,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
       toast.warning(t('content.bulkNothingEligible', { skipped }))
       return
     }
-    const confirmed = await showConfirm(
-      t(confirmKey, { count: eligible.length }),
-      t(titleKey),
-      { confirmLabel: t(confirmLabel), variant },
-    )
+    const confirmed = await showConfirm(t(confirmKey, { count: eligible.length }), t(titleKey), {
+      confirmLabel: t(confirmLabel),
+      variant,
+    })
     if (!confirmed) return
 
     setBulkBusy(true)
@@ -207,11 +220,13 @@ export function ContentListScreen({ navigate, canUpdate }) {
     if (failed === 0 && skipped === 0) {
       toast.success(t('content.bulkSuccess', { count: successfulIds.length }))
     } else {
-      toast.warning(t('content.bulkPartial', {
-        ok: successfulIds.length,
-        fail: failed,
-        skipped,
-      }))
+      toast.warning(
+        t('content.bulkPartial', {
+          ok: successfulIds.length,
+          fail: failed,
+          skipped,
+        }),
+      )
     }
   }
 
@@ -223,55 +238,59 @@ export function ContentListScreen({ navigate, canUpdate }) {
   const anyBusy = bulkBusy || Boolean(rowBusy)
 
   const bulkActions = canUpdate
-    ? (isTrashView
-        ? [
-            {
-              label: t('content.bulkRestore'),
-              disabled: anyBusy,
-              onClick: () => runBulk({
+    ? isTrashView
+      ? [
+          {
+            label: t('content.bulkRestore'),
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'restore',
                 confirmKey: 'content.bulkRestoreConfirm',
                 titleKey: 'content.bulkRestoreTitle',
                 confirmLabel: 'content.restore',
               }),
-            },
-            {
-              label: t('content.bulkHardDelete'),
-              tone: 'danger',
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+          {
+            label: t('content.bulkHardDelete'),
+            tone: 'danger',
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'permanent',
                 confirmKey: 'content.bulkHardDeleteConfirm',
                 titleKey: 'common.permanentDeleteTitle',
                 confirmLabel: 'common.permanentDelete',
                 variant: 'danger',
               }),
-            },
-          ]
-        : [
-            {
-              label: t('content.bulkPublish'),
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+        ]
+      : [
+          {
+            label: t('content.bulkPublish'),
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'publish',
                 confirmKey: 'content.bulkPublishConfirm',
                 titleKey: 'content.bulkPublishTitle',
                 confirmLabel: 'content.bulkPublishCta',
               }),
-            },
-            {
-              label: t('content.bulkTrash'),
-              tone: 'danger',
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+          {
+            label: t('content.bulkTrash'),
+            tone: 'danger',
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'trash',
                 confirmKey: 'content.bulkTrashConfirm',
                 titleKey: 'common.moveToTrashTitle',
                 confirmLabel: 'common.moveToTrash',
                 variant: 'default',
               }),
-            },
-          ])
+          },
+        ]
     : []
 
   const filterChips = useMemo(() => {
@@ -298,7 +317,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
     const isBusy = rowBusy?.endsWith(`:${item.id}`)
     const detailLabel = canUpdate && !isTrashed ? t('common.edit') : t('common.view')
     return (
-      <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="flex items-center justify-end gap-1"
+        onClick={(event) => event.stopPropagation()}
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -309,9 +331,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
           aria-label={detailLabel}
           onClick={() => navigate(contentDetailPath(item))}
         >
-          {canUpdate && !isTrashed
-            ? <Pencil size={16} aria-hidden="true" />
-            : <Eye size={16} aria-hidden="true" />}
+          {canUpdate && !isTrashed ? (
+            <Pencil size={16} aria-hidden="true" />
+          ) : (
+            <Eye size={16} aria-hidden="true" />
+          )}
         </Button>
         {canUpdate && !isTrashed ? (
           <Button
@@ -384,8 +408,12 @@ export function ContentListScreen({ navigate, canUpdate }) {
             )}
           </span>
           <span className="min-w-0">
-            <span className="block truncate font-semibold text-foreground">{formatText(item.title)}</span>
-            <span className="block truncate text-xs text-muted-foreground">/{formatText(item.slug)}</span>
+            <span className="block truncate font-semibold text-foreground">
+              {formatText(item.title)}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              /{formatText(item.slug)}
+            </span>
           </span>
         </div>
       ),
@@ -400,7 +428,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
       key: 'updatedAt',
       label: t('content.colUpdated'),
       sortable: true,
-      render: (item) => <span className="text-xs text-muted-foreground">{formatDateTime(item.updatedAt)}</span>,
+      render: (item) => (
+        <span className="text-xs text-muted-foreground">{formatDateTime(item.updatedAt)}</span>
+      ),
     },
     {
       key: 'actions',
@@ -443,7 +473,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
         eyebrow={t('content.eyebrow')}
         title={t('content.title')}
         description={t('content.description')}
-        actions={(
+        actions={
           <Button
             type="button"
             disabled={!canUpdate}
@@ -453,7 +483,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             <Plus size={16} aria-hidden="true" />
             {canUpdate ? t('content.newArticle') : t('common.noPermission')}
           </Button>
-        )}
+        }
       />
 
       <RecentItemsChips
@@ -551,12 +581,14 @@ export function ContentListScreen({ navigate, canUpdate }) {
           tone="neutral"
           title={emptyState.title}
           description={emptyState.description}
-          actionLabel={isFiltered ? t('common.resetFilters') : (canUpdate ? t('content.newArticle') : undefined)}
-          onAction={isFiltered ? resetFilters : (canUpdate ? () => navigate(createPath) : undefined)}
+          actionLabel={
+            isFiltered ? t('common.resetFilters') : canUpdate ? t('content.newArticle') : undefined
+          }
+          onAction={isFiltered ? resetFilters : canUpdate ? () => navigate(createPath) : undefined}
         />
       ) : null}
 
-      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
+      {state.status === 'loading' || (state.status === 'success' && items.length > 0) ? (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
@@ -570,7 +602,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
               rowClassName={(item) => publishRowAccent(item.publishStatus)}
               sortKey={sortField}
               sortDir={sortDir}
-              onSortChange={(key, direction) => updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })}
+              onSortChange={(key, direction) =>
+                updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })
+              }
               selectable={canUpdate}
               selectedIds={[...selected]}
               onSelectionChange={(ids) => setSelected(new Set(ids))}

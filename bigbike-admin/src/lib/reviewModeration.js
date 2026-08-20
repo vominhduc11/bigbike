@@ -26,7 +26,9 @@ export function toVersionedReviewItems(reviews) {
 }
 
 export function hasReviewStatusTarget(reviews, targetStatus) {
-  return (reviews || []).some((review) => getReviewStatusTargets(review?.status).includes(targetStatus))
+  return (reviews || []).some((review) =>
+    getReviewStatusTargets(review?.status).includes(targetStatus),
+  )
 }
 
 // --- Kết quả kiểm duyệt tự động (REVIEW_RULE_012) ---------------------------------
@@ -50,7 +52,10 @@ export function getAutoModerationState(review) {
 
 /** Tone dùng chung cho badge/alert, để danh sách và chi tiết không lệch màu nhau. */
 export function getAutoModerationTone(state) {
-  return { blocked: 'danger', skipped: 'warning', clean: 'success', unchecked: 'neutral' }[state] || 'neutral'
+  return (
+    { blocked: 'danger', skipped: 'warning', clean: 'success', unchecked: 'neutral' }[state] ||
+    'neutral'
+  )
 }
 
 /**

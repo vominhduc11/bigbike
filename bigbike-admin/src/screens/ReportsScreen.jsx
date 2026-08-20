@@ -2,14 +2,27 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Info, TrendingUp, TrendingDown, Minus,
-  CircleDollarSign, Wallet, ShoppingBag, Receipt,
+  Info,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  CircleDollarSign,
+  Wallet,
+  ShoppingBag,
+  Receipt,
   ArrowRight,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import {
-  Area, AreaChart, Bar, BarChart,
-  CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useHasPermission } from '../lib/auth'
@@ -49,12 +62,17 @@ function RevenueTooltip({ active, payload, label, locale }) {
 function TrendPill({ direction, label }) {
   const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
   const icon =
-    direction === 'up' ? <TrendingUp size={10} /> :
-    direction === 'down' ? <TrendingDown size={10} /> :
-    <Minus size={10} />
+    direction === 'up' ? (
+      <TrendingUp size={10} />
+    ) : direction === 'down' ? (
+      <TrendingDown size={10} />
+    ) : (
+      <Minus size={10} />
+    )
   return (
     <span className={`bb-kpi-trend ${cls}`}>
-      {icon}{label}
+      {icon}
+      {label}
     </span>
   )
 }
@@ -97,7 +115,9 @@ function RankTable({ title, rows, cols, noDataLabel }) {
 
   return (
     <div className="bb-card">
-      <div className="bb-card-header"><h3>{title}</h3></div>
+      <div className="bb-card-header">
+        <h3>{title}</h3>
+      </div>
       <div className="bb-card-body bb-card-body--flush">
         {sortedRows.length === 0 ? (
           <StatePanel tone="neutral" title={noDataLabel} />
@@ -107,7 +127,10 @@ function RankTable({ title, rows, cols, noDataLabel }) {
             rows={indexedRows}
             sortKey={sortKey}
             sortDir={sortDir}
-            onSortChange={(key, dir) => { setSortKey(key); setSortDir(dir) }}
+            onSortChange={(key, dir) => {
+              setSortKey(key)
+              setSortDir(dir)
+            }}
           />
         )}
       </div>
@@ -117,14 +140,26 @@ function RankTable({ title, rows, cols, noDataLabel }) {
 
 // % thay đổi giữa kỳ hiện tại và kỳ trước → {direction, label} cho TrendPill.
 function makeTrend(current, previous, t) {
-  if (previous == null) return { direction: 'neutral', label: t('reports.trendNoData', { defaultValue: 'Chưa có kỳ trước' }) }
+  if (previous == null)
+    return {
+      direction: 'neutral',
+      label: t('reports.trendNoData', { defaultValue: 'Chưa có kỳ trước' }),
+    }
   if (previous === 0) {
-    if (current === 0) return { direction: 'neutral', label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }) }
+    if (current === 0)
+      return {
+        direction: 'neutral',
+        label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }),
+      }
     return { direction: 'up', label: t('reports.trendNew', { defaultValue: 'Mới' }) }
   }
   const pct = ((current - previous) / Math.abs(previous)) * 100
   const rounded = Math.round(pct * 10) / 10
-  if (rounded === 0) return { direction: 'neutral', label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }) }
+  if (rounded === 0)
+    return {
+      direction: 'neutral',
+      label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }),
+    }
   const sign = rounded > 0 ? '+' : ''
   return {
     direction: rounded > 0 ? 'up' : 'down',
@@ -143,8 +178,8 @@ export function ReportsScreen() {
     {
       deserialize: {
         preset: normalizeReportPreset,
-        from: (value) => isIsoCalendarDate(value) ? value : '',
-        to: (value) => isIsoCalendarDate(value) ? value : '',
+        from: (value) => (isIsoCalendarDate(value) ? value : ''),
+        to: (value) => (isIsoCalendarDate(value) ? value : ''),
       },
     },
   )
@@ -175,7 +210,7 @@ export function ReportsScreen() {
   const prevRange = useMemo(() => shiftRangeBack(from, to), [from, to])
 
   const isEnabled = Boolean(from && to)
-  const isRangeValid = !isEnabled || (from <= to)
+  const isRangeValid = !isEnabled || from <= to
 
   const dateSpanDays = useMemo(() => inclusiveDateSpan(from, to), [from, to])
   const isRangeWithinLimit = dateSpanDays == null || dateSpanDays <= 90
@@ -194,9 +229,7 @@ export function ReportsScreen() {
     enabled: shouldFetch,
   })
 
-  const {
-    data: prevResult,
-  } = useQuery({
+  const { data: prevResult } = useQuery({
     queryKey: ['analytics', prevRange.from, prevRange.to],
     queryFn: () => fetchAnalytics(prevRange.from, prevRange.to).catch(() => null),
     enabled: shouldFetch && Boolean(prevRange.from && prevRange.to),
@@ -207,16 +240,36 @@ export function ReportsScreen() {
       return { status: 'custom_pending', data: null, prev: null, warning: '' }
     }
     if (!isRangeValid) {
-      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.dateRangeError') }
+      return {
+        status: 'error',
+        data: null,
+        prev: null,
+        warning: '',
+        error: t('reports.dateRangeError'),
+      }
     }
     if (!isRangeWithinLimit) {
-      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.maxRangeError') }
+      return {
+        status: 'error',
+        data: null,
+        prev: null,
+        warning: '',
+        error: t('reports.maxRangeError'),
+      }
     }
     if (isCurrentLoading) {
       return { status: 'loading', data: null, prev: null, warning: '' }
     }
     if (isCurrentError) {
-      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.loadErrorDesc', { defaultValue: 'Không thể tải báo cáo lúc này. Vui lòng thử lại.' }) }
+      return {
+        status: 'error',
+        data: null,
+        prev: null,
+        warning: '',
+        error: t('reports.loadErrorDesc', {
+          defaultValue: 'Không thể tải báo cáo lúc này. Vui lòng thử lại.',
+        }),
+      }
     }
     return {
       status: 'success',
@@ -224,7 +277,18 @@ export function ReportsScreen() {
       prev: prevResult?.data || null,
       warning: currentResult?.warning || '',
     }
-  }, [preset, customFrom, customTo, isRangeValid, isRangeWithinLimit, isCurrentLoading, isCurrentError, currentResult, prevResult, t])
+  }, [
+    preset,
+    customFrom,
+    customTo,
+    isRangeValid,
+    isRangeWithinLimit,
+    isCurrentLoading,
+    isCurrentError,
+    currentResult,
+    prevResult,
+    t,
+  ])
 
   const handleRetry = () => {
     if (preset === 'custom' && customFrom && customTo && customFrom > customTo) {
@@ -238,9 +302,14 @@ export function ReportsScreen() {
   const { from: exportFrom, to: exportTo } = resolvedDates()
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
 
-  const rangeLabel = exportFrom && exportTo
-    ? t('reports.rangeFromTo', { from: exportFrom, to: exportTo, defaultValue: 'Từ {{from}} đến {{to}}' })
-    : ''
+  const rangeLabel =
+    exportFrom && exportTo
+      ? t('reports.rangeFromTo', {
+          from: exportFrom,
+          to: exportTo,
+          defaultValue: 'Từ {{from}} đến {{to}}',
+        })
+      : ''
 
   const presetTabs = [
     ...REPORT_PRESETS.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
@@ -260,44 +329,65 @@ export function ReportsScreen() {
   }
 
   // Mỗi KPI: nhãn + giá trị + icon màu semantic + gợi ý cách tính + delta kỳ-trên-kỳ.
-  const kpiCards = state.data ? [
-    {
-      key: 'gmv',
-      label: t('reports.kpiGmv'),
-      value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale),
-      raw: state.data.summary.grossOrderValue,
-      prev: state.prev?.summary.grossOrderValue,
-      color: 'danger', money: true, icon: <CircleDollarSign size={15} />,
-      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị đơn trong kỳ, không tính đơn đã huỷ.' }),
-    },
-    {
-      key: 'paid',
-      label: t('reports.kpiPaidRevenue'),
-      value: formatCurrencyVnd(state.data.summary.paidRevenue, locale),
-      raw: state.data.summary.paidRevenue,
-      prev: state.prev?.summary.paidRevenue,
-      color: 'success', money: true, icon: <Wallet size={15} />,
-      hint: t('reports.kpiPaidRevenueHint', { defaultValue: 'Tổng giá trị các đơn đã hoàn tất trong kỳ; không phải số giao dịch thanh toán đã thu.' }),
-    },
-    {
-      key: 'orders',
-      label: t('reports.kpiOrderCount'),
-      value: state.data.summary.orderCount.toLocaleString(locale),
-      raw: state.data.summary.orderCount,
-      prev: state.prev?.summary.orderCount,
-      color: 'info', icon: <ShoppingBag size={15} />,
-      hint: t('reports.kpiOrderCountHint', { defaultValue: 'Số đơn phát sinh trong kỳ, không tính đơn đã huỷ.' }),
-    },
-    {
-      key: 'aov',
-      label: t('reports.kpiAov'),
-      value: formatCurrencyVnd(state.data.summary.orderCount > 0 ? (state.data.summary.avgOrderValue || 0) : 0, locale),
-      raw: state.data.summary.avgOrderValue,
-      prev: state.prev?.summary.avgOrderValue,
-      color: 'brand', money: true, icon: <Receipt size={15} />,
-      hint: t('reports.kpiAovHint', { defaultValue: 'Doanh số chia số đơn hợp lệ; không tính đơn đã huỷ.' }),
-    },
-  ] : []
+  const kpiCards = state.data
+    ? [
+        {
+          key: 'gmv',
+          label: t('reports.kpiGmv'),
+          value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale),
+          raw: state.data.summary.grossOrderValue,
+          prev: state.prev?.summary.grossOrderValue,
+          color: 'danger',
+          money: true,
+          icon: <CircleDollarSign size={15} />,
+          hint: t('reports.kpiGmvHint', {
+            defaultValue: 'Tổng giá trị đơn trong kỳ, không tính đơn đã huỷ.',
+          }),
+        },
+        {
+          key: 'paid',
+          label: t('reports.kpiPaidRevenue'),
+          value: formatCurrencyVnd(state.data.summary.paidRevenue, locale),
+          raw: state.data.summary.paidRevenue,
+          prev: state.prev?.summary.paidRevenue,
+          color: 'success',
+          money: true,
+          icon: <Wallet size={15} />,
+          hint: t('reports.kpiPaidRevenueHint', {
+            defaultValue:
+              'Tổng giá trị các đơn đã hoàn tất trong kỳ; không phải số giao dịch thanh toán đã thu.',
+          }),
+        },
+        {
+          key: 'orders',
+          label: t('reports.kpiOrderCount'),
+          value: state.data.summary.orderCount.toLocaleString(locale),
+          raw: state.data.summary.orderCount,
+          prev: state.prev?.summary.orderCount,
+          color: 'info',
+          icon: <ShoppingBag size={15} />,
+          hint: t('reports.kpiOrderCountHint', {
+            defaultValue: 'Số đơn phát sinh trong kỳ, không tính đơn đã huỷ.',
+          }),
+        },
+        {
+          key: 'aov',
+          label: t('reports.kpiAov'),
+          value: formatCurrencyVnd(
+            state.data.summary.orderCount > 0 ? state.data.summary.avgOrderValue || 0 : 0,
+            locale,
+          ),
+          raw: state.data.summary.avgOrderValue,
+          prev: state.prev?.summary.avgOrderValue,
+          color: 'brand',
+          money: true,
+          icon: <Receipt size={15} />,
+          hint: t('reports.kpiAovHint', {
+            defaultValue: 'Doanh số chia số đơn hợp lệ; không tính đơn đã huỷ.',
+          }),
+        },
+      ]
+    : []
 
   return (
     <div>
@@ -311,12 +401,12 @@ export function ReportsScreen() {
           <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>
             {presetTabs.map((tab) => (
               <Button
-                 variant="unstyled"
-                 key={tab.key}
-                 role="tab"
-                 aria-selected={preset === tab.key}
-                 className={preset === tab.key ? 'active' : ''}
-                 onClick={() => setPreset(tab.key)}
+                variant="unstyled"
+                key={tab.key}
+                role="tab"
+                aria-selected={preset === tab.key}
+                className={preset === tab.key ? 'active' : ''}
+                onClick={() => setPreset(tab.key)}
               >
                 {tab.label}
               </Button>
@@ -348,14 +438,22 @@ export function ReportsScreen() {
           <div className="flex gap-2">
             <ExportButton
               disabled={!canExport || !shouldFetch}
-              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : undefined}
+              title={
+                !canExport
+                  ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' })
+                  : undefined
+              }
               onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
             >
               {t('reports.exportOrders')}
             </ExportButton>
             <ExportButton
               disabled={!canExport}
-              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : t('reports.exportAllHint')}
+              title={
+                !canExport
+                  ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' })
+                  : t('reports.exportAllHint')
+              }
               onExport={() => runExport(() => exportCustomersCsv())}
             >
               {t('reports.exportCustomers')}
@@ -422,7 +520,9 @@ export function ReportsScreen() {
                     </span>
                     <span className={`bb-kpi-icon ${k.color || 'info'}`}>{k.icon}</span>
                   </div>
-                  <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
+                  <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>
+                    {k.value}
+                  </div>
                   <div className="bb-kpi-foot">
                     <TrendPill {...trend} />
                     {rangeLabel && <span className="bb-kpi-foot-label">{rangeLabel}</span>}
@@ -443,14 +543,25 @@ export function ReportsScreen() {
             <div className="bb-card-body">
               {state.data.dailyRevenue?.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
+                  <AreaChart
+                    data={state.data.dailyRevenue}
+                    margin={{ left: 10, right: 10, top: 4, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--admin-color-primary)" stopOpacity={0.15} />
+                        <stop
+                          offset="5%"
+                          stopColor="var(--admin-color-primary)"
+                          stopOpacity={0.15}
+                        />
                         <stop offset="95%" stopColor="var(--admin-color-primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--admin-color-border-subtle)"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
@@ -480,7 +591,10 @@ export function ReportsScreen() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center bb-muted text-sm" style={{ minHeight: 240 }}>
+                <div
+                  className="flex items-center justify-center bb-muted text-sm"
+                  style={{ minHeight: 240 }}
+                >
                   {t('reports.notEnoughDataForChart')}
                 </div>
               )}
@@ -490,7 +604,9 @@ export function ReportsScreen() {
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
             <div className="bb-card mb-4">
-              <div className="bb-card-header"><h3>{t('reports.chartTopProducts')}</h3></div>
+              <div className="bb-card-header">
+                <h3>{t('reports.chartTopProducts')}</h3>
+              </div>
               <div className="bb-card-body">
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
@@ -498,7 +614,11 @@ export function ReportsScreen() {
                     layout="vertical"
                     margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" horizontal={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--admin-color-border-subtle)"
+                      horizontal={false}
+                    />
                     <XAxis
                       type="number"
                       tickFormatter={tickFmt}
@@ -513,13 +633,18 @@ export function ReportsScreen() {
                       tickLine={false}
                       axisLine={false}
                       width={140}
-                      tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}…` : v}
+                      tickFormatter={(v) => (v.length > 20 ? `${v.slice(0, 20)}…` : v)}
                     />
                     <Tooltip
                       formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
                       cursor={{ fill: 'var(--admin-color-surface-hover)' }}
                     />
-                    <Bar dataKey="revenue" fill="var(--admin-color-primary)" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                    <Bar
+                      dataKey="revenue"
+                      fill="var(--admin-color-primary)"
+                      radius={[0, 3, 3, 0]}
+                      maxBarSize={20}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -535,7 +660,13 @@ export function ReportsScreen() {
               cols={[
                 { key: 'productName', label: t('reports.colProduct') },
                 { key: 'unitsSold', label: t('reports.colUnitsSold'), right: true, sortable: true },
-                { key: 'revenue', label: t('reports.colRevenue'), right: true, sortable: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
+                {
+                  key: 'revenue',
+                  label: t('reports.colRevenue'),
+                  right: true,
+                  sortable: true,
+                  render: (r) => formatCurrencyVnd(r.revenue, locale),
+                },
               ]}
             />
             <RankTable
@@ -545,7 +676,13 @@ export function ReportsScreen() {
               cols={[
                 { key: 'customerEmail', label: t('reports.colEmail') },
                 { key: 'orderCount', label: t('reports.colOrders'), right: true, sortable: true },
-                { key: 'revenue', label: t('reports.colSpend'), right: true, sortable: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
+                {
+                  key: 'revenue',
+                  label: t('reports.colSpend'),
+                  right: true,
+                  sortable: true,
+                  render: (r) => formatCurrencyVnd(r.revenue, locale),
+                },
               ]}
             />
           </div>

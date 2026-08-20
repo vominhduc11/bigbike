@@ -1,10 +1,21 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CollapsibleSection } from '../../components/CollapsibleSection'
-import { formatParentOption, formatCategoryOption, buildCategoryMenuUrl, isValidCustomUrl } from './constants'
+import {
+  formatParentOption,
+  formatCategoryOption,
+  buildCategoryMenuUrl,
+  isValidCustomUrl,
+} from './constants'
 
 // Radix Select cấm value rỗng, nên dùng sentinel cho lựa chọn "cấp gốc".
 const ROOT_VALUE = '__root__'
@@ -13,7 +24,11 @@ const NONE_VALUE = '__none__'
 
 // Dấu * đỏ cạnh nhãn trường bắt buộc (glyph + màu, không chỉ màu).
 function RequiredMark() {
-  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+  return (
+    <span className="text-danger ml-0.5" aria-hidden="true">
+      *
+    </span>
+  )
 }
 
 function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
@@ -23,14 +38,19 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
       <Select
         value={value || ROOT_VALUE}
         onValueChange={(v) => onChange(v === ROOT_VALUE ? '' : v)}
-      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-        <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
-        {options.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {formatParentOption(item)}
-          </SelectItem>
-        ))}
-      </SelectContent></Select>
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
+          {options.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {formatParentOption(item)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   )
 }
@@ -41,7 +61,8 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
 // đổi tên/slug danh mục), 2 ô Tên/URL bên dưới khoá lại không sửa tay được.
 // Chọn "— Không liên kết danh mục —" để huỷ liên kết và tự nhập tay.
 function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
-  const selectedValue = value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
+  const selectedValue =
+    value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
   return (
     <label className="form-field form-field-wide">
       {label}
@@ -61,19 +82,31 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
             targetId: category.id,
           })
         }}
-      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-        <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
-        {options.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {formatCategoryOption(item)}
-          </SelectItem>
-        ))}
-      </SelectContent></Select>
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
+          {options.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {formatCategoryOption(item)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   )
 }
 
-export function ItemForm({ value, onChange, parentOptions, categoryOptions, categoryError, isNew }) {
+export function ItemForm({
+  value,
+  onChange,
+  parentOptions,
+  categoryOptions,
+  categoryError,
+  isNew,
+}) {
   const { t } = useTranslation()
   const [labelTouched, setLabelTouched] = useState(false)
   // F10 chống ngợp: giữ 2 trường cốt lõi (Tên + URL) luôn hiện, gom 4 trường tùy chọn vào
@@ -89,7 +122,9 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
     <div className="form-grid">
       {/* Chú thích trường bắt buộc */}
       <p className="form-field-wide menu-form-hint">
-        <span className="text-danger" aria-hidden="true">*</span>{' '}
+        <span className="text-danger" aria-hidden="true">
+          *
+        </span>{' '}
         {t('menus.requiredLegend', { defaultValue: 'Bắt buộc' })}
       </p>
 
@@ -110,14 +145,28 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           disabled={categoryLinked}
           aria-required={!categoryLinked}
           aria-invalid={showLabelError || undefined}
-          aria-describedby={showLabelError ? 'menu-item-label-error' : categoryLinked ? 'menu-item-label-hint' : undefined}
-         />
+          aria-describedby={
+            showLabelError
+              ? 'menu-item-label-error'
+              : categoryLinked
+                ? 'menu-item-label-hint'
+                : undefined
+          }
+        />
         {categoryLinked ? (
-          <small id="menu-item-label-hint" className="menu-form-hint">{t('menus.itemLabelCategoryLinkedHint')}</small>
-        ) : showLabelError && (
-          <small id="menu-item-label-error" className="menu-form-hint menu-form-hint--danger" role="alert">
-            {t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })}
+          <small id="menu-item-label-hint" className="menu-form-hint">
+            {t('menus.itemLabelCategoryLinkedHint')}
           </small>
+        ) : (
+          showLabelError && (
+            <small
+              id="menu-item-label-error"
+              className="menu-form-hint menu-form-hint--danger"
+              role="alert"
+            >
+              {t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })}
+            </small>
+          )
         )}
       </label>
 
@@ -132,7 +181,10 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         />
       ) : categoryError ? (
         <p className="form-field-wide menu-form-hint menu-form-hint--warn" role="status">
-          {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.' })}
+          {t('menus.categoryLoadError', {
+            defaultValue:
+              'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.',
+          })}
         </p>
       ) : null}
 
@@ -152,17 +204,24 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           aria-required={!categoryLinked}
           aria-invalid={urlInvalid || undefined}
           aria-describedby="menu-item-url-hint"
-         />
+        />
         {categoryLinked ? (
-          <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.itemCategoryLinkedHint')}</small>
+          <small id="menu-item-url-hint" className="menu-form-hint">
+            {t('menus.itemCategoryLinkedHint')}
+          </small>
         ) : value.url.trim() ? (
           urlInvalid && (
             <small id="menu-item-url-hint" className="menu-form-hint menu-form-hint--danger">
-              {t('menus.urlInvalid', { defaultValue: 'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.' })}
+              {t('menus.urlInvalid', {
+                defaultValue:
+                  'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.',
+              })}
             </small>
           )
         ) : (
-          <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.urlHint')}</small>
+          <small id="menu-item-url-hint" className="menu-form-hint">
+            {t('menus.urlHint')}
+          </small>
         )}
       </label>
 
@@ -170,7 +229,9 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
       <div className="form-field-wide">
         <CollapsibleSection
           title={t('menus.itemAdvancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
-          hint={t('menus.itemAdvancedHint', { defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới' })}
+          hint={t('menus.itemAdvancedHint', {
+            defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới',
+          })}
           open={advancedOpen}
           onToggle={() => setAdvancedOpen((v) => !v)}
           keepMounted
@@ -185,9 +246,11 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
                 placeholder={t('menus.itemLabelEnPlaceholder')}
                 readOnly={categoryLinked}
                 disabled={categoryLinked}
-               />
+              />
               <small className="menu-form-hint">
-                {categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')}
+                {categoryLinked
+                  ? t('menus.itemLabelCategoryLinkedHint')
+                  : t('menus.itemLabelEnHint')}
               </small>
             </label>
 
@@ -203,15 +266,19 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
             {/* Status */}
             <label className="form-field">
               {t('menus.itemStatus')}
-              <Select
-                value={value.status}
-                onValueChange={(val) => onChange({ status: val })}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
-                <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
-              </SelectContent></Select>
+              <Select value={value.status} onValueChange={(val) => onChange({ status: val })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
+                </SelectContent>
+              </Select>
               {value.status === 'INACTIVE' && (
-                <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
+                <small className="menu-form-hint menu-form-hint--warn">
+                  {t('menus.statusInactiveHint')}
+                </small>
               )}
             </label>
 
@@ -220,7 +287,7 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
               <Checkbox
                 checked={value.openInNewTab}
                 onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
-               />
+              />
               {t('menus.itemOpenInNewTab')}
             </label>
           </div>

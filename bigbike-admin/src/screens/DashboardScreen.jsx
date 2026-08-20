@@ -22,34 +22,40 @@ import { formatVndShort, formatRelativeTime } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import { useRecentItems } from '../lib/useRecentItems'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
-import {
-  fetchDashboardSummary,
-  fetchInventorySummary,
-} from '../lib/adminApi'
+import { fetchDashboardSummary, fetchInventorySummary } from '../lib/adminApi'
 
 const PENDING_WARN_THRESHOLD = 5
 
 const ORDER_STATUS_COLORS = {
-  PENDING:    'var(--admin-color-status-warning-text)',
+  PENDING: 'var(--admin-color-status-warning-text)',
   PROCESSING: 'var(--admin-color-status-info-text)',
-  COMPLETED:  'var(--admin-color-status-success-text)',
-  CANCELLED:  'var(--admin-color-status-danger-text)',
+  COMPLETED: 'var(--admin-color-status-success-text)',
+  CANCELLED: 'var(--admin-color-status-danger-text)',
 }
 
 // Charts pull in recharts (~346KB) — load them lazily so the dashboard shell
 // (KPIs + tables) paints immediately and the charts stream in afterwards.
-const RevenueAreaChart = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.RevenueAreaChart })))
-const OrderStatusPie = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.OrderStatusPie })))
+const RevenueAreaChart = lazy(() =>
+  import('./dashboard/charts').then((m) => ({ default: m.RevenueAreaChart })),
+)
+const OrderStatusPie = lazy(() =>
+  import('./dashboard/charts').then((m) => ({ default: m.OrderStatusPie })),
+)
 
 function TrendPill({ direction, label }) {
   const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
   const icon =
-    direction === 'up' ? <TrendingUp size={10} /> :
-    direction === 'down' ? <TrendingDown size={10} /> :
-    <Minus size={10} />
+    direction === 'up' ? (
+      <TrendingUp size={10} />
+    ) : direction === 'down' ? (
+      <TrendingDown size={10} />
+    ) : (
+      <Minus size={10} />
+    )
   return (
     <span className={`bb-kpi-trend ${cls}`}>
-      {icon}{label}
+      {icon}
+      {label}
     </span>
   )
 }
@@ -89,9 +95,12 @@ export function DashboardScreen({ navigate }) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [period, setPeriod] = useState('30d')
-  const canReadInventory = user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
-  const canReadProducts = user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
-  const canReadReports = user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
+  const canReadInventory =
+    user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
+  const canReadProducts =
+    user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
+  const canReadReports =
+    user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
   // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
   const numberLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   // O9 — đơn hàng admin vừa xem gần đây, cho phép quay lại nhanh.
@@ -101,12 +110,13 @@ export function DashboardScreen({ navigate }) {
   const hour = now.getHours()
   const greetingKey =
     hour < 12 ? 'greetingMorning' : hour < 18 ? 'greetingAfternoon' : 'greetingEvening'
-  const firstName =
-    (user?.fullName || '').trim().split(/\s+/).filter(Boolean).slice(-1)[0] || ''
-  const todayLabel = now.toLocaleDateString(
-    i18n.language?.startsWith('vi') ? 'vi-VN' : 'en-US',
-    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-  )
+  const firstName = (user?.fullName || '').trim().split(/\s+/).filter(Boolean).slice(-1)[0] || ''
+  const todayLabel = now.toLocaleDateString(i18n.language?.startsWith('vi') ? 'vi-VN' : 'en-US', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // Số liệu vận hành (doanh thu, tồn thấp, đơn chờ) cần tươi mà không cần
   // instant → polling định kỳ 90s + làm mới khi admin quay lại tab. Refetch chạy nền,
@@ -120,7 +130,12 @@ export function DashboardScreen({ navigate }) {
     })
   }, [canReadInventory, queryClient])
 
-  const { data: dashResult, isLoading, isError, refetch } = useQuery({
+  const {
+    data: dashResult,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['dashboard', period],
     queryFn: () => fetchDashboardSummary(period),
     staleTime: 60_000,
@@ -128,7 +143,11 @@ export function DashboardScreen({ navigate }) {
     refetchOnWindowFocus: true,
   })
 
-  const { data: invSummary, isLoading: invIsLoading, isError: invIsError } = useQuery({
+  const {
+    data: invSummary,
+    isLoading: invIsLoading,
+    isError: invIsError,
+  } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
     staleTime: 60_000,
@@ -147,11 +166,12 @@ export function DashboardScreen({ navigate }) {
   const { data } = state
 
   const periodTabs = [
-    { key: '7d',  label: t('dashboard.period7d')  },
+    { key: '7d', label: t('dashboard.period7d') },
     { key: '30d', label: t('dashboard.period30d') },
     { key: '90d', label: t('dashboard.period90d') },
   ]
-  const selectedPeriodLabel = periodTabs.find((tab) => tab.key === period)?.label ?? periodTabs[1].label
+  const selectedPeriodLabel =
+    periodTabs.find((tab) => tab.key === period)?.label ?? periodTabs[1].label
 
   // Dữ liệu có thể về thiếu (partial) — mảng breakdown có thể undefined dù `data` tồn tại.
   const orderStatusBreakdown = Array.isArray(data?.orderStatusBreakdown)
@@ -178,19 +198,27 @@ export function DashboardScreen({ navigate }) {
     const pct = kpi?.todayRevenuePct
     if (pct == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
     const absPct = Math.abs(pct)
-    const formattedValue = absPct > 999
-      ? '>999'
-      : new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 }).format(absPct)
-    if (pct > 0)  return { direction: 'up',   label: t('dashboard.kpi.trendUp',   { value: formattedValue }) }
-    if (pct < 0)  return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
+    const formattedValue =
+      absPct > 999
+        ? '>999'
+        : new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 }).format(absPct)
+    if (pct > 0)
+      return { direction: 'up', label: t('dashboard.kpi.trendUp', { value: formattedValue }) }
+    if (pct < 0)
+      return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
     return { direction: 'neutral', label: t('dashboard.kpi.trendFlat') }
   }
 
   function ordersTrend(kpi) {
     const delta = kpi?.todayOrdersDelta
     if (delta == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
-    if (delta > 0) return { direction: 'up',   label: t('dashboard.kpi.ordersDeltaUp',   { count: delta }) }
-    if (delta < 0) return { direction: 'down', label: t('dashboard.kpi.ordersDeltaDown', { count: Math.abs(delta) }) }
+    if (delta > 0)
+      return { direction: 'up', label: t('dashboard.kpi.ordersDeltaUp', { count: delta }) }
+    if (delta < 0)
+      return {
+        direction: 'down',
+        label: t('dashboard.kpi.ordersDeltaDown', { count: Math.abs(delta) }),
+      }
     return { direction: 'neutral', label: t('dashboard.kpi.ordersDeltaFlat') }
   }
 
@@ -247,13 +275,10 @@ export function DashboardScreen({ navigate }) {
           <p className="bb-muted">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
         </div>
         <div className="bb-screen-actions">
-          <div
-            className="bb-seg"
-            role="group"
-            aria-label={t('dashboard.periodControlLabel')}
-          >
+          <div className="bb-seg" role="group" aria-label={t('dashboard.periodControlLabel')}>
             {periodTabs.map((tab) => (
-              <Button variant="unstyled"
+              <Button
+                variant="unstyled"
                 key={tab.key}
                 type="button"
                 aria-pressed={period === tab.key}
@@ -298,23 +323,33 @@ export function DashboardScreen({ navigate }) {
           <div className="bb-kpi-grid bb-kpi-grid-4">
             <div
               className={`bb-kpi${canReadReports ? ' clickable' : ''}`}
-              {...(canReadReports ? clickableProps(
-                () => navigate('/admin/reports'),
-                t('dashboard.kpi.todayRevenueAria'),
-              ) : {})}
+              {...(canReadReports
+                ? clickableProps(
+                    () => navigate('/admin/reports'),
+                    t('dashboard.kpi.todayRevenueAria'),
+                  )
+                : {})}
             >
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.todayRevenue')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">
+                    {t('dashboard.kpi.todayScope')}
+                  </span>
                 </span>
-                <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
+                <span className="bb-kpi-icon brand">
+                  <CircleDollarSign size={15} />
+                </span>
               </div>
-              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi?.todayRevenue)}</div>
+              <div className="bb-kpi-value bb-kpi-value--money">
+                {formatVndShort(data.kpi?.todayRevenue)}
+              </div>
               <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">
-                  {t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi?.todayPaidRevenue) })}
+                  {t('dashboard.kpi.todayPaid', {
+                    amount: formatVndShort(data.kpi?.todayPaidRevenue),
+                  })}
                 </span>
               </div>
             </div>
@@ -329,11 +364,17 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.todayOrders')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">
+                    {t('dashboard.kpi.todayScope')}
+                  </span>
                 </span>
-                <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
+                <span className="bb-kpi-icon info">
+                  <ShoppingBag size={15} />
+                </span>
               </div>
-              <div className="bb-kpi-value">{(data.kpi?.todayOrders ?? 0).toLocaleString(numberLocale)}</div>
+              <div className="bb-kpi-value">
+                {(data.kpi?.todayOrders ?? 0).toLocaleString(numberLocale)}
+              </div>
               <div className="bb-kpi-foot">
                 <TrendPill {...ordersTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.todayOrdersHint')}</span>
@@ -350,13 +391,19 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.pendingOrders')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">
+                    {t('dashboard.kpi.currentScope')}
+                  </span>
                 </span>
-                <span className={`bb-kpi-icon ${(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
+                <span
+                  className={`bb-kpi-icon ${(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}
+                >
                   <Clock size={15} />
                 </span>
               </div>
-              <div className="bb-kpi-value">{(data.kpi?.pendingOrders ?? 0).toLocaleString(numberLocale)}</div>
+              <div className="bb-kpi-value">
+                {(data.kpi?.pendingOrders ?? 0).toLocaleString(numberLocale)}
+              </div>
               <div className="bb-kpi-foot">
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.pendingOrdersHint')}</span>
               </div>
@@ -364,19 +411,27 @@ export function DashboardScreen({ navigate }) {
 
             <div
               className={`bb-kpi${canReadProducts ? ' clickable' : ''}`}
-              {...(canReadProducts ? clickableProps(
-                () => navigate('/admin/products?publishStatus=PUBLISHED'),
-                t('dashboard.kpi.activeProductsAria'),
-              ) : {})}
+              {...(canReadProducts
+                ? clickableProps(
+                    () => navigate('/admin/products?publishStatus=PUBLISHED'),
+                    t('dashboard.kpi.activeProductsAria'),
+                  )
+                : {})}
             >
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.activeProducts')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">
+                    {t('dashboard.kpi.currentScope')}
+                  </span>
                 </span>
-                <span className="bb-kpi-icon success"><Package size={15} /></span>
+                <span className="bb-kpi-icon success">
+                  <Package size={15} />
+                </span>
               </div>
-              <div className="bb-kpi-value">{(data.kpi?.activeProducts ?? 0).toLocaleString(numberLocale)}</div>
+              <div className="bb-kpi-value">
+                {(data.kpi?.activeProducts ?? 0).toLocaleString(numberLocale)}
+              </div>
               <div className="bb-kpi-foot">
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.activeProductsHint')}</span>
               </div>
@@ -434,7 +489,8 @@ export function DashboardScreen({ navigate }) {
                     size="sm"
                     onClick={() => navigate('/admin/orders')}
                   >
-                    {t('dashboard.orderStatusChart.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.orderStatusChart.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
                 )}
               </div>
@@ -458,7 +514,13 @@ export function DashboardScreen({ navigate }) {
                                 style={{ backgroundColor: d.color }}
                                 aria-hidden="true"
                               />
-                              <span className={index === 0 ? 'flex-1 font-semibold text-foreground' : 'flex-1 bb-muted'}>
+                              <span
+                                className={
+                                  index === 0
+                                    ? 'flex-1 font-semibold text-foreground'
+                                    : 'flex-1 bb-muted'
+                                }
+                              >
                                 {d.name}
                               </span>
                               {index === 0 && (
@@ -511,14 +573,9 @@ export function DashboardScreen({ navigate }) {
             </div>
             <div className="bb-card-body">
               {showInventoryWarning && (
-                <StatePanel
-                  tone="warning"
-                  description={t('dashboard.attention.inventoryWarn')}
-                />
+                <StatePanel tone="warning" description={t('dashboard.attention.inventoryWarn')} />
               )}
-              {invIsLoading && !hasInventoryData && (
-                <SkeletonBlock height={72} />
-              )}
+              {invIsLoading && !hasInventoryData && <SkeletonBlock height={72} />}
               {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
                   ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
                   không khẳng định rỗng. */}
@@ -534,13 +591,20 @@ export function DashboardScreen({ navigate }) {
                     <div
                       key={item.key}
                       className="bb-attention-item"
-                      {...(item.onClick ? clickableProps(
-                        item.onClick,
-                        `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
-                      ) : {})}
+                      {...(item.onClick
+                        ? clickableProps(
+                            item.onClick,
+                            `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
+                          )
+                        : {})}
                     >
-                      <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />
-                      <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
+                      <span
+                        className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`}
+                        aria-hidden="true"
+                      />
+                      <span className="bb-attention-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
                       <div className="bb-attention-body">
                         <div className="bb-attention-title">{item.label}</div>
                         <div className="bb-attention-desc">{item.hint}</div>
@@ -548,7 +612,8 @@ export function DashboardScreen({ navigate }) {
                       <span className="bb-attention-count">{item.count}</span>
                       {item.onClick ? (
                         <span className="bb-btn bb-btn-ghost bb-btn-sm" aria-hidden="true">
-                          {item.cta}<ArrowRight size={14} aria-hidden="true" />
+                          {item.cta}
+                          <ArrowRight size={14} aria-hidden="true" />
                         </span>
                       ) : null}
                     </div>
@@ -559,7 +624,10 @@ export function DashboardScreen({ navigate }) {
           </div>
 
           {/* O9 — Vừa xem gần đây */}
-          <RecentItemsChips items={recentOrderItems} onSelect={(item) => navigate(`/admin/orders/${item.id}`)} />
+          <RecentItemsChips
+            items={recentOrderItems}
+            onSelect={(item) => navigate(`/admin/orders/${item.id}`)}
+          />
 
           {/* Recent orders + top products */}
           <div className="bb-grid-2">
@@ -573,67 +641,79 @@ export function DashboardScreen({ navigate }) {
                     size="sm"
                     onClick={() => navigate('/admin/orders')}
                   >
-                    {t('dashboard.recentOrders.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.recentOrders.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
                 )}
               </div>
               <div className="bb-card-body--flush">
                 {recentOrders.length > 0 ? (
                   <>
-                  <div className="hide-on-mobile">
-                  <div className="bb-table-wrap">
-                    <table className="bb-table">
-                      <thead>
-                        <tr>
-                          <th scope="col">{t('dashboard.recentOrders.orderNumber')}</th>
-                          <th scope="col">{t('dashboard.recentOrders.customer')}</th>
-                          <th scope="col" className="num">{t('dashboard.recentOrders.total')}</th>
-                          <th scope="col">{t('dashboard.recentOrders.status')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentOrders.map((order) => (
-                          <tr key={order.id}>
-                            <td className="mono">
-                              <div className="flex flex-col">
-                                <Button variant="unstyled"
-                                  type="button"
-                                  className="bg-transparent border-0 p-0 font-mono text-xs cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
-                                  style={{ color: 'var(--bb-primary)' }}
-                                  onClick={() => navigate(`/admin/orders/${order.id}`)}
-                                >
-                                  {order.orderNumber || t('common.unknown')}
-                                </Button>
-                                <span className="text-xs text-muted leading-none mt-0.5">
-                                  {formatRelativeTime(order.placedAt, t)}
-                                </span>
-                              </div>
-                            </td>
-                            <td title={order.customerName || order.customerEmail || ''}>
-                              {order.customerName || order.customerEmail || t('common.unknown')}
-                            </td>
-                            <td className="num" style={{ fontWeight: 600 }}>{formatVndShort(order.total)}</td>
-                            <td><StatusBadge type="order" status={order.orderStatus} /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  </div>
-                  <MobileCardList>
-                    {recentOrders.map((order) => (
-                      <MobileCard
-                        key={order.id}
-                        title={order.orderNumber || t('common.unknown')}
-                        subtitle={`${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`}
-                        status={<StatusBadge type="order" status={order.orderStatus} />}
-                        meta={[
-                          { label: t('dashboard.recentOrders.total'), value: formatVndShort(order.total), tone: 'strong' },
-                        ]}
-                        onClick={() => navigate(`/admin/orders/${order.id}`)}
-                      />
-                    ))}
-                  </MobileCardList>
+                    <div className="hide-on-mobile">
+                      <div className="bb-table-wrap">
+                        <table className="bb-table">
+                          <thead>
+                            <tr>
+                              <th scope="col">{t('dashboard.recentOrders.orderNumber')}</th>
+                              <th scope="col">{t('dashboard.recentOrders.customer')}</th>
+                              <th scope="col" className="num">
+                                {t('dashboard.recentOrders.total')}
+                              </th>
+                              <th scope="col">{t('dashboard.recentOrders.status')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentOrders.map((order) => (
+                              <tr key={order.id}>
+                                <td className="mono">
+                                  <div className="flex flex-col">
+                                    <Button
+                                      variant="unstyled"
+                                      type="button"
+                                      className="bg-transparent border-0 p-0 font-mono text-xs cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
+                                      style={{ color: 'var(--bb-primary)' }}
+                                      onClick={() => navigate(`/admin/orders/${order.id}`)}
+                                    >
+                                      {order.orderNumber || t('common.unknown')}
+                                    </Button>
+                                    <span className="text-xs text-muted leading-none mt-0.5">
+                                      {formatRelativeTime(order.placedAt, t)}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td title={order.customerName || order.customerEmail || ''}>
+                                  {order.customerName || order.customerEmail || t('common.unknown')}
+                                </td>
+                                <td className="num" style={{ fontWeight: 600 }}>
+                                  {formatVndShort(order.total)}
+                                </td>
+                                <td>
+                                  <StatusBadge type="order" status={order.orderStatus} />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <MobileCardList>
+                      {recentOrders.map((order) => (
+                        <MobileCard
+                          key={order.id}
+                          title={order.orderNumber || t('common.unknown')}
+                          subtitle={`${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`}
+                          status={<StatusBadge type="order" status={order.orderStatus} />}
+                          meta={[
+                            {
+                              label: t('dashboard.recentOrders.total'),
+                              value: formatVndShort(order.total),
+                              tone: 'strong',
+                            },
+                          ]}
+                          onClick={() => navigate(`/admin/orders/${order.id}`)}
+                        />
+                      ))}
+                    </MobileCardList>
                   </>
                 ) : (
                   <div className="bb-card-body">
@@ -659,66 +739,96 @@ export function DashboardScreen({ navigate }) {
                     size="sm"
                     onClick={() => navigate('/admin/products')}
                   >
-                    {t('dashboard.topProducts.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.topProducts.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
                 )}
               </div>
               <div className="bb-card-body--flush">
                 {topProducts.length > 0 ? (
                   <>
-                  <div className="hide-on-mobile">
-                  <div className="bb-table-wrap">
-                    <table className="bb-table">
-                      <thead>
-                        <tr>
-                          <th scope="col" style={{ width: 36 }}>{t('dashboard.topProducts.rank')}</th>
-                          <th scope="col">{t('dashboard.topProducts.product')}</th>
-                          <th scope="col" className="num">{t('dashboard.topProducts.units')}</th>
-                          <th scope="col" className="num">{t('dashboard.topProducts.revenue')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topProducts.map((product, idx) => (
-                          <tr key={product.productId}>
-                            <td>
-                              <span className={`bb-rank${idx < 3 ? ` bb-rank-${idx + 1}` : ''}`}>
-                                {idx + 1}
-                              </span>
-                            </td>
-                            <td>
-                              <Button variant="unstyled"
-                                type="button"
-                                className="bb-product-cell bg-transparent border-0 p-0 text-left cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-                                onClick={() => navigate(`/admin/products/${product.productId}`)}
-                                disabled={!canReadProducts}
-                              >
-                                <span className="bb-product-thumb"><Package size={18} /></span>
-                                <span title={product.name}>{product.name || t('common.unknown')}</span>
-                              </Button>
-                            </td>
-                            <td className="num">{(product.units ?? 0).toLocaleString(numberLocale)}</td>
-                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>
-                              {formatVndShort(product.revenue)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  </div>
-                  <MobileCardList>
-                    {topProducts.map((product, idx) => (
-                      <MobileCard
-                        key={product.productId}
-                        title={`${idx + 1}. ${product.name || t('common.unknown')}`}
-                        meta={[
-                          { label: t('dashboard.topProducts.units'), value: (product.units ?? 0).toLocaleString(numberLocale) },
-                          { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },
-                        ]}
-                        onClick={canReadProducts ? () => navigate(`/admin/products/${product.productId}`) : undefined}
-                      />
-                    ))}
-                  </MobileCardList>
+                    <div className="hide-on-mobile">
+                      <div className="bb-table-wrap">
+                        <table className="bb-table">
+                          <thead>
+                            <tr>
+                              <th scope="col" style={{ width: 36 }}>
+                                {t('dashboard.topProducts.rank')}
+                              </th>
+                              <th scope="col">{t('dashboard.topProducts.product')}</th>
+                              <th scope="col" className="num">
+                                {t('dashboard.topProducts.units')}
+                              </th>
+                              <th scope="col" className="num">
+                                {t('dashboard.topProducts.revenue')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {topProducts.map((product, idx) => (
+                              <tr key={product.productId}>
+                                <td>
+                                  <span
+                                    className={`bb-rank${idx < 3 ? ` bb-rank-${idx + 1}` : ''}`}
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                </td>
+                                <td>
+                                  <Button
+                                    variant="unstyled"
+                                    type="button"
+                                    className="bb-product-cell bg-transparent border-0 p-0 text-left cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                                    onClick={() => navigate(`/admin/products/${product.productId}`)}
+                                    disabled={!canReadProducts}
+                                  >
+                                    <span className="bb-product-thumb">
+                                      <Package size={18} />
+                                    </span>
+                                    <span title={product.name}>
+                                      {product.name || t('common.unknown')}
+                                    </span>
+                                  </Button>
+                                </td>
+                                <td className="num">
+                                  {(product.units ?? 0).toLocaleString(numberLocale)}
+                                </td>
+                                <td
+                                  className="num"
+                                  style={{ fontWeight: 700, color: 'var(--bb-primary)' }}
+                                >
+                                  {formatVndShort(product.revenue)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <MobileCardList>
+                      {topProducts.map((product, idx) => (
+                        <MobileCard
+                          key={product.productId}
+                          title={`${idx + 1}. ${product.name || t('common.unknown')}`}
+                          meta={[
+                            {
+                              label: t('dashboard.topProducts.units'),
+                              value: (product.units ?? 0).toLocaleString(numberLocale),
+                            },
+                            {
+                              label: t('dashboard.topProducts.revenue'),
+                              value: formatVndShort(product.revenue),
+                              tone: 'strong',
+                            },
+                          ]}
+                          onClick={
+                            canReadProducts
+                              ? () => navigate(`/admin/products/${product.productId}`)
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </MobileCardList>
                   </>
                 ) : (
                   <div className="bb-card-body">
@@ -726,7 +836,9 @@ export function DashboardScreen({ navigate }) {
                       tone="neutral"
                       title={t('dashboard.topProducts.empty')}
                       description={t('dashboard.topProducts.emptyDesc')}
-                      actionLabel={canReadProducts ? t('dashboard.topProducts.emptyCta') : undefined}
+                      actionLabel={
+                        canReadProducts ? t('dashboard.topProducts.emptyCta') : undefined
+                      }
                       onAction={canReadProducts ? () => navigate('/admin/products') : undefined}
                     />
                   </div>

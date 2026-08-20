@@ -10,7 +10,10 @@ export function normalizeSizeScaleValue(value) {
 }
 
 export function parseSizeScaleValues(raw) {
-  const values = String(raw ?? '').split(',').map((value) => value.trim()).filter(Boolean)
+  const values = String(raw ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
   const seen = new Set()
   for (const value of values) {
     const key = normalizeSizeScaleValue(value)

@@ -41,17 +41,21 @@ export function MaintenanceOverlay() {
     select: normalizeStatus,
   })
 
-  useEffect(() => subscribeAdminWs('/topic/admin/maintenance', (event) => {
-    const next = normalizeStatus(event)
-    if (!next) return
-    // Merge rather than replace: the broadcast carries no canToggle for this caller.
-    queryClient.setQueryData(['maintenance'], (prev) => ({
-      ...(prev || {}),
-      state: next.state,
-      staffNote: next.staffNote,
-      expectedAt: next.expectedAt,
-    }))
-  }), [queryClient])
+  useEffect(
+    () =>
+      subscribeAdminWs('/topic/admin/maintenance', (event) => {
+        const next = normalizeStatus(event)
+        if (!next) return
+        // Merge rather than replace: the broadcast carries no canToggle for this caller.
+        queryClient.setQueryData(['maintenance'], (prev) => ({
+          ...(prev || {}),
+          state: next.state,
+          staffNote: next.staffNote,
+          expectedAt: next.expectedAt,
+        }))
+      }),
+    [queryClient],
+  )
 
   if (!data || !['UPCOMING', 'ACTIVE'].includes(data.state)) return null
 
@@ -85,11 +89,14 @@ export function MaintenanceOverlay() {
             <Lock className="mt-0.5 shrink-0 text-primary" size={22} aria-hidden="true" />
             <div className="min-w-0 text-sm text-foreground">
               <p id="maintenance-overlay-title" className="m-0 text-base font-semibold">
-                {t('maintenance.overlayActiveTitle', { defaultValue: 'Trang quản trị đang bảo trì' })}
+                {t('maintenance.overlayActiveTitle', {
+                  defaultValue: 'Trang quản trị đang bảo trì',
+                })}
               </p>
               <p className="mb-0 mt-2">
                 {t('maintenance.overlayActiveBody', {
-                  defaultValue: 'Mọi thay đổi tạm thời không lưu được. Nếu bạn vừa bấm lưu, thao tác đó CHƯA được ghi nhận — hãy làm lại sau khi mở khoá.',
+                  defaultValue:
+                    'Mọi thay đổi tạm thời không lưu được. Nếu bạn vừa bấm lưu, thao tác đó CHƯA được ghi nhận — hãy làm lại sau khi mở khoá.',
                 })}
               </p>
               <p className="mb-0 mt-2 text-muted-foreground">
@@ -112,19 +119,24 @@ export function MaintenanceOverlay() {
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        {isActive
-          ? <Lock className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
-          : <Clock3 className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />}
+        {isActive ? (
+          <Lock className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
+        ) : (
+          <Clock3 className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
+        )}
         <div className="min-w-0 text-sm text-foreground">
           <p className="m-0 font-semibold">
             {isActive
-              ? t('maintenance.bannerActive', { defaultValue: 'Bạn đang khoá trang quản trị để bảo trì.' })
+              ? t('maintenance.bannerActive', {
+                  defaultValue: 'Bạn đang khoá trang quản trị để bảo trì.',
+                })
               : t('maintenance.bannerUpcoming', { defaultValue: 'Trang quản trị sắp bảo trì.' })}
           </p>
           {!isActive ? (
             <p className="mb-0 mt-1">
               {t('maintenance.bannerUpcomingHint', {
-                defaultValue: 'Hãy lưu lại các thay đổi đang làm dở. Hiện tại bạn vẫn lưu được bình thường.',
+                defaultValue:
+                  'Hãy lưu lại các thay đổi đang làm dở. Hiện tại bạn vẫn lưu được bình thường.',
               })}
             </p>
           ) : null}

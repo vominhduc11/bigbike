@@ -2,9 +2,15 @@
 // Extracted from SettingsScreen.jsx to keep the screen file focused on behaviour
 // and to keep fast-refresh happy (non-component exports live in .js).
 import {
-  Store, Phone, Globe, Settings,
-  Image as ImageIcon, Users,
-  Bot, Landmark, ShieldCheck,
+  Store,
+  Phone,
+  Globe,
+  Settings,
+  Image as ImageIcon,
+  Users,
+  Bot,
+  Landmark,
+  ShieldCheck,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -18,10 +24,12 @@ export function displayValue(val) {
 }
 
 export function isSettingDirty(setting, drafts, draftsEn) {
-  const viDirty = drafts[setting.key] !== undefined
-    && displayValue(drafts[setting.key]) !== displayValue(setting.value)
-  const enDirty = draftsEn[setting.key] !== undefined
-    && displayValue(draftsEn[setting.key]) !== displayValue(setting.valueEn)
+  const viDirty =
+    drafts[setting.key] !== undefined &&
+    displayValue(drafts[setting.key]) !== displayValue(setting.value)
+  const enDirty =
+    draftsEn[setting.key] !== undefined &&
+    displayValue(draftsEn[setting.key]) !== displayValue(setting.valueEn)
   return viDirty || enDirty
 }
 
@@ -117,7 +125,12 @@ export function validateValue(key, value) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
   // Money / stock thresholds must be non-negative numbers.
-  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount') || k === 'ai_assistant_monthly_cost_warning_usd') {
+  if (
+    k.includes('threshold') ||
+    k.includes('amount') ||
+    k.includes('min_amount') ||
+    k === 'ai_assistant_monthly_cost_warning_usd'
+  ) {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
@@ -132,8 +145,11 @@ export function validateValue(key, value) {
         const seen = new Set()
         for (const item of items) {
           const locale = String(item?.locale || '').toLowerCase()
-          const phrase = String(item?.phrase || '').trim().toLowerCase()
-          if (!['vi', 'en'].includes(locale) || !phrase || !String(item?.expansion || '').trim()) return 'settings.assistantConfig.invalid'
+          const phrase = String(item?.phrase || '')
+            .trim()
+            .toLowerCase()
+          if (!['vi', 'en'].includes(locale) || !phrase || !String(item?.expansion || '').trim())
+            return 'settings.assistantConfig.invalid'
           const signature = `${locale}|${phrase}`
           if (seen.has(signature)) return 'settings.assistantConfig.duplicate'
           seen.add(signature)
@@ -143,10 +159,16 @@ export function validateValue(key, value) {
         const ids = new Set()
         for (const item of items) {
           const id = String(item?.id || '').trim()
-          if (!id || !String(item?.topic || '').trim()
-            || !Array.isArray(item?.triggersVi) || item.triggersVi.length === 0
-            || !Array.isArray(item?.triggersEn) || item.triggersEn.length === 0
-            || !String(item?.answerVi || '').trim() || !String(item?.answerEn || '').trim()) {
+          if (
+            !id ||
+            !String(item?.topic || '').trim() ||
+            !Array.isArray(item?.triggersVi) ||
+            item.triggersVi.length === 0 ||
+            !Array.isArray(item?.triggersEn) ||
+            item.triggersEn.length === 0 ||
+            !String(item?.answerVi || '').trim() ||
+            !String(item?.answerEn || '').trim()
+          ) {
             return 'settings.assistantConfig.invalid'
           }
           if (ids.has(id)) return 'settings.assistantConfig.duplicate'
@@ -169,9 +191,15 @@ const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'AI_ASSIST
 export function isTranslatableSetting(setting) {
   const group = (setting.settingGroup || '').toUpperCase()
   if (!TRANSLATABLE_GROUPS.has(group)) return false
-  if (setting.valueType === 'IMAGE_URL' || setting.valueType === 'BOOLEAN'
-      || setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL'
-      || setting.valueType === 'MONEY' || setting.valueType === 'JSON') return false
+  if (
+    setting.valueType === 'IMAGE_URL' ||
+    setting.valueType === 'BOOLEAN' ||
+    setting.valueType === 'INTEGER' ||
+    setting.valueType === 'DECIMAL' ||
+    setting.valueType === 'MONEY' ||
+    setting.valueType === 'JSON'
+  )
+    return false
   if (setting.valueType === 'HTML' || setting.valueType === 'LONG_TEXT') return true
   return inputTypeFor(setting.key) === 'text'
 }
@@ -200,8 +228,14 @@ export const MIN_ASSIGNMENT_ROLES = 1
 export const MAX_ASSIGNMENT_ROLES = 6
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
-  'PRODUCT_ASSIGN', 'REVIEW_MODERATION', 'AI_ASSISTANT',
+  'GENERAL',
+  'CONTACT',
+  'PAYMENT',
+  'PUBLIC_HERO',
+  'SEO',
+  'PRODUCT_ASSIGN',
+  'REVIEW_MODERATION',
+  'AI_ASSISTANT',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -303,7 +337,8 @@ export const KEY_LABELS_VI = {
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
   ai_assistant_monthly_cost_warning_usd: 'Ngưỡng cảnh báo chi phí tháng (USD)',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
-  ai_assistant_search_ai_interpretation_enabled: 'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
+  ai_assistant_search_ai_interpretation_enabled:
+    'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
   ai_assistant_greeting: 'Câu chào đầu khung chat',
   ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
   ai_assistant_abbreviations: 'Từ và cụm viết tắt',
@@ -342,7 +377,8 @@ export const KEY_LABELS_VI = {
   hero_news_title: 'Tiêu đề hero — Tin tức',
   // global hero defaults
   hero_default_bg_url: 'Ảnh nền mặc định hero (dùng khi trang không có ảnh riêng)',
-  hero_default_illustration_url: 'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
+  hero_default_illustration_url:
+    'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
   // product_assign: KHÔNG còn ở đây — nhóm này render qua AssignmentRolesScreen riêng
   // (xem HIDDEN_GROUPS), không qua SettingField/KEY_LABELS_VI chung.
 }
@@ -366,30 +402,29 @@ export const KEY_HINTS_VI = {
     'Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
   ai_assistant_greeting:
     'Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Trợ lý BigBike là trợ lý ảo AI.',
-  ai_assistant_quick_prompts:
-    'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
+  ai_assistant_quick_prompts: 'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
   ai_assistant_abbreviations:
     'Tối đa 100 mục. Hệ thống khớp nguyên cụm, ưu tiên cụm dài hơn và sẽ từ chối mục trùng hoặc va chạm tên hàng.',
   ai_assistant_answer_templates:
     'Tối đa 50 mẫu, mỗi mẫu phải có trigger và câu trả lời đầy đủ bằng tiếng Việt lẫn tiếng Anh.',
-  hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_default_bg_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
-  seo_home_title:                  'Nhập tiêu đề hiện trên Google và trong thẻ trình duyệt.',
-  seo_home_description:            'Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.',
-  seo_home_h1:                     'Nhập đúng một tiêu đề chính hiển thị trên trang chủ.',
+  hero_products_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_brands_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_news_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_default_bg_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_default_illustration_url: 'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
+  seo_home_title: 'Nhập tiêu đề hiện trên Google và trong thẻ trình duyệt.',
+  seo_home_description: 'Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.',
+  seo_home_h1: 'Nhập đúng một tiêu đề chính hiển thị trên trang chủ.',
 }
 
 // Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
 // Key không liệt kê sẽ dùng spec chung (chỉ nhắc khi quá nhỏ, không khóa tỉ lệ).
 export const KEY_RECO = {
-  hero_products_image_url:         IMAGE_RECO.bannerWide,
-  hero_brands_image_url:           IMAGE_RECO.bannerWide,
-  hero_news_image_url:             IMAGE_RECO.bannerWide,
-  hero_default_bg_url:             IMAGE_RECO.bannerWide,
-  hero_default_illustration_url:   IMAGE_RECO.illustration,
+  hero_products_image_url: IMAGE_RECO.bannerWide,
+  hero_brands_image_url: IMAGE_RECO.bannerWide,
+  hero_news_image_url: IMAGE_RECO.bannerWide,
+  hero_default_bg_url: IMAGE_RECO.bannerWide,
+  hero_default_illustration_url: IMAGE_RECO.illustration,
 }
 
 export const FALLBACK_META = { icon: Settings, labelKey: null }
@@ -450,11 +485,13 @@ export const SECTION_GUIDE = {
   },
   review_moderation_switch: {
     title: 'Bật kiểm duyệt tự động',
-    description: 'Khi bật, đánh giá mới của khách được máy lọc trước. Máy chỉ được chặn, không bao giờ tự đăng đánh giá lên web — phần duyệt vẫn do bạn bấm.',
+    description:
+      'Khi bật, đánh giá mới của khách được máy lọc trước. Máy chỉ được chặn, không bao giờ tự đăng đánh giá lên web — phần duyệt vẫn do bạn bấm.',
   },
   review_moderation_kinds: {
     title: 'Loại nội dung cần chặn',
-    description: 'Tắt một loại nghĩa là không chặn vì loại đó nữa; hệ thống vẫn ghi chú lại để bạn tự xem.',
+    description:
+      'Tắt một loại nghĩa là không chặn vì loại đó nữa; hệ thống vẫn ghi chú lại để bạn tự xem.',
   },
   review_moderation_words: {
     title: 'Danh sách từ cấm của shop',
@@ -462,7 +499,8 @@ export const SECTION_GUIDE = {
   },
   ai_assistant_switch: {
     title: 'Vận hành và ngân sách của Trợ lý BigBike',
-    description: 'Bật/tắt trợ lý và giới hạn số lượt có dùng AI trong ngày. Khi không khả dụng, widget tự quay về bảng liên hệ.',
+    description:
+      'Bật/tắt trợ lý và giới hạn số lượt có dùng AI trong ngày. Khi không khả dụng, widget tự quay về bảng liên hệ.',
   },
   ai_assistant_copy: {
     title: 'Nội dung đầu khung chat',
@@ -474,51 +512,54 @@ export const SECTION_GUIDE = {
   },
   ai_assistant_templates: {
     title: 'Câu trả lời mẫu an toàn',
-    description: 'Câu mẫu song ngữ cho các chủ đề ổn định; máy chủ vẫn kiểm tra an toàn trước khi lưu.',
+    description:
+      'Câu mẫu song ngữ cho các chủ đề ổn định; máy chủ vẫn kiểm tra an toàn trước khi lưu.',
   },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
 // Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
 export const KEY_GUIDE = {
-  site_name:             ['general_brand', 'tên hiển thị — SEO trang chủ/bài viết + khối liên hệ trang sản phẩm'],
+  site_name: [
+    'general_brand',
+    'tên hiển thị — SEO trang chủ/bài viết + khối liên hệ trang sản phẩm',
+  ],
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode.
-  footer_description:    ['general_brand', 'đoạn mô tả — panel thông tin shop trên header mobile'],
+  footer_description: ['general_brand', 'đoạn mô tả — panel thông tin shop trên header mobile'],
 
-  contact_email:         ['contact_main', 'email liên hệ'],
-  contact_address:       ['contact_main', 'địa chỉ + bản đồ trang Liên hệ'],
-  hotline:               ['contact_main', 'hotline chính (header — footer đã hardcode riêng)'],
-  hotline_2:             ['contact_main', 'hotline phụ'],
-  hotline_3:             ['contact_main', 'hotline thứ ba'],
+  contact_email: ['contact_main', 'email liên hệ'],
+  contact_address: ['contact_main', 'địa chỉ + bản đồ trang Liên hệ'],
+  hotline: ['contact_main', 'hotline chính (header — footer đã hardcode riêng)'],
+  hotline_2: ['contact_main', 'hotline phụ'],
+  hotline_3: ['contact_main', 'hotline thứ ba'],
   opening_hours_weekday: ['contact_main', 'giờ mở cửa T2–T6 (header)'],
   opening_hours_weekend: ['contact_main', 'giờ mở cửa T7/CN'],
   opening_hours_holiday: ['contact_main', 'lịch nghỉ lễ/Tết'],
-  facebook_url:          ['contact_social', 'link Facebook (trang Liên hệ — footer đã hardcode riêng)'],
-  messenger_url:         ['contact_social', 'nút Messenger (chat nổi)'],
-  messenger_display:     ['contact_social', 'chữ hiển thị dòng Messenger'],
-  zalo_url:              ['contact_social', 'nút Zalo (chat nổi)'],
-  zalo_display:          ['contact_social', 'chữ hiển thị dòng Zalo'],
-  youtube_url:           ['contact_social', 'link YouTube (trang Liên hệ — footer đã hardcode riêng)'],
-  tiktok_url:            ['contact_social', 'link TikTok (trang Liên hệ — footer đã hardcode riêng)'],
-  instagram_url:         ['contact_social', 'link Instagram (trang Liên hệ — footer đã hardcode riêng)'],
-  shopee_url:            ['contact_social', 'link Shopee (trang Liên hệ — footer đã hardcode riêng)'],
+  facebook_url: ['contact_social', 'link Facebook (trang Liên hệ — footer đã hardcode riêng)'],
+  messenger_url: ['contact_social', 'nút Messenger (chat nổi)'],
+  messenger_display: ['contact_social', 'chữ hiển thị dòng Messenger'],
+  zalo_url: ['contact_social', 'nút Zalo (chat nổi)'],
+  zalo_display: ['contact_social', 'chữ hiển thị dòng Zalo'],
+  youtube_url: ['contact_social', 'link YouTube (trang Liên hệ — footer đã hardcode riêng)'],
+  tiktok_url: ['contact_social', 'link TikTok (trang Liên hệ — footer đã hardcode riêng)'],
+  instagram_url: ['contact_social', 'link Instagram (trang Liên hệ — footer đã hardcode riêng)'],
+  shopee_url: ['contact_social', 'link Shopee (trang Liên hệ — footer đã hardcode riêng)'],
 
-  bank_account_holder:   ['payment_bank', 'tên chủ tài khoản'],
-  bank_account_number:   ['payment_bank', 'số tài khoản'],
-  bank_name:             ['payment_bank', 'tên ngân hàng'],
-  bank_branch:           ['payment_bank', 'chi nhánh'],
+  bank_account_holder: ['payment_bank', 'tên chủ tài khoản'],
+  bank_account_number: ['payment_bank', 'số tài khoản'],
+  bank_name: ['payment_bank', 'tên ngân hàng'],
+  bank_branch: ['payment_bank', 'chi nhánh'],
 
-
-  hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
-  hero_products_image_alt:        ['hero_products', 'mô tả ảnh (SEO)'],
-  hero_products_title:            ['hero_products', 'tiêu đề trên banner'],
-  hero_brands_image_url:          ['hero_brands', 'ảnh nền banner (desktop)'],
-  hero_brands_image_alt:          ['hero_brands', 'mô tả ảnh (SEO)'],
-  hero_brands_title:              ['hero_brands', 'tiêu đề trên banner'],
-  hero_news_image_url:            ['hero_news', 'ảnh nền banner (desktop)'],
-  hero_news_image_alt:            ['hero_news', 'mô tả ảnh (SEO)'],
-  hero_news_title:                ['hero_news', 'tiêu đề trên banner'],
-  hero_default_bg_url:           ['hero_default', 'ảnh nền mặc định'],
+  hero_products_image_url: ['hero_products', 'ảnh nền banner (desktop)'],
+  hero_products_image_alt: ['hero_products', 'mô tả ảnh (SEO)'],
+  hero_products_title: ['hero_products', 'tiêu đề trên banner'],
+  hero_brands_image_url: ['hero_brands', 'ảnh nền banner (desktop)'],
+  hero_brands_image_alt: ['hero_brands', 'mô tả ảnh (SEO)'],
+  hero_brands_title: ['hero_brands', 'tiêu đề trên banner'],
+  hero_news_image_url: ['hero_news', 'ảnh nền banner (desktop)'],
+  hero_news_image_alt: ['hero_news', 'mô tả ảnh (SEO)'],
+  hero_news_title: ['hero_news', 'tiêu đề trên banner'],
+  hero_default_bg_url: ['hero_default', 'ảnh nền mặc định'],
   hero_default_illustration_url: ['hero_default', 'ảnh minh hoạ mặc định'],
 
   seo_home_title: ['seo_home', 'tiêu đề SEO trang chủ'],
@@ -530,22 +571,43 @@ export const KEY_GUIDE = {
 
   // review_moderation: tách 2 khối để công tắc tổng không nằm lẫn với 4 loại vi phạm,
   // và danh sách từ cấm (áp dụng độc lập với 4 loại đó) đứng riêng một khối.
-  review_moderation_enabled:            ['review_moderation_switch', 'bật/tắt toàn bộ'],
-  review_moderation_block_profanity:    ['review_moderation_kinds', 'chửi tục, thô tục → Thùng rác'],
-  review_moderation_block_harassment:   ['review_moderation_kinds', 'xúc phạm, công kích, kỳ thị → Thùng rác'],
-  review_moderation_block_advertising:  ['review_moderation_kinds', 'quảng cáo, link, số điện thoại → Spam'],
-  review_moderation_block_sensitive:    ['review_moderation_kinds', '18+, chính trị, nội dung lạc đề → Thùng rác'],
-  review_moderation_daily_limit:        ['review_moderation_switch', 'trần chi phí mỗi ngày'],
-  review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
-  ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
-  ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
-  ai_assistant_monthly_cost_warning_usd: ['ai_assistant_switch', 'ngưỡng cảnh báo tổng chi phí tháng bằng USD; 0 để tắt'],
-  ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
-  ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
-  ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
-  ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
-  ai_assistant_abbreviations:           ['ai_assistant_language', 'danh sách từ/cụm viết tắt do chủ shop quản lý'],
-  ai_assistant_answer_templates:        ['ai_assistant_templates', 'danh sách câu trả lời mẫu song ngữ do chủ shop quản lý'],
+  review_moderation_enabled: ['review_moderation_switch', 'bật/tắt toàn bộ'],
+  review_moderation_block_profanity: ['review_moderation_kinds', 'chửi tục, thô tục → Thùng rác'],
+  review_moderation_block_harassment: [
+    'review_moderation_kinds',
+    'xúc phạm, công kích, kỳ thị → Thùng rác',
+  ],
+  review_moderation_block_advertising: [
+    'review_moderation_kinds',
+    'quảng cáo, link, số điện thoại → Spam',
+  ],
+  review_moderation_block_sensitive: [
+    'review_moderation_kinds',
+    '18+, chính trị, nội dung lạc đề → Thùng rác',
+  ],
+  review_moderation_daily_limit: ['review_moderation_switch', 'trần chi phí mỗi ngày'],
+  review_moderation_banned_words: ['review_moderation_words', 'danh sách từ cấm tự quản'],
+  ai_assistant_enabled: ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
+  ai_assistant_daily_limit: ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_monthly_cost_warning_usd: [
+    'ai_assistant_switch',
+    'ngưỡng cảnh báo tổng chi phí tháng bằng USD; 0 để tắt',
+  ],
+  ai_assistant_recent_turn_pairs: ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
+  ai_assistant_search_ai_interpretation_enabled: [
+    'ai_assistant_switch',
+    'chuyển giữa cách hiểu tìm hàng mới và cũ',
+  ],
+  ai_assistant_greeting: ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
+  ai_assistant_quick_prompts: ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
+  ai_assistant_abbreviations: [
+    'ai_assistant_language',
+    'danh sách từ/cụm viết tắt do chủ shop quản lý',
+  ],
+  ai_assistant_answer_templates: [
+    'ai_assistant_templates',
+    'danh sách câu trả lời mẫu song ngữ do chủ shop quản lý',
+  ],
 }
 
 export function groupBySection(items) {
@@ -555,8 +617,13 @@ export function groupBySection(items) {
     if (!map.has(sec)) map.set(sec, [])
     map.get(sec).push(s)
   }
-  const idx = (s) => { const i = SECTION_ORDER.indexOf(s); return i === -1 ? 999 : i }
-  return [...map.keys()].sort((a, b) => idx(a) - idx(b)).map((sec) => ({ sec, fields: map.get(sec) }))
+  const idx = (s) => {
+    const i = SECTION_ORDER.indexOf(s)
+    return i === -1 ? 999 : i
+  }
+  return [...map.keys()]
+    .sort((a, b) => idx(a) - idx(b))
+    .map((sec) => ({ sec, fields: map.get(sec) }))
 }
 
 export function sectionDescription(sec, t) {
@@ -580,7 +647,9 @@ export function getAutosaveKey() {
 export function saveFormToStorage(key, form) {
   try {
     localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
-  } catch { /* quota */ }
+  } catch {
+    /* quota */
+  }
 }
 
 export function loadFormFromStorage(key) {
@@ -593,9 +662,15 @@ export function loadFormFromStorage(key) {
       return null
     }
     return parsed
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function clearFormFromStorage(key) {
-  try { localStorage.removeItem(key) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
 }

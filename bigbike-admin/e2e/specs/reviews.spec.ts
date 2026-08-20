@@ -1,11 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import type { Locator, Page, Route } from '@playwright/test'
 import { test, expect, expectRuntimeClean } from '../fixtures/admin-test'
-import {
-  expectNoHorizontalOverflow,
-  navigateSpa,
-  waitForScreenReady,
-} from '../utils/quality'
+import { expectNoHorizontalOverflow, navigateSpa, waitForScreenReady } from '../utils/quality'
 import { VIEWPORTS } from '../utils/viewports'
 
 type ReviewStatus = 'APPROVED' | 'PENDING' | 'SPAM' | 'TRASH'
@@ -42,8 +38,9 @@ type MockReviewState = {
   conflictNextStatus: boolean
 }
 
-const REVIEW_VIEWPORTS = ['1440x900', '768x1024', '430x932', '390x844', '375x812']
-  .map((name) => VIEWPORTS.find((viewport) => viewport.name === name)!)
+const REVIEW_VIEWPORTS = ['1440x900', '768x1024', '430x932', '390x844', '375x812'].map((name) =>
+  VIEWPORTS.find((viewport) => viewport.name === name)!,
+)
 
 const BASE_REVIEWS: MockReview[] = [
   {
@@ -345,7 +342,11 @@ async function installReviewApi(page: Page, state: MockReviewState) {
 
     if (request.method() === 'PATCH' && suffix === `/${reviewId}/status`) {
       const body = request.postDataJSON() as { status: ReviewStatus; expectedVersion: number }
-      state.statusPatches.push({ id: reviewId, status: body.status, expectedVersion: body.expectedVersion })
+      state.statusPatches.push({
+        id: reviewId,
+        status: body.status,
+        expectedVersion: body.expectedVersion,
+      })
       if (state.conflictNextStatus) {
         state.conflictNextStatus = false
         review.version += 1
@@ -420,13 +421,18 @@ function rowFor(page: Page, author: string) {
 }
 
 test.describe('Reviews admin audit', () => {
-  test('uses privacy-safe fixtures and sends the exact 9-level half-star filter', async ({ adminPage, collect }) => {
+  test('uses privacy-safe fixtures and sends the exact 9-level half-star filter', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     await openReviews(adminPage)
 
     await expect(rowFor(adminPage, 'E2E_REVIEW_HALF_STAR')).toBeVisible()
-    await expect(adminPage.getByText('e2e_review_half_star@example.invalid', { exact: true })).toHaveCount(0)
+    await expect(
+      adminPage.getByText('e2e_review_half_star@example.invalid', { exact: true }),
+    ).toHaveCount(0)
     const ratingFilter = adminPage.getByRole('combobox', { name: 'Số sao', exact: true })
     await ratingFilter.click()
     await expect(adminPage.getByRole('option')).toHaveCount(10)
@@ -437,14 +443,21 @@ test.describe('Reviews admin audit', () => {
     await expect.poll(() => new URL(adminPage.url()).searchParams.get('rating')).toBe('4.5')
     await expect(rowFor(adminPage, 'E2E_REVIEW_HALF_STAR')).toBeVisible()
     await expect(rowFor(adminPage, 'E2E_REVIEW_APPROVED')).toHaveCount(0)
-    expect(state.listRequests.some((query) => new URLSearchParams(query).get('rating') === '4.5')).toBe(true)
+    expect(
+      state.listRequests.some((query) => new URLSearchParams(query).get('rating') === '4.5'),
+    ).toBe(true)
 
     await navigateSpa(adminPage, '/admin/reviews/91001')
-    await expect(adminPage.getByText('e2e_review_half_star@example.invalid', { exact: false })).toBeVisible()
+    await expect(
+      adminPage.getByText('e2e_review_half_star@example.invalid', { exact: false }),
+    ).toBeVisible()
     expectRuntimeClean(collect)
   })
 
-  test('reviews.read without reviews.write is read-only on list and detail', async ({ adminPage, collect }) => {
+  test('reviews.read without reviews.write is read-only on list and detail', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     await adminPage.route('**/api/v1/auth/me', async (route) => {
@@ -461,24 +474,37 @@ test.describe('Reviews admin audit', () => {
 
     await adminPage.goto('/admin/reviews', { waitUntil: 'domcontentloaded' })
     await waitForScreenReady(adminPage)
-    await expect(adminPage.getByRole('status').filter({ hasText: 'Bạn có quyền xem đánh giá' })).toBeVisible()
+    await expect(
+      adminPage.getByRole('status').filter({ hasText: 'Bạn có quyền xem đánh giá' }),
+    ).toBeVisible()
     await expect(adminPage.getByRole('button', { name: 'Duyệt', exact: true })).toHaveCount(0)
     await expect(adminPage.getByRole('button', { name: 'Spam', exact: true })).toHaveCount(0)
-    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(0)
+    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(
+      0,
+    )
     await expect(adminPage.getByRole('checkbox')).toHaveCount(0)
 
     await navigateSpa(adminPage, '/admin/reviews/91001')
-    await expect(adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true })).toBeVisible()
-    await expect(adminPage.getByRole('status').filter({ hasText: 'Bạn chỉ có quyền xem đánh giá' })).toBeVisible()
+    await expect(
+      adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true }),
+    ).toBeVisible()
+    await expect(
+      adminPage.getByRole('status').filter({ hasText: 'Bạn chỉ có quyền xem đánh giá' }),
+    ).toBeVisible()
     await expect(adminPage.getByRole('button', { name: 'Duyệt', exact: true })).toHaveCount(0)
     await expect(adminPage.getByRole('button', { name: 'Spam', exact: true })).toHaveCount(0)
-    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(0)
+    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(
+      0,
+    )
     expect(state.statusPatches).toHaveLength(0)
     expect(state.deletes).toHaveLength(0)
     expectRuntimeClean(collect)
   })
 
-  test('approve, spam, trash and permanent delete honor confirmation and rendered versions', async ({ adminPage, collect }) => {
+  test('approve, spam, trash and permanent delete honor confirmation and rendered versions', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     await openReviews(adminPage)
@@ -520,7 +546,10 @@ test.describe('Reviews admin audit', () => {
     expectRuntimeClean(collect)
   })
 
-  test('bulk moderation sends distinct versioned items and explains every skipped review', async ({ adminPage, collect }) => {
+  test('bulk moderation sends distinct versioned items and explains every skipped review', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     await openReviews(adminPage)
@@ -561,7 +590,10 @@ test.describe('Reviews admin audit', () => {
     expectRuntimeClean(collect)
   })
 
-  test('wildcard permission without the exact SUPER_ADMIN role cannot hard-delete Trash', async ({ adminPage, collect }) => {
+  test('wildcard permission without the exact SUPER_ADMIN role cannot hard-delete Trash', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     await adminPage.route('**/api/v1/auth/me', async (route) => {
@@ -580,17 +612,30 @@ test.describe('Reviews admin audit', () => {
     await waitForScreenReady(adminPage)
     const trashRow = rowFor(adminPage, 'E2E_REVIEW_TRASH')
     await expect(trashRow.getByRole('button', { name: 'Khôi phục', exact: true })).toBeVisible()
-    await expect(trashRow.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(0)
+    await expect(trashRow.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(
+      0,
+    )
 
     await navigateSpa(adminPage, '/admin/reviews/91005')
-    await expect(adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true })).toBeVisible()
-    await expect(adminPage.getByRole('button', { name: 'Khôi phục', exact: true }).first()).toBeVisible()
-    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(0)
-    await expect(adminPage.getByText('Chỉ Super Admin được xóa vĩnh viễn đánh giá trong thùng rác.').first()).toBeVisible()
+    await expect(
+      adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true }),
+    ).toBeVisible()
+    await expect(
+      adminPage.getByRole('button', { name: 'Khôi phục', exact: true }).first(),
+    ).toBeVisible()
+    await expect(adminPage.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true })).toHaveCount(
+      0,
+    )
+    await expect(
+      adminPage.getByText('Chỉ Super Admin được xóa vĩnh viễn đánh giá trong thùng rác.').first(),
+    ).toBeVisible()
     expectRuntimeClean(collect)
   })
 
-  test('a stale status write reloads the latest version before the next action', async ({ adminPage, collect }) => {
+  test('a stale status write reloads the latest version before the next action', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     state.conflictNextStatus = true
     await installReviewApi(adminPage, state)
@@ -601,21 +646,26 @@ test.describe('Reviews admin audit', () => {
     await confirmDialog(adminPage, 'Duyệt công khai', 'Duyệt')
 
     await expect(adminPage.getByText(/Đánh giá đã được người khác cập nhật/)).toBeVisible()
-    await expect.poll(() => state.statusPatches).toEqual([
-      { id: 91001, status: 'APPROVED', expectedVersion: 3 },
-    ])
+    await expect
+      .poll(() => state.statusPatches)
+      .toEqual([{ id: 91001, status: 'APPROVED', expectedVersion: 3 }])
     await expect(halfStarRow.getByRole('button', { name: 'Duyệt', exact: true })).toBeEnabled()
 
     await halfStarRow.getByRole('button', { name: 'Duyệt', exact: true }).click()
     await confirmDialog(adminPage, 'Duyệt công khai', 'Duyệt')
-    await expect.poll(() => state.statusPatches).toEqual([
-      { id: 91001, status: 'APPROVED', expectedVersion: 3 },
-      { id: 91001, status: 'APPROVED', expectedVersion: 4 },
-    ])
+    await expect
+      .poll(() => state.statusPatches)
+      .toEqual([
+        { id: 91001, status: 'APPROVED', expectedVersion: 3 },
+        { id: 91001, status: 'APPROVED', expectedVersion: 4 },
+      ])
     expectRuntimeClean(collect, { allowApi: true })
   })
 
-  test('empty, summary error, list error and detail 404 stay distinct and retryable', async ({ adminPage, collect }) => {
+  test('empty, summary error, list error and detail 404 stay distinct and retryable', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     state.reviews = []
     await installReviewApi(adminPage, state)
@@ -628,7 +678,10 @@ test.describe('Reviews admin audit', () => {
     await expect(adminPage.getByText('Không thể tải số liệu tổng quan.').last()).toBeVisible()
     await expect(adminPage.getByRole('button', { name: /đánh giá chờ duyệt/i })).toHaveCount(0)
     state.summaryError = false
-    await adminPage.locator('[aria-labelledby="review-public-score"]').getByRole('button', { name: 'Thử lại', exact: true }).click()
+    await adminPage
+      .locator('[aria-labelledby="review-public-score"]')
+      .getByRole('button', { name: 'Thử lại', exact: true })
+      .click()
     await expect(adminPage.getByRole('button', { name: /đánh giá chờ duyệt/i })).toBeVisible()
 
     state.listError = true
@@ -644,7 +697,10 @@ test.describe('Reviews admin audit', () => {
     expectRuntimeClean(collect, { allowApi: true })
   })
 
-  test('list and detail do not overflow at the standard desktop, tablet and mobile viewports', async ({ adminPage, collect }) => {
+  test('list and detail do not overflow at the standard desktop, tablet and mobile viewports', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installReviewApi(adminPage, state)
     const screenshotDir = 'e2e/.artifacts/review-audit'
@@ -653,7 +709,9 @@ test.describe('Reviews admin audit', () => {
     for (const viewport of REVIEW_VIEWPORTS) {
       await adminPage.setViewportSize(viewport)
       await navigateSpa(adminPage, '/admin/reviews')
-      await expect(adminPage.getByRole('heading', { name: 'Đánh giá sản phẩm', exact: true })).toBeVisible()
+      await expect(
+        adminPage.getByRole('heading', { name: 'Đánh giá sản phẩm', exact: true }),
+      ).toBeVisible()
       if (viewport.width < 640) {
         await expect(adminPage.locator('.mobile-card-list')).toBeVisible()
       } else {
@@ -666,7 +724,9 @@ test.describe('Reviews admin audit', () => {
       })
 
       await navigateSpa(adminPage, '/admin/reviews/91001')
-      await expect(adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true })).toBeVisible()
+      await expect(
+        adminPage.getByRole('heading', { name: 'Chi tiết đánh giá', exact: true }),
+      ).toBeVisible()
       await expectNoHorizontalOverflow(adminPage, `review detail @ ${viewport.name}`)
       await adminPage.screenshot({
         path: `${screenshotDir}/review-detail-${viewport.width}.png`,

@@ -6,16 +6,16 @@ const TONE_CLASSES = {
   neutral: 'bg-surface-muted text-foreground',
   success: 'bg-success-bg text-success',
   warning: 'bg-warning-bg text-warning',
-  danger:  'bg-danger-bg text-danger',
-  info:    'bg-info-bg text-info',
+  danger: 'bg-danger-bg text-danger',
+  info: 'bg-info-bg text-info',
 }
 
 const TONE_ICONS = {
   neutral: Info,
   success: CheckCircle2,
   warning: AlertTriangle,
-  danger:  XCircle,
-  info:    Info,
+  danger: XCircle,
+  info: Info,
 }
 
 export function StatePanel({
@@ -29,7 +29,11 @@ export function StatePanel({
   const ToneIcon = TONE_ICONS[tone] ?? TONE_ICONS.neutral
   return (
     <section
-      className={cn('flex flex-col items-center justify-center gap-3 rounded-md px-6 py-10 text-center', TONE_CLASSES[tone] ?? TONE_CLASSES.neutral, className)}
+      className={cn(
+        'flex flex-col items-center justify-center gap-3 rounded-md px-6 py-10 text-center',
+        TONE_CLASSES[tone] ?? TONE_CLASSES.neutral,
+        className,
+      )}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <ToneIcon className="h-6 w-6" aria-hidden="true" />

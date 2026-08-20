@@ -9,7 +9,9 @@ export function ThemeToggle() {
   const isDark = theme === 'dark'
 
   return (
-    <Button variant="secondary" className="theme-toggle size-11"
+    <Button
+      variant="secondary"
+      className="theme-toggle size-11"
       type="button"
       onClick={toggleTheme}
       aria-label={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}

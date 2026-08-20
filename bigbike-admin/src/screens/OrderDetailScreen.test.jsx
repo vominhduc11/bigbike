@@ -55,19 +55,23 @@ vi.mock('../lib/useAdminPresence', () => ({
 }))
 
 vi.mock('../lib/formatters', () => ({
-  formatCurrencyVnd: (value) => value == null ? '—' : `${value} ₫`,
-  formatDateTime: (value) => value ? `date:${value}` : '—',
-  formatText: (value, fallback = '—') => (
-    typeof value === 'string' && value.trim() ? value.trim() : fallback
-  ),
+  formatCurrencyVnd: (value) => (value == null ? '—' : `${value} ₫`),
+  formatDateTime: (value) => (value ? `date:${value}` : '—'),
+  formatText: (value, fallback = '—') =>
+    typeof value === 'string' && value.trim() ? value.trim() : fallback,
 }))
 
 vi.mock('../components/layout', () => ({
-  Modal: ({ open, title, children }) => open
-    ? <section role="dialog" aria-label={title}>{children}</section>
-    : null,
+  Modal: ({ open, title, children }) =>
+    open ? (
+      <section role="dialog" aria-label={title}>
+        {children}
+      </section>
+    ) : null,
   StickyActionBar: ({ ariaLabel, children }) => (
-    <div role="toolbar" aria-label={ariaLabel}>{children}</div>
+    <div role="toolbar" aria-label={ariaLabel}>
+      {children}
+    </div>
   ),
 }))
 
@@ -94,15 +98,17 @@ const baseOrder = {
   customerNote: '',
   shippingAddress: baseAddress,
   billingAddress: { ...baseAddress },
-  items: [{
-    id: 'item-1',
-    productName: 'Mũ bảo hiểm LS2',
-    variantName: 'Đen / L',
-    unitPrice: 1000000,
-    quantity: 1,
-    lineTotal: 1000000,
-    productThumbnailUrl: null,
-  }],
+  items: [
+    {
+      id: 'item-1',
+      productName: 'Mũ bảo hiểm LS2',
+      variantName: 'Đen / L',
+      unitPrice: 1000000,
+      quantity: 1,
+      lineTotal: 1000000,
+      productThumbnailUrl: null,
+    },
+  ],
   payments: [],
   subtotal: 1000000,
   shippingFee: 30000,
@@ -189,7 +195,9 @@ describe('OrderDetailScreen', () => {
     [404, 'orders.detail.notFound'],
     [403, 'orders.detail.loadForbidden'],
   ])('phân biệt lỗi tải ban đầu HTTP %s', async (status, expectedTitle) => {
-    mocks.fetchOrderDetail.mockRejectedValue(Object.assign(new Error('Backend message'), { status }))
+    mocks.fetchOrderDetail.mockRejectedValue(
+      Object.assign(new Error('Backend message'), { status }),
+    )
     const user = userEvent.setup()
     const { navigate } = renderScreen()
 
@@ -213,12 +221,16 @@ describe('OrderDetailScreen', () => {
 
     expect(await screen.findByText('orders.detail.refreshError')).toBeInTheDocument()
     expect(screen.getByText('BB-1001')).toBeInTheDocument()
-    for (const button of screen.getAllByRole('button', { name: 'orders.detail.actionProcessing' })) {
+    for (const button of screen.getAllByRole('button', {
+      name: 'orders.detail.actionProcessing',
+    })) {
       expect(button).toBeDisabled()
     }
 
     await user.click(screen.getByRole('button', { name: 'common.retry' }))
-    await waitFor(() => expect(screen.queryByText('orders.detail.refreshError')).not.toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.queryByText('orders.detail.refreshError')).not.toBeInTheDocument(),
+    )
     expect(mocks.fetchOrderDetail).toHaveBeenCalledTimes(3)
   })
 
@@ -229,8 +241,12 @@ describe('OrderDetailScreen', () => {
     expect(screen.getByText('readOnly.prefix')).toBeInTheDocument()
     expect(screen.getByText('orders.readOnlyWarning')).toBeInTheDocument()
     expect(mocks.fetchOrderAllowedTransitions).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionProcessing' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionCancelled' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionProcessing' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionCancelled' }),
+    ).not.toBeInTheDocument()
   })
 
   it('chỉ hiện chuyển trạng thái backend cho phép và gửi đúng trạng thái được chọn', async () => {
@@ -242,7 +258,9 @@ describe('OrderDetailScreen', () => {
     })
     expect(processingButtons).toHaveLength(2)
     expect(screen.getAllByRole('button', { name: 'orders.detail.actionCancelled' })).toHaveLength(2)
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionCompleted' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionCompleted' }),
+    ).not.toBeInTheDocument()
 
     await user.click(processingButtons[0])
 
@@ -261,9 +279,7 @@ describe('OrderDetailScreen', () => {
     mocks.fetchOrderAllowedTransitions
       .mockResolvedValueOnce({ transitions: ['PROCESSING', 'CANCELLED'] })
       .mockResolvedValue({ transitions: ['COMPLETED', 'CANCELLED'] })
-    mocks.updateOrderStatus.mockRejectedValue(
-      Object.assign(new Error('Conflict'), { status: 409 }),
-    )
+    mocks.updateOrderStatus.mockRejectedValue(Object.assign(new Error('Conflict'), { status: 409 }))
     renderScreen()
 
     const processingButtons = await screen.findAllByRole('button', {
@@ -271,10 +287,14 @@ describe('OrderDetailScreen', () => {
     })
     await user.click(processingButtons[0])
 
-    await waitFor(() => expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorConflict'))
-    expect(await screen.findAllByRole('button', {
-      name: 'orders.detail.actionCompleted',
-    })).toHaveLength(2)
+    await waitFor(() =>
+      expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorConflict'),
+    )
+    expect(
+      await screen.findAllByRole('button', {
+        name: 'orders.detail.actionCompleted',
+      }),
+    ).toHaveLength(2)
     expect(mocks.fetchOrderDetail.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
@@ -290,7 +310,9 @@ describe('OrderDetailScreen', () => {
     })
     await user.click(processingButtons[0])
 
-    await waitFor(() => expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorNotFound'))
+    await waitFor(() =>
+      expect(mocks.toast.error).toHaveBeenCalledWith('orders.detail.errorNotFound'),
+    )
     expect(navigate).toHaveBeenCalledWith('/admin/orders')
   })
 
@@ -306,12 +328,16 @@ describe('OrderDetailScreen', () => {
     renderScreen()
 
     expect(await screen.findByText('orders.detail.transitionsLoadError')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionCancelled' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionCancelled' }),
+    ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'common.retry' }))
 
-    expect(await screen.findAllByRole('button', {
-      name: 'orders.detail.actionProcessing',
-    })).toHaveLength(2)
+    expect(
+      await screen.findAllByRole('button', {
+        name: 'orders.detail.actionProcessing',
+      }),
+    ).toHaveLength(2)
     expect(mocks.fetchOrderAllowedTransitions).toHaveBeenCalledTimes(2)
   })
 
@@ -331,12 +357,16 @@ describe('OrderDetailScreen', () => {
     })
     await user.click(cancelButtons[0])
 
-    expect(screen.getByRole('dialog', {
-      name: 'orders.detail.confirmCancelTitle',
-    })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', {
-      name: 'orders.detail.confirmCancelTitle',
-    }))
+    expect(
+      screen.getByRole('dialog', {
+        name: 'orders.detail.confirmCancelTitle',
+      }),
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'orders.detail.confirmCancelTitle',
+      }),
+    )
     expect(await screen.findByRole('alert')).toHaveTextContent('orders.detail.reasonRequired')
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled()
 
@@ -344,9 +374,11 @@ describe('OrderDetailScreen', () => {
       screen.getByLabelText(/orders\.detail\.reasonLabel/),
       '  Khách yêu cầu đổi sản phẩm  ',
     )
-    await user.click(screen.getByRole('button', {
-      name: 'orders.detail.confirmCancelTitle',
-    }))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'orders.detail.confirmCancelTitle',
+      }),
+    )
 
     await waitFor(() => {
       expect(mocks.updateOrderStatus).toHaveBeenCalledWith(
@@ -369,9 +401,15 @@ describe('OrderDetailScreen', () => {
     renderScreen()
 
     expect(await screen.findByText('orders.detail.noActionQuiet')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionProcessing' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionCompleted' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.detail.actionCancelled' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionProcessing' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionCompleted' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'orders.detail.actionCancelled' }),
+    ).not.toBeInTheDocument()
   })
 
   it('hiển thị nhật ký và dùng nhãn an toàn cho hành động hoặc người thực hiện chưa biết', async () => {
@@ -406,11 +444,13 @@ describe('OrderDetailScreen', () => {
   it('cho phép thử lại khi nhật ký đơn hàng tải lỗi', async () => {
     mocks.fetchOrderAuditTrail
       .mockRejectedValueOnce(new Error('audit network down'))
-      .mockResolvedValueOnce([{
-        id: 'audit-1',
-        action: 'ORDER_STATUS_UPDATED',
-        actorType: 'ADMIN',
-      }])
+      .mockResolvedValueOnce([
+        {
+          id: 'audit-1',
+          action: 'ORDER_STATUS_UPDATED',
+          actorType: 'ADMIN',
+        },
+      ])
     const user = userEvent.setup()
     renderScreen()
 
@@ -444,12 +484,17 @@ describe('OrderDetailScreen', () => {
     renderScreen()
 
     expect(await screen.findByText('0909999999')).toBeInTheDocument()
-    expect(screen.getByText('12 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh')).toBeInTheDocument()
-    expect(screen.getByText((_, element) => (
-      element.tagName === 'DD'
-      && element.textContent.includes('Trần Thị B')
-      && element.textContent.includes('25 Lê Lợi, Quận Hải Châu, Đà Nẵng')
-    ))).toBeInTheDocument()
+    expect(
+      screen.getByText('12 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element.tagName === 'DD' &&
+          element.textContent.includes('Trần Thị B') &&
+          element.textContent.includes('25 Lê Lợi, Quận Hải Châu, Đà Nẵng'),
+      ),
+    ).toBeInTheDocument()
   })
 
   it('không lộ enum thanh toán lạ và có giá trị dự phòng khi dữ liệu thanh toán thiếu', async () => {
@@ -487,13 +532,15 @@ describe('OrderDetailScreen', () => {
     mocks.fetchOrderDetail.mockResolvedValue({
       item: {
         ...baseOrder,
-        payments: [{
-          id: 'payment-succeeded',
-          paymentMethod: 'BANK_TRANSFER',
-          status: 'SUCCEEDED',
-          amount: 1030000,
-          paidAt: '2026-07-25T02:00:00Z',
-        }],
+        payments: [
+          {
+            id: 'payment-succeeded',
+            paymentMethod: 'BANK_TRANSFER',
+            status: 'SUCCEEDED',
+            amount: 1030000,
+            paidAt: '2026-07-25T02:00:00Z',
+          },
+        ],
       },
     })
 

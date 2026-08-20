@@ -21,11 +21,24 @@ function emptyRole() {
 
 // Một vai trò = một nhóm thu gọn (chống ngợp khi có tới 6 vai trò cùng lúc).
 // Tên vai trò bắt buộc — hiện lỗi nội tuyến + dấu cảnh báo trên tiêu đề khi thiếu.
-function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate, onRemove, onTouch, t }) {
-  const nameError = showError && !role.name.trim()
-    ? t('settings.assign.roleNameRequired', { defaultValue: 'Nhập tên vai trò' })
-    : ''
-  const displayTitle = role.name.trim() || t('settings.assign.roleUntitled', { defaultValue: 'Vai trò chưa đặt tên' })
+function RoleCard({
+  role,
+  open,
+  showError,
+  canUpdate,
+  atMin,
+  onToggle,
+  onUpdate,
+  onRemove,
+  onTouch,
+  t,
+}) {
+  const nameError =
+    showError && !role.name.trim()
+      ? t('settings.assign.roleNameRequired', { defaultValue: 'Nhập tên vai trò' })
+      : ''
+  const displayTitle =
+    role.name.trim() || t('settings.assign.roleUntitled', { defaultValue: 'Vai trò chưa đặt tên' })
   const nameId = `assignment-role-name-${role.id}`
   const itemsId = `assignment-role-items-${role.id}`
   return (
@@ -33,7 +46,11 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
       title={displayTitle}
       open={open}
       onToggle={onToggle}
-      badge={nameError ? <AlertTriangle size={14} className="text-danger shrink-0 ml-1" aria-hidden /> : undefined}
+      badge={
+        nameError ? (
+          <AlertTriangle size={14} className="text-danger shrink-0 ml-1" aria-hidden />
+        ) : undefined
+      }
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-start gap-2">
@@ -44,7 +61,9 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
             <Input
               id={nameId}
               className="font-bold"
-              placeholder={t('settings.assign.roleNamePlaceholder', { defaultValue: 'Tên vai trò' })}
+              placeholder={t('settings.assign.roleNamePlaceholder', {
+                defaultValue: 'Tên vai trò',
+              })}
               value={role.name}
               onChange={(e) => onUpdate({ name: e.target.value })}
               onBlur={onTouch}
@@ -52,7 +71,11 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
               maxLength={1000}
               aria-invalid={nameError ? true : undefined}
             />
-            {nameError && <span className="text-xs text-danger" role="alert">{nameError}</span>}
+            {nameError && (
+              <span className="text-xs text-danger" role="alert">
+                {nameError}
+              </span>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -70,7 +93,9 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
         </label>
         <Textarea
           id={itemsId}
-          placeholder={t('settings.assign.itemsPlaceholder', { defaultValue: 'Công việc phụ trách...' })}
+          placeholder={t('settings.assign.itemsPlaceholder', {
+            defaultValue: 'Công việc phụ trách...',
+          })}
           value={role.items}
           onChange={(e) => onUpdate({ items: e.target.value })}
           disabled={!canUpdate}
@@ -85,7 +110,11 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
 // Dùng react-query (queryKey ['product-assignment']) thay vì fetch thủ công như BannerScreen vì
 // key này còn được ProductDetailScreen/ContentAssignmentBanner đọc cùng lúc: invalidateQueries
 // sau khi lưu giúp banner ở tab sản phẩm/bài viết đang mở khác cập nhật ngay, không cần F5.
-export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onEditorStateChange }) {
+export function AssignmentRolesScreen({
+  canUpdate = false,
+  embedded = false,
+  onEditorStateChange,
+}) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -119,7 +148,8 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
   }
 
   const isDirty = Boolean(
-    baseline && (title !== baseline.title || JSON.stringify(roles) !== JSON.stringify(baseline.roles)),
+    baseline &&
+    (title !== baseline.title || JSON.stringify(roles) !== JSON.stringify(baseline.roles)),
   )
 
   useEffect(() => {
@@ -170,7 +200,9 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
     const hasContent = Boolean(role?.name?.trim()) || Boolean(role?.items?.trim())
     if (hasContent) {
       const ok = await showConfirm(
-        t('settings.assign.removeConfirmMessage', { defaultValue: 'Xoá vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.' }),
+        t('settings.assign.removeConfirmMessage', {
+          defaultValue: 'Xoá vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.',
+        }),
         t('settings.assign.removeConfirmTitle', { defaultValue: 'Xoá vai trò' }),
       )
       if (!ok) return
@@ -226,7 +258,9 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
     )
   }
   if (isLoading || !baseline) {
-    return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
+    return (
+      <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
+    )
   }
 
   const atMax = roles.length >= MAX_ASSIGNMENT_ROLES
@@ -249,7 +283,8 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
   } else {
     statusInfo = (
       <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-        <AlertCircle size={14} aria-hidden /> {t('settings.assign.unsavedHint', { defaultValue: 'Có thay đổi chưa lưu' })}
+        <AlertCircle size={14} aria-hidden />{' '}
+        {t('settings.assign.unsavedHint', { defaultValue: 'Có thay đổi chưa lưu' })}
       </span>
     )
   }
@@ -258,7 +293,10 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
     <div>
       {embedded ? (
         <p className="bb-muted mt-0 mb-4">
-          {t('settings.assign.description', { defaultValue: 'Banner phân công hiển thị trên màn tạo/sửa sản phẩm và bài viết — dùng chung 1 nguồn dữ liệu.' })}
+          {t('settings.assign.description', {
+            defaultValue:
+              'Banner phân công hiển thị trên màn tạo/sửa sản phẩm và bài viết — dùng chung 1 nguồn dữ liệu.',
+          })}
         </p>
       ) : (
         <div className="bb-screen-header">
@@ -301,7 +339,13 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
           />
         ))}
         {canUpdate && (
-          <Button variant="outline" size="sm" onClick={addRole} disabled={atMax} className="self-start">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addRole}
+            disabled={atMax}
+            className="self-start"
+          >
             + {t('settings.assign.addRole', { defaultValue: 'Thêm vai trò' })}
           </Button>
         )}
@@ -309,7 +353,12 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
 
       {canUpdate && (isDirty || saveSuccess) && (
         <StickyActionBar ariaLabel={t('common.actionBarLabel')} info={statusInfo}>
-          <Button className="min-h-11" variant="secondary" onClick={handleCancel} disabled={saving || !isDirty}>
+          <Button
+            className="min-h-11"
+            variant="secondary"
+            onClick={handleCancel}
+            disabled={saving || !isDirty}
+          >
             {t('common.cancel')}
           </Button>
           <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={!isDirty}>

@@ -48,7 +48,8 @@ describe('mergeHighlightsHtmlIntoItems', () => {
       { _key: 'first', content: 'VI 1', contentEn: 'Old 1' },
       { _key: 'second', content: 'VI 2', contentEn: 'Old 2' },
     ]
-    const html = '<ul class="bb-highlights-list"><li>New 1</li><li>New 2</li><li>Ignored 3</li></ul>'
+    const html =
+      '<ul class="bb-highlights-list"><li>New 1</li><li>New 2</li><li>Ignored 3</li></ul>'
 
     const next = mergeHighlightsHtmlIntoItems(items, html, true)
 
@@ -63,7 +64,10 @@ describe('serializeHighlightsPairToHtml / parseHighlightsPairFromHtml', () => {
     const positiveNotes = [{ content: 'Nhẹ' }, { content: 'Bền' }]
     const negativeNotes = [{ content: 'Không kèm Pinlock' }]
 
-    const html = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, false, { prosLabel: 'Ưu điểm', consLabel: 'Nhược điểm' })
+    const html = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, false, {
+      prosLabel: 'Ưu điểm',
+      consLabel: 'Nhược điểm',
+    })
 
     expect(html).toContain('class="bb-highlights-pros"')
     expect(html).toContain('class="bb-highlights-cons"')
@@ -79,7 +83,9 @@ describe('serializeHighlightsPairToHtml / parseHighlightsPairFromHtml', () => {
   })
 
   it('đọc danh sách không gắn nhãn vào Ưu điểm theo rule owner', () => {
-    const result = parseHighlightsPairResult('<h4>Điểm nổi bật</h4><ul><li>Nhẹ</li><li>Thoáng</li></ul>')
+    const result = parseHighlightsPairResult(
+      '<h4>Điểm nổi bật</h4><ul><li>Nhẹ</li><li>Thoáng</li></ul>',
+    )
     expect(result.positive).toEqual(['Nhẹ', 'Thoáng'])
     expect(result.negative).toEqual([])
     expect(result.presentGroups).toEqual({ positive: true, negative: false })
@@ -123,7 +129,9 @@ describe('mergeHighlightsPairHtmlIntoItems', () => {
   it('HTML không đọc được giữ nguyên cả hai nhóm', () => {
     const positive = [{ _key: 'p1', content: 'Ưu cũ', contentEn: '' }]
     const negative = [{ _key: 'n1', content: 'Nhược cũ', contentEn: '' }]
-    expect(mergeHighlightsPairHtmlIntoItems(positive, negative, '<div>không theo mẫu</div>', false)).toEqual({
+    expect(
+      mergeHighlightsPairHtmlIntoItems(positive, negative, '<div>không theo mẫu</div>', false),
+    ).toEqual({
       positiveNotes: positive,
       negativeNotes: negative,
     })

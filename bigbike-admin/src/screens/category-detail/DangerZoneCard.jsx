@@ -28,7 +28,13 @@ export function DangerZoneCard({ onHardDelete, pending, isDeleted, onRestore, re
               {t('products.restore')}
             </Button>
           ) : null}
-          <Button type="button" variant="danger" onClick={onHardDelete} disabled={pending} aria-busy={pending || undefined}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={onHardDelete}
+            disabled={pending}
+            aria-busy={pending || undefined}
+          >
             {pending && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {t('categories.detail.hardDeleteBtn')}
           </Button>

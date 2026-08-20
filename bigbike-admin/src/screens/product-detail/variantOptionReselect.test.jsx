@@ -10,7 +10,15 @@
 import { describe, it, expect, vi } from 'vitest'
 
 const CREATE_NEW_ATTRIBUTE_VALUE = '__create_new_attribute__'
-const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
+const COLOR_ATTRIBUTE_KEYS = new Set([
+  'color',
+  'colour',
+  'mau',
+  'mau sac',
+  'pa color',
+  'pa mau',
+  'pa mau sac',
+])
 
 function normalizeVariantToken(value) {
   return String(value || '')
@@ -29,9 +37,11 @@ function isColorAttributeName(name) {
 
 function resolveAttr(attributes, optionName) {
   const norm = normalizeVariantToken(optionName)
-  return attributes.find(
-    (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
-  ) ?? null
+  return (
+    attributes.find(
+      (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
+    ) ?? null
+  )
 }
 
 function isSameAttributeSelection(attributes, currentName, nextName) {
@@ -46,7 +56,10 @@ function isSameAttributeSelection(attributes, currentName, nextName) {
 function makeNameChange(opt, onUpdate, setCreateAttrOpen = () => {}, attributes = []) {
   return (val) => {
     if (!val) return
-    if (val === CREATE_NEW_ATTRIBUTE_VALUE) { setCreateAttrOpen(true); return }
+    if (val === CREATE_NEW_ATTRIBUTE_VALUE) {
+      setCreateAttrOpen(true)
+      return
+    }
     if (isSameAttributeSelection(attributes, opt.name, val)) return
     onUpdate({ name: val, value: '', attributeValueId: null })
   }

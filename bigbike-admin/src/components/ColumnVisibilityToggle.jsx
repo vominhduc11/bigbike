@@ -3,8 +3,13 @@ import { Columns3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 
 // T7 — dropdown "Cột hiển thị" dùng chung cho mọi AdminTable. Ghép với
@@ -22,7 +27,9 @@ export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle, class
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{t('common.columns', { defaultValue: 'Cột hiển thị' })}</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {t('common.columns', { defaultValue: 'Cột hiển thị' })}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {allColumns.map((column) => {
           const checked = !hiddenKeys.includes(column.key)

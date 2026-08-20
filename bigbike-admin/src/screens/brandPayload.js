@@ -53,10 +53,7 @@ export function toBrandPayload(form) {
 }
 
 export function getBrandRequiredProgress(form) {
-  const requiredValues = [
-    form.slug,
-    form.name,
-  ]
+  const requiredValues = [form.slug, form.name]
   return {
     total: requiredValues.length,
     filled: requiredValues.filter((value) => Boolean(value?.trim())).length,

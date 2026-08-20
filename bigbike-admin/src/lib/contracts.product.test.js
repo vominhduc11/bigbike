@@ -38,7 +38,8 @@ describe('normalizeProduct — đường dẫn tiếng Anh (slugEn)', () => {
   })
 
   it('cắt khoảng trắng thừa quanh slugEn', () => {
-    expect(normalizeProduct({ ...response, slugEn: '  scs-s7x-headset  ' }).slugEn)
-      .toBe('scs-s7x-headset')
+    expect(normalizeProduct({ ...response, slugEn: '  scs-s7x-headset  ' }).slugEn).toBe(
+      'scs-s7x-headset',
+    )
   })
 })

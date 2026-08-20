@@ -12,7 +12,8 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     // ANALYZE=1 npm run analyze — opens dist/stats.html, a treemap of what's in each chunk.
-    process.env.ANALYZE && visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
+    process.env.ANALYZE &&
+      visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
   ].filter(Boolean),
   resolve: {
     alias: {

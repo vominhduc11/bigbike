@@ -11,7 +11,8 @@ export function MediaRequirementHint({ recommend, className }) {
   return (
     <p className={cn('text-xs text-muted-foreground', className)}>
       {t('mediaReco.requirementSize', { w: recommend.minW, h: recommend.minH })}
-      {recommend.ratio && t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
+      {recommend.ratio &&
+        t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
     </p>
   )
 }

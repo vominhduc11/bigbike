@@ -1,6 +1,9 @@
 import { test, expect, expectRuntimeClean } from '../fixtures/admin-test'
 import {
-  navigateSpa, expectNoHorizontalOverflow, expectWithinViewport, openSidebarDrawer,
+  navigateSpa,
+  expectNoHorizontalOverflow,
+  expectWithinViewport,
+  openSidebarDrawer,
 } from '../utils/quality'
 
 /**
@@ -22,7 +25,10 @@ test('effect · user dropdown opens and closes on outside click', async ({ admin
   expectRuntimeClean(collect)
 })
 
-test('effect · global search palette opens on Ctrl+K and closes on Escape', async ({ adminPage, collect }) => {
+test('effect · global search palette opens on Ctrl+K and closes on Escape', async ({
+  adminPage,
+  collect,
+}) => {
   await adminPage.keyboard.press('Control+k')
   const input = adminPage.getByPlaceholder(/Tìm đơn hàng|Search/i)
   await expect(input).toBeVisible()
@@ -59,7 +65,10 @@ test('effect · theme toggle flips data-theme and persists', async ({ adminPage 
   await expect.poll(() => root.getAttribute('data-theme')).toBe(before)
 })
 
-test('effect · mobile sidebar drawer overlay closes the drawer (no scroll lock left)', async ({ adminPage, collect }) => {
+test('effect · mobile sidebar drawer overlay closes the drawer (no scroll lock left)', async ({
+  adminPage,
+  collect,
+}) => {
   await adminPage.setViewportSize({ width: 390, height: 844 })
   await navigateSpa(adminPage, '/admin/orders')
   await openSidebarDrawer(adminPage)
@@ -67,17 +76,22 @@ test('effect · mobile sidebar drawer overlay closes the drawer (no scroll lock 
   const overlay = adminPage.locator('.bb-sidebar-overlay')
   await expect(overlay).toBeVisible()
   await overlay.click({ position: { x: 360, y: 400 }, force: true })
-  await expect.poll(async () => {
-    const b = await adminPage.locator('.bb-sidebar').boundingBox()
-    return b ? Math.round(b.x + b.width) : 0
-  }).toBeLessThanOrEqual(4)
+  await expect
+    .poll(async () => {
+      const b = await adminPage.locator('.bb-sidebar').boundingBox()
+      return b ? Math.round(b.x + b.width) : 0
+    })
+    .toBeLessThanOrEqual(4)
   // Body scroll not stuck.
   const overflow = await adminPage.evaluate(() => getComputedStyle(document.body).overflow)
   expect(overflow === '' || overflow === 'visible' || overflow === 'auto').toBeTruthy()
   expectRuntimeClean(collect)
 })
 
-test('effect · order status filter switches without breaking layout', async ({ adminPage, collect }) => {
+test('effect · order status filter switches without breaking layout', async ({
+  adminPage,
+  collect,
+}) => {
   await navigateSpa(adminPage, '/admin/orders')
   const statusFilter = adminPage.getByRole('combobox', { name: 'Trạng thái' })
   await statusFilter.click()
@@ -91,18 +105,27 @@ test('effect · order status filter switches without breaking layout', async ({ 
   expectRuntimeClean(collect)
 })
 
-test('effect · dangerous action shows a confirm dialog; Cancel makes no change', async ({ adminPage, collect }) => {
+test('effect · dangerous action shows a confirm dialog; Cancel makes no change', async ({
+  adminPage,
+  collect,
+}) => {
   // Safety net: never let a destructive request reach the server in this test.
   let deleteAttempts = 0
   await adminPage.route('**/api/v1/**', (route) => {
-    if (route.request().method() === 'DELETE') { deleteAttempts++; return route.abort() }
+    if (route.request().method() === 'DELETE') {
+      deleteAttempts++
+      return route.abort()
+    }
     return route.continue()
   })
 
   await navigateSpa(adminPage, '/admin/sliders')
   const del = adminPage.locator('.bb-page-content button', { hasText: /^Xo[áạ]$/ }).first()
   if (!(await del.count())) {
-    test.info().annotations.push({ type: 'skip', description: 'No deletable slider row to exercise confirm dialog' })
+    test.info().annotations.push({
+      type: 'skip',
+      description: 'No deletable slider row to exercise confirm dialog',
+    })
     return
   }
   await del.click()

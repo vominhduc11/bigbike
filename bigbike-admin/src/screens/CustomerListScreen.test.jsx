@@ -23,7 +23,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
     i18n: { language: 'vi' },
   }),
 }))
@@ -45,7 +46,9 @@ vi.mock('../components/AdminTable', () => ({
     <div data-testid="customer-table">
       {rows.map((row) => (
         <div key={row.id} data-testid={`row-${row.id}`}>
-          {columns.map((column) => <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>)}
+          {columns.map((column) => (
+            <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
+          ))}
         </div>
       ))}
     </div>
@@ -181,9 +184,11 @@ describe('CustomerListScreen', () => {
 
     await user.click(screen.getByRole('button', { name: 'customers.kpi.activeFilterAria' }))
 
-    await waitFor(() => expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
-      expect.objectContaining({ status: 'ACTIVE', synthetic: 'false' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'ACTIVE', synthetic: 'false' }),
+      ),
+    )
   })
 
   it('lọc theo nguồn khách hàng gửi đúng tham số synthetic cho fetchCustomers', async () => {
@@ -194,9 +199,11 @@ describe('CustomerListScreen', () => {
     const sourceSelect = document.querySelector('select[aria-label="customers.filterSource"]')
     await user.selectOptions(sourceSelect, 'true')
 
-    await waitFor(() => expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
-      expect.objectContaining({ synthetic: 'true' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ synthetic: 'true' }),
+      ),
+    )
   })
 
   it('lọc theo xác thực email gửi đúng tham số emailVerified cho fetchCustomers', async () => {
@@ -204,12 +211,16 @@ describe('CustomerListScreen', () => {
     renderScreen()
     await screen.findByText('Nguyen Van A')
 
-    const verificationSelect = document.querySelector('select[aria-label="customers.filterEmailVerified"]')
+    const verificationSelect = document.querySelector(
+      'select[aria-label="customers.filterEmailVerified"]',
+    )
     await user.selectOptions(verificationSelect, 'true')
 
-    await waitFor(() => expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
-      expect.objectContaining({ emailVerified: 'true' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchCustomers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ emailVerified: 'true' }),
+      ),
+    )
   })
 
   it('đổi trạng thái sang ACTIVE gọi thẳng updateCustomerStatus, không cần lý do', async () => {
@@ -221,7 +232,9 @@ describe('CustomerListScreen', () => {
     const statusSelect = row.querySelector('select[aria-label="customers.colStatus"]')
     await user.selectOptions(statusSelect, 'ACTIVE')
 
-    await waitFor(() => expect(mocks.updateCustomerStatus).toHaveBeenCalledWith('cust-real-1', 'ACTIVE', undefined))
+    await waitFor(() =>
+      expect(mocks.updateCustomerStatus).toHaveBeenCalledWith('cust-real-1', 'ACTIVE', undefined),
+    )
   })
 
   it('đổi trạng thái sang BLOCKED mở modal lý do — Hủy không gọi API', async () => {
@@ -253,9 +266,13 @@ describe('CustomerListScreen', () => {
     await user.type(reasonInput, 'Khách báo cáo gian lận')
     await user.click(screen.getByRole('button', { name: 'customers.detail.statusConfirmOk' }))
 
-    await waitFor(() => expect(mocks.updateCustomerStatus).toHaveBeenCalledWith(
-      'cust-real-1', 'BLOCKED', 'Khách báo cáo gian lận',
-    ))
+    await waitFor(() =>
+      expect(mocks.updateCustomerStatus).toHaveBeenCalledWith(
+        'cust-real-1',
+        'BLOCKED',
+        'Khách báo cáo gian lận',
+      ),
+    )
   })
 
   it('cho phép chọn PENDING và cảnh báo thu hồi phiên trước khi cập nhật', async () => {
@@ -271,9 +288,9 @@ describe('CustomerListScreen', () => {
     expect(await screen.findByText('customers.detail.statusConfirmBody')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'customers.detail.statusConfirmOk' }))
 
-    await waitFor(() => expect(mocks.updateCustomerStatus).toHaveBeenCalledWith(
-      'cust-real-1', 'PENDING', '',
-    ))
+    await waitFor(() =>
+      expect(mocks.updateCustomerStatus).toHaveBeenCalledWith('cust-real-1', 'PENDING', ''),
+    )
   })
 
   it('không cho đổi trạng thái tài khoản tạo từ đơn hàng cũ', async () => {
@@ -329,7 +346,11 @@ describe('CustomerListScreen', () => {
   it('xuất CSV với đủ bộ lọc hiện tại và không cảnh báo giới hạn dòng', async () => {
     const user = userEvent.setup()
     mocks.hasPermission.mockImplementation((permission) => permission === 'reports.export')
-    mocks.exportCustomersCsv.mockResolvedValue({ filename: 'customers.csv', truncated: true, maxRows: 1 })
+    mocks.exportCustomersCsv.mockResolvedValue({
+      filename: 'customers.csv',
+      truncated: true,
+      maxRows: 1,
+    })
     window.history.replaceState(
       {},
       '',
@@ -340,12 +361,14 @@ describe('CustomerListScreen', () => {
     await screen.findByText('Nguyen Van A')
     await user.click(screen.getByRole('button', { name: 'common.exportCsv' }))
 
-    await waitFor(() => expect(mocks.exportCustomersCsv).toHaveBeenCalledWith({
-      q: 'Nguyen',
-      status: 'ACTIVE',
-      synthetic: 'false',
-      emailVerified: 'true',
-    }))
+    await waitFor(() =>
+      expect(mocks.exportCustomersCsv).toHaveBeenCalledWith({
+        q: 'Nguyen',
+        status: 'ACTIVE',
+        synthetic: 'false',
+        emailVerified: 'true',
+      }),
+    )
     expect(mocks.toast.warning).not.toHaveBeenCalled()
   })
 })

@@ -34,7 +34,9 @@ export function serializeSpecs(items) {
   const rows = (items || []).map(normalizeRow).filter(rowHasContent)
   if (rows.length === 0) return ''
   const trs = rows
-    .map((s) => `<tr><th scope="row">${escapeHtml(s.name)}</th><td>${inlineHtml(s.value)}</td></tr>`)
+    .map(
+      (s) => `<tr><th scope="row">${escapeHtml(s.name)}</th><td>${inlineHtml(s.value)}</td></tr>`,
+    )
     .join('')
   return `<table class="shop_attributes"><tbody>${trs}</tbody></table>`
 }
@@ -119,13 +121,20 @@ export function parseSpecsResult(html) {
 
     // Fallback: text thuần "tên: giá trị" mỗi dòng.
     const text = (doc.body.textContent || html).replace(/\r/g, '')
-    const lines = text.split('\n').map((raw) => raw.trim()).filter(Boolean)
+    const lines = text
+      .split('\n')
+      .map((raw) => raw.trim())
+      .filter(Boolean)
     const rows = lines
       .map((line) => line.match(/^(.+?)\s*[:：]\s*(.+)$/))
       .filter(Boolean)
       .map(([, name, value]) => ({ _key: generateId(), name: name.trim(), value: value.trim() }))
       .filter(rowHasContent)
-    return makeHtmlImportResult({ items: rows, skippedCount: lines.length - rows.length + (rows.length ? 0 : 1), hasInput: true })
+    return makeHtmlImportResult({
+      items: rows,
+      skippedCount: lines.length - rows.length + (rows.length ? 0 : 1),
+      hasInput: true,
+    })
   } catch {
     return makeHtmlImportResult({ skippedCount: 1, hasInput: true, items: [], extraColumnCount: 0 })
   }
@@ -157,7 +166,10 @@ export function mergeSpecsIntoHtml(items, existingHtml) {
       const pairs = headingSpecPairs(doc)
       if (pairs.length && pairs.length === model.length) {
         if (model.length === 0) {
-          pairs.forEach(({ heading, value }) => { heading.remove(); value.remove() })
+          pairs.forEach(({ heading, value }) => {
+            heading.remove()
+            value.remove()
+          })
         } else {
           model.forEach((row, index) => {
             pairs[index].heading.textContent = row.name
@@ -183,7 +195,9 @@ export function mergeSpecsIntoHtml(items, existingHtml) {
       let tr
       if (last) {
         tr = last.cloneNode(true)
-        tr.querySelectorAll('th, td').forEach((c) => { c.textContent = '' })
+        tr.querySelectorAll('th, td').forEach((c) => {
+          c.textContent = ''
+        })
       } else {
         tr = doc.createElement('tr')
         const th = doc.createElement('th')

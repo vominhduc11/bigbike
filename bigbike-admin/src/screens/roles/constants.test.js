@@ -13,15 +13,12 @@ describe('permission dependency helpers', () => {
   it('adds every direct dependency for a write permission', () => {
     const result = closePermissionDependencies(new Set(['products.update']), catalog)
 
-    expect([...result.permissions]).toEqual(expect.arrayContaining([
-      'products.update',
-      'products.read',
-      'catalog.read',
-    ]))
-    expect([...result.autoAdded.keys()]).toEqual(expect.arrayContaining([
-      'products.read',
-      'catalog.read',
-    ]))
+    expect([...result.permissions]).toEqual(
+      expect.arrayContaining(['products.update', 'products.read', 'catalog.read']),
+    )
+    expect([...result.autoAdded.keys()]).toEqual(
+      expect.arrayContaining(['products.read', 'catalog.read']),
+    )
   })
 
   it('closes cross-module dependencies for Home Highlights and Admin Users', () => {
@@ -30,14 +27,16 @@ describe('permission dependency helpers', () => {
       catalog,
     )
 
-    expect(result.permissions).toEqual(new Set([
-      'home_highlights.write',
-      'admin-users.write',
-      'home_highlights.read',
-      'products.read',
-      'admin-users.read',
-      'roles.read',
-    ]))
+    expect(result.permissions).toEqual(
+      new Set([
+        'home_highlights.write',
+        'admin-users.write',
+        'home_highlights.read',
+        'products.read',
+        'admin-users.read',
+        'roles.read',
+      ]),
+    )
   })
 
   it('removes all active dependents when a required read permission is removed', () => {
@@ -63,13 +62,15 @@ describe('permission dependency helpers', () => {
       {
         groupKey: 'roles.module.orders',
         moduleKey: 'orders',
-        permissions: [{
-          key: 'orders.read',
-          moduleKey: 'orders',
-          kind: 'READ',
-          sensitive: false,
-          requires: [],
-        }],
+        permissions: [
+          {
+            key: 'orders.read',
+            moduleKey: 'orders',
+            kind: 'READ',
+            sensitive: false,
+            requires: [],
+          },
+        ],
       },
     ])
   })

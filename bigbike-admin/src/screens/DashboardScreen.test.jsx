@@ -56,7 +56,11 @@ vi.mock('../components/StatePanel', () => ({
     <div>
       {title ? <span>{title}</span> : null}
       {description ? <span>{description}</span> : null}
-      {actionLabel ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
+      {actionLabel ? (
+        <button type="button" onClick={onAction}>
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   ),
 }))
@@ -77,9 +81,11 @@ const BASE_DASHBOARD = {
   topProducts: [],
 }
 
-function renderScreen(client = new QueryClient({
+function renderScreen(
+  client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  })) {
+  }),
+) {
   const result = render(
     <QueryClientProvider client={client}>
       <DashboardScreen navigate={mocks.navigate} />
@@ -106,8 +112,13 @@ it('does not fetch or subscribe to inventory without inventory.read', async () =
 
   expect(await screen.findByText('dashboard.kpi.todayRevenue')).toBeInTheDocument()
   expect(mocks.fetchInventorySummary).not.toHaveBeenCalled()
-  expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith('/topic/admin/inventory', expect.any(Function))
-  expect(screen.queryByRole('button', { name: 'dashboard.kpi.activeProductsAria' })).not.toBeInTheDocument()
+  expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith(
+    '/topic/admin/inventory',
+    expect.any(Function),
+  )
+  expect(
+    screen.queryByRole('button', { name: 'dashboard.kpi.activeProductsAria' }),
+  ).not.toBeInTheDocument()
 })
 
 describe('DashboardScreen', () => {
@@ -124,7 +135,9 @@ describe('DashboardScreen', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'dashboard.kpi.activeProductsAria' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'dashboard.kpi.activeProductsAria' }),
+    )
 
     expect(mocks.navigate).toHaveBeenCalledWith('/admin/products?publishStatus=PUBLISHED')
   })

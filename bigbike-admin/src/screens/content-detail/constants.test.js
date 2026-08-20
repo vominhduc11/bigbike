@@ -13,12 +13,15 @@ function articleForm(overrides = {}) {
 
 describe('Content payload — ảnh giữ alt, nội dung xoá được', () => {
   it('gửi kèm alt của ảnh bìa và ảnh sản phẩm để không mất chữ admin vừa nhập', () => {
-    const payload = toPayload(articleForm({
-      coverImageUrl: '/media/articles/cover.jpg',
-      coverImageAlt: 'Ảnh bìa bài viết',
-      productImageUrl: '/media/articles/product.jpg',
-      productImageAlt: 'Ảnh sản phẩm trong bài',
-    }), false)
+    const payload = toPayload(
+      articleForm({
+        coverImageUrl: '/media/articles/cover.jpg',
+        coverImageAlt: 'Ảnh bìa bài viết',
+        productImageUrl: '/media/articles/product.jpg',
+        productImageAlt: 'Ảnh sản phẩm trong bài',
+      }),
+      false,
+    )
 
     expect(payload.coverImage).toEqual({
       url: '/media/articles/cover.jpg',
@@ -27,7 +30,10 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
       height: null,
       mimeType: null,
     })
-    expect(payload.productImage).toEqual({ url: '/media/articles/product.jpg', alt: 'Ảnh sản phẩm trong bài' })
+    expect(payload.productImage).toEqual({
+      url: '/media/articles/product.jpg',
+      alt: 'Ảnh sản phẩm trong bài',
+    })
   })
 
   it('giữ nguyên URL gốc và metadata ảnh bìa, ảnh OG khi admin không thay ảnh', () => {
@@ -90,14 +96,23 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
   })
 
   it('lưu tên tác giả song ngữ và gửi chuỗi rỗng khi để trống để xoá được tên cũ', () => {
-    const payload = toPayload(articleForm({
-      authorName: '  Nguyễn Văn A  ',
-      translations: {
-        en: {
-          slug: '', title: '', excerpt: '', body: '', authorName: '  Alex A  ', seoTitle: '', seoDescription: '',
+    const payload = toPayload(
+      articleForm({
+        authorName: '  Nguyễn Văn A  ',
+        translations: {
+          en: {
+            slug: '',
+            title: '',
+            excerpt: '',
+            body: '',
+            authorName: '  Alex A  ',
+            seoTitle: '',
+            seoDescription: '',
+          },
         },
-      },
-    }), false)
+      }),
+      false,
+    )
     expect(payload.authorName).toBe('Nguyễn Văn A')
     expect(payload.translations.en.authorName).toBe('Alex A')
 
@@ -127,9 +142,21 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
   })
 
   it('gửi slug tiếng Anh cho bài viết và các field EN chuẩn hoá null khi trống', () => {
-    const payload = toPayload(articleForm({
-      translations: { en: { slug: 'test-article', title: 'Test article', excerpt: '', body: '', seoTitle: '', seoDescription: '' } },
-    }), false)
+    const payload = toPayload(
+      articleForm({
+        translations: {
+          en: {
+            slug: 'test-article',
+            title: 'Test article',
+            excerpt: '',
+            body: '',
+            seoTitle: '',
+            seoDescription: '',
+          },
+        },
+      }),
+      false,
+    )
     expect(payload.translations.en.slug).toBe('test-article')
     expect(payload.translations.en.title).toBe('Test article')
     expect(payload.translations.en.excerpt).toBeNull()
@@ -157,14 +184,16 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
   }
 
   it('bắt buộc tiêu đề VI, tiêu đề EN và nội dung VI nhưng không bắt nội dung EN', () => {
-    const result = createContentSchema(t, true, 'ARTICLE').safeParse(validForm({
-      title: '',
-      body: '',
-      bodyBlocks: null,
-      translations: {
-        en: { title: '', slug: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
-      },
-    }))
+    const result = createContentSchema(t, true, 'ARTICLE').safeParse(
+      validForm({
+        title: '',
+        body: '',
+        bodyBlocks: null,
+        translations: {
+          en: { title: '', slug: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
+        },
+      }),
+    )
     const errors = zodErrors(result)
 
     expect(errors.title).toBe('content.detail.errTitleRequired')
@@ -174,19 +203,27 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
   })
 
   it('chặn tiêu đề/SEO quá 255 và tóm tắt/mô tả SEO quá 5.000 ký tự', () => {
-    const result = createContentSchema(t, true, 'ARTICLE').safeParse(validForm({
-      title: 'a'.repeat(256),
-      excerpt: 'b'.repeat(5001),
-      seoTitle: 'c'.repeat(256),
-      seoDescription: 'd'.repeat(5001),
-    }))
+    const result = createContentSchema(t, true, 'ARTICLE').safeParse(
+      validForm({
+        title: 'a'.repeat(256),
+        excerpt: 'b'.repeat(5001),
+        seoTitle: 'c'.repeat(256),
+        seoDescription: 'd'.repeat(5001),
+      }),
+    )
     const errors = zodErrors(result)
 
     expect(errors.title).toBe('content.detail.errTitleTooLong')
     expect(errors.excerpt).toBe('content.detail.errExcerptTooLong')
-    expect(zodErrors(createContentSchema(t, true, 'ARTICLE').safeParse(validForm({
-      authorName: 'a'.repeat(256),
-    }))).authorName).toBe('content.detail.errAuthorTooLong')
+    expect(
+      zodErrors(
+        createContentSchema(t, true, 'ARTICLE').safeParse(
+          validForm({
+            authorName: 'a'.repeat(256),
+          }),
+        ),
+      ).authorName,
+    ).toBe('content.detail.errAuthorTooLong')
     expect(errors.seoTitle).toBe('content.detail.errSeoTitleTooLong')
     expect(errors.seoDescription).toBe('content.detail.errSeoDescriptionTooLong')
   })

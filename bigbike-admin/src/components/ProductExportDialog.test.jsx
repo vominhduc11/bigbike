@@ -59,7 +59,9 @@ vi.mock('@/components/ui/alert', () => ({
 
 vi.mock('@/components/ExportButton', () => ({
   ExportButton: ({ children, onExport, disabled }) => (
-    <button type="button" disabled={disabled} onClick={onExport}>{children}</button>
+    <button type="button" disabled={disabled} onClick={onExport}>
+      {children}
+    </button>
   ),
 }))
 
@@ -103,7 +105,9 @@ describe('ProductExportDialog', () => {
     expect(screen.getByText('Nội dung & hiển thị trên Google')).toBeInTheDocument()
     expect(screen.getByText('Mã sản phẩm (SKU)')).toBeInTheDocument()
     expect(screen.getByText('sku')).toBeInTheDocument()
-    expect(screen.getByText('Tên kỹ thuật màu xám chỉ dùng để đối chiếu với tên cột trong file.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Tên kỹ thuật màu xám chỉ dùng để đối chiếu với tên cột trong file.'),
+    ).toBeInTheDocument()
 
     const skuCheckbox = screen.getByRole('checkbox', { name: 'Mã sản phẩm (SKU) (sku)' })
     expect(skuCheckbox).toBeDisabled()

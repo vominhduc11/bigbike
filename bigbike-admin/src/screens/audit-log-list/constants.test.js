@@ -68,19 +68,24 @@ describe('DANGEROUS_ACTIONS', () => {
     expect(DANGEROUS_ACTIONS.has(action)).toBe(true)
   })
 
-  it.each(['ADMIN_USER_DISABLED', 'ADMIN_USER_SUSPENDED', 'ADMIN_LOGIN_FAILED', 'ADMIN_ACCOUNT_LOCKED'])(
-    'đánh dấu nguy hiểm cho sự kiện khoá truy cập: %s',
-    (action) => {
-      expect(DANGEROUS_ACTIONS.has(action)).toBe(true)
-    },
-  )
+  it.each([
+    'ADMIN_USER_DISABLED',
+    'ADMIN_USER_SUSPENDED',
+    'ADMIN_LOGIN_FAILED',
+    'ADMIN_ACCOUNT_LOCKED',
+  ])('đánh dấu nguy hiểm cho sự kiện khoá truy cập: %s', (action) => {
+    expect(DANGEROUS_ACTIONS.has(action)).toBe(true)
+  })
 
-  it.each(['PRODUCT_CREATED', 'PRODUCT_UPDATED', 'ADMIN_LOGIN_SUCCESS', 'SETTING_UPDATED', 'PRODUCT_RESTORED'])(
-    'KHÔNG đánh dấu nguy hiểm cho thao tác thường: %s',
-    (action) => {
-      expect(DANGEROUS_ACTIONS.has(action)).toBe(false)
-    },
-  )
+  it.each([
+    'PRODUCT_CREATED',
+    'PRODUCT_UPDATED',
+    'ADMIN_LOGIN_SUCCESS',
+    'SETTING_UPDATED',
+    'PRODUCT_RESTORED',
+  ])('KHÔNG đánh dấu nguy hiểm cho thao tác thường: %s', (action) => {
+    expect(DANGEROUS_ACTIONS.has(action)).toBe(false)
+  })
 
   it('không đánh dấu khi hành động rỗng/không xác định', () => {
     expect(DANGEROUS_ACTIONS.has('')).toBe(false)
@@ -125,9 +130,8 @@ describe('nhãn hiển thị', () => {
   })
 
   it('mã hành động lạ vẫn có nhãn dự phòng khi bộ dịch trả lại nguyên khóa', () => {
-    const keyReturningT = (key, options = {}) => (
+    const keyReturningT = (key, options = {}) =>
       key === 'auditLog.actionOther' ? `(${options.code})` : key
-    )
     expect(getActionLabel(keyReturningT, 'SOMETHING_BRAND_NEW')).toBe('Hoạt động khác')
   })
 
@@ -203,8 +207,17 @@ describe('tryParse', () => {
 
 describe('buildCsvRow', () => {
   it('ưu tiên tên người thực hiện, sau đó email, cuối cùng là loại', () => {
-    const base = { createdAt: '2026-07-25T03:00:00Z', action: 'PRODUCT_UPDATED', resourceType: 'PRODUCT' }
-    expect(buildCsvRow({ ...base, actorDisplayName: 'Minh', actorEmail: 'm@x.vn', actorType: 'ADMIN' }, t)[1]).toBe('Minh')
+    const base = {
+      createdAt: '2026-07-25T03:00:00Z',
+      action: 'PRODUCT_UPDATED',
+      resourceType: 'PRODUCT',
+    }
+    expect(
+      buildCsvRow(
+        { ...base, actorDisplayName: 'Minh', actorEmail: 'm@x.vn', actorType: 'ADMIN' },
+        t,
+      )[1],
+    ).toBe('Minh')
     expect(buildCsvRow({ ...base, actorEmail: 'm@x.vn', actorType: 'ADMIN' }, t)[1]).toBe('m@x.vn')
     expect(buildCsvRow({ ...base, actorType: 'SYSTEM' }, t)[1]).toBe(t('auditLog.actorType.SYSTEM'))
   })
@@ -217,7 +230,9 @@ describe('buildCsvRow', () => {
 
   it('dùng mã đối tượng khi có, nếu không thì tên hiển thị', () => {
     const base = { createdAt: '', action: '', resourceType: 'ORDER', actorType: 'ADMIN' }
-    expect(buildCsvRow({ ...base, resourceCode: 'DH-001', resourceDisplayName: 'Mũ' }, t)[5]).toBe('DH-001')
+    expect(buildCsvRow({ ...base, resourceCode: 'DH-001', resourceDisplayName: 'Mũ' }, t)[5]).toBe(
+      'DH-001',
+    )
     expect(buildCsvRow({ ...base, resourceDisplayName: 'Mũ' }, t)[5]).toBe('Mũ')
   })
 })
@@ -252,7 +267,13 @@ describe('DANGEROUS_VALUES', () => {
 describe('INITIAL_QUERY', () => {
   it('mặc định không lọc gì và bắt đầu từ trang 1', () => {
     expect(INITIAL_QUERY).toEqual({
-      actorType: 'ALL', resourceType: 'ALL', q: '', from: '', to: '', page: 1, pageSize: 20,
+      actorType: 'ALL',
+      resourceType: 'ALL',
+      q: '',
+      from: '',
+      to: '',
+      page: 1,
+      pageSize: 20,
     })
   })
 

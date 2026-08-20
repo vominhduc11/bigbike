@@ -22,9 +22,10 @@ async function deleteVideoCard(page: Page, card: ReturnType<typeof findVideoCard
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText(/Xoá video này\?|Xóa video này\?/)
   const [deleteResponse] = await Promise.all([
-    page.waitForResponse((response) =>
-      response.request().method() === 'DELETE'
-      && new URL(response.url()).pathname.includes('/admin/home-videos/'),
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        new URL(response.url()).pathname.includes('/admin/home-videos/'),
     ),
     dialog.getByRole('button', { name: 'Xác nhận', exact: true }).click(),
   ])
@@ -51,7 +52,10 @@ async function captureResponsiveList(page: Page, testInfo: TestInfo) {
 }
 
 test.describe('home-video-sources', () => {
-  test('chỉ tạo video YouTube/Upload và dọn sạch dữ liệu thử', async ({ adminPage, collect }, testInfo) => {
+  test('chỉ tạo video YouTube/Upload và dọn sạch dữ liệu thử', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(120_000)
     const title = videoTitle(testInfo.retry)
     let created = false
@@ -66,16 +70,19 @@ test.describe('home-video-sources', () => {
       const sourceRadios = form.getByRole('radio')
       await expect(sourceRadios).toHaveCount(2)
       await expect(form.getByRole('radio', { name: 'YouTube', exact: true })).toBeVisible()
-      await expect(form.getByRole('radio', { name: 'Upload / thư viện media', exact: true })).toBeVisible()
+      await expect(
+        form.getByRole('radio', { name: 'Upload / thư viện media', exact: true }),
+      ).toBeVisible()
       await expect(form).not.toContainText(/TikTok|Facebook/i)
 
       await form.locator('input').nth(0).fill(title)
       await form.locator('input[placeholder*="youtube.com"]').fill(YOUTUBE_URL)
 
       const [createResponse] = await Promise.all([
-        adminPage.waitForResponse((response) =>
-          response.request().method() === 'POST'
-          && new URL(response.url()).pathname.endsWith('/admin/home-videos'),
+        adminPage.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname.endsWith('/admin/home-videos'),
         ),
         form.getByRole('button', { name: 'Thêm', exact: true }).click(),
       ])

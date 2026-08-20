@@ -2,17 +2,60 @@ import DOMPurify from 'dompurify'
 
 // Tags allowed in admin-managed HTML setting values (footer text, rich descriptions...).
 const ALLOWED_TAGS = [
-  'a', 'b', 'blockquote', 'br', 'caption', 'cite', 'code', 'div', 'em',
-  'figcaption', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i',
-  'img', 'li', 'ol', 'p', 'pre', 'small', 'span', 'strong',
-  'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'u', 'ul',
+  'a',
+  'b',
+  'blockquote',
+  'br',
+  'caption',
+  'cite',
+  'code',
+  'div',
+  'em',
+  'figcaption',
+  'figure',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'hr',
+  'i',
+  'img',
+  'li',
+  'ol',
+  'p',
+  'pre',
+  'small',
+  'span',
+  'strong',
+  'table',
+  'tbody',
+  'td',
+  'tfoot',
+  'th',
+  'thead',
+  'tr',
+  'u',
+  'ul',
 ]
 
 const ALLOWED_ATTR = [
-  'aria-label', 'class', 'id', 'title',
-  'href', 'rel', 'target',
-  'alt', 'src', 'width', 'height', 'loading',
-  'colspan', 'rowspan', 'scope',
+  'aria-label',
+  'class',
+  'id',
+  'title',
+  'href',
+  'rel',
+  'target',
+  'alt',
+  'src',
+  'width',
+  'height',
+  'loading',
+  'colspan',
+  'rowspan',
+  'scope',
   // `style` cho phép admin tự chỉnh giao diện bằng CSS inline khi dán HTML (3 khối
   // Thông số kỹ thuật / Phù hợp với ai / Bảng size). DOMPurify vẫn chặn
   // script/onclick/javascript: và làm sạch nội dung CSS nguy hiểm.
@@ -62,5 +105,8 @@ export function sanitizeInlineHtml(raw) {
 // bảng vô danh đó không ăn width:100% của thẻ <table> ngoài) → bảng co theo nội dung
 // thay vì chiếm hết chiều ngang. Ô xem trước ở đây phải khớp đúng hành vi thật của web.
 function wrapTablesForScroll(html) {
-  return html.replace(/<table\b[\s\S]*?<\/table>/gi, (match) => `<div class="rich-table-scroll">${match}</div>`)
+  return html.replace(
+    /<table\b[\s\S]*?<\/table>/gi,
+    (match) => `<div class="rich-table-scroll">${match}</div>`,
+  )
 }

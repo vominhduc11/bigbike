@@ -3,7 +3,10 @@ import { navigateSpa, waitForScreenReady, expectNoHorizontalOverflow } from '../
 import { DESKTOP_VIEWPORT, MOBILE_VIEWPORT } from '../utils/viewports'
 
 test.describe('Orders admin (read-only smoke)', () => {
-  test('mobile list keeps filters and order cards within the viewport', async ({ adminPage, collect }) => {
+  test('mobile list keeps filters and order cards within the viewport', async ({
+    adminPage,
+    collect,
+  }) => {
     await adminPage.setViewportSize(MOBILE_VIEWPORT)
     await navigateSpa(adminPage, '/admin/orders')
 
@@ -22,12 +25,15 @@ test.describe('Orders admin (read-only smoke)', () => {
     expectRuntimeClean(collect)
   })
 
-  test('an existing order detail stays readable on mobile without changing data', async ({ adminPage, collect }) => {
+  test('an existing order detail stays readable on mobile without changing data', async ({
+    adminPage,
+    collect,
+  }) => {
     await adminPage.setViewportSize(DESKTOP_VIEWPORT)
     await navigateSpa(adminPage, '/admin/orders')
 
     const firstOrderLink = adminPage.locator('tbody .bb-row-link').first()
-    if (await firstOrderLink.count() === 0) {
+    if ((await firstOrderLink.count()) === 0) {
       test.info().annotations.push({
         type: 'skip',
         description: 'Backend has no order fixture available for detail smoke.',

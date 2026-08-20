@@ -95,9 +95,13 @@ export function ReviewModerationNote({ review, compact = false }) {
 
       {categories.length ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold opacity-80">{t('reviews.moderation.categoriesLabel')}</span>
+          <span className="text-xs font-semibold opacity-80">
+            {t('reviews.moderation.categoriesLabel')}
+          </span>
           {categories.map((code) => (
-            <Badge key={code} variant={TONE_BADGE_VARIANT[tone]}>{categoryLabel(code, t)}</Badge>
+            <Badge key={code} variant={TONE_BADGE_VARIANT[tone]}>
+              {categoryLabel(code, t)}
+            </Badge>
           ))}
         </div>
       ) : null}

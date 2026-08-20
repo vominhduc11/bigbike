@@ -27,10 +27,22 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerDetail, mapValidationErrors, removeCustomerAvatar, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
+import {
+  fetchCustomerDetail,
+  mapValidationErrors,
+  removeCustomerAvatar,
+  updateCustomer,
+  updateCustomerStatus,
+} from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FormField, Screen, ScreenHeader } from '../components/layout'
@@ -72,8 +84,10 @@ function isPhoneInvalid(phone) {
 }
 // Nhãn loại địa chỉ đã lưu (i18n, có fallback về mã gốc nếu là loại lạ).
 function addressTypeLabel(type, t) {
-  if (type === 'BILLING') return t('customers.detail.addressBilling', { defaultValue: 'Thanh toán' })
-  if (type === 'SHIPPING') return t('customers.detail.addressShipping', { defaultValue: 'Giao hàng' })
+  if (type === 'BILLING')
+    return t('customers.detail.addressBilling', { defaultValue: 'Thanh toán' })
+  if (type === 'SHIPPING')
+    return t('customers.detail.addressShipping', { defaultValue: 'Giao hàng' })
   return type
 }
 
@@ -88,10 +102,10 @@ function stripLeadingArrow(label) {
 // Tone bb-badge cho từng phân khúc — không dùng đỏ primary (dành riêng cho CTA/active/
 // selected theo CLAUDE.md), VIP nổi bật bằng tone warning thay vì màu thương hiệu.
 const SEGMENT_BADGE_TONE = {
-  VIP:      'warning',
-  LOYAL:    'info',
-  REGULAR:  'success',
-  NEW:      'neutral',
+  VIP: 'warning',
+  LOYAL: 'info',
+  REGULAR: 'success',
+  NEW: 'neutral',
   INACTIVE: 'muted',
 }
 
@@ -195,7 +209,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     displayName: editForm.displayName,
     phone: normalizePhoneInput(editForm.phone),
   }
-  const isDirty = editOpen && editBaseline != null &&
+  const isDirty =
+    editOpen &&
+    editBaseline != null &&
     JSON.stringify(normalizedEditForm) !== JSON.stringify(editBaseline)
   useUnsavedChanges(isDirty)
 
@@ -225,28 +241,35 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
 
   // N2: tách hàm tải để nút "Thử lại" gọi lại được khi lỗi mạng/API.
   // active flag: chỉ áp kết quả khi component còn mount / lần tải còn hiệu lực.
-  const fetchInto = useCallback((isActive) => {
-    fetchCustomerDetail(customerId)
-      .then((r) => { if (isActive()) setState({ status: 'success', customer: r.item, warning: '' }) })
-      .catch((e) => {
-        if (!isActive()) return
-        if (e?.status === 404) {
-          setState({ status: 'success', customer: null, warning: '' })
-          return
-        }
-        setState({
-          status: 'error',
-          customer: null,
-          warning: '',
-          error: e?.message || '',
+  const fetchInto = useCallback(
+    (isActive) => {
+      fetchCustomerDetail(customerId)
+        .then((r) => {
+          if (isActive()) setState({ status: 'success', customer: r.item, warning: '' })
         })
-      })
-  }, [customerId])
+        .catch((e) => {
+          if (!isActive()) return
+          if (e?.status === 404) {
+            setState({ status: 'success', customer: null, warning: '' })
+            return
+          }
+          setState({
+            status: 'error',
+            customer: null,
+            warning: '',
+            error: e?.message || '',
+          })
+        })
+    },
+    [customerId],
+  )
 
   useEffect(() => {
     let active = true
     fetchInto(() => active)
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [fetchInto])
 
   // O9: ghi lại khách hàng vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
@@ -311,7 +334,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         defaultValue: 'Xoá ảnh đại diện của khách hàng này? Khách sẽ cần tự tải ảnh mới nếu muốn.',
       }),
       t('customers.detail.avatarRemoveConfirmTitle', { defaultValue: 'Xoá ảnh đại diện' }),
-      { variant: 'danger', confirmLabel: t('customers.detail.avatarRemoveConfirmOk', { defaultValue: 'Xoá ảnh' }) },
+      {
+        variant: 'danger',
+        confirmLabel: t('customers.detail.avatarRemoveConfirmOk', { defaultValue: 'Xoá ảnh' }),
+      },
     )
     if (!ok) return
     if (!beginMutation('avatar')) return
@@ -335,10 +361,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       phone: customer.phone || '',
     }
     const saved = readDraft(customerDraftKey)
-    const savedForm = saved?.value?.customerId != null
-      && String(saved.value.customerId) === String(customerId)
-      ? saved.value.form
-      : null
+    const savedForm =
+      saved?.value?.customerId != null && String(saved.value.customerId) === String(customerId)
+        ? saved.value.form
+        : null
     setEditForm(savedForm ? { ...initial, ...savedForm } : initial)
     setEditBaseline({
       displayName: initial.displayName,
@@ -346,7 +372,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     })
     setFieldErrors({})
     setEditOpen(true)
-    if (savedForm) toast.info(t('customers.detail.draftRestored', { defaultValue: 'Đã khôi phục bản nháp thông tin khách hàng.' }))
+    if (savedForm)
+      toast.info(
+        t('customers.detail.draftRestored', {
+          defaultValue: 'Đã khôi phục bản nháp thông tin khách hàng.',
+        }),
+      )
   }
 
   function handleEditCancel() {
@@ -356,72 +387,100 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     setFieldErrors({})
   }
 
-  const handleEditSave = useCallback(async (e) => {
-    e.preventDefault()
-    if (!isDirty || mutationLockRef.current) return
-    if (isPhoneInvalid(editForm.phone)) {
-      toast.error(t('customers.detail.phoneInvalidToast', { defaultValue: 'Số điện thoại không hợp lệ.' }))
-      return
-    }
-    if (!beginMutation('profile')) return
-    setFieldErrors({})
-    try {
-      const payload = {}
-      if (editForm.displayName !== editBaseline.displayName) {
-        payload.displayName = editForm.displayName
+  const handleEditSave = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (!isDirty || mutationLockRef.current) return
+      if (isPhoneInvalid(editForm.phone)) {
+        toast.error(
+          t('customers.detail.phoneInvalidToast', { defaultValue: 'Số điện thoại không hợp lệ.' }),
+        )
+        return
       }
-      if (normalizedEditForm.phone !== editBaseline.phone) {
-        payload.phone = normalizedEditForm.phone
+      if (!beginMutation('profile')) return
+      setFieldErrors({})
+      try {
+        const payload = {}
+        if (editForm.displayName !== editBaseline.displayName) {
+          payload.displayName = editForm.displayName
+        }
+        if (normalizedEditForm.phone !== editBaseline.phone) {
+          payload.phone = normalizedEditForm.phone
+        }
+        const r = await updateCustomer(customerId, payload)
+        setState((p) => ({ ...p, customer: r.item }))
+        clearCustomerDraft()
+        setEditOpen(false)
+        setEditBaseline(null)
+        // Đồng bộ lại danh sách khách hàng để tên/SĐT vừa sửa hiển thị khi quay lại.
+        queryClient.invalidateQueries({ queryKey: ['customers'] })
+        toast.success(
+          t('customers.detail.profileUpdated', { defaultValue: 'Thông tin đã được cập nhật.' }),
+        )
+      } catch (err) {
+        // F1: gắn thêm lỗi vào đúng ô (vd SĐT trùng) khi backend trả field-level detail,
+        // bên cạnh toast — không tự bịa field nếu backend không xác định được.
+        const fieldErrs = mapValidationErrors(err)
+        if (Object.keys(fieldErrs).length > 0) {
+          setFieldErrors(fieldErrs)
+        }
+        toast.error(err.message || t('common.error'))
+      } finally {
+        endMutation()
       }
-      const r = await updateCustomer(customerId, payload)
-      setState((p) => ({ ...p, customer: r.item }))
-      clearCustomerDraft()
-      setEditOpen(false)
-      setEditBaseline(null)
-      // Đồng bộ lại danh sách khách hàng để tên/SĐT vừa sửa hiển thị khi quay lại.
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      toast.success(t('customers.detail.profileUpdated', { defaultValue: 'Thông tin đã được cập nhật.' }))
-    } catch (err) {
-      // F1: gắn thêm lỗi vào đúng ô (vd SĐT trùng) khi backend trả field-level detail,
-      // bên cạnh toast — không tự bịa field nếu backend không xác định được.
-      const fieldErrs = mapValidationErrors(err)
-      if (Object.keys(fieldErrs).length > 0) {
-        setFieldErrors(fieldErrs)
-      }
-      toast.error(err.message || t('common.error'))
-    } finally {
-      endMutation()
-    }
-  }, [
-    beginMutation,
-    customerId,
-    editBaseline,
-    editForm.displayName,
-    editForm.phone,
-    endMutation,
-    isDirty,
-    clearCustomerDraft,
-    normalizedEditForm.phone,
-    queryClient,
-    t,
-  ])
+    },
+    [
+      beginMutation,
+      customerId,
+      editBaseline,
+      editForm.displayName,
+      editForm.phone,
+      endMutation,
+      isDirty,
+      clearCustomerDraft,
+      normalizedEditForm.phone,
+      queryClient,
+      t,
+    ],
+  )
 
   // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở.
   useSaveShortcut(editOpen && !mutationBusy, handleEditSave)
 
-  if (state.status === 'loading') return <Screen><StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} /></Screen>
-  if (state.status === 'error') return <Screen><StatePanel tone="danger" title={t('customers.detail.error')} description={state.error || t('common.error')} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} /></Screen>
-  if (!state.customer) return (
-    <Screen>
-      <StatePanel
-        tone="neutral"
-        title={t('customers.detail.notFound')}
-        description={t('customers.detail.notFoundDesc')}
-        actionLabel={t('common.back')}
-        onAction={() => navigate('/admin/customers')}
-      />
-    </Screen>
-  )
+  if (state.status === 'loading')
+    return (
+      <Screen>
+        <StatePanel
+          tone="info"
+          title={t('customers.detail.loading')}
+          description={t('common.pleaseWait')}
+        />
+      </Screen>
+    )
+  if (state.status === 'error')
+    return (
+      <Screen>
+        <StatePanel
+          tone="danger"
+          title={t('customers.detail.error')}
+          description={state.error || t('common.error')}
+          actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+          onAction={handleRetry}
+        />
+      </Screen>
+    )
+  if (!state.customer)
+    return (
+      <Screen>
+        <StatePanel
+          tone="neutral"
+          title={t('customers.detail.notFound')}
+          description={t('customers.detail.notFoundDesc')}
+          actionLabel={t('common.back')}
+          onAction={() => navigate('/admin/customers')}
+        />
+      </Screen>
+    )
 
   const { customer } = state
 
@@ -444,40 +503,55 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     <Screen>
       <ScreenHeader
         eyebrow={t('customers.detail.eyebrow')}
-        title={(
+        title={
           <span className="flex min-w-0 items-center gap-3">
-            <CustomerAvatar avatarUrl={customer.avatarUrl} name={customer.fullName || customer.email} />
-            <span className="min-w-0 truncate">{formatText(customer.fullName, customer.email)}</span>
+            <CustomerAvatar
+              avatarUrl={customer.avatarUrl}
+              name={customer.fullName || customer.email}
+            />
+            <span className="min-w-0 truncate">
+              {formatText(customer.fullName, customer.email)}
+            </span>
           </span>
-        )}
+        }
         description={customer.fullName ? formatText(customer.email) : undefined}
         badge={<StatusBadge type="customer" status={customer.status} />}
-        actions={(
+        actions={
           <div className="flex flex-wrap justify-end gap-2">
-          {customer.avatarUrl && (
+            {customer.avatarUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={handleRemoveAvatar}
+                loading={avatarSaving}
+                disabled={!canUpdate || mutationBusy}
+              >
+                <ImageOff size={16} aria-hidden="true" />
+                {t('customers.detail.removeAvatar', { defaultValue: 'Xoá ảnh đại diện' })}
+              </Button>
+            )}
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="min-h-11"
-              onClick={handleRemoveAvatar}
-              loading={avatarSaving}
-              disabled={!canUpdate || mutationBusy}
+              onClick={() => navigate(`/admin/customers${readListQuery()}`)}
             >
-              <ImageOff size={16} aria-hidden="true" />
-              {t('customers.detail.removeAvatar', { defaultValue: 'Xoá ảnh đại diện' })}
+              <ArrowLeft size={16} aria-hidden="true" />
+              {stripLeadingArrow(t('customers.detail.backToList'))}
             </Button>
-          )}
-          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate(`/admin/customers${readListQuery()}`)}>
-            <ArrowLeft size={16} aria-hidden="true" />
-            {stripLeadingArrow(t('customers.detail.backToList'))}
-          </Button>
-        </div>
-        )}
+          </div>
+        }
       />
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
       {!canUpdate && (
-        <ReadOnlyBanner warning={t('customers.detail.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.' })} />
+        <ReadOnlyBanner
+          warning={t('customers.detail.readOnlyHint', {
+            defaultValue:
+              'Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.',
+          })}
+        />
       )}
 
       <div className="bb-kpi-grid bb-kpi-grid-4">
@@ -486,7 +560,11 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           tone="info"
           label={t('customers.detail.orderCount', { defaultValue: 'Tổng đơn hàng' })}
           value={(customer.orderCount ?? 0).toLocaleString()}
-          hint={customer.lastOrderAt ? t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' }) : t('customers.detail.noOrdersYet', { defaultValue: 'Chưa có đơn hàng' })}
+          hint={
+            customer.lastOrderAt
+              ? t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' })
+              : t('customers.detail.noOrdersYet', { defaultValue: 'Chưa có đơn hàng' })
+          }
         />
         <MetricCard
           icon={CreditCard}
@@ -494,7 +572,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           money
           label={t('customers.detail.totalSpent', { defaultValue: 'Tổng chi tiêu' })}
           value={formatCurrencyVnd(customer.totalSpent)}
-          hint={t('customers.detail.lifetimeValueHint', { defaultValue: 'Giá trị tích luỹ của khách' })}
+          hint={t('customers.detail.lifetimeValueHint', {
+            defaultValue: 'Giá trị tích luỹ của khách',
+          })}
         />
         <MetricCard
           icon={ReceiptText}
@@ -502,14 +582,18 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           money
           label={t('customers.detail.avgOrderValue', { defaultValue: 'Giá trị đơn TB (AOV)' })}
           value={formatCurrencyVnd(customer.avgOrderValue)}
-          hint={t('customers.detail.avgOrderValueHint', { defaultValue: 'Trung bình mỗi đơn hàng' })}
+          hint={t('customers.detail.avgOrderValueHint', {
+            defaultValue: 'Trung bình mỗi đơn hàng',
+          })}
         />
         <MetricCard
           icon={UserRound}
           tone="brand"
           label={t('customers.detail.segment', { defaultValue: 'Phân khúc' })}
           value={<SegmentBadge segment={customer.segment} />}
-          hint={t('customers.detail.segmentHint', { defaultValue: 'Dựa trên số đơn và tổng chi tiêu' })}
+          hint={t('customers.detail.segmentHint', {
+            defaultValue: 'Dựa trên số đơn và tổng chi tiêu',
+          })}
         />
       </div>
 
@@ -517,7 +601,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         <div className="grid gap-6 lg:col-span-2">
           <DetailSection title={t('customers.detail.sectionAccount')}>
             <dl className="m-0">
-              <DetailRow label={t('customers.detail.source', { defaultValue: 'Nguồn tài khoản' })} icon={UserRound}>
+              <DetailRow
+                label={t('customers.detail.source', { defaultValue: 'Nguồn tài khoản' })}
+                icon={UserRound}
+              >
                 <StatusBadge type="source" status={customer.isSynthetic} />
               </DetailRow>
               <DetailRow label={t('customers.detail.email')} icon={Mail}>
@@ -539,18 +626,26 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
               <DetailRow label={t('customers.detail.registered')} icon={CalendarDays}>
                 {formatDateTime(customer.createdAt)}
               </DetailRow>
-              <DetailRow label={t('customers.detail.emailVerified', { defaultValue: 'Email xác thực' })} icon={ShieldCheck}>
+              <DetailRow
+                label={t('customers.detail.emailVerified', { defaultValue: 'Email xác thực' })}
+                icon={ShieldCheck}
+              >
                 {customer.emailVerifiedAt
                   ? formatDateTime(customer.emailVerifiedAt)
                   : t('customers.detail.emailNotVerified', { defaultValue: 'Chưa xác thực' })}
               </DetailRow>
-              <DetailRow label={t('customers.detail.lastLogin', { defaultValue: 'Đăng nhập gần nhất' })} icon={Clock3}>
+              <DetailRow
+                label={t('customers.detail.lastLogin', { defaultValue: 'Đăng nhập gần nhất' })}
+                icon={Clock3}
+              >
                 {formatDateTime(customer.lastLoginAt)}
               </DetailRow>
             </dl>
           </DetailSection>
 
-          <DetailSection title={t('customers.detail.sectionAddresses', { defaultValue: 'Địa chỉ đã lưu' })}>
+          <DetailSection
+            title={t('customers.detail.sectionAddresses', { defaultValue: 'Địa chỉ đã lưu' })}
+          >
             {customer.addresses?.length ? (
               <div className="divide-y divide-border">
                 {customer.addresses.map((addr, i) => (
@@ -567,7 +662,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                     <div className="grid gap-1 text-sm text-muted-foreground">
                       {addr.phone ? <span>{addr.phone}</span> : null}
                       <span className="text-foreground">
-                        {[addr.addressLine1, addr.addressLine2, addr.ward, addr.district, addr.province]
+                        {[
+                          addr.addressLine1,
+                          addr.addressLine2,
+                          addr.ward,
+                          addr.district,
+                          addr.province,
+                        ]
                           .filter(Boolean)
                           .join(', ') || '—'}
                       </span>
@@ -576,37 +677,62 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                 ))}
               </div>
             ) : (
-              <EmptyInline icon={MapPin}>{t('customers.detail.noAddresses', { defaultValue: 'Khách hàng chưa lưu địa chỉ.' })}</EmptyInline>
+              <EmptyInline icon={MapPin}>
+                {t('customers.detail.noAddresses', {
+                  defaultValue: 'Khách hàng chưa lưu địa chỉ.',
+                })}
+              </EmptyInline>
             )}
           </DetailSection>
 
           <DetailSection title={t('customers.detail.sectionStats')}>
             <dl className="m-0">
-              <DetailRow label={t('customers.detail.firstOrder', { defaultValue: 'Đơn đầu tiên' })} icon={CalendarDays}>
+              <DetailRow
+                label={t('customers.detail.firstOrder', { defaultValue: 'Đơn đầu tiên' })}
+                icon={CalendarDays}
+              >
                 {formatDateTime(customer.firstOrderAt)}
               </DetailRow>
-              <DetailRow label={t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' })} icon={Clock3}>
+              <DetailRow
+                label={t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' })}
+                icon={Clock3}
+              >
                 {formatDateTime(customer.lastOrderAt)}
               </DetailRow>
             </dl>
           </DetailSection>
 
-          <DetailSection title={t('customers.detail.sectionLatestOrders', { defaultValue: 'Đơn hàng gần đây' })}>
+          <DetailSection
+            title={t('customers.detail.sectionLatestOrders', { defaultValue: 'Đơn hàng gần đây' })}
+          >
             {customer.latestOrders?.length ? (
               <div className="divide-y divide-border">
                 {customer.latestOrders.map((o) => (
-                  <div key={o.id || o.orderNumber} className="grid gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
+                  <div
+                    key={o.id || o.orderNumber}
+                    className="grid gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4"
+                  >
                     <div className="min-w-0">
-                      <p className="m-0 truncate font-mono text-sm font-semibold">#{formatText(o.orderNumber, o.id)}</p>
-                      <p className="m-0 text-xs text-muted-foreground">{formatDateTime(o.placedAt)}</p>
+                      <p className="m-0 truncate font-mono text-sm font-semibold">
+                        #{formatText(o.orderNumber, o.id)}
+                      </p>
+                      <p className="m-0 text-xs text-muted-foreground">
+                        {formatDateTime(o.placedAt)}
+                      </p>
                     </div>
                     <StatusBadge status={o.status} type="order" />
-                    <span className="text-sm font-semibold">{formatCurrencyVnd(o.totalAmount)}</span>
+                    <span className="text-sm font-semibold">
+                      {formatCurrencyVnd(o.totalAmount)}
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <EmptyInline icon={ReceiptText}>{t('customers.detail.noLatestOrders', { defaultValue: 'Chưa có đơn hàng gần đây.' })}</EmptyInline>
+              <EmptyInline icon={ReceiptText}>
+                {t('customers.detail.noLatestOrders', {
+                  defaultValue: 'Chưa có đơn hàng gần đây.',
+                })}
+              </EmptyInline>
             )}
           </DetailSection>
         </div>
@@ -615,23 +741,30 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           <DetailSection title={t('customers.detail.sectionStatus')}>
             <div className="grid gap-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-muted-foreground">{t('customers.detail.accountStatus')}</span>
+                <span className="text-sm font-semibold text-muted-foreground">
+                  {t('customers.detail.accountStatus')}
+                </span>
                 <StatusBadge type="customer" status={customer.status} />
               </div>
               {/* Unknown status, synthetic records, or view-only permission use a
                   read-only explanation instead of an empty Select. */}
-              {(canUpdate && !customer.isSynthetic && CUSTOMER_STATUSES.includes(customer.status)) ? (
+              {canUpdate && !customer.isSynthetic && CUSTOMER_STATUSES.includes(customer.status) ? (
                 <Select
                   value={customer.status}
                   onValueChange={handleStatusChange}
                   disabled={mutationBusy}
                 >
-                  <SelectTrigger className="min-h-11" aria-label={t('customers.detail.accountStatus')}>
+                  <SelectTrigger
+                    className="min-h-11"
+                    aria-label={t('customers.detail.accountStatus')}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {CUSTOMER_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+                      <SelectItem key={s} value={s}>
+                        {t(`status.customer.${s}`, { defaultValue: s })}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -645,36 +778,55 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
             </div>
           </DetailSection>
 
-          <DetailSection title={t('customers.detail.sectionEditProfile', { defaultValue: 'Chỉnh sửa hồ sơ' })}>
+          <DetailSection
+            title={t('customers.detail.sectionEditProfile', { defaultValue: 'Chỉnh sửa hồ sơ' })}
+          >
             {!editOpen ? (
               <div className="grid gap-3">
                 <p className="m-0 text-sm text-muted-foreground">
                   {canUpdate
-                    ? t('customers.detail.editProfileHint', { defaultValue: 'Cập nhật tên hiển thị và số điện thoại của khách hàng.' })
-                    : t('customers.detail.noEditPermission', { defaultValue: 'Bạn không có quyền chỉnh sửa hồ sơ này.' })}
+                    ? t('customers.detail.editProfileHint', {
+                        defaultValue: 'Cập nhật tên hiển thị và số điện thoại của khách hàng.',
+                      })
+                    : t('customers.detail.noEditPermission', {
+                        defaultValue: 'Bạn không có quyền chỉnh sửa hồ sơ này.',
+                      })}
                 </p>
                 {editAction}
               </div>
             ) : (
               <form onSubmit={handleEditSave} className="grid gap-3">
-                <FormField label={t('customers.detail.fieldDisplayName', { defaultValue: 'Tên hiển thị (tùy chọn)' })} error={fieldErrors.displayName}>
+                <FormField
+                  label={t('customers.detail.fieldDisplayName', {
+                    defaultValue: 'Tên hiển thị (tùy chọn)',
+                  })}
+                  error={fieldErrors.displayName}
+                >
                   <Input
                     type="text"
                     value={editForm.displayName}
                     maxLength={255}
                     onChange={(e) => {
                       setEditForm((p) => ({ ...p, displayName: e.target.value }))
-                      if (fieldErrors.displayName) setFieldErrors((p) => ({ ...p, displayName: undefined }))
+                      if (fieldErrors.displayName)
+                        setFieldErrors((p) => ({ ...p, displayName: undefined }))
                     }}
                     disabled={mutationBusy}
                   />
                 </FormField>
                 <FormField
                   label={t('customers.detail.fieldPhone', { defaultValue: 'Số điện thoại' })}
-                  error={phoneError
-                    ? t('customers.detail.phoneFormatHint', { defaultValue: 'Số điện thoại sau chuẩn hoá phải gồm 8–15 chữ số; có thể nhập dấu +, khoảng trắng, dấu chấm, gạch ngang hoặc ngoặc.' })
-                    : fieldErrors.phone}
-                  helper={t('customers.detail.phoneEmptyHint', { defaultValue: 'Để trống nếu chưa có.' })}
+                  error={
+                    phoneError
+                      ? t('customers.detail.phoneFormatHint', {
+                          defaultValue:
+                            'Số điện thoại sau chuẩn hoá phải gồm 8–15 chữ số; có thể nhập dấu +, khoảng trắng, dấu chấm, gạch ngang hoặc ngoặc.',
+                        })
+                      : fieldErrors.phone
+                  }
+                  helper={t('customers.detail.phoneEmptyHint', {
+                    defaultValue: 'Để trống nếu chưa có.',
+                  })}
                 >
                   <Input
                     type="text"
@@ -698,7 +850,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                     <Save size={16} aria-hidden="true" />
                     {t('common.save')}
                   </Button>
-                  <Button type="button" variant="outline" className="min-h-11" onClick={handleEditCancel} disabled={mutationBusy}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                    onClick={handleEditCancel}
+                    disabled={mutationBusy}
+                  >
                     <X size={16} aria-hidden="true" />
                     {t('common.cancel')}
                   </Button>
@@ -711,12 +869,18 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
 
       {reasonModal && (
         <CustomerStatusReasonModal
-          title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
+          title={t('customers.detail.statusConfirmTitle', {
+            defaultValue: 'Đổi trạng thái tài khoản',
+          })}
           description={t('customers.detail.statusConfirmBody', {
             status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
-          confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}
+          confirmVariant={
+            reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED'
+              ? 'danger'
+              : 'default'
+          }
           loading={statusSaving}
           onConfirm={async (reason) => {
             const ok = await applyStatusChange(reasonModal.value, reason)

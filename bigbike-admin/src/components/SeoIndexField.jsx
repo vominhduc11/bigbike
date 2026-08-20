@@ -46,7 +46,9 @@ export function SeoIndexField({
       <label className="flex w-fit cursor-pointer items-center gap-2.5 border border-border p-2.5 text-sm hover:bg-muted">
         <Checkbox
           checked={visible}
-          onCheckedChange={(checked) => onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)}
+          onCheckedChange={(checked) =>
+            onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)
+          }
           disabled={disabled}
         />
         <span>
@@ -75,8 +77,8 @@ export function SeoIndexField({
       {blockedByContent && (
         <span className="hint text-warning flex items-center gap-1">
           <EyeOff size={13} aria-hidden="true" />
-          {englishReadyHint
-            || t('seoIndex.englishNotReady', {
+          {englishReadyHint ||
+            t('seoIndex.englishNotReady', {
               defaultValue:
                 'Bản tiếng Anh chưa đủ nội dung nên vẫn chưa hiển thị trên Google dù đã bật. Bổ sung nội dung tiếng Anh để trang được tính là bản dịch thật.',
             })}

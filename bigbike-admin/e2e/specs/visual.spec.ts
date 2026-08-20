@@ -13,7 +13,10 @@ import { navigateSpa } from '../utils/quality'
  */
 
 testAnon.describe('Visual · login', () => {
-  for (const vp of [{ n: 'desktop', w: 1440, h: 900 }, { n: 'mobile', w: 390, h: 844 }]) {
+  for (const vp of [
+    { n: 'desktop', w: 1440, h: 900 },
+    { n: 'mobile', w: 390, h: 844 },
+  ]) {
     testAnon(`login ${vp.n}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.w, height: vp.h })
       await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
@@ -42,12 +45,16 @@ test('visual · sidebar chrome (desktop)', async ({ adminPage }) => {
 test('visual · confirm dialog', async ({ adminPage }) => {
   // Block destructive requests as a safety net.
   await adminPage.route('**/api/v1/**', (route) =>
-    route.request().method() === 'DELETE' ? route.abort() : route.continue())
+    route.request().method() === 'DELETE' ? route.abort() : route.continue(),
+  )
 
   await navigateSpa(adminPage, '/admin/sliders')
   const del = adminPage.locator('.bb-page-content button', { hasText: /^Xo[áạ]$/ }).first()
   if (!(await del.count())) {
-    test.info().annotations.push({ type: 'skip', description: 'No deletable slider row for dialog snapshot' })
+    test.info().annotations.push({
+      type: 'skip',
+      description: 'No deletable slider row for dialog snapshot',
+    })
     return
   }
   await del.click()

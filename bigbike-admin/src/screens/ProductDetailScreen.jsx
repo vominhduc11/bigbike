@@ -3,7 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, ChevronRight, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Info,
+  Loader2,
+  Lock,
+  Save,
+  Search as PfSearch,
+  X,
 } from 'lucide-react'
 
 import {
@@ -25,7 +35,12 @@ import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
 import { queryKeys } from '../lib/queryKeys'
-import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
+import {
+  createProductSchema,
+  zodErrors,
+  normalizeVariantToken,
+  isColorAttributeName,
+} from '../lib/schemas'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -107,22 +122,11 @@ import {
 // ngữ theo contentLang; ĐƯỜNG DẪN link (linkUrl) dùng chung cả VI/EN (không dịch). Mirror FaqEditor.
 // (V246) SuitabilityEditor đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong trình dựng mô tả.
 
-import {
-  CommitmentEditor,
-  SpecStatEditor,
-  TrustBadgesEditor,
-} from './product-detail/RowEditors'
-import {
-  VariantsEditor,
-  VariantMatrixWizard,
-} from './product-detail/VariantEditors'
+import { CommitmentEditor, SpecStatEditor, TrustBadgesEditor } from './product-detail/RowEditors'
+import { VariantsEditor, VariantMatrixWizard } from './product-detail/VariantEditors'
 // ── Prototype form layout ───────────────────────────────────────────────────────
 
-import {
-  RelatedProductRow,
-  RoleBadge,
-  AssignmentBanner,
-} from './product-detail/Layout'
+import { RelatedProductRow, RoleBadge, AssignmentBanner } from './product-detail/Layout'
 import { SectionCard } from '../components/SectionCard'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
@@ -135,11 +139,26 @@ import { PublishChecklistModal } from './product-detail/Modals'
 const EMPTY_ITEMS = []
 // Thụt lề theo cấp trong cây danh mục bằng class Tailwind có sẵn; cấp sâu hơn
 // dùng lại mức sâu nhất để không cần arbitrary spacing.
-const CATEGORY_TREE_INDENT_CLASSES = ['pl-2', 'pl-6', 'pl-10', 'pl-14', 'pl-16', 'pl-20', 'pl-24', 'pl-28']
+const CATEGORY_TREE_INDENT_CLASSES = [
+  'pl-2',
+  'pl-6',
+  'pl-10',
+  'pl-14',
+  'pl-16',
+  'pl-20',
+  'pl-24',
+  'pl-28',
+]
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
-export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate, canReadCatalog }) {
+export function ProductDetailScreen({
+  productId,
+  isCreate = false,
+  navigate,
+  canUpdate,
+  canReadCatalog,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -165,7 +184,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // (KHÔNG lưu) lấy public Product và đẩy sang iframe. Reuse VITE_STOREFRONT_BASE_URL
   // (origin web đã dùng cho link admin→storefront). Docs: API_CONTRACT "Product
   // preview" + WORKFLOW_OVERVIEW "Product Authoring & Live Preview".
-  const storefrontOrigin = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+  const storefrontOrigin = (
+    import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'
+  ).replace(/\/$/, '')
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLang, setPreviewLang] = useState('vi')
   const [previewDevice, setPreviewDevice] = useState('desktop')
@@ -214,7 +235,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Ưu điểm & Nhược điểm: 1 công tắc Nhập có cấu trúc/Dán mã HTML dùng chung cho cả 2 cột
   const [highlightsMode, setHighlightsMode] = useState('structured')
 
-  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
+  const {
+    data: fetchResult,
+    isLoading,
+    isError,
+    error: fetchError,
+    refetch,
+  } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => fetchProductDetail(productId),
     enabled: !isCreate,
@@ -254,11 +281,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     staleTime: 5 * 60 * 1000,
   })
   const categoriesResult = useMemo(
-    () => (isEn ? { items: overlayEnNames(categoriesResultVi?.items, categoriesResultEn?.items) } : categoriesResultVi),
+    () =>
+      isEn
+        ? { items: overlayEnNames(categoriesResultVi?.items, categoriesResultEn?.items) }
+        : categoriesResultVi,
     [isEn, categoriesResultVi, categoriesResultEn],
   )
   const brandsResult = useMemo(
-    () => (isEn ? { items: overlayEnNames(brandsResultVi?.items, brandsResultEn?.items) } : brandsResultVi),
+    () =>
+      isEn
+        ? { items: overlayEnNames(brandsResultVi?.items, brandsResultEn?.items) }
+        : brandsResultVi,
     [isEn, brandsResultVi, brandsResultEn],
   )
   // Editable "Phân công" banner text (role names + task lists). Read-only here
@@ -297,21 +330,28 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const brandOptions = prependSelectedOption(brands, selectedBrandRef)
   // Nhãn "Cha › Con › Cháu" để phân biệt cha/con khi cây danh mục có nhiều cấp.
   const categoryPathById = useMemo(() => buildCategoryPathMap(categoryOptions), [categoryOptions])
-  const categoryParentPathById = useMemo(() => buildCategoryParentPathMap(categoryOptions), [categoryOptions])
+  const categoryParentPathById = useMemo(
+    () => buildCategoryParentPathMap(categoryOptions),
+    [categoryOptions],
+  )
   // Thứ tự cây + độ sâu để thụt lề con dưới cha trong ô chọn danh mục.
   const categoryTree = useMemo(() => buildCategoryTreeOrder(categoryOptions), [categoryOptions])
-  const selectedCategories = (form.categoryIds ?? []).map((id) => (
-    findOptionById(categoryOptions, id) || {
-      id,
-      name: t('products.detail.optionNotFound', { id }),
-      slug: id,
-      visible: false,
-      deleted: true,
-    }
-  ))
+  const selectedCategories = (form.categoryIds ?? []).map(
+    (id) =>
+      findOptionById(categoryOptions, id) || {
+        id,
+        name: t('products.detail.optionNotFound', { id }),
+        slug: id,
+        visible: false,
+        deleted: true,
+      },
+  )
   // Cha (mọi cấp) có ít nhất 1 con trong categoryTree — quyết định hiện mũi tên
   // mở/thu ở ô chọn danh mục.
-  const categoryIdsWithChildren = useMemo(() => buildCategoryChildrenSet(categoryTree), [categoryTree])
+  const categoryIdsWithChildren = useMemo(
+    () => buildCategoryChildrenSet(categoryTree),
+    [categoryTree],
+  )
   // Tổ tiên (mọi cấp) của các danh mục đang được chọn — tự mở để không ẩn mất
   // lựa chọn hiện có khi sửa sản phẩm cũ.
   const autoExpandCategoryIds = useMemo(() => {
@@ -326,7 +366,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     }
     return result
   }, [categoryTree, form.categoryIds])
-  const [expandedCategoryIds, setExpandedCategoryIds] = useState(() => new Set(autoExpandCategoryIds))
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState(
+    () => new Set(autoExpandCategoryIds),
+  )
   // Đồng bộ trong lúc render (không phải effect) khi form.categoryIds đổi thật
   // (load sản phẩm / tick chọn) — so sánh theo form.categoryIds (chỉ đổi
   // reference qua setForm) chứ không theo autoExpandCategoryIds: categoryTree
@@ -506,15 +548,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   function toggleProductCategory(categoryId) {
     if (isReadOnly) return
     const category = findOptionById(categoryOptions, categoryId)
-    const isLocked = category?.deleted === true || category?.visible === false || category?.isVisible === false
+    const isLocked =
+      category?.deleted === true || category?.visible === false || category?.isVisible === false
     const selected = form.categoryIds?.includes(categoryId)
     if (isLocked && !selected) return
-    setProductCategories(selected
-      ? form.categoryIds.filter((id) => id !== categoryId)
-      : [
-          ...(form.categoryIds ?? []).filter((id) => id !== SYSTEM_CATEGORY_ID),
-          categoryId,
-        ])
+    setProductCategories(
+      selected
+        ? form.categoryIds.filter((id) => id !== categoryId)
+        : [...(form.categoryIds ?? []).filter((id) => id !== SYSTEM_CATEGORY_ID), categoryId],
+    )
   }
 
   function moveProductCategory(categoryId, direction) {
@@ -745,7 +787,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isCreate ? createProduct(payload) : updateProduct(productId, payload),
+    mutationFn: (payload) =>
+      isCreate ? createProduct(payload) : updateProduct(productId, payload),
     onSuccess: (response) => {
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(savedItem)
@@ -757,7 +800,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['products'] })
       if (!isCreate) queryClient.setQueryData(['product', productId], response)
-      toast.success(isCreate ? t('products.detail.successCreate') : t('products.detail.successUpdate'))
+      toast.success(
+        isCreate ? t('products.detail.successCreate') : t('products.detail.successUpdate'),
+      )
       setIsSubmitting(false)
       // Briefly flash the "saved" dot in the TOC save bar.
       setSavedFlash(true)
@@ -782,7 +827,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         error.message || t('products.detail.errSaveFailed'),
         hasFieldErrors
           ? undefined
-          : { action: { label: t('common.retry', { defaultValue: 'Thử lại' }), onClick: () => handleSave() } },
+          : {
+              action: {
+                label: t('common.retry', { defaultValue: 'Thử lại' }),
+                onClick: () => handleSave(),
+              },
+            },
       )
       setIsSubmitting(false)
     },
@@ -802,7 +852,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         }
       })
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
+      toast.success(
+        t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }),
+      )
       setIsPublishToggling(false)
     },
     onError: (error) => {
@@ -814,22 +866,25 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   function focusFirstError() {
     // Use double-rAF so we run AFTER React's commit phase, including the
     // adjust-state-during-render pass that auto-expands a variant card.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const errorEl = formRef.current?.querySelector('.field-error')
-      if (!errorEl) return
-      const container = errorEl.closest('label, .form-field')
-      // Try native focusable inputs first, then fall back to combobox (shadcn
-      // Select) or contenteditable (RichTextEditor) — both of which querySelector
-      // 'input, select, textarea' misses.
-      const focusTarget =
-        container?.querySelector('input, textarea, [contenteditable="true"], [role="combobox"]') ??
-        errorEl
-      if (typeof focusTarget.focus === 'function') {
-        focusTarget.focus()
-      } else {
-        errorEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
-      }
-    }))
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const errorEl = formRef.current?.querySelector('.field-error')
+        if (!errorEl) return
+        const container = errorEl.closest('label, .form-field')
+        // Try native focusable inputs first, then fall back to combobox (shadcn
+        // Select) or contenteditable (RichTextEditor) — both of which querySelector
+        // 'input, select, textarea' misses.
+        const focusTarget =
+          container?.querySelector(
+            'input, textarea, [contenteditable="true"], [role="combobox"]',
+          ) ?? errorEl
+        if (typeof focusTarget.focus === 'function') {
+          focusTarget.focus()
+        } else {
+          errorEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      }),
+    )
   }
 
   // Khi lưu lỗi (client hoặc server trả về): chuyển sang tab chứa lỗi, BUNG các nhóm đang thu gọn
@@ -838,9 +893,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     const hasEnglishError = Object.keys(errorsMap).some((key) => key.startsWith('translations.en.'))
     if (hasEnglishError && !isEnLang) {
       setContentLang('en')
-      toast.error(t('products.detail.englishErrorsToast', {
-        defaultValue: 'Có lỗi ở nội dung tiếng Anh. Màn hình đã chuyển sang English để bạn bổ sung.',
-      }))
+      toast.error(
+        t('products.detail.englishErrorsToast', {
+          defaultValue:
+            'Có lỗi ở nội dung tiếng Anh. Màn hình đã chuyển sang English để bạn bổ sung.',
+        }),
+      )
     }
     const failedSections = computeSectionErrorsFromMap(errorsMap)
     const failedTab = findTabForErrors(failedSections)
@@ -874,8 +932,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     const attrWarn = computeAttrSetWarning(formToSave.variants ?? [], t)
     if (attrWarn) {
       for (const o of attrWarn.offenders) {
-        clientErrors[`variants.${o.index - 1}.options`] =
-          t('products.detail.variant.attrSetErrorField', { missing: o.missing })
+        clientErrors[`variants.${o.index - 1}.options`] = t(
+          'products.detail.variant.attrSetErrorField',
+          { missing: o.missing },
+        )
       }
     }
 
@@ -888,7 +948,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
     const currentCategoryIds = formToSave.categoryIds ?? []
     const initialCategoryIds = formToSave.initialCategoryIds ?? []
-    const categoriesChanged = currentCategoryIds.length !== initialCategoryIds.length ||
+    const categoriesChanged =
+      currentCategoryIds.length !== initialCategoryIds.length ||
       currentCategoryIds.some((id, index) => id !== initialCategoryIds[index])
 
     setIsSubmitting(true)
@@ -902,7 +963,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       return null
     }
   }
-
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
   // 2 tab: "main" gộp toàn bộ nội dung sản phẩm theo đúng thứ tự khối trên PDP bigbike-web
@@ -1003,7 +1063,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   const sectionErrors = computeSectionErrorsFromMap(validationErrors)
   const tabCounts = Object.fromEntries(
-    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
+    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [
+      tab,
+      keys.filter((k) => sectionErrors[k]).length,
+    ]),
   )
   // Badge số lỗi cho từng tab: tô màu cảnh báo (danger token) + nhãn ẩn cho trình
   // đọc màn hình để phân biệt với badge đếm thông thường ("N lỗi" thay vì số trơ).
@@ -1027,8 +1090,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     if (!count) return undefined
     return (
       <span className="ml-auto whitespace-nowrap text-xs font-bold text-danger">
-        <span aria-hidden="true">{t('products.detail.groupErrorCount', { count, defaultValue: '{{count}} lỗi' })}</span>
-        <span className="sr-only">{t('products.detail.groupErrorCountFull', { count, defaultValue: '{{count}} lỗi cần sửa' })}</span>
+        <span aria-hidden="true">
+          {t('products.detail.groupErrorCount', { count, defaultValue: '{{count}} lỗi' })}
+        </span>
+        <span className="sr-only">
+          {t('products.detail.groupErrorCountFull', {
+            count,
+            defaultValue: '{{count}} lỗi cần sửa',
+          })}
+        </span>
       </span>
     )
   }
@@ -1040,21 +1110,57 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const seoDescVal = langValue('seoDescription')
   const seoDescPlain = stripHtml(seoDescVal, '')
   const seoChecks = [
-    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
-    { ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165, hint: seoDescPlain.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–165 ký tự' }) },
-    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
-    { ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(), label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có mô tả' }) },
-    { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
-    { ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0, label: t('products.detail.seoCheckSchema', { defaultValue: 'Thông tin sản phẩm có đủ ảnh và giá' }) },
+    {
+      ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60,
+      hint: seoTitleVal.length,
+      label: t('products.detail.seoCheckTitle', {
+        defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự',
+      }),
+    },
+    {
+      ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165,
+      hint: seoDescPlain.length,
+      label: t('products.detail.seoCheckDesc', {
+        defaultValue: 'Mô tả trên Google dài 140–165 ký tự',
+      }),
+    },
+    {
+      ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug),
+      label: t('products.detail.seoCheckSlug', {
+        defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang',
+      }),
+    },
+    {
+      ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(),
+      label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có mô tả' }),
+    },
+    {
+      ok: !!form.seoOgImageUrl,
+      label: t('products.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }),
+    },
+    {
+      ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0,
+      label: t('products.detail.seoCheckSchema', {
+        defaultValue: 'Thông tin sản phẩm có đủ ảnh và giá',
+      }),
+    },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
   // ── Save-bar derivations ────────────────────────────────────────────────────
-  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
+  const saveDotState = isSubmitting
+    ? 'saving'
+    : savedFlash
+      ? 'saved-flash'
+      : isDirty
+        ? 'dirty'
+        : 'saved'
   const saveDotClass =
-    saveDotState === 'saving'      ? 'bg-info animate-pulse'
-    : saveDotState === 'dirty'     ? 'bg-warning animate-pulse'
-    :                                'bg-success'
+    saveDotState === 'saving'
+      ? 'bg-info animate-pulse'
+      : saveDotState === 'dirty'
+        ? 'bg-warning animate-pulse'
+        : 'bg-success'
   const saveLabel = isSubmitting
     ? t('products.detail.savingShort', { defaultValue: 'Đang lưu...' })
     : isDirty
@@ -1069,7 +1175,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const isTrashed = form.publishStatus === 'TRASH'
   const primaryLabel = isTrashed
     ? t('products.detail.restoreAndSave')
-    : isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
+    : isPublished
+      ? t('products.detail.saveBtn')
+      : t('products.detail.saveDraft')
   const publishActionLabel = isPublished
     ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' })
     : t('products.publishAction', { defaultValue: 'Xuất bản' })
@@ -1082,9 +1190,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   async function handlePublishAction() {
     if (!canUpdate || isCreate || isTrashed || isPublishToggling) return
     if (isDirty) {
-      toast.info(t('products.detail.publishRequiresSavedForm', {
-        defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
-      }))
+      toast.info(
+        t('products.detail.publishRequiresSavedForm', {
+          defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
+        }),
+      )
       return
     }
 
@@ -1151,1370 +1261,1707 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   return (
     <AssignmentConfigContext.Provider value={assignmentConfig ?? null}>
-    <div className="flex w-full min-w-0 items-start gap-6">
-    {/* @container: các lưới trong form co theo BỀ RỘNG CỘT NÀY, không theo cửa sổ —
+      <div className="flex w-full min-w-0 items-start gap-6">
+        {/* @container: các lưới trong form co theo BỀ RỘNG CỘT NÀY, không theo cửa sổ —
         khi kéo khung xem trước rộng ra làm cột hẹp lại thì lưới tự về 1 cột, không chật. */}
-    <div className="@container min-w-0 flex-1 basis-0">
-    <Screen maxWidth="1440px">
-        <ScreenHeader
-          eyebrow={t('products.detail.eyebrow')}
-          title={isCreate
-            ? t('products.detail.createTitle')
-            : (langValue('name') || form.name || t('products.detail.editTitle'))}
-          description={
-            !isCreate && state.item?.updatedAt ? (
-              <span className="text-xs">
-                {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-                {isEnLang && (
-                  <>
-                    {' · '}
+        <div className="@container min-w-0 flex-1 basis-0">
+          <Screen maxWidth="1440px">
+            <ScreenHeader
+              eyebrow={t('products.detail.eyebrow')}
+              title={
+                isCreate
+                  ? t('products.detail.createTitle')
+                  : langValue('name') || form.name || t('products.detail.editTitle')
+              }
+              description={
+                !isCreate && state.item?.updatedAt ? (
+                  <span className="text-xs">
+                    {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
+                    {isEnLang && (
+                      <>
+                        {' · '}
+                        {t('products.detail.langEnHint', {
+                          defaultValue:
+                            'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
+                        })}
+                      </>
+                    )}
+                  </span>
+                ) : isEnLang ? (
+                  <span className="text-xs">
                     {t('products.detail.langEnHint', {
-                      defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
+                      defaultValue:
+                        'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
                     })}
-                  </>
-                )}
-              </span>
-            ) : isEnLang ? (
-              <span className="text-xs">
-                {t('products.detail.langEnHint', {
-                  defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
-                })}
-              </span>
-            ) : null
-          }
-          badge={
-            <span className="inline-flex items-center gap-2">
-              <span className={publishBadgeClass(form.publishStatus)}>
-                {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
-              </span>
-              {!canUpdate && (
-                <span className="bb-badge bb-badge-warning">
-                  <Lock size={11} />
-                  {t('products.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
+                  </span>
+                ) : null
+              }
+              badge={
+                <span className="inline-flex items-center gap-2">
+                  <span className={publishBadgeClass(form.publishStatus)}>
+                    {t(`status.publish.${form.publishStatus}`, {
+                      defaultValue: form.publishStatus,
+                    })}
+                  </span>
+                  {!canUpdate && (
+                    <span className="bb-badge bb-badge-warning">
+                      <Lock size={11} />
+                      {t('products.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-          }
-          actions={
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="min-h-11 min-w-11"
-                onClick={handleClose}
-                aria-label={t('common.cancel')}
-                data-screen-close="true"
-              >
-                <X size={18} />
-              </Button>
-            </div>
-          }
-        />
+              }
+              actions={
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="min-h-11 min-w-11"
+                    onClick={handleClose}
+                    aria-label={t('common.cancel')}
+                    data-screen-close="true"
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+              }
+            />
 
-        {/* Banners — trash / read-only / draft-recovery */}
-        {isTrashed && (
-          <div className="bb-alert warning wrap">
-            <AlertCircle size={16} className="shrink-0" />
-            <div className="bb-alert-main">{t('products.detail.trashWarning')}</div>
-          </div>
-        )}
+            {/* Banners — trash / read-only / draft-recovery */}
+            {isTrashed && (
+              <div className="bb-alert warning wrap">
+                <AlertCircle size={16} className="shrink-0" />
+                <div className="bb-alert-main">{t('products.detail.trashWarning')}</div>
+              </div>
+            )}
 
-        {hasOtherAdmin ? (
-          <Alert tone="warning" size="sm" className="mb-4">
-            {t('presence.otherAdminProduct', { defaultValue: 'Có quản trị viên khác đang mở sản phẩm này. Hãy kiểm tra dữ liệu trước khi lưu.' })}
-          </Alert>
-        ) : null}
+            {hasOtherAdmin ? (
+              <Alert tone="warning" size="sm" className="mb-4">
+                {t('presence.otherAdminProduct', {
+                  defaultValue:
+                    'Có quản trị viên khác đang mở sản phẩm này. Hãy kiểm tra dữ liệu trước khi lưu.',
+                })}
+              </Alert>
+            ) : null}
 
-        {!canUpdate && (
-          <div className="bb-alert warning tight center">
-            <Lock size={16} className="shrink-0" />
-            <span>{t('products.detail.permissionDesc')}</span>
-          </div>
-        )}
+            {!canUpdate && (
+              <div className="bb-alert warning tight center">
+                <Lock size={16} className="shrink-0" />
+                <span>{t('products.detail.permissionDesc')}</span>
+              </div>
+            )}
 
-        {state.warning && (
-          <div className="bb-alert warning tight">
-            <AlertCircle size={16} className="shrink-0" />
-            <div className="bb-alert-main">{state.warning}</div>
-          </div>
-        )}
+            {state.warning && (
+              <div className="bb-alert warning tight">
+                <AlertCircle size={16} className="shrink-0" />
+                <div className="bb-alert-main">{state.warning}</div>
+              </div>
+            )}
 
-        {draftRecovery && (
-          <div className="bb-alert info tight center wrap">
-            <Save size={14} className="shrink-0" />
-            <span className="bb-alert-main truncate">
-              <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
-              {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
-            </span>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto px-0 py-0 text-xs font-semibold"
-              onClick={() => {
-                setForm(draftRecovery.form)
-                setIsDirty(true)
-                setDraftRecovery(null)
-                slugEditedByUser.current = Boolean(draftRecovery.form.slug)
-                enSlugEditedByUser.current = Boolean(draftRecovery.form.translations?.en?.slug)
+            {draftRecovery && (
+              <div className="bb-alert info tight center wrap">
+                <Save size={14} className="shrink-0" />
+                <span className="bb-alert-main truncate">
+                  <strong>
+                    {t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}
+                  </strong>
+                  {' · '}
+                  {formatDateTime(new Date(draftRecovery.ts).toISOString())}
+                </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto px-0 py-0 text-xs font-semibold"
+                  onClick={() => {
+                    setForm(draftRecovery.form)
+                    setIsDirty(true)
+                    setDraftRecovery(null)
+                    slugEditedByUser.current = Boolean(draftRecovery.form.slug)
+                    enSlugEditedByUser.current = Boolean(draftRecovery.form.translations?.en?.slug)
+                  }}
+                >
+                  {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto px-0 py-0 text-xs font-normal"
+                  onClick={() => {
+                    clearFormFromStorage(autosaveKey)
+                    setDraftRecovery(null)
+                  }}
+                >
+                  {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+                </Button>
+              </div>
+            )}
+
+            {/* Assignment banner — always visible */}
+            <AssignmentBanner t={t} />
+
+            <Tabs
+              ariaLabel={t('products.detail.tabsAriaLabel', { defaultValue: 'Phần của sản phẩm' })}
+              value={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: 'main',
+                  label: t('products.detail.tabMain', { defaultValue: 'Thông tin sản phẩm' }),
+                  count: tabErrorBadge(tabCounts.main),
+                },
+                {
+                  key: 'seo',
+                  label: t('products.detail.tabSeo', { defaultValue: 'SEO' }),
+                  count: tabErrorBadge(tabCounts.seo),
+                },
+              ]}
+            />
+
+            <form
+              ref={formRef}
+              className="flex flex-col gap-6 pb-24"
+              onSubmit={(e) => {
+                e.preventDefault()
+                handlePrimarySave()
+              }}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
+                  e.preventDefault()
+                  handlePrimarySave()
+                }
               }}
             >
-              {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto px-0 py-0 text-xs font-normal"
-              onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
-            >
-              {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-            </Button>
-          </div>
-        )}
-
-        {/* Assignment banner — always visible */}
-        <AssignmentBanner t={t} />
-
-        <Tabs
-          ariaLabel={t('products.detail.tabsAriaLabel', { defaultValue: 'Phần của sản phẩm' })}
-          value={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: 'main', label: t('products.detail.tabMain', { defaultValue: 'Thông tin sản phẩm' }), count: tabErrorBadge(tabCounts.main) },
-            { key: 'seo',  label: t('products.detail.tabSeo', { defaultValue: 'SEO' }),                 count: tabErrorBadge(tabCounts.seo) },
-          ]}
-        />
-
-        <form
-          ref={formRef}
-          className="flex flex-col gap-6 pb-24"
-          onSubmit={(e) => { e.preventDefault(); handlePrimarySave() }}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
-              e.preventDefault()
-              handlePrimarySave()
-            }
-          }}
-        >
-          {activeTab === 'main' && (
-            <>
-              {/* ══ Nhóm 1: Bán hàng & hình ảnh ══ */}
-              <CollapsibleSection
-                title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & hình ảnh' })}
-                hint={t('products.detail.groupSalesHint', { defaultValue: 'Thông tin để bán: cơ bản, ảnh, giá, biến thể' })}
-                open={openGroups.sales}
-                onToggle={() => toggleGroup('sales')}
-                badge={mainGroupErrorBadge('sales')}
-                keepMounted
-              >
-
-              {/* ── Card: Thông tin cơ bản ── */}
-              <SectionCard
-                title={t('products.detail.sectionBasic')}
-                required
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <RoleBadge role="content" />
-                    <RoleBadge role="seo" />
-                  </div>
-                }
-              >
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field
-                    full
-                    label={t('products.detail.name')}
-                    required
-                    count={`${langValue('name').length} / 255`}
-                    countWarn={langValue('name').length > 230}
-                    error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
+              {activeTab === 'main' && (
+                <>
+                  {/* ══ Nhóm 1: Bán hàng & hình ảnh ══ */}
+                  <CollapsibleSection
+                    title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & hình ảnh' })}
+                    hint={t('products.detail.groupSalesHint', {
+                      defaultValue: 'Thông tin để bán: cơ bản, ảnh, giá, biến thể',
+                    })}
+                    open={openGroups.sales}
+                    onToggle={() => toggleGroup('sales')}
+                    badge={mainGroupErrorBadge('sales')}
+                    keepMounted
                   >
-                    <Input
-                      value={langValue('name')}
-                      onChange={(e) => (isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value))}
-                      onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.name' : 'name')}
-                      disabled={isReadOnly}
-                      maxLength={255}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.slug')}
-                    required={!isEnLang}
-                    error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
-                    // Trùng slug VI/EN KHÔNG chặn lưu (owner decision 2026-08-06): sản phẩm tên vốn
-                    // tiếng Anh (mã máy như komine-jk-176) trùng là hợp lệ. Chỉ nhắc để tránh lặp lại
-                    // sự cố slug tiếng Anh đè lên slug tiếng Việt của sản phẩm tên tiếng Việt.
-                    warning={isEnLang && enSlugDuplicatesVi
-                      ? t('products.detail.slugDuplicateEnVi')
-                      : undefined}
-                    helper={isEnLang
-                      ? t('products.detail.slugHintEn')
-                      : t('products.detail.slugHint')}
-                  >
-                    <Input
-                      value={isEnLang ? (form.translations?.en?.slug || '') : (form.slug || '')}
-                      placeholder={isEnLang
-                        ? t('products.detail.slugPlaceholderEn')
-                        : t('products.detail.slugPlaceholderVi')}
-                      onChange={(e) => (isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value))}
-                      onBlur={(e) => {
-                        if (isEnLang) {
-                          handleEnSlugBlur(e.target.value)
-                          validateFieldOnBlur('translations.en.slug')
-                        } else {
-                          handleSlugBlur(e.target.value)
-                          validateFieldOnBlur('slug')
-                        }
-                      }}
-                      disabled={isReadOnly}
-                      maxLength={isEnLang ? 100 : 200}
-                      className="font-mono"
-                    />
-                  </Field>
-
-                  <Field
-                    label={t('products.detail.sku')}
-                    count={`${form.sku.length} / 100`}
-                    countWarn={form.sku.length > 85}
-                    helper={t('products.detail.skuHint')}
-                    required
-                    error={validationErrors.sku}
-                  >
-                    <Input
-                      value={form.sku}
-                      onChange={(e) => updateField('sku', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={100}
-                      className="font-mono"
-                    />
-                  </Field>
-
-                  <Field
-                    label={t('products.detail.categoryIds')}
-                    required
-                    error={validationErrors.categoryIds || (categoriesLoadError ? t('products.detail.categoriesLoadError', { defaultValue: 'Không tải được danh mục. Vui lòng tải lại trang.' }) : undefined)}
-                  >
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full justify-between font-normal"
-                          disabled={isReadOnly}
-                          onBlur={() => validateFieldOnBlur('categoryIds')}
-                        >
-                          {selectedCategories.length > 0
-                            ? t('products.detail.categorySelectedCount', { count: selectedCategories.length })
-                            : t('products.detail.categoryPlaceholder')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" className="w-80 p-2">
-                        <p className="px-2 py-1 text-xs text-muted-foreground">
-                          {t('products.detail.categoryPickerHint')}
-                        </p>
-                        <div className="max-h-64 space-y-1 overflow-y-auto">
-                          {visibleCategoryTreeRows.map((category) => {
-                            const selected = form.categoryIds?.includes(category.id)
-                            const locked = category.deleted === true || category.visible === false || category.isVisible === false
-                            const hasChildren = categoryIdsWithChildren.has(category.id)
-                            const isExpanded = expandedCategoryIds.has(category.id)
-                            const parentPath = categoryParentPathById.get(category.id)
-                            return (
-                              <div
-                                key={category.id}
-                                title={categoryPathById.get(category.id) || category.name}
-                                className={cn(
-                                  'flex min-h-11 items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
-                                  CATEGORY_TREE_INDENT_CLASSES[Math.min(category.depth, CATEGORY_TREE_INDENT_CLASSES.length - 1)],
-                                  locked && !selected && 'opacity-60',
-                                )}
-                              >
-                                {hasChildren ? (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="min-h-11 min-w-11 shrink-0 text-muted-foreground"
-                                    onClick={(e) => {
-                                      e.preventDefault()
-                                      e.stopPropagation()
-                                      toggleCategoryExpanded(category.id)
-                                    }}
-                                    aria-label={isExpanded
-                                      ? t('products.detail.categoryCollapse', { defaultValue: 'Thu gọn' })
-                                      : t('products.detail.categoryExpand', { defaultValue: 'Mở rộng' })}
-                                  >
-                                    {isExpanded
-                                      ? <ChevronDown size={14} aria-hidden="true" />
-                                      : <ChevronRight size={14} aria-hidden="true" />}
-                                  </Button>
-                                ) : (
-                                  <span className="min-h-11 min-w-11 shrink-0" aria-hidden="true" />
-                                )}
-                                <label className={cn(
-                                  'flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3',
-                                  locked && !selected && 'cursor-not-allowed',
-                                )}>
-                                  <Checkbox
-                                    checked={selected}
-                                    disabled={isReadOnly || (locked && !selected)}
-                                    onCheckedChange={() => toggleProductCategory(category.id)}
-                                  />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate">{category.name}</span>
-                                    {parentPath && (
-                                      <span className="block truncate text-xs text-muted-foreground">{parentPath}</span>
-                                    )}
-                                    {locked && (
-                                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Lock size={12} aria-hidden="true" />
-                                        {t('products.detail.categoryLocked')}
-                                      </span>
-                                    )}
-                                  </span>
-                                </label>
-                              </div>
-                            )
-                          })}
+                    {/* ── Card: Thông tin cơ bản ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionBasic')}
+                      required
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <RoleBadge role="content" />
+                          <RoleBadge role="seo" />
                         </div>
-                      </PopoverContent>
-                    </Popover>
-
-                    <div className="mt-2 space-y-2">
-                      {selectedCategories.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">{t('products.detail.categoryEmpty')}</p>
-                      ) : selectedCategories.map((category, index) => {
-                        const locked = category.deleted === true || category.visible === false || category.isVisible === false
-                        return (
-                          <div key={category.id} className="flex items-center gap-2 border border-border bg-muted/30 p-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="truncate text-sm font-medium">{categoryPathById.get(category.id) || category.name}</span>
-                                {index === 0 && <span className="text-xs font-medium text-primary">{t('products.detail.categoryPrimary')}</span>}
-                                {locked && (
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Lock size={12} aria-hidden="true" />
-                                    {t('products.detail.categoryLocked')}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="min-h-11 px-2 text-xs"
-                                disabled={isReadOnly || locked || index === 0}
-                                onClick={() => moveProductCategory(category.id, -1)}
-                              >
-                                {t('products.detail.categoryMoveUp')}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="min-h-11 px-2 text-xs"
-                                disabled={isReadOnly || locked || index === selectedCategories.length - 1}
-                                onClick={() => moveProductCategory(category.id, 1)}
-                              >
-                                {t('products.detail.categoryMoveDown')}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="min-h-11 px-2 text-xs"
-                                disabled={isReadOnly}
-                                onClick={() => toggleProductCategory(category.id)}
-                              >
-                                {t('products.detail.categoryRemove')}
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </Field>
-
-                  <Field label={t('products.detail.brandId')} required error={validationErrors.brandId}>
-                    <BrandCombobox
-                      displayLabel={selectedBrandLabel}
-                      options={brandOptions}
-                      onChange={(id) => updateField('brandId', id)}
-                      disabled={isReadOnly}
-                      placeholder={t('products.detail.brandSearchPlaceholder', { defaultValue: 'Tìm hoặc tạo thương hiệu…' })}
-                    />
-                  </Field>
-
-                  <Field
-                    label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}
-                    helper={t('products.detail.trust.originBrandHint', { defaultValue: 'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).' })}
-                  >
-                    <Input
-                      placeholder={isEn
-                        ? t('products.detail.originBrandPlaceholderEn')
-                        : t('products.detail.originBrandPlaceholderVi')}
-                      value={langValue('originBrandCountry')}
-                      onChange={(e) => langChange('originBrandCountry', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={120}
-                    />
-                  </Field>
-
-                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} error={validationErrors.genders}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {[
-                        { value: 'Nam', label: isEn ? 'Male' : 'Nam', id: 'product-gender-male' },
-                        { value: 'Nữ', label: isEn ? 'Female' : 'Nữ', id: 'product-gender-female' },
-                      ].map((gender) => (
-                        <label
-                          key={gender.value}
-                          htmlFor={gender.id}
-                          className={cn(
-                            'flex min-h-11 items-center gap-3 border border-border px-3 py-2 text-sm',
-                            isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-                          )}
+                      }
+                    >
+                      <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                        <Field
+                          full
+                          label={t('products.detail.name')}
+                          required
+                          count={`${langValue('name').length} / 255`}
+                          countWarn={langValue('name').length > 230}
+                          error={
+                            isEnLang
+                              ? validationErrors['translations.en.name']
+                              : validationErrors.name
+                          }
                         >
-                          <Checkbox
-                            id={gender.id}
-                            checked={Array.isArray(form.genders) && form.genders.includes(gender.value)}
-                            onCheckedChange={(checked) => {
-                              const current = Array.isArray(form.genders) ? form.genders : []
-                              const next = checked
-                                ? [...new Set([...current, gender.value])]
-                                : current.filter((value) => value !== gender.value)
-                              updateField('genders', next)
+                          <Input
+                            value={langValue('name')}
+                            onChange={(e) =>
+                              isEnLang
+                                ? handleEnNameChange(e.target.value)
+                                : handleNameChange(e.target.value)
+                            }
+                            onBlur={() =>
+                              validateFieldOnBlur(isEnLang ? 'translations.en.name' : 'name')
+                            }
+                            disabled={isReadOnly}
+                            maxLength={255}
+                          />
+                        </Field>
+
+                        <Field
+                          full
+                          label={t('products.detail.slug')}
+                          required={!isEnLang}
+                          error={
+                            isEnLang
+                              ? validationErrors['translations.en.slug']
+                              : validationErrors.slug
+                          }
+                          // Trùng slug VI/EN KHÔNG chặn lưu (owner decision 2026-08-06): sản phẩm tên vốn
+                          // tiếng Anh (mã máy như komine-jk-176) trùng là hợp lệ. Chỉ nhắc để tránh lặp lại
+                          // sự cố slug tiếng Anh đè lên slug tiếng Việt của sản phẩm tên tiếng Việt.
+                          warning={
+                            isEnLang && enSlugDuplicatesVi
+                              ? t('products.detail.slugDuplicateEnVi')
+                              : undefined
+                          }
+                          helper={
+                            isEnLang
+                              ? t('products.detail.slugHintEn')
+                              : t('products.detail.slugHint')
+                          }
+                        >
+                          <Input
+                            value={isEnLang ? form.translations?.en?.slug || '' : form.slug || ''}
+                            placeholder={
+                              isEnLang
+                                ? t('products.detail.slugPlaceholderEn')
+                                : t('products.detail.slugPlaceholderVi')
+                            }
+                            onChange={(e) =>
+                              isEnLang
+                                ? handleEnSlugChange(e.target.value)
+                                : handleSlugChange(e.target.value)
+                            }
+                            onBlur={(e) => {
+                              if (isEnLang) {
+                                handleEnSlugBlur(e.target.value)
+                                validateFieldOnBlur('translations.en.slug')
+                              } else {
+                                handleSlugBlur(e.target.value)
+                                validateFieldOnBlur('slug')
+                              }
                             }}
                             disabled={isReadOnly}
+                            maxLength={isEnLang ? 100 : 200}
+                            className="font-mono"
                           />
-                          <span>{gender.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </Field>
+                        </Field>
 
-                  <Field
-                    full
-                    label={t('products.detail.shortDescription')}
-                    helper={t('products.detail.shortDescriptionHint')}
-                    error={validationErrors.shortDescription}
-                  >
-                    <RichTextEditor
-                      key={`shortDescription-${contentLang}`}
-                      value={langValue('shortDescription')}
-                      onChange={(html) => langChange('shortDescription', html)}
-                      placeholder={t('products.detail.shortDescriptionPlaceholder')}
-                      disabled={isReadOnly}
-                      hasError={Boolean(validationErrors.shortDescription)}
-                    />
-                  </Field>
-
-                </div>
-              </SectionCard>
-
-              {/* ── Card: Ảnh đại diện ── */}
-              <SectionCard title={t('products.detail.mainImageTitle')} required={isPublished} badge={<RoleBadge role="content" />}>
-                <ImageUrlInput
-                  value={form.imageUrl}
-                  onChange={(url, media) => {
-                    updateField('imageUrl', url)
-                    updateField('imageWidth', media?.width ?? null)
-                    updateField('imageHeight', media?.height ?? null)
-                    updateField('imageMimeType', media?.mimeType ?? null)
-                  }}
-                  alt={form.imageAlt}
-                  onAltChange={(v) => updateField('imageAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.imageUrl}
-                  recommend={IMAGE_RECO.productImage}
-                />
-              </SectionCard>
-
-              {/* ── Card: Gallery (ảnh phụ) — ngay dưới Ảnh đại diện, không bắt buộc ── */}
-              <SectionCard
-                title={t('products.detail.gallerySectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <GalleryEditor
-                  items={form.gallery}
-                  onChange={(next) => updateField('gallery', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Giá & trạng thái ── */}
-              <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
-                {variantsDeletedToEmpty && form.variants.length === 0 && (
-                  <Alert tone="warning" size="sm" className="mb-4">
-                    {t('products.detail.variantsEmptyWarning')}
-                  </Alert>
-                )}
-                {form.variants.length > 0 && (
-                  <div className="bb-alert info tight">
-                    <Info size={14} className="mt-0.5 shrink-0" />
-                    <span>{t('products.detail.variantPricingHint')}</span>
-                  </div>
-                )}
-                <div className={cn('grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5', form.variants.length > 0 && 'mt-5')}>
-                  <Field label={t('products.detail.retailPrice')} required={!hasVariants} error={validationErrors.retailPrice}>
-                    <MoneyInput
-                      placeholder={t('products.detail.retailPricePlaceholder')}
-                      value={form.retailPrice}
-                      onValueChange={(value) => updateField('retailPrice', value)}
-                      onBlur={() => validateFieldOnBlur('retailPrice')}
-                      disabled={isReadOnly}
-                    />
-                  </Field>
-
-                  <Field
-                    label={t('products.detail.salePrice')}
-                    error={
-                      validationErrors.salePrice
-                        ? validationErrors.salePrice
-                        : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice)
-                          ? t('products.detail.saleMustBeLower')
-                          : undefined
-                    }
-                  >
-                    <div className="flex gap-2">
-                      <MoneyInput
-                        placeholder={t('products.detail.salePricePlaceholder')}
-                        value={form.salePrice}
-                        onValueChange={(value) => updateField('salePrice', value)}
-                        zeroAsEmpty
-                        disabled={isReadOnly}
-                      />
-                      {!isReadOnly && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          onClick={() => setShowDiscountHelper((p) => !p)}
-                          title={t('products.detail.discountButtonTitle')}
+                        <Field
+                          label={t('products.detail.sku')}
+                          count={`${form.sku.length} / 100`}
+                          countWarn={form.sku.length > 85}
+                          helper={t('products.detail.skuHint')}
+                          required
+                          error={validationErrors.sku}
                         >
-                          {t('products.detail.discountButton')}
-                        </Button>
-                      )}
-                    </div>
-                    {showDiscountHelper && !isReadOnly && (
-                      <div className="mt-2 flex flex-wrap items-center gap-2 p-2 bg-muted">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="99"
-                          placeholder={t('products.detail.discountInputPlaceholder')}
-                          value={discountPct}
-                          onChange={(e) => setDiscountPct(e.target.value)}
-                          className="w-32"
-                        />
-                        <Button
-                          size="sm"
-                          type="button"
-                          disabled={!Number(form.retailPrice)}
-                          onClick={() => {
-                            const base = Number(form.retailPrice)
-                            const pct = Number(discountPct)
-                            if (base > 0 && pct > 0 && pct < 100) {
-                              updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
-                              setShowDiscountHelper(false)
-                              setDiscountPct('')
+                          <Input
+                            value={form.sku}
+                            onChange={(e) => updateField('sku', e.target.value)}
+                            disabled={isReadOnly}
+                            maxLength={100}
+                            className="font-mono"
+                          />
+                        </Field>
+
+                        <Field
+                          label={t('products.detail.categoryIds')}
+                          required
+                          error={
+                            validationErrors.categoryIds ||
+                            (categoriesLoadError
+                              ? t('products.detail.categoriesLoadError', {
+                                  defaultValue: 'Không tải được danh mục. Vui lòng tải lại trang.',
+                                })
+                              : undefined)
+                          }
+                        >
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full justify-between font-normal"
+                                disabled={isReadOnly}
+                                onBlur={() => validateFieldOnBlur('categoryIds')}
+                              >
+                                {selectedCategories.length > 0
+                                  ? t('products.detail.categorySelectedCount', {
+                                      count: selectedCategories.length,
+                                    })
+                                  : t('products.detail.categoryPlaceholder')}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-80 p-2">
+                              <p className="px-2 py-1 text-xs text-muted-foreground">
+                                {t('products.detail.categoryPickerHint')}
+                              </p>
+                              <div className="max-h-64 space-y-1 overflow-y-auto">
+                                {visibleCategoryTreeRows.map((category) => {
+                                  const selected = form.categoryIds?.includes(category.id)
+                                  const locked =
+                                    category.deleted === true ||
+                                    category.visible === false ||
+                                    category.isVisible === false
+                                  const hasChildren = categoryIdsWithChildren.has(category.id)
+                                  const isExpanded = expandedCategoryIds.has(category.id)
+                                  const parentPath = categoryParentPathById.get(category.id)
+                                  return (
+                                    <div
+                                      key={category.id}
+                                      title={categoryPathById.get(category.id) || category.name}
+                                      className={cn(
+                                        'flex min-h-11 items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
+                                        CATEGORY_TREE_INDENT_CLASSES[
+                                          Math.min(
+                                            category.depth,
+                                            CATEGORY_TREE_INDENT_CLASSES.length - 1,
+                                          )
+                                        ],
+                                        locked && !selected && 'opacity-60',
+                                      )}
+                                    >
+                                      {hasChildren ? (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="min-h-11 min-w-11 shrink-0 text-muted-foreground"
+                                          onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            toggleCategoryExpanded(category.id)
+                                          }}
+                                          aria-label={
+                                            isExpanded
+                                              ? t('products.detail.categoryCollapse', {
+                                                  defaultValue: 'Thu gọn',
+                                                })
+                                              : t('products.detail.categoryExpand', {
+                                                  defaultValue: 'Mở rộng',
+                                                })
+                                          }
+                                        >
+                                          {isExpanded ? (
+                                            <ChevronDown size={14} aria-hidden="true" />
+                                          ) : (
+                                            <ChevronRight size={14} aria-hidden="true" />
+                                          )}
+                                        </Button>
+                                      ) : (
+                                        <span
+                                          className="min-h-11 min-w-11 shrink-0"
+                                          aria-hidden="true"
+                                        />
+                                      )}
+                                      <label
+                                        className={cn(
+                                          'flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3',
+                                          locked && !selected && 'cursor-not-allowed',
+                                        )}
+                                      >
+                                        <Checkbox
+                                          checked={selected}
+                                          disabled={isReadOnly || (locked && !selected)}
+                                          onCheckedChange={() => toggleProductCategory(category.id)}
+                                        />
+                                        <span className="min-w-0 flex-1">
+                                          <span className="block truncate">{category.name}</span>
+                                          {parentPath && (
+                                            <span className="block truncate text-xs text-muted-foreground">
+                                              {parentPath}
+                                            </span>
+                                          )}
+                                          {locked && (
+                                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                              <Lock size={12} aria-hidden="true" />
+                                              {t('products.detail.categoryLocked')}
+                                            </span>
+                                          )}
+                                        </span>
+                                      </label>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+
+                          <div className="mt-2 space-y-2">
+                            {selectedCategories.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                {t('products.detail.categoryEmpty')}
+                              </p>
+                            ) : (
+                              selectedCategories.map((category, index) => {
+                                const locked =
+                                  category.deleted === true ||
+                                  category.visible === false ||
+                                  category.isVisible === false
+                                return (
+                                  <div
+                                    key={category.id}
+                                    className="flex items-center gap-2 border border-border bg-muted/30 p-2"
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="truncate text-sm font-medium">
+                                          {categoryPathById.get(category.id) || category.name}
+                                        </span>
+                                        {index === 0 && (
+                                          <span className="text-xs font-medium text-primary">
+                                            {t('products.detail.categoryPrimary')}
+                                          </span>
+                                        )}
+                                        {locked && (
+                                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <Lock size={12} aria-hidden="true" />
+                                            {t('products.detail.categoryLocked')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="min-h-11 px-2 text-xs"
+                                        disabled={isReadOnly || locked || index === 0}
+                                        onClick={() => moveProductCategory(category.id, -1)}
+                                      >
+                                        {t('products.detail.categoryMoveUp')}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="min-h-11 px-2 text-xs"
+                                        disabled={
+                                          isReadOnly ||
+                                          locked ||
+                                          index === selectedCategories.length - 1
+                                        }
+                                        onClick={() => moveProductCategory(category.id, 1)}
+                                      >
+                                        {t('products.detail.categoryMoveDown')}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="min-h-11 px-2 text-xs"
+                                        disabled={isReadOnly}
+                                        onClick={() => toggleProductCategory(category.id)}
+                                      >
+                                        {t('products.detail.categoryRemove')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            )}
+                          </div>
+                        </Field>
+
+                        <Field
+                          label={t('products.detail.brandId')}
+                          required
+                          error={validationErrors.brandId}
+                        >
+                          <BrandCombobox
+                            displayLabel={selectedBrandLabel}
+                            options={brandOptions}
+                            onChange={(id) => updateField('brandId', id)}
+                            disabled={isReadOnly}
+                            placeholder={t('products.detail.brandSearchPlaceholder', {
+                              defaultValue: 'Tìm hoặc tạo thương hiệu…',
+                            })}
+                          />
+                        </Field>
+
+                        <Field
+                          label={t('products.detail.trust.originBrand', {
+                            defaultValue: 'Thương hiệu (nước)',
+                          })}
+                          helper={t('products.detail.trust.originBrandHint', {
+                            defaultValue:
+                              'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).',
+                          })}
+                        >
+                          <Input
+                            placeholder={
+                              isEn
+                                ? t('products.detail.originBrandPlaceholderEn')
+                                : t('products.detail.originBrandPlaceholderVi')
                             }
-                          }}
+                            value={langValue('originBrandCountry')}
+                            onChange={(e) => langChange('originBrandCountry', e.target.value)}
+                            disabled={isReadOnly}
+                            maxLength={120}
+                          />
+                        </Field>
+
+                        <Field
+                          label={t('products.detail.gender', { defaultValue: 'Giới tính' })}
+                          error={validationErrors.genders}
                         >
-                          {t('products.detail.apply')}
-                        </Button>
-                        <small className="text-xs text-muted-foreground">
-                          {Number(form.retailPrice)
-                            ? t('products.detail.discountFromBaseHint')
-                            : t('products.detail.discountNeedsBaseHint')}
-                        </small>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {[
+                              {
+                                value: 'Nam',
+                                label: isEn ? 'Male' : 'Nam',
+                                id: 'product-gender-male',
+                              },
+                              {
+                                value: 'Nữ',
+                                label: isEn ? 'Female' : 'Nữ',
+                                id: 'product-gender-female',
+                              },
+                            ].map((gender) => (
+                              <label
+                                key={gender.value}
+                                htmlFor={gender.id}
+                                className={cn(
+                                  'flex min-h-11 items-center gap-3 border border-border px-3 py-2 text-sm',
+                                  isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                                )}
+                              >
+                                <Checkbox
+                                  id={gender.id}
+                                  checked={
+                                    Array.isArray(form.genders) &&
+                                    form.genders.includes(gender.value)
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const current = Array.isArray(form.genders) ? form.genders : []
+                                    const next = checked
+                                      ? [...new Set([...current, gender.value])]
+                                      : current.filter((value) => value !== gender.value)
+                                    updateField('genders', next)
+                                  }}
+                                  disabled={isReadOnly}
+                                />
+                                <span>{gender.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </Field>
+
+                        <Field
+                          full
+                          label={t('products.detail.shortDescription')}
+                          helper={t('products.detail.shortDescriptionHint')}
+                          error={validationErrors.shortDescription}
+                        >
+                          <RichTextEditor
+                            key={`shortDescription-${contentLang}`}
+                            value={langValue('shortDescription')}
+                            onChange={(html) => langChange('shortDescription', html)}
+                            placeholder={t('products.detail.shortDescriptionPlaceholder')}
+                            disabled={isReadOnly}
+                            hasError={Boolean(validationErrors.shortDescription)}
+                          />
+                        </Field>
                       </div>
-                    )}
-                  </Field>
+                    </SectionCard>
 
-                  {form.variants.length === 0 && (
-                    // Sản phẩm KHÔNG biến thể: công tắc Còn/Hết mức sản phẩm (admin tự quyết).
-                    // Lưu qua available; backend dẫn xuất stockState theo công tắc này.
-                    <div className="@xl:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
-                      <Switch
-                        checked={form.available}
-                        onCheckedChange={(checked) => updateField('available', checked)}
+                    {/* ── Card: Ảnh đại diện ── */}
+                    <SectionCard
+                      title={t('products.detail.mainImageTitle')}
+                      required={isPublished}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <ImageUrlInput
+                        value={form.imageUrl}
+                        onChange={(url, media) => {
+                          updateField('imageUrl', url)
+                          updateField('imageWidth', media?.width ?? null)
+                          updateField('imageHeight', media?.height ?? null)
+                          updateField('imageMimeType', media?.mimeType ?? null)
+                        }}
+                        alt={form.imageAlt}
+                        onAltChange={(v) => updateField('imageAlt', v)}
                         disabled={isReadOnly}
-                        aria-label={t('products.detail.productStock')}
+                        error={validationErrors.imageUrl}
+                        recommend={IMAGE_RECO.productImage}
                       />
-                      <span className={form.available ? 'text-success font-medium' : 'text-danger font-medium'}>
-                        {form.available ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
-                      </span>
-                      <span className="text-muted-foreground">— {t('products.detail.productStockHint')}</span>
-                    </div>
-                  )}
-                  <div className="@xl:col-span-2 flex items-center gap-2.5 border border-border p-2.5 text-sm">
-                    <Switch
-                      checked={form.discontinued}
-                      onCheckedChange={(checked) => updateField('discontinued', checked)}
-                      disabled={isReadOnly || form.publishStatus !== 'PUBLISHED'}
-                      aria-label={t('products.detail.discontinued', { defaultValue: 'Ngừng bán' })}
-                    />
-                    <span className={form.discontinued ? 'font-medium text-warning' : 'font-medium text-muted-foreground'}>
-                      {t('products.detail.discontinued', { defaultValue: 'Ngừng bán' })}
-                    </span>
-                    <span className="text-muted-foreground">
-                      — {t('products.detail.discontinuedHint', { defaultValue: 'Giữ trang cũ nhưng không còn nút mua.' })}
-                    </span>
-                  </div>
-                </div>
-              </SectionCard>
+                    </SectionCard>
 
-              {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
-              <SectionCard
-                title={t('products.detail.variantSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <VariantsEditor
-                  items={form.variants}
-                  onChange={(next) => {
-                    if (form.variants.length > 0 && next.length === 0) setVariantsDeletedToEmpty(true)
-                    if (next.length > 0) setVariantsDeletedToEmpty(false)
-                    updateField('variants', next)
-                  }}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
-                  contentLang={contentLang}
-                  sizeScaleId={form.sizeScaleId}
-                  sizeScales={sizeScales}
-                  sizeScalesLoading={sizeScalesLoading}
-                  onSizeScaleChange={(value) => updateField('sizeScaleId', value || '')}
-                />
-              </SectionCard>
+                    {/* ── Card: Gallery (ảnh phụ) — ngay dưới Ảnh đại diện, không bắt buộc ── */}
+                    <SectionCard
+                      title={t('products.detail.gallerySectionTitle')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {form.gallery.length}{' '}
+                            {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <GalleryEditor
+                        items={form.gallery}
+                        onChange={(next) => updateField('gallery', next)}
+                        disabled={isReadOnly}
+                        validationErrors={validationErrors}
+                      />
+                    </SectionCard>
 
-              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) — không bắt buộc ── */}
-              <SectionCard
-                title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
-                </p>
-                {validationErrors.trustBadges && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.trustBadges}
-                  </p>
-                )}
-                <TrustBadgesEditor
-                  key={`trustbadges-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('trustBadges')}
-                  onHtmlChange={(v) => langChange('trustBadges', v)}
-                  aiPromptBuilder={getProductAiPrompt}
-                />
-              </SectionCard>
+                    {/* ── Card: Giá & trạng thái ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionPricing')}
+                      required
+                      badge={<RoleBadge role="manager" />}
+                    >
+                      {variantsDeletedToEmpty && form.variants.length === 0 && (
+                        <Alert tone="warning" size="sm" className="mb-4">
+                          {t('products.detail.variantsEmptyWarning')}
+                        </Alert>
+                      )}
+                      {form.variants.length > 0 && (
+                        <div className="bb-alert info tight">
+                          <Info size={14} className="mt-0.5 shrink-0" />
+                          <span>{t('products.detail.variantPricingHint')}</span>
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          'grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5',
+                          form.variants.length > 0 && 'mt-5',
+                        )}
+                      >
+                        <Field
+                          label={t('products.detail.retailPrice')}
+                          required={!hasVariants}
+                          error={validationErrors.retailPrice}
+                        >
+                          <MoneyInput
+                            placeholder={t('products.detail.retailPricePlaceholder')}
+                            value={form.retailPrice}
+                            onValueChange={(value) => updateField('retailPrice', value)}
+                            onBlur={() => validateFieldOnBlur('retailPrice')}
+                            disabled={isReadOnly}
+                          />
+                        </Field>
 
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — web render khối này NGAY DƯỚI CTA mua hàng
+                        <Field
+                          label={t('products.detail.salePrice')}
+                          error={
+                            validationErrors.salePrice
+                              ? validationErrors.salePrice
+                              : form.salePrice &&
+                                  form.retailPrice &&
+                                  Number(form.salePrice) >= Number(form.retailPrice)
+                                ? t('products.detail.saleMustBeLower')
+                                : undefined
+                          }
+                        >
+                          <div className="flex gap-2">
+                            <MoneyInput
+                              placeholder={t('products.detail.salePricePlaceholder')}
+                              value={form.salePrice}
+                              onValueChange={(value) => updateField('salePrice', value)}
+                              zeroAsEmpty
+                              disabled={isReadOnly}
+                            />
+                            {!isReadOnly && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                onClick={() => setShowDiscountHelper((p) => !p)}
+                                title={t('products.detail.discountButtonTitle')}
+                              >
+                                {t('products.detail.discountButton')}
+                              </Button>
+                            )}
+                          </div>
+                          {showDiscountHelper && !isReadOnly && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 p-2 bg-muted">
+                              <Input
+                                type="number"
+                                min="1"
+                                max="99"
+                                placeholder={t('products.detail.discountInputPlaceholder')}
+                                value={discountPct}
+                                onChange={(e) => setDiscountPct(e.target.value)}
+                                className="w-32"
+                              />
+                              <Button
+                                size="sm"
+                                type="button"
+                                disabled={!Number(form.retailPrice)}
+                                onClick={() => {
+                                  const base = Number(form.retailPrice)
+                                  const pct = Number(discountPct)
+                                  if (base > 0 && pct > 0 && pct < 100) {
+                                    updateField(
+                                      'salePrice',
+                                      String(Math.round(base * (1 - pct / 100))),
+                                    )
+                                    setShowDiscountHelper(false)
+                                    setDiscountPct('')
+                                  }
+                                }}
+                              >
+                                {t('products.detail.apply')}
+                              </Button>
+                              <small className="text-xs text-muted-foreground">
+                                {Number(form.retailPrice)
+                                  ? t('products.detail.discountFromBaseHint')
+                                  : t('products.detail.discountNeedsBaseHint')}
+                              </small>
+                            </div>
+                          )}
+                        </Field>
+
+                        {form.variants.length === 0 && (
+                          // Sản phẩm KHÔNG biến thể: công tắc Còn/Hết mức sản phẩm (admin tự quyết).
+                          // Lưu qua available; backend dẫn xuất stockState theo công tắc này.
+                          <div className="@xl:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
+                            <Switch
+                              checked={form.available}
+                              onCheckedChange={(checked) => updateField('available', checked)}
+                              disabled={isReadOnly}
+                              aria-label={t('products.detail.productStock')}
+                            />
+                            <span
+                              className={
+                                form.available
+                                  ? 'text-success font-medium'
+                                  : 'text-danger font-medium'
+                              }
+                            >
+                              {form.available
+                                ? t('status.stock.IN_STOCK')
+                                : t('status.stock.OUT_OF_STOCK')}
+                            </span>
+                            <span className="text-muted-foreground">
+                              — {t('products.detail.productStockHint')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="@xl:col-span-2 flex items-center gap-2.5 border border-border p-2.5 text-sm">
+                          <Switch
+                            checked={form.discontinued}
+                            onCheckedChange={(checked) => updateField('discontinued', checked)}
+                            disabled={isReadOnly || form.publishStatus !== 'PUBLISHED'}
+                            aria-label={t('products.detail.discontinued', {
+                              defaultValue: 'Ngừng bán',
+                            })}
+                          />
+                          <span
+                            className={
+                              form.discontinued
+                                ? 'font-medium text-warning'
+                                : 'font-medium text-muted-foreground'
+                            }
+                          >
+                            {t('products.detail.discontinued', { defaultValue: 'Ngừng bán' })}
+                          </span>
+                          <span className="text-muted-foreground">
+                            —{' '}
+                            {t('products.detail.discontinuedHint', {
+                              defaultValue: 'Giữ trang cũ nhưng không còn nút mua.',
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </SectionCard>
+
+                    {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
+                    <SectionCard
+                      title={t('products.detail.variantSectionTitle')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {form.variants.length}{' '}
+                            {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <VariantsEditor
+                        items={form.variants}
+                        onChange={(next) => {
+                          if (form.variants.length > 0 && next.length === 0)
+                            setVariantsDeletedToEmpty(true)
+                          if (next.length > 0) setVariantsDeletedToEmpty(false)
+                          updateField('variants', next)
+                        }}
+                        disabled={isReadOnly}
+                        validationErrors={validationErrors}
+                        onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+                        contentLang={contentLang}
+                        sizeScaleId={form.sizeScaleId}
+                        sizeScales={sizeScales}
+                        sizeScalesLoading={sizeScalesLoading}
+                        onSizeScaleChange={(value) => updateField('sizeScaleId', value || '')}
+                      />
+                    </SectionCard>
+
+                    {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) — không bắt buộc ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionTrustBadges', {
+                        defaultValue: 'Dải tin cậy (trên tên sản phẩm)',
+                      })}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {parseTrustBadgesFromHtml(langValue('trustBadges')).length}{' '}
+                            {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('products.detail.trustBadges.hint', {
+                          defaultValue:
+                            'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.',
+                        })}
+                      </p>
+                      {validationErrors.trustBadges && (
+                        <p
+                          className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                          role="alert"
+                        >
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.trustBadges}
+                        </p>
+                      )}
+                      <TrustBadgesEditor
+                        key={`trustbadges-${contentLang}`}
+                        disabled={isReadOnly}
+                        html={langValue('trustBadges')}
+                        onHtmlChange={(v) => langChange('trustBadges', v)}
+                        aiPromptBuilder={getProductAiPrompt}
+                      />
+                    </SectionCard>
+
+                    {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — web render khối này NGAY DƯỚI CTA mua hàng
                   (đầu trang, cùng nguồn dữ liệu lặp lại ở Trust "Mua tại BigBike.vn" #11 cuối trang) —
                   đặt cùng Nhóm 1 để khớp vị trí ưu tiên cao trên web, không nằm chung nhóm Video/Phụ kiện. ── */}
-              <SectionCard
-                title={t('products.detail.sectionCommitments')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
-                {validationErrors.commitments && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.commitments}
-                  </p>
-                )}
-                <CommitmentEditor
-                  items={form.commitments}
-                  onChange={(next) => updateField('commitments', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-              </CollapsibleSection>
+                    <SectionCard
+                      title={t('products.detail.sectionCommitments')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {form.commitments.length}{' '}
+                            {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('products.detail.commitments.hint')}
+                      </p>
+                      {validationErrors.commitments && (
+                        <p
+                          className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                          role="alert"
+                        >
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.commitments}
+                        </p>
+                      )}
+                      <CommitmentEditor
+                        items={form.commitments}
+                        onChange={(next) => updateField('commitments', next)}
+                        disabled={isReadOnly}
+                        contentLang={contentLang}
+                      />
+                    </SectionCard>
+                  </CollapsibleSection>
 
-              {/* ══ Nhóm 2: Nội dung trang ══ */}
-              <CollapsibleSection
-                title={t('products.detail.groupContent', { defaultValue: 'Nội dung trang' })}
-                hint={t('products.detail.groupContentHint', { defaultValue: 'Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc' })}
-                open={openGroups.content}
-                onToggle={() => toggleGroup('content')}
-                badge={mainGroupErrorBadge('content')}
-                keepMounted
-              >
+                  {/* ══ Nhóm 2: Nội dung trang ══ */}
+                  <CollapsibleSection
+                    title={t('products.detail.groupContent', { defaultValue: 'Nội dung trang' })}
+                    hint={t('products.detail.groupContentHint', {
+                      defaultValue: 'Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc',
+                    })}
+                    open={openGroups.content}
+                    onToggle={() => toggleGroup('content')}
+                    badge={mainGroupErrorBadge('content')}
+                    keepMounted
+                  >
+                    {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionSpecStats')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {parseSpecStatsFromHtml(langValue('specStats')).length} / 4
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('products.detail.specStats.hint')}
+                      </p>
+                      {validationErrors.specStats && (
+                        <p
+                          className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                          role="alert"
+                        >
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.specStats}
+                        </p>
+                      )}
+                      <SpecStatEditor
+                        key={`specstats-${contentLang}`}
+                        disabled={isReadOnly}
+                        html={langValue('specStats')}
+                        onHtmlChange={(v) => langChange('specStats', v)}
+                        aiPromptBuilder={getProductAiPrompt}
+                      />
+                    </SectionCard>
 
-              {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
-              <SectionCard
-                title={t('products.detail.sectionSpecStats')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {parseSpecStatsFromHtml(langValue('specStats')).length} / 4
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
-                {validationErrors.specStats && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.specStats}
-                  </p>
-                )}
-                <SpecStatEditor
-                  key={`specstats-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('specStats')}
-                  onHtmlChange={(v) => langChange('specStats', v)}
-                  aiPromptBuilder={getProductAiPrompt}
-                />
-              </SectionCard>
+                    {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
+                    <SectionCard
+                      title={t('products.detail.quickAnswer.sectionTitle', {
+                        defaultValue: 'Quick Answer (trả lời nhanh)',
+                      })}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('products.detail.quickAnswer.hint', {
+                          defaultValue:
+                            'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.',
+                        })}
+                      </p>
+                      <Textarea
+                        value={langValue('quickAnswerSummary')}
+                        onChange={(e) => langChange('quickAnswerSummary', e.target.value)}
+                        disabled={isReadOnly}
+                        maxLength={600}
+                        rows={4}
+                        placeholder={t('products.detail.quickAnswer.placeholder', {
+                          defaultValue:
+                            'Ví dụ: Mũ fullface AGV K6 vỏ sợi carbon nặng 1.250g, kính chống tia UV, đạt chuẩn ECE 22.06...',
+                        })}
+                        className={
+                          validationErrors.quickAnswerSummary ? 'border-danger' : undefined
+                        }
+                      />
+                      {validationErrors.quickAnswerSummary && (
+                        <span className="mt-2 block text-xs font-semibold text-danger">
+                          {validationErrors.quickAnswerSummary}
+                        </span>
+                      )}
+                    </SectionCard>
 
-              {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
-              <SectionCard
-                title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.quickAnswer.hint', { defaultValue: 'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.' })}
-                </p>
-                <Textarea
-                  value={langValue('quickAnswerSummary')}
-                  onChange={(e) => langChange('quickAnswerSummary', e.target.value)}
-                  disabled={isReadOnly}
-                  maxLength={600}
-                  rows={4}
-                  placeholder={t('products.detail.quickAnswer.placeholder', { defaultValue: 'Ví dụ: Mũ fullface AGV K6 vỏ sợi carbon nặng 1.250g, kính chống tia UV, đạt chuẩn ECE 22.06...' })}
-                  className={validationErrors.quickAnswerSummary ? 'border-danger' : undefined}
-                />
-                {validationErrors.quickAnswerSummary && (
-                  <span className="mt-2 block text-xs font-semibold text-danger">
-                    {validationErrors.quickAnswerSummary}
-                  </span>
-                )}
-              </SectionCard>
+                    {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionDescription', {
+                        defaultValue: 'Mô tả chi tiết',
+                      })}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.descriptionBuilderHint', {
+                          defaultValue:
+                            'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.',
+                        })}
+                      </p>
+                      <Field
+                        full
+                        label={t('products.detail.description')}
+                        error={validationErrors.description}
+                      >
+                        <BlockEditor
+                          value={form.descriptionBlocks}
+                          onChange={(blocks) => updateField('descriptionBlocks', blocks)}
+                          disabled={isReadOnly}
+                          hasError={Boolean(validationErrors.description)}
+                          showFallbackHtml={false}
+                          productMode
+                          contentLang={contentLang}
+                        />
+                      </Field>
+                    </SectionCard>
 
-              {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
-              <SectionCard
-                title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
-                </p>
-                <Field full label={t('products.detail.description')} error={validationErrors.description}>
-                  <BlockEditor
-                    value={form.descriptionBlocks}
-                    onChange={(blocks) => updateField('descriptionBlocks', blocks)}
-                    disabled={isReadOnly}
-                    hasError={Boolean(validationErrors.description)}
-                    showFallbackHtml={false}
-                    productMode
-                    contentLang={contentLang}
-                  />
-                </Field>
-              </SectionCard>
+                    {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
+                    <SectionCard
+                      title={t('products.detail.highlights.sectionTitle', {
+                        defaultValue: 'Ưu điểm & Nhược điểm',
+                      })}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.highlights.hint', {
+                          defaultValue:
+                            'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.',
+                        })}
+                      </p>
+                      <UiTabs
+                        value={highlightsMode}
+                        onValueChange={setHighlightsMode}
+                        className="mb-3"
+                      >
+                        <TabsList>
+                          <TabsTrigger value="structured" disabled={isReadOnly}>
+                            {t('products.detail.highlights.modeStructured')}
+                          </TabsTrigger>
+                          <TabsTrigger value="html" disabled={isReadOnly}>
+                            {t('products.detail.highlights.modeHtml')}
+                          </TabsTrigger>
+                        </TabsList>
+                      </UiTabs>
+                      {highlightsMode === 'html' ? (
+                        <div>
+                          {(validationErrors.positiveNotes || validationErrors.negativeNotes) && (
+                            <div className="mb-2 flex flex-col gap-1">
+                              {validationErrors.positiveNotes && (
+                                <p
+                                  className="field-error flex items-center gap-1 text-xs font-semibold text-danger"
+                                  role="alert"
+                                >
+                                  <AlertCircle size={13} className="shrink-0" />
+                                  {validationErrors.positiveNotes}
+                                </p>
+                              )}
+                              {validationErrors.negativeNotes && (
+                                <p
+                                  className="field-error flex items-center gap-1 text-xs font-semibold text-danger"
+                                  role="alert"
+                                >
+                                  <AlertCircle size={13} className="shrink-0" />
+                                  {validationErrors.negativeNotes}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <HighlightsHtmlEditor
+                            positiveNotes={form.positiveNotes}
+                            negativeNotes={form.negativeNotes}
+                            onChangePositive={(next) => updateField('positiveNotes', next)}
+                            onChangeNegative={(next) => updateField('negativeNotes', next)}
+                            disabled={isReadOnly}
+                            contentLang={contentLang}
+                            aiPromptBuilder={getProductAiPrompt}
+                          />
+                        </div>
+                      ) : (
+                        <div className="grid gap-5 @xl:grid-cols-2">
+                          <div>
+                            <div className="text-sm font-medium mb-2">
+                              {t('products.detail.highlights.prosTitle', {
+                                defaultValue: 'Ưu điểm',
+                              })}
+                            </div>
+                            {validationErrors.positiveNotes && (
+                              <p
+                                className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                                role="alert"
+                              >
+                                <AlertCircle size={13} className="shrink-0" />
+                                {validationErrors.positiveNotes}
+                              </p>
+                            )}
+                            <HighlightsEditor
+                              items={form.positiveNotes}
+                              onChange={(next) => updateField('positiveNotes', next)}
+                              disabled={isReadOnly}
+                              contentLang={contentLang}
+                              placeholder={t('products.detail.highlights.prosPlaceholder', {
+                                defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g',
+                              })}
+                              addLabel={t('products.detail.highlights.addPro', {
+                                defaultValue: 'Thêm ưu điểm',
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium mb-2">
+                              {t('products.detail.highlights.consTitle', {
+                                defaultValue: 'Nhược điểm',
+                              })}
+                            </div>
+                            {validationErrors.negativeNotes && (
+                              <p
+                                className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                                role="alert"
+                              >
+                                <AlertCircle size={13} className="shrink-0" />
+                                {validationErrors.negativeNotes}
+                              </p>
+                            )}
+                            <HighlightsEditor
+                              items={form.negativeNotes}
+                              onChange={(next) => updateField('negativeNotes', next)}
+                              disabled={isReadOnly}
+                              contentLang={contentLang}
+                              placeholder={t('products.detail.highlights.consPlaceholder', {
+                                defaultValue: 'vd: Không kèm Pinlock',
+                              })}
+                              addLabel={t('products.detail.highlights.addCon', {
+                                defaultValue: 'Thêm nhược điểm',
+                              })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </SectionCard>
 
-              {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
-              <SectionCard
-                title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
-                </p>
-                <UiTabs value={highlightsMode} onValueChange={setHighlightsMode} className="mb-3">
-                  <TabsList>
-                    <TabsTrigger value="structured" disabled={isReadOnly}>{t('products.detail.highlights.modeStructured')}</TabsTrigger>
-                    <TabsTrigger value="html" disabled={isReadOnly}>{t('products.detail.highlights.modeHtml')}</TabsTrigger>
-                  </TabsList>
-                </UiTabs>
-                {highlightsMode === 'html' ? (
-                  <div>
-                    {(validationErrors.positiveNotes || validationErrors.negativeNotes) && (
-                      <div className="mb-2 flex flex-col gap-1">
-                        {validationErrors.positiveNotes && (
-                          <p className="field-error flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                            <AlertCircle size={13} className="shrink-0" />
-                            {validationErrors.positiveNotes}
-                          </p>
-                        )}
-                        {validationErrors.negativeNotes && (
-                          <p className="field-error flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                            <AlertCircle size={13} className="shrink-0" />
-                            {validationErrors.negativeNotes}
-                          </p>
-                        )}
+                    {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionRelated')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'bb-count-pill bb-count-pill--bordered',
+                              relatedAtMax && 'bb-count-pill--warning',
+                            )}
+                          >
+                            {form.relatedProductIds.length} / {RELATED_PRODUCTS_MAX}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.relatedHint')}
+                      </p>
+
+                      {form.relatedProductChips.length > 0 && (
+                        <SortableList
+                          items={form.relatedProductChips}
+                          disabled={isReadOnly}
+                          onReorder={reorderRelatedProducts}
+                          className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
+                          renderItem={(chip, sortable) => (
+                            <RelatedProductRow
+                              chip={chip}
+                              canEdit={!isReadOnly}
+                              onRemove={removeRelatedProduct}
+                              t={t}
+                              sortable={sortable}
+                            />
+                          )}
+                          renderOverlay={(chip) => (
+                            <RelatedProductRow
+                              chip={chip}
+                              canEdit={false}
+                              onRemove={() => {}}
+                              t={t}
+                            />
+                          )}
+                        />
+                      )}
+
+                      {!isReadOnly && (
+                        <>
+                          <ProductPickerCombobox
+                            search={relatedSearch}
+                            onSearchChange={setRelatedSearch}
+                            open={relatedSearchDebounced.length >= 1}
+                            loading={isSearchingRelated}
+                            items={relatedSearchItems}
+                            addedIds={form.relatedProductIds}
+                            onPick={addRelatedProduct}
+                            placeholder={t('products.detail.relatedSearch')}
+                            loadingText={t('products.detail.relatedSearching')}
+                            emptyText={t('products.detail.relatedEmpty')}
+                            addedText={t('products.detail.relatedAdded')}
+                            disabled={relatedAtMax}
+                          />
+                          {relatedAtMax && (
+                            <p className="mt-2 text-xs text-warning">
+                              {t('products.detail.relatedLimitHint', { max: RELATED_PRODUCTS_MAX })}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </SectionCard>
+
+                    {/* ── Card: Phù hợp với ai (#7) — field riêng form.suitabilitySection (V327/V328) ── */}
+                    <SectionCard
+                      title={t('products.detail.blocks.blockTypeSuitability')}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.suitabilityCard.hint', {
+                          defaultValue:
+                            'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.',
+                        })}
+                      </p>
+                      {suitabilityCreateLockedInEn ? (
+                        <p className="list-editor-empty">
+                          {t('products.detail.suitabilityCard.addInViFirst', {
+                            defaultValue:
+                              'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.',
+                          })}
+                        </p>
+                      ) : (
+                        <SuitabilityBlockEditor
+                          key={`suit-${productId ?? 'new'}-${suitabilitySection._key}-${contentLang}`}
+                          block={suitabilitySection}
+                          disabled={isReadOnly}
+                          contentLang={contentLang}
+                          aiPromptBuilder={getProductAiPrompt}
+                          onChange={(patch) =>
+                            updateField('suitabilitySection', { ...suitabilitySection, ...patch })
+                          }
+                        />
+                      )}
+                    </SectionCard>
+
+                    {/* ── Card: Bảng size (#8) — field riêng form.sizeGuideSection (V327/V328) ── */}
+                    <SectionCard
+                      title={t('products.detail.blocks.blockTypeSizeGuide')}
+                      badge={<RoleBadge role="content" />}
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.sizeGuideCard.hint', {
+                          defaultValue:
+                            'Bảng chọn kích cỡ (nhập theo cột/dòng hoặc dán nội dung có sẵn). Bảng sẽ hiển thị riêng trên trang sản phẩm, ngay sau mục Phù hợp với ai. Để trống, website sẽ ẩn bảng này.',
+                        })}
+                      </p>
+                      {sizeGuideCreateLockedInEn ? (
+                        <p className="list-editor-empty">
+                          {t('products.detail.sizeGuideCard.addInViFirst', {
+                            defaultValue:
+                              'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.',
+                          })}
+                        </p>
+                      ) : (
+                        <SizeGuideBlockEditor
+                          key={`size-${productId ?? 'new'}-${sizeGuideSection._key}-${contentLang}`}
+                          block={sizeGuideSection}
+                          disabled={isReadOnly}
+                          contentLang={contentLang}
+                          aiPromptBuilder={getProductAiPrompt}
+                          onChange={(patch) =>
+                            updateField('sizeGuideSection', { ...sizeGuideSection, ...patch })
+                          }
+                        />
+                      )}
+                    </SectionCard>
+
+                    {/* ── Card: Thông số ── */}
+                    <SectionCard
+                      title={t('products.detail.specsSectionTitle')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {t('products.detail.specCount', {
+                              count: parseSpecsFromHtml(langValue('specifications')).length,
+                            })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <SpecificationsEditor
+                        key={`specs-${contentLang}`}
+                        disabled={isReadOnly}
+                        html={langValue('specifications')}
+                        onHtmlChange={(v) => langChange('specifications', v)}
+                        aiPromptBuilder={getProductAiPrompt}
+                      />
+                    </SectionCard>
+
+                    {/* ── Card: FAQ ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionFaqs')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {form.faqs.length}{' '}
+                            {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('products.detail.faqs.hint')}
+                      </p>
+                      {validationErrors.faqs && (
+                        <p
+                          className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger"
+                          role="alert"
+                        >
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.faqs}
+                        </p>
+                      )}
+                      <FaqEditor
+                        items={form.faqs}
+                        onChange={(next) => updateField('faqs', next)}
+                        disabled={isReadOnly}
+                        validationErrors={validationErrors}
+                        contentLang={contentLang}
+                        aiPromptBuilder={getProductAiPrompt}
+                      />
+                    </SectionCard>
+                  </CollapsibleSection>
+
+                  {/* ══ Nhóm 3: Video, cam kết & bán kèm ══ */}
+                  <CollapsibleSection
+                    title={t('products.detail.groupExtras', { defaultValue: 'Video & bán kèm' })}
+                    hint={t('products.detail.groupExtrasHint', { defaultValue: 'Không bắt buộc' })}
+                    open={openGroups.extras}
+                    onToggle={() => toggleGroup('extras')}
+                    badge={mainGroupErrorBadge('extras')}
+                    keepMounted
+                  >
+                    {/* ── Card: Video ── */}
+                    <SectionCard
+                      title={t('products.detail.videoSectionTitle')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span className="bb-count-pill">
+                            {t('products.detail.videoCount', { count: form.videos.length })}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <VideoEditor
+                        items={form.videos}
+                        onChange={(next) => updateField('videos', next)}
+                        disabled={isReadOnly}
+                        validationErrors={validationErrors}
+                      />
+                    </SectionCard>
+
+                    {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
+                    <SectionCard
+                      title={t('products.detail.sectionAccessories')}
+                      badge={
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'bb-count-pill bb-count-pill--bordered',
+                              accessoryAtMax && 'bb-count-pill--warning',
+                            )}
+                          >
+                            {form.accessoryProductIds.length} / {RELATED_PRODUCTS_MAX}
+                          </span>
+                          <RoleBadge role="content" />
+                        </div>
+                      }
+                    >
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {t('products.detail.accessoryHint')}
+                      </p>
+
+                      {form.accessoryProductChips.length > 0 && (
+                        <SortableList
+                          items={form.accessoryProductChips}
+                          disabled={isReadOnly}
+                          onReorder={reorderAccessoryProducts}
+                          className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
+                          renderItem={(chip, sortable) => (
+                            <RelatedProductRow
+                              chip={chip}
+                              canEdit={!isReadOnly}
+                              onRemove={removeAccessoryProduct}
+                              t={t}
+                              sortable={sortable}
+                            />
+                          )}
+                          renderOverlay={(chip) => (
+                            <RelatedProductRow
+                              chip={chip}
+                              canEdit={false}
+                              onRemove={() => {}}
+                              t={t}
+                            />
+                          )}
+                        />
+                      )}
+
+                      {!isReadOnly && (
+                        <>
+                          <ProductPickerCombobox
+                            search={accessorySearch}
+                            onSearchChange={setAccessorySearch}
+                            open={accessorySearchDebounced.length >= 1}
+                            loading={isSearchingAccessory}
+                            items={accessorySearchItems}
+                            addedIds={form.accessoryProductIds}
+                            onPick={addAccessoryProduct}
+                            placeholder={t('products.detail.accessorySearch')}
+                            loadingText={t('products.detail.accessorySearching')}
+                            emptyText={t('products.detail.accessoryEmpty')}
+                            addedText={t('products.detail.accessoryAdded')}
+                            disabled={accessoryAtMax}
+                          />
+                          {accessoryAtMax && (
+                            <p className="mt-2 text-xs text-warning">
+                              {t('products.detail.accessoryLimitHint', {
+                                max: RELATED_PRODUCTS_MAX,
+                              })}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </SectionCard>
+                  </CollapsibleSection>
+                </>
+              )}
+
+              {activeTab === 'seo' && (
+                <>
+                  {/* ── Card: SEO ── */}
+                  <SectionCard
+                    title={t('products.detail.sectionSeo')}
+                    badge={<RoleBadge role="seo" />}
+                  >
+                    {/* Live Google SERP preview */}
+                    <div className="mb-4 rte-canvas-frame">
+                      <div className="p-3 border border-border bg-white">
+                        <div className="flex items-center gap-1 text-xs text-google-url mb-1">
+                          <PfSearch size={12} />
+                          <span>
+                            {t('products.detail.serpPreview', {
+                              defaultValue: 'Xem trước trên Google',
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-xs text-google-url break-all mb-1">
+                          {isEnLang
+                            ? englishUrlFromSlugs(form.slug, form.translations?.en?.slug) ||
+                              'https://bigbike.vn/en/product/product-url/'
+                            : canonicalUrlFromSlug(form.slug) ||
+                              'https://bigbike.vn/product/duong-dan-san-pham/'}
+                        </div>
+                        <div className="text-lg leading-snug text-google-title break-words mb-1">
+                          {stripHtml(seoTitleVal || langValue('name'), '').slice(0, 60) ||
+                            t('products.detail.serpTitleFallback', {
+                              defaultValue: 'Tiêu đề sản phẩm trên Google',
+                            })}
+                        </div>
+                        <div className="text-sm leading-relaxed text-google-description break-words">
+                          {normalizeSeoText(seoDescVal || langValue('shortDescription')) ||
+                            t('products.detail.serpDescFallback', {
+                              defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.',
+                            })}
+                        </div>
                       </div>
-                    )}
-                    <HighlightsHtmlEditor
-                      positiveNotes={form.positiveNotes}
-                      negativeNotes={form.negativeNotes}
-                      onChangePositive={(next) => updateField('positiveNotes', next)}
-                      onChangeNegative={(next) => updateField('negativeNotes', next)}
-                      disabled={isReadOnly}
-                      contentLang={contentLang}
-                      aiPromptBuilder={getProductAiPrompt}
-                    />
-                  </div>
-                ) : (
-                  <div className="grid gap-5 @xl:grid-cols-2">
-                    <div>
-                      <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
-                      {validationErrors.positiveNotes && (
-                        <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                          <AlertCircle size={13} className="shrink-0" />
-                          {validationErrors.positiveNotes}
-                        </p>
-                      )}
-                      <HighlightsEditor
-                        items={form.positiveNotes}
-                        onChange={(next) => updateField('positiveNotes', next)}
-                        disabled={isReadOnly}
-                        contentLang={contentLang}
-                        placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
-                        addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
-                      />
                     </div>
-                    <div>
-                      <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
-                      {validationErrors.negativeNotes && (
-                        <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                          <AlertCircle size={13} className="shrink-0" />
-                          {validationErrors.negativeNotes}
-                        </p>
-                      )}
-                      <HighlightsEditor
-                        items={form.negativeNotes}
-                        onChange={(next) => updateField('negativeNotes', next)}
-                        disabled={isReadOnly}
-                        contentLang={contentLang}
-                        placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
-                        addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
-                      />
+
+                    <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                      <Field
+                        full
+                        label={t('products.detail.seoTitle')}
+                        count={`${langValue('seoTitle').length} / 60`}
+                        countWarn={langValue('seoTitle').length > 60}
+                        error={
+                          isEnLang
+                            ? validationErrors['translations.en.seoTitle']
+                            : validationErrors.seoTitle
+                        }
+                      >
+                        <Input
+                          value={langValue('seoTitle')}
+                          onChange={(e) => langChange('seoTitle', e.target.value)}
+                          disabled={isReadOnly}
+                          maxLength={255}
+                          placeholder={t('products.detail.seoTitle')}
+                        />
+                      </Field>
+
+                      <Field
+                        full
+                        label={t('products.detail.seoDescription')}
+                        count={`${stripHtml(langValue('seoDescription'), '').length} / 165`}
+                        countWarn={stripHtml(langValue('seoDescription'), '').length > 165}
+                        error={
+                          isEnLang
+                            ? validationErrors['translations.en.seoDescription']
+                            : validationErrors.seoDescription
+                        }
+                      >
+                        <Textarea
+                          value={langValue('seoDescription')}
+                          onChange={(e) => langChange('seoDescription', e.target.value)}
+                          disabled={isReadOnly}
+                          maxLength={5000}
+                          placeholder={t('products.detail.seoDescription')}
+                        />
+                      </Field>
+
+                      <Field
+                        full
+                        label={t('products.detail.seoOgImageUrl')}
+                        helper={t('products.detail.seoOgImageHint', {
+                          defaultValue: 'Kích thước đề xuất 1200×630 px cho mạng xã hội.',
+                        })}
+                        error={validationErrors.seoOgImageUrl}
+                      >
+                        <ImageUrlInput
+                          value={form.seoOgImageUrl}
+                          onChange={(url, media) => {
+                            updateField('seoOgImageUrl', url)
+                            updateField('seoOgImageWidth', media?.width ?? null)
+                            updateField('seoOgImageHeight', media?.height ?? null)
+                            updateField('seoOgImageMimeType', media?.mimeType ?? null)
+                          }}
+                          alt={form.seoOgImageAlt}
+                          onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                          disabled={isReadOnly}
+                          error={validationErrors.seoOgImageUrl}
+                          recommend={IMAGE_RECO.cover}
+                        />
+                      </Field>
                     </div>
-                  </div>
-                )}
-              </SectionCard>
 
-              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
-              <SectionCard
-                title={t('products.detail.sectionRelated')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={cn('bb-count-pill bb-count-pill--bordered', relatedAtMax && 'bb-count-pill--warning')}
-                    >
-                      {form.relatedProductIds.length} / {RELATED_PRODUCTS_MAX}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-3">{t('products.detail.relatedHint')}</p>
-
-                {form.relatedProductChips.length > 0 && (
-                  <SortableList
-                    items={form.relatedProductChips}
-                    disabled={isReadOnly}
-                    onReorder={reorderRelatedProducts}
-                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
-                    renderItem={(chip, sortable) => (
-                      <RelatedProductRow
-                        chip={chip}
-                        canEdit={!isReadOnly}
-                        onRemove={removeRelatedProduct}
-                        t={t}
-                        sortable={sortable}
-                      />
-                    )}
-                    renderOverlay={(chip) => (
-                      <RelatedProductRow chip={chip} canEdit={false} onRemove={() => {}} t={t} />
-                    )}
-                  />
-                )}
-
-                {!isReadOnly && (
-                  <>
-                    <ProductPickerCombobox
-                      search={relatedSearch}
-                      onSearchChange={setRelatedSearch}
-                      open={relatedSearchDebounced.length >= 1}
-                      loading={isSearchingRelated}
-                      items={relatedSearchItems}
-                      addedIds={form.relatedProductIds}
-                      onPick={addRelatedProduct}
-                      placeholder={t('products.detail.relatedSearch')}
-                      loadingText={t('products.detail.relatedSearching')}
-                      emptyText={t('products.detail.relatedEmpty')}
-                      addedText={t('products.detail.relatedAdded')}
-                      disabled={relatedAtMax}
-                    />
-                    {relatedAtMax && (
-                      <p className="mt-2 text-xs text-warning">
-                        {t('products.detail.relatedLimitHint', { max: RELATED_PRODUCTS_MAX })}
-                      </p>
-                    )}
-                  </>
-                )}
-              </SectionCard>
-
-              {/* ── Card: Phù hợp với ai (#7) — field riêng form.suitabilitySection (V327/V328) ── */}
-              <SectionCard
-                title={t('products.detail.blocks.blockTypeSuitability')}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
-                </p>
-                {suitabilityCreateLockedInEn ? (
-                  <p className="list-editor-empty">
-                    {t('products.detail.suitabilityCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
-                  </p>
-                ) : (
-                  <SuitabilityBlockEditor
-                    key={`suit-${productId ?? 'new'}-${suitabilitySection._key}-${contentLang}`}
-                    block={suitabilitySection}
-                    disabled={isReadOnly}
-                    contentLang={contentLang}
-                    aiPromptBuilder={getProductAiPrompt}
-                    onChange={(patch) => updateField('suitabilitySection', { ...suitabilitySection, ...patch })}
-                  />
-                )}
-              </SectionCard>
-
-              {/* ── Card: Bảng size (#8) — field riêng form.sizeGuideSection (V327/V328) ── */}
-              <SectionCard
-                title={t('products.detail.blocks.blockTypeSizeGuide')}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn kích cỡ (nhập theo cột/dòng hoặc dán nội dung có sẵn). Bảng sẽ hiển thị riêng trên trang sản phẩm, ngay sau mục Phù hợp với ai. Để trống, website sẽ ẩn bảng này.' })}
-                </p>
-                {sizeGuideCreateLockedInEn ? (
-                  <p className="list-editor-empty">
-                    {t('products.detail.sizeGuideCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
-                  </p>
-                ) : (
-                  <SizeGuideBlockEditor
-                    key={`size-${productId ?? 'new'}-${sizeGuideSection._key}-${contentLang}`}
-                    block={sizeGuideSection}
-                    disabled={isReadOnly}
-                    contentLang={contentLang}
-                    aiPromptBuilder={getProductAiPrompt}
-                    onChange={(patch) => updateField('sizeGuideSection', { ...sizeGuideSection, ...patch })}
-                  />
-                )}
-              </SectionCard>
-
-              {/* ── Card: Thông số ── */}
-              <SectionCard
-                title={t('products.detail.specsSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specifications')).length })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <SpecificationsEditor
-                  key={`specs-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('specifications')}
-                  onHtmlChange={(v) => langChange('specifications', v)}
-                  aiPromptBuilder={getProductAiPrompt}
-                />
-              </SectionCard>
-
-              {/* ── Card: FAQ ── */}
-              <SectionCard
-                title={t('products.detail.sectionFaqs')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
-                {validationErrors.faqs && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.faqs}
-                  </p>
-                )}
-                <FaqEditor
-                  items={form.faqs}
-                  onChange={(next) => updateField('faqs', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                  contentLang={contentLang}
-                  aiPromptBuilder={getProductAiPrompt}
-                />
-              </SectionCard>
-
-              </CollapsibleSection>
-
-              {/* ══ Nhóm 3: Video, cam kết & bán kèm ══ */}
-              <CollapsibleSection
-                title={t('products.detail.groupExtras', { defaultValue: 'Video & bán kèm' })}
-                hint={t('products.detail.groupExtrasHint', { defaultValue: 'Không bắt buộc' })}
-                open={openGroups.extras}
-                onToggle={() => toggleGroup('extras')}
-                badge={mainGroupErrorBadge('extras')}
-                keepMounted
-              >
-
-              {/* ── Card: Video ── */}
-              <SectionCard
-                title={t('products.detail.videoSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {t('products.detail.videoCount', { count: form.videos.length })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <VideoEditor
-                  items={form.videos}
-                  onChange={(next) => updateField('videos', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
-              <SectionCard
-                title={t('products.detail.sectionAccessories')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={cn('bb-count-pill bb-count-pill--bordered', accessoryAtMax && 'bb-count-pill--warning')}
-                    >
-                      {form.accessoryProductIds.length} / {RELATED_PRODUCTS_MAX}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-3">{t('products.detail.accessoryHint')}</p>
-
-                {form.accessoryProductChips.length > 0 && (
-                  <SortableList
-                    items={form.accessoryProductChips}
-                    disabled={isReadOnly}
-                    onReorder={reorderAccessoryProducts}
-                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
-                    renderItem={(chip, sortable) => (
-                      <RelatedProductRow
-                        chip={chip}
-                        canEdit={!isReadOnly}
-                        onRemove={removeAccessoryProduct}
-                        t={t}
-                        sortable={sortable}
-                      />
-                    )}
-                    renderOverlay={(chip) => (
-                      <RelatedProductRow chip={chip} canEdit={false} onRemove={() => {}} t={t} />
-                    )}
-                  />
-                )}
-
-                {!isReadOnly && (
-                  <>
-                    <ProductPickerCombobox
-                      search={accessorySearch}
-                      onSearchChange={setAccessorySearch}
-                      open={accessorySearchDebounced.length >= 1}
-                      loading={isSearchingAccessory}
-                      items={accessorySearchItems}
-                      addedIds={form.accessoryProductIds}
-                      onPick={addAccessoryProduct}
-                      placeholder={t('products.detail.accessorySearch')}
-                      loadingText={t('products.detail.accessorySearching')}
-                      emptyText={t('products.detail.accessoryEmpty')}
-                      addedText={t('products.detail.accessoryAdded')}
-                      disabled={accessoryAtMax}
-                    />
-                    {accessoryAtMax && (
-                      <p className="mt-2 text-xs text-warning">
-                        {t('products.detail.accessoryLimitHint', { max: RELATED_PRODUCTS_MAX })}
-                      </p>
-                    )}
-                  </>
-                )}
-              </SectionCard>
-              </CollapsibleSection>
-            </>
-          )}
-
-          {activeTab === 'seo' && (
-            <>
-              {/* ── Card: SEO ── */}
-              <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
-                {/* Live Google SERP preview */}
-                <div className="mb-4 rte-canvas-frame">
-                  <div className="p-3 border border-border bg-white">
-                    <div className="flex items-center gap-1 text-xs text-google-url mb-1">
-                      <PfSearch size={12} />
-                      <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-                    </div>
-                    <div className="text-xs text-google-url break-all mb-1">
-                      {isEnLang
-                        ? (englishUrlFromSlugs(form.slug, form.translations?.en?.slug)
-                            || 'https://bigbike.vn/en/product/product-url/')
-                        : (canonicalUrlFromSlug(form.slug) || 'https://bigbike.vn/product/duong-dan-san-pham/')}
-                    </div>
-                    <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {stripHtml(seoTitleVal || langValue('name'), '').slice(0, 60)
-                        || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })}
-                    </div>
-                    <div className="text-sm leading-relaxed text-google-description break-words">
-                      {normalizeSeoText(seoDescVal || langValue('shortDescription'))
-                        || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field
-                    full
-                    label={t('products.detail.seoTitle')}
-                    count={`${langValue('seoTitle').length} / 60`}
-                    countWarn={langValue('seoTitle').length > 60}
-                    error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
-                  >
-                    <Input
-                      value={langValue('seoTitle')}
-                      onChange={(e) => langChange('seoTitle', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={255}
-                      placeholder={t('products.detail.seoTitle')}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.seoDescription')}
-                    count={`${stripHtml(langValue('seoDescription'), '').length} / 165`}
-                    countWarn={stripHtml(langValue('seoDescription'), '').length > 165}
-                    error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
-                  >
-                    <Textarea
-                      value={langValue('seoDescription')}
-                      onChange={(e) => langChange('seoDescription', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={5000}
-                      placeholder={t('products.detail.seoDescription')}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.seoOgImageUrl')}
-                    helper={t('products.detail.seoOgImageHint', { defaultValue: 'Kích thước đề xuất 1200×630 px cho mạng xã hội.' })}
-                    error={validationErrors.seoOgImageUrl}
-                  >
-                    <ImageUrlInput
-                      value={form.seoOgImageUrl}
-                      onChange={(url, media) => {
-                        updateField('seoOgImageUrl', url)
-                        updateField('seoOgImageWidth', media?.width ?? null)
-                        updateField('seoOgImageHeight', media?.height ?? null)
-                        updateField('seoOgImageMimeType', media?.mimeType ?? null)
-                      }}
-                      alt={form.seoOgImageAlt}
-                      onAltChange={(v) => updateField('seoOgImageAlt', v)}
-                      disabled={isReadOnly}
-                      error={validationErrors.seoOgImageUrl}
-                      recommend={IMAGE_RECO.cover}
-                    />
-                  </Field>
-
-
-                </div>
-
-                {/* Cho Google hiển thị — tách riêng bản Việt và bản Anh (SEO_RULE_001).
+                    {/* Cho Google hiển thị — tách riêng bản Việt và bản Anh (SEO_RULE_001).
                     Trước V371 sản phẩm không có cờ này ở BẤT KỲ tầng nào: cách duy nhất để
                     gỡ một trang khỏi Google là chuyển về Nháp, kéo theo khách cũng không
                     xem được và link cũ hỏng. */}
-                <SeoIndexField
-                  noIndexVi={form.seoNoIndex}
-                  noIndexEn={form.seoNoIndexEn}
-                  isEnLang={isEnLang}
-                  isReadOnly={isReadOnly}
-                  englishReady={productEnglishReady(form)}
-                  onChange={updateField}
-                />
+                    <SeoIndexField
+                      noIndexVi={form.seoNoIndex}
+                      noIndexEn={form.seoNoIndexEn}
+                      isEnLang={isEnLang}
+                      isReadOnly={isReadOnly}
+                      englishReady={productEnglishReady(form)}
+                      onChange={updateField}
+                    />
 
-                {/* SEO checklist */}
-                <div className="mt-4 p-3 border border-border bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold">
-                      <Check size={14} />
-                      {t('products.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
-                    </span>
-                    <span className="font-mono text-sm font-bold text-success">
-                      {seoPassed} / {seoChecks.length}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
-                    {seoChecks.map((c, i) => (
-                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
-                        <span className={cn(
-                          'w-4 h-4 flex items-center justify-center',
-                          c.ok
-                            ? 'bg-success-bg text-success'
-                            : 'bg-muted',
-                        )}>
-                          {c.ok ? <Check size={11} /> : null}
+                    {/* SEO checklist */}
+                    <div className="mt-4 p-3 border border-border bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="flex items-center gap-1.5 text-sm font-semibold">
+                          <Check size={14} />
+                          {t('products.detail.seoChecklist', {
+                            defaultValue: 'Kiểm tra thông tin tìm kiếm',
+                          })}
                         </span>
-                        <span>
-                          {c.label}
-                          {c.hint != null && (
-                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
-                          )}
+                        <span className="font-mono text-sm font-bold text-success">
+                          {seoPassed} / {seoChecks.length}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </SectionCard>
-            </>
-          )}
-        </form>
+                      <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
+                        {seoChecks.map((c, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              'flex items-center gap-2 text-xs',
+                              c.ok ? 'text-foreground' : 'text-muted-foreground',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'w-4 h-4 flex items-center justify-center',
+                                c.ok ? 'bg-success-bg text-success' : 'bg-muted',
+                              )}
+                            >
+                              {c.ok ? <Check size={11} /> : null}
+                            </span>
+                            <span>
+                              {c.label}
+                              {c.hint != null && (
+                                <span className="ml-1 font-mono text-muted-foreground">
+                                  ({c.hint})
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </SectionCard>
+                </>
+              )}
+            </form>
 
-        {showPublishChecklist && (
-          <PublishChecklistModal
-            form={form}
-            onConfirm={confirmPublishFromChecklist}
-            onCancel={() => setShowPublishChecklist(false)}
-          />
-        )}
+            {showPublishChecklist && (
+              <PublishChecklistModal
+                form={form}
+                onConfirm={confirmPublishFromChecklist}
+                onCancel={() => setShowPublishChecklist(false)}
+              />
+            )}
 
-        <StickyActionBar
-          ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
-          info={
-            <span className="flex items-center gap-2 text-sm">
-              <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
-              <span className="font-medium">{saveLabel}</span>
-            </span>
-          }
-        >
-
-          {canUpdate && (
-            <Button
-              variant="outline"
-              type="button"
-              className="min-h-11"
-              onClick={() => setPreviewOpen(true)}
-              title={t('products.detail.preview.title', { defaultValue: 'Xem trước trang sản phẩm' })}
+            <StickyActionBar
+              ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
+              info={
+                <span className="flex items-center gap-2 text-sm">
+                  <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
+                  <span className="font-medium">{saveLabel}</span>
+                </span>
+              }
             >
-              <Eye size={14} className="mr-1.5" />
-              {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
-            </Button>
-          )}
+              {canUpdate && (
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="min-h-11"
+                  onClick={() => setPreviewOpen(true)}
+                  title={t('products.detail.preview.title', {
+                    defaultValue: 'Xem trước trang sản phẩm',
+                  })}
+                >
+                  <Eye size={14} className="mr-1.5" />
+                  {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
+                </Button>
+              )}
 
-          {canUpdate && !isCreate && !isTrashed && (
-            <Button
-              variant="outline"
-              type="button"
-              className="min-h-11"
-              disabled={isReadOnly || isDirty}
-              onClick={handlePublishAction}
-              title={isDirty
-                ? t('products.detail.publishRequiresSavedForm', {
-                    defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
-                  })
-                : publishActionLabel}
-            >
-              {isPublishToggling && <Loader2 size={14} className="mr-1.5 animate-spin" />}
-              {publishActionLabel}
-            </Button>
-          )}
+              {canUpdate && !isCreate && !isTrashed && (
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="min-h-11"
+                  disabled={isReadOnly || isDirty}
+                  onClick={handlePublishAction}
+                  title={
+                    isDirty
+                      ? t('products.detail.publishRequiresSavedForm', {
+                          defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
+                        })
+                      : publishActionLabel
+                  }
+                >
+                  {isPublishToggling && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                  {publishActionLabel}
+                </Button>
+              )}
 
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={isReadOnly || isSubmitting || isRestoreConfirming || !isDirty}
-            onClick={handlePrimarySave}
-          >
-            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
-            {primaryLabel}
-          </Button>
-        </StickyActionBar>
+              <Button
+                type="button"
+                className="min-h-11"
+                disabled={isReadOnly || isSubmitting || isRestoreConfirming || !isDirty}
+                onClick={handlePrimarySave}
+              >
+                {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+                {primaryLabel}
+              </Button>
+            </StickyActionBar>
 
-        {showMatrixWizard && (
-          <VariantMatrixWizard
-            onGenerate={(newVariants) => {
-              const existing = form.variants
-              function variantSig(options) {
-                return JSON.stringify(
-                  [...(options || [])].map((o) => ({
-                    k: isColorAttributeName(o.name) ? '__color__' : normalizeVariantToken(o.name),
-                    v: normalizeVariantToken(o.value),
-                  }))
-                    .sort((a, b) => a.k.localeCompare(b.k))
-                    .map(({ k, v }) => `${k}:::${v}`)
-                )
-              }
-              const existingSigs = new Set(existing.map(v => variantSig(v.options)))
-              const deduped = newVariants.filter(nv => !existingSigs.has(variantSig(nv.options)))
-              const skipped = newVariants.length - deduped.length
-              if (skipped > 0) {
-                toast.info(t('products.detail.matrix.skipDuplicates', { count: skipped }))
-              }
-              if (deduped.length > 0) {
-                updateField('variants', [...existing, ...deduped])
-                toast.success(t('products.detail.matrix.added', { count: deduped.length }))
-              }
-            }}
-            onClose={() => setShowMatrixWizard(false)}
-          />
-        )}
-
-      </Screen>
-    </div>
+            {showMatrixWizard && (
+              <VariantMatrixWizard
+                onGenerate={(newVariants) => {
+                  const existing = form.variants
+                  function variantSig(options) {
+                    return JSON.stringify(
+                      [...(options || [])]
+                        .map((o) => ({
+                          k: isColorAttributeName(o.name)
+                            ? '__color__'
+                            : normalizeVariantToken(o.name),
+                          v: normalizeVariantToken(o.value),
+                        }))
+                        .sort((a, b) => a.k.localeCompare(b.k))
+                        .map(({ k, v }) => `${k}:::${v}`),
+                    )
+                  }
+                  const existingSigs = new Set(existing.map((v) => variantSig(v.options)))
+                  const deduped = newVariants.filter(
+                    (nv) => !existingSigs.has(variantSig(nv.options)),
+                  )
+                  const skipped = newVariants.length - deduped.length
+                  if (skipped > 0) {
+                    toast.info(t('products.detail.matrix.skipDuplicates', { count: skipped }))
+                  }
+                  if (deduped.length > 0) {
+                    updateField('variants', [...existing, ...deduped])
+                    toast.success(t('products.detail.matrix.added', { count: deduped.length }))
+                  }
+                }}
+                onClose={() => setShowMatrixWizard(false)}
+              />
+            )}
+          </Screen>
+        </div>
         <LivePreview
           open={previewOpen}
           onClose={() => setPreviewOpen(false)}
@@ -2530,7 +2977,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           i18nPrefix="products.detail.preview"
           t={t}
         />
-    </div>
+      </div>
     </AssignmentConfigContext.Provider>
   )
 }

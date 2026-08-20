@@ -27,10 +27,13 @@ import { Button } from '@/components/ui/button'
  * back via {@code onFoldersChanged} so the parent can refetch.
  */
 export function MediaFolderSidebar({
-  folderFilter, tag, canUpdate,
+  folderFilter,
+  tag,
+  canUpdate,
   folders = [],
   onFoldersChanged,
-  onSelectFolder, onSelectTag,
+  onSelectFolder,
+  onSelectTag,
 }) {
   const { t } = useTranslation()
   const [tags, setTags] = useState([])
@@ -48,9 +51,18 @@ export function MediaFolderSidebar({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTagsStatus('loading')
     fetchMediaTags()
-      .then((ts) => { if (active) { setTags(ts); setTagsStatus('ready') } })
-      .catch(() => { if (active) setTagsStatus('error') })
-    return () => { active = false }
+      .then((ts) => {
+        if (active) {
+          setTags(ts)
+          setTagsStatus('ready')
+        }
+      })
+      .catch(() => {
+        if (active) setTagsStatus('error')
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   async function handleCreate(name) {
@@ -100,17 +112,23 @@ export function MediaFolderSidebar({
         <p className="mediafolder-section-title">{t('media.folders')}</p>
         <ul className="mediafolder-list">
           <li>
-            <Button variant="unstyled" onClick={() => onSelectFolder('')}
+            <Button
+              variant="unstyled"
+              onClick={() => onSelectFolder('')}
               aria-current={!folderFilter ? 'true' : undefined}
-              className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}>
+              className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}
+            >
               <FolderOpen size={14} />
               <span>{t('media.allFolders')}</span>
             </Button>
           </li>
           <li>
-            <Button variant="unstyled" onClick={() => onSelectFolder('NONE')}
+            <Button
+              variant="unstyled"
+              onClick={() => onSelectFolder('NONE')}
               aria-current={folderFilter === 'NONE' ? 'true' : undefined}
-              className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}>
+              className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}
+            >
               <Inbox size={14} />
               <span>{t('media.uncategorized')}</span>
             </Button>
@@ -124,14 +142,26 @@ export function MediaFolderSidebar({
           {canUpdate && (
             <div className="flex items-center gap-1">
               {manageMode && (
-                <Button variant="unstyled" onClick={() => setCreating(true)} className="mediafolder-add-btn"
-                  aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
+                <Button
+                  variant="unstyled"
+                  onClick={() => setCreating(true)}
+                  className="mediafolder-add-btn"
+                  aria-label={t('media.folderAdd')}
+                  title={t('media.folderAdd')}
+                >
                   <Plus size={14} />
                 </Button>
               )}
-              <Button variant="unstyled" aria-pressed={manageMode}
-                onClick={() => { setManageMode((s) => !s); setCreating(false); setEditingId(null) }}
-                className="mediafolder-action-btn w-auto px-1.5 text-xs">
+              <Button
+                variant="unstyled"
+                aria-pressed={manageMode}
+                onClick={() => {
+                  setManageMode((s) => !s)
+                  setCreating(false)
+                  setEditingId(null)
+                }}
+                className="mediafolder-action-btn w-auto px-1.5 text-xs"
+              >
                 {manageMode ? t('media.folderManageDone') : t('media.folderManage')}
               </Button>
             </div>
@@ -143,33 +173,53 @@ export function MediaFolderSidebar({
         <ul className="mediafolder-list">
           {creating && (
             <li>
-              <FolderInput onSubmit={handleCreate} onCancel={() => setCreating(false)}
-                placeholder={t('media.folderNamePlaceholder')} />
+              <FolderInput
+                onSubmit={handleCreate}
+                onCancel={() => setCreating(false)}
+                placeholder={t('media.folderNamePlaceholder')}
+              />
             </li>
           )}
           {folders.map((f) => (
             <li key={f.id}>
               {editingId === f.id ? (
-                <FolderInput defaultValue={f.name}
+                <FolderInput
+                  defaultValue={f.name}
                   onSubmit={(name) => handleRename(f.id, name)}
-                  onCancel={() => setEditingId(null)} />
+                  onCancel={() => setEditingId(null)}
+                />
               ) : (
-                <div className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}>
-                  <Button variant="unstyled" onClick={() => onSelectFolder(f.id)}
+                <div
+                  className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}
+                >
+                  <Button
+                    variant="unstyled"
+                    onClick={() => onSelectFolder(f.id)}
                     aria-current={folderFilter === f.id ? 'true' : undefined}
-                    className="mediafolder-item-btn">
+                    className="mediafolder-item-btn"
+                  >
                     <Folder size={14} />
                     <span className="mediafolder-item-label">{f.name}</span>
                     <span className="mediafolder-item-count">{f.mediaCount}</span>
                   </Button>
                   {canUpdate && manageMode && (
                     <div className="mediafolder-item-actions">
-                      <Button variant="unstyled" onClick={() => setEditingId(f.id)}
-                        className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>
+                      <Button
+                        variant="unstyled"
+                        onClick={() => setEditingId(f.id)}
+                        className="mediafolder-action-btn"
+                        aria-label={t('common.edit')}
+                        title={t('common.edit')}
+                      >
                         <Pencil size={11} />
                       </Button>
-                      <Button variant="unstyled" onClick={() => handleDelete(f)}
-                        className="mediafolder-action-btn" aria-label={t('common.delete')} title={t('common.delete')}>
+                      <Button
+                        variant="unstyled"
+                        onClick={() => handleDelete(f)}
+                        className="mediafolder-action-btn"
+                        aria-label={t('common.delete')}
+                        title={t('common.delete')}
+                      >
                         <Trash2 size={11} />
                       </Button>
                     </div>
@@ -185,18 +235,25 @@ export function MediaFolderSidebar({
         <section className="mediafolder-section">
           <p className="mediafolder-section-title">{t('media.popularTags')}</p>
           {tagsStatus === 'loading' && (
-            <p className="mediafolder-empty" role="status">{t('common.loading')}</p>
+            <p className="mediafolder-empty" role="status">
+              {t('common.loading')}
+            </p>
           )}
           {tagsStatus === 'error' && (
-            <p className="mediafolder-empty">{t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}</p>
+            <p className="mediafolder-empty">
+              {t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}
+            </p>
           )}
           {tagsStatus === 'ready' && tags.length > 0 && (
             <div className="mediafolder-tags-wrap">
               {tags.map((tg) => (
-                <Button variant="unstyled" key={tg}
+                <Button
+                  variant="unstyled"
+                  key={tg}
                   onClick={() => onSelectTag(tag === tg ? '' : tg)}
                   aria-pressed={tag === tg}
-                  className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
+                  className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}
+                >
                   <Hash size={11} /> {tg}
                 </Button>
               ))}
@@ -216,15 +273,32 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
   // Explicit Lưu/Huỷ so a rename isn't lost by clicking away, and doesn't require
   // discovering that Enter saves. Escape still cancels for keyboard users.
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }}
-      className="mediafolder-edit-form">
-      <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit(value)
+      }}
+      className="mediafolder-edit-form"
+    >
+      <Input
+        autoFocus
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onCancel()
+        }}
+        placeholder={placeholder}
         aria-label={accessibleLabel}
-        className="text-xs py-1 px-2" />
+        className="text-xs py-1 px-2"
+      />
       <div className="flex items-center gap-1.5 mt-1.5">
-        <Button type="submit" size="sm" disabled={!value.trim()}>{t('common.save')}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+        <Button type="submit" size="sm" disabled={!value.trim()}>
+          {t('common.save')}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          {t('common.cancel')}
+        </Button>
       </div>
     </form>
   )

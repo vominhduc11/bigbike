@@ -31,7 +31,11 @@ function PickerVideoThumbnail({ url }) {
 
   if (!url || failed) {
     return (
-      <div className="mpicker-thumb mpicker-thumb-video" role="img" aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}>
+      <div
+        className="mpicker-thumb mpicker-thumb-video"
+        role="img"
+        aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}
+      >
         <Video size={28} strokeWidth={1.5} aria-hidden="true" />
       </div>
     )
@@ -39,7 +43,13 @@ function PickerVideoThumbnail({ url }) {
 
   return (
     <div className="mpicker-thumb mpicker-thumb-video">
-      <video src={`${url}#t=0.001`} className="h-full w-full object-cover" muted preload="metadata" onError={() => setFailed(true)} />
+      <video
+        src={`${url}#t=0.001`}
+        className="h-full w-full object-cover"
+        muted
+        preload="metadata"
+        onError={() => setFailed(true)}
+      />
     </div>
   )
 }
@@ -60,7 +70,13 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   const [filtersError, setFiltersError] = useState(false)
   const [page, setPage] = useState(1)
   const [reloadKey, setReloadKey] = useState(0)
-  const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1, error: '', refreshError: '' })
+  const [state, setState] = useState({
+    status: 'loading',
+    items: [],
+    totalPages: 1,
+    error: '',
+    refreshError: '',
+  })
   const [selectedUrl, setSelectedUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -80,8 +96,10 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     }))
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setPage(1) }, [debouncedSearch, folderFilter, tag])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1)
+  }, [debouncedSearch, folderFilter, tag])
 
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
@@ -94,7 +112,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       if (tRes.status === 'fulfilled') setTags(tRes.value ?? [])
       setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [canRead])
 
   useEffect(() => {
@@ -107,7 +127,14 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       error: '',
       refreshError: '',
     }))
-    fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+    fetchMedia({
+      search: debouncedSearch,
+      mimeType: 'video/',
+      page,
+      pageSize: PAGE_SIZE,
+      folderFilter: folderFilter || undefined,
+      tag: tag || undefined,
+    })
       .then((result) => {
         if (!active) return
         const items = result.items ?? []
@@ -127,11 +154,26 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       })
       .catch((loadError) => {
         if (!active) return
-        setState((previous) => previous.items.length > 0
-          ? { ...previous, status: 'success', refreshError: loadError?.message || 'refresh-failed', error: '' }
-          : { status: 'error', items: [], totalPages: 1, error: loadError?.message || '', refreshError: '' })
+        setState((previous) =>
+          previous.items.length > 0
+            ? {
+                ...previous,
+                status: 'success',
+                refreshError: loadError?.message || 'refresh-failed',
+                error: '',
+              }
+            : {
+                status: 'error',
+                items: [],
+                totalPages: 1,
+                error: loadError?.message || '',
+                refreshError: '',
+              },
+        )
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [canRead, debouncedSearch, page, reloadKey, folderFilter, tag])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
@@ -162,7 +204,13 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     const targetFolderId = folderFilter && folderFilter !== 'NONE' ? folderFilter : null
     const targetClearFolder = folderFilter === 'NONE'
     try {
-      const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct), targetFolderId, targetClearFolder)
+      const result = await uploadMedia(
+        file,
+        '',
+        (pct) => setUploadProgress(pct),
+        targetFolderId,
+        targetClearFolder,
+      )
       const url = result?.item?.publicUrl
       if (url) {
         mediaCacheRef.current.set(url, result.item)
@@ -175,11 +223,26 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         // Refetch ngay với search rỗng tường minh (không chờ debounce 300ms bắt kịp) để
         // video vừa tải chắc chắn hiện ra ngay.
         try {
-          const r = await fetchMedia({ search: '', mimeType: 'video/', page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+          const r = await fetchMedia({
+            search: '',
+            mimeType: 'video/',
+            page: 1,
+            pageSize: PAGE_SIZE,
+            folderFilter: folderFilter || undefined,
+            tag: tag || undefined,
+          })
           const items = r.items ?? []
           items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
-          setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })
-        } catch { /* effect bên dưới (reloadKey bump) sẽ tự thử lại */ }
+          setState({
+            status: 'success',
+            items,
+            totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1),
+            error: '',
+            refreshError: '',
+          })
+        } catch {
+          /* effect bên dưới (reloadKey bump) sẽ tự thử lại */
+        }
         setReloadKey((value) => value + 1)
       } else {
         setUploadError(t('homeVideos.picker.uploadError'))
@@ -194,7 +257,8 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   }
 
   function handleConfirm() {
-    if (selectedUrl && !validation.blocked) onSelect(selectedUrl, mediaCacheRef.current.get(selectedUrl) ?? null)
+    if (selectedUrl && !validation.blocked)
+      onSelect(selectedUrl, mediaCacheRef.current.get(selectedUrl) ?? null)
   }
 
   // Hỏi xác nhận khi đóng lúc đang tải lên hoặc đã chọn video để tránh mất lựa
@@ -206,7 +270,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     }
     if (selectedUrl) {
       const ok = await showConfirm(
-        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang có tệp đã chọn. Đóng sẽ bỏ lựa chọn này. Tiếp tục?' }),
+        t('media.picker.closeConfirm', {
+          defaultValue: 'Bạn đang có tệp đã chọn. Đóng sẽ bỏ lựa chọn này. Tiếp tục?',
+        }),
         t('media.picker.closeConfirmTitle', { defaultValue: 'Đóng cửa sổ chọn?' }),
       )
       if (!ok) return
@@ -215,7 +281,8 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   }
 
   const isRefreshing = state.status === 'refreshing'
-  const canConfirm = Boolean(selectedUrl) && !isRefreshing && !validation.blocked && validation.status !== 'loading'
+  const canConfirm =
+    Boolean(selectedUrl) && !isRefreshing && !validation.blocked && validation.status !== 'loading'
 
   const isLoading = state.status === 'loading'
 
@@ -223,10 +290,19 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     return createPortal(
       <>
         <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-        <div ref={modalRef} tabIndex={-1} className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('media.videoPermissionDeniedTitle')}>
+        <div
+          ref={modalRef}
+          tabIndex={-1}
+          className="mpicker-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('media.videoPermissionDeniedTitle')}
+        >
           <div className="mpicker-header">
             <h3 className="mpicker-title">{t('media.videoPermissionDeniedTitle')}</h3>
-            <Button variant="secondary" size="sm" type="button" onClick={onClose}>{t('common.close')}</Button>
+            <Button variant="secondary" size="sm" type="button" onClick={onClose}>
+              {t('common.close')}
+            </Button>
           </div>
           <div className="p-4 text-sm text-muted-foreground">
             {t('media.videoPermissionDeniedDesc')}
@@ -243,7 +319,13 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   return createPortal(
     <>
       <div className="mpicker-backdrop" onClick={attemptClose} aria-hidden="true" />
-      <div ref={modalRef} className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('homeVideos.picker.dialogLabel')}>
+      <div
+        ref={modalRef}
+        className="mpicker-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('homeVideos.picker.dialogLabel')}
+      >
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('homeVideos.picker.title')}</h3>
           <div className="mpicker-header-actions">
@@ -257,7 +339,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                   onChange={handleFileChange}
                   disabled={uploading}
                 />
-                <Button variant="secondary" size="sm"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
@@ -269,7 +353,13 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                 </Button>
               </>
             )}
-            <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('homeVideos.picker.close')}>
+            <Button
+              variant="secondary"
+              size="icon"
+              type="button"
+              onClick={attemptClose}
+              aria-label={t('homeVideos.picker.close')}
+            >
               <X size={18} strokeWidth={2.2} aria-hidden="true" />
             </Button>
           </div>
@@ -282,7 +372,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             autoFocus
-           />
+          />
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <FilterSelect
               value={folderFilter}
@@ -308,7 +398,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
           </div>
           {filtersError && (
             <p className="mt-1 text-xs text-danger">
-              {t('media.picker.filtersError', { defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.' })}
+              {t('media.picker.filtersError', {
+                defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.',
+              })}
             </p>
           )}
         </div>
@@ -316,7 +408,13 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><X size={18} strokeWidth={2.2} aria-hidden="true" /></Button>
+            <Button
+              variant="unstyled"
+              onClick={() => setUploadError('')}
+              aria-label={t('homeVideos.picker.dismissError')}
+            >
+              <X size={18} strokeWidth={2.2} aria-hidden="true" />
+            </Button>
           </div>
         )}
 
@@ -325,14 +423,35 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
           {state.status === 'error' && (
             <div className="mpicker-state mpicker-state-error">
               <p>{state.error || t('homeVideos.picker.loadError')}</p>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setReloadKey((value) => value + 1)}>{t('common.retry')}</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setReloadKey((value) => value + 1)}
+              >
+                {t('common.retry')}
+              </Button>
             </div>
           )}
-          {isRefreshing && <p className="px-4 py-2 text-sm text-muted-foreground" role="status">{t('media.refreshing')}</p>}
+          {isRefreshing && (
+            <p className="px-4 py-2 text-sm text-muted-foreground" role="status">
+              {t('media.refreshing')}
+            </p>
+          )}
           {state.refreshError && (
-            <div className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-sm bg-danger-bg px-3 py-2 text-sm text-danger" role="alert">
+            <div
+              className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-sm bg-danger-bg px-3 py-2 text-sm text-danger"
+              role="alert"
+            >
               <span>{t('media.refreshError')}</span>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setReloadKey((value) => value + 1)}>{t('common.retry')}</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setReloadKey((value) => value + 1)}
+              >
+                {t('common.retry')}
+              </Button>
             </div>
           )}
           {state.status === 'success' && state.items.length === 0 && (
@@ -341,44 +460,50 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
               <p>{search ? t('homeVideos.picker.emptySearch') : t('homeVideos.picker.empty')}</p>
             </div>
           )}
-          {(state.status === 'success' || state.status === 'refreshing') && state.items.length > 0 && (
-            <div className="mpicker-grid" aria-busy={isRefreshing || undefined}>
-              {state.items.map((media) => {
-                const url = media.publicUrl
-                const isSelected = url === selectedUrl
-                const filename = media.filename?.split('/').pop() ?? t('homeVideos.picker.defaultFileName')
-                return (
-                  <Button
-                    variant="unstyled"
-                    key={media.id}
-                    className={`mpicker-item${isSelected ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedUrl(isSelected ? null : url)}
-                    disabled={isRefreshing || !url}
-                    aria-pressed={isSelected}
-                    title={filename}
-                  >
-                    <PickerVideoThumbnail url={url} />
-                    {isSelected && (
-                      <div className="mpicker-item-check" aria-hidden="true">
-                        <Check size={16} strokeWidth={2.5} aria-hidden="true" />
+          {(state.status === 'success' || state.status === 'refreshing') &&
+            state.items.length > 0 && (
+              <div className="mpicker-grid" aria-busy={isRefreshing || undefined}>
+                {state.items.map((media) => {
+                  const url = media.publicUrl
+                  const isSelected = url === selectedUrl
+                  const filename =
+                    media.filename?.split('/').pop() ?? t('homeVideos.picker.defaultFileName')
+                  return (
+                    <Button
+                      variant="unstyled"
+                      key={media.id}
+                      className={`mpicker-item${isSelected ? ' is-selected' : ''}`}
+                      onClick={() => setSelectedUrl(isSelected ? null : url)}
+                      disabled={isRefreshing || !url}
+                      aria-pressed={isSelected}
+                      title={filename}
+                    >
+                      <PickerVideoThumbnail url={url} />
+                      {isSelected && (
+                        <div className="mpicker-item-check" aria-hidden="true">
+                          <Check size={16} strokeWidth={2.5} aria-hidden="true" />
+                        </div>
+                      )}
+                      <div className="mpicker-item-info">
+                        <span className="mpicker-item-name">
+                          {filename.replace(/\.[^.]+$/, '')}
+                        </span>
+                        {media.fileSize ? (
+                          <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
+                        ) : null}
                       </div>
-                    )}
-                    <div className="mpicker-item-info">
-                      <span className="mpicker-item-name">{filename.replace(/\.[^.]+$/, '')}</span>
-                      {media.fileSize ? (
-                        <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
-                      ) : null}
-                    </div>
-                  </Button>
-                )
-              })}
-            </div>
-          )}
+                    </Button>
+                  )
+                })}
+              </div>
+            )}
         </div>
 
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <Button variant="secondary" size="sm"
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => {
                 markLoading()
@@ -388,8 +513,12 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
             >
               {t('homeVideos.picker.prev')}
             </Button>
-            <span className="mpicker-page-info">{t('homeVideos.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
-            <Button variant="secondary" size="sm"
+            <span className="mpicker-page-info">
+              {t('homeVideos.picker.pageInfo', { page, totalPages: state.totalPages })}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               onClick={() => {
                 markLoading()
@@ -424,7 +553,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
             <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
-            <Button variant="secondary" type="button" onClick={attemptClose}>{t('common.cancel')}</Button>
+            <Button variant="secondary" type="button" onClick={attemptClose}>
+              {t('common.cancel')}
+            </Button>
             <Button type="button" onClick={handleConfirm} disabled={!canConfirm}>
               {t('homeVideos.picker.confirm')}
             </Button>

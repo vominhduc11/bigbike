@@ -60,7 +60,10 @@ export function useDragSensors(distance = 5) {
  * as needed.
  */
 export function SortableRow({ id, disabled = false, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
+  })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -171,14 +174,17 @@ export function SortableList({
   const accessibility = {
     screenReaderInstructions: {
       draggable: t('common.dnd.instructions', {
-        defaultValue: 'Nhấn phím cách để bắt đầu kéo. Khi đang kéo, dùng phím mũi tên để di chuyển. Nhấn phím cách để thả, hoặc Escape để hủy.',
+        defaultValue:
+          'Nhấn phím cách để bắt đầu kéo. Khi đang kéo, dùng phím mũi tên để di chuyển. Nhấn phím cách để thả, hoặc Escape để hủy.',
       }),
     },
     announcements: {
-      onDragStart: () => t('common.dnd.onStart', { defaultValue: 'Đã nhấc phần tử, bắt đầu sắp xếp.' }),
+      onDragStart: () =>
+        t('common.dnd.onStart', { defaultValue: 'Đã nhấc phần tử, bắt đầu sắp xếp.' }),
       onDragOver: () => t('common.dnd.onOver', { defaultValue: 'Phần tử đang được di chuyển.' }),
       onDragEnd: () => t('common.dnd.onEnd', { defaultValue: 'Đã thả phần tử vào vị trí mới.' }),
-      onDragCancel: () => t('common.dnd.onCancel', { defaultValue: 'Đã hủy kéo, phần tử trở về vị trí cũ.' }),
+      onDragCancel: () =>
+        t('common.dnd.onCancel', { defaultValue: 'Đã hủy kéo, phần tử trở về vị trí cũ.' }),
     },
   }
 

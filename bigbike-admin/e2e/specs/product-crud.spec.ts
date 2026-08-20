@@ -51,7 +51,9 @@ const recoveryProductSkus = (process.env.E2E_PRODUCT_CLEANUP_SKUS || '')
   .filter(Boolean)
 
 function sectionCard(page: Page, title: string): Locator {
-  return page.locator('.bb-card').filter({ has: page.locator('.bb-card-header h3', { hasText: title }) })
+  return page
+    .locator('.bb-card')
+    .filter({ has: page.locator('.bb-card-header h3', { hasText: title }) })
 }
 
 function escapeRegExp(value: string) {
@@ -72,9 +74,11 @@ async function filterProductRows(page: Page, sku: string) {
 
   const filteredResponse = page.waitForResponse((response) => {
     const url = new URL(response.url())
-    return response.request().method() === 'GET'
-      && url.pathname.endsWith('/api/v1/admin/products')
-      && url.searchParams.get('q') === sku
+    return (
+      response.request().method() === 'GET' &&
+      url.pathname.endsWith('/api/v1/admin/products') &&
+      url.searchParams.get('q') === sku
+    )
   })
   await searchInput.fill(sku)
   await filteredResponse
@@ -113,16 +117,23 @@ async function uploadMainImage(page: Page) {
   // Regression video10/video11: AuthProvider kiểm tra lại quyền khi cửa sổ lấy focus
   // và theo chu kỳ 30 giây. Trước fix, lần kiểm tra này gọi queryClient.clear(), làm
   // Product Detail trở về skeleton và unmount MediaPicker giữa lúc admin đang tải ảnh.
-  const profileRefresh = page.waitForResponse((response) =>
-    response.request().method() === 'GET'
-      && new URL(response.url()).pathname.endsWith('/api/v1/auth/me'))
+  const profileRefresh = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname.endsWith('/api/v1/auth/me'),
+  )
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await profileRefresh
-  await expect(dialog, 'Làm mới quyền không được đóng Media picker hoặc tải lại màn Product').toBeVisible()
+  await expect(
+    dialog,
+    'Làm mới quyền không được đóng Media picker hoặc tải lại màn Product',
+  ).toBeVisible()
 
   await dialog.locator('input[type="file"]').setInputFiles(TEST_IMAGE_PATH)
   const confirmBtn = dialog.getByRole('button', { name: 'Chọn ảnh này' })
-  await expect(confirmBtn, 'Upload chưa xong hoặc ảnh sai tỉ lệ 1:1').toBeEnabled({ timeout: 30_000 })
+  await expect(confirmBtn, 'Upload chưa xong hoặc ảnh sai tỉ lệ 1:1').toBeEnabled({
+    timeout: 30_000,
+  })
   await confirmBtn.click()
   await expect(card.getByRole('button', { name: 'Đổi ảnh' })).toBeVisible()
 }
@@ -193,12 +204,15 @@ async function publishDraftRow(page: Page, sku: string) {
   await expect(checklist).toBeVisible({ timeout: 10_000 })
 
   const publishNowBtn = checklist.getByRole('button', { name: 'Đăng bán ngay' })
-  await expect(publishNowBtn, 'Checklist báo còn mục bắt buộc chưa điền — nút "Đăng bán ngay" không hiện').toBeVisible()
+  await expect(
+    publishNowBtn,
+    'Checklist báo còn mục bắt buộc chưa điền — nút "Đăng bán ngay" không hiện',
+  ).toBeVisible()
 
   const [response] = await Promise.all([
-    page.waitForResponse((r) =>
-      r.request().method() === 'PATCH'
-      && new URL(r.url()).pathname.endsWith('/publish')),
+    page.waitForResponse(
+      (r) => r.request().method() === 'PATCH' && new URL(r.url()).pathname.endsWith('/publish'),
+    ),
     publishNowBtn.click(),
   ])
   return response
@@ -216,16 +230,24 @@ async function deleteRowBySku(
 ) {
   await filterProductRows(page, sku)
   const row = productRowBySku(page, sku)
-  if (allowMissing && await row.count() === 0) return false
-  await expect(row, `Không tìm thấy sản phẩm test với SKU ${sku} trong danh sách`).toHaveCount(1, { timeout: 10_000 })
+  if (allowMissing && (await row.count()) === 0) return false
+  await expect(row, `Không tìm thấy sản phẩm test với SKU ${sku} trong danh sách`).toHaveCount(1, {
+    timeout: 10_000,
+  })
   await row.getByRole('button', { name: 'Thao tác', exact: true }).click()
   await page.getByRole('menu').getByRole('menuitem', { name: buttonName, exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: dialogConfirmName, exact: true }).click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: dialogConfirmName, exact: true })
+    .click()
   return true
 }
 
 test.describe('product-crud', () => {
-  test('product-crud · create new product as DRAFT succeeds', async ({ adminPage, collect }, testInfo) => {
+  test('product-crud · create new product as DRAFT succeeds', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(150_000)
 
     createdProductName = productName(testInfo.retry)
@@ -235,14 +257,20 @@ test.describe('product-crud', () => {
     await navigateSpa(adminPage, '/admin/products/new')
 
     await test.step('điền đủ field bắt buộc (kể cả upload ảnh thật + tên tiếng Anh)', async () => {
-      await fillRequiredProductFields(adminPage, { name: createdProductName!, sku: createdProductSku!, nameEn })
+      await fillRequiredProductFields(adminPage, {
+        name: createdProductName!,
+        sku: createdProductSku!,
+        nameEn,
+      })
     })
 
     await test.step('lưu nháp, kỳ vọng API tạo trả 2xx', async () => {
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) =>
-          r.request().method() === 'POST'
-          && new URL(r.url()).pathname.endsWith('/api/v1/admin/products')),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'POST' &&
+            new URL(r.url()).pathname.endsWith('/api/v1/admin/products'),
+        ),
         adminPage.getByRole('button', { name: 'Lưu nháp', exact: true }).click(),
       ])
       expect(response.status(), 'API tạo sản phẩm nháp phải trả 2xx').toBeLessThan(300)
@@ -253,19 +281,26 @@ test.describe('product-crud', () => {
 
       await expect(adminPage.getByText('Tạo sản phẩm thành công.')).toBeVisible()
       await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toBeVisible()
-      await expect(adminPage.getByRole('button', { name: 'Đăng bán ngay', exact: true })).toHaveCount(0)
+      await expect(
+        adminPage.getByRole('button', { name: 'Đăng bán ngay', exact: true }),
+      ).toHaveCount(0)
     })
 
     await test.step('sản phẩm xuất hiện trong danh sách /admin/products', async () => {
       await navigateSpa(adminPage, '/admin/products')
       await adminPage.getByPlaceholder(/Tên sản phẩm.*đường dẫn/).fill(createdProductSku!)
-      await expect(adminPage.getByRole('link', { name: createdProductName!, exact: false })).toBeVisible({ timeout: 10_000 })
+      await expect(
+        adminPage.getByRole('link', { name: createdProductName!, exact: false }),
+      ).toBeVisible({ timeout: 10_000 })
     })
 
     expectRuntimeClean(collect)
   })
 
-  test('product-crud · publish and move back to draft from Product Detail', async ({ adminPage, collect }) => {
+  test('product-crud · publish and move back to draft from Product Detail', async ({
+    adminPage,
+    collect,
+  }) => {
     test.skip(!createdProductId, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công')
     test.setTimeout(90_000)
 
@@ -277,32 +312,50 @@ test.describe('product-crud', () => {
     const publishNow = checklist.getByRole('button', { name: 'Đăng bán ngay' })
     await expect(publishNow).toBeVisible()
     const [publishResponse] = await Promise.all([
-      adminPage.waitForResponse((r) =>
-        r.request().method() === 'PATCH'
-        && new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`)),
+      adminPage.waitForResponse(
+        (r) =>
+          r.request().method() === 'PATCH' &&
+          new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`),
+      ),
       publishNow.click(),
     ])
-    expect(publishResponse.status(), 'API xuất bản từ trang chi tiết phải trả 2xx').toBeLessThan(300)
+    expect(publishResponse.status(), 'API xuất bản từ trang chi tiết phải trả 2xx').toBeLessThan(
+      300,
+    )
     await expect(adminPage.getByText('Đã xuất bản', { exact: true })).toBeVisible()
-    await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toBeVisible()
-    expect(adminPage.url(), 'Đổi trạng thái không được điều hướng khỏi trang chi tiết').toBe(detailUrl)
+    await expect(
+      adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true }),
+    ).toBeVisible()
+    expect(adminPage.url(), 'Đổi trạng thái không được điều hướng khỏi trang chi tiết').toBe(
+      detailUrl,
+    )
 
     await adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true }).click()
     const confirmDialog = adminPage.getByRole('dialog', { name: 'Chuyển sản phẩm về Nháp?' })
     const [unpublishResponse] = await Promise.all([
-      adminPage.waitForResponse((r) =>
-        r.request().method() === 'PATCH'
-        && new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`)),
+      adminPage.waitForResponse(
+        (r) =>
+          r.request().method() === 'PATCH' &&
+          new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`),
+      ),
       confirmDialog.getByRole('button', { name: 'Chuyển về Nháp', exact: true }).click(),
     ])
-    expect(unpublishResponse.status(), 'API chuyển về Nháp từ trang chi tiết phải trả 2xx').toBeLessThan(300)
+    expect(
+      unpublishResponse.status(),
+      'API chuyển về Nháp từ trang chi tiết phải trả 2xx',
+    ).toBeLessThan(300)
     await expect(adminPage.getByText('Nháp', { exact: true })).toBeVisible()
     await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toBeVisible()
-    expect(adminPage.url(), 'Chuyển về Nháp không được điều hướng khỏi trang chi tiết').toBe(detailUrl)
+    expect(adminPage.url(), 'Chuyển về Nháp không được điều hướng khỏi trang chi tiết').toBe(
+      detailUrl,
+    )
     expectRuntimeClean(collect)
   })
 
-  test('product-crud · publish from Product List checklist succeeds', async ({ adminPage, collect }) => {
+  test('product-crud · publish from Product List checklist succeeds', async ({
+    adminPage,
+    collect,
+  }) => {
     test.skip(!createdProductSku, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công')
     test.setTimeout(90_000)
 
@@ -316,8 +369,14 @@ test.describe('product-crud', () => {
     expectRuntimeClean(collect)
   })
 
-  test('product-crud · edit existing product persists after reload', async ({ adminPage, collect }) => {
-    test.skip(!createdProductId, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công nên không có sản phẩm để sửa')
+  test('product-crud · edit existing product persists after reload', async ({
+    adminPage,
+    collect,
+  }) => {
+    test.skip(
+      !createdProductId,
+      'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công nên không có sản phẩm để sửa',
+    )
     test.setTimeout(90_000)
 
     const editedName = `${createdProductName} (đã sửa)`
@@ -327,12 +386,18 @@ test.describe('product-crud', () => {
       const basicCard = sectionCard(adminPage, 'Thông tin cơ bản')
       const pricingCard = sectionCard(adminPage, 'Giá & trạng thái')
 
-      await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toBeVisible()
+      await expect(
+        adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true }),
+      ).toBeVisible()
       await basicCard.getByLabel('Tên', { exact: false }).fill(editedName)
       await pricingCard.getByLabel('Giá niêm yết', { exact: false }).fill(RETAIL_PRICE_EDITED)
 
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'PATCH' && r.url().includes(`/admin/products/${createdProductId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'PATCH' &&
+            r.url().includes(`/admin/products/${createdProductId}`),
+        ),
         adminPage.getByRole('button', { name: 'Lưu thay đổi' }).click(),
       ])
       expect(response.status(), 'API cập nhật sản phẩm phải trả 2xx').toBeLessThan(300)
@@ -354,7 +419,9 @@ test.describe('product-crud', () => {
     expectRuntimeClean(collect)
   })
 
-  test('product-crud · Product List blocks publishing when image is missing', async ({ adminPage }, testInfo) => {
+  test('product-crud · Product List blocks publishing when image is missing', async ({
+    adminPage,
+  }, testInfo) => {
     validationProductSku = `${productSku(testInfo.retry)}-NOIMAGE`
     await navigateSpa(adminPage, '/admin/products/new')
 
@@ -366,9 +433,11 @@ test.describe('product-crud', () => {
     })
 
     const [createResponse] = await Promise.all([
-      adminPage.waitForResponse((r) =>
-        r.request().method() === 'POST'
-        && new URL(r.url()).pathname.endsWith('/api/v1/admin/products')),
+      adminPage.waitForResponse(
+        (r) =>
+          r.request().method() === 'POST' &&
+          new URL(r.url()).pathname.endsWith('/api/v1/admin/products'),
+      ),
       adminPage.getByRole('button', { name: 'Lưu nháp', exact: true }).click(),
     ])
     expect(createResponse.status(), 'Sản phẩm thiếu ảnh vẫn phải lưu Nháp được').toBeLessThan(300)
@@ -388,11 +457,13 @@ test.describe('product-crud', () => {
   })
 
   test('product-crud · cleanup test products', async ({ adminPage }) => {
-    const testSkus = [...new Set(
-      [createdProductSku, validationProductSku, ...recoveryProductSkus].filter(
-        (sku): sku is string => Boolean(sku),
+    const testSkus = [
+      ...new Set(
+        [createdProductSku, validationProductSku, ...recoveryProductSkus].filter(
+          (sku): sku is string => Boolean(sku),
+        ),
       ),
-    )]
+    ]
     test.skip(testSkus.length === 0, 'Không có sản phẩm test nào cần xoá')
     test.setTimeout(90_000)
 
@@ -412,7 +483,10 @@ test.describe('product-crud', () => {
 
       for (const sku of testSkus) {
         const deleted = await deleteRowBySku(adminPage, sku, 'Xóa vĩnh viễn', 'Xóa vĩnh viễn', true)
-        if (deleted) await expect(adminPage.getByText(/Xóa vĩnh viễn sản phẩm thành công/).last()).toBeVisible()
+        if (deleted)
+          await expect(
+            adminPage.getByText(/Xóa vĩnh viễn sản phẩm thành công/).last(),
+          ).toBeVisible()
       }
     })
 

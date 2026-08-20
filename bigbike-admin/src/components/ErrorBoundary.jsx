@@ -26,13 +26,17 @@ export class ErrorBoundary extends Component {
       // ErrorBoundary là class component nên KHÔNG dùng được hook useTranslation —
       // gọi thẳng instance i18next (mọi text vẫn i18n hoá, kèm defaultValue tiếng Việt).
       return (
-        <div role="alert" className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4">
+        <div
+          role="alert"
+          className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4"
+        >
           <h1 className="text-2xl font-bold">
             {i18n.t('errorBoundary.title', { defaultValue: 'Đã xảy ra lỗi không mong đợi' })}
           </h1>
           <p className="text-muted-foreground max-w-[480px]">
             {i18n.t('errorBoundary.description', {
-              defaultValue: 'Vui lòng tải lại trang. Nếu lỗi vẫn tiếp diễn, hãy liên hệ người quản trị.',
+              defaultValue:
+                'Vui lòng tải lại trang. Nếu lỗi vẫn tiếp diễn, hãy liên hệ người quản trị.',
             })}
           </p>
           <div className="flex flex-wrap justify-center gap-3">

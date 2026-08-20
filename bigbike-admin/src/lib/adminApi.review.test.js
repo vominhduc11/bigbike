@@ -20,9 +20,11 @@ describe('admin review mutation contract', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('sends status with the rendered expectedVersion', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: { id: 12, status: 'APPROVED', version: 4 },
-    }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: { id: 12, status: 'APPROVED', version: 4 },
+      }),
+    )
 
     const result = await updateReviewStatus(12, 'APPROVED', 3)
 
@@ -38,33 +40,35 @@ describe('admin review mutation contract', () => {
   })
 
   it('normalizes malformed partial review data without leaking object strings or invalid photos', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: {
-        id: 12,
-        productId: {},
-        productName: {},
-        productNameEn: [],
-        productSlug: null,
-        authorName: ['Nguyễn Minh'],
-        authorEmail: { value: 'minh@example.com' },
-        rating: 'not-a-number',
-        body: { text: 'Rất tốt' },
-        photos: [
-          null,
-          '',
-          'javascript:alert(1)',
-          'https://cdn.example.com/review.jpg',
-          '/media/reviews/../secret.jpg',
-          '/media/reviews/%2e%2e%5csecret.jpg',
-          '/media/reviews/review.jpg?token=leak',
-          '/media/reviews/review.jpg',
-        ],
-        status: { value: 'PENDING' },
-        version: 'invalid',
-        createdAt: {},
-        updatedAt: [],
-      },
-    }))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: {
+          id: 12,
+          productId: {},
+          productName: {},
+          productNameEn: [],
+          productSlug: null,
+          authorName: ['Nguyễn Minh'],
+          authorEmail: { value: 'minh@example.com' },
+          rating: 'not-a-number',
+          body: { text: 'Rất tốt' },
+          photos: [
+            null,
+            '',
+            'javascript:alert(1)',
+            'https://cdn.example.com/review.jpg',
+            '/media/reviews/../secret.jpg',
+            '/media/reviews/%2e%2e%5csecret.jpg',
+            '/media/reviews/review.jpg?token=leak',
+            '/media/reviews/review.jpg',
+          ],
+          status: { value: 'PENDING' },
+          version: 'invalid',
+          createdAt: {},
+          updatedAt: [],
+        },
+      }),
+    )
 
     const result = await fetchReviewDetail(12)
 
@@ -98,16 +102,18 @@ describe('admin review mutation contract', () => {
   })
 
   it('clamps malformed summary values to safe business ranges', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: {
-        approved: {
-          averageRating: 7,
-          totalReviews: -2,
-          ratingBreakdown: { 5: -1, 4.5: 2.5, 4: 3 },
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: {
+          approved: {
+            averageRating: 7,
+            totalReviews: -2,
+            ratingBreakdown: { 5: -1, 4.5: 2.5, 4: 3 },
+          },
+          pending: { totalReviews: '1.5', oneStarReviews: 2 },
         },
-        pending: { totalReviews: '1.5', oneStarReviews: 2 },
-      },
-    }))
+      }),
+    )
 
     const result = await fetchReviewSummary()
 
@@ -118,19 +124,24 @@ describe('admin review mutation contract', () => {
   })
 
   it('sends versioned bulk items and preserves affected/skipped details', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(jsonResponse({
-        data: {
-          affected: 1,
-          skipped: [{ id: 13, reason: 'VERSION_CONFLICT' }],
-        },
-      }))
-      .mockResolvedValueOnce(jsonResponse({
-        data: {
-          affected: 1,
-          skipped: [{ id: 12, reason: 'NOT_IN_TRASH' }],
-        },
-      }))
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            affected: 1,
+            skipped: [{ id: 13, reason: 'VERSION_CONFLICT' }],
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            affected: 1,
+            skipped: [{ id: 12, reason: 'NOT_IN_TRASH' }],
+          },
+        }),
+      )
     const items = [
       { id: 12, expectedVersion: 3 },
       { id: 13, expectedVersion: 7 },

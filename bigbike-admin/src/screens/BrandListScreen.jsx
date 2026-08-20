@@ -44,13 +44,22 @@ function initialBrandQuery() {
 
 function brandActionError(t, error, fallback) {
   if (error?.status === 403) {
-    return t('brands.actionForbidden', { defaultValue: 'Bạn không có quyền thực hiện thao tác này.' })
+    return t('brands.actionForbidden', {
+      defaultValue: 'Bạn không có quyền thực hiện thao tác này.',
+    })
   }
   if (error?.status === 404) {
-    return t('brands.actionNotFound', { defaultValue: 'Thương hiệu không còn tồn tại. Danh sách đã được làm mới.' })
+    return t('brands.actionNotFound', {
+      defaultValue: 'Thương hiệu không còn tồn tại. Danh sách đã được làm mới.',
+    })
   }
   if (error?.status === 409) {
-    return error.message || t('brands.actionConflict', { defaultValue: 'Thương hiệu không còn ở trạng thái phù hợp để thực hiện thao tác này.' })
+    return (
+      error.message ||
+      t('brands.actionConflict', {
+        defaultValue: 'Thương hiệu không còn ở trạng thái phù hợp để thực hiện thao tác này.',
+      })
+    )
   }
   return error?.message || fallback
 }
@@ -110,7 +119,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('brands.hideConfirm', {
         name: formatText(brand.name),
-        defaultValue: 'Chuyển thương hiệu "{{name}}" vào Thùng rác. Đây là xoá mềm và có thể khôi phục sau.',
+        defaultValue:
+          'Chuyển thương hiệu "{{name}}" vào Thùng rác. Đây là xoá mềm và có thể khôi phục sau.',
       }),
       t('common.moveToTrashTitle'),
       { variant: 'default', confirmLabel: t('common.moveToTrash') },
@@ -121,7 +131,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
     try {
       await deleteBrand(brand.id)
       await queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.hideSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }))
+      toast.success(
+        t('brands.hideSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }),
+      )
     } catch (error) {
       toast.error(brandActionError(t, error, t('common.error')))
       if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
@@ -146,7 +158,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
     try {
       await restoreBrand(brand.id)
       await queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.restoreSuccess', { defaultValue: 'Đã khôi phục và hiển thị lại thương hiệu.' }))
+      toast.success(
+        t('brands.restoreSuccess', { defaultValue: 'Đã khôi phục và hiển thị lại thương hiệu.' }),
+      )
     } catch (error) {
       toast.error(brandActionError(t, error, t('common.error')))
       if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
@@ -160,7 +174,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('brands.permanentDeleteConfirm', {
         name: formatText(brand.name),
-        defaultValue: 'Xoá vĩnh viễn thương hiệu "{{name}}". Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
+        defaultValue:
+          'Xoá vĩnh viễn thương hiệu "{{name}}". Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
       }),
       t('common.permanentDeleteTitle'),
       { variant: 'danger', confirmLabel: t('common.permanentDelete') },
@@ -174,10 +189,13 @@ export function BrandListScreen({ navigate, canUpdate }) {
         queryClient.invalidateQueries({ queryKey: ['brands'] }),
         queryClient.invalidateQueries({ queryKey: ['products'] }),
       ])
-      toast.success(t('brands.permanentDeleteSuccessWithProducts', {
-        count: reassignedProductCount,
-        defaultValue: 'Đã xoá vĩnh viễn thương hiệu. {{count}} sản phẩm đã được chuyển sang “Chưa phân loại”.',
-      }))
+      toast.success(
+        t('brands.permanentDeleteSuccessWithProducts', {
+          count: reassignedProductCount,
+          defaultValue:
+            'Đã xoá vĩnh viễn thương hiệu. {{count}} sản phẩm đã được chuyển sang “Chưa phân loại”.',
+        }),
+      )
     } catch (error) {
       toast.error(brandActionError(t, error, t('common.error')))
       if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
@@ -267,13 +285,17 @@ export function BrandListScreen({ navigate, canUpdate }) {
                 referrerPolicy="no-referrer"
                 loading="lazy"
                 className="absolute inset-0 h-full w-full bg-background object-contain"
-                onError={(event) => { event.currentTarget.hidden = true }}
+                onError={(event) => {
+                  event.currentTarget.hidden = true
+                }}
               />
             ) : null}
           </span>
           <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{formatText(brand.name)}</p>
-            <p className="truncate font-mono text-xs text-muted-foreground">/{formatText(brand.slug)}</p>
+            <p className="truncate font-mono text-xs text-muted-foreground">
+              /{formatText(brand.slug)}
+            </p>
           </div>
         </div>
       ),
@@ -300,7 +322,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
       key: 'updatedAt',
       label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }),
       align: 'right',
-      render: (brand) => <span className="text-xs text-muted-foreground">{formatDateTime(brand.updatedAt)}</span>,
+      render: (brand) => (
+        <span className="text-xs text-muted-foreground">{formatDateTime(brand.updatedAt)}</span>
+      ),
     },
     {
       key: 'actions',
@@ -311,21 +335,41 @@ export function BrandListScreen({ navigate, canUpdate }) {
   ]
 
   const activeFilterChips = [
-    ...(query.search ? [{
-      key: 'search',
-      label: t('brands.filterChipSearch', { value: query.search, defaultValue: 'Tìm: "{{value}}"' }),
-      removeLabel: t('brands.removeFilter', { filter: t('common.search'), defaultValue: 'Bỏ lọc {{filter}}' }),
-      onRemove: () => {
-        setSearchInput('')
-        updateQuery({ search: '' }, true)
-      },
-    }] : []),
-    ...(isTrash ? [{
-      key: 'visibility',
-      label: t('brands.filterChipVisibility', { value: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }), defaultValue: 'Hiển thị: {{value}}' }),
-      removeLabel: t('brands.removeFilter', { filter: t('brands.filterVisibility'), defaultValue: 'Bỏ lọc {{filter}}' }),
-      onRemove: () => updateQuery({ visibility: 'VISIBLE' }, true),
-    }] : []),
+    ...(query.search
+      ? [
+          {
+            key: 'search',
+            label: t('brands.filterChipSearch', {
+              value: query.search,
+              defaultValue: 'Tìm: "{{value}}"',
+            }),
+            removeLabel: t('brands.removeFilter', {
+              filter: t('common.search'),
+              defaultValue: 'Bỏ lọc {{filter}}',
+            }),
+            onRemove: () => {
+              setSearchInput('')
+              updateQuery({ search: '' }, true)
+            },
+          },
+        ]
+      : []),
+    ...(isTrash
+      ? [
+          {
+            key: 'visibility',
+            label: t('brands.filterChipVisibility', {
+              value: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }),
+              defaultValue: 'Hiển thị: {{value}}',
+            }),
+            removeLabel: t('brands.removeFilter', {
+              filter: t('brands.filterVisibility'),
+              defaultValue: 'Bỏ lọc {{filter}}',
+            }),
+            onRemove: () => updateQuery({ visibility: 'VISIBLE' }, true),
+          },
+        ]
+      : []),
   ]
 
   const mobileCard = (brand) => ({
@@ -335,13 +379,17 @@ export function BrandListScreen({ navigate, canUpdate }) {
     meta: [
       {
         label: t('brands.detail.showOnHomepage', { defaultValue: 'Hiển thị trên trang chủ' }),
-        value: brand.showOnHomepage === true
-          ? t('common.yes', { defaultValue: 'Có' })
-          : brand.showOnHomepage === false
-            ? t('common.no', { defaultValue: 'Không' })
-            : t('common.unknown', { defaultValue: 'Không xác định' }),
+        value:
+          brand.showOnHomepage === true
+            ? t('common.yes', { defaultValue: 'Có' })
+            : brand.showOnHomepage === false
+              ? t('common.no', { defaultValue: 'Không' })
+              : t('common.unknown', { defaultValue: 'Không xác định' }),
       },
-      { label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(brand.updatedAt) },
+      {
+        label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }),
+        value: formatDateTime(brand.updatedAt),
+      },
     ],
     actions: renderRowActions(brand),
     onClick: () => navigate(`/admin/brands/${brand.id}`),
@@ -353,22 +401,39 @@ export function BrandListScreen({ navigate, canUpdate }) {
         eyebrow={t('brands.eyebrow')}
         title={t('brands.title')}
         description={t('brands.description')}
-        actions={canUpdate ? (
-          <Button type="button" className="min-h-11" onClick={() => navigate('/admin/brands/new')}>
-            <Plus size={16} aria-hidden="true" />
-            {t('brands.create')}
-          </Button>
-        ) : null}
+        actions={
+          canUpdate ? (
+            <Button
+              type="button"
+              className="min-h-11"
+              onClick={() => navigate('/admin/brands/new')}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {t('brands.create')}
+            </Button>
+          ) : null
+        }
       />
 
       {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
+      <RecentItemsChips
+        items={recentBrandItems}
+        onSelect={(item) => navigate(`/admin/brands/${item.id}`)}
+      />
 
       {!canUpdate ? (
-        <ReadOnlyBanner warning={t('brands.readOnly', { defaultValue: 'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.' })} />
+        <ReadOnlyBanner
+          warning={t('brands.readOnly', {
+            defaultValue:
+              'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.',
+          })}
+        />
       ) : null}
 
-      <FilterBar ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })} className="items-center">
+      <FilterBar
+        ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })}
+        className="items-center"
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -383,8 +448,14 @@ export function BrandListScreen({ navigate, canUpdate }) {
           ariaLabel={t('brands.filterVisibility')}
           className="min-h-11"
           options={[
-            { value: 'VISIBLE', label: t('brands.filterVisibilityVisible', { defaultValue: 'Đang hiển thị' }) },
-            { value: 'HIDDEN', label: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }) },
+            {
+              value: 'VISIBLE',
+              label: t('brands.filterVisibilityVisible', { defaultValue: 'Đang hiển thị' }),
+            },
+            {
+              value: 'HIDDEN',
+              label: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }),
+            },
           ]}
         />
         <PageSizeSelect
@@ -399,7 +470,11 @@ export function BrandListScreen({ navigate, canUpdate }) {
           disabled={state.isFetching}
           onClick={() => state.refetch()}
         >
-          <RefreshCw size={16} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
+          <RefreshCw
+            size={16}
+            className={state.isFetching ? 'animate-spin' : undefined}
+            aria-hidden="true"
+          />
           {t('common.refresh', { defaultValue: 'Làm mới' })}
         </Button>
         {state.isFetching && state.status === 'success' ? (
@@ -421,7 +496,12 @@ export function BrandListScreen({ navigate, canUpdate }) {
         <StatePanel
           tone="danger"
           title={t('brands.loadError')}
-          description={state.error || t('brands.loadErrorDesc', { defaultValue: 'Không thể tải danh sách thương hiệu. Vui lòng thử lại.' })}
+          description={
+            state.error ||
+            t('brands.loadErrorDesc', {
+              defaultValue: 'Không thể tải danh sách thương hiệu. Vui lòng thử lại.',
+            })
+          }
           actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => state.refetch()}
           className="mt-4"
@@ -431,19 +511,35 @@ export function BrandListScreen({ navigate, canUpdate }) {
       {state.status === 'success' && items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title={isFiltered
-            ? t('brands.emptyFiltered', { defaultValue: 'Không có thương hiệu phù hợp' })
-            : t('brands.empty', { defaultValue: 'Chưa có thương hiệu' })}
-          description={isFiltered
-            ? t('brands.emptyFilteredDesc', { defaultValue: 'Hãy thay đổi từ khóa hoặc bộ lọc để xem kết quả khác.' })
-            : t('brands.emptyDesc', { defaultValue: 'Tạo thương hiệu đầu tiên để quản lý danh mục sản phẩm.' })}
-          actionLabel={isFiltered ? t('common.resetFilters', { defaultValue: 'Làm mới bộ lọc' }) : canUpdate ? t('brands.create') : undefined}
-          onAction={isFiltered ? resetFilters : canUpdate ? () => navigate('/admin/brands/new') : undefined}
+          title={
+            isFiltered
+              ? t('brands.emptyFiltered', { defaultValue: 'Không có thương hiệu phù hợp' })
+              : t('brands.empty', { defaultValue: 'Chưa có thương hiệu' })
+          }
+          description={
+            isFiltered
+              ? t('brands.emptyFilteredDesc', {
+                  defaultValue: 'Hãy thay đổi từ khóa hoặc bộ lọc để xem kết quả khác.',
+                })
+              : t('brands.emptyDesc', {
+                  defaultValue: 'Tạo thương hiệu đầu tiên để quản lý danh mục sản phẩm.',
+                })
+          }
+          actionLabel={
+            isFiltered
+              ? t('common.resetFilters', { defaultValue: 'Làm mới bộ lọc' })
+              : canUpdate
+                ? t('brands.create')
+                : undefined
+          }
+          onAction={
+            isFiltered ? resetFilters : canUpdate ? () => navigate('/admin/brands/new') : undefined
+          }
           className="mt-4"
         />
       ) : null}
 
-      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
+      {state.status === 'loading' || (state.status === 'success' && items.length > 0) ? (
         <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
           <AdminTable
             columns={columns}

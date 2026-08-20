@@ -36,7 +36,10 @@ const ORDER_SORT_KEYS = ['createdAt:desc', 'createdAt:asc', 'total:desc']
 const ORDER_PAGE_SIZES = [20, 50, 100]
 
 // T2 — CTA cho trạng thái "chưa từng có đơn nào" (không phải do lọc).
-const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(
+  /\/$/,
+  '',
+)
 
 // Chỉ bước PENDING → PROCESSING được thực hiện nhanh trên danh sách.
 const INLINE_STATUS_TARGETS = {
@@ -61,18 +64,21 @@ function isIsoCalendarDate(value) {
   const month = Number(match[2])
   const day = Number(match[3])
   const parsed = new Date(Date.UTC(year, month - 1, day))
-  return parsed.getUTCFullYear() === year
-    && parsed.getUTCMonth() === month - 1
-    && parsed.getUTCDate() === day
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  )
 }
 
 function readInitialOrderQuery() {
   const query = readQueryFromUrl(INITIAL_QUERY)
   return {
     ...query,
-    orderStatus: query.orderStatus === 'ALL' || ORDER_STATUS_KEYS.includes(query.orderStatus)
-      ? query.orderStatus
-      : INITIAL_QUERY.orderStatus,
+    orderStatus:
+      query.orderStatus === 'ALL' || ORDER_STATUS_KEYS.includes(query.orderStatus)
+        ? query.orderStatus
+        : INITIAL_QUERY.orderStatus,
     sort: ORDER_SORT_KEYS.includes(query.sort) ? query.sort : INITIAL_QUERY.sort,
     page: Number.isInteger(query.page) && query.page >= 1 ? query.page : INITIAL_QUERY.page,
     pageSize: ORDER_PAGE_SIZES.includes(query.pageSize) ? query.pageSize : INITIAL_QUERY.pageSize,
@@ -105,7 +111,11 @@ export function OrderListScreen({ navigate, canUpdate }) {
     syncQueryToUrl(query, INITIAL_QUERY)
     // T9: lưu lại query string đang áp dụng để nút "Quay lại danh sách" ở trang
     // chi tiết không làm mất filter/sort/trang.
-    try { sessionStorage.setItem('orders:listQuery', window.location.search) } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem('orders:listQuery', window.location.search)
+    } catch {
+      /* ignore */
+    }
     // Selections refer to ids that may leave the visible page after a filter
     // or page change; clear so the bulk bar never shows hidden items.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -225,9 +235,15 @@ export function OrderListScreen({ navigate, canUpdate }) {
   async function runBulkProcessing() {
     if (!canUpdate || bulkConfirming || bulkProgress || mutationsDisabled) return
     const byId = new Map(items.map((o) => [o.id, o]))
-    const ids = selectedIds.filter((id) => INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'))
+    const ids = selectedIds.filter((id) =>
+      INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'),
+    )
     if (ids.length === 0) {
-      toast.error(t('orders.bulkNoEligible', { defaultValue: 'Không có đơn nào đủ điều kiện chuyển "Đang xử lý" trong lựa chọn.' }))
+      toast.error(
+        t('orders.bulkNoEligible', {
+          defaultValue: 'Không có đơn nào đủ điều kiện chuyển "Đang xử lý" trong lựa chọn.',
+        }),
+      )
       return
     }
 
@@ -235,7 +251,10 @@ export function OrderListScreen({ navigate, canUpdate }) {
     let ok = false
     try {
       ok = await showConfirm(
-        t('orders.bulkProcessingConfirm', { count: ids.length, defaultValue: `Chuyển {{count}} đơn đã chọn sang "Đang xử lý"?` }),
+        t('orders.bulkProcessingConfirm', {
+          count: ids.length,
+          defaultValue: `Chuyển {{count}} đơn đã chọn sang "Đang xử lý"?`,
+        }),
         t('orders.bulkProcessingTitle', { defaultValue: 'Chuyển trạng thái hàng loạt' }),
       )
     } finally {
@@ -249,7 +268,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
     await Promise.allSettled(
       ids.map((id) =>
         updateOrderStatus(id, 'PROCESSING')
-          .then(() => { success += 1 })
+          .then(() => {
+            success += 1
+          })
           .catch((err) => {
             failed += 1
             const order = byId.get(id)
@@ -257,8 +278,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
           })
           .finally(() => {
             setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
-          })
-      )
+          }),
+      ),
     )
     setBulkProgress(null)
     setSelectedIds([])
@@ -289,9 +310,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
       key: 'orderNumber',
       label: t('orders.colOrder'),
       render: (order) => (
-        <span className="mono flex items-center gap-2">
-          {formatText(order.orderNumber)}
-        </span>
+        <span className="mono flex items-center gap-2">{formatText(order.orderNumber)}</span>
       ),
     },
     {
@@ -300,7 +319,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
       render: (order) => (
         <div className="bb-product-cell">
           <div>
-            <div className="font-medium">{formatText(order.customerName, '') || formatText(order.customerEmail)}</div>
+            <div className="font-medium">
+              {formatText(order.customerName, '') || formatText(order.customerEmail)}
+            </div>
             {order.customerName && order.customerEmail ? (
               <div className="bb-cell-sub">{formatText(order.customerEmail)}</div>
             ) : null}
@@ -341,11 +362,19 @@ export function OrderListScreen({ navigate, canUpdate }) {
                 aria-label={t('orders.processingOrderLabel', {
                   order: formatText(order.orderNumber),
                 })}
-                onClick={(e) => { e.stopPropagation(); handleInlineStatusChange(order, target) }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleInlineStatusChange(order, target)
+                }}
               >
-                {inlineUpdating[order.id] === target
-                  ? t('orders.detail.savingShort')
-                  : <><ArrowRight size={14} aria-hidden="true" />{t('orders.detail.actionProcessing')}</>}
+                {inlineUpdating[order.id] === target ? (
+                  t('orders.detail.savingShort')
+                ) : (
+                  <>
+                    <ArrowRight size={14} aria-hidden="true" />
+                    {t('orders.detail.actionProcessing')}
+                  </>
+                )}
               </Button>
             ))}
           </div>
@@ -354,18 +383,19 @@ export function OrderListScreen({ navigate, canUpdate }) {
     },
   ]
 
-  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:orders')
+  const {
+    visibleColumns,
+    hiddenKeys,
+    toggle: toggleColumn,
+    allColumns,
+  } = useColumnVisibility(columns, 'columns:orders')
 
   const mobileCard = (order) => {
     // O4/O6 mobile parity — cùng nút đổi trạng thái nhanh như desktop, hiện ở khu action
     // của thẻ (không lồng trong vùng bấm mở chi tiết).
     const inlineTargets = canUpdate ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? []) : []
     return {
-      title: (
-        <span className="flex items-center gap-2">
-          {formatText(order.orderNumber)}
-        </span>
-      ),
+      title: <span className="flex items-center gap-2">{formatText(order.orderNumber)}</span>,
       subtitle: formatText(order.customerName, '') || formatText(order.customerEmail),
       status: <StatusBadge type="order" status={order.orderStatus} />,
       meta: [
@@ -373,27 +403,33 @@ export function OrderListScreen({ navigate, canUpdate }) {
         { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
       ],
       onClick: () => navigate(`/admin/orders/${order.id}`),
-      actions: inlineTargets.length > 0
-        ? inlineTargets.map((target) => (
-          <Button
-            key={target}
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="min-h-11"
-            disabled={!!inlineUpdating[order.id] || mutationsDisabled}
-            aria-busy={inlineUpdating[order.id] === target}
-            aria-label={t('orders.processingOrderLabel', {
-              order: formatText(order.orderNumber),
-            })}
-            onClick={() => handleInlineStatusChange(order, target)}
-          >
-            {inlineUpdating[order.id] === target
-              ? t('orders.detail.savingShort')
-              : <><ArrowRight size={14} aria-hidden="true" />{t('orders.detail.actionProcessing')}</>}
-          </Button>
-        ))
-        : undefined,
+      actions:
+        inlineTargets.length > 0
+          ? inlineTargets.map((target) => (
+              <Button
+                key={target}
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="min-h-11"
+                disabled={!!inlineUpdating[order.id] || mutationsDisabled}
+                aria-busy={inlineUpdating[order.id] === target}
+                aria-label={t('orders.processingOrderLabel', {
+                  order: formatText(order.orderNumber),
+                })}
+                onClick={() => handleInlineStatusChange(order, target)}
+              >
+                {inlineUpdating[order.id] === target ? (
+                  t('orders.detail.savingShort')
+                ) : (
+                  <>
+                    <ArrowRight size={14} aria-hidden="true" />
+                    {t('orders.detail.actionProcessing')}
+                  </>
+                )}
+              </Button>
+            ))
+          : undefined,
     }
   }
 
@@ -426,12 +462,27 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
       {!canUpdate ? (
-        <ReadOnlyBanner warning={t('orders.readOnlyWarning', { defaultValue: 'Bạn chỉ có quyền xem đơn hàng. Không thể thay đổi trạng thái đơn.' })} />
+        <ReadOnlyBanner
+          warning={t('orders.readOnlyWarning', {
+            defaultValue: 'Bạn chỉ có quyền xem đơn hàng. Không thể thay đổi trạng thái đơn.',
+          })}
+        />
       ) : null}
       {hasCachedPage ? (
-        <Alert tone="danger" size="sm" className="mb-4 flex flex-wrap items-center justify-between gap-3" role="alert">
+        <Alert
+          tone="danger"
+          size="sm"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3"
+          role="alert"
+        >
           <span>{t('orders.refreshError')}</span>
-          <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => state.refetch()}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11"
+            onClick={() => state.refetch()}
+          >
             {t('common.retry')}
           </Button>
         </Alert>
@@ -506,7 +557,11 @@ export function OrderListScreen({ navigate, canUpdate }) {
           disabled={state.isFetching}
           onClick={() => state.refetch()}
         >
-          <RefreshCw size={16} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
+          <RefreshCw
+            size={16}
+            className={state.isFetching ? 'animate-spin' : undefined}
+            aria-hidden="true"
+          />
           {t('common.refresh', { defaultValue: 'Làm mới' })}
         </Button>
         <div className="hide-on-mobile">
@@ -517,8 +572,16 @@ export function OrderListScreen({ navigate, canUpdate }) {
             className="min-h-11"
           />
         </div>
-        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={resetFilters} disabled={!isFiltered}>
-          <SlidersHorizontal size={13} aria-hidden="true" />{t('orders.clearFilters')}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="min-h-11"
+          onClick={resetFilters}
+          disabled={!isFiltered}
+        >
+          <SlidersHorizontal size={13} aria-hidden="true" />
+          {t('orders.clearFilters')}
         </Button>
         {state.isFetching && state.status === 'success' ? (
           <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -535,11 +598,17 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
       {/* Thanh hành động hàng loạt — chuyển nhiều đơn PENDING sang Đang xử lý. */}
       <BulkActionBar
-        selectedCount={canUpdate && selectedIds.length > 0
-          ? (bulkProgress
-            ? t('orders.bulkProcessingProgress', { done: bulkProgress.done, total: bulkProgress.total, defaultValue: `Đang xử lý {{done}}/{{total}}...` })
-            : selectedIds.length)
-          : null}
+        selectedCount={
+          canUpdate && selectedIds.length > 0
+            ? bulkProgress
+              ? t('orders.bulkProcessingProgress', {
+                  done: bulkProgress.done,
+                  total: bulkProgress.total,
+                  defaultValue: `Đang xử lý {{done}}/{{total}}...`,
+                })
+              : selectedIds.length
+            : null
+        }
         onClear={() => setSelectedIds([])}
         actions={[
           {
@@ -551,27 +620,43 @@ export function OrderListScreen({ navigate, canUpdate }) {
       />
 
       {state.status === 'error' && !hasCachedPage && (
-        <StatePanel tone="danger" title={t('orders.loadError')} description={t('orders.loadErrorDesc')}
-          actionLabel={t('common.retry')} onAction={() => state.refetch()} />
+        <StatePanel
+          tone="danger"
+          title={t('orders.loadError')}
+          description={t('orders.loadErrorDesc')}
+          actionLabel={t('common.retry')}
+          onAction={() => state.refetch()}
+        />
       )}
 
-      {listStatus === 'success' && items.length === 0 && (
-        isFiltered ? (
-          <StatePanel tone="neutral" title={t('orders.empty')} description={t('orders.emptyDesc')}
-            actionLabel={t('orders.clearFilters')} onAction={resetFilters} />
+      {listStatus === 'success' &&
+        items.length === 0 &&
+        (isFiltered ? (
+          <StatePanel
+            tone="neutral"
+            title={t('orders.empty')}
+            description={t('orders.emptyDesc')}
+            actionLabel={t('orders.clearFilters')}
+            onAction={resetFilters}
+          />
         ) : (
-          <StatePanel tone="neutral"
+          <StatePanel
+            tone="neutral"
             title={t('orders.emptyAll', { defaultValue: 'Chưa có đơn hàng nào' })}
-            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website, đơn sẽ hiện ở đây.' })}
+            description={t('orders.emptyAllDesc', {
+              defaultValue: 'Khi có đơn đặt trên website, đơn sẽ hiện ở đây.',
+            })}
             actionLabel={t('orders.viewStorefrontCta', { defaultValue: 'Xem trang web' })}
-            onAction={() => window.open(STOREFRONT_BASE, '_blank', 'noopener')} />
-        )
-      )}
+            onAction={() => window.open(STOREFRONT_BASE, '_blank', 'noopener')}
+          />
+        ))}
 
       {(listStatus === 'loading' || (listStatus === 'success' && items.length > 0)) && (
         <div className="bb-card">
           {listStatus === 'loading' ? (
-            <span role="status" className="sr-only">{t('orders.loading')}</span>
+            <span role="status" className="sr-only">
+              {t('orders.loading')}
+            </span>
           ) : null}
           <div
             className={`bb-card-body bb-card-body--flush transition-opacity ${state.isFetching ? 'opacity-60' : 'opacity-100'}`}

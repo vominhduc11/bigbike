@@ -59,7 +59,9 @@ vi.mock('./FilterSelect', () => ({
   FilterSelect: ({ value, onValueChange, options, ariaLabel }) => (
     <select aria-label={ariaLabel} value={value} onChange={(e) => onValueChange(e.target.value)}>
       {options.map((o) => (
-        <option key={String(o.value)} value={o.value}>{typeof o.label === 'string' ? o.label : String(o.value)}</option>
+        <option key={String(o.value)} value={o.value}>
+          {typeof o.label === 'string' ? o.label : String(o.value)}
+        </option>
       ))}
     </select>
   ),
@@ -137,7 +139,7 @@ describe('MediaPickerModal', () => {
   })
 
   it('ẩn nút tải lên khi tài khoản không có quyền media.write', async () => {
-    mocks.hasPermission.mockImplementation(permission => permission === 'media.read')
+    mocks.hasPermission.mockImplementation((permission) => permission === 'media.read')
     renderPicker()
 
     await screen.findByTitle('helmet-one.jpg')
@@ -175,13 +177,9 @@ describe('MediaPickerModal', () => {
 
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
-      file,
-      '',
-      expect.any(Function),
-      null,
-      false,
-    ))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, false),
+    )
     expect(onClose).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog', { name: 'media.picker.dialogLabel' })).toBeInTheDocument()
 
@@ -205,7 +203,9 @@ describe('MediaPickerModal', () => {
     fireEvent.change(fileInput, { target: { files: [invalid, valid] } })
 
     expect(await screen.findByText('media.unsupportedType')).toBeInTheDocument()
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function), null, false))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function), null, false),
+    )
   })
 
   it('upload vào đúng thư mục đang lọc và không bị reset về "Tất cả" sau khi tải xong', async () => {
@@ -221,13 +221,15 @@ describe('MediaPickerModal', () => {
     const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
-      file,
-      '',
-      expect.any(Function),
-      'folder-1',
-      false,
-    ))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(
+        file,
+        '',
+        expect.any(Function),
+        'folder-1',
+        false,
+      ),
+    )
     // Không còn nhảy về "Tất cả thư mục" sau khi upload — giữ đúng ngữ cảnh admin đang lọc.
     await waitFor(() => expect(folderSelect.value).toBe('folder-1'))
   })
@@ -245,13 +247,9 @@ describe('MediaPickerModal', () => {
     const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
-      file,
-      '',
-      expect.any(Function),
-      null,
-      true,
-    ))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, true),
+    )
   })
 
   it('giữ nguyên chữ ký callback chọn ảnh', async () => {
@@ -278,6 +276,7 @@ describe('MediaPickerModal', () => {
 
     await user.click(item)
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'media.picker.confirmSingle' })).toBeDisabled())
+      expect(screen.getByRole('button', { name: 'media.picker.confirmSingle' })).toBeDisabled(),
+    )
   })
 })

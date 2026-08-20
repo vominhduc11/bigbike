@@ -8,9 +8,11 @@ export function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel 
   const { t } = useTranslation()
   const permLabelKey = pending ? PERM_LABEL_KEY_MAP[pending.key] : null
   const permLabel = pending ? (permLabelKey ? t(permLabelKey) : pending.label) : ''
-  const msg = pending && (pending.willAdd
-    ? t('roles.sensitivePermAdd', { perm: permLabel, role: roleName })
-    : t('roles.sensitivePermRemove', { perm: permLabel, role: roleName }))
+  const msg =
+    pending &&
+    (pending.willAdd
+      ? t('roles.sensitivePermAdd', { perm: permLabel, role: roleName })
+      : t('roles.sensitivePermRemove', { perm: permLabel, role: roleName }))
   return (
     <Modal
       open={!!pending}
@@ -23,14 +25,16 @@ export function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel 
       }
       actions={
         <>
-          <Button variant="ghost" size="sm" onClick={onCancel}>{t('roles.cancelBtn')}</Button>
-          <Button size="sm" onClick={onConfirm}>{t('roles.confirmBtn')}</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            {t('roles.cancelBtn')}
+          </Button>
+          <Button size="sm" onClick={onConfirm}>
+            {t('roles.confirmBtn')}
+          </Button>
         </>
       }
     >
-      <p className="m-0 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-        {msg}
-      </p>
+      <p className="m-0 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{msg}</p>
     </Modal>
   )
 }

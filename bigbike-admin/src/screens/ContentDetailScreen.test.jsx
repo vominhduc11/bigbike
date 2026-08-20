@@ -93,7 +93,7 @@ vi.mock('../components/ImageUrlInput', () => ({
   ),
 }))
 vi.mock('../components/LivePreview', () => ({
-  LivePreview: ({ open }) => open ? <div data-testid="live-preview" /> : null,
+  LivePreview: ({ open }) => (open ? <div data-testid="live-preview" /> : null),
 }))
 
 class ResizeObserverStub {
@@ -173,13 +173,17 @@ describe('ContentDetailScreen', () => {
     const title = await screen.findByLabelText(/content\.detail\.title/)
     expect(screen.getByText('content.detail.permissionDesc')).toBeInTheDocument()
     expect(title).toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'content.detail.preview.open' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'content.detail.preview.open' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByTestId('live-preview')).not.toBeInTheDocument()
     expect(mocks.previewArticle).not.toHaveBeenCalled()
   })
 
   it('phân biệt rõ bài không tồn tại với lỗi tải thông thường', async () => {
-    mocks.fetchContentDetail.mockRejectedValue(Object.assign(new Error('Không tìm thấy'), { status: 404 }))
+    mocks.fetchContentDetail.mockRejectedValue(
+      Object.assign(new Error('Không tìm thấy'), { status: 404 }),
+    )
     renderScreen()
 
     expect(await screen.findByText('content.detail.notFound')).toBeInTheDocument()
@@ -267,7 +271,9 @@ describe('ContentDetailScreen', () => {
     renderScreen({ item: trash })
 
     expect(await screen.findByText('content.detail.trashWarningTitle')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'content.detail.archiveBtn' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'content.detail.archiveBtn' }),
+    ).not.toBeInTheDocument()
     const restoreAndSave = screen.getByRole('button', { name: 'content.detail.restoreAndSave' })
     await user.click(restoreAndSave)
 

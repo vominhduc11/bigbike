@@ -55,9 +55,13 @@ export function MaintenanceScreen() {
 
   // Another developer may flip the state from their own session; the same STOMP topic the
   // overlay listens on keeps this screen honest without a manual reload.
-  useEffect(() => subscribeAdminWs('/topic/admin/maintenance', () => {
-    queryClient.invalidateQueries({ queryKey: ['maintenance'] })
-  }), [queryClient])
+  useEffect(
+    () =>
+      subscribeAdminWs('/topic/admin/maintenance', () => {
+        queryClient.invalidateQueries({ queryKey: ['maintenance'] })
+      }),
+    [queryClient],
+  )
 
   const staffNote = noteDraft ?? (data?.staffNote || '')
   const expectedAt = expectedDraft ?? toLocalInput(data?.expectedAt)
@@ -80,25 +84,44 @@ export function MaintenanceScreen() {
   const busy = mutation.isPending
 
   const tone = useMemo(() => {
-    if (state === STATES.ACTIVE) return { label: t('maintenance.stateActive', { defaultValue: 'Đang khoá' }), badge: 'bb-badge-danger', Icon: Lock }
-    if (state === STATES.UPCOMING) return { label: t('maintenance.stateUpcoming', { defaultValue: 'Sắp bảo trì' }), badge: 'bb-badge-warning', Icon: Clock3 }
-    return { label: t('maintenance.stateNormal', { defaultValue: 'Bình thường' }), badge: 'bb-badge-success', Icon: ShieldCheck }
+    if (state === STATES.ACTIVE)
+      return {
+        label: t('maintenance.stateActive', { defaultValue: 'Đang khoá' }),
+        badge: 'bb-badge-danger',
+        Icon: Lock,
+      }
+    if (state === STATES.UPCOMING)
+      return {
+        label: t('maintenance.stateUpcoming', { defaultValue: 'Sắp bảo trì' }),
+        badge: 'bb-badge-warning',
+        Icon: Clock3,
+      }
+    return {
+      label: t('maintenance.stateNormal', { defaultValue: 'Bình thường' }),
+      badge: 'bb-badge-success',
+      Icon: ShieldCheck,
+    }
   }, [state, t])
 
   async function apply(next) {
     if (next === STATES.ACTIVE) {
-      const uploadWarning = uploadCount > 0
-        ? t('maintenance.confirmLockUploads', {
-            count: uploadCount,
-            defaultValue: `Đang có ${uploadCount} tệp tải lên dở dang — khoá bây giờ sẽ làm hỏng các tệp đó. `,
-          })
-        : ''
+      const uploadWarning =
+        uploadCount > 0
+          ? t('maintenance.confirmLockUploads', {
+              count: uploadCount,
+              defaultValue: `Đang có ${uploadCount} tệp tải lên dở dang — khoá bây giờ sẽ làm hỏng các tệp đó. `,
+            })
+          : ''
       const ok = await showConfirm(
         `${uploadWarning}${t('maintenance.confirmLockBody', {
-          defaultValue: 'Nhân viên sẽ không lưu được bất kỳ thay đổi nào cho tới khi bạn mở lại. Khách hàng không bị ảnh hưởng.',
+          defaultValue:
+            'Nhân viên sẽ không lưu được bất kỳ thay đổi nào cho tới khi bạn mở lại. Khách hàng không bị ảnh hưởng.',
         })}`,
         t('maintenance.confirmLockTitle', { defaultValue: 'Khoá trang quản trị?' }),
-        { variant: 'danger', confirmLabel: t('maintenance.lockNow', { defaultValue: 'Khoá ngay' }) },
+        {
+          variant: 'danger',
+          confirmLabel: t('maintenance.lockNow', { defaultValue: 'Khoá ngay' }),
+        },
       )
       if (!ok) return
     }
@@ -110,7 +133,9 @@ export function MaintenanceScreen() {
     return (
       <Alert tone="danger">
         {t('common.loadFailed')}{' '}
-        <Button variant="link" onClick={() => refetch()}>{t('common.retry')}</Button>
+        <Button variant="link" onClick={() => refetch()}>
+          {t('common.retry')}
+        </Button>
       </Alert>
     )
   }
@@ -127,22 +152,24 @@ export function MaintenanceScreen() {
 
       <SectionCard
         title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })}
-        badge={(
+        badge={
           <span className={`bb-badge ${tone.badge}`}>
             <tone.Icon size={14} aria-hidden="true" /> {tone.label}
           </span>
-        )}
+        }
       >
         <p className="mt-0 text-sm text-muted-foreground">
           {t('maintenance.intro', {
-            defaultValue: 'Khoá chỉ áp dụng cho trang quản trị. Trang bán hàng và việc đặt hàng của khách không bị ảnh hưởng ở bất kỳ trạng thái nào.',
+            defaultValue:
+              'Khoá chỉ áp dụng cho trang quản trị. Trang bán hàng và việc đặt hàng của khách không bị ảnh hưởng ở bất kỳ trạng thái nào.',
           })}
         </p>
 
         {state === STATES.ACTIVE && (
           <Alert tone="danger" className="mt-3">
             {t('maintenance.activeHint', {
-              defaultValue: 'Nhân viên đang không lưu được thay đổi nào. Chỉ tài khoản kỹ thuật còn thao tác được.',
+              defaultValue:
+                'Nhân viên đang không lưu được thay đổi nào. Chỉ tài khoản kỹ thuật còn thao tác được.',
             })}
           </Alert>
         )}
@@ -158,16 +185,21 @@ export function MaintenanceScreen() {
 
         {data?.updatedAt && (
           <p className="mb-0 mt-3 text-xs text-muted-foreground">
-            {t('maintenance.updatedAt', { defaultValue: 'Cập nhật lần cuối' })}: {formatDateTime(data.updatedAt)}
+            {t('maintenance.updatedAt', { defaultValue: 'Cập nhật lần cuối' })}:{' '}
+            {formatDateTime(data.updatedAt)}
           </p>
         )}
       </SectionCard>
 
-      <SectionCard title={t('maintenance.detailsTitle', { defaultValue: 'Thông tin hiển thị cho nhân viên' })}>
+      <SectionCard
+        title={t('maintenance.detailsTitle', { defaultValue: 'Thông tin hiển thị cho nhân viên' })}
+      >
         <div className="flex flex-col gap-4">
           <FormField
             label={t('maintenance.staffNote', { defaultValue: 'Lời nhắn cho nhân viên' })}
-            helper={t('maintenance.staffNoteHint', { defaultValue: 'Hiện trên thông báo bảo trì của mọi nhân viên đang đăng nhập.' })}
+            helper={t('maintenance.staffNoteHint', {
+              defaultValue: 'Hiện trên thông báo bảo trì của mọi nhân viên đang đăng nhập.',
+            })}
           >
             <Textarea
               rows={3}
@@ -175,13 +207,17 @@ export function MaintenanceScreen() {
               value={staffNote}
               disabled={!canToggle || busy}
               onChange={(event) => setNoteDraft(event.target.value)}
-              placeholder={t('maintenance.staffNotePlaceholder', { defaultValue: 'Ví dụ: Đang nâng cấp dữ liệu sản phẩm, dự kiến xong 15:00.' })}
+              placeholder={t('maintenance.staffNotePlaceholder', {
+                defaultValue: 'Ví dụ: Đang nâng cấp dữ liệu sản phẩm, dự kiến xong 15:00.',
+              })}
             />
           </FormField>
 
           <FormField
             label={t('maintenance.expectedAt', { defaultValue: 'Dự kiến xong lúc' })}
-            helper={t('maintenance.expectedAtHint', { defaultValue: 'Chỉ để hiển thị — hệ thống không tự khoá hay tự mở theo mốc này.' })}
+            helper={t('maintenance.expectedAtHint', {
+              defaultValue: 'Chỉ để hiển thị — hệ thống không tự khoá hay tự mở theo mốc này.',
+            })}
           >
             <Input
               type="datetime-local"

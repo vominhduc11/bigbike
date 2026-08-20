@@ -18,15 +18,17 @@ function CategoryTableHead({ canUpdate, selectAllCheckbox }) {
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {canUpdate ? (
-            <TableHead className="w-12 text-center">
-              {selectAllCheckbox}
-            </TableHead>
+            <TableHead className="w-12 text-center">{selectAllCheckbox}</TableHead>
           ) : null}
           <TableHead className={headerClassName}>{t('categories.colCategory')}</TableHead>
           <TableHead className={headerClassName}>{t('categories.colVisibility')}</TableHead>
           <TableHead className={headerClassName}>{t('categories.colHomepage')}</TableHead>
-          <TableHead className={`${headerClassName} text-right`}>{t('categories.colUpdated')}</TableHead>
-          <TableHead className={`${headerClassName} text-right`}>{t('categories.colActions')}</TableHead>
+          <TableHead className={`${headerClassName} text-right`}>
+            {t('categories.colUpdated')}
+          </TableHead>
+          <TableHead className={`${headerClassName} text-right`}>
+            {t('categories.colActions')}
+          </TableHead>
         </TableRow>
       </TableHeader>
     </>

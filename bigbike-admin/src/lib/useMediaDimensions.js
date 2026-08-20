@@ -12,15 +12,24 @@ export function useImageDimensions(url) {
   const [dims, setDims] = useState(IDLE)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!trimmed) { setDims(IDLE); return }
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDims(IDLE)
+      return
+    }
     let alive = true
     setDims({ status: 'loading', width: 0, height: 0 })
     const img = new Image()
-    img.onload = () => { if (alive) setDims({ status: 'loaded', width: img.naturalWidth, height: img.naturalHeight }) }
-    img.onerror = () => { if (alive) setDims({ status: 'error', width: 0, height: 0 }) }
+    img.onload = () => {
+      if (alive) setDims({ status: 'loaded', width: img.naturalWidth, height: img.naturalHeight })
+    }
+    img.onerror = () => {
+      if (alive) setDims({ status: 'error', width: 0, height: 0 })
+    }
     img.src = trimmed
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [trimmed])
 
   return dims
@@ -33,15 +42,22 @@ export function useVideoDimensions(url) {
   const [dims, setDims] = useState(IDLE)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!trimmed) { setDims(IDLE); return }
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDims(IDLE)
+      return
+    }
     let alive = true
     setDims({ status: 'loading', width: 0, height: 0 })
     const video = document.createElement('video')
     video.preload = 'metadata'
     video.muted = true
-    const onMeta = () => { if (alive) setDims({ status: 'loaded', width: video.videoWidth, height: video.videoHeight }) }
-    const onError = () => { if (alive) setDims({ status: 'error', width: 0, height: 0 }) }
+    const onMeta = () => {
+      if (alive) setDims({ status: 'loaded', width: video.videoWidth, height: video.videoHeight })
+    }
+    const onError = () => {
+      if (alive) setDims({ status: 'error', width: 0, height: 0 })
+    }
     video.addEventListener('loadedmetadata', onMeta)
     video.addEventListener('error', onError)
     video.src = trimmed
@@ -70,5 +86,11 @@ export function useMediaValidation(kind, url, recommend) {
   if (dims.status !== 'loaded') return { ...dims, blocked: false, reasons: null }
 
   const reasons = evaluateImageDimensions(dims.width, dims.height, recommend)
-  return { status: 'loaded', blocked: Boolean(reasons), reasons, width: dims.width, height: dims.height }
+  return {
+    status: 'loaded',
+    blocked: Boolean(reasons),
+    reasons,
+    width: dims.width,
+    height: dims.height,
+  }
 }

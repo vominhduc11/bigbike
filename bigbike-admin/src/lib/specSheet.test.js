@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { serializeSpecs, parseSpecsFromHtml, parseSpecsResult, mergeSpecsIntoHtml } from './specSheet'
+import {
+  serializeSpecs,
+  parseSpecsFromHtml,
+  parseSpecsResult,
+  mergeSpecsIntoHtml,
+} from './specSheet'
 
 const spec = (name, value) => ({ name, value })
 
@@ -41,13 +46,18 @@ describe('parseSpecsFromHtml', () => {
   it('đọc bảng tùy biến (có style) bỏ qua CSS, lấy chữ', () => {
     const html =
       '<table style="border:1px solid"><tbody><tr><th style="color:red">Size</th><td>M</td></tr></tbody></table>'
-    expect(parseSpecsFromHtml(html).map((r) => ({ name: r.name, value: r.value }))).toEqual([spec('Size', 'M')])
+    expect(parseSpecsFromHtml(html).map((r) => ({ name: r.name, value: r.value }))).toEqual([
+      spec('Size', 'M'),
+    ])
   })
 
   it('bảng 3 cột chỉ đưa hai cột đầu vào biểu mẫu và báo cột dư', () => {
-    const html = '<table><tbody><tr><th scope="row">Trọng lượng</th><td>1350</td><td>gram</td></tr></tbody></table>'
+    const html =
+      '<table><tbody><tr><th scope="row">Trọng lượng</th><td>1350</td><td>gram</td></tr></tbody></table>'
     const result = parseSpecsResult(html)
-    expect(result.items.map(({ name, value }) => ({ name, value }))).toEqual([spec('Trọng lượng', '1350')])
+    expect(result.items.map(({ name, value }) => ({ name, value }))).toEqual([
+      spec('Trọng lượng', '1350'),
+    ])
     expect(result.extraColumnCount).toBe(1)
   })
 
@@ -58,23 +68,33 @@ describe('parseSpecsFromHtml', () => {
     expect(result.items[0].value).toBe('<strong>1350</strong> <em>gram</em>')
   })
 
-	it('fallback text "tên: giá trị"', () => {
-    expect(parseSpecsFromHtml('Chất liệu: Carbon\nTrọng lượng: 1.4 kg').map((r) => ({ name: r.name, value: r.value })))
-      .toEqual([spec('Chất liệu', 'Carbon'), spec('Trọng lượng', '1.4 kg')])
-	})
+  it('fallback text "tên: giá trị"', () => {
+    expect(
+      parseSpecsFromHtml('Chất liệu: Carbon\nTrọng lượng: 1.4 kg').map((r) => ({
+        name: r.name,
+        value: r.value,
+      })),
+    ).toEqual([spec('Chất liệu', 'Carbon'), spec('Trọng lượng', '1.4 kg')])
+  })
 
-	it('đọc HTML thông thường dạng tiêu đề + đoạn văn', () => {
-		expect(parseSpecsResult('<h3>Trọng lượng</h3><p>1350 gram</p>').items.map(({ name, value }) => ({ name, value })))
-			.toEqual([spec('Trọng lượng', '1350 gram')])
-	})
+  it('đọc HTML thông thường dạng tiêu đề + đoạn văn', () => {
+    expect(
+      parseSpecsResult('<h3>Trọng lượng</h3><p>1350 gram</p>').items.map(({ name, value }) => ({
+        name,
+        value,
+      })),
+    ).toEqual([spec('Trọng lượng', '1350 gram')])
+  })
 
-	it('đọc thông số dạng danh sách gạch đầu dòng', () => {
-		const result = parseSpecsResult('<ul><li>Trọng lượng: 1350 gram</li><li>Chuẩn: ECE 22.06</li></ul>')
-		expect(result.items.map(({ name, value }) => ({ name, value }))).toEqual([
-			spec('Trọng lượng', '1350 gram'),
-			spec('Chuẩn', 'ECE 22.06'),
-		])
-	})
+  it('đọc thông số dạng danh sách gạch đầu dòng', () => {
+    const result = parseSpecsResult(
+      '<ul><li>Trọng lượng: 1350 gram</li><li>Chuẩn: ECE 22.06</li></ul>',
+    )
+    expect(result.items.map(({ name, value }) => ({ name, value }))).toEqual([
+      spec('Trọng lượng', '1350 gram'),
+      spec('Chuẩn', 'ECE 22.06'),
+    ])
+  })
 })
 
 describe('mergeSpecsIntoHtml', () => {
@@ -104,28 +124,30 @@ describe('mergeSpecsIntoHtml', () => {
   })
 
   it('bớt dòng → gỡ node thừa', () => {
-    const styled = '<table><tbody><tr><th scope="row">A</th><td>1</td></tr><tr><th scope="row">B</th><td>2</td></tr></tbody></table>'
+    const styled =
+      '<table><tbody><tr><th scope="row">A</th><td>1</td></tr><tr><th scope="row">B</th><td>2</td></tr></tbody></table>'
     const out = mergeSpecsIntoHtml([spec('A', '1')], styled)
     expect(out).toContain('>A<')
     expect(out).not.toContain('>B<')
   })
 
-	it('không còn dòng → gỡ bảng', () => {
+  it('không còn dòng → gỡ bảng', () => {
     const styled = '<table><tbody><tr><th scope="row">A</th><td>1</td></tr></tbody></table>'
     expect(mergeSpecsIntoHtml([], styled)).toBe('')
-	})
+  })
 
-	it('sửa HTML tiêu đề + đoạn văn vẫn giữ khung trình bày', () => {
-		const existing = '<h3 style="color:blue">Cũ</h3><p class="value">1</p>'
-		const out = mergeSpecsIntoHtml([spec('Mới', '2')], existing)
-		expect(out).toContain('style="color:blue"')
-		expect(out).toContain('class="value"')
-		expect(out).toContain('Mới')
-		expect(out).toContain('2')
-	})
+  it('sửa HTML tiêu đề + đoạn văn vẫn giữ khung trình bày', () => {
+    const existing = '<h3 style="color:blue">Cũ</h3><p class="value">1</p>'
+    const out = mergeSpecsIntoHtml([spec('Mới', '2')], existing)
+    expect(out).toContain('style="color:blue"')
+    expect(out).toContain('class="value"')
+    expect(out).toContain('Mới')
+    expect(out).toContain('2')
+  })
 
   it('sửa bảng 3 cột không nhân đôi hoặc xoá cột thứ ba', () => {
-    const existing = '<table><tbody><tr><th scope="row">Trọng lượng</th><td>1350</td><td>gram</td></tr></tbody></table>'
+    const existing =
+      '<table><tbody><tr><th scope="row">Trọng lượng</th><td>1350</td><td>gram</td></tr></tbody></table>'
     const out = mergeSpecsIntoHtml([spec('Trọng lượng', '1350 gram')], existing)
     expect(out.match(/1350 gram/g)).toHaveLength(1)
     expect(out.match(/gram/g)).toHaveLength(2)

@@ -18,7 +18,10 @@ describe('category intro HTML source and structured reader', () => {
   })
 
   it('recognizes a table plus six FAQ pairs in one shared wrapper', () => {
-    const answers = Array.from({ length: 6 }, (_, index) => `<p class="bb-ci-at">Câu trả lời ${index + 1}.</p>`).join('')
+    const answers = Array.from(
+      { length: 6 },
+      (_, index) => `<p class="bb-ci-at">Câu trả lời ${index + 1}.</p>`,
+    ).join('')
     const html = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Mũ</h2><p class="bb-ci-body">Giới thiệu</p></div><table><tr><td>Bảng riêng</td></tr></table><div class="bb-ci-b"><div class="legacy-questions">${Array.from({ length: 6 }, (_, index) => `<h3 class="bb-ci-qt">Câu hỏi ${index + 1}?</h3>`).join('')}${answers}</div></div></div>`
     const parsed = parseIntro(html)
 
@@ -26,8 +29,12 @@ describe('category intro HTML source and structured reader', () => {
     expect(getIntroInputMode(html)).toBe('structured')
     expect(parsed.heading).toBe('Mũ')
     expect(parsed.faqs).toHaveLength(6)
-    expect(parsed.faqs.map((faq) => faq.question)).toEqual(Array.from({ length: 6 }, (_, index) => `Câu hỏi ${index + 1}?`))
-    expect(parsed.faqs.map((faq) => faq.answer)).toEqual(Array.from({ length: 6 }, (_, index) => `Câu trả lời ${index + 1}.`))
+    expect(parsed.faqs.map((faq) => faq.question)).toEqual(
+      Array.from({ length: 6 }, (_, index) => `Câu hỏi ${index + 1}?`),
+    )
+    expect(parsed.faqs.map((faq) => faq.answer)).toEqual(
+      Array.from({ length: 6 }, (_, index) => `Câu trả lời ${index + 1}.`),
+    )
   })
 
   it('recognizes legacy microdata and incomplete managed content', () => {
@@ -58,35 +65,70 @@ describe('category intro HTML source and structured reader', () => {
     expect(root.querySelector('.comparison td').textContent).toBe('Giữ nguyên')
     expect(root.querySelector('.free-columns img')).not.toBeNull()
     expect(root.querySelector('.free-after p').textContent).toBe('Khối lạ')
-    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual(['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'])
-    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'A6'])
-    expect(root.querySelector('table').compareDocumentPosition(root.querySelector('.bb-ci-b')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual([
+      'Q1',
+      'Q2',
+      'Q3',
+      'Q4',
+      'Q5',
+      'Q6',
+    ])
+    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual([
+      'A1',
+      'A2',
+      'A3',
+      'A4',
+      'A5',
+      'A6',
+    ])
+    expect(
+      root.querySelector('table').compareDocumentPosition(root.querySelector('.bb-ci-b')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('patches FAQ content by global appearance order and inserts a new FAQ before the CTA', () => {
-    const html = '<div class="bb-cat-intro"><div class="bb-ci-b"><h3 class="bb-ci-qt">Q1</h3><p class="bb-ci-at">A1</p></div><div class="bb-ci-c"><span class="bb-ci-ct">Contact</span></div></div>'
-    const patched = patchIntroHtml(html, {
-      field: 'faqs',
-      value: [
-        { question: 'Q mới 1', answer: 'A mới 1' },
-        { question: 'Q mới 2', answer: 'A mới 2' },
-      ],
-    }, 'vi')
+    const html =
+      '<div class="bb-cat-intro"><div class="bb-ci-b"><h3 class="bb-ci-qt">Q1</h3><p class="bb-ci-at">A1</p></div><div class="bb-ci-c"><span class="bb-ci-ct">Contact</span></div></div>'
+    const patched = patchIntroHtml(
+      html,
+      {
+        field: 'faqs',
+        value: [
+          { question: 'Q mới 1', answer: 'A mới 1' },
+          { question: 'Q mới 2', answer: 'A mới 2' },
+        ],
+      },
+      'vi',
+    )
     const doc = new DOMParser().parseFromString(patched, 'text/html')
     const root = doc.querySelector('.bb-cat-intro')
 
-    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual(['Q mới 1', 'Q mới 2'])
-    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual(['A mới 1', 'A mới 2'])
-    expect(root.querySelector('.bb-ci-b').compareDocumentPosition(root.querySelector('.bb-ci-c')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(Array.from(root.querySelectorAll('.bb-ci-qt')).map((node) => node.textContent)).toEqual([
+      'Q mới 1',
+      'Q mới 2',
+    ])
+    expect(Array.from(root.querySelectorAll('.bb-ci-at')).map((node) => node.textContent)).toEqual([
+      'A mới 1',
+      'A mới 2',
+    ])
+    expect(
+      root.querySelector('.bb-ci-b').compareDocumentPosition(root.querySelector('.bb-ci-c')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('ignores an answer-like store paragraph and does not duplicate it across three FAQ edits', () => {
-    const faqMarkup = Array.from({ length: 6 }, (_, index) => `
+    const faqMarkup = Array.from(
+      { length: 6 },
+      (_, index) => `
       <div class="bb-ci-faq">
         <div class="bb-ci-q"><span class="bb-ci-qbadge">Q</span><h3 class="bb-ci-qt">Câu hỏi ${index + 1}?</h3></div>
         <div><p class="bb-ci-at">Câu trả lời ${index + 1}.</p></div>
-      </div>`).join('')
-    const storeParagraph = '<p class="bb-ci-at">Bigbike.vn hoạt động từ 2014 tại địa chỉ của cửa hàng.</p>'
+      </div>`,
+    ).join('')
+    const storeParagraph =
+      '<p class="bb-ci-at">Bigbike.vn hoạt động từ 2014 tại địa chỉ của cửa hàng.</p>'
     let html = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Mũ bảo hiểm</h2><p class="bb-ci-body">Giới thiệu.</p></div><table class="comparison"><tbody><tr><td>So sánh</td></tr></tbody></table><div class="bb-ci-b">${faqMarkup}${storeParagraph}</div><div class="free-block"><img src="/keep.jpg" alt="Giữ nguyên" /></div></div>`
 
     for (let edit = 0; edit < 3; edit += 1) {
@@ -94,26 +136,39 @@ describe('category intro HTML source and structured reader', () => {
       expect(parsed.faqs).toHaveLength(6)
       expect(parsed.faqs.every((faq) => faq.question && faq.answer)).toBe(true)
 
-      html = patchIntroHtml(html, {
-        field: 'faqs',
-        value: parsed.faqs.map((faq, index) => ({
-          ...faq,
-          answer: `${faq.answer} Lần sửa ${edit + 1}-${index + 1}.`,
-        })),
-      }, 'vi')
+      html = patchIntroHtml(
+        html,
+        {
+          field: 'faqs',
+          value: parsed.faqs.map((faq, index) => ({
+            ...faq,
+            answer: `${faq.answer} Lần sửa ${edit + 1}-${index + 1}.`,
+          })),
+        },
+        'vi',
+      )
 
       const document = new DOMParser().parseFromString(html, 'text/html')
       expect(document.querySelectorAll('.bb-ci-qt')).toHaveLength(6)
       expect(document.querySelectorAll('.bb-ci-at')).toHaveLength(7)
       expect(document.body.textContent).toContain(`Lần sửa ${edit + 1}-1.`)
       expect(document.body.textContent.match(/Bigbike\.vn hoạt động từ 2014/g)).toHaveLength(1)
-      expect(document.querySelector('.comparison').compareDocumentPosition(document.querySelector('.bb-ci-b')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(
+        document
+          .querySelector('.comparison')
+          .compareDocumentPosition(document.querySelector('.bb-ci-b')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
       expect(document.querySelector('.free-block img')).not.toBeNull()
     }
   })
 
   it('creates a managed root without deleting the supplied HTML when a new field is edited', () => {
-    const patched = patchIntroHtml('<table><tr><td>Existing</td></tr></table>', { field: 'heading', value: 'Heading' }, 'en')
+    const patched = patchIntroHtml(
+      '<table><tr><td>Existing</td></tr></table>',
+      { field: 'heading', value: 'Heading' },
+      'en',
+    )
     expect(patched).toContain('Existing')
     expect(patched).toContain('Heading')
     expect(patched).toContain('class="bb-cat-intro"')

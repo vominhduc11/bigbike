@@ -16,9 +16,25 @@ import { setContentLang } from '../lib/contentLang'
 import { ScreenHeader, Tabs } from '@/components/layout'
 import { cn } from '@/lib/utils'
 import {
-  validateValue, isTranslatableSetting, REQUIRED_SETTING_KEYS, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
-  TAB_META, FALLBACK_META, tabLabel, tabDescription, displayValue, isSettingDirty, BANNERS_TAB_ID, ASSIGN_TAB_ID,
-  getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
+  validateValue,
+  isTranslatableSetting,
+  REQUIRED_SETTING_KEYS,
+  TAB_ORDER,
+  SENSITIVE_SETTING_TABS,
+  HIDDEN_GROUPS,
+  HIDDEN_KEYS,
+  TAB_META,
+  FALLBACK_META,
+  tabLabel,
+  tabDescription,
+  displayValue,
+  isSettingDirty,
+  BANNERS_TAB_ID,
+  ASSIGN_TAB_ID,
+  getAutosaveKey,
+  saveFormToStorage,
+  loadFormFromStorage,
+  clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
 
@@ -27,7 +43,10 @@ import { SettingTabPanel } from './settings/SettingTabPanel'
 const BannerScreen = lazyScreen(() => import('./BannerScreen'), 'BannerScreen')
 // Lazy — cùng lý do: tab "Phân công" chỉ Super Admin mới thấy, không kéo code
 // AssignmentRolesScreen vào mọi lần mở Cài đặt của role khác.
-const AssignmentRolesScreen = lazyScreen(() => import('./AssignmentRolesScreen'), 'AssignmentRolesScreen')
+const AssignmentRolesScreen = lazyScreen(
+  () => import('./AssignmentRolesScreen'),
+  'AssignmentRolesScreen',
+)
 
 // ── SettingsScreen ────────────────────────────────────────────────────────────
 
@@ -64,9 +83,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     items: settingsData?.items ?? [],
     warning: '',
     isRefreshing: settingsQuery.isFetching && Boolean(settingsData),
-    refreshError: settingsQuery.isError && settingsData
-      ? settingsQuery.error?.message || t('settings.refreshError')
-      : '',
+    refreshError:
+      settingsQuery.isError && settingsData
+        ? settingsQuery.error?.message || t('settings.refreshError')
+        : '',
     error: settingsQuery.error?.message || '',
   }
 
@@ -75,10 +95,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     hasCheckedDraftRef.current = true
     // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
     const draft = loadFormFromStorage(autosaveKey)
-    const hasDraftValues = draft?.form && (
-      Object.keys(draft.form.drafts || {}).length > 0 ||
-      Object.keys(draft.form.draftsEn || {}).length > 0
-    )
+    const hasDraftValues =
+      draft?.form &&
+      (Object.keys(draft.form.drafts || {}).length > 0 ||
+        Object.keys(draft.form.draftsEn || {}).length > 0)
     // Khôi phục bản nháp là phản hồi một lần cho dữ liệu vừa có từ server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (hasDraftValues) setDraftRecovery(draft)
@@ -125,11 +145,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   // Derive active tab: user pick takes priority, else first available tab
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
-  const isValidOverride = activeTabOverride && (
-    groups.has(activeTabOverride)
-    || activeTabOverride === BANNERS_TAB_ID
-    || (activeTabOverride === ASSIGN_TAB_ID && isSuperAdmin)
-  )
+  const isValidOverride =
+    activeTabOverride &&
+    (groups.has(activeTabOverride) ||
+      activeTabOverride === BANNERS_TAB_ID ||
+      (activeTabOverride === ASSIGN_TAB_ID && isSuperAdmin))
   const activeTab = isValidOverride ? activeTabOverride : firstTab
 
   const activeItems = useMemo(() => {
@@ -152,11 +172,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     setEmbeddedStates((previous) => {
       const current = previous[tabId]
       if (
-        current?.dirtyCount === nextState.dirtyCount
-        && current?.saving === nextState.saving
-        && current?.saveSuccess === nextState.saveSuccess
-        && current?.error === nextState.error
-      ) return previous
+        current?.dirtyCount === nextState.dirtyCount &&
+        current?.saving === nextState.saving &&
+        current?.saveSuccess === nextState.saveSuccess &&
+        current?.error === nextState.error
+      )
+        return previous
       return { ...previous, [tabId]: nextState }
     })
   }, [])
@@ -169,41 +190,50 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     [handleEditorStateChange],
   )
 
-  const handleDraftChange = useCallback((key, value) => {
-    const original = displayValue(state.items.find((setting) => setting.key === key)?.value)
-    setDrafts((previous) => {
-      if (displayValue(value) !== original) return { ...previous, [key]: value }
-      if (previous[key] === undefined) return previous
-      const next = { ...previous }
-      delete next[key]
-      return next
-    })
-    // "Reward early, punish late": khi đang gõ chỉ XÓA lỗi cũ, không bắt lỗi từng
-    // ký tự (gõ dở email/URL/hotline không bị báo đỏ ngay). Validate đầy đủ chạy
-    // lại ở handleSave trước khi lưu, nên không bỏ sót giá trị sai.
-    setErrors((p) => (p[key] ? { ...p, [key]: '' } : p))
-    setSaveError('')
-  }, [state.items])
+  const handleDraftChange = useCallback(
+    (key, value) => {
+      const original = displayValue(state.items.find((setting) => setting.key === key)?.value)
+      setDrafts((previous) => {
+        if (displayValue(value) !== original) return { ...previous, [key]: value }
+        if (previous[key] === undefined) return previous
+        const next = { ...previous }
+        delete next[key]
+        return next
+      })
+      // "Reward early, punish late": khi đang gõ chỉ XÓA lỗi cũ, không bắt lỗi từng
+      // ký tự (gõ dở email/URL/hotline không bị báo đỏ ngay). Validate đầy đủ chạy
+      // lại ở handleSave trước khi lưu, nên không bỏ sót giá trị sai.
+      setErrors((p) => (p[key] ? { ...p, [key]: '' } : p))
+      setSaveError('')
+    },
+    [state.items],
+  )
 
   // English drafts: text-only, no validation (titles/descriptions).
-  const handleDraftChangeEn = useCallback((key, value) => {
-    const original = displayValue(state.items.find((setting) => setting.key === key)?.valueEn)
-    setDraftsEn((previous) => {
-      if (displayValue(value) !== original) return { ...previous, [key]: value }
-      if (previous[key] === undefined) return previous
-      const next = { ...previous }
-      delete next[key]
-      return next
-    })
-    setSaveError('')
-  }, [state.items])
+  const handleDraftChangeEn = useCallback(
+    (key, value) => {
+      const original = displayValue(state.items.find((setting) => setting.key === key)?.valueEn)
+      setDraftsEn((previous) => {
+        if (displayValue(value) !== original) return { ...previous, [key]: value }
+        if (previous[key] === undefined) return previous
+        const next = { ...previous }
+        delete next[key]
+        return next
+      })
+      setSaveError('')
+    },
+    [state.items],
+  )
 
   // Validate khi rời ô (F3): báo lỗi email/URL/hotline/ngưỡng ngay khi blur,
   // không bắt lỗi từng ký tự lúc đang gõ. handleSave vẫn validate lại lần cuối.
-  const handleDraftBlur = useCallback((key, value) => {
-    const err = validateValue(key, value)
-    setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
-  }, [t])
+  const handleDraftBlur = useCallback(
+    (key, value) => {
+      const err = validateValue(key, value)
+      setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
+    },
+    [t],
+  )
 
   const handleDiscard = useCallback(() => {
     const keys = activeItems.map((s) => s.key)
@@ -235,7 +265,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       if (!REQUIRED_SETTING_KEYS.has(s.key) || !isTranslatableSetting(s)) continue
       const effectiveEn = draftsEn[s.key] !== undefined ? draftsEn[s.key] : s.valueEn
       if (!String(effectiveEn ?? '').trim()) {
-        newErrors[s.key] = t('settings.errValueEnRequired', { defaultValue: 'Vui lòng nhập bản tiếng Anh cho trường này.' })
+        newErrors[s.key] = t('settings.errValueEnRequired', {
+          defaultValue: 'Vui lòng nhập bản tiếng Anh cho trường này.',
+        })
         missingEn = true
       }
     }
@@ -246,10 +278,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     }
 
     if (SENSITIVE_SETTING_TABS.has(activeTab)) {
-      const ok = await showConfirm(
-        t('settings.confirmSaveMessage'),
-        t('settings.confirmSaveTitle'),
-      )
+      const ok = await showConfirm(t('settings.confirmSaveMessage'), t('settings.confirmSaveTitle'))
       if (!ok) return
     }
 
@@ -264,7 +293,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           if (drafts[s.key] !== undefined) u.value = drafts[s.key]
           if (draftsEn[s.key] !== undefined) u.valueEn = draftsEn[s.key]
           return u
-        })
+        }),
       )
       // Cập nhật cache ngay để tab hiện tại không chớp rồi làm mới cache chung cho Banner.
       queryClient.setQueryData(['settings'], (previous) => {
@@ -288,7 +317,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       // ghi lại phần còn dở của các tab khác nếu còn).
       const remainingDrafts = dropSaved(drafts)
       const remainingDraftsEn = dropSaved(draftsEn)
-      if (Object.keys(remainingDrafts).length === 0 && Object.keys(remainingDraftsEn).length === 0) {
+      if (
+        Object.keys(remainingDrafts).length === 0 &&
+        Object.keys(remainingDraftsEn).length === 0
+      ) {
         clearFormFromStorage(autosaveKey)
       } else {
         saveFormToStorage(autosaveKey, { drafts: remainingDrafts, draftsEn: remainingDraftsEn })
@@ -317,9 +349,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   useEffect(() => {
     if (!isDirty) {
       if (
-        state.status === 'success'
-        && (Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0)
-      ) clearFormFromStorage(autosaveKey)
+        state.status === 'success' &&
+        (Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0)
+      )
+        clearFormFromStorage(autosaveKey)
       return
     }
     const timer = setTimeout(() => saveFormToStorage(autosaveKey, { drafts, draftsEn }), 10_000)
@@ -328,18 +361,27 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   // O3: Ctrl/Cmd+S lưu tab đang xem — chỉ bật khi có quyền sửa, không ở tab Banner
   // (tab đó có luồng lưu riêng của BannerScreen) và tab hiện tại có thay đổi chưa lưu.
-  const activeDirtyCount = activeItems.filter((setting) => isSettingDirty(setting, drafts, draftsEn)).length
+  const activeDirtyCount = activeItems.filter((setting) =>
+    isSettingDirty(setting, drafts, draftsEn),
+  ).length
   useSaveShortcut(
-    canUpdate && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && activeDirtyCount > 0,
+    canUpdate &&
+      activeTab !== BANNERS_TAB_ID &&
+      activeTab !== ASSIGN_TAB_ID &&
+      activeDirtyCount > 0,
     handleSave,
   )
 
-  const anySaving = saving || Object.values(embeddedStates).some((editorState) => editorState.saving)
+  const anySaving =
+    saving || Object.values(embeddedStates).some((editorState) => editorState.saving)
 
   const getTabInfo = (tab) => {
     if (tab.kind === 'banners') {
-      const rawItems = state.items.filter((setting) =>
-        (setting.settingGroup || '').toUpperCase() === 'PUBLIC_HERO' && !HIDDEN_KEYS.has(setting.key))
+      const rawItems = state.items.filter(
+        (setting) =>
+          (setting.settingGroup || '').toUpperCase() === 'PUBLIC_HERO' &&
+          !HIDDEN_KEYS.has(setting.key),
+      )
       return {
         ...tab,
         label: tabLabel('PUBLIC_HERO', t),
@@ -352,8 +394,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       }
     }
     if (tab.kind === 'assign') {
-      const rawItems = state.items.filter((setting) =>
-        (setting.settingGroup || '').toUpperCase() === 'PRODUCT_ASSIGN' && !HIDDEN_KEYS.has(setting.key))
+      const rawItems = state.items.filter(
+        (setting) =>
+          (setting.settingGroup || '').toUpperCase() === 'PRODUCT_ASSIGN' &&
+          !HIDDEN_KEYS.has(setting.key),
+      )
       return {
         ...tab,
         label: tabLabel('PRODUCT_ASSIGN', t),
@@ -375,7 +420,8 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       itemCount: items.length,
       dirtyCount: items.filter((setting) => isSettingDirty(setting, drafts, draftsEn)).length,
       sensitive: SENSITIVE_SETTING_TABS.has(tab.id),
-      restricted: !isSuperAdmin && items.length > 0 && items.every((setting) => setting.superAdminOnly),
+      restricted:
+        !isSuperAdmin && items.length > 0 && items.every((setting) => setting.superAdminOnly),
     }
   }
   const tabInfos = navTabs.map(getTabInfo)
@@ -399,24 +445,28 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       eyebrow={t('settings.eyebrow')}
       title={t('settings.title')}
       description={t('settings.description')}
-      badge={(
+      badge={
         <span className={canUpdate ? 'bb-badge bb-badge-success' : 'bb-badge bb-badge-warning'}>
           {canUpdate
             ? t('settings.accessEditable', { defaultValue: 'Có thể chỉnh sửa' })
             : t('settings.accessReadOnly', { defaultValue: 'Chỉ xem' })}
         </span>
-      )}
-      actions={(
+      }
+      actions={
         <Button
           variant="secondary"
           className="min-h-11"
           onClick={() => settingsQuery.refetch()}
           disabled={state.status === 'loading' || state.isRefreshing || anySaving}
         >
-          <RefreshCw size={16} className={state.isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
+          <RefreshCw
+            size={16}
+            className={state.isRefreshing ? 'animate-spin' : undefined}
+            aria-hidden="true"
+          />
           {state.isRefreshing ? t('settings.refreshing') : t('settings.refresh')}
         </Button>
-      )}
+      }
     />
   )
 
@@ -462,17 +512,25 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       {/* Không có quyền sửa mà cũng chưa có cảnh báo read-only từ máy chủ: nêu rõ
           đang ở chế độ chỉ xem để chủ shop không loay hoay tìm nút Lưu. */}
       {!canUpdate && !state.warning && (
-        <ReadOnlyBanner warning={t('settings.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.' })} />
+        <ReadOnlyBanner
+          warning={t('settings.readOnlyHint', {
+            defaultValue: 'Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.',
+          })}
+        />
       )}
 
       {draftRecovery && (
         <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
           <span className="bb-alert-main truncate">
-            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
-            {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+            <strong>
+              {t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}
+            </strong>
+            {' · '}
+            {formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
-          <Button variant="unstyled"
+          <Button
+            variant="unstyled"
             type="button"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
@@ -483,7 +541,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
               // Nhảy sang tab đầu tiên có field vừa khôi phục để admin thấy ngay,
               // không phải tự dò từng tab theo huy hiệu số thay đổi.
               const targetGroup = [...groups.entries()].find(([, items]) =>
-                items.some((s) => restoredDrafts[s.key] !== undefined || restoredDraftsEn[s.key] !== undefined)
+                items.some(
+                  (s) =>
+                    restoredDrafts[s.key] !== undefined || restoredDraftsEn[s.key] !== undefined,
+                ),
               )
               if (targetGroup) setActiveTabOverride(targetGroup[0])
               setDraftRecovery(null)
@@ -491,10 +552,14 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
           </Button>
-          <Button variant="unstyled"
+          <Button
+            variant="unstyled"
             type="button"
             className="text-xs underline hover:no-underline"
-            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+            onClick={() => {
+              clearFormFromStorage(autosaveKey)
+              setDraftRecovery(null)
+            }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
           </Button>
@@ -502,7 +567,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       )}
 
       {state.items.length === 0 ? (
-        <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
+        <StatePanel
+          tone="neutral"
+          title={t('settings.noSettings')}
+          description={t('settings.noSettingsDesc')}
+        />
       ) : (
         <>
           <div className="sticky top-0 z-10 mb-4 bg-background py-2 lg:hidden">
@@ -518,7 +587,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             <div className="hidden lg:block">
               <nav className="bb-card sticky top-0 p-2" aria-label={t('settings.tabsAria')}>
                 <div className="border-b border-border px-3 pb-3 pt-2">
-                  <p className="m-0 text-sm font-semibold text-foreground">{t('settings.navigatorTitle')}</p>
+                  <p className="m-0 text-sm font-semibold text-foreground">
+                    {t('settings.navigatorTitle')}
+                  </p>
                   <p className="mb-0 mt-1 text-xs leading-relaxed text-muted-foreground">
                     {t('settings.navigatorDescription')}
                   </p>
@@ -552,7 +623,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                               </span>
                             ) : null}
                             {tab.sensitive ? (
-                              <span className="bb-badge bb-badge-warning">{t('settings.confirmRequired')}</span>
+                              <span className="bb-badge bb-badge-warning">
+                                {t('settings.confirmRequired')}
+                              </span>
                             ) : null}
                           </span>
                           <span className="mt-1 block text-xs font-normal leading-relaxed text-muted-foreground">
@@ -561,7 +634,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                           <span className="mt-1.5 flex items-center gap-2 text-xs font-normal text-muted-foreground">
                             <span>{t('settings.itemCountShort', { count: tab.itemCount })}</span>
                             {tab.dirtyCount > 0 ? (
-                              <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: tab.dirtyCount })}>
+                              <span
+                                className="bb-badge bb-badge-warning"
+                                aria-label={t('settings.tabChangeCount', { count: tab.dirtyCount })}
+                              >
                                 {t('settings.unsavedShort', { count: tab.dirtyCount })}
                               </span>
                             ) : null}
@@ -575,7 +651,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             </div>
 
             <div className="min-w-0 lg:col-span-3">
-              {(visitedTabs.has(BANNERS_TAB_ID) || activeTab === BANNERS_TAB_ID) ? (
+              {visitedTabs.has(BANNERS_TAB_ID) || activeTab === BANNERS_TAB_ID ? (
                 <div hidden={activeTab !== BANNERS_TAB_ID}>
                   <Suspense fallback={<ScreenSkeleton />}>
                     <BannerScreen
@@ -588,7 +664,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 </div>
               ) : null}
 
-              {(visitedTabs.has(ASSIGN_TAB_ID) || activeTab === ASSIGN_TAB_ID) ? (
+              {visitedTabs.has(ASSIGN_TAB_ID) || activeTab === ASSIGN_TAB_ID ? (
                 <div hidden={activeTab !== ASSIGN_TAB_ID}>
                   <Suspense fallback={<ScreenSkeleton />}>
                     <AssignmentRolesScreen
@@ -600,26 +676,26 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 </div>
               ) : null}
 
-            {activeTab && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
-              <SettingTabPanel
-                title={tabLabel(activeTab, t)}
-                description={tabDescription(activeTab, t)}
-                items={activeItems}
-                canUpdate={canUpdate}
-                drafts={drafts}
-                draftsEn={draftsEn}
-                errors={errors}
-                isSuperAdmin={isSuperAdmin}
-                onDraftChange={handleDraftChange}
-                onDraftChangeEn={handleDraftChangeEn}
-                onDraftBlur={handleDraftBlur}
-                onSave={handleSave}
-                onDiscard={handleDiscard}
-                saving={saving}
-                saveSuccess={saveSuccess}
-                saveError={saveError}
-              />
-            )}
+              {activeTab && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
+                <SettingTabPanel
+                  title={tabLabel(activeTab, t)}
+                  description={tabDescription(activeTab, t)}
+                  items={activeItems}
+                  canUpdate={canUpdate}
+                  drafts={drafts}
+                  draftsEn={draftsEn}
+                  errors={errors}
+                  isSuperAdmin={isSuperAdmin}
+                  onDraftChange={handleDraftChange}
+                  onDraftChangeEn={handleDraftChangeEn}
+                  onDraftBlur={handleDraftBlur}
+                  onSave={handleSave}
+                  onDiscard={handleDiscard}
+                  saving={saving}
+                  saveSuccess={saveSuccess}
+                  saveError={saveError}
+                />
+              )}
             </div>
           </div>
         </>

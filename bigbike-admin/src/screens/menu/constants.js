@@ -91,10 +91,7 @@ export function buildMenuTree(items) {
 export function flattenMenuTree(nodes, depth = 0) {
   return nodes
     .filter((node) => node != null && node.id)
-    .flatMap((node) => [
-      { ...node, depth },
-      ...flattenMenuTree(node.children ?? [], depth + 1),
-    ])
+    .flatMap((node) => [{ ...node, depth }, ...flattenMenuTree(node.children ?? [], depth + 1)])
 }
 
 export function collectDescendantIds(items, itemId) {
@@ -139,11 +136,12 @@ export function normalizeMenuUrlForSave(url) {
   const normalizePath = (pathname) => {
     const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
     if (
-      clean === '/san-pham'
-      || clean === '/danh-muc'
-      || clean === '/danh-muc-san-pham'
-      || clean === '/danh-muc-san-pham.html'
-    ) return '/sp/'
+      clean === '/san-pham' ||
+      clean === '/danh-muc' ||
+      clean === '/danh-muc-san-pham' ||
+      clean === '/danh-muc-san-pham.html'
+    )
+      return '/sp/'
     if (clean.startsWith('/danh-muc-san-pham/')) {
       return `/danh-muc/${clean.slice('/danh-muc-san-pham/'.length)}/`
     }
@@ -175,9 +173,15 @@ export function isValidCustomUrl(url) {
   // bằng lỗi khó hiểu — nay client từ chối ngay cho khớp.
   if (v.includes('\n') || v.includes('\r')) return false
   const lower = v.toLowerCase()
-  if (lower.startsWith('javascript:') || lower.startsWith('data:')
-      || lower.startsWith('vbscript:') || lower.startsWith('//')) return false
-  if (v.startsWith('/') || v.startsWith('#') || v.startsWith('tel:') || v.startsWith('mailto:')) return true
+  if (
+    lower.startsWith('javascript:') ||
+    lower.startsWith('data:') ||
+    lower.startsWith('vbscript:') ||
+    lower.startsWith('//')
+  )
+    return false
+  if (v.startsWith('/') || v.startsWith('#') || v.startsWith('tel:') || v.startsWith('mailto:'))
+    return true
   // Chỉ chấp nhận http/https cho URL tuyệt đối (đồng bộ danh sách scheme an toàn của server).
   return lower.startsWith('http://') || lower.startsWith('https://')
 }
@@ -192,6 +196,7 @@ export function isItemFormValid(data) {
 export const SLOT_CONTEXT_NOTE_KEYS = {
   primary: {
     key: 'menus.slotPrimaryContextNote',
-    defaultValue: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+    defaultValue:
+      'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
   },
 }

@@ -40,30 +40,40 @@ function ProductPicker({ value, onChange, disabled }) {
     enabled: open,
   })
 
-  const handleSelect = useCallback((product) => {
-    onChange(product)
-    reset()
-    setOpen(false)
-  }, [onChange, reset])
+  const handleSelect = useCallback(
+    (product) => {
+      onChange(product)
+      reset()
+      setOpen(false)
+    },
+    [onChange, reset],
+  )
 
   const displayValue = search || (value ? value.name : '')
 
   return (
     <ProductPickerCombobox
       search={displayValue}
-      onSearchChange={(v) => { setSearch(v); setOpen(true) }}
+      onSearchChange={(v) => {
+        setSearch(v)
+        setOpen(true)
+      }}
       onFocus={() => setOpen(true)}
       open={open && search.trim().length > 0}
-      onOpenChange={(next) => { if (!next) setOpen(false) }}
+      onOpenChange={(next) => {
+        if (!next) setOpen(false)
+      }}
       loading={isFetching}
       error={isError}
       items={items}
       onPick={handleSelect}
       placeholder={t('homeHighlights.searchPlaceholder')}
       loadingText={`${t('common.loading')}…`}
-      errorText={error?.code === 'FORBIDDEN'
-        ? t('homeHighlights.searchPermissionError')
-        : t('homeHighlights.searchError')}
+      errorText={
+        error?.code === 'FORBIDDEN'
+          ? t('homeHighlights.searchPermissionError')
+          : t('homeHighlights.searchError')
+      }
       emptyText={t('homeHighlights.noResults')}
       disabled={disabled}
     />
@@ -88,7 +98,9 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
               referrerPolicy="no-referrer"
               loading="lazy"
               // Ảnh sản phẩm hỏng/404 không để lại ô ảnh vỡ trong slot (nhất quán với các màn khác).
-              onError={(event) => { event.currentTarget.hidden = true }}
+              onError={(event) => {
+                event.currentTarget.hidden = true
+              }}
               className="w-16 h-16 object-cover flex-shrink-0"
             />
           )}
@@ -113,11 +125,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
         </div>
       )}
 
-      <ProductPicker
-        value={product}
-        onChange={onProductChange}
-        disabled={disabled}
-      />
+      <ProductPicker value={product} onChange={onProductChange} disabled={disabled} />
     </div>
   )
 }
@@ -135,7 +143,13 @@ export function HomeHighlightsScreen({ canUpdate }) {
   const [initialized, setInitialized] = useState(false)
   const [hasConflict, setHasConflict] = useState(false)
 
-  const { isLoading, isError, error, data: highlightsData, refetch } = useQuery({
+  const {
+    isLoading,
+    isError,
+    error,
+    data: highlightsData,
+    refetch,
+  } = useQuery({
     queryKey: ['home-highlights', contentLang],
     queryFn: fetchHomeHighlights,
   })
@@ -151,7 +165,8 @@ export function HomeHighlightsScreen({ canUpdate }) {
           id: found.productId,
           name: found.productName,
           slug: found.productSlug,
-          image: normalizeImageAsset({ url: found.productImageUrl, alt: found.productName }) ?? null,
+          image:
+            normalizeImageAsset({ url: found.productImageUrl, alt: found.productName }) ?? null,
         },
       }
     })
@@ -161,7 +176,8 @@ export function HomeHighlightsScreen({ canUpdate }) {
   }, [highlightsData, initialized])
 
   const saveMutation = useMutation({
-    mutationFn: ({ slotsToSave, expectedVersion }) => saveHomeHighlights(slotsToSave, expectedVersion),
+    mutationFn: ({ slotsToSave, expectedVersion }) =>
+      saveHomeHighlights(slotsToSave, expectedVersion),
     onSuccess(savedData) {
       setHasConflict(false)
       queryClient.setQueryData(['home-highlights', contentLang], savedData)
@@ -187,7 +203,8 @@ export function HomeHighlightsScreen({ canUpdate }) {
     return slotsSignature(loaded)
   }, [highlightsData])
 
-  const isDirty = initialized && !saveMutation.isPending && slotsSignature(slots) !== baselineSignature
+  const isDirty =
+    initialized && !saveMutation.isPending && slotsSignature(slots) !== baselineSignature
 
   useUnsavedChanges(isDirty)
 
@@ -199,16 +216,16 @@ export function HomeHighlightsScreen({ canUpdate }) {
       const shouldReload = await canReloadHighlightsForLanguageChange({
         initialized,
         isDirty,
-        confirmDiscard: () => showConfirm(
-          t('homeHighlights.langSwitchConfirm'),
-          t('homeHighlights.unsavedTitle'),
-        ),
+        confirmDiscard: () =>
+          showConfirm(t('homeHighlights.langSwitchConfirm'), t('homeHighlights.unsavedTitle')),
       })
       if (cancelled || !shouldReload) return
       setInitialized(false)
     }
     maybeReload()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
     // Chỉ chạy khi contentLang đổi; isDirty/initialized là snapshot tại thời điểm đổi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLang])
@@ -217,9 +234,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
   useSaveShortcut(canUpdate, handleSave)
 
   function handleProductChange(slotNumber, product) {
-    setSlots((prev) =>
-      prev.map((s) => (s.slot === slotNumber ? { ...s, product } : s))
-    )
+    setSlots((prev) => prev.map((s) => (s.slot === slotNumber ? { ...s, product } : s)))
   }
 
   const filledSlots = slots.filter((s) => s.product?.id)

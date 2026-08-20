@@ -23,11 +23,16 @@ describe('serializeFaqsToHtml / parseFaqsFromHtml', () => {
 
     const html = serializeFaqsToHtml(items, false)
     expect(html).toContain('class="bb-faq-item"')
-    expect(parseFaqsFromHtml(html)).toEqual(items.map(({ question, answer }) => ({ question, answer })))
+    expect(parseFaqsFromHtml(html)).toEqual(
+      items.map(({ question, answer }) => ({ question, answer })),
+    )
   })
 
   it('escape câu hỏi để không đưa HTML từ trường text vào markup', () => {
-    const html = serializeFaqsToHtml([faq('<img src=x onerror=alert(1)> & giá?', '<p>Không.</p>')], false)
+    const html = serializeFaqsToHtml(
+      [faq('<img src=x onerror=alert(1)> & giá?', '<p>Không.</p>')],
+      false,
+    )
 
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt; &amp; giá?')
     expect(html).not.toContain('<img src=x')
@@ -36,13 +41,19 @@ describe('serializeFaqsToHtml / parseFaqsFromHtml', () => {
 
   it('đọc HTML thông thường dạng tiêu đề nhỏ + đoạn trả lời', () => {
     const result = parseFaqsResult('<h3>Mũ có Pinlock không?</h3><p>Có, kèm Pinlock 70.</p>')
-    expect(result.items).toEqual([{ question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' }])
+    expect(result.items).toEqual([
+      { question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' },
+    ])
     expect(result.acceptedCount).toBe(1)
   })
 
   it('đọc FAQ dạng danh sách có câu hỏi in đậm và câu trả lời', () => {
-    const result = parseFaqsResult('<ul><li><strong>Mũ có Pinlock không?</strong><p>Có, kèm Pinlock 70.</p></li></ul>')
-    expect(result.items).toEqual([{ question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' }])
+    const result = parseFaqsResult(
+      '<ul><li><strong>Mũ có Pinlock không?</strong><p>Có, kèm Pinlock 70.</p></li></ul>',
+    )
+    expect(result.items).toEqual([
+      { question: 'Mũ có Pinlock không?', answer: '<p>Có, kèm Pinlock 70.</p>' },
+    ])
     expect(result.acceptedCount).toBe(1)
   })
 
@@ -74,7 +85,11 @@ describe('mergeFaqsHtmlIntoItems', () => {
       { question: 'Mới 3', answer: '<p>Đáp 3</p>' },
     ])
     expect(next.map((item) => item.questionEn)).toEqual(['Old 1', 'Old 2', ''])
-    expect(next.map((item) => item.answerEn)).toEqual(['<p>Old answer 1</p>', '<p>Old answer 2</p>', ''])
+    expect(next.map((item) => item.answerEn)).toEqual([
+      '<p>Old answer 1</p>',
+      '<p>Old answer 2</p>',
+      '',
+    ])
     expect(next.slice(0, 2).map((item) => item._key)).toEqual(['first', 'second'])
   })
 
@@ -95,7 +110,10 @@ describe('mergeFaqsHtmlIntoItems', () => {
     expect(next.map((item) => item.question)).toEqual(['VI 1', 'VI 2'])
     expect(next.map((item) => item.answer)).toEqual(['<p>Đáp VI 1</p>', '<p>Đáp VI 2</p>'])
     expect(next.map((item) => item.questionEn)).toEqual(['New 1', 'New 2'])
-    expect(next.map((item) => item.answerEn)).toEqual(['<p>New answer 1</p>', '<p>New answer 2</p>'])
+    expect(next.map((item) => item.answerEn)).toEqual([
+      '<p>New answer 1</p>',
+      '<p>New answer 2</p>',
+    ])
   })
 
   it('HTML không đọc được giữ nguyên FAQ hiện có', () => {

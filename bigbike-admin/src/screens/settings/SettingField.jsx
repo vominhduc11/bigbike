@@ -7,7 +7,13 @@ import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { useContentLang } from '../../lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
   AssistantConfigEditor,
@@ -15,12 +21,26 @@ import {
   ASSISTANT_TEMPLATES_KEY,
 } from './AssistantConfigEditor'
 import {
-  displayValue, inputTypeFor, placeholderFor, isTranslatableSetting,
-  settingLabel, settingHint, KEY_RECO,
+  displayValue,
+  inputTypeFor,
+  placeholderFor,
+  isTranslatableSetting,
+  settingLabel,
+  settingHint,
+  KEY_RECO,
 } from './constants'
 
 export function SettingField({
-  setting, where, canUpdate, isSuperAdmin = false, draft, draftEn, error, onChange, onChangeEn, onBlur,
+  setting,
+  where,
+  canUpdate,
+  isSuperAdmin = false,
+  draft,
+  draftEn,
+  error,
+  onChange,
+  onChangeEn,
+  onBlur,
 }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -31,19 +51,27 @@ export function SettingField({
   const currentValue = draft !== undefined ? draft : rawValue
   const rawValueEn = displayValue(setting.valueEn)
   const currentValueEn = draftEn !== undefined ? draftEn : rawValueEn
-  const isDirty = (draft !== undefined && displayValue(draft) !== rawValue)
-    || (draftEn !== undefined && displayValue(draftEn) !== rawValueEn)
+  const isDirty =
+    (draft !== undefined && displayValue(draft) !== rawValue) ||
+    (draftEn !== undefined && displayValue(draftEn) !== rawValueEn)
   const isHtml = setting.valueType === 'HTML'
   const isImage = setting.valueType === 'IMAGE_URL'
   const isLongText = setting.valueType === 'LONG_TEXT'
   const isBoolean = setting.valueType === 'BOOLEAN'
-  const isEnum = setting.valueType === 'ENUM' && Array.isArray(setting.allowedValues) && setting.allowedValues.length > 0
-  const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
-  const isAssistantConfig = setting.key === ASSISTANT_ABBREVIATIONS_KEY || setting.key === ASSISTANT_TEMPLATES_KEY
+  const isEnum =
+    setting.valueType === 'ENUM' &&
+    Array.isArray(setting.allowedValues) &&
+    setting.allowedValues.length > 0
+  const isNumber =
+    setting.valueType === 'INTEGER' ||
+    setting.valueType === 'DECIMAL' ||
+    setting.valueType === 'MONEY'
+  const isAssistantConfig =
+    setting.key === ASSISTANT_ABBREVIATIONS_KEY || setting.key === ASSISTANT_TEMPLATES_KEY
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = isEnLang
     ? t('settings.englishPlaceholder')
-    : (placeholderFor(setting.key) || (rawValue ? '' : t('settings.empty')))
+    : placeholderFor(setting.key) || (rawValue ? '' : t('settings.empty'))
   const label = settingLabel(setting, t)
   const hint = settingHint(setting, t)
 
@@ -52,11 +80,10 @@ export function SettingField({
   const hintId = `hint-${setting.key}`
   const whereId = `where-${setting.key}`
   const errorId = `err-${setting.key}`
-  const describedBy = [
-    hint ? hintId : null,
-    where ? whereId : null,
-    error && !isImage ? errorId : null,
-  ].filter(Boolean).join(' ') || undefined
+  const describedBy =
+    [hint ? hintId : null, where ? whereId : null, error && !isImage ? errorId : null]
+      .filter(Boolean)
+      .join(' ') || undefined
 
   const activeValue = isEnLang ? currentValueEn : currentValue
   const activeRawValue = isEnLang ? rawValueEn : rawValue
@@ -74,7 +101,9 @@ export function SettingField({
       return (
         <div
           className="min-h-20 rounded-md border border-border bg-surface-muted p-4 text-sm leading-relaxed text-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeRawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
+          dangerouslySetInnerHTML={{
+            __html: sanitizeHtml(activeRawValue) || `<em>${t('settings.htmlEmpty')}</em>`,
+          }}
         />
       )
     }
@@ -89,8 +118,15 @@ export function SettingField({
       }
       return (
         <figure className="m-0 rounded-md border border-border bg-surface-muted p-3">
-          <img src={rawValue} alt={label} className="max-h-52 max-w-full rounded-sm object-contain" loading="lazy" />
-          <figcaption className="mt-2 break-all text-xs text-muted-foreground">{rawValue}</figcaption>
+          <img
+            src={rawValue}
+            alt={label}
+            className="max-h-52 max-w-full rounded-sm object-contain"
+            loading="lazy"
+          />
+          <figcaption className="mt-2 break-all text-xs text-muted-foreground">
+            {rawValue}
+          </figcaption>
         </figure>
       )
     }
@@ -133,17 +169,20 @@ export function SettingField({
           </span>
         ) : null}
         {isDirty ? (
-          <span className="bb-badge bb-badge-warning">
-            {t('settings.unsavedDot')}
-          </span>
+          <span className="bb-badge bb-badge-warning">{t('settings.unsavedDot')}</span>
         ) : null}
       </div>
 
       {hint ? (
-        <p id={hintId} className="mb-2 mt-0 text-xs leading-relaxed text-muted-foreground">{hint}</p>
+        <p id={hintId} className="mb-2 mt-0 text-xs leading-relaxed text-muted-foreground">
+          {hint}
+        </p>
       ) : null}
       {where ? (
-        <p id={whereId} className="mb-3 mt-0 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+        <p
+          id={whereId}
+          className="mb-3 mt-0 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground"
+        >
           <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>{where}</span>
         </p>
@@ -161,7 +200,9 @@ export function SettingField({
           <RichTextEditor
             value={activeValue}
             onChange={handleActiveChange}
-            placeholder={isEnLang ? t('settings.englishPlaceholder') : t('settings.htmlPlaceholder')}
+            placeholder={
+              isEnLang ? t('settings.englishPlaceholder') : t('settings.htmlPlaceholder')
+            }
             hasError={Boolean(error)}
             enableImagePicker
           />
@@ -205,7 +246,9 @@ export function SettingField({
             </SelectTrigger>
             <SelectContent>
               {setting.allowedValues.map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -223,10 +266,16 @@ export function SettingField({
             aria-describedby={describedBy}
           />
         )
-      ) : readOnlyValue()}
+      ) : (
+        readOnlyValue()
+      )}
 
       {error && !isImage ? (
-        <p id={errorId} role="alert" className="mb-0 mt-2 flex items-start gap-1.5 text-xs font-semibold text-danger">
+        <p
+          id={errorId}
+          role="alert"
+          className="mb-0 mt-2 flex items-start gap-1.5 text-xs font-semibold text-danger"
+        >
           <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </p>

@@ -1,10 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Award, BadgeCheck, Clock, CreditCard, Gift, Headphones, MapPin, Package, RefreshCw, ShieldCheck, Truck, Wrench, X,
+  Award,
+  BadgeCheck,
+  Clock,
+  CreditCard,
+  Gift,
+  Headphones,
+  MapPin,
+  Package,
+  RefreshCw,
+  ShieldCheck,
+  Truck,
+  Wrench,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -13,8 +31,16 @@ import { showConfirm } from '../../lib/confirm'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
-import { parseSpecStatsResult, parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
-import { parseTrustBadgesFromHtml, parseTrustBadgesResult, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
+import {
+  parseSpecStatsResult,
+  parseSpecStatsFromHtml,
+  mergeSpecStatsIntoHtml,
+} from '../../lib/specStatsBlock'
+import {
+  parseTrustBadgesFromHtml,
+  parseTrustBadgesResult,
+  mergeTrustBadgesIntoHtml,
+} from '../../lib/trustBadgesBlock'
 import { HtmlImportNotice } from '../../components/HtmlImportNotice'
 import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 import { SPEC_STAT_MAX } from './constants'
@@ -48,13 +74,26 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
     onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), icon: 'shield-check', title: '', subtitle: '', titleEn: '', subtitleEn: '' }])
+    onChange([
+      ...items,
+      {
+        _key: generateId(),
+        icon: 'shield-check',
+        title: '',
+        subtitle: '',
+        titleEn: '',
+        subtitleEn: '',
+      },
+    ])
   }
   async function removeItem(index) {
     const item = items[index]
     const hasContent = Boolean((item?.[fTitle] || item?.[fSubtitle] || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(items.filter((_, i) => i !== index))
@@ -64,7 +103,11 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
     <div className="list-editor">
       {items.length === 0 && (
         <p className="list-editor-empty">
-          {isEn ? t('products.detail.commitments.addInViFirst', { defaultValue: 'Thêm dòng ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.commitments.empty')}
+          {isEn
+            ? t('products.detail.commitments.addInViFirst', {
+                defaultValue: 'Thêm dòng ở tab Tiếng Việt trước, rồi quay lại đây để dịch.',
+              })
+            : t('products.detail.commitments.empty')}
         </p>
       )}
       <SortableList
@@ -74,61 +117,88 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
         disabled={disabled}
         className="list-editor"
         renderItem={(item, sortable, index) => (
-        <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
-          <div className="flex flex-1 flex-col gap-2">
-            {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
-            <Select value={item.icon || 'shield-check'} onValueChange={(v) => updateItem(index, 'icon', v)} disabled={disabled || isEn}>
-              <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.commitments.iconLabel')}>
-                <SelectValue placeholder={t('products.detail.commitments.iconLabel')} />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMITMENT_ICON_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <span className="flex items-center gap-2">
-                      <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      {isEn
-                        ? t(`products.detail.commitments.icons.${opt.labelKey}`, { lng: 'en', defaultValue: opt.labelEn })
-                        : t(`products.detail.commitments.icons.${opt.labelKey}`)}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder={t('products.detail.commitments.titlePlaceholder')}
-              aria-label={t('products.detail.commitments.titleLabel', { defaultValue: 'Tiêu đề cam kết' })}
-              value={item[fTitle] || ''}
-              onChange={(e) => updateItem(index, fTitle, e.target.value)}
-              disabled={disabled}
-              maxLength={200}
-            />
-            <Input
-              placeholder={t('products.detail.commitments.subtitlePlaceholder')}
-              aria-label={t('products.detail.commitments.subtitleLabel', { defaultValue: 'Mô tả cam kết' })}
-              value={item[fSubtitle] || ''}
-              onChange={(e) => updateItem(index, fSubtitle, e.target.value)}
-              disabled={disabled}
-              maxLength={300}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled || isEn}
-            aria-label={t('products.detail.commitments.removeRow')}
+          <div
+            ref={sortable.setNodeRef}
+            style={sortable.style}
+            className="list-editor-row list-editor-row--stack"
           >
-            <X size={14} aria-hidden="true" />
-          </Button>
-        </div>
+            <DragHandle
+              handleProps={sortable.handleProps}
+              disabled={disabled || isEn}
+              label={t('products.detail.dragToReorder')}
+            />
+            <div className="flex flex-1 flex-col gap-2">
+              {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
+              <Select
+                value={item.icon || 'shield-check'}
+                onValueChange={(v) => updateItem(index, 'icon', v)}
+                disabled={disabled || isEn}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-56"
+                  aria-label={t('products.detail.commitments.iconLabel')}
+                >
+                  <SelectValue placeholder={t('products.detail.commitments.iconLabel')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMITMENT_ICON_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <opt.Icon
+                          className="size-4 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        {isEn
+                          ? t(`products.detail.commitments.icons.${opt.labelKey}`, {
+                              lng: 'en',
+                              defaultValue: opt.labelEn,
+                            })
+                          : t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder={t('products.detail.commitments.titlePlaceholder')}
+                aria-label={t('products.detail.commitments.titleLabel', {
+                  defaultValue: 'Tiêu đề cam kết',
+                })}
+                value={item[fTitle] || ''}
+                onChange={(e) => updateItem(index, fTitle, e.target.value)}
+                disabled={disabled}
+                maxLength={200}
+              />
+              <Input
+                placeholder={t('products.detail.commitments.subtitlePlaceholder')}
+                aria-label={t('products.detail.commitments.subtitleLabel', {
+                  defaultValue: 'Mô tả cam kết',
+                })}
+                value={item[fSubtitle] || ''}
+                onChange={(e) => updateItem(index, fSubtitle, e.target.value)}
+                disabled={disabled}
+                maxLength={300}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => removeItem(index)}
+              disabled={disabled || isEn}
+              aria-label={t('products.detail.commitments.removeRow')}
+            >
+              <X size={14} aria-hidden="true" />
+            </Button>
+          </div>
         )}
-        footer={!isEn && (
-          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-            + {t('products.detail.commitments.addRow')}
-          </Button>
-        )}
+        footer={
+          !isEn && (
+            <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+              + {t('products.detail.commitments.addRow')}
+            </Button>
+          )
+        }
       />
     </div>
   )
@@ -148,7 +218,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), content: '' })
   const [mode, setMode] = useState(() =>
-    ((html || '').trim() && !isGeneratedTrustBadgesHtml(html)) ? 'html' : 'structured',
+    (html || '').trim() && !isGeneratedTrustBadgesHtml(html) ? 'html' : 'structured',
   )
   const importer = useHtmlImportDraft(html, parseTrustBadgesResult)
   const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
@@ -177,7 +247,10 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -232,11 +305,16 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
   function updateItem(index, value) {
     commit(rows.map((r, i) => (i === index ? { ...r, content: value } : r)))
   }
-  function addItem() { commit([...rows, newRow()]) }
+  function addItem() {
+    commit([...rows, newRow()])
+  }
   async function removeItem(index) {
     const hasContent = Boolean((rows[index]?.content || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = rows.filter((_, i) => i !== index)
@@ -246,8 +324,12 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
   return (
     <Tabs value={mode} onValueChange={changeMode}>
       <TabsList>
-        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.specs.modeStructured')}</TabsTrigger>
-        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.specs.modeHtml')}</TabsTrigger>
+        <TabsTrigger value="structured" disabled={disabled}>
+          {t('products.detail.specs.modeStructured')}
+        </TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>
+          {t('products.detail.specs.modeHtml')}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="structured">
@@ -259,11 +341,19 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
           className="list-editor"
           renderItem={(item, sortable, index) => (
             <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row">
-              <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+              <DragHandle
+                handleProps={sortable.handleProps}
+                disabled={disabled}
+                label={t('products.detail.dragToReorder')}
+              />
               <div className="flex-1">
                 <Input
-                  placeholder={t('products.detail.trustBadges.placeholder', { defaultValue: 'vd: Chính hãng' })}
-                  aria-label={t('products.detail.trustBadges.itemLabel', { defaultValue: 'Nhãn tin cậy' })}
+                  placeholder={t('products.detail.trustBadges.placeholder', {
+                    defaultValue: 'vd: Chính hãng',
+                  })}
+                  aria-label={t('products.detail.trustBadges.itemLabel', {
+                    defaultValue: 'Nhãn tin cậy',
+                  })}
                   value={item.content || ''}
                   onChange={(e) => updateItem(index, e.target.value)}
                   disabled={disabled}
@@ -311,7 +401,11 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
         />
         <AiHtmlBrief
           promptKey="products.detail.trustBadges.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('trustBadges', t('products.detail.trustBadges.aiBriefPrompt')) : undefined}
+          getPrompt={
+            aiPromptBuilder
+              ? () => aiPromptBuilder('trustBadges', t('products.detail.trustBadges.aiBriefPrompt'))
+              : undefined
+          }
         />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -346,7 +440,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), value: '', label: '' })
   const [mode, setMode] = useState(() =>
-    ((html || '').trim() && !isGeneratedSpecStatsHtml(html)) ? 'html' : 'structured',
+    (html || '').trim() && !isGeneratedSpecStatsHtml(html) ? 'html' : 'structured',
   )
   const importer = useHtmlImportDraft(html, parseSpecStatsResult)
   const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
@@ -375,7 +469,10 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -430,12 +527,17 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
   function updateItem(index, field, value) {
     commit(rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
   }
-  function addItem() { commit([...rows, newRow()]) }
+  function addItem() {
+    commit([...rows, newRow()])
+  }
   async function removeItem(index) {
     const item = rows[index]
     const hasContent = Boolean((item?.value || item?.label || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = rows.filter((_, i) => i !== index)
@@ -445,63 +547,88 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
   return (
     <Tabs value={mode} onValueChange={changeMode}>
       <TabsList>
-        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.specs.modeStructured')}</TabsTrigger>
-        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.specs.modeHtml')}</TabsTrigger>
+        <TabsTrigger value="structured" disabled={disabled}>
+          {t('products.detail.specs.modeStructured')}
+        </TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>
+          {t('products.detail.specs.modeHtml')}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="structured">
-    <SortableList
-      items={rows}
-      getId={(it) => it._key}
-      onReorder={(next) => commit(next)}
-      disabled={disabled}
-      className="list-editor"
-      renderItem={(item, sortable, index) => (
-        <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
-          <div className="flex flex-1 flex-col gap-2">
-            <Input
-              placeholder={t('products.detail.specStats.valuePlaceholder')}
-              aria-label={t('products.detail.specStats.valueLabel', { defaultValue: 'Số liệu' })}
-              value={item.value || ''}
-              onChange={(e) => updateItem(index, 'value', e.target.value)}
-              disabled={disabled}
-              maxLength={60}
-            />
-            <Input
-              placeholder={t('products.detail.specStats.labelPlaceholder')}
-              aria-label={t('products.detail.specStats.labelLabel', { defaultValue: 'Nhãn số liệu' })}
-              value={item.label || ''}
-              onChange={(e) => updateItem(index, 'label', e.target.value)}
-              disabled={disabled}
-              maxLength={80}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.specStats.removeRow')}
-          >
-            <X size={14} aria-hidden="true" />
-          </Button>
-        </div>
-      )}
-      footer={
-        <div className="flex flex-col gap-1">
-          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || rows.length >= SPEC_STAT_MAX}>
-            + {t('products.detail.specStats.addRow')}
-          </Button>
-          {rows.length >= SPEC_STAT_MAX && (
-            <p className="text-xs text-muted-foreground">
-              {t('products.detail.specStats.maxHint', { defaultValue: 'Đã đạt tối đa {{max}} ô số liệu. Xoá bớt một ô nếu muốn thêm ô khác.', max: SPEC_STAT_MAX })}
-            </p>
+        <SortableList
+          items={rows}
+          getId={(it) => it._key}
+          onReorder={(next) => commit(next)}
+          disabled={disabled}
+          className="list-editor"
+          renderItem={(item, sortable, index) => (
+            <div
+              ref={sortable.setNodeRef}
+              style={sortable.style}
+              className="list-editor-row list-editor-row--stack"
+            >
+              <DragHandle
+                handleProps={sortable.handleProps}
+                disabled={disabled}
+                label={t('products.detail.dragToReorder')}
+              />
+              <div className="flex flex-1 flex-col gap-2">
+                <Input
+                  placeholder={t('products.detail.specStats.valuePlaceholder')}
+                  aria-label={t('products.detail.specStats.valueLabel', {
+                    defaultValue: 'Số liệu',
+                  })}
+                  value={item.value || ''}
+                  onChange={(e) => updateItem(index, 'value', e.target.value)}
+                  disabled={disabled}
+                  maxLength={60}
+                />
+                <Input
+                  placeholder={t('products.detail.specStats.labelPlaceholder')}
+                  aria-label={t('products.detail.specStats.labelLabel', {
+                    defaultValue: 'Nhãn số liệu',
+                  })}
+                  value={item.label || ''}
+                  onChange={(e) => updateItem(index, 'label', e.target.value)}
+                  disabled={disabled}
+                  maxLength={80}
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => removeItem(index)}
+                disabled={disabled}
+                aria-label={t('products.detail.specStats.removeRow')}
+              >
+                <X size={14} aria-hidden="true" />
+              </Button>
+            </div>
           )}
-        </div>
-      }
-    />
+          footer={
+            <div className="flex flex-col gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addItem}
+                disabled={disabled || rows.length >= SPEC_STAT_MAX}
+              >
+                + {t('products.detail.specStats.addRow')}
+              </Button>
+              {rows.length >= SPEC_STAT_MAX && (
+                <p className="text-xs text-muted-foreground">
+                  {t('products.detail.specStats.maxHint', {
+                    defaultValue:
+                      'Đã đạt tối đa {{max}} ô số liệu. Xoá bớt một ô nếu muốn thêm ô khác.',
+                    max: SPEC_STAT_MAX,
+                  })}
+                </p>
+              )}
+            </div>
+          }
+        />
       </TabsContent>
 
       <TabsContent value="html" className="flex flex-col gap-2">
@@ -525,7 +652,11 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
         />
         <AiHtmlBrief
           promptKey="products.detail.specStats.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('specStats', t('products.detail.specStats.aiBriefPrompt')) : undefined}
+          getPrompt={
+            aiPromptBuilder
+              ? () => aiPromptBuilder('specStats', t('products.detail.specStats.aiBriefPrompt'))
+              : undefined
+          }
         />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

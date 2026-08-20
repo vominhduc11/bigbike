@@ -15,10 +15,15 @@ export function MediaCardSkeleton() {
 export function MediaGridSkeleton({ count = 12 }) {
   const { t } = useTranslation()
   return (
-    <div role="status" aria-busy="true"
-      className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
+    <div
+      role="status"
+      aria-busy="true"
+      className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]"
+    >
       <span className="sr-only">{t('common.loading')}</span>
-      {Array.from({ length: count }).map((_, i) => <MediaCardSkeleton key={i} />)}
+      {Array.from({ length: count }).map((_, i) => (
+        <MediaCardSkeleton key={i} />
+      ))}
     </div>
   )
 }

@@ -10,9 +10,29 @@ import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle, Color, BackgroundColor } from '@tiptap/extension-text-style'
 import { TableKit } from '@tiptap/extension-table'
 import {
-  AlignCenter, AlignLeft, AlignRight, Baseline, Bold, Code, Heading2, Heading3, Highlighter, Image,
-  Italic, Link, Link2Off, List, ListOrdered, Minus, MoreHorizontal, Quote, Redo, Strikethrough, Table as TableIcon,
-  Underline, Undo,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Baseline,
+  Bold,
+  Code,
+  Heading2,
+  Heading3,
+  Highlighter,
+  Image,
+  Italic,
+  Link,
+  Link2Off,
+  List,
+  ListOrdered,
+  Minus,
+  MoreHorizontal,
+  Quote,
+  Redo,
+  Strikethrough,
+  Table as TableIcon,
+  Underline,
+  Undo,
 } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { MediaRequirementHint } from './MediaRequirementHint'
@@ -20,8 +40,11 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
@@ -31,7 +54,10 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       type="button"
       variant="ghost"
       size="icon"
-      onMouseDown={(e) => { e.preventDefault(); onClick() }}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        onClick()
+      }}
       disabled={disabled}
       title={title}
       aria-label={title}
@@ -42,7 +68,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
           ? 'bg-primary/10 text-primary'
           : disabled
             ? 'cursor-not-allowed text-muted-foreground/50'
-            : 'cursor-pointer text-muted-foreground hover:bg-surface-hover'
+            : 'cursor-pointer text-muted-foreground hover:bg-surface-hover',
       )}
     >
       {children}
@@ -51,9 +77,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
 }
 
 function Divider() {
-  return (
-    <span className="inline-block w-px h-5 bg-border mx-1 shrink-0" />
-  )
+  return <span className="inline-block w-px h-5 bg-border mx-1 shrink-0" />
 }
 
 // Đường dẫn hợp lệ cho nút chèn liên kết: http(s), mailto, tel hoặc nội bộ (bắt đầu / hoặc #).
@@ -76,14 +100,27 @@ function toInlineFragment(html) {
   const doc = new DOMParser().parseFromString(raw, 'text/html')
   const blocks = Array.from(doc.body.children)
   if (!blocks.length) return raw
-  return blocks.map((block) => block.tagName === 'P' ? block.innerHTML : block.outerHTML).join('<br>')
+  return blocks
+    .map((block) => (block.tagName === 'P' ? block.innerHTML : block.outerHTML))
+    .join('<br>')
 }
 
-export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false, inlineOnly = false, maxLength }) {
+export function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  hasError,
+  enableImagePicker = false,
+  inlineOnly = false,
+  maxLength,
+}) {
   const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const [linkModal, setLinkModal] = useState({ open: false, value: '', error: '' })
-  const linkInputRef = useCallback((el) => { if (el) el.focus() }, [])
+  const linkInputRef = useCallback((el) => {
+    if (el) el.focus()
+  }, [])
 
   // Chỉ coi là "user sửa" sau khi editor thực sự được focus. TipTap (v3) phát onUpdate
   // ngay khi parse/chuẩn hoá nội dung lúc mount — nếu HTML lưu khác chuỗi serialize chuẩn,
@@ -94,47 +131,47 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   const editor = useEditor({
     extensions: inlineOnly
       ? [
-        StarterKit.configure({
-          blockquote: false,
-          bulletList: false,
-          code: false,
-          codeBlock: false,
-          heading: false,
-          horizontalRule: false,
-          listItem: false,
-          link: false,
-          orderedList: false,
-          strike: false,
-        }),
-        LinkExt.configure({
-          openOnClick: false,
-          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-        }),
-        Placeholder.configure({ placeholder: placeholder || '' }),
-      ]
+          StarterKit.configure({
+            blockquote: false,
+            bulletList: false,
+            code: false,
+            codeBlock: false,
+            heading: false,
+            horizontalRule: false,
+            listItem: false,
+            link: false,
+            orderedList: false,
+            strike: false,
+          }),
+          LinkExt.configure({
+            openOnClick: false,
+            HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+          }),
+          Placeholder.configure({ placeholder: placeholder || '' }),
+        ]
       : [
-        StarterKit.configure({
-          heading: { levels: [2, 3] },
-          codeBlock: { languageClassPrefix: 'language-' },
-          link: false,
-        }),
-        UnderlineExt,
-        LinkExt.configure({
-          openOnClick: false,
-          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-        }),
-        ImageExt.configure({
-          HTMLAttributes: { class: 'rte-image' },
-        }),
-        // Căn lề (áp cho heading + đoạn văn) + màu chữ/tô nền (TextStyle + Color/BackgroundColor,
-        // xuất inline-style nên web render được khi bật allowInlineStyles) + bảng (TableKit).
-        TextAlign.configure({ types: ['heading', 'paragraph'] }),
-        TextStyle,
-        Color,
-        BackgroundColor,
-        TableKit.configure({ table: { resizable: true } }),
-        Placeholder.configure({ placeholder: placeholder || '' }),
-      ],
+          StarterKit.configure({
+            heading: { levels: [2, 3] },
+            codeBlock: { languageClassPrefix: 'language-' },
+            link: false,
+          }),
+          UnderlineExt,
+          LinkExt.configure({
+            openOnClick: false,
+            HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+          }),
+          ImageExt.configure({
+            HTMLAttributes: { class: 'rte-image' },
+          }),
+          // Căn lề (áp cho heading + đoạn văn) + màu chữ/tô nền (TextStyle + Color/BackgroundColor,
+          // xuất inline-style nên web render được khi bật allowInlineStyles) + bảng (TableKit).
+          TextAlign.configure({ types: ['heading', 'paragraph'] }),
+          TextStyle,
+          Color,
+          BackgroundColor,
+          TableKit.configure({ table: { resizable: true } }),
+          Placeholder.configure({ placeholder: placeholder || '' }),
+        ],
     content: inlineOnly ? wrapInlineContent(value) : value || '',
     editable: !disabled,
     // Khi paste từ Word: gỡ background-color (highlight Word) và thuộc tính mso-* (Word-specific)
@@ -145,13 +182,15 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       attributes: {
         role: 'textbox',
         'aria-multiline': 'true',
-        'aria-label': placeholder || t('richEditor.editorLabel', { defaultValue: 'Nội dung văn bản' }),
+        'aria-label':
+          placeholder || t('richEditor.editorLabel', { defaultValue: 'Nội dung văn bản' }),
       },
       transformPastedHTML(html) {
         const div = document.createElement('div')
         div.innerHTML = html
         div.querySelectorAll('[style]').forEach((el) => {
-          const cleaned = el.getAttribute('style')
+          const cleaned = el
+            .getAttribute('style')
             .split(';')
             .filter((rule) => {
               const prop = (rule.split(':')[0] || '').trim().toLowerCase()
@@ -167,11 +206,17 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         return div.innerHTML
       },
     },
-    onFocus: () => { userEditedRef.current = true },
+    onFocus: () => {
+      userEditedRef.current = true
+    },
     onUpdate: ({ editor }) => {
       if (!userEditedRef.current) return
       if (maxLength && editor.getText().length > maxLength) return
-      const html = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
+      const html = editor.isEmpty
+        ? ''
+        : inlineOnly
+          ? toInlineFragment(editor.getHTML())
+          : editor.getHTML()
       onChange?.(html)
     },
   })
@@ -220,7 +265,13 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     if (url === '') {
       editor.chain().focus().unsetLink().run()
     } else if (!isValidLinkHref(url)) {
-      setLinkModal((m) => ({ ...m, error: t('richEditor.linkInvalid', { defaultValue: 'Đường dẫn không hợp lệ. Dùng http(s)://, mailto:, tel: hoặc đường dẫn nội bộ bắt đầu bằng /.' }) }))
+      setLinkModal((m) => ({
+        ...m,
+        error: t('richEditor.linkInvalid', {
+          defaultValue:
+            'Đường dẫn không hợp lệ. Dùng http(s)://, mailto:, tel: hoặc đường dẫn nội bộ bắt đầu bằng /.',
+        }),
+      }))
       return
     } else {
       editor.chain().focus().setLink({ href: url }).run()
@@ -235,12 +286,18 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
   useEffect(() => {
     if (!editor) return
-    const current = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
+    const current = editor.isEmpty
+      ? ''
+      : inlineOnly
+        ? toInlineFragment(editor.getHTML())
+        : editor.getHTML()
     if (value !== current) {
       // TipTap v3: tham số thứ 2 là options object. Phải truyền { emitUpdate: false }
       // để đồng bộ value từ ngoài (mount / refetch) KHÔNG bị tính là user sửa —
       // nếu không, mở form rich-text sẽ báo "thay đổi chưa lưu" giả. (v2 nhận false trực tiếp)
-      editor.commands.setContent(inlineOnly ? wrapInlineContent(value) : value || '', { emitUpdate: false })
+      editor.commands.setContent(inlineOnly ? wrapInlineContent(value) : value || '', {
+        emitUpdate: false,
+      })
     }
   }, [value, editor, inlineOnly])
 
@@ -273,38 +330,103 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   )
 
   return (
-    <div className={cn(
-      'rounded-md overflow-hidden transition-colors border-[1.5px]',
-      hasError ? 'border-danger-border' : 'border-border',
-      disabled ? 'bg-surface-muted' : 'bg-surface'
-    )}>
+    <div
+      className={cn(
+        'rounded-md overflow-hidden transition-colors border-[1.5px]',
+        hasError ? 'border-danger-border' : 'border-border',
+        disabled ? 'bg-surface-muted' : 'bg-surface',
+      )}
+    >
       {/* Toolbar */}
       <div
         role="group"
         aria-label={t('richEditor.toolbarLabel', { defaultValue: 'Thanh công cụ định dạng' })}
         className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted"
       >
-        {btn(() => editor.chain().focus().undo().run(), false, t('richEditor.undo'), <Undo size={14} />, !s?.canUndo)}
-        {btn(() => editor.chain().focus().redo().run(), false, t('richEditor.redo'), <Redo size={14} />, !s?.canRedo)}
+        {btn(
+          () => editor.chain().focus().undo().run(),
+          false,
+          t('richEditor.undo'),
+          <Undo size={14} />,
+          !s?.canUndo,
+        )}
+        {btn(
+          () => editor.chain().focus().redo().run(),
+          false,
+          t('richEditor.redo'),
+          <Redo size={14} />,
+          !s?.canRedo,
+        )}
         <Divider />
-        {btn(() => editor.chain().focus().toggleBold().run(), s?.isBold, t('richEditor.bold'), <Bold size={14} />)}
-        {btn(() => editor.chain().focus().toggleItalic().run(), s?.isItalic, t('richEditor.italic'), <Italic size={14} />)}
+        {btn(
+          () => editor.chain().focus().toggleBold().run(),
+          s?.isBold,
+          t('richEditor.bold'),
+          <Bold size={14} />,
+        )}
+        {btn(
+          () => editor.chain().focus().toggleItalic().run(),
+          s?.isItalic,
+          t('richEditor.italic'),
+          <Italic size={14} />,
+        )}
         {!inlineOnly && (
           <>
-            {btn(() => editor.chain().focus().toggleUnderline().run(), s?.isUnderline, t('richEditor.underline'), <Underline size={14} />)}
-            {btn(() => editor.chain().focus().toggleStrike().run(), s?.isStrike, t('richEditor.strike'), <Strikethrough size={14} />)}
+            {btn(
+              () => editor.chain().focus().toggleUnderline().run(),
+              s?.isUnderline,
+              t('richEditor.underline'),
+              <Underline size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().toggleStrike().run(),
+              s?.isStrike,
+              t('richEditor.strike'),
+              <Strikethrough size={14} />,
+            )}
             <Divider />
-            {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), s?.isH2, t('richEditor.h2'), <Heading2 size={14} />)}
-            {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), s?.isH3, t('richEditor.h3'), <Heading3 size={14} />)}
+            {btn(
+              () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+              s?.isH2,
+              t('richEditor.h2'),
+              <Heading2 size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+              s?.isH3,
+              t('richEditor.h3'),
+              <Heading3 size={14} />,
+            )}
             <Divider />
-            {btn(() => editor.chain().focus().toggleBulletList().run(), s?.isBulletList, t('richEditor.bulletList'), <List size={14} />)}
-            {btn(() => editor.chain().focus().toggleOrderedList().run(), s?.isOrderedList, t('richEditor.orderedList'), <ListOrdered size={14} />)}
-            {btn(() => editor.chain().focus().toggleBlockquote().run(), s?.isBlockquote, t('richEditor.quote'), <Quote size={14} />)}
+            {btn(
+              () => editor.chain().focus().toggleBulletList().run(),
+              s?.isBulletList,
+              t('richEditor.bulletList'),
+              <List size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().toggleOrderedList().run(),
+              s?.isOrderedList,
+              t('richEditor.orderedList'),
+              <ListOrdered size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().toggleBlockquote().run(),
+              s?.isBlockquote,
+              t('richEditor.quote'),
+              <Quote size={14} />,
+            )}
           </>
         )}
         <Divider />
         {btn(handleLink, s?.isLink, t('richEditor.link'), <Link size={14} />)}
-        {s?.isLink && btn(() => editor.chain().focus().unsetLink().run(), false, t('richEditor.unlink'), <Link2Off size={14} />)}
+        {s?.isLink &&
+          btn(
+            () => editor.chain().focus().unsetLink().run(),
+            false,
+            t('richEditor.unlink'),
+            <Link2Off size={14} />,
+          )}
         {!inlineOnly && enableImagePicker && (
           <>
             <Divider />
@@ -316,94 +438,147 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
           <>
             {/* Căn lề */}
             <Divider />
-            {btn(() => editor.chain().focus().setTextAlign('left').run(), s?.alignLeft, t('richEditor.alignLeft', { defaultValue: 'Căn trái' }), <AlignLeft size={14} />)}
-            {btn(() => editor.chain().focus().setTextAlign('center').run(), s?.alignCenter, t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }), <AlignCenter size={14} />)}
-            {btn(() => editor.chain().focus().setTextAlign('right').run(), s?.alignRight, t('richEditor.alignRight', { defaultValue: 'Căn phải' }), <AlignRight size={14} />)}
+            {btn(
+              () => editor.chain().focus().setTextAlign('left').run(),
+              s?.alignLeft,
+              t('richEditor.alignLeft', { defaultValue: 'Căn trái' }),
+              <AlignLeft size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().setTextAlign('center').run(),
+              s?.alignCenter,
+              t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }),
+              <AlignCenter size={14} />,
+            )}
+            {btn(
+              () => editor.chain().focus().setTextAlign('right').run(),
+              s?.alignRight,
+              t('richEditor.alignRight', { defaultValue: 'Căn phải' }),
+              <AlignRight size={14} />,
+            )}
 
             {/* Thêm — gom công cụ ít dùng: mã, kẻ ngang, màu chữ/nền, bảng */}
             <Divider />
             <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={disabled}
-              title={t('richEditor.more', { defaultValue: 'Thêm' })}
-              aria-label={t('richEditor.more', { defaultValue: 'Thêm' })}
-              className={cn(
-                'inline-flex h-8 w-8 items-center justify-center rounded-xs border-none transition-colors',
-                (s?.isCode || s?.isTable)
-                  ? 'bg-primary/10 text-primary'
-                  : 'cursor-pointer text-muted-foreground hover:bg-surface-hover'
-              )}
-            >
-              <MoreHorizontal size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-52" onCloseAutoFocus={(e) => e.preventDefault()}>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().toggleCode().run()}>
-              <Code size={14} /> {t('richEditor.code')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().setHorizontalRule().run()}>
-              <Minus size={14} /> {t('richEditor.hr')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {/* Ô chọn màu để trong <div> (không phải MenuItem) để không kích hoạt select; chọn xong menu tự đóng. */}
-            <div className="flex items-center gap-3 px-2 py-1.5">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
-                <Baseline size={14} className="text-muted-foreground" />
-                <Input
-                  type="color"
-                  aria-label={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}
-                  className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
-                  value={s?.color || '#111827'}
-                  onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   disabled={disabled}
-                />
-              </label>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
-                <Highlighter size={14} className="text-muted-foreground" />
-                <Input
-                  type="color"
-                  aria-label={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}
-                  className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
-                  value={s?.bgColor || '#fff3cd'}
-                  onChange={(e) => editor.chain().focus().setBackgroundColor(e.target.value).run()}
-                  disabled={disabled}
-                />
-              </label>
-            </div>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().unsetColor().unsetBackgroundColor().run()}>
-              <span className="text-xs font-semibold line-through">A</span> {t('richEditor.clearColor', { defaultValue: 'Xoá màu' })}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
-              <TableIcon size={14} /> {t('richEditor.insertTable', { defaultValue: 'Chèn bảng' })}
-            </DropdownMenuItem>
-            {s?.isTable && (
-              <>
-                <DropdownMenuItem onSelect={() => editor.chain().focus().addColumnAfter().run()}>
-                  {t('richEditor.addColumn', { defaultValue: 'Thêm cột' })}
+                  title={t('richEditor.more', { defaultValue: 'Thêm' })}
+                  aria-label={t('richEditor.more', { defaultValue: 'Thêm' })}
+                  className={cn(
+                    'inline-flex h-8 w-8 items-center justify-center rounded-xs border-none transition-colors',
+                    s?.isCode || s?.isTable
+                      ? 'bg-primary/10 text-primary'
+                      : 'cursor-pointer text-muted-foreground hover:bg-surface-hover',
+                  )}
+                >
+                  <MoreHorizontal size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="w-52"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
+                <DropdownMenuItem onSelect={() => editor.chain().focus().toggleCode().run()}>
+                  <Code size={14} /> {t('richEditor.code')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => editor.chain().focus().addRowAfter().run()}>
-                  {t('richEditor.addRow', { defaultValue: 'Thêm dòng' })}
+                <DropdownMenuItem onSelect={() => editor.chain().focus().setHorizontalRule().run()}>
+                  <Minus size={14} /> {t('richEditor.hr')}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteColumn().run()}>
-                  {t('richEditor.deleteColumn', { defaultValue: 'Xoá cột' })}
+                <DropdownMenuSeparator />
+                {/* Ô chọn màu để trong <div> (không phải MenuItem) để không kích hoạt select; chọn xong menu tự đóng. */}
+                <div className="flex items-center gap-3 px-2 py-1.5">
+                  <label
+                    className="inline-flex cursor-pointer items-center gap-1.5 text-sm"
+                    title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}
+                  >
+                    <Baseline size={14} className="text-muted-foreground" />
+                    <Input
+                      type="color"
+                      aria-label={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}
+                      className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
+                      value={s?.color || '#111827'}
+                      onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+                      disabled={disabled}
+                    />
+                  </label>
+                  <label
+                    className="inline-flex cursor-pointer items-center gap-1.5 text-sm"
+                    title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}
+                  >
+                    <Highlighter size={14} className="text-muted-foreground" />
+                    <Input
+                      type="color"
+                      aria-label={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}
+                      className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
+                      value={s?.bgColor || '#fff3cd'}
+                      onChange={(e) =>
+                        editor.chain().focus().setBackgroundColor(e.target.value).run()
+                      }
+                      disabled={disabled}
+                    />
+                  </label>
+                </div>
+                <DropdownMenuItem
+                  onSelect={() => editor.chain().focus().unsetColor().unsetBackgroundColor().run()}
+                >
+                  <span className="text-xs font-semibold line-through">A</span>{' '}
+                  {t('richEditor.clearColor', { defaultValue: 'Xoá màu' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteRow().run()}>
-                  {t('richEditor.deleteRow', { defaultValue: 'Xoá dòng' })}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() =>
+                    editor
+                      .chain()
+                      .focus()
+                      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                      .run()
+                  }
+                >
+                  <TableIcon size={14} />{' '}
+                  {t('richEditor.insertTable', { defaultValue: 'Chèn bảng' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteTable().run()}>
-                  {t('richEditor.deleteTable', { defaultValue: 'Xoá bảng' })}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
+                {s?.isTable && (
+                  <>
+                    <DropdownMenuItem
+                      onSelect={() => editor.chain().focus().addColumnAfter().run()}
+                    >
+                      {t('richEditor.addColumn', { defaultValue: 'Thêm cột' })}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => editor.chain().focus().addRowAfter().run()}>
+                      {t('richEditor.addRow', { defaultValue: 'Thêm dòng' })}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-danger focus:text-danger"
+                      onSelect={() => editor.chain().focus().deleteColumn().run()}
+                    >
+                      {t('richEditor.deleteColumn', { defaultValue: 'Xoá cột' })}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-danger focus:text-danger"
+                      onSelect={() => editor.chain().focus().deleteRow().run()}
+                    >
+                      {t('richEditor.deleteRow', { defaultValue: 'Xoá dòng' })}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-danger focus:text-danger"
+                      onSelect={() => editor.chain().focus().deleteTable().run()}
+                    >
+                      {t('richEditor.deleteTable', { defaultValue: 'Xoá bảng' })}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
             </DropdownMenu>
             {enableImagePicker && (
-              <MediaRequirementHint recommend={IMAGE_RECO.general} className="m-0 basis-full pt-1" />
+              <MediaRequirementHint
+                recommend={IMAGE_RECO.general}
+                className="m-0 basis-full pt-1"
+              />
             )}
           </>
         )}
@@ -424,7 +599,11 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             // can do is carry the library's saved alt/title onto the <img> tag —
             // there's no context field here to sync a fresh upload's alt back from.
             const alt = media?.altText || media?.title || undefined
-            editor.chain().focus().setImage({ src: url, alt, title: media?.title || undefined }).run()
+            editor
+              .chain()
+              .focus()
+              .setImage({ src: url, alt, title: media?.title || undefined })
+              .run()
             setImagePickerOpen(false)
           }}
           onClose={() => setImagePickerOpen(false)}
@@ -435,7 +614,10 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       {linkModal.open && (
         <div className="py-2.5 px-3 border-t border-border bg-surface-muted flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <label htmlFor="rte-link-url" className="text-xs text-muted-foreground whitespace-nowrap">
+            <label
+              htmlFor="rte-link-url"
+              className="text-xs text-muted-foreground whitespace-nowrap"
+            >
               {t('richEditor.linkUrlLabel', { defaultValue: 'Đường dẫn' })}
             </label>
             <Input
@@ -449,10 +631,13 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               aria-describedby={linkModal.error ? 'rte-link-error' : undefined}
               onChange={(e) => setLinkModal((m) => ({ ...m, value: e.target.value, error: '' }))}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); applyLink() }
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  applyLink()
+                }
                 if (e.key === 'Escape') cancelLink()
               }}
-             />
+            />
             <Button type="button" size="sm" onClick={applyLink}>
               {t('richEditor.apply')}
             </Button>

@@ -5,34 +5,37 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => ({
-      'homeVideos.title': 'Home videos',
-      'homeVideos.addButton': 'Add video',
-      'homeVideos.formSource': 'Video source',
-      'homeVideos.sourceYoutube': 'YouTube',
-      'homeVideos.sourceUpload': 'Upload / media library',
-      'homeVideos.legacySourceWarning': 'Legacy source must be replaced',
-      'homeVideos.statusVisible': 'Visible',
-      'homeVideos.hideAction': 'Hide',
-      'homeVideos.preview': 'Preview',
-      'common.edit': 'Edit',
-      'common.delete': 'Delete',
-    }[key] || key),
+    t: (key) =>
+      ({
+        'homeVideos.title': 'Home videos',
+        'homeVideos.addButton': 'Add video',
+        'homeVideos.formSource': 'Video source',
+        'homeVideos.sourceYoutube': 'YouTube',
+        'homeVideos.sourceUpload': 'Upload / media library',
+        'homeVideos.legacySourceWarning': 'Legacy source must be replaced',
+        'homeVideos.statusVisible': 'Visible',
+        'homeVideos.hideAction': 'Hide',
+        'homeVideos.preview': 'Preview',
+        'common.edit': 'Edit',
+        'common.delete': 'Delete',
+      })[key] || key,
   }),
 }))
 
 vi.mock('../lib/adminApi', () => ({
   fetchHomeVideos: vi.fn().mockResolvedValue({
-    items: [{
-      id: 'legacy-home-video',
-      title: 'Legacy home video',
-      titleEn: '',
-      videoUrl: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
-      youtubeId: null,
-      thumbnail: null,
-      isActive: true,
-      sortOrder: 0,
-    }],
+    items: [
+      {
+        id: 'legacy-home-video',
+        title: 'Legacy home video',
+        titleEn: '',
+        videoUrl: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
+        youtubeId: null,
+        thumbnail: null,
+        isActive: true,
+        sortOrder: 0,
+      },
+    ],
   }),
   createHomeVideo: vi.fn(),
   updateHomeVideo: vi.fn(),
@@ -42,13 +45,14 @@ vi.mock('../lib/adminApi', () => ({
 
 vi.mock('../components/Sortable', () => ({
   useDragSensors: () => [],
-  SortableRow: ({ children }) => children({
-    setNodeRef: () => {},
-    style: {},
-    isDragging: false,
-    attributes: {},
-    listeners: {},
-  }),
+  SortableRow: ({ children }) =>
+    children({
+      setNodeRef: () => {},
+      style: {},
+      isDragging: false,
+      attributes: {},
+      listeners: {},
+    }),
 }))
 vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
@@ -81,13 +85,15 @@ function renderScreen() {
 
 describe('HomeVideoListScreen video sources', () => {
   it('giữ đầy đủ metadata thumbnail do picker trả về', () => {
-    expect(buildHomeVideoThumbnail({
-      thumbnailUrl: '  /media/home/video-thumb.webp  ',
-      thumbnailAlt: '  Ảnh video  ',
-      thumbnailWidth: 500,
-      thumbnailHeight: 900,
-      thumbnailMimeType: 'image/webp',
-    })).toEqual({
+    expect(
+      buildHomeVideoThumbnail({
+        thumbnailUrl: '  /media/home/video-thumb.webp  ',
+        thumbnailAlt: '  Ảnh video  ',
+        thumbnailWidth: 500,
+        thumbnailHeight: 900,
+        thumbnailMimeType: 'image/webp',
+      }),
+    ).toEqual({
       url: '/media/home/video-thumb.webp',
       alt: 'Ảnh video',
       width: 500,

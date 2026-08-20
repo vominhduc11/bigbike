@@ -13,12 +13,16 @@ vi.mock('react-i18next', () => ({
         return `${values.tokens} token · ${values.requests} yêu cầu · ${values.latency} · ${values.cost}`
       }
       if (key === 'chatAdmin.detail.openOrder') return `Mở đơn ${values.id}`
-      return {
-        'chatAdmin.detail.sources.contentRefusal': 'Từ chối nội dung không phù hợp',
-        'chatAdmin.stats.noTelemetry': 'Dữ liệu cũ chưa có số đo',
-        'chatAdmin.detail.assistedOrders': 'Đơn hàng được trợ lý hỗ trợ',
-        'chatAdmin.detail.noLead': 'Khách chưa để lại thông tin liên hệ.',
-      }[key] || values.defaultValue || key
+      return (
+        {
+          'chatAdmin.detail.sources.contentRefusal': 'Từ chối nội dung không phù hợp',
+          'chatAdmin.stats.noTelemetry': 'Dữ liệu cũ chưa có số đo',
+          'chatAdmin.detail.assistedOrders': 'Đơn hàng được trợ lý hỗ trợ',
+          'chatAdmin.detail.noLead': 'Khách chưa để lại thông tin liên hệ.',
+        }[key] ||
+        values.defaultValue ||
+        key
+      )
     },
   }),
 }))
@@ -46,26 +50,30 @@ const baseConversation = {
   assistedOrders: 1,
   assistedRevenue: 1590000,
   hasTelemetry: true,
-  messages: [{
-    id: 'message-1',
-    role: 'ASSISTANT',
-    content: 'Em không thể hỗ trợ nội dung này.',
-    source: 'CONTENT_REFUSAL',
-    aiCalled: false,
-    inputTokens: 100,
-    outputTokens: 40,
-    thinkingTokens: 10,
-    providerRequestCount: 2,
-    latencyMs: 1500,
-    estimatedCostUsd: 0.0002,
-    createdAt: '2026-08-18T03:01:00Z',
-  }],
-  orderAttributions: [{
-    orderId: '12345678-1234-1234-1234-123456789012',
-    orderLineItemId: 'line-1',
-    attributedAmount: 1590000,
-    createdAt: '2026-08-18T03:02:00Z',
-  }],
+  messages: [
+    {
+      id: 'message-1',
+      role: 'ASSISTANT',
+      content: 'Em không thể hỗ trợ nội dung này.',
+      source: 'CONTENT_REFUSAL',
+      aiCalled: false,
+      inputTokens: 100,
+      outputTokens: 40,
+      thinkingTokens: 10,
+      providerRequestCount: 2,
+      latencyMs: 1500,
+      estimatedCostUsd: 0.0002,
+      createdAt: '2026-08-18T03:01:00Z',
+    },
+  ],
+  orderAttributions: [
+    {
+      orderId: '12345678-1234-1234-1234-123456789012',
+      orderLineItemId: 'line-1',
+      attributedAmount: 1590000,
+      createdAt: '2026-08-18T03:02:00Z',
+    },
+  ],
 }
 
 function renderScreen(navigate = vi.fn()) {

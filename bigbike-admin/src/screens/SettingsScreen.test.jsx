@@ -69,12 +69,7 @@ function renderScreen(props = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <SettingsScreen
-        canUpdate
-        isSuperAdmin={false}
-        navigate={vi.fn()}
-        {...props}
-      />
+      <SettingsScreen canUpdate isSuperAdmin={false} navigate={vi.fn()} {...props} />
     </QueryClientProvider>,
   )
 }
@@ -123,9 +118,11 @@ describe('SettingsScreen', () => {
   it('keeps the current tab and local draft while refreshing', async () => {
     const user = userEvent.setup()
     let resolveRefresh
-    mocks.fetchSettings
-      .mockResolvedValueOnce({ items: settings })
-      .mockReturnValueOnce(new Promise((resolve) => { resolveRefresh = resolve }))
+    mocks.fetchSettings.mockResolvedValueOnce({ items: settings }).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve
+      }),
+    )
     renderScreen()
 
     const siteName = await screen.findByLabelText(/Tên shop/)
@@ -137,7 +134,9 @@ describe('SettingsScreen', () => {
     expect(siteName).toHaveValue('BigBike mới')
 
     resolveRefresh({ items: settings })
-    await waitFor(() => expect(screen.getByRole('button', { name: 'settings.refresh' })).toBeEnabled())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'settings.refresh' })).toBeEnabled(),
+    )
     expect(siteName).toHaveValue('BigBike mới')
   })
 
@@ -190,9 +189,11 @@ describe('SettingsScreen', () => {
       'settings.confirmSaveMessage',
       'settings.confirmSaveTitle',
     )
-    await waitFor(() => expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
-      { key: 'bank_account_holder', value: 'BIGBIKE VN' },
-    ]))
+    await waitFor(() =>
+      expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
+        { key: 'bank_account_holder', value: 'BIGBIKE VN' },
+      ]),
+    )
   })
 
   it('requires the English site name when the Vietnamese site name changes', async () => {
@@ -221,7 +222,9 @@ describe('SettingsScreen', () => {
   it('states clearly when the screen is view-only', async () => {
     renderScreen({ canUpdate: false })
 
-    expect(await screen.findByText('Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.'),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'settings.saveCount' })).not.toBeInTheDocument()
   })
 

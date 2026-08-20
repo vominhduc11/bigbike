@@ -23,7 +23,9 @@ export function SectionCard({ title, badge, required, headingLevel = 3, children
               className="ml-1 text-danger"
               aria-label={t('common.required')}
               title={t('common.required')}
-            >*</span>
+            >
+              *
+            </span>
           )}
         </Heading>
         {badge}

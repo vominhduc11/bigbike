@@ -7,15 +7,21 @@ import { validateValue } from './constants'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, values = {}) => key === 'settings.assistantConfig.itemCount'
-      ? `${values.count}/${values.max} items`
-      : key,
+    t: (key, values = {}) =>
+      key === 'settings.assistantConfig.itemCount' ? `${values.count}/${values.max} items` : key,
   }),
 }))
 
 function Harness({ settingKey, initialValue = '[]', readOnly = false }) {
   const [value, setValue] = useState(initialValue)
-  return <AssistantConfigEditor settingKey={settingKey} value={value} onChange={setValue} readOnly={readOnly} />
+  return (
+    <AssistantConfigEditor
+      settingKey={settingKey}
+      value={value}
+      onChange={setValue}
+      readOnly={readOnly}
+    />
+  )
 }
 
 describe('AssistantConfigEditor', () => {
@@ -23,7 +29,9 @@ describe('AssistantConfigEditor', () => {
     const user = userEvent.setup()
     render(<Harness settingKey="ai_assistant_abbreviations" />)
 
-    await user.click(screen.getByRole('button', { name: 'settings.assistantConfig.addAbbreviation' }))
+    await user.click(
+      screen.getByRole('button', { name: 'settings.assistantConfig.addAbbreviation' }),
+    )
     const inputs = screen.getAllByRole('textbox')
     await user.type(inputs[0], 'mbh')
     await user.type(inputs[1], 'mu bao hiem')
@@ -34,19 +42,28 @@ describe('AssistantConfigEditor', () => {
   })
 
   it('shows saved answers in read-only mode without mutation controls', () => {
-    render(<Harness
-      settingKey="ai_assistant_answer_templates"
-      readOnly
-      initialValue={JSON.stringify([{
-        id: 'warranty', topic: 'Warranty', enabled: true,
-        triggersVi: ['bảo hành'], triggersEn: ['warranty'],
-        answerVi: 'BigBike hỗ trợ theo chính sách hiện hành.',
-        answerEn: 'BigBike follows its current policy.',
-      }])}
-    />)
+    render(
+      <Harness
+        settingKey="ai_assistant_answer_templates"
+        readOnly
+        initialValue={JSON.stringify([
+          {
+            id: 'warranty',
+            topic: 'Warranty',
+            enabled: true,
+            triggersVi: ['bảo hành'],
+            triggersEn: ['warranty'],
+            answerVi: 'BigBike hỗ trợ theo chính sách hiện hành.',
+            answerEn: 'BigBike follows its current policy.',
+          },
+        ])}
+      />,
+    )
 
     expect(screen.getAllByDisplayValue('warranty').every((control) => control.disabled)).toBe(true)
-    expect(screen.queryByRole('button', { name: 'settings.assistantConfig.addTemplate' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'settings.assistantConfig.addTemplate' }),
+    ).not.toBeInTheDocument()
   })
 
   it('validates duplicate abbreviations and incomplete bilingual templates before saving', () => {
@@ -54,12 +71,23 @@ describe('AssistantConfigEditor', () => {
       { locale: 'vi', phrase: 'mbh', expansion: 'mũ bảo hiểm', enabled: true },
       { locale: 'vi', phrase: 'MBH', expansion: 'mũ bảo hiểm', enabled: true },
     ])
-    const incompleteTemplate = JSON.stringify([{
-      id: 'shipping', topic: 'Shipping', enabled: true,
-      triggersVi: ['giao hàng'], triggersEn: [], answerVi: 'Có hỗ trợ.', answerEn: '',
-    }])
+    const incompleteTemplate = JSON.stringify([
+      {
+        id: 'shipping',
+        topic: 'Shipping',
+        enabled: true,
+        triggersVi: ['giao hàng'],
+        triggersEn: [],
+        answerVi: 'Có hỗ trợ.',
+        answerEn: '',
+      },
+    ])
 
-    expect(validateValue('ai_assistant_abbreviations', duplicateAliases)).toBe('settings.assistantConfig.duplicate')
-    expect(validateValue('ai_assistant_answer_templates', incompleteTemplate)).toBe('settings.assistantConfig.invalid')
+    expect(validateValue('ai_assistant_abbreviations', duplicateAliases)).toBe(
+      'settings.assistantConfig.duplicate',
+    )
+    expect(validateValue('ai_assistant_answer_templates', incompleteTemplate)).toBe(
+      'settings.assistantConfig.invalid',
+    )
   })
 })

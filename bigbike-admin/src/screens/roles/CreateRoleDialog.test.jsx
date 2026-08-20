@@ -140,10 +140,14 @@ describe('CreateRoleDialog', () => {
 
     mocks.showConfirm.mockResolvedValueOnce(true)
     await user.click(screen.getByRole('button', { name: 'roles.createRoleBtn' }))
-    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'DIEU_PHOI',
-      permissions: ['orders.read', 'roles.write'],
-    })))
+    await waitFor(() =>
+      expect(onConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'DIEU_PHOI',
+          permissions: ['orders.read', 'roles.write'],
+        }),
+      ),
+    )
   })
 
   it('clones a non-sensitive role without an extra confirmation', async () => {
@@ -154,10 +158,12 @@ describe('CreateRoleDialog', () => {
     await user.click(screen.getByRole('button', { name: 'roles.createRoleBtn' }))
 
     expect(mocks.showConfirm).not.toHaveBeenCalled()
-    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'TIN_TUC',
-      permissions: ['content.read'],
-    }))
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'TIN_TUC',
+        permissions: ['content.read'],
+      }),
+    )
   })
 
   it('warns before discarding a partially completed role', async () => {

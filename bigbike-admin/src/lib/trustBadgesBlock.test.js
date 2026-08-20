@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { serializeTrustBadges, parseTrustBadgesFromHtml, parseTrustBadgesResult, mergeTrustBadgesIntoHtml } from './trustBadgesBlock'
+import {
+  serializeTrustBadges,
+  parseTrustBadgesFromHtml,
+  parseTrustBadgesResult,
+  mergeTrustBadgesIntoHtml,
+} from './trustBadgesBlock'
 
 const badge = (content) => ({ content })
 
@@ -41,7 +46,7 @@ describe('parseTrustBadgesFromHtml', () => {
     expect(parseTrustBadgesFromHtml(html).map((b) => b.content)).toEqual(['Chính hãng'])
   })
 
-	it('HTML nhập ngoài: chấm "•" là ký tự trước chữ, không phải span rỗng', () => {
+  it('HTML nhập ngoài: chấm "•" là ký tự trước chữ, không phải span rỗng', () => {
     const html =
       '<div class="bb-trust-badges">' +
       '<span><span style="color:#cc0906;font-size:18px">•</span> Tặng kèm Pinlock</span> ' +
@@ -50,13 +55,13 @@ describe('parseTrustBadgesFromHtml', () => {
       'Tặng kèm Pinlock',
       'FreeShip Toàn Quốc',
     ])
-	})
+  })
 
-	it('đọc danh sách HTML thông thường', () => {
-		const result = parseTrustBadgesResult('<ul><li>Chính hãng</li><li>Freeship</li></ul>')
-		expect(result.items.map((item) => item.content)).toEqual(['Chính hãng', 'Freeship'])
-		expect(result.acceptedCount).toBe(2)
-	})
+  it('đọc danh sách HTML thông thường', () => {
+    const result = parseTrustBadgesResult('<ul><li>Chính hãng</li><li>Freeship</li></ul>')
+    expect(result.items.map((item) => item.content)).toEqual(['Chính hãng', 'Freeship'])
+    expect(result.acceptedCount).toBe(2)
+  })
 })
 
 describe('mergeTrustBadgesIntoHtml', () => {
@@ -77,7 +82,8 @@ describe('mergeTrustBadgesIntoHtml', () => {
   })
 
   it('thêm mục → nhân bản giữ style mục cuối', () => {
-    const styled = '<div class="bb-trust-badges"><span style="padding:2px"><span></span><span>A</span></span></div>'
+    const styled =
+      '<div class="bb-trust-badges"><span style="padding:2px"><span></span><span>A</span></span></div>'
     const out = mergeTrustBadgesIntoHtml([badge('A'), badge('B')], styled)
     expect(out).toContain('B')
     expect((out.match(/style="padding:2px"/g) || []).length).toBe(2)

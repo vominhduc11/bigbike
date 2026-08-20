@@ -18,13 +18,18 @@ export function Modal({
   const { t } = useTranslation()
   const label = closeLabel || t('common.close')
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.() }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose?.()
+      }}
+    >
       <DialogContent
         showClose={false}
         aria-describedby={undefined}
         className={cn(
           'p-0 flex flex-col max-h-[90vh] overflow-hidden',
-          contentClassName || (wide ? 'max-w-3xl' : 'max-w-lg')
+          contentClassName || (wide ? 'max-w-3xl' : 'max-w-lg'),
         )}
       >
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0">
@@ -38,7 +43,13 @@ export function Modal({
               </DialogDescription>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label={label} className="shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label={label}
+            className="shrink-0"
+          >
             <X size={16} />
           </Button>
         </div>

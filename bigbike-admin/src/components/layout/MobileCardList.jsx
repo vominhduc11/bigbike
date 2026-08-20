@@ -54,7 +54,11 @@ export function MobileCard({
         <div className="mobile-card-head">
           <div className="min-w-0 flex-1">
             {title ? <div className="mobile-card-title break-words">{title}</div> : null}
-            {subtitle ? <div className="mobile-card-subtitle break-words [overflow-wrap:anywhere]">{subtitle}</div> : null}
+            {subtitle ? (
+              <div className="mobile-card-subtitle break-words [overflow-wrap:anywhere]">
+                {subtitle}
+              </div>
+            ) : null}
           </div>
           {status ? <div className="shrink-0">{status}</div> : null}
         </div>
@@ -72,33 +76,33 @@ export function MobileCard({
     </>
   )
 
-  const main = onClick
-    ? (
-      <Button
-        variant="unstyled"
-        onClick={onClick}
-        className="mobile-card-main block w-full cursor-pointer border-0 bg-transparent p-0 text-left text-inherit [font:inherit]"
-      >
-        {body}
-      </Button>
-    )
-    : body
+  const main = onClick ? (
+    <Button
+      variant="unstyled"
+      onClick={onClick}
+      className="mobile-card-main block w-full cursor-pointer border-0 bg-transparent p-0 text-left text-inherit [font:inherit]"
+    >
+      {body}
+    </Button>
+  ) : (
+    body
+  )
 
   return (
     <li className="mobile-card">
-      {selectable
-        ? (
-          <div className="flex items-start gap-2">
-            <Checkbox
-              checked={selected}
-              onCheckedChange={onSelectChange}
-              aria-label={selectionLabel}
-              className="mt-0.5 shrink-0"
-            />
-            <div className="min-w-0 flex-1">{main}</div>
-          </div>
-        )
-        : main}
+      {selectable ? (
+        <div className="flex items-start gap-2">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onSelectChange}
+            aria-label={selectionLabel}
+            className="mt-0.5 shrink-0"
+          />
+          <div className="min-w-0 flex-1">{main}</div>
+        </div>
+      ) : (
+        main
+      )}
       {actions ? <div className="mobile-card-actions">{actions}</div> : null}
     </li>
   )

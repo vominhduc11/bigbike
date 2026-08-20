@@ -13,7 +13,15 @@ import { Button } from '@/components/ui/button'
  *
  * @param {{ onExport: () => Promise<any>, children: any, variant?: string, className?: string, icon?: boolean, title?: string, disabled?: boolean }} props
  */
-export function ExportButton({ onExport, children, variant = 'secondary', className, icon = true, title, disabled = false }) {
+export function ExportButton({
+  onExport,
+  children,
+  variant = 'secondary',
+  className,
+  icon = true,
+  title,
+  disabled = false,
+}) {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
 
@@ -32,10 +40,20 @@ export function ExportButton({ onExport, children, variant = 'secondary', classN
   }
 
   return (
-    <Button type="button" variant={variant} className={className} onClick={handleClick} disabled={busy || disabled} aria-busy={busy || undefined} title={title}>
-      {busy
-        ? <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-        : (icon ? <Download size={14} aria-hidden="true" /> : null)}
+    <Button
+      type="button"
+      variant={variant}
+      className={className}
+      onClick={handleClick}
+      disabled={busy || disabled}
+      aria-busy={busy || undefined}
+      title={title}
+    >
+      {busy ? (
+        <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+      ) : icon ? (
+        <Download size={14} aria-hidden="true" />
+      ) : null}
       {busy ? t('export.exporting') : children}
     </Button>
   )

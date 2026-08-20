@@ -5,7 +5,16 @@ import { AdminTable } from '../../components/AdminTable'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '@/components/ui/button'
 
-export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false, isError = false, onRetry, permissionDenied = false }) {
+export function ProductsInCategoryCard({
+  item,
+  productsList,
+  productsTotal,
+  navigate,
+  isLoading = false,
+  isError = false,
+  onRetry,
+  permissionDenied = false,
+}) {
   const { t } = useTranslation()
 
   const openProduct = (p) => navigate(`/admin/products/${p.id}`)
@@ -15,8 +24,15 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
   const productThumb = (p, extraClass) => (
     <span className={`bb-product-thumb${extraClass ? ` ${extraClass}` : ''}`}>
       {p.image?.url ? (
-        <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer" />
-      ) : <Package size={16} />}
+        <img
+          src={p.image.url}
+          alt={p.image.alt || p.name}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <Package size={16} />
+      )}
     </span>
   )
 
@@ -95,8 +111,12 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
           <div className="p-4">
             <StatePanel
               tone="danger"
-              title={t('categories.detail.productsLoadError', { defaultValue: 'Không tải được sản phẩm của danh mục.' })}
-              description={t('categories.detail.productsLoadErrorDesc', { defaultValue: 'Danh sách có thể chưa đầy đủ. Vui lòng thử lại.' })}
+              title={t('categories.detail.productsLoadError', {
+                defaultValue: 'Không tải được sản phẩm của danh mục.',
+              })}
+              description={t('categories.detail.productsLoadErrorDesc', {
+                defaultValue: 'Danh sách có thể chưa đầy đủ. Vui lòng thử lại.',
+              })}
               actionLabel={onRetry ? t('common.retry') : undefined}
               onAction={onRetry}
             />

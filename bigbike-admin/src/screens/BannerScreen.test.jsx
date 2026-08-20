@@ -28,7 +28,12 @@ vi.mock('@/lib/contentLang', () => ({ useContentLang: () => mocks.contentLang })
 vi.mock('@/lib/contracts', () => ({ resolveDisplayUrl: (value) => value }))
 vi.mock('../components/ImageUrlInput', () => ({
   ImageUrlInput: ({ value, disabled }) => (
-    <input aria-label={`image-${value || 'empty'}`} value={value || ''} disabled={disabled} readOnly />
+    <input
+      aria-label={`image-${value || 'empty'}`}
+      value={value || ''}
+      disabled={disabled}
+      readOnly
+    />
   ),
 }))
 
@@ -105,9 +110,11 @@ describe('BannerScreen', () => {
     await user.type(firstAlt, 'New English banner alt')
     await user.click(screen.getByRole('button', { name: 'common.save' }))
 
-    await waitFor(() => expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
-      { key: 'hero_products_image_alt', valueEn: 'New English banner alt' },
-    ]))
+    await waitFor(() =>
+      expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
+        { key: 'hero_products_image_alt', valueEn: 'New English banner alt' },
+      ]),
+    )
   })
 
   it('links only to the still-supported per-category banner editor', async () => {
@@ -135,14 +142,18 @@ describe('BannerScreen', () => {
     renderScreen({ embedded: true, onEditorStateChange })
 
     const firstTitle = (await screen.findAllByLabelText('banners.fieldTitle'))[0]
-    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ dirtyCount: 0, saving: false }),
-    ))
+    await waitFor(() =>
+      expect(onEditorStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ dirtyCount: 0, saving: false }),
+      ),
+    )
 
     await user.clear(firstTitle)
     await user.type(firstTitle, 'Banner mới')
-    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ dirtyCount: 1, saving: false }),
-    ))
+    await waitFor(() =>
+      expect(onEditorStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ dirtyCount: 1, saving: false }),
+      ),
+    )
   })
 })

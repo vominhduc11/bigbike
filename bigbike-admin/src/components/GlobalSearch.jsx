@@ -68,7 +68,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   // Cuộn dòng đang chọn vào tầm nhìn khi điều hướng bằng phím ↑/↓.
   useEffect(() => {
     if (!open) return
-    listRef.current?.querySelector(`#bb-search-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+    listRef.current
+      ?.querySelector(`#bb-search-opt-${activeIndex}`)
+      ?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex, open])
 
   // Fan-out search — latest request wins. Lỗi từng nhóm được ghi nhận (setError) để
@@ -87,7 +89,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         setError(false)
         setLoading(false)
       })
-      return () => { cancelled = true }
+      return () => {
+        cancelled = true
+      }
     }
 
     const myId = ++reqIdRef.current
@@ -97,11 +101,26 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       setError(false)
       const listQuery = { search: q, page: 1, pageSize: PER_GROUP }
       let failed = false
-      const onFail = () => { failed = true; return [] }
+      const onFail = () => {
+        failed = true
+        return []
+      }
       Promise.all([
-        canOrders ? fetchOrders(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
-        canProducts ? fetchProducts(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
-        canCustomers ? fetchCustomers(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
+        canOrders
+          ? fetchOrders(listQuery)
+              .then((r) => r.items || [])
+              .catch(onFail)
+          : Promise.resolve([]),
+        canProducts
+          ? fetchProducts(listQuery)
+              .then((r) => r.items || [])
+              .catch(onFail)
+          : Promise.resolve([]),
+        canCustomers
+          ? fetchCustomers(listQuery)
+              .then((r) => r.items || [])
+              .catch(onFail)
+          : Promise.resolve([]),
       ]).then(([orders, products, customers]) => {
         if (myId !== reqIdRef.current) return
         setResults({ orders, products, customers })
@@ -110,29 +129,52 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         setLoading(false)
       })
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [debounced, open, canOrders, canProducts, canCustomers])
 
   // Flatten every result row into one list so ↑/↓ can move across groups.
   const flat = useMemo(() => {
     const rows = []
-    results.orders.forEach((o) => rows.push({
-      group: 'orders', key: `o-${o.id}`, to: `/admin/orders/${o.id}`,
-      primary: formatText(o.orderNumber), secondary: formatText(o.customerName || o.customerEmail),
-      trailing: formatCurrencyVnd(o.total),
-    }))
-    results.products.forEach((p) => rows.push({
-      group: 'products', key: `p-${p.id}`, to: `/admin/products/${p.id}`,
-      primary: formatText(p.name), secondary: formatText(p.sku, t('search.skuTbd', { defaultValue: 'Chưa có mã sản phẩm' })),
-    }))
-    results.customers.forEach((c) => rows.push({
-      group: 'customers', key: `c-${c.id}`, to: `/admin/customers/${c.id}`,
-      primary: formatText(c.fullName), secondary: formatText(c.email || c.phone),
-    }))
+    results.orders.forEach((o) =>
+      rows.push({
+        group: 'orders',
+        key: `o-${o.id}`,
+        to: `/admin/orders/${o.id}`,
+        primary: formatText(o.orderNumber),
+        secondary: formatText(o.customerName || o.customerEmail),
+        trailing: formatCurrencyVnd(o.total),
+      }),
+    )
+    results.products.forEach((p) =>
+      rows.push({
+        group: 'products',
+        key: `p-${p.id}`,
+        to: `/admin/products/${p.id}`,
+        primary: formatText(p.name),
+        secondary: formatText(p.sku, t('search.skuTbd', { defaultValue: 'Chưa có mã sản phẩm' })),
+      }),
+    )
+    results.customers.forEach((c) =>
+      rows.push({
+        group: 'customers',
+        key: `c-${c.id}`,
+        to: `/admin/customers/${c.id}`,
+        primary: formatText(c.fullName),
+        secondary: formatText(c.email || c.phone),
+      }),
+    )
     return rows
   }, [results, t])
 
-  const go = useCallback((to) => { close(); navigate(to) }, [close, navigate])
+  const go = useCallback(
+    (to) => {
+      close()
+      navigate(to)
+    },
+    [close, navigate],
+  )
 
   function onInputKeyDown(e) {
     if (e.key === 'ArrowDown') {
@@ -162,7 +204,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       >
         <Search size={15} className="shrink-0" />
         <span className="flex-1 truncate text-left text-sm">{t('search.placeholder')}</span>
-        <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">⌘K</kbd>
+        <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">
+          ⌘K
+        </kbd>
       </Button>
 
       {/* Mobile: nút icon mở panel tìm kiếm (ô đầy đủ ẩn ở <md) */}
@@ -177,115 +221,135 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         <Search size={18} aria-hidden="true" />
       </Button>
 
-      {open && createPortal(
-        <div
-          ref={dialogRef}
-          className="fixed inset-0 flex items-start justify-center px-4 pt-[12vh]"
-          style={{ zIndex: 'var(--z-modal)' }}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('search.title')}
-        >
+      {open &&
+        createPortal(
           <div
-            className="fixed inset-0"
-            style={{ background: 'var(--admin-color-overlay)' }}
-            onClick={close}
-            aria-hidden="true"
-          />
-          <div
-            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-lg border border-border bg-surface"
-            style={{ boxShadow: 'var(--admin-shadow-lg)' }}
+            ref={dialogRef}
+            className="fixed inset-0 flex items-start justify-center px-4 pt-[12vh]"
+            style={{ zIndex: 'var(--z-modal)' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('search.title')}
           >
-            <div className="flex items-center gap-2.5 border-b border-border px-4">
-              {loading
-                ? <Loader2 size={17} className="shrink-0 animate-spin text-muted-foreground" />
-                : <Search size={17} className="shrink-0 text-muted-foreground" />}
-              <input
-                ref={inputRef}
-                value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                onKeyDown={onInputKeyDown}
-                placeholder={t('search.placeholder')}
-                className="h-12 flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-                role="combobox"
-                aria-expanded={hasQuery && flat.length > 0}
-                aria-controls="bb-search-listbox"
-                aria-activedescendant={hasQuery && flat.length > 0 ? `bb-search-opt-${activeIndex}` : undefined}
-                aria-autocomplete="list"
-                autoComplete="off"
-              />
-              <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">Esc</kbd>
-            </div>
+            <div
+              className="fixed inset-0"
+              style={{ background: 'var(--admin-color-overlay)' }}
+              onClick={close}
+              aria-hidden="true"
+            />
+            <div
+              className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-lg border border-border bg-surface"
+              style={{ boxShadow: 'var(--admin-shadow-lg)' }}
+            >
+              <div className="flex items-center gap-2.5 border-b border-border px-4">
+                {loading ? (
+                  <Loader2 size={17} className="shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Search size={17} className="shrink-0 text-muted-foreground" />
+                )}
+                <input
+                  ref={inputRef}
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  onKeyDown={onInputKeyDown}
+                  placeholder={t('search.placeholder')}
+                  className="h-12 flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  role="combobox"
+                  aria-expanded={hasQuery && flat.length > 0}
+                  aria-controls="bb-search-listbox"
+                  aria-activedescendant={
+                    hasQuery && flat.length > 0 ? `bb-search-opt-${activeIndex}` : undefined
+                  }
+                  aria-autocomplete="list"
+                  autoComplete="off"
+                />
+                <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                  Esc
+                </kbd>
+              </div>
 
-            <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-1.5">
-              {!hasQuery && (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
-              )}
-              {hasQuery && !loading && flat.length === 0 && error && (
-                <div className="p-2">
-                  <StatePanel
-                    tone="danger"
-                    title={t('search.errorTitle', { defaultValue: 'Không tìm kiếm được' })}
-                    description={t('search.errorBody', { defaultValue: 'Đã có lỗi khi tìm kiếm. Vui lòng thử lại.' })}
-                  />
-                </div>
-              )}
-              {hasQuery && !loading && flat.length === 0 && !error && (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.empty')}</p>
-              )}
-              {hasQuery && groupOrder.map((group) => {
-                const groupRows = flat.filter((r) => r.group === group)
-                if (!groupRows.length) return null
-                const GroupIcon = GROUP_META[group].icon
-                return (
-                  <div key={group} className="mb-1 last:mb-0">
-                    <p className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {t(`search.group.${group}`)}
-                    </p>
-                    {groupRows.map((row) => {
-                      const flatIndex = flat.indexOf(row)
-                      const isActive = flatIndex === activeIndex
-                      return (
-                        <Button
-                          variant="unstyled"
-                          key={row.key}
-                          id={`bb-search-opt-${flatIndex}`}
-                          role="option"
-                          aria-selected={isActive}
-                          tabIndex={-1}
-                          onMouseEnter={() => setActiveIndex(flatIndex)}
-                          onClick={() => go(row.to)}
-                          className={`flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors ${
-                            isActive ? 'bg-surface-selected' : 'hover:bg-surface-muted'
-                          }`}
-                        >
-                          <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-surface-muted text-muted-foreground">
-                            <GroupIcon size={15} />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold text-foreground">
-                              {row.primary}
-                            </span>
-                            <span className="block truncate text-xs text-muted-foreground">
-                              {row.secondary}
-                            </span>
-                          </span>
-                          {row.trailing && (
-                            <span className="shrink-0 text-xs font-semibold text-foreground">
-                              {row.trailing}
-                            </span>
-                          )}
-                        </Button>
-                      )
-                    })}
+              <div
+                ref={listRef}
+                id="bb-search-listbox"
+                role="listbox"
+                aria-label={t('search.title')}
+                className="max-h-[52vh] overflow-y-auto p-1.5"
+              >
+                {!hasQuery && (
+                  <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    {t('search.hint')}
+                  </p>
+                )}
+                {hasQuery && !loading && flat.length === 0 && error && (
+                  <div className="p-2">
+                    <StatePanel
+                      tone="danger"
+                      title={t('search.errorTitle', { defaultValue: 'Không tìm kiếm được' })}
+                      description={t('search.errorBody', {
+                        defaultValue: 'Đã có lỗi khi tìm kiếm. Vui lòng thử lại.',
+                      })}
+                    />
                   </div>
-                )
-              })}
+                )}
+                {hasQuery && !loading && flat.length === 0 && !error && (
+                  <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    {t('search.empty')}
+                  </p>
+                )}
+                {hasQuery &&
+                  groupOrder.map((group) => {
+                    const groupRows = flat.filter((r) => r.group === group)
+                    if (!groupRows.length) return null
+                    const GroupIcon = GROUP_META[group].icon
+                    return (
+                      <div key={group} className="mb-1 last:mb-0">
+                        <p className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                          {t(`search.group.${group}`)}
+                        </p>
+                        {groupRows.map((row) => {
+                          const flatIndex = flat.indexOf(row)
+                          const isActive = flatIndex === activeIndex
+                          return (
+                            <Button
+                              variant="unstyled"
+                              key={row.key}
+                              id={`bb-search-opt-${flatIndex}`}
+                              role="option"
+                              aria-selected={isActive}
+                              tabIndex={-1}
+                              onMouseEnter={() => setActiveIndex(flatIndex)}
+                              onClick={() => go(row.to)}
+                              className={`flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors ${
+                                isActive ? 'bg-surface-selected' : 'hover:bg-surface-muted'
+                              }`}
+                            >
+                              <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-surface-muted text-muted-foreground">
+                                <GroupIcon size={15} />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-semibold text-foreground">
+                                  {row.primary}
+                                </span>
+                                <span className="block truncate text-xs text-muted-foreground">
+                                  {row.secondary}
+                                </span>
+                              </span>
+                              {row.trailing && (
+                                <span className="shrink-0 text-xs font-semibold text-foreground">
+                                  {row.trailing}
+                                </span>
+                              )}
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    )
+                  })}
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   )
 }

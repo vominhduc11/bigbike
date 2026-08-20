@@ -25,7 +25,8 @@ export function CategoryEmptyState({ searchTerm, query, canUpdate, onResetFilter
         )}
         {canUpdate && (
           <Button onClick={onCreate}>
-            <Plus size={14} />{t('categories.create')}
+            <Plus size={14} />
+            {t('categories.create')}
           </Button>
         )}
       </div>

@@ -96,14 +96,22 @@ function listResponse(items) {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.fetchMedia.mockResolvedValue(listResponse([activeMedia]))
-  mocks.fetchMediaStats.mockResolvedValue({ total: 1, used: 0, unused: 1, byMimeGroup: { image: 1 } })
+  mocks.fetchMediaStats.mockResolvedValue({
+    total: 1,
+    used: 0,
+    unused: 1,
+    byMimeGroup: { image: 1 },
+  })
   mocks.fetchMediaFolders.mockResolvedValue([])
   mocks.fetchMediaReferences.mockResolvedValue([])
   mocks.showConfirm.mockResolvedValue(true)
   mocks.query = {}
 })
 
-function renderScreen(props = {}, client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
+function renderScreen(
+  props = {},
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   const result = render(
     <QueryClientProvider client={client}>
       <MediaLibraryScreen canUpdate canHardDelete={false} {...props} />
@@ -144,11 +152,16 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     const thumb = await screen.findByTitle('catalog/mu-bao-hiem.jpg')
     const card = thumb.closest('.medialib-card')
 
-    const actions = within(card).getAllByRole('button')
+    const actions = within(card)
+      .getAllByRole('button')
       .filter((b) => b.classList.contains('medialib-icon-btn'))
     expect(actions).toHaveLength(4)
-    expect(actions.map((b) => b.getAttribute('title')))
-      .toEqual(['media.copyUrl', 'media.download', 'common.edit', 'common.delete'])
+    expect(actions.map((b) => b.getAttribute('title'))).toEqual([
+      'media.copyUrl',
+      'media.download',
+      'common.edit',
+      'common.delete',
+    ])
   })
 
   it('nút thao tác luôn nằm trên vùng bấm xem lớn', async () => {
@@ -156,8 +169,7 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     const thumb = await screen.findByTitle('catalog/mu-bao-hiem.jpg')
     const card = thumb.closest('.medialib-card')
 
-    expect(within(card).getByRole('button', { name: /media\.previewNamed/ }))
-      .toHaveClass('z-0')
+    expect(within(card).getByRole('button', { name: /media\.previewNamed/ })).toHaveClass('z-0')
     const editButton = within(card).getByRole('button', { name: 'common.edit' })
     expect(editButton.closest('.medialib-action-overlay')).toHaveClass('z-10')
     expect(editButton.closest('.medialib-overlay-actions')).toHaveClass('pointer-events-auto')
@@ -195,7 +207,9 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
   })
 
   it('ẩn nút tải khi media chỉ có URL ngoài hoặc không có object MinIO', async () => {
-    mocks.fetchMedia.mockResolvedValue(listResponse([{ ...activeMedia, storageProvider: 'EXTERNAL', filePath: null }]))
+    mocks.fetchMedia.mockResolvedValue(
+      listResponse([{ ...activeMedia, storageProvider: 'EXTERNAL', filePath: null }]),
+    )
     renderScreen()
 
     await screen.findByTitle('catalog/mu-bao-hiem.jpg')
@@ -210,7 +224,12 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     const card = (await screen.findByTitle('catalog/mu-bao-hiem.jpg')).closest('.medialib-card')
     await user.click(within(card).getByRole('button', { name: 'media.download' }))
 
-    await waitFor(() => expect(mocks.downloadMedia).toHaveBeenCalledWith(activeMedia.id, activeMedia.originalFilename))
+    await waitFor(() =>
+      expect(mocks.downloadMedia).toHaveBeenCalledWith(
+        activeMedia.id,
+        activeMedia.originalFilename,
+      ),
+    )
     expect(mocks.toast.error).toHaveBeenCalledWith('media.actionNetworkError')
   })
 
@@ -221,8 +240,11 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
 
     const card = (await screen.findByTitle('catalog/mu-bao-hiem.jpg')).closest('.medialib-card')
     await user.click(within(card).getByRole('button', { name: 'common.edit' }))
-    await user.click(screen.getByRole('complementary', { name: 'media.editTitle' })
-      .querySelector('button[title="common.delete"]'))
+    await user.click(
+      screen
+        .getByRole('complementary', { name: 'media.editTitle' })
+        .querySelector('button[title="common.delete"]'),
+    )
 
     await waitFor(() => expect(mocks.deleteMedia).toHaveBeenCalledWith(activeMedia.id))
     expect(screen.getByRole('complementary', { name: 'media.editTitle' })).toBeInTheDocument()
@@ -233,8 +255,12 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
   it('không xoá vĩnh viễn nếu tệp còn được dùng', async () => {
     const user = userEvent.setup()
     mocks.query = { status: 'DELETED' }
-    mocks.fetchMedia.mockResolvedValue(listResponse([{ ...activeMedia, status: 'DELETED', usageCount: 1 }]))
-    mocks.fetchMediaReferences.mockResolvedValue([{ type: 'PRODUCT', id: 'product-1', name: 'Sản phẩm A' }])
+    mocks.fetchMedia.mockResolvedValue(
+      listResponse([{ ...activeMedia, status: 'DELETED', usageCount: 1 }]),
+    )
+    mocks.fetchMediaReferences.mockResolvedValue([
+      { type: 'PRODUCT', id: 'product-1', name: 'Sản phẩm A' },
+    ])
     renderScreen({ canHardDelete: true })
 
     const card = (await screen.findByTitle('catalog/mu-bao-hiem.jpg')).closest('.medialib-card')
@@ -259,13 +285,15 @@ describe('MediaLibraryScreen — upload', () => {
     const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
-      file,
-      '',
-      expect.any(Function),
-      'folder-1',
-      false,
-    ))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(
+        file,
+        '',
+        expect.any(Function),
+        'folder-1',
+        false,
+      ),
+    )
   })
 
   it('không gán folder cụ thể khi đang xem "Tất cả"', async () => {
@@ -278,7 +306,9 @@ describe('MediaLibraryScreen — upload', () => {
     const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, false))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, false),
+    )
   })
 
   it('gửi cờ clearFolder khi đang xem "Chưa phân loại" — để ảnh trùng nội dung ở thư mục khác cũng phải quay về đúng Chưa phân loại', async () => {
@@ -291,7 +321,9 @@ describe('MediaLibraryScreen — upload', () => {
     const file = new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' })
     await user.upload(fileInput, file)
 
-    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, true))
+    await waitFor(() =>
+      expect(mocks.uploadMedia).toHaveBeenCalledWith(file, '', expect.any(Function), null, true),
+    )
   })
 
   it('đưa danh sách về trang 1 sau khi upload xong dù đang đứng ở trang khác', async () => {
@@ -309,7 +341,9 @@ describe('MediaLibraryScreen — upload', () => {
     await user.upload(fileInput, file)
 
     await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalled())
-    await waitFor(() => expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })))
+    await waitFor(() =>
+      expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })),
+    )
   })
 })
 
@@ -318,18 +352,24 @@ describe('MediaLibraryScreen — trạng thái', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     })
-    client.setQueryData(['media', {
-      page: 1,
-      pageSize: 24,
-      search: '',
-      mimeType: 'ALL',
-      status: 'ACTIVE',
-      folderFilter: '',
-      tag: '',
-      usageFilter: 'ALL',
-      sort: 'createdAt',
-      dir: 'desc',
-    }], listResponse([activeMedia]))
+    client.setQueryData(
+      [
+        'media',
+        {
+          page: 1,
+          pageSize: 24,
+          search: '',
+          mimeType: 'ALL',
+          status: 'ACTIVE',
+          folderFilter: '',
+          tag: '',
+          usageFilter: 'ALL',
+          sort: 'createdAt',
+          dir: 'desc',
+        },
+      ],
+      listResponse([activeMedia]),
+    )
 
     renderScreen({}, client)
 

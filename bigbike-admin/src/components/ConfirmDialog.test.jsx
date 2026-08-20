@@ -6,11 +6,12 @@ import { setConfirmHandler, showConfirm } from '../lib/confirm'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => ({
-      'common.confirm': 'Xác nhận',
-      'common.cancel': 'Huỷ',
-      'common.close': 'Đóng',
-    }[key] || key),
+    t: (key) =>
+      ({
+        'common.confirm': 'Xác nhận',
+        'common.cancel': 'Huỷ',
+        'common.close': 'Đóng',
+      })[key] || key,
   }),
 }))
 
@@ -23,9 +24,13 @@ describe('ConfirmDialogProvider', () => {
 
     let result
     act(() => {
-      result = showConfirm('Chuyển tệp vào Thùng rác. Có thể khôi phục sau.', 'Chuyển vào Thùng rác', {
-        confirmLabel: 'Chuyển vào Thùng rác',
-      })
+      result = showConfirm(
+        'Chuyển tệp vào Thùng rác. Có thể khôi phục sau.',
+        'Chuyển vào Thùng rác',
+        {
+          confirmLabel: 'Chuyển vào Thùng rác',
+        },
+      )
     })
     const confirmButton = await screen.findByRole('button', { name: 'Chuyển vào Thùng rác' })
     expect(confirmButton.className).toContain('bg-primary')

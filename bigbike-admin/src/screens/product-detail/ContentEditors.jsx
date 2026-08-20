@@ -17,7 +17,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { cn, generateId } from '@/lib/utils'
 import { showConfirm } from '../../lib/confirm'
 import { parseSpecsFromHtml, parseSpecsResult, mergeSpecsIntoHtml } from '../../lib/specSheet'
-import { parseHighlightsPairResult, mergeHighlightsPairHtmlIntoItems, serializeHighlightsPairToHtml } from '../../lib/highlightsBlock'
+import {
+  parseHighlightsPairResult,
+  mergeHighlightsPairHtmlIntoItems,
+  serializeHighlightsPairToHtml,
+} from '../../lib/highlightsBlock'
 import { parseFaqsResult, mergeFaqsHtmlIntoItems, serializeFaqsToHtml } from '../../lib/faqsBlock'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId } from './constants'
@@ -41,7 +45,9 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
     const ytId = provider === 'youtube' ? extractYouTubeId(item.videoUrl || '') : null
     const posterUrl = trimmed
       ? displayUrl
-      : (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : '')
+      : ytId
+        ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`
+        : ''
     const changeProvider = async (nextProvider) => {
       if (provider === nextProvider) return
       if ((item.videoUrl || '').trim()) {
@@ -60,14 +66,19 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}
       >
         <div className="gallery-card-thumb relative bg-black">
-          {posterUrl
-            ? <img src={posterUrl} alt="" loading="eager" />
-            : <span className="gallery-thumb-status"><Film size={22} aria-hidden="true" /></span>}
+          {posterUrl ? (
+            <img src={posterUrl} alt="" loading="eager" />
+          ) : (
+            <span className="gallery-thumb-status">
+              <Film size={22} aria-hidden="true" />
+            </span>
+          )}
           <span className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
             <Play size={28} fill="currentColor" aria-hidden="true" />
           </span>
           {!disabled && sortable && (
-            <Button variant="unstyled"
+            <Button
+              variant="unstyled"
               type="button"
               {...sortable.handleProps}
               className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
@@ -79,10 +90,14 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             </Button>
           )}
           {!disabled && (
-            <Button variant="unstyled"
+            <Button
+              variant="unstyled"
               type="button"
               className="gallery-card-remove"
-              onClick={(e) => { e.stopPropagation(); onRemove() }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove()
+              }}
               aria-label={t('products.detail.gallery.removeImage')}
             >
               <X size={14} aria-hidden="true" />
@@ -91,35 +106,72 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         </div>
         <div className="gallery-card-body flex flex-col gap-2">
           <div className="flex gap-1 p-1 bg-muted w-fit">
-            <Button type="button" variant={provider === 'youtube' ? 'default' : 'ghost'} size="sm"
-              onClick={() => { void changeProvider('youtube') }} disabled={disabled}>YouTube</Button>
-            <Button type="button" variant={provider === 'upload' ? 'default' : 'ghost'} size="sm"
-              onClick={() => { void changeProvider('upload') }} disabled={disabled}>
+            <Button
+              type="button"
+              variant={provider === 'youtube' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                void changeProvider('youtube')
+              }}
+              disabled={disabled}
+            >
+              YouTube
+            </Button>
+            <Button
+              type="button"
+              variant={provider === 'upload' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                void changeProvider('upload')
+              }}
+              disabled={disabled}
+            >
               {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
             </Button>
           </div>
           {provider === 'youtube' ? (
             <Input
               type="text"
-              placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
+              placeholder={t('products.detail.gallery.videoUrlPlaceholder', {
+                defaultValue: 'Dán link YouTube',
+              })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : provider === 'upload' ? (
             <div className="flex flex-col gap-1">
-              <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)} disabled={disabled} className="self-start">
-                {item.videoUrl ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' }) : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVideoPickerOpen(true)}
+                disabled={disabled}
+                className="self-start"
+              >
+                {item.videoUrl
+                  ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' })
+                  : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
               </Button>
               <MediaRequirementHint recommend={IMAGE_RECO.video} />
             </div>
           ) : (
-            <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+            <div
+              className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning"
+              role="alert"
+            >
               {t('products.detail.gallery.legacySourceWarning')}
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
-            {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPickerOpen(true)}
+            disabled={disabled}
+            className="self-start"
+          >
+            {trimmed
+              ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' })
+              : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
           </Button>
           {urlError && <small className="field-error">{urlError}</small>}
         </div>
@@ -143,7 +195,10 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         {videoPickerOpen && (
           <VideoPickerModal
             recommend={IMAGE_RECO.video}
-            onSelect={(url) => { onUpdate({ videoUrl: url, provider: 'upload' }); setVideoPickerOpen(false) }}
+            onSelect={(url) => {
+              onUpdate({ videoUrl: url, provider: 'upload' })
+              setVideoPickerOpen(false)
+            }}
             onClose={() => setVideoPickerOpen(false)}
           />
         )}
@@ -159,11 +214,16 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
     >
       {/* Thumb chỉ để xem — mở picker qua nút bên dưới (tránh lồng nút trong nút, a11y). */}
       <div className="gallery-card-thumb">
-        {trimmed
-          ? <img src={displayUrl} alt="" loading="eager" />
-          : <span className="gallery-thumb-status"><ImageIcon size={22} aria-hidden="true" /></span>}
+        {trimmed ? (
+          <img src={displayUrl} alt="" loading="eager" />
+        ) : (
+          <span className="gallery-thumb-status">
+            <ImageIcon size={22} aria-hidden="true" />
+          </span>
+        )}
         {!disabled && sortable && (
-          <Button variant="unstyled"
+          <Button
+            variant="unstyled"
             type="button"
             {...sortable.handleProps}
             className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
@@ -175,16 +235,19 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           </Button>
         )}
         {!disabled && (
-          <Button variant="unstyled"
+          <Button
+            variant="unstyled"
             type="button"
             className="gallery-card-remove"
-            onClick={(e) => { e.stopPropagation(); onRemove() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove()
+            }}
             aria-label={t('products.detail.gallery.removeImage')}
           >
             <X size={14} aria-hidden="true" />
           </Button>
         )}
-
       </div>
       <div className="gallery-card-body">
         <Button
@@ -194,7 +257,9 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           onClick={() => setPickerOpen(true)}
           disabled={disabled}
         >
-          {trimmed ? t('products.detail.gallery.changeImage') : t('products.detail.gallery.pickImage')}
+          {trimmed
+            ? t('products.detail.gallery.changeImage')
+            : t('products.detail.gallery.pickImage')}
         </Button>
         {urlError && <small className="field-error">{urlError}</small>}
       </div>
@@ -219,17 +284,26 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   )
 }
 
-export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true }) {
+export function GalleryEditor({
+  items,
+  onChange,
+  disabled,
+  validationErrors = {},
+  allowVideo = true,
+}) {
   const { t } = useTranslation()
 
   function updateItem(index, patch) {
-    onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   }
   async function removeItem(index) {
     const item = items[index]
     const hasContent = Boolean((item?.url || item?.videoUrl || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(items.filter((_, i) => i !== index))
@@ -238,9 +312,18 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
     onChange([...items, { _key: generateId(), url: '', alt: '' }])
   }
   function addVideoItem() {
-    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
+    onChange([
+      ...items,
+      {
+        _key: generateId(),
+        mediaType: 'video',
+        provider: 'youtube',
+        videoUrl: '',
+        url: '',
+        alt: '',
+      },
+    ])
   }
-
 
   return (
     <div className="gallery-editor">
@@ -259,15 +342,22 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
             onUpdate={(patch) => updateItem(index, patch)}
             onRemove={() => removeItem(index)}
             disabled={disabled}
-            urlError={validationErrors[`gallery.${index}.videoUrl`] || validationErrors[`gallery.${index}.url`]}
+            urlError={
+              validationErrors[`gallery.${index}.videoUrl`] ||
+              validationErrors[`gallery.${index}.url`]
+            }
           />
         )}
-        footer={!disabled && (
-          <Button variant="unstyled" type="button" className="gallery-card-add" onClick={addItem}>
-            <span className="gallery-add-icon"><Plus size={20} aria-hidden="true" /></span>
-            <span>{t('products.detail.gallery.addImage')}</span>
-          </Button>
-        )}
+        footer={
+          !disabled && (
+            <Button variant="unstyled" type="button" className="gallery-card-add" onClick={addItem}>
+              <span className="gallery-add-icon">
+                <Plus size={20} aria-hidden="true" />
+              </span>
+              <span>{t('products.detail.gallery.addImage')}</span>
+            </Button>
+          )
+        }
       />
       {!disabled && allowVideo && (
         <div className="flex flex-wrap gap-2">
@@ -275,7 +365,9 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
             variant="outline"
             size="sm"
             onClick={addVideoItem}
-            title={t('products.detail.gallery.addVideoTitle', { defaultValue: 'Thêm video vào dải ảnh sản phẩm' })}
+            title={t('products.detail.gallery.addVideoTitle', {
+              defaultValue: 'Thêm video vào dải ảnh sản phẩm',
+            })}
           >
             + {t('products.detail.gallery.addVideo', { defaultValue: 'Thêm video' })}
           </Button>
@@ -291,15 +383,28 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   const getMediaAltSync = useMediaAltSyncList()
 
   function updateItem(index, patch) {
-    onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
+    onChange([
+      ...items,
+      {
+        _key: generateId(),
+        url: '',
+        title: '',
+        description: '',
+        type: 'youtube',
+        thumbnailUrl: '',
+      },
+    ])
   }
   async function removeItem(index) {
     const hasContent = Boolean((items[index]?.url || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(items.filter((_, i) => i !== index))
@@ -311,14 +416,19 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
     if (item?.type === nextType) return
     if ((item?.url || '').trim()) {
       const confirmed = await showConfirm(
-        t('products.detail.video.switchProviderConfirm', { defaultValue: 'Đổi nguồn video sẽ xoá liên kết đã nhập. Bạn có chắc muốn tiếp tục?' }),
+        t('products.detail.video.switchProviderConfirm', {
+          defaultValue: 'Đổi nguồn video sẽ xoá liên kết đã nhập. Bạn có chắc muốn tiếp tục?',
+        }),
         t('products.detail.video.switchProviderTitle', { defaultValue: 'Đổi nguồn video' }),
       )
       if (!confirmed) return
     }
-    updateItem(index, nextType === 'upload'
-      ? { type: 'upload', url: '' }
-      : { type: nextType, url: '', thumbnailUrl: '' })
+    updateItem(
+      index,
+      nextType === 'upload'
+        ? { type: 'upload', url: '' }
+        : { type: nextType, url: '', thumbnailUrl: '' },
+    )
   }
 
   return (
@@ -356,13 +466,16 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
 
               {type === 'youtube' ? (
                 <div>
-                  <Input className={urlError  ? 'border-danger' : undefined}
+                  <Input
+                    className={urlError ? 'border-danger' : undefined}
                     placeholder={t('products.detail.video.youtubePlaceholder')}
-                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
+                    aria-label={t('products.detail.video.urlLabel', {
+                      defaultValue: 'Liên kết video',
+                    })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
-                   />
+                  />
                   {urlError && <small className="field-error">{urlError}</small>}
                   {ytId && (
                     <img
@@ -382,7 +495,9 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                       onClick={() => setPickerOpenIndex(index)}
                       disabled={disabled}
                     >
-                      {item.url ? t('products.detail.video.changeVideo') : t('products.detail.video.pickFromLibrary')}
+                      {item.url
+                        ? t('products.detail.video.changeVideo')
+                        : t('products.detail.video.pickFromLibrary')}
                     </Button>
                     {item.url && (
                       <Button
@@ -414,14 +529,19 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   )}
                 </div>
               ) : (
-                <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+                <div
+                  className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning"
+                  role="alert"
+                >
                   {t('products.detail.video.legacySourceWarning')}
                   {urlError && <small className="mt-1 block field-error">{urlError}</small>}
                 </div>
               )}
               <Input
                 placeholder={t('products.detail.video.titlePlaceholder')}
-                aria-label={t('products.detail.video.titleLabel', { defaultValue: 'Tiêu đề video' })}
+                aria-label={t('products.detail.video.titleLabel', {
+                  defaultValue: 'Tiêu đề video',
+                })}
                 value={item.title || ''}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
                 onBlur={(e) => getMediaAltSync(item._key ?? index).flushAltSync(e.target.value)}
@@ -429,7 +549,9 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
               />
               <Input
                 placeholder={t('products.detail.video.descriptionPlaceholder')}
-                aria-label={t('products.detail.video.descriptionLabel', { defaultValue: 'Mô tả video' })}
+                aria-label={t('products.detail.video.descriptionLabel', {
+                  defaultValue: 'Mô tả video',
+                })}
                 value={item.description || ''}
                 onChange={(e) => updateItem(index, { description: e.target.value })}
                 disabled={disabled}
@@ -491,7 +613,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
   const { t } = useTranslation()
   const newRow = () => ({ _key: generateId(), name: '', value: '' })
   const [mode, setMode] = useState(() =>
-    ((html || '').trim() && !isGeneratedSpecsHtml(html)) ? 'html' : 'structured',
+    (html || '').trim() && !isGeneratedSpecsHtml(html) ? 'html' : 'structured',
   )
   const importer = useHtmlImportDraft(html, parseSpecsResult)
   const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
@@ -522,7 +644,10 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -578,12 +703,17 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
   function updateRow(index, field, value) {
     commit(rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
   }
-  function addRow() { commit([...rows, newRow()]) }
+  function addRow() {
+    commit([...rows, newRow()])
+  }
   async function removeRow(index) {
     const row = rows[index]
     const hasContent = Boolean((row?.name || row?.value || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = rows.filter((_, i) => i !== index)
@@ -593,68 +723,76 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
   return (
     <Tabs value={mode} onValueChange={changeMode}>
       <TabsList>
-        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.specs.modeStructured')}</TabsTrigger>
-        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.specs.modeHtml')}</TabsTrigger>
+        <TabsTrigger value="structured" disabled={disabled}>
+          {t('products.detail.specs.modeStructured')}
+        </TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>
+          {t('products.detail.specs.modeHtml')}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="structured">
-    <SortableList
-      items={rows}
-      getId={(it) => it._key}
-      onReorder={(next) => commit(next)}
-      disabled={disabled}
-      className="list-editor"
-      renderItem={(row, sortable, index) => (
-        <div
-          ref={sortable.setNodeRef}
-          style={sortable.style}
-          className="list-editor-row list-editor-row--stack"
-        >
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
-          <div className="flex flex-1 flex-col gap-2">
-            <div>
-              <Input
-                placeholder={t('products.detail.specs.namePlaceholder')}
-                aria-label={t('products.detail.specs.nameLabel')}
-                value={row.name || ''}
-                onChange={(e) => updateRow(index, 'name', e.target.value)}
+        <SortableList
+          items={rows}
+          getId={(it) => it._key}
+          onReorder={(next) => commit(next)}
+          disabled={disabled}
+          className="list-editor"
+          renderItem={(row, sortable, index) => (
+            <div
+              ref={sortable.setNodeRef}
+              style={sortable.style}
+              className="list-editor-row list-editor-row--stack"
+            >
+              <DragHandle
+                handleProps={sortable.handleProps}
                 disabled={disabled}
-                maxLength={255}
-               />
-            </div>
-            <div className="flex flex-col gap-1">
-              <RichTextEditor
-                key={`spec-value-${row._key}`}
-                value={row.value || ''}
-                onChange={(value) => updateRow(index, 'value', value)}
-                placeholder={t('products.detail.specs.valuePlaceholder')}
-                disabled={disabled}
-                inlineOnly
-                maxLength={2000}
+                label={t('products.detail.dragToReorder')}
               />
-              <p className="text-xs text-muted-foreground">
-                {t('products.detail.specs.valueFormatHint')}
-              </p>
+              <div className="flex flex-1 flex-col gap-2">
+                <div>
+                  <Input
+                    placeholder={t('products.detail.specs.namePlaceholder')}
+                    aria-label={t('products.detail.specs.nameLabel')}
+                    value={row.name || ''}
+                    onChange={(e) => updateRow(index, 'name', e.target.value)}
+                    disabled={disabled}
+                    maxLength={255}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <RichTextEditor
+                    key={`spec-value-${row._key}`}
+                    value={row.value || ''}
+                    onChange={(value) => updateRow(index, 'value', value)}
+                    placeholder={t('products.detail.specs.valuePlaceholder')}
+                    disabled={disabled}
+                    inlineOnly
+                    maxLength={2000}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('products.detail.specs.valueFormatHint')}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => removeRow(index)}
+                disabled={disabled}
+                aria-label={t('products.detail.specs.removeSpec')}
+              >
+                <X size={14} aria-hidden="true" />
+              </Button>
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeRow(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.specs.removeSpec')}
-          >
-            <X size={14} aria-hidden="true" />
-          </Button>
-        </div>
-      )}
-      footer={
-        <Button variant="outline" size="sm" onClick={addRow} disabled={disabled}>
-          + {t('products.detail.specs.addSpec')}
-        </Button>
-      }
-    />
+          )}
+          footer={
+            <Button variant="outline" size="sm" onClick={addRow} disabled={disabled}>
+              + {t('products.detail.specs.addSpec')}
+            </Button>
+          }
+        />
       </TabsContent>
 
       <TabsContent value="html" className="flex flex-col gap-2">
@@ -675,11 +813,19 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
           onApply={applyParsed}
           onUseRaw={applyRaw}
           allowRaw
-          extraNotice={result.extraColumnCount > 0 ? t('products.detail.htmlImport.extraColumns', { count: result.extraColumnCount }) : null}
+          extraNotice={
+            result.extraColumnCount > 0
+              ? t('products.detail.htmlImport.extraColumns', { count: result.extraColumnCount })
+              : null
+          }
         />
         <AiHtmlBrief
           promptKey="products.detail.specs.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('specifications', t('products.detail.specs.aiBriefPrompt')) : undefined}
+          getPrompt={
+            aiPromptBuilder
+              ? () => aiPromptBuilder('specifications', t('products.detail.specs.aiBriefPrompt'))
+              : undefined
+          }
         />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -712,21 +858,36 @@ function HighlightsCardsPreview({ positiveNotes, negativeNotes, isEn, prosLabel,
   const card = (tone, label, list) => {
     const isPositive = tone === 'positive'
     return (
-    <div className={cn('border-t-2 p-5', isPositive ? 'border-success bg-success/10' : 'border-danger bg-danger/10')}>
-      <h3 className={cn('mb-3 text-base font-bold uppercase tracking-wide', isPositive ? 'text-success' : 'text-danger')}>
-        {label}
-      </h3>
-      <ul className="flex list-none flex-col gap-2 p-0">
-        {list.map((html, i) => (
-          <li key={i} className={cn('flex gap-2 text-base', !isPositive && 'text-muted-foreground')}>
-            {isPositive
-              ? <Check size={16} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
-              : <X size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />}
-            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
-          </li>
-        ))}
-      </ul>
-    </div>
+      <div
+        className={cn(
+          'border-t-2 p-5',
+          isPositive ? 'border-success bg-success/10' : 'border-danger bg-danger/10',
+        )}
+      >
+        <h3
+          className={cn(
+            'mb-3 text-base font-bold uppercase tracking-wide',
+            isPositive ? 'text-success' : 'text-danger',
+          )}
+        >
+          {label}
+        </h3>
+        <ul className="flex list-none flex-col gap-2 p-0">
+          {list.map((html, i) => (
+            <li
+              key={i}
+              className={cn('flex gap-2 text-base', !isPositive && 'text-muted-foreground')}
+            >
+              {isPositive ? (
+                <Check size={16} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+              ) : (
+                <X size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
+              )}
+              <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
+            </li>
+          ))}
+        </ul>
+      </div>
     )
   }
 
@@ -745,7 +906,10 @@ function FaqAccordionPreview({ items, isEn }) {
   const fQuestion = isEn ? 'questionEn' : 'question'
   const fAnswer = isEn ? 'answerEn' : 'answer'
   const rows = (items || [])
-    .map((item) => ({ question: (item?.[fQuestion] || '').trim(), answer: (item?.[fAnswer] || '').trim() }))
+    .map((item) => ({
+      question: (item?.[fQuestion] || '').trim(),
+      answer: (item?.[fAnswer] || '').trim(),
+    }))
     .filter((row) => row.question || row.answer)
   if (rows.length === 0) return null
 
@@ -760,7 +924,11 @@ function FaqAccordionPreview({ items, isEn }) {
               </span>
               <span className="text-base font-semibold">{row.question}</span>
             </span>
-            <ChevronDown className="faq-chevron shrink-0 text-muted-foreground" size={16} aria-hidden="true" />
+            <ChevronDown
+              className="faq-chevron shrink-0 text-muted-foreground"
+              size={16}
+              aria-hidden="true"
+            />
           </summary>
           <div
             className="pb-3 ps-9 text-sm text-muted-foreground"
@@ -775,7 +943,14 @@ function FaqAccordionPreview({ items, isEn }) {
 /** Ưu/Nhược điểm (V175) — danh sách câu ngắn, song ngữ inline. Dùng chung cho cả
  *  hai nhóm; nhãn/placeholder truyền qua props. Chỉ dùng ở chế độ "Nhập có cấu trúc" —
  *  chế độ "Dán mã HTML" dùng chung 1 khối cho cả 2 nhóm, xem [[HighlightsHtmlEditor]]. */
-export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi', placeholder, addLabel }) {
+export function HighlightsEditor({
+  items,
+  onChange,
+  disabled,
+  contentLang = 'vi',
+  placeholder,
+  addLabel,
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fContent = isEn ? 'contentEn' : 'content'
@@ -788,7 +963,10 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   async function removeItem(index) {
     const hasContent = Boolean((items[index]?.[fContent] || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(items.filter((_, i) => i !== index))
@@ -797,7 +975,11 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   return (
     <>
       {items.length === 0 && isEn && (
-        <p className="list-editor-empty">{t('products.detail.highlights.addInViFirst', { defaultValue: 'Thêm mục ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}</p>
+        <p className="list-editor-empty">
+          {t('products.detail.highlights.addInViFirst', {
+            defaultValue: 'Thêm mục ở tab Tiếng Việt trước, rồi quay lại đây để dịch.',
+          })}
+        </p>
       )}
       <SortableList
         items={items}
@@ -807,7 +989,11 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
         className="list-editor"
         renderItem={(item, sortable, index) => (
           <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row">
-            <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
+            <DragHandle
+              handleProps={sortable.handleProps}
+              disabled={disabled || isEn}
+              label={t('products.detail.dragToReorder')}
+            />
             <div className="flex-1">
               <Input
                 placeholder={placeholder}
@@ -829,11 +1015,13 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
             </Button>
           </div>
         )}
-        footer={!isEn && (
-          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-            + {addLabel}
-          </Button>
-        )}
+        footer={
+          !isEn && (
+            <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+              + {addLabel}
+            </Button>
+          )
+        }
       />
     </>
   )
@@ -842,10 +1030,21 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
 /** Ưu/Nhược điểm — chế độ "Dán mã HTML": MỘT khối mã cho cả Ưu điểm lẫn Nhược điểm cùng
  *  lúc (2 vùng .bb-highlights-pros/.bb-highlights-cons bên trong), gõ xong tách ngay về
  *  positiveNotes/negativeNotes tương ứng — không tạo trường HTML riêng để lưu. */
-export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePositive, onChangeNegative, disabled, contentLang = 'vi', aiPromptBuilder }) {
+export function HighlightsHtmlEditor({
+  positiveNotes,
+  negativeNotes,
+  onChangePositive,
+  onChangeNegative,
+  disabled,
+  contentLang = 'vi',
+  aiPromptBuilder,
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
-  const labels = { prosLabel: t('products.detail.highlights.prosTitle'), consLabel: t('products.detail.highlights.consTitle') }
+  const labels = {
+    prosLabel: t('products.detail.highlights.prosTitle'),
+    consLabel: t('products.detail.highlights.consTitle'),
+  }
   const sourceHtml = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels)
   const importer = useHtmlImportDraft(sourceHtml, parseHighlightsPairResult)
   const { draftHtml, result, dirty, pending, updateDraft, runApply } = importer
@@ -854,7 +1053,10 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -867,7 +1069,12 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
       onChangePositive(next.positiveNotes)
       onChangeNegative(next.negativeNotes)
       return {
-        sourceHtml: serializeHighlightsPairToHtml(next.positiveNotes, next.negativeNotes, isEn, labels),
+        sourceHtml: serializeHighlightsPairToHtml(
+          next.positiveNotes,
+          next.negativeNotes,
+          isEn,
+          labels,
+        ),
       }
     })
   }
@@ -895,7 +1102,11 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
       />
       <AiHtmlBrief
         promptKey="products.detail.highlights.aiBriefPrompt"
-        getPrompt={aiPromptBuilder ? () => aiPromptBuilder('highlights', t('products.detail.highlights.aiBriefPrompt')) : undefined}
+        getPrompt={
+          aiPromptBuilder
+            ? () => aiPromptBuilder('highlights', t('products.detail.highlights.aiBriefPrompt'))
+            : undefined
+        }
       />
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -919,7 +1130,14 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
   )
 }
 
-export function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi', aiPromptBuilder }) {
+export function FaqEditor({
+  items,
+  onChange,
+  disabled,
+  validationErrors,
+  contentLang = 'vi',
+  aiPromptBuilder,
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fQuestion = isEn ? 'questionEn' : 'question'
@@ -930,17 +1148,23 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
 
   function updateItem(index, field, value) {
-    const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
+    const next = items.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     onChange(next)
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), question: '', answer: '', questionEn: '', answerEn: '' }])
+    onChange([
+      ...items,
+      { _key: generateId(), question: '', answer: '', questionEn: '', answerEn: '' },
+    ])
   }
   async function removeItem(index) {
     const item = items[index]
     const hasContent = Boolean((item?.[fQuestion] || item?.[fAnswer] || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.removeRowConfirmMessage'),
+        t('products.detail.removeRowConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(items.filter((_, i) => i !== index))
@@ -949,7 +1173,10 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
     return runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -981,15 +1208,23 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   return (
     <Tabs value={mode} onValueChange={changeMode}>
       <TabsList>
-        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.faqs.modeStructured')}</TabsTrigger>
-        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.faqs.modeHtml')}</TabsTrigger>
+        <TabsTrigger value="structured" disabled={disabled}>
+          {t('products.detail.faqs.modeStructured')}
+        </TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>
+          {t('products.detail.faqs.modeHtml')}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="structured">
         <div className="list-editor">
           {items.length === 0 && (
             <p className="list-editor-empty">
-              {isEn ? t('products.detail.faqs.addInViFirst', { defaultValue: 'Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.faqs.empty')}
+              {isEn
+                ? t('products.detail.faqs.addInViFirst', {
+                    defaultValue: 'Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.',
+                  })
+                : t('products.detail.faqs.empty')}
             </p>
           )}
           <SortableList
@@ -1002,11 +1237,20 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
               const errQuestion = validationErrors?.[`faqs.${index}.question`]
               const errAnswer = validationErrors?.[`faqs.${index}.answer`]
               return (
-                <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-                  <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
+                <div
+                  ref={sortable.setNodeRef}
+                  style={sortable.style}
+                  className="list-editor-row list-editor-row--stack"
+                >
+                  <DragHandle
+                    handleProps={sortable.handleProps}
+                    disabled={disabled || isEn}
+                    label={t('products.detail.dragToReorder')}
+                  />
                   <div className="flex flex-1 flex-col gap-2">
                     <div>
-                      <Input className={errQuestion ? 'border-danger' : undefined}
+                      <Input
+                        className={errQuestion ? 'border-danger' : undefined}
                         placeholder={t('products.detail.faqs.questionPlaceholder')}
                         value={item[fQuestion] || ''}
                         onChange={(e) => updateItem(index, fQuestion, e.target.value)}
@@ -1040,11 +1284,13 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
                 </div>
               )
             }}
-            footer={!isEn && (
-              <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-                + {t('products.detail.faqs.addFaq')}
-              </Button>
-            )}
+            footer={
+              !isEn && (
+                <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+                  + {t('products.detail.faqs.addFaq')}
+                </Button>
+              )
+            }
           />
         </div>
       </TabsContent>
@@ -1069,7 +1315,11 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
         />
         <AiHtmlBrief
           promptKey="products.detail.faqs.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('faqs', t('products.detail.faqs.aiBriefPrompt')) : undefined}
+          getPrompt={
+            aiPromptBuilder
+              ? () => aiPromptBuilder('faqs', t('products.detail.faqs.aiBriefPrompt'))
+              : undefined
+          }
         />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

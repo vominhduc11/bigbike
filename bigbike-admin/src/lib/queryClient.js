@@ -9,7 +9,7 @@ export function shouldRetryQuery(failureCount, error) {
 }
 
 export function retryDelay(attemptIndex) {
-  const exponential = Math.min(1_000 * (2 ** attemptIndex), 8_000)
+  const exponential = Math.min(1_000 * 2 ** attemptIndex, 8_000)
   return exponential + Math.floor(Math.random() * 250)
 }
 

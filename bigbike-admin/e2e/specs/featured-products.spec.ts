@@ -24,14 +24,16 @@ async function captureResponsiveScreen(
 }
 
 test.describe('featured-products', () => {
-  test('xem danh sách và hoàn tác thay đổi cục bộ mà không ghi vào trang chủ', async (
-    { adminPage, collect },
-    testInfo,
-  ) => {
+  test('xem danh sách và hoàn tác thay đổi cục bộ mà không ghi vào trang chủ', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     await navigateSpa(adminPage, '/admin/featured-products')
     await waitForScreenReady(adminPage)
 
-    await expect(adminPage.getByRole('heading', { name: 'Sản phẩm nổi bật', exact: true })).toBeVisible()
+    await expect(
+      adminPage.getByRole('heading', { name: 'Sản phẩm nổi bật', exact: true }),
+    ).toBeVisible()
     await expect(adminPage.getByText(/^\d+ \/ 12$/)).toBeVisible()
 
     const saveButton = adminPage.getByRole('button', { name: 'Lưu thứ tự', exact: true })
@@ -39,7 +41,9 @@ test.describe('featured-products', () => {
 
     const removeButtons = adminPage.getByRole('button', { name: 'Xóa khỏi danh sách', exact: true })
     if (await removeButtons.count()) {
-      const firstRow = removeButtons.first().locator('xpath=ancestor::div[./button[@aria-label="Xóa khỏi danh sách"]][1]')
+      const firstRow = removeButtons
+        .first()
+        .locator('xpath=ancestor::div[./button[@aria-label="Xóa khỏi danh sách"]][1]')
       const firstProductName = (await firstRow.locator('p').first().innerText()).trim()
 
       await removeButtons.first().click()
@@ -50,7 +54,9 @@ test.describe('featured-products', () => {
       await expect(saveButton).toBeDisabled()
     } else {
       await adminPage.getByRole('button', { name: 'Thêm sản phẩm', exact: true }).click()
-      await expect(adminPage.getByPlaceholder('Tìm sản phẩm để thêm vào danh sách...')).toBeFocused()
+      await expect(
+        adminPage.getByPlaceholder('Tìm sản phẩm để thêm vào danh sách...'),
+      ).toBeFocused()
       await expect(saveButton).toBeDisabled()
     }
 

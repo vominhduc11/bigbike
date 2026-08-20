@@ -26,20 +26,26 @@ describe('reviewModeration', () => {
   })
 
   it('deduplicates bulk items and keeps each rendered version', () => {
-    expect(toVersionedReviewItems([
-      { id: 12, version: 3 },
-      { id: 12, version: 4 },
-      { id: 13, version: 2 },
-      { id: 14, version: -1 },
-    ])).toEqual([
+    expect(
+      toVersionedReviewItems([
+        { id: 12, version: 3 },
+        { id: 12, version: 4 },
+        { id: 13, version: 2 },
+        { id: 14, version: -1 },
+      ]),
+    ).toEqual([
       { id: 12, expectedVersion: 3 },
       { id: 13, expectedVersion: 2 },
     ])
   })
 
   it('detects whether a mixed selection has an eligible transition', () => {
-    expect(hasReviewStatusTarget([{ status: 'PENDING' }, { status: 'TRASH' }], 'APPROVED')).toBe(true)
-    expect(hasReviewStatusTarget([{ status: 'APPROVED' }, { status: 'SPAM' }], 'APPROVED')).toBe(false)
+    expect(hasReviewStatusTarget([{ status: 'PENDING' }, { status: 'TRASH' }], 'APPROVED')).toBe(
+      true,
+    )
+    expect(hasReviewStatusTarget([{ status: 'APPROVED' }, { status: 'SPAM' }], 'APPROVED')).toBe(
+      false,
+    )
   })
 })
 
@@ -49,14 +55,21 @@ describe('automatic moderation annotations (REVIEW_RULE_012)', () => {
     // a review that slipped through because the AI was down need different responses.
     expect(getAutoModerationState({})).toBe('unchecked')
     expect(getAutoModerationState({ moderationSource: null })).toBe('unchecked')
-    expect(getAutoModerationState({ moderationSource: 'SKIPPED', moderationReason: 'AI_UNAVAILABLE' }))
-      .toBe('skipped')
+    expect(
+      getAutoModerationState({ moderationSource: 'SKIPPED', moderationReason: 'AI_UNAVAILABLE' }),
+    ).toBe('skipped')
   })
 
   it('reads the verdict, not the source, to decide blocked vs clean', () => {
-    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'BLOCKED' })).toBe('blocked')
-    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'CLEAN' })).toBe('clean')
-    expect(getAutoModerationState({ moderationSource: 'RULE', moderationVerdict: 'BLOCKED' })).toBe('blocked')
+    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'BLOCKED' })).toBe(
+      'blocked',
+    )
+    expect(getAutoModerationState({ moderationSource: 'AI', moderationVerdict: 'CLEAN' })).toBe(
+      'clean',
+    )
+    expect(getAutoModerationState({ moderationSource: 'RULE', moderationVerdict: 'BLOCKED' })).toBe(
+      'blocked',
+    )
   })
 
   it('maps each state to a stable tone so list and detail never disagree', () => {
@@ -75,7 +88,9 @@ describe('automatic moderation annotations (REVIEW_RULE_012)', () => {
   })
 
   it('tolerates a missing or malformed category list', () => {
-    expect(getAutoModerationCategories({ moderationCategories: ['PROFANITY', null] })).toEqual(['PROFANITY'])
+    expect(getAutoModerationCategories({ moderationCategories: ['PROFANITY', null] })).toEqual([
+      'PROFANITY',
+    ])
     expect(getAutoModerationCategories({ moderationCategories: null })).toEqual([])
     expect(getAutoModerationCategories({})).toEqual([])
   })

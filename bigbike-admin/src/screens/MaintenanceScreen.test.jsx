@@ -96,9 +96,11 @@ describe('MaintenanceScreen', () => {
     await user.type(note, 'Nâng cấp dữ liệu')
     await user.click(screen.getByRole('button', { name: /Khoá ngay/ }))
 
-    await waitFor(() => expect(mocks.updateMaintenance).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'ACTIVE', staffNote: 'Nâng cấp dữ liệu' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateMaintenance).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'ACTIVE', staffNote: 'Nâng cấp dữ liệu' }),
+      ),
+    )
   })
 
   /** UPCOMING must not need a confirmation — it changes nothing for staff except a warning. */
@@ -109,9 +111,11 @@ describe('MaintenanceScreen', () => {
     await user.click(await screen.findByRole('button', { name: /Báo trước cho nhân viên/ }))
 
     expect(mocks.showConfirm).not.toHaveBeenCalled()
-    await waitFor(() => expect(mocks.updateMaintenance).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'UPCOMING' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateMaintenance).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'UPCOMING' }),
+      ),
+    )
   })
 
   it('states plainly that customers are unaffected', async () => {

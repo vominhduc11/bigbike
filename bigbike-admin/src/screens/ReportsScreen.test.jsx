@@ -56,7 +56,11 @@ vi.mock('../components/StatePanel', () => ({
     <div>
       {title ? <span>{title}</span> : null}
       {description ? <span>{description}</span> : null}
-      {actionLabel ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
+      {actionLabel ? (
+        <button type="button" onClick={onAction}>
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   ),
 }))
@@ -107,7 +111,11 @@ beforeEach(() => {
 
 describe('ReportsScreen', () => {
   it('blocks ranges over 90 days and does not offer a retry that would bypass the guardrail', async () => {
-    window.history.replaceState({}, '', '/admin/reports?preset=custom&from=2026-01-01&to=2026-07-01')
+    window.history.replaceState(
+      {},
+      '',
+      '/admin/reports?preset=custom&from=2026-01-01&to=2026-07-01',
+    )
     renderScreen()
 
     expect(await screen.findByText('reports.maxRangeError')).toBeInTheDocument()
@@ -119,16 +127,26 @@ describe('ReportsScreen', () => {
 
   it('repairs an inverted custom range before fetching', async () => {
     const user = userEvent.setup()
-    window.history.replaceState({}, '', '/admin/reports?preset=custom&from=2026-07-10&to=2026-07-01')
+    window.history.replaceState(
+      {},
+      '',
+      '/admin/reports?preset=custom&from=2026-07-10&to=2026-07-01',
+    )
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'common.retry' }))
 
-    await waitFor(() => expect(mocks.fetchAnalytics).toHaveBeenCalledWith('2026-07-01', '2026-07-10'))
+    await waitFor(() =>
+      expect(mocks.fetchAnalytics).toHaveBeenCalledWith('2026-07-01', '2026-07-10'),
+    )
   })
 
   it('normalizes an impossible URL date into the designed incomplete-range state', async () => {
-    window.history.replaceState({}, '', '/admin/reports?preset=custom&from=2026-02-30&to=2026-03-01')
+    window.history.replaceState(
+      {},
+      '',
+      '/admin/reports?preset=custom&from=2026-02-30&to=2026-03-01',
+    )
     renderScreen()
 
     expect(await screen.findByText('reports.customPendingTitle')).toBeInTheDocument()
@@ -155,15 +173,21 @@ describe('ReportsScreen', () => {
 
   it('exports orders with the exact selected inclusive dates and reports success', async () => {
     const user = userEvent.setup()
-    window.history.replaceState({}, '', '/admin/reports?preset=custom&from=2026-07-01&to=2026-07-10')
+    window.history.replaceState(
+      {},
+      '',
+      '/admin/reports?preset=custom&from=2026-07-01&to=2026-07-10',
+    )
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'reports.exportOrders' }))
 
-    await waitFor(() => expect(mocks.exportOrdersCsv).toHaveBeenCalledWith({
-      from: '2026-07-01',
-      to: '2026-07-10',
-    }))
+    await waitFor(() =>
+      expect(mocks.exportOrdersCsv).toHaveBeenCalledWith({
+        from: '2026-07-01',
+        to: '2026-07-10',
+      }),
+    )
     expect(mocks.toastSuccess).toHaveBeenCalledWith('export.success')
   })
 

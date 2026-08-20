@@ -17,7 +17,7 @@ vi.mock('./auth', () => ({
 }))
 
 vi.mock('./useDebounce', () => ({
-  useDebounce: value => value,
+  useDebounce: (value) => value,
 }))
 
 function Harness() {
@@ -53,7 +53,7 @@ describe('useProductPicker permission gate', () => {
   })
 
   it('loads products when the caller and permission both enable it', async () => {
-    mocks.hasPermission.mockImplementation(permission => permission === 'products.read')
+    mocks.hasPermission.mockImplementation((permission) => permission === 'products.read')
     renderHarness()
 
     await waitFor(() => expect(screen.getByText('items:1')).toBeInTheDocument())

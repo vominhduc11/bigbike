@@ -17,9 +17,11 @@ export function isIsoCalendarDate(value) {
   const month = Number(match[2])
   const day = Number(match[3])
   const parsed = new Date(Date.UTC(year, month - 1, day))
-  return parsed.getUTCFullYear() === year
-    && parsed.getUTCMonth() === month - 1
-    && parsed.getUTCDate() === day
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  )
 }
 
 function addCalendarDays(value, days) {

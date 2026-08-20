@@ -29,11 +29,12 @@ export function MobileFilterDrawer({
   })
   const [activePreset, setActivePreset] = useState(null)
 
-  const dateError = draft.from && draft.to && draft.from > draft.to
-    ? t('auditLog.dateRangeError', {
-      defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-    })
-    : ''
+  const dateError =
+    draft.from && draft.to && draft.from > draft.to
+      ? t('auditLog.dateRangeError', {
+          defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+        })
+      : ''
 
   function updateDraft(partial) {
     setDraft((current) => ({ ...current, ...partial }))
@@ -55,16 +56,18 @@ export function MobileFilterDrawer({
       open
       onClose={onClose}
       title={t('auditLog.mobileFilterLabel')}
-      description={activeFilterCount > 0
-        ? t('auditLog.mobileFiltersApplied', {
-          count: activeFilterCount,
-          defaultValue: `Đang áp dụng ${activeFilterCount} bộ lọc`,
-        })
-        : t('auditLog.mobileFilterDescription', {
-          defaultValue: 'Thu hẹp danh sách theo người thực hiện, khu vực và thời gian.',
-        })}
+      description={
+        activeFilterCount > 0
+          ? t('auditLog.mobileFiltersApplied', {
+              count: activeFilterCount,
+              defaultValue: `Đang áp dụng ${activeFilterCount} bộ lọc`,
+            })
+          : t('auditLog.mobileFilterDescription', {
+              defaultValue: 'Thu hẹp danh sách theo người thực hiện, khu vực và thời gian.',
+            })
+      }
       closeLabel={t('auditLog.drawerClose')}
-      actions={(
+      actions={
         <>
           {isFiltered ? (
             <Button
@@ -84,7 +87,7 @@ export function MobileFilterDrawer({
             {t('auditLog.mobileFilterApply', { defaultValue: 'Áp dụng bộ lọc' })}
           </Button>
         </>
-      )}
+      }
     >
       <div className="grid gap-5">
         <FormField label={t('auditLog.filterSearch')}>
@@ -106,9 +109,10 @@ export function MobileFilterDrawer({
               className="min-h-11 w-full"
               options={RESOURCE_OPTIONS.map((resourceType) => ({
                 value: resourceType,
-                label: resourceType === 'ALL'
-                  ? t('common.all')
-                  : t(`auditLog.module.${resourceType}`, { defaultValue: resourceType }),
+                label:
+                  resourceType === 'ALL'
+                    ? t('common.all')
+                    : t(`auditLog.module.${resourceType}`, { defaultValue: resourceType }),
               }))}
             />
           </FormField>
@@ -121,9 +125,10 @@ export function MobileFilterDrawer({
               className="min-h-11 w-full"
               options={ACTOR_OPTIONS.map((actorType) => ({
                 value: actorType,
-                label: actorType === 'ALL'
-                  ? t('common.all')
-                  : t(`auditLog.actorType.${actorType}`, { defaultValue: actorType }),
+                label:
+                  actorType === 'ALL'
+                    ? t('common.all')
+                    : t(`auditLog.actorType.${actorType}`, { defaultValue: actorType }),
               }))}
             />
           </FormField>

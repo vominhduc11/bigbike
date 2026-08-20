@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import {
-  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from '@/components/ui/table'
 import { MobileCardList, MobileCard } from '@/components/layout/MobileCardList'
 import { cn } from '@/lib/utils'
@@ -14,7 +19,8 @@ const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-le
 // tương tác con (checkbox chọn dòng, link cột đầu, nút/select trong cột action), Enter/Space/click
 // KHÔNG được vừa chạy control con vừa mở chi tiết. Guard: bỏ qua nếu control tương tác gần nhất
 // không phải chính dòng (currentTarget).
-const ROW_INTERACTIVE_SELECTOR = 'button,a,input,select,textarea,label,[role="checkbox"],[role="button"],[role="menuitem"]'
+const ROW_INTERACTIVE_SELECTOR =
+  'button,a,input,select,textarea,label,[role="checkbox"],[role="button"],[role="menuitem"]'
 function fromInteractiveChild(e) {
   const el = e.target.closest(ROW_INTERACTIVE_SELECTOR)
   return el && el !== e.currentTarget
@@ -33,15 +39,27 @@ function fromInteractiveChild(e) {
  * mới (hành vi trình duyệt). Click trái thường vẫn gọi onRowClick (cùng tab).
  */
 export function AdminTable({
-  columns, rows, caption,
-  loading = false, pageSize = 8,
-  onSortChange, sortKey, sortDir,
-  selectable = false, selectedIds = [], onSelectionChange,
-  onRowClick, rowClassName, mobileCard, rowHref,
+  columns,
+  rows,
+  caption,
+  loading = false,
+  pageSize = 8,
+  onSortChange,
+  sortKey,
+  sortDir,
+  selectable = false,
+  selectedIds = [],
+  onSelectionChange,
+  onRowClick,
+  rowClassName,
+  mobileCard,
+  rowHref,
 }) {
   const { t } = useTranslation()
   const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
-  const openTab = (href) => { if (href) window.open(href, '_blank', 'noopener') }
+  const openTab = (href) => {
+    if (href) window.open(href, '_blank', 'noopener')
+  }
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
   const someSelected = !allSelected && rows.some((r) => selectedIds.includes(r.id))
 
@@ -69,7 +87,9 @@ export function AdminTable({
 
   const tableView = (
     <Table containerClassName="max-h-[calc(100vh-13rem)]">
-      {caption ? <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption> : null}
+      {caption ? (
+        <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption>
+      ) : null}
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {selectable && (
@@ -101,9 +121,15 @@ export function AdminTable({
                   >
                     {column.label}
                     <span aria-hidden="true" className="opacity-60">
-                      {isSorted
-                        ? sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                        : <ChevronsUpDown size={12} />}
+                      {isSorted ? (
+                        sortDir === 'asc' ? (
+                          <ChevronUp size={12} />
+                        ) : (
+                          <ChevronDown size={12} />
+                        )
+                      ) : (
+                        <ChevronsUpDown size={12} />
+                      )}
                     </span>
                   </Button>
                 ) : (
@@ -134,7 +160,8 @@ export function AdminTable({
               </TableRow>
             ))
           : rows.map((row) => {
-              const extraClass = typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
+              const extraClass =
+                typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
               const clickable = typeof onRowClick === 'function'
               const href = hrefOf(row)
               const rowClickable = clickable || !!href
@@ -142,18 +169,42 @@ export function AdminTable({
                 <TableRow
                   key={row.id}
                   className={cn('h-12', extraClass, rowClickable && 'cursor-pointer')}
-                  onClick={rowClickable ? (e) => {
-                    if (fromInteractiveChild(e)) return
-                    // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
-                    if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); openTab(href); return }
-                    if (clickable) onRowClick(row)
-                  } : undefined}
-                  onAuxClick={href ? (e) => { if (e.button === 1) { e.preventDefault(); openTab(href) } } : undefined}
+                  onClick={
+                    rowClickable
+                      ? (e) => {
+                          if (fromInteractiveChild(e)) return
+                          // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
+                          if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+                            e.preventDefault()
+                            openTab(href)
+                            return
+                          }
+                          if (clickable) onRowClick(row)
+                        }
+                      : undefined
+                  }
+                  onAuxClick={
+                    href
+                      ? (e) => {
+                          if (e.button === 1) {
+                            e.preventDefault()
+                            openTab(href)
+                          }
+                        }
+                      : undefined
+                  }
                   tabIndex={rowClickable ? 0 : undefined}
-                  onKeyDown={rowClickable ? (e) => {
-                    if (fromInteractiveChild(e)) return
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (clickable) onRowClick(row) }
-                  } : undefined}
+                  onKeyDown={
+                    rowClickable
+                      ? (e) => {
+                          if (fromInteractiveChild(e)) return
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            if (clickable) onRowClick(row)
+                          }
+                        }
+                      : undefined
+                  }
                   role={rowClickable ? 'button' : undefined}
                 >
                   {selectable && (
@@ -170,21 +221,24 @@ export function AdminTable({
                     const content = column.render ? column.render(row) : (row[column.key] ?? '—')
                     // Bọc ô định danh (cột đầu) bằng link thật: chuột-phải "Mở ở tab mới",
                     // Ctrl/Cmd-click, chuột-giữa đều hoạt động theo trình duyệt.
-                    const cell = href && colIdx === 0 ? (
-                      <a
-                        href={href}
-                        className="bb-row-link"
-                        title={t('common.openInNewTab')}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
-                          e.preventDefault()
-                          if (clickable) onRowClick(row)
-                        }}
-                      >
-                        {content}
-                      </a>
-                    ) : content
+                    const cell =
+                      href && colIdx === 0 ? (
+                        <a
+                          href={href}
+                          className="bb-row-link"
+                          title={t('common.openInNewTab')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                            e.preventDefault()
+                            if (clickable) onRowClick(row)
+                          }}
+                        >
+                          {content}
+                        </a>
+                      ) : (
+                        content
+                      )
                     return (
                       <TableCell
                         key={`${row.id}:${column.key}`}
@@ -233,9 +287,12 @@ export function AdminTable({
                   selectable={selectable}
                   selected={selectedIds.includes(row.id)}
                   onSelectChange={() => toggleOne(row.id)}
-                  selectionLabel={card.selectionLabel || t('common.selectNamedRow', {
-                    name: typeof card.title === 'string' ? card.title : row.id,
-                  })}
+                  selectionLabel={
+                    card.selectionLabel ||
+                    t('common.selectNamedRow', {
+                      name: typeof card.title === 'string' ? card.title : row.id,
+                    })
+                  }
                 />
               )
             })}

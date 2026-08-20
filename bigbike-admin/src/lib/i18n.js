@@ -4,16 +4,14 @@ import vi from '../locales/vi.json'
 
 // Giao diện admin KHOÁ CỨNG tiếng Việt — chữ menu/nút/nhãn không đổi theo nút
 // VI/EN ở header. Nút đó chỉ đổi ngôn ngữ NỘI DUNG (xem lib/contentLang.js).
-i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      vi: { translation: vi },
-    },
-    lng: 'vi',
-    fallbackLng: 'vi',
-    interpolation: { escapeValue: false },
-  })
+i18n.use(initReactI18next).init({
+  resources: {
+    vi: { translation: vi },
+  },
+  lng: 'vi',
+  fallbackLng: 'vi',
+  interpolation: { escapeValue: false },
+})
 
 document.documentElement.lang = 'vi'
 

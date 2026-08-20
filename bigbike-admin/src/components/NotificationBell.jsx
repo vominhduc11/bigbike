@@ -43,7 +43,9 @@ function loadStored(storageKey) {
 function persist(storageKey, items) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(items))
-  } catch { /* quota / private mode — keep working from memory */ }
+  } catch {
+    /* quota / private mode — keep working from memory */
+  }
 }
 
 function formatWhen(ts, locale) {
@@ -52,7 +54,9 @@ function formatWhen(ts, locale) {
   if (Number.isNaN(d.getTime())) return '—'
   const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const sameDay = new Date().toDateString() === d.toDateString()
-  return sameDay ? time : `${d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} ${time}`
+  return sameDay
+    ? time
+    : `${d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} ${time}`
 }
 
 // Topbar notification centre — accumulates the order events that already
@@ -92,7 +96,12 @@ export function NotificationBell({ navigate }) {
       if (!event?.orderId) return
       setItems((prev) => {
         const next = [
-          { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now(), read: false, ...event },
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            at: Date.now(),
+            read: false,
+            ...event,
+          },
           ...prev,
         ].slice(0, MAX_ITEMS)
         persist(storageKey, next)
@@ -135,7 +144,9 @@ export function NotificationBell({ navigate }) {
         // Vẫn giữ được item trong localStorage, chỉ đánh dấu lỗi để panel báo rõ.
         if (active) setLoadError(true)
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [canViewOrders, storageKey])
 
   const unread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
@@ -158,17 +169,20 @@ export function NotificationBell({ navigate }) {
   }, [t, storageKey])
 
   // Radix quản lý focus/keyboard/đóng-mở; chỉ cần chạy logic snapshot khi MỞ.
-  const handleOpenChange = useCallback((next) => {
-    if (next) {
-      if (unread > 0) {
-        setSeenUnread(new Set(items.filter((it) => !it.read).map((it) => it.id)))
-        markAllRead()
-      } else {
-        setSeenUnread(new Set())
+  const handleOpenChange = useCallback(
+    (next) => {
+      if (next) {
+        if (unread > 0) {
+          setSeenUnread(new Set(items.filter((it) => !it.read).map((it) => it.id)))
+          markAllRead()
+        } else {
+          setSeenUnread(new Set())
+        }
       }
-    }
-    setOpen(next)
-  }, [unread, items, markAllRead])
+      setOpen(next)
+    },
+    [unread, items, markAllRead],
+  )
 
   // Xoá danh sách cục bộ (lịch sử đã đọc trong trình duyệt này). Backend V102 chưa có
   // endpoint xoá nên đây là thao tác dọn cục bộ; item đã được đánh dấu đã đọc khi mở
@@ -209,10 +223,15 @@ export function NotificationBell({ navigate }) {
         className="w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-          <strong className="text-sm font-semibold text-foreground">{t('notifications.panelTitle')}</strong>
+          <strong className="text-sm font-semibold text-foreground">
+            {t('notifications.panelTitle')}
+          </strong>
           {items.length > 0 && (
             <DropdownMenuItem
-              onSelect={(e) => { e.preventDefault(); clearAll() }}
+              onSelect={(e) => {
+                e.preventDefault()
+                clearAll()
+              }}
               className="h-auto rounded-[var(--admin-radius-control)] px-2 py-1 text-xs font-medium text-muted-foreground focus:text-primary"
             >
               {t('notifications.clearAll')}
@@ -227,7 +246,9 @@ export function NotificationBell({ navigate }) {
                 <>
                   <AlertCircle size={22} className="text-danger" aria-hidden="true" />
                   <p className="text-sm text-danger">
-                    {t('notifications.loadError', { defaultValue: 'Không tải được thông báo. Vui lòng thử lại.' })}
+                    {t('notifications.loadError', {
+                      defaultValue: 'Không tải được thông báo. Vui lòng thử lại.',
+                    })}
                   </p>
                 </>
               ) : (
@@ -255,21 +276,28 @@ export function NotificationBell({ navigate }) {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="block text-sm font-semibold text-foreground">
-                        {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
+                        {item.type === 'NEW_ORDER'
+                          ? t('notifications.newOrder')
+                          : t('notifications.orderUpdate')}
                       </span>
                       {fresh && (
                         <>
-                          <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                          <span
+                            className="inline-block size-1.5 shrink-0 rounded-full bg-primary"
+                            aria-hidden="true"
+                          />
                           <span className="sr-only">{t('notifications.unread')}</span>
                         </>
                       )}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {item.orderNumber || t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
+                      {item.orderNumber ||
+                        t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
                       {item.customerName ? ` — ${item.customerName}` : ''}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
+                      {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}
+                      {formatWhen(item.at, i18n.language)}
                     </span>
                   </span>
                 </DropdownMenuItem>

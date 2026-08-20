@@ -120,14 +120,25 @@ export default function AiHtmlBrief({
           aria-controls={panelId}
           className="h-8 flex-1 justify-start gap-1.5 px-1 text-left text-xs font-medium text-foreground hover:bg-transparent"
         >
-          {open
-            ? <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
-            : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
+          {open ? (
+            <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />
+          )}
           {title || t('products.detail.aiBrief.title')}
         </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={handleCopy} disabled={isCopying}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 text-xs"
+          onClick={handleCopy}
+          disabled={isCopying}
+        >
           <Copy className="size-3.5" aria-hidden="true" />
-          {isCopying ? (copyingMessage || t('products.detail.aiBrief.copying')) : (copyLabel || t('products.detail.aiBrief.copy'))}
+          {isCopying
+            ? copyingMessage || t('products.detail.aiBrief.copying')
+            : copyLabel || t('products.detail.aiBrief.copy')}
         </Button>
       </div>
       {open && (

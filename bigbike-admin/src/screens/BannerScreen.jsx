@@ -17,7 +17,10 @@ import { StickyActionBar } from '@/components/layout'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
-const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(
+  /\/$/,
+  '',
+)
 
 // Ảnh fallback cứng baked trong WpCategoryHero (bigbike-web). Chỉ hiển thị khi cả ảnh riêng
 // lẫn ảnh mặc định chung đều trống — khớp đúng những gì khách thấy.
@@ -52,15 +55,24 @@ function previewSrc(url, { themeAsset = false } = {}) {
 // Ráp nền + gear + tiêu đề như WpCategoryHero để admin thấy đúng kết quả thật.
 function BannerPreview({ bg, illustration, title }) {
   return (
-    <div
-      className="bb-banner-preview"
-    >
+    <div className="bb-banner-preview">
       {bg.src ? (
-        <img src={bg.src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+        <img
+          src={bg.src}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent"
+        aria-hidden="true"
+      />
       <div className="absolute inset-y-0 left-0 flex flex-col justify-center gap-1 px-4 sm:px-6">
-        <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">{title}</span>
+        <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">
+          {title}
+        </span>
         <span className="text-xs text-white/80">Bigbike.vn / {title}</span>
       </div>
       {illustration.src ? (
@@ -81,9 +93,7 @@ function SourceBadge({ source, t }) {
   if (source === 'own') return null
   const isDefault = source === 'default'
   return (
-    <span
-      className={`bb-badge ${isDefault ? 'bb-badge-warning' : 'bb-badge-muted'}`}
-    >
+    <span className={`bb-badge ${isDefault ? 'bb-badge-warning' : 'bb-badge-muted'}`}>
       {isDefault ? t('banners.usingDefault') : t('banners.usingFallback')}
     </span>
   )
@@ -91,7 +101,16 @@ function SourceBadge({ source, t }) {
 
 // ── Một ô ảnh ───────────────────────────────────────────────────────────────
 function ImageField({
-  label, hint, value, onChange, alt, onAltChange, recommend, disabled, badge, error,
+  label,
+  hint,
+  value,
+  onChange,
+  alt,
+  onAltChange,
+  recommend,
+  disabled,
+  badge,
+  error,
 }) {
   return (
     <div className="form-field">
@@ -133,14 +152,28 @@ function TextField({ fieldKey, label, value, onChange, disabled, contentLang, t,
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
       />
-      {error && <small id={errorId} className="field-error" role="alert">{error}</small>}
+      {error && (
+        <small id={errorId} className="field-error" role="alert">
+          {error}
+        </small>
+      )}
     </div>
   )
 }
 
 // ── Thẻ một trang ────────────────────────────────────────────────────────────
 function PageBannerCard({
-  page, get, getEn, set, setEn, defaults, canUpdate, contentLang, t, errors, errorsEn,
+  page,
+  get,
+  getEn,
+  set,
+  setEn,
+  defaults,
+  canUpdate,
+  contentLang,
+  t,
+  errors,
+  errorsEn,
 }) {
   const k = (suffix) => `${page.prefix}_${suffix}`
   const ownBg = get(k('image_url'))
@@ -228,7 +261,9 @@ function PageBannerCard({
 function DefaultsCard({ get, set, canUpdate, t, errors }) {
   return (
     <div className="bb-card">
-      <div className="bb-card-header"><h3>{t('banners.defaultsTitle')}</h3></div>
+      <div className="bb-card-header">
+        <h3>{t('banners.defaultsTitle')}</h3>
+      </div>
       <div className="bb-card-body bb-form-grid">
         <p className="bb-muted m-0 text-sm">{t('banners.defaultsDesc')}</p>
         <div className="bb-form-grid bb-form-grid-2">
@@ -260,7 +295,9 @@ function DefaultsCard({ get, set, canUpdate, t, errors }) {
 function CrossLinksCard({ navigate, t }) {
   return (
     <div className="bb-card">
-      <div className="bb-card-header"><h3>{t('banners.elsewhereTitle')}</h3></div>
+      <div className="bb-card-header">
+        <h3>{t('banners.elsewhereTitle')}</h3>
+      </div>
       <div className="bb-card-body bb-link-card-list">
         <div className="bb-link-card-item">
           <div className="bb-link-card-copy">
@@ -270,7 +307,12 @@ function CrossLinksCard({ navigate, t }) {
               <div className="bb-link-card-desc">{t('banners.categoryLinkDesc')}</div>
             </div>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/admin/categories')}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/admin/categories')}
+          >
             {t('banners.openCategories')}
           </Button>
         </div>
@@ -282,7 +324,12 @@ function CrossLinksCard({ navigate, t }) {
 // ── Screen ───────────────────────────────────────────────────────────────────
 // `embedded` = render bên trong một tab của màn Cài đặt: bỏ tiêu đề trang riêng
 // (tránh trùng heading), chỉ giữ phần mô tả ngắn để có ngữ cảnh.
-export function BannerScreen({ canUpdate = false, navigate, embedded = false, onEditorStateChange }) {
+export function BannerScreen({
+  canUpdate = false,
+  navigate,
+  embedded = false,
+  onEditorStateChange,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -314,15 +361,22 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
     return m
   }, [state.items])
 
-  const get = useCallback((key) => (drafts[key] !== undefined ? drafts[key] : unquote(byKey.get(key)?.value)), [drafts, byKey])
-  const getEn = useCallback((key) => (draftsEn[key] !== undefined ? draftsEn[key] : unquote(byKey.get(key)?.valueEn)), [draftsEn, byKey])
+  const get = useCallback(
+    (key) => (drafts[key] !== undefined ? drafts[key] : unquote(byKey.get(key)?.value)),
+    [drafts, byKey],
+  )
+  const getEn = useCallback(
+    (key) => (draftsEn[key] !== undefined ? draftsEn[key] : unquote(byKey.get(key)?.valueEn)),
+    [draftsEn, byKey],
+  )
   const set = useCallback((key, value) => setDrafts((p) => ({ ...p, [key]: value })), [])
   const setEn = useCallback((key, value) => setDraftsEn((p) => ({ ...p, [key]: value })), [])
 
   const dirtyKeys = useMemo(() => {
     const keys = new Set()
     for (const [k, v] of Object.entries(drafts)) if (v !== unquote(byKey.get(k)?.value)) keys.add(k)
-    for (const [k, v] of Object.entries(draftsEn)) if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
+    for (const [k, v] of Object.entries(draftsEn))
+      if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
     return [...keys]
   }, [drafts, draftsEn, byKey])
 
@@ -358,7 +412,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
   const handleDiscard = useCallback(async () => {
     if (dirtyKeys.length > 0) {
       const ok = await showConfirm(
-        t('banners.discardConfirm', { defaultValue: 'Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.' }),
+        t('banners.discardConfirm', {
+          defaultValue: 'Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.',
+        }),
         t('banners.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi banner' }),
       )
       if (!ok) return
@@ -413,7 +469,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
   }, [dirtyKeys, drafts, draftsEn, queryClient, t])
 
   if (state.status === 'loading') {
-    return <StatePanel tone="info" title={t('banners.loading')} description={t('common.pleaseWait')} />
+    return (
+      <StatePanel tone="info" title={t('banners.loading')} description={t('common.pleaseWait')} />
+    )
   }
   if (state.status === 'error') {
     return (
@@ -467,61 +525,94 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
         <CrossLinksCard navigate={navigate} t={t} />
       </div>
 
-      {canUpdate && (dirtyKeys.length > 0 || saving || saveSuccess || saveError) && (
-        embedded ? (
+      {canUpdate &&
+        (dirtyKeys.length > 0 || saving || saveSuccess || saveError) &&
+        (embedded ? (
           <StickyActionBar
             ariaLabel={t('common.actionBarLabel')}
-            info={(
+            info={
               <span
-                className={saveError ? 'inline-flex items-center gap-1.5 font-semibold text-danger' : 'inline-flex items-center gap-1.5 text-muted-foreground'}
+                className={
+                  saveError
+                    ? 'inline-flex items-center gap-1.5 font-semibold text-danger'
+                    : 'inline-flex items-center gap-1.5 text-muted-foreground'
+                }
                 role={saveError ? 'alert' : 'status'}
               >
                 {saveError ? (
-                  <><AlertCircle size={14} aria-hidden="true" /> {saveError}</>
+                  <>
+                    <AlertCircle size={14} aria-hidden="true" /> {saveError}
+                  </>
                 ) : saveSuccess ? (
-                  <><CheckCircle2 size={15} className="text-success" aria-hidden="true" /> {t('banners.saveSuccess')}</>
+                  <>
+                    <CheckCircle2 size={15} className="text-success" aria-hidden="true" />{' '}
+                    {t('banners.saveSuccess')}
+                  </>
                 ) : (
-                  <><AlertCircle size={14} aria-hidden="true" /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
+                  <>
+                    <AlertCircle size={14} aria-hidden="true" />{' '}
+                    {t('banners.unsavedCount', { count: dirtyKeys.length })}
+                  </>
                 )}
               </span>
-            )}
+            }
           >
             {dirtyKeys.length > 0 ? (
-              <Button className="min-h-11" variant="secondary" onClick={handleDiscard} disabled={saving}>
+              <Button
+                className="min-h-11"
+                variant="secondary"
+                onClick={handleDiscard}
+                disabled={saving}
+              >
                 {t('common.cancel')}
               </Button>
             ) : null}
-            <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
+            <Button
+              className="min-h-11"
+              onClick={handleSave}
+              loading={saving}
+              disabled={dirtyKeys.length === 0}
+            >
               {t('common.save')}
             </Button>
           </StickyActionBar>
         ) : (
           <div className="bb-card bb-save-bar">
-          <span
-            className={`bb-save-bar-status ${saveError ? 'danger' : ''}`}
-            role={saveError ? 'alert' : undefined}
-          >
-            {saveError ? (
-              <><AlertCircle size={14} /> {saveError}</>
-            ) : saveSuccess ? (
-              <><CheckCircle2 size={15} className="text-success" /> {t('banners.saveSuccess')}</>
-            ) : (
-              <><AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
-            )}
-          </span>
-          <div className="bb-save-bar-actions">
-            {dirtyKeys.length > 0 && (
-              <Button variant="secondary" size="sm" onClick={handleDiscard} disabled={saving}>
-                {t('common.cancel')}
+            <span
+              className={`bb-save-bar-status ${saveError ? 'danger' : ''}`}
+              role={saveError ? 'alert' : undefined}
+            >
+              {saveError ? (
+                <>
+                  <AlertCircle size={14} /> {saveError}
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle2 size={15} className="text-success" /> {t('banners.saveSuccess')}
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}
+                </>
+              )}
+            </span>
+            <div className="bb-save-bar-actions">
+              {dirtyKeys.length > 0 && (
+                <Button variant="secondary" size="sm" onClick={handleDiscard} disabled={saving}>
+                  {t('common.cancel')}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSave}
+                loading={saving}
+                disabled={dirtyKeys.length === 0}
+              >
+                {t('common.save')}
               </Button>
-            )}
-            <Button size="sm" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
-              {t('common.save')}
-            </Button>
+            </div>
           </div>
-          </div>
-        )
-      )}
+        ))}
     </div>
   )
 }

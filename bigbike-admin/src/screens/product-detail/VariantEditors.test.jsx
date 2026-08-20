@@ -36,7 +36,9 @@ describe('variant matrix money input', () => {
     await user.type(fields[2], 'Kích thước')
     await user.type(fields[3], 'M')
     await user.click(fields[5])
-    fireEvent.change(fields[5], { target: { value: '2.000.000', selectionStart: 9, selectionEnd: 9 } })
+    fireEvent.change(fields[5], {
+      target: { value: '2.000.000', selectionStart: 9, selectionEnd: 9 },
+    })
 
     const buttons = screen.getAllByRole('button')
     await user.click(buttons[buttons.length - 1])

@@ -33,20 +33,20 @@ function collectKeys(obj, prefix = '') {
 const viKeys = new Set(collectKeys(vi))
 const enKeys = new Set(collectKeys(en))
 
-const missingInEn = [...viKeys].filter(k => !enKeys.has(k))
-const missingInVi = [...enKeys].filter(k => !viKeys.has(k))
+const missingInEn = [...viKeys].filter((k) => !enKeys.has(k))
+const missingInVi = [...enKeys].filter((k) => !viKeys.has(k))
 
 let hasErrors = false
 
 if (missingInEn.length > 0) {
   console.error(`\n❌  ${missingInEn.length} key(s) present in vi.json but MISSING in en.json:`)
-  missingInEn.forEach(k => console.error(`     - ${k}`))
+  missingInEn.forEach((k) => console.error(`     - ${k}`))
   hasErrors = true
 }
 
 if (missingInVi.length > 0) {
   console.error(`\n❌  ${missingInVi.length} key(s) present in en.json but MISSING in vi.json:`)
-  missingInVi.forEach(k => console.error(`     - ${k}`))
+  missingInVi.forEach((k) => console.error(`     - ${k}`))
   hasErrors = true
 }
 

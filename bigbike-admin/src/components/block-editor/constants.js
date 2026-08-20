@@ -17,8 +17,16 @@ export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video'].m
 // vào product_highlights. Owner decision 2026-07-20: bỏ hẳn 'paragraph'/'image' khỏi menu sản phẩm —
 // chỉ giữ khối feature (ảnh phải + chữ trái / ảnh trái + chữ phải), đủ để làm chữ-thuần hoặc ảnh-thuần.
 export const PRODUCT_MENU = [
-  { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
-  { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
+  {
+    type: 'feature',
+    labelKey: 'products.detail.blocks.blockTypeFeatureRight',
+    preset: { side: 'right' },
+  },
+  {
+    type: 'feature',
+    labelKey: 'products.detail.blocks.blockTypeFeatureLeft',
+    preset: { side: 'left' },
+  },
 ]
 
 // Sản phẩm không lưu side="auto" (owner decision 2026-07-20 — xem DATA_CONTRACT.md), nhưng thao tác
@@ -35,17 +43,48 @@ export function createBlock(type, preset) {
   const base = { _key: generateId(), type }
   let block
   switch (type) {
-    case 'heading':   block = { ...base, level: 2, text: '' }; break
-    case 'paragraph': block = { ...base, html: '' }; break
-    case 'list':      block = { ...base, style: 'bulleted', items: [''] }; break
-    case 'image':     block = { ...base, url: '', alt: '', caption: '' }; break
-    case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
-    case 'callout':   block = { ...base, variant: 'info', html: '' }; break
-    case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '' }; break
-    case 'suitability': block = { _key: base._key, title: '', cards: [{ audience: '', advice: '' }], html: '' }; break
-    case 'sizeGuide':   block = { _key: base._key, title: '', html: '' }; break
-    case 'divider':   block = base; break
-    default:          block = base; break
+    case 'heading':
+      block = { ...base, level: 2, text: '' }
+      break
+    case 'paragraph':
+      block = { ...base, html: '' }
+      break
+    case 'list':
+      block = { ...base, style: 'bulleted', items: [''] }
+      break
+    case 'image':
+      block = { ...base, url: '', alt: '', caption: '' }
+      break
+    case 'video':
+      block = { ...base, provider: 'youtube', url: '', caption: '' }
+      break
+    case 'callout':
+      block = { ...base, variant: 'info', html: '' }
+      break
+    case 'feature':
+      block = {
+        ...base,
+        side: 'auto',
+        url: '',
+        alt: '',
+        caption: '',
+        subheading: '',
+        heading: '',
+        html: '',
+      }
+      break
+    case 'suitability':
+      block = { _key: base._key, title: '', cards: [{ audience: '', advice: '' }], html: '' }
+      break
+    case 'sizeGuide':
+      block = { _key: base._key, title: '', html: '' }
+      break
+    case 'divider':
+      block = base
+      break
+    default:
+      block = base
+      break
   }
   return preset ? { ...block, ...preset } : block
 }

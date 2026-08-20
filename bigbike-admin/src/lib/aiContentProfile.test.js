@@ -20,11 +20,25 @@ describe('dynamic AI content profiles', () => {
       categoryId: 'helmet-category',
       lang: 'vi',
       form: categoryForm,
-      currentItem: { id: 'helmet-category', slug: 'mu-bao-hiem', name: 'Mũ bảo hiểm', introContent: '<p>Saved intro</p>' },
-      fetchCategoryDetail: vi.fn().mockResolvedValue({ item: { ...categoryForm, introContent: '<p>Fresh saved intro</p>' } }),
-      fetchCategoryTree: vi.fn().mockResolvedValue({ items: [
-        { id: 'fullface', parentId: 'helmet-category', slug: 'mu-fullface', name: 'Mũ fullface' },
-      ] }),
+      currentItem: {
+        id: 'helmet-category',
+        slug: 'mu-bao-hiem',
+        name: 'Mũ bảo hiểm',
+        introContent: '<p>Saved intro</p>',
+      },
+      fetchCategoryDetail: vi
+        .fn()
+        .mockResolvedValue({ item: { ...categoryForm, introContent: '<p>Fresh saved intro</p>' } }),
+      fetchCategoryTree: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: 'fullface',
+            parentId: 'helmet-category',
+            slug: 'mu-fullface',
+            name: 'Mũ fullface',
+          },
+        ],
+      }),
       fetchCatalogFacets: vi.fn().mockResolvedValue({
         resultCount: 17,
         brands: [
@@ -48,16 +62,18 @@ describe('dynamic AI content profiles', () => {
   })
 
   it('uses fresh product metadata but keeps current draft content for the clicked block', async () => {
-    const fetchProductDetail = vi.fn().mockResolvedValue({ item: {
-      id: 'helmet-1',
-      name: 'Fresh helmet name',
-      sku: 'FRESH-SKU',
-      brand: { name: 'ILM' },
-      categories: [{ id: 'helmet-category', name: 'Mũ bảo hiểm', slug: 'mu-bao-hiem' }],
-      price: { retailPrice: 2500000, salePrice: 2200000 },
-      variants: [{ sku: 'FRESH-M', isAvailable: true, options: [{ name: 'Cỡ', value: 'M' }] }],
-      specifications: '<table><tr><th>Trọng lượng</th><td>1.450 g</td></tr></table>',
-    } })
+    const fetchProductDetail = vi.fn().mockResolvedValue({
+      item: {
+        id: 'helmet-1',
+        name: 'Fresh helmet name',
+        sku: 'FRESH-SKU',
+        brand: { name: 'ILM' },
+        categories: [{ id: 'helmet-category', name: 'Mũ bảo hiểm', slug: 'mu-bao-hiem' }],
+        price: { retailPrice: 2500000, salePrice: 2200000 },
+        variants: [{ sku: 'FRESH-M', isAvailable: true, options: [{ name: 'Cỡ', value: 'M' }] }],
+        specifications: '<table><tr><th>Trọng lượng</th><td>1.450 g</td></tr></table>',
+      },
+    })
     const profile = await buildProductProfile({
       productId: 'helmet-1',
       lang: 'vi',
@@ -68,7 +84,9 @@ describe('dynamic AI content profiles', () => {
         retailPrice: '2500000',
         salePrice: '2200000',
         categoryIds: ['helmet-category'],
-        variants: [{ sku: 'DRAFT-M', name: 'M', isAvailable: true, options: [{ name: 'Cỡ', value: 'M' }] }],
+        variants: [
+          { sku: 'DRAFT-M', name: 'M', isAvailable: true, options: [{ name: 'Cỡ', value: 'M' }] },
+        ],
         sizeGuideSection: { html: '<table><tr><td>Draft size</td></tr></table>' },
       },
       categoryOptions: [{ id: 'helmet-category', name: 'Mũ bảo hiểm', slug: 'mu-bao-hiem' }],
@@ -84,7 +102,14 @@ describe('dynamic AI content profiles', () => {
   })
 
   it('adds technical specifications to the four dependent product blocks', async () => {
-    const form = { specifications: '<table><tr><td>ECE 22.06</td></tr></table>', faqs: [], positiveNotes: [], negativeNotes: [], specStats: '', trustBadges: '' }
+    const form = {
+      specifications: '<table><tr><td>ECE 22.06</td></tr></table>',
+      faqs: [],
+      positiveNotes: [],
+      negativeNotes: [],
+      specStats: '',
+      trustBadges: '',
+    }
     for (const blockType of ['highlights', 'faqs', 'specStats', 'trustBadges']) {
       const profile = await buildProductProfile({ productId: null, lang: 'vi', blockType, form })
       expect(profile.lines.join('\n')).toContain('Thông số kỹ thuật hiện có')
@@ -93,7 +118,12 @@ describe('dynamic AI content profiles', () => {
   })
 
   it('marks missing facts explicitly for an unsaved product', async () => {
-    const profile = await buildProductProfile({ productId: null, lang: 'en', blockType: 'sizeGuide', form: {} })
+    const profile = await buildProductProfile({
+      productId: null,
+      lang: 'en',
+      blockType: 'sizeGuide',
+      form: {},
+    })
     expect(profile.lines.join('\n')).toContain('not available yet')
   })
 
@@ -105,7 +135,11 @@ describe('dynamic AI content profiles', () => {
       fetchProductDetail: vi.fn(),
     })
     const first = await builder('sizeGuide', 'Tạo bảng cỡ')
-    const second = attachProfileToPrompt('Tạo bảng cỡ', { type: 'product', lines: ['- Tên sản phẩm: Mũ B', '- Mã sản phẩm: B-2'] }, 'vi')
+    const second = attachProfileToPrompt(
+      'Tạo bảng cỡ',
+      { type: 'product', lines: ['- Tên sản phẩm: Mũ B', '- Mã sản phẩm: B-2'] },
+      'vi',
+    )
     expect(first).toContain('Mũ A')
     expect(second).toContain('Mũ B')
     expect(first).not.toBe(second)

@@ -52,15 +52,7 @@ function renderField(setting = baseSetting, props = {}) {
     onChangeEn: vi.fn(),
     onBlur: vi.fn(),
   }
-  render(
-    <SettingField
-      setting={setting}
-      where="Trang chủ"
-      canUpdate
-      {...callbacks}
-      {...props}
-    />,
-  )
+  render(<SettingField setting={setting} where="Trang chủ" canUpdate {...callbacks} {...props} />)
   return callbacks
 }
 
