@@ -17,7 +17,7 @@ describe('MediaPreviewLightbox', () => {
     const onNavigate = vi.fn()
     render(<MediaPreviewLightbox items={items} index={0} onClose={onClose} onNavigate={onNavigate} />)
 
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: 'one.jpg' })
     const image = screen.getByAltText('Ảnh review một')
     expect(screen.getByText('Đang tải ảnh…')).toBeInTheDocument()
 
