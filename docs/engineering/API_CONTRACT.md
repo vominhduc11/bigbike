@@ -397,6 +397,16 @@ Status: `CONFIRMED_FROM_CODE` — `SeoMetaRequest`, `ProductFieldApplier.applySe
 `CatalogReadSupport.toListView`, migration `V371__add_seo_no_index_per_locale.sql`.
 Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"SEO noindex theo từng ngôn ngữ (V371)".
 
+### SEO title/description validation (2026-08-20)
+
+`SeoMetaRequest.title` và `SeoMetaRequest.description` chỉ nhận chữ thuần; payload có HTML
+markup bị từ chối bằng `400 VALIDATION_ERROR` ở field `seo.title` hoặc `seo.description`.
+Trường rich-text mô tả/thân bài không dùng chung contract này. Public web tự chuẩn hóa fallback
+rich-text trước khi phát metadata và giới hạn description còn tối đa 165 ký tự ở ranh giới từ.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminMutationValidators.validateSeoMeta`,
+`SeoMetaRequest`, `BUSINESS_RULES.md` `SEO_RULE_009`.
+
 ### Admin content list — sort params
 
 `GET /api/v1/admin/content` accepts an optional `sort` param in `field:direction` format (default `updatedAt:desc`). The allowed sort fields are whitelisted by `AdminContentReadService.CONTENT_SORT_FIELDS`:

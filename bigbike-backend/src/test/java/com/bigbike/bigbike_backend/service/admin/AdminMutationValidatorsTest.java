@@ -148,6 +148,32 @@ class AdminMutationValidatorsTest {
     }
 
     @Test
+    void seoTitleAndDescriptionRejectHtmlMarkup() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setTitle("<strong>Mũ bảo hiểm</strong>");
+        seo.setDescription("<p>Mô tả sản phẩm</p>");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, errors);
+
+        assertThat(errors).extracting(ApiErrorDetail::field)
+                .containsExactlyInAnyOrder("seo.title", "seo.description");
+        assertThat(errors).allSatisfy(error -> assertThat(error.code()).isEqualTo("INVALID_VALUE"));
+    }
+
+    @Test
+    void plainSeoTitleAndDescriptionAreAccepted() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setTitle("Mũ bảo hiểm touring chính hãng");
+        seo.setDescription("Mũ bảo hiểm touring chính hãng, nhiều lựa chọn cho chuyến đi xa.");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, errors);
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
     void seoCanonicalUrlMustBelongToRealDomainInProduction() {
         List<ApiErrorDetail> errors = new ArrayList<>();
         SeoMetaRequest seo = new SeoMetaRequest();

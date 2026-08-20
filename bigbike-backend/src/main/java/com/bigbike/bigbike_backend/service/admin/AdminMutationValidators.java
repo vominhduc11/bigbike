@@ -28,6 +28,7 @@ final class AdminMutationValidators {
     private static final String UNCATEGORIZED_BRAND_ID = "uncategorized-brand";
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern WINDOWS_PATH_PATTERN = Pattern.compile("^[A-Za-z]:[\\\\/].*");
+    private static final Pattern SEO_MARKUP_PATTERN = Pattern.compile("<\\s*/?\\s*[a-z][^>]*>", Pattern.CASE_INSENSITIVE);
 
     private AdminMutationValidators() {
     }
@@ -173,12 +174,25 @@ final class AdminMutationValidators {
         if (seo == null) {
             return;
         }
+        validatePlainSeoText(seo.getTitle(), fieldPrefix + ".title", errors);
+        validatePlainSeoText(seo.getDescription(), fieldPrefix + ".description", errors);
         validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", isDev, errors);
         if (seo.getOgImage() != null) {
             String url = trimToNull(seo.getOgImage().getUrl());
             if (url == null || existingOgImageUrl == null || !url.equals(trimToNull(existingOgImageUrl))) {
                 validateWhitelistedMediaUrl(seo.getOgImage().getUrl(), fieldPrefix + ".ogImage.url", allowedMediaBaseUrl, errors);
             }
+        }
+    }
+
+    /** SEO metadata is text-only; rich content belongs in the separate content fields. */
+    static void validatePlainSeoText(String value, String field, List<ApiErrorDetail> errors) {
+        if (value != null && SEO_MARKUP_PATTERN.matcher(value).find()) {
+            errors.add(new ApiErrorDetail(
+                    field,
+                    "INVALID_VALUE",
+                    "SEO title and description must contain plain text only; HTML markup is not allowed."
+            ));
         }
     }
 
@@ -711,4 +725,3 @@ final class AdminMutationValidators {
         };
     }
 }
-

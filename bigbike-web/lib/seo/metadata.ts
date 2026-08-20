@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { toCanonicalUrl } from "@/lib/utils/routes";
+import { normalizeMetaDescription } from "@/lib/utils/text";
 
 const DEFAULT_SITE_NAME = "BigBike";
 
@@ -24,13 +25,14 @@ type PublicMetadataInput = {
 export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
   const canonicalUrl = toCanonicalUrl(input.canonicalPath);
   const title = normalizePageTitle(input.title, input.siteName ?? DEFAULT_SITE_NAME);
+  const description = normalizeMetaDescription(input.description) || undefined;
   const ogImageUrl = input.ogImage?.trim() ? toCanonicalUrl(input.ogImage.trim()) : undefined;
 
   const metadata: Metadata = {
     // Route-level titles must be absolute so the root layout template cannot
     // append the shop name a second time (SEO_RULE_006).
     title: { absolute: title },
-    description: input.description,
+    description,
     alternates: {
       canonical: canonicalUrl,
       ...(input.languageAlternates
@@ -45,7 +47,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
     },
     openGraph: {
       title,
-      description: input.description,
+      description,
       url: canonicalUrl,
       ...(input.siteName ? { siteName: input.siteName } : {}),
       ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
@@ -56,7 +58,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
     twitter: {
       card: "summary_large_image",
       title,
-      description: input.description,
+      description,
       ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
     },
   };

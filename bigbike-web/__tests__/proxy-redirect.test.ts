@@ -106,6 +106,22 @@ describe("legacy redirect proxy", () => {
     expect(response.headers.get("location")).toBe("https://bigbike.vn/danh-muc/mu-bao-hiem/");
   });
 
+  it("prefers an exact English redirect source over the neutral Vietnamese alias", async () => {
+    mockRedirect(
+      "/en/categories/quan-ao-bao-ho-moto",
+      "/en/categories/motorcycle-jackets-riding-pants",
+    );
+
+    const response = await proxy(new NextRequest(
+      "https://bigbike.vn/en/categories/quan-ao-bao-ho-moto/?manufacturer=7",
+    ));
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe(
+      "https://bigbike.vn/en/categories/motorcycle-jackets-riding-pants/?manufacturer=7",
+    );
+  });
+
   it("still 308-normalizes a slash-less path that has no redirect rule", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 404 }));
 

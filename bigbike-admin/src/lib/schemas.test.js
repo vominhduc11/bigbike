@@ -79,6 +79,46 @@ describe('MEDIA_RULE_004 — writable video sources', () => {
   })
 })
 
+describe('SEO_RULE_009 — SEO fields are plain text', () => {
+  it('rejects HTML in Vietnamese and English SEO fields', () => {
+    const product = createProductSchema(t, false).safeParse(baseForm({
+      seoTitle: '<strong>Title</strong>',
+      seoDescription: '<p>Description</p>',
+      translations: { en: { name: 'Test Product EN', seoTitle: '<b>Title</b>', seoDescription: '<div>Description</div>' } },
+    }))
+    const paths = pathsOf(product)
+    expect(paths).toEqual(expect.arrayContaining([
+      'seoTitle', 'seoDescription', 'translations.en.seoTitle', 'translations.en.seoDescription',
+    ]))
+
+    const category = createCategorySchema(t).safeParse({
+      slug: 'category', name: 'Danh mục',
+      seoTitle: '<em>Danh mục</em>', seoDescription: '<p>Mô tả</p>',
+      translations: { en: { name: 'Category', seoTitle: '<em>Category</em>', seoDescription: '<p>Description</p>' } },
+    })
+    expect(pathsOf(category)).toEqual(expect.arrayContaining([
+      'seoTitle', 'seoDescription', 'translations.en.seoTitle', 'translations.en.seoDescription',
+    ]))
+
+    const brand = createBrandSchema(t).safeParse({
+      slug: 'brand', name: 'Brand', seoTitle: '<b>Brand</b>', seoDescription: '<p>Description</p>',
+      translations: { en: { seoTitle: '<b>Brand</b>', seoDescription: '<p>Description</p>' } },
+    })
+    expect(pathsOf(brand)).toEqual(expect.arrayContaining([
+      'seoTitle', 'seoDescription', 'translations.en.seoTitle', 'translations.en.seoDescription',
+    ]))
+
+    const content = createContentSchema(t, true, 'article').safeParse({
+      slug: 'article', title: 'Bài viết', excerpt: '', body: '<p>Nội dung</p>', publishStatus: 'DRAFT',
+      seoTitle: '<b>Title</b>', seoDescription: '<p>Description</p>',
+      translations: { en: { title: 'Article', seoTitle: '<b>Title</b>', seoDescription: '<p>Description</p>' } },
+    })
+    expect(pathsOf(content)).toEqual(expect.arrayContaining([
+      'seoTitle', 'seoDescription', 'translations.en.seoTitle', 'translations.en.seoDescription',
+    ]))
+  })
+})
+
 describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () => {
   it('no variants / draft: name-slug-category-brand-sku-retailPrice always required, isCreate not needed', () => {
     const schema = createProductSchema(t, false)

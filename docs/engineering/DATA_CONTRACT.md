@@ -1390,7 +1390,7 @@ Stores admin-managed URL-redirect rules, independent from the `slug_en`-triggere
 
 | Column | Type | Notes |
 |---|---|---|
-| `source_pattern` | `VARCHAR(1024)` | The old/legacy exact internal path. **Case-sensitive, stored without trailing slashes** (except root `/`), and never contains a scheme/host, query or fragment — canonicalized by `AdminRedirectService` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
+| `source_pattern` | `VARCHAR(1024)` | The old/legacy exact internal path. **Case-sensitive, stored without trailing slashes** (except root `/`), and never contains a scheme/host, query or fragment — canonicalized by `AdminRedirectService` at write time. A locale-prefixed source such as `/en/categories/old-slug` remains locale-prefixed and is looked up before the neutral Vietnamese alias by `bigbike-web/proxy.ts`. Unique (`uq_redirects_source_pattern`, `V80`). |
 | `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. Always the fully-resolved final destination — `AdminRedirectService` auto-collapses any chain through another enabled rule at write time (`REDIRECT_RULE_010`), so this column never points at another rule's `source_pattern`. |
 | `enabled` | `BOOLEAN` | Disabled rules are skipped by the internal lookup. |
 | `status_code` | `INTEGER` | `301` (default) or `410`. A `410` rule is terminal and is served as Gone rather than redirecting to `target_url`. |
@@ -1492,6 +1492,23 @@ Status: `CONFIRMED_FROM_CODE` — migration `V371__add_seo_no_index_per_locale.s
 `ProductEntity`/`CategoryEntity`/`BrandEntity`/`ArticleEntity`, `SeoIndexPolicy.java`,
 `JpaCatalogReadSupport.toSeoMeta`, `ArticleMapper`. Xem [API_CONTRACT.md](API_CONTRACT.md)
 §"SEO `noIndex` cho cả 4 loại (V371)".
+
+### SEO title/description text contract (2026-08-20)
+
+Các cột `seo_title`/`seo_title_en` và `seo_description`/`seo_description_en` là metadata
+chữ thuần, không phải trường HTML. Backend từ chối thẻ markup trong `SeoMetaRequest` với
+`400 VALIDATION_ERROR`; nội dung rich-text của `description`, `short_description`, `body` và
+các block tương ứng vẫn được lưu ở trường riêng theo contract của từng entity.
+
+Khi public web dùng fallback từ một trường rich-text vì SEO description đang trống, web phải
+chuyển thành chữ thuần trước khi dựng `<meta name="description">`, Open Graph và Twitter. Giá
+trị công khai được chuẩn hóa còn tối đa 165 ký tự ở ranh giới từ; giá trị rỗng sau chuẩn hóa
+được xử lý như thiếu metadata. Quy tắc này không thay đổi fallback song ngữ từng trường và
+không cho phép ghi nội dung tiếng Việt vào cột `_en` thay cho bản dịch thủ công.
+
+Status: `CONFIRMED_FROM_OWNER_REQUEST_AND_CODE` — `SeoMetaRequest`,
+`AdminMutationValidators.validateSeoMeta`, `bigbike-web/lib/seo/metadata.ts`,
+`BUSINESS_RULES.md` `SEO_RULE_009`.
 
 ### Article home_experience (V272)
 

@@ -27,7 +27,7 @@ import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
 import type { Locale } from "@/i18n/locale";
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
-import type { RouteSearchParams } from "@/lib/utils/query";
+import { hasPriceRangeFilter, type RouteSearchParams } from "@/lib/utils/query";
 
 // ISR on-demand: danh mục là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Shell
 // (thông tin danh mục, sidebar) + lưới sản phẩm đúng theo URL hiện tại đều render ở
@@ -56,8 +56,9 @@ type CategoryDetailPageProps = {
   searchParams: Promise<RouteSearchParams>;
 };
 
-export async function generateMetadata({ params }: CategoryDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: CategoryDetailPageProps): Promise<Metadata> {
   const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const priceFiltered = hasPriceRangeFilter(await searchParams);
   setRequestLocale(locale);
   const tCatalog = await getTranslations("Catalog");
   if (!isValidSlug(slug)) {
@@ -80,9 +81,10 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
     });
   }
 
-  // Metadata base (trang tĩnh) — canonical về danh mục. View đã lọc/phân trang dùng chung
-  // canonical này nên không cần per-filter noIndex; tham số lọc xử lý ở client.
+  // Price-filter views remain usable for customers, but must not become separate Google
+  // landing pages. Canonical stays on the base category and hreflang is omitted with noindex.
   const defaultDescription = tCatalog("categoryDefaultDescription");
+  const noIndex = priceFiltered || category.seo?.noIndex === true;
   return buildPublicMetadata({
     title: category.seo?.title ?? category.name,
     description:
@@ -94,10 +96,10 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
     locale,
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
     // Cờ đã resolve theo locale ở backend (SeoIndexPolicy) — SEO_RULE_001/002.
-    noIndex: category.seo?.noIndex ?? false,
+    noIndex,
     // hreflang vi/en khi danh mục có slug tiếng Anh riêng (CATEGORY_RULE_003).
     // Trang noindex thì không khai hreflang — xem ghi chú ở trang sản phẩm.
-    ...(category.seo?.noIndex
+    ...(noIndex
       ? {}
       : {
           languageAlternates: {

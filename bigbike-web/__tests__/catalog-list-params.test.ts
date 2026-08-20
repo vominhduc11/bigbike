@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { parseCatalogListParams, toggleCatalogGenderFilter } from "@/lib/utils/catalog-list-params";
-import { buildQueryString } from "@/lib/utils/query";
+import { buildQueryString, hasPriceRangeFilter } from "@/lib/utils/query";
 
 describe("catalog gender filter query contract", () => {
+  it("marks price-range URLs as noindex candidates even when the value is empty", () => {
+    expect(hasPriceRangeFilter({ min_price: "500000" })).toBe(true);
+    expect(hasPriceRangeFilter({ max_price: "1000000" })).toBe(true);
+    expect(hasPriceRangeFilter({ min_price: "" })).toBe(true);
+    expect(hasPriceRangeFilter({ page: "2" })).toBe(false);
+  });
+
   it("parses one gender and keeps the first value from old repeated URLs", () => {
     const parsed = parseCatalogListParams({
       filter_gender: ["Nam", "Nữ", "Unisex", "nam", "  nữ  "],

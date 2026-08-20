@@ -208,7 +208,7 @@ describe('ContentDetailScreen', () => {
     await user.click(await screen.findByRole('tab', { name: 'content.detail.tabSeoPublish' }))
 
     expect(screen.getByText('0 / 60')).toBeInTheDocument()
-    expect(screen.getByText('0 / 155')).toBeInTheDocument()
+    expect(screen.getByText('0 / 165')).toBeInTheDocument()
     expect(screen.getByText('content.detail.seoOgImageUrl')).toBeInTheDocument()
     // Khối "Tùy chọn nâng cao" gập lại vẫn không quay về — ô nằm thẳng trong tab.
     expect(screen.queryByText('content.detail.seoAdvanced')).not.toBeInTheDocument()

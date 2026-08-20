@@ -22,7 +22,7 @@ import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
-import { formatDateTime } from '../lib/formatters'
+import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
 import { queryKeys } from '../lib/queryKeys'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
@@ -1038,9 +1038,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // field base. `hint` hiển thị số ký tự hiện tại để trạng thái ✓/✗ tự giải thích.
   const seoTitleVal = langValue('seoTitle')
   const seoDescVal = langValue('seoDescription')
+  const seoDescPlain = stripHtml(seoDescVal, '')
   const seoChecks = [
     { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
-    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–160 ký tự' }) },
+    { ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165, hint: seoDescPlain.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–165 ký tự' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
     { ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(), label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có mô tả' }) },
     { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
@@ -2305,10 +2306,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         : (canonicalUrlFromSlug(form.slug) || 'https://bigbike.vn/product/duong-dan-san-pham/')}
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {(seoTitleVal || langValue('name') || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+                      {stripHtml(seoTitleVal || langValue('name'), '').slice(0, 60)
+                        || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })}
                     </div>
                     <div className="text-sm leading-relaxed text-google-description break-words">
-                      {seoDescVal || langValue('shortDescription') || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                      {normalizeSeoText(seoDescVal || langValue('shortDescription'))
+                        || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
                     </div>
                   </div>
                 </div>
@@ -2333,8 +2336,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.seoDescription')}
-                    count={`${langValue('seoDescription').length} / 155`}
-                    countWarn={langValue('seoDescription').length > 155}
+                    count={`${stripHtml(langValue('seoDescription'), '').length} / 165`}
+                    countWarn={stripHtml(langValue('seoDescription'), '').length > 165}
                     error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
                   >
                     <Textarea

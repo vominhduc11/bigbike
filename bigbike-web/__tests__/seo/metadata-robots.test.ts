@@ -102,3 +102,19 @@ describe("buildPublicMetadata — tiêu đề và ảnh tuyệt đối", () => {
     expect(twitterImage).toMatch(/^https?:\/\//);
   });
 });
+
+describe("buildPublicMetadata — mô tả chữ thuần", () => {
+  it("loại HTML/chat widget khỏi fallback và giới hạn ở 165 ký tự", () => {
+    const metadata = buildPublicMetadata({
+      ...base,
+      description: "<p>Mô tả sản phẩm</p><div id=\"messageView\"><div class=\"chat-message\">Không đưa vào SEO</div></div> "
+        + "Nội dung bổ sung đủ dài để kiểm tra giới hạn từ và không phát nguyên mã HTML.",
+    });
+
+    expect(metadata.description).not.toContain("<p>");
+    expect(metadata.description).not.toContain("Không đưa vào SEO");
+    expect(metadata.description?.length).toBeLessThanOrEqual(165);
+    expect(metadata.openGraph?.description).toBe(metadata.description);
+    expect(metadata.twitter?.description).toBe(metadata.description);
+  });
+});

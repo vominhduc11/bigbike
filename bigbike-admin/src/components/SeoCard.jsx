@@ -7,6 +7,7 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { normalizeSeoText, stripHtml } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
 
 // Thẻ SEO dùng chung (Danh mục, Thương hiệu, …). Gộp bản trùng ~95 dòng trước đây ở
@@ -37,6 +38,9 @@ export function SeoCard({
   const seoTitleVal = (isEnLang ? form.translations?.en?.seoTitle : form.seoTitle) ?? ''
   const seoDescVal = (isEnLang ? form.translations?.en?.seoDescription : form.seoDescription) ?? ''
   const nameVal = (isEnLang ? form.translations?.en?.name : form.name) ?? ''
+  const previewTitle = stripHtml(seoTitleVal || nameVal, '')
+  const seoDescriptionPlain = stripHtml(seoDescVal, '')
+  const previewDescription = normalizeSeoText(seoDescriptionPlain)
   const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || previewSlugDefault
   // SEO_RULE_003: canonical LUÔN tự sinh từ slug theo locale. Ô nhập tay đã gỡ (2026-08-06) —
   // web chưa bao giờ đọc `seo.canonicalUrl` để dựng thẻ canonical, nên đó là trường chết
@@ -91,10 +95,10 @@ export function SeoCard({
             <div className="text-xs text-google-url mb-1">{p('seoPreviewLabel', 'Xem thử trên Google')}</div>
             <div className="text-xs text-google-url break-all mb-1">{previewUrl}</div>
             <div className="text-lg leading-snug text-google-title break-words mb-1">
-              {(seoTitleVal || nameVal || p('seoPreviewFallbackTitle', 'Tiêu đề')).slice(0, 60)}
+              {(previewTitle || p('seoPreviewFallbackTitle', 'Tiêu đề')).slice(0, 60)}
             </div>
             <div className="text-sm leading-relaxed text-google-description break-words">
-              {seoDescVal || p('seoPreviewFallbackDesc', 'Mô tả ngắn sẽ hiển thị ở đây.')}
+              {previewDescription || p('seoPreviewFallbackDesc', 'Mô tả ngắn sẽ hiển thị ở đây.')}
             </div>
           </div>
         </div>
@@ -123,7 +127,7 @@ export function SeoCard({
         <label className="form-field">
           <span className="flex items-center justify-between">
             <span>{p('seoDescription', 'Mô tả khi xuất hiện trên Google')}{enHint}</span>
-            <span className={`hint ${seoDescVal.length > 160 ? 'text-danger' : ''}`}>{seoDescVal.length} / 160</span>
+            <span className={`hint ${seoDescriptionPlain.length > 165 ? 'text-danger' : ''}`}>{seoDescriptionPlain.length} / 165</span>
           </span>
           <Textarea
             rows={3}

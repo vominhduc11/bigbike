@@ -1,4 +1,4 @@
--- V1041: complete the BigBike sales-assistant funnel, action attribution and owner settings.
+-- V1044: complete the BigBike sales-assistant funnel, action attribution and owner settings.
 -- Canonical evidence: CHAT_RULE_003/009/010/012/014/017/029..033 (2026-08-20).
 
 alter table chat_conversations

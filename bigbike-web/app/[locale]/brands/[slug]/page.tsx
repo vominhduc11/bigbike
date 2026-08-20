@@ -19,7 +19,7 @@ import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
 import type { Locale } from "@/i18n/locale";
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
-import type { RouteSearchParams } from "@/lib/utils/query";
+import { hasPriceRangeFilter, type RouteSearchParams } from "@/lib/utils/query";
 
 // ISR on-demand: thương hiệu là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
 // sinh khi truy cập lần đầu + revalidate theo tag brand:{slug}/brands khi admin sửa.
@@ -36,8 +36,9 @@ type BrandDetailPageProps = {
   searchParams: Promise<RouteSearchParams>;
 };
 
-export async function generateMetadata({ params }: BrandDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: BrandDetailPageProps): Promise<Metadata> {
   const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const priceFiltered = hasPriceRangeFilter(await searchParams);
   setRequestLocale(locale);
   const t = await getTranslations("Catalog");
   if (!isValidSlug(slug)) {
@@ -60,7 +61,9 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
     });
   }
 
-  // Metadata base (trang tĩnh) — canonical về thương hiệu; tham số lọc xử lý ở client.
+  // Price-filter views remain usable for customers, but must not become separate Google
+  // landing pages. Canonical stays on the base brand page and hreflang is omitted with noindex.
+  const noIndex = priceFiltered || brand.seo?.noIndex === true;
   return buildPublicMetadata({
     title: brand.seo?.title ?? brand.name,
     description: brand.seo?.description ?? brand.description ?? t("brandDefaultDescription"),
@@ -69,10 +72,10 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
     // Cờ đã resolve theo locale ở backend (SeoIndexPolicy) — SEO_RULE_001/002. Với thương hiệu,
     // ngưỡng EN chỉ xét `description_en` vì bảng brands không có name_en/slug_en (DROP ở V352).
-    noIndex: brand.seo?.noIndex ?? false,
+    noIndex,
     // BRAND_RULE_003: brand slug is shared across VI/EN; no separate hreflang URL.
     // Trang noindex thì không khai hreflang — xem ghi chú ở trang sản phẩm.
-    ...(brand.seo?.noIndex
+    ...(noIndex
       ? {}
       : { languageAlternates: { vi: toBrandPath(brand.slug, "vi"), en: toBrandPath(brand.slug, "en") } }),
   });

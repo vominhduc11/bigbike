@@ -17,7 +17,7 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
 import { clearNavGuard } from '../lib/navigationGuard'
-import { formatDateTime } from '../lib/formatters'
+import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang } from '../lib/contentLang'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { createContentSchema, zodErrors } from '../lib/schemas'
@@ -584,9 +584,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const seoTitleVal = langValue('seoTitle')
   const seoDescVal = langValue('seoDescription')
+  const seoDescPlain = stripHtml(seoDescVal, '')
   const seoChecks = [
     { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
-    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–160 ký tự' }) },
+    { ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165, hint: seoDescPlain.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–165 ký tự' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
     { ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt') },
     { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
@@ -992,10 +993,12 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         : `${storefrontOrigin}/tin-tuc/${form.slug || 'duong-dan'}/`}
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {(langValue('seoTitle') || langValue('title') || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+                      {stripHtml(langValue('seoTitle') || langValue('title'), '').slice(0, 60)
+                        || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })}
                     </div>
                     <div className="text-sm leading-relaxed text-google-description break-words">
-                      {langValue('seoDescription') || langValue('excerpt') || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                      {normalizeSeoText(langValue('seoDescription') || langValue('excerpt'))
+                        || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
                     </div>
                   </div>
                 </div>
@@ -1021,8 +1024,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field
                     full
                     label={t('content.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-                    count={`${langValue('seoDescription').length} / 155`}
-                    countWarn={langValue('seoDescription').length > 155}
+                    count={`${seoDescPlain.length} / 165`}
+                    countWarn={seoDescPlain.length > 165}
                     error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
                     helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >

@@ -92,6 +92,14 @@ public class ContentRequestValidator {
                 current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
+        ArticleTranslationRequest.ArticleContentRequest articleEn =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        if (articleEn != null) {
+            AdminMutationValidators.validatePlainSeoText(
+                    articleEn.getSeoTitle(), "translations.en.seoTitle", errors);
+            AdminMutationValidators.validatePlainSeoText(
+                    articleEn.getSeoDescription(), "translations.en.seoDescription", errors);
+        }
 
         if (request.isBodyBlocksPresent() && request.getBodyBlocks() != null) {
             // Grandfather media URLs already stored on the article (MEDIA_RULE_003) so editing legacy

@@ -578,7 +578,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     // sourcePattern không kèm "/" cuối; nếu 308 trước thì mỗi luật tốn 2 hop
     // (308 thêm "/" → 301 tới đích) thay vì 1. isLoop trong redirectResponse đã
     // bỏ qua "/" cuối khi so sánh, nên luật /x→/x/ vẫn rơi xuống nhánh 308 dưới.
-    const slashlessRule = await lookupRedirect(
+    // English redirect sources are locale-specific and must be checked before
+    // translating to the neutral Vietnamese registry key. Otherwise an English
+    // alias can inherit a Vietnamese intermediate and add a second hop.
+    const localeRule = locale === "en" ? await lookupRedirect(pathname) : null;
+    const slashlessRule = localeRule ?? await lookupRedirect(
       translatePath(pathname, "vi").split(/[?#]/)[0],
     );
     if (slashlessRule) {
@@ -618,7 +622,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const rule = await lookupRedirect(viPathname);
+  // Prefer an exact /en source before the locale-neutral lookup. This is what
+  // lets the redirect registry collapse English two-hop aliases directly to
+  // their current English destination.
+  const localeRule = locale === "en" ? await lookupRedirect(pathname) : null;
+  const rule = localeRule ?? await lookupRedirect(viPathname);
   const isDefaultLocaleRoute = locale === "vi" && !hasExplicitLocalePrefix(pathname);
   if (!rule) {
     const brandSlug = brandSlugFromPath(pathname);

@@ -167,6 +167,14 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
+        ProductTranslationRequest.ProductContentRequest productEn =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        if (productEn != null) {
+            AdminMutationValidators.validatePlainSeoText(
+                    productEn.getSeoTitle(), "translations.en.seoTitle", errors);
+            AdminMutationValidators.validatePlainSeoText(
+                    productEn.getSeoDescription(), "translations.en.seoDescription", errors);
+        }
 
         if (!preview) {
             // Grandfather set: image-shaped URLs (plain gallery images AND video-item thumbnails
@@ -723,6 +731,14 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
+        CategoryTranslationRequest.CategoryContentRequest categoryEnSeo =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        if (categoryEnSeo != null) {
+            AdminMutationValidators.validatePlainSeoText(
+                    categoryEnSeo.getSeoTitle(), "translations.en.seoTitle", errors);
+            AdminMutationValidators.validatePlainSeoText(
+                    categoryEnSeo.getSeoDescription(), "translations.en.seoDescription", errors);
+        }
 
         validateVietnameseSlugAgainstEnglish(
                 slug,
@@ -845,6 +861,14 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
+        com.bigbike.bigbike_backend.api.admin.dto.BrandTranslationRequest.BrandContentRequest brandEn =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        if (brandEn != null) {
+            AdminMutationValidators.validatePlainSeoText(
+                    brandEn.getSeoTitle(), "translations.en.seoTitle", errors);
+            AdminMutationValidators.validatePlainSeoText(
+                    brandEn.getSeoDescription(), "translations.en.seoDescription", errors);
+        }
 
         if (slug != null) {
             Optional<String> existingId = brandJpaRepository.findBySlug(slug).map(BrandEntity::getId);

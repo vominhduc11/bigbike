@@ -7,7 +7,14 @@ const URL_REGEX = /^https?:\/\//
 // /media/* proxy (e.g. "/media/foo.jpg"). The MediaPickerModal returns the
 // latter, so image/gallery/video fields must accept both forms.
 const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
+const SEO_MARKUP_REGEX = /<\s*\/?\s*[a-z][^>]*>/i
 export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
+
+function validatePlainSeoText(value, path, ctx, message) {
+  if (SEO_MARKUP_REGEX.test(String(value ?? ''))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
+  }
+}
 
 /**
  * Optional English URL slug (V213/V214/V216): empty is allowed (falls back to the
@@ -308,6 +315,11 @@ export function createProductSchema(t, isCreate = false) {
           path: ['seoDescription'],
         })
       }
+      const seoTextMessage = t('common.errSeoPlainText', {
+        defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
+      })
+      validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
+      validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
       if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -350,6 +362,8 @@ export function createProductSchema(t, isCreate = false) {
           })
         }
       }
+      validatePlainSeoText(en.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
+      validatePlainSeoText(en.seoDescription, ['translations', 'en', 'seoDescription'], ctx, seoTextMessage)
       // English URL slug (V214): optional; when filled must be valid kebab-case ≤ 100.
       validateEnSlug(t, en.slug, ctx)
 
@@ -589,6 +603,13 @@ export function createCategorySchema(t) {
       if ((data.seoDescription ?? '').trim().length > 5000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoDescriptionTooLong'), path: ['seoDescription'] })
       }
+      const seoTextMessage = t('common.errSeoPlainText', {
+        defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
+      })
+      validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
+      validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
+      validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
+      validatePlainSeoText(data.translations?.en?.seoDescription, ['translations', 'en', 'seoDescription'], ctx, seoTextMessage)
       if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })
       }
@@ -610,6 +631,8 @@ export function createBrandSchema(t) {
     slug: z.string(),
     name: z.string(),
     description: z.string().optional(),
+    seoTitle: z.string().optional(),
+    seoDescription: z.string().optional(),
     logoUrl: z.string().optional(),
     bannerUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
@@ -635,6 +658,13 @@ export function createBrandSchema(t) {
     if ((data.description || '').length > 5000) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errDescriptionTooLong'), path: ['description'] })
     }
+    const seoTextMessage = t('common.errSeoPlainText', {
+      defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
+    })
+    validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
+    validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
+    validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
+    validatePlainSeoText(data.translations?.en?.seoDescription, ['translations', 'en', 'seoDescription'], ctx, seoTextMessage)
     if (data.logoUrl?.trim() && !MEDIA_URL_REGEX.test(data.logoUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errLogoUrl'), path: ['logoUrl'] })
     }
@@ -751,6 +781,13 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
     if (data.productImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.productImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errProductImageUrl'), path: ['productImageUrl'] })
     }
+    const seoTextMessage = t('common.errSeoPlainText', {
+      defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
+    })
+    validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
+    validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
+    validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
+    validatePlainSeoText(data.translations?.en?.seoDescription, ['translations', 'en', 'seoDescription'], ctx, seoTextMessage)
     if (data.seoOgImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })
     }

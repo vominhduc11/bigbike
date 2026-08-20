@@ -108,6 +108,16 @@ export function stripHtml(value, fallback = '—') {
   }
 }
 
+export function normalizeSeoText(value, maxLength = 165) {
+  const plain = stripHtml(value, '')
+  if (!plain || maxLength <= 0 || plain.length <= maxLength) return plain
+  const candidate = plain.slice(0, maxLength + 1).trim()
+  const boundary = candidate.lastIndexOf(' ')
+  return boundary >= Math.max(1, Math.floor(maxLength / 2))
+    ? candidate.slice(0, boundary).trim()
+    : plain.slice(0, maxLength).trim()
+}
+
 export function formatDateTimeWithSeconds(value) {
   if (!value) return '—'
   const parsed = new Date(value)

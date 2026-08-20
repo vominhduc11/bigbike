@@ -1,6 +1,12 @@
  type SearchParamValue = string | string[] | undefined;
 export type RouteSearchParams = Record<string, SearchParamValue>;
 
+/** Price-range archive URLs are viewable but must not create indexable SEO pages. */
+export function hasPriceRangeFilter(params: RouteSearchParams): boolean {
+  return Object.prototype.hasOwnProperty.call(params, "min_price")
+    || Object.prototype.hasOwnProperty.call(params, "max_price");
+}
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function readSingleSearchParam(value: SearchParamValue): string | undefined {
