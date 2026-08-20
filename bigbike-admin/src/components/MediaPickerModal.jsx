@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { Check, ImageIcon, Upload, X } from 'lucide-react'
 import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
@@ -11,7 +12,6 @@ import { useMediaValidation } from '../lib/useMediaDimensions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FilterSelect } from './FilterSelect'
-import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 import { sendAdminWs } from '../lib/adminWebSocket'
@@ -19,16 +19,6 @@ import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES } from '../lib/mediaCons
 
 const ALLOWED_MIME = IMAGE_MEDIA_MIME_TYPES
 const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
-
-function IconImage() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
-    </svg>
-  )
-}
 
 function PickerImageThumbnail({ src, alt }) {
   const { t } = useTranslation()
@@ -42,7 +32,7 @@ function PickerImageThumbnail({ src, alt }) {
   if (!src || failed) {
     return (
       <div className="mpicker-thumb mpicker-thumb-placeholder" role="img" aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}>
-        <IconImage />
+        <ImageIcon size={28} strokeWidth={1.5} aria-hidden="true" />
       </div>
     )
   }
@@ -341,7 +331,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         {/* Drag overlay */}
         {isDragOver && (
           <div className="mpicker-drag-overlay" aria-hidden="true">
-            <IconUpload />
+            <Upload size={14} strokeWidth={2.2} aria-hidden="true" />
             <p>{t('media.picker.dropToUpload')}</p>
           </div>
         )}
@@ -367,13 +357,13 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                   disabled={uploading}
                   title={t('media.picker.uploadTitle')}
                 >
-                  <IconUpload />
+                  <Upload size={14} strokeWidth={2.2} aria-hidden="true" />
                   {uploading ? t('media.picker.uploading') : t('media.picker.uploadButton')}
                 </Button>
               </>
             )}
             <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('common.close')}>
-              <IconClose />
+              <X size={18} strokeWidth={2.2} aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -411,7 +401,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                         onClick={() => setUploadQueue((queue) => queue.filter((entry) => entry.id !== item.id))}
                         aria-label={t('notifications.close')}
                       >
-                        <IconClose />
+                        <X size={18} strokeWidth={2.2} aria-hidden="true" />
                       </Button>
                     </>
                   : <progress className="h-1 flex-1 accent-primary" value={item.progress} max="100" aria-label={t('media.uploadProgress', { name: item.name })} />
@@ -462,7 +452,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><IconClose /></Button>
+            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><X size={18} strokeWidth={2.2} aria-hidden="true" /></Button>
           </div>
         )}
 
@@ -486,7 +476,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           )}
           {state.status === 'success' && state.items.length === 0 && (
             <div className="mpicker-state mpicker-state-empty">
-              <IconImage />
+              <ImageIcon size={28} strokeWidth={1.5} aria-hidden="true" />
               <p>{search ? t('media.picker.emptySearch') : t('media.picker.empty')}</p>
             </div>
           )}
@@ -509,7 +499,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                       <PickerImageThumbnail src={thumbUrl} alt={media.altText} />
                       {sel && (
                         <div className="mpicker-item-check" aria-hidden="true">
-                          <IconCheck />
+                          <Check size={16} strokeWidth={2.5} aria-hidden="true" />
                         </div>
                       )}
                       <div className="mpicker-item-info">

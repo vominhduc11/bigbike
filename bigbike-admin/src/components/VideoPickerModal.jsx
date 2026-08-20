@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { Check, Upload, Video, X } from 'lucide-react'
 import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
@@ -11,7 +12,6 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FilterSelect } from './FilterSelect'
-import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 import { MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES } from '../lib/mediaConstants'
@@ -19,15 +19,6 @@ import { MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES } from '../lib/mediaCons
 const ALLOWED_MIME = VIDEO_MEDIA_MIME_TYPES
 const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
 const PAGE_SIZE = 20
-
-function IconVideo() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polygon points="23 7 16 12 23 17 23 7" />
-      <rect x="1" y="5" width="15" height="14" rx="2" />
-    </svg>
-  )
-}
 
 function PickerVideoThumbnail({ url }) {
   const { t } = useTranslation()
@@ -41,7 +32,7 @@ function PickerVideoThumbnail({ url }) {
   if (!url || failed) {
     return (
       <div className="mpicker-thumb mpicker-thumb-video" role="img" aria-label={failed ? t('media.mediaLoadError') : t('media.missingPublicUrl')}>
-        <IconVideo />
+        <Video size={28} strokeWidth={1.5} aria-hidden="true" />
       </div>
     )
   }
@@ -271,7 +262,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  <IconUpload />
+                  <Upload size={14} strokeWidth={2.2} aria-hidden="true" />
                   {uploading
                     ? t('homeVideos.picker.uploading', { progress: uploadProgress || 0 })
                     : t('homeVideos.picker.uploadButton')}
@@ -279,7 +270,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
               </>
             )}
             <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('homeVideos.picker.close')}>
-              <IconClose />
+              <X size={18} strokeWidth={2.2} aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -325,7 +316,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><IconClose /></Button>
+            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><X size={18} strokeWidth={2.2} aria-hidden="true" /></Button>
           </div>
         )}
 
@@ -346,7 +337,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
           )}
           {state.status === 'success' && state.items.length === 0 && (
             <div className="mpicker-state mpicker-state-empty">
-              <IconVideo />
+              <Video size={28} strokeWidth={1.5} aria-hidden="true" />
               <p>{search ? t('homeVideos.picker.emptySearch') : t('homeVideos.picker.empty')}</p>
             </div>
           )}
@@ -369,7 +360,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                     <PickerVideoThumbnail url={url} />
                     {isSelected && (
                       <div className="mpicker-item-check" aria-hidden="true">
-                        <IconCheck />
+                        <Check size={16} strokeWidth={2.5} aria-hidden="true" />
                       </div>
                     )}
                     <div className="mpicker-item-info">
