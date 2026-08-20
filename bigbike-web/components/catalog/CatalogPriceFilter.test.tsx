@@ -110,5 +110,9 @@ describe("CatalogPriceFilter UI contract", () => {
     expect(thumbs[1]).toHaveClass("h-11", "w-11");
     expect(indicators).toHaveLength(2);
     expect(indicators[0]).toHaveClass("!rounded-full");
+    expect(thumbs[0]).not.toContainElement(indicators[0]);
+    expect(thumbs[1]).not.toContainElement(indicators[1]);
+    expect(container.querySelector('[data-slider-track="true"]')).not.toBeNull();
+    expect(container.querySelector('[data-slider-range="true"]')).not.toBeNull();
   });
 });

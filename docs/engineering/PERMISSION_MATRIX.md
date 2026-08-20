@@ -69,8 +69,8 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `media.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `GET /api/v1/admin/media/**` (list, stats, tags, references, detail) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
-| `media.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `POST/PUT/DELETE /api/v1/admin/media/**` (upload, bulk-move, bulk soft-delete, bulk-restore, update, replace, soft-delete, restore) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
+| `media.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `GET /api/v1/admin/media/**` (list, stats, tags, references, detail, download object gốc) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
+| `media.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `POST/PUT/DELETE /api/v1/admin/media/**` (upload, bulk-move, bulk soft-delete, bulk-restore, update, soft-delete, restore) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
 | `*` (wildcard — `SUPER_ADMIN` only) | `SUPER_ADMIN` | `POST /api/v1/admin/media/bulk-hard-delete`, `DELETE /api/v1/admin/media/{mediaId}?permanent=true` | `AdminMediaController.java` (`requirePermission("*")`, separate from and stricter than `media.write` — permanent/irreversible delete is gated to the top tier only) |
 
 `SHOP_MANAGER` does **not** hold `media.read`/`media.write` (not seeded in `V49`) — it cannot access the Media Library at all.

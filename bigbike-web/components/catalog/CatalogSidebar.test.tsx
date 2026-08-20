@@ -64,10 +64,14 @@ describe("CatalogSidebar brand logos", () => {
 
     const slots = document.querySelectorAll('[data-brand-logo="true"]');
     expect(slots).toHaveLength(3);
-    expect(slots[0]).toHaveClass("h-10", "w-10");
-    expect(slots[1]).toHaveClass("h-10", "w-10");
-    expect(slots[2]).toHaveClass("h-10", "w-10");
+    for (const slot of slots) {
+      expect(slot).toHaveClass("h-12", "w-24");
+      expect(slot).not.toHaveClass("border");
+      expect(slot).not.toHaveClass("border-border");
+      expect(slot).not.toHaveClass("bg-muted");
+    }
     expect(slots[0]?.querySelector("img")).toHaveAttribute("src", "/media/brand-logos/agv.png");
+    expect(slots[0]?.querySelector("img")).toHaveClass("object-contain");
     expect(slots[1]).toHaveTextContent("AL");
     expect(slots[2]).toHaveTextContent("EX");
     expect(screen.getByRole("checkbox", { name: "AGV (24)" })).toBeVisible();

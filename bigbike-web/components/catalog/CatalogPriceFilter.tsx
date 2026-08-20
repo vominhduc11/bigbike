@@ -10,12 +10,14 @@ import {
   buildPriceScale,
   formatPriceAria,
   formatPriceDisplay,
+  getChangedPriceHandle,
   PRICE_TRACK_STEPS,
   priceRangeHasSelection,
   priceSelectionToQueryBounds,
   priceSelectionToSliderValues,
   sliderValuesToPriceSelection,
-  snapPriceSelection,
+  snapPriceSelectionForHandle,
+  type PriceHandle,
 } from "@/lib/utils/catalog-price-filter";
 
 type CatalogPriceFilterProps = {
@@ -49,6 +51,9 @@ export function CatalogPriceFilter({
     [committedSelection, scale],
   );
   const [sliderValues, setSliderValues] = useState<[number, number]>(() => committedSliderValues);
+  const [activeHandle, setActiveHandle] = useState<PriceHandle | null>(null);
+  const lastSliderValuesRef = useRef<[number, number]>(committedSliderValues);
+  const activeHandleRef = useRef<PriceHandle | null>(null);
   const propsKey = useMemo(
     () => [
       range.minPrice,
@@ -64,12 +69,22 @@ export function CatalogPriceFilter({
   useEffect(() => {
     if (previousPropsKey.current === propsKey) return;
     previousPropsKey.current = propsKey;
+    lastSliderValuesRef.current = committedSliderValues;
+    activeHandleRef.current = null;
+    setActiveHandle(null);
     setSliderValues(committedSliderValues);
   }, [committedSliderValues, propsKey]);
 
   const minPosition = Math.min(PRICE_TRACK_STEPS, Math.max(0, sliderValues[0] ?? 0));
   const maxPosition = Math.min(PRICE_TRACK_STEPS, Math.max(0, sliderValues[1] ?? PRICE_TRACK_STEPS));
-  const liveSelection = sliderValuesToPriceSelection([minPosition, maxPosition], scale);
+  const rawLiveSelection = sliderValuesToPriceSelection([minPosition, maxPosition], scale);
+  const liveHandle = activeHandle
+    ?? getChangedPriceHandle([minPosition, maxPosition], committedSliderValues);
+  const liveSelection = liveHandle === "min"
+    ? { minPrice: rawLiveSelection.minPrice, maxPrice: committedSelection.maxPrice }
+    : liveHandle === "max"
+      ? { minPrice: committedSelection.minPrice, maxPrice: rawLiveSelection.maxPrice }
+      : committedSelection;
   const liveMinPrice = Math.round(liveSelection.minPrice);
   const liveMaxPrice = Math.round(liveSelection.maxPrice);
   const hasSelection = priceRangeHasSelection(range, currentMinPrice, currentMaxPrice);
@@ -92,10 +107,40 @@ export function CatalogPriceFilter({
     },
   ];
 
+  function updateSliderValues(values: number[]) {
+    const nextValues: [number, number] = [
+      values[0] ?? 0,
+      values[1] ?? PRICE_TRACK_STEPS,
+    ];
+    const changedHandle = getChangedPriceHandle(nextValues, lastSliderValuesRef.current);
+    if (changedHandle) {
+      activeHandleRef.current = changedHandle;
+      setActiveHandle(changedHandle);
+    }
+    lastSliderValuesRef.current = nextValues;
+    setSliderValues(nextValues);
+  }
+
   function commitSliderValues(values: number[]) {
-    const snappedSelection = snapPriceSelection(sliderValuesToPriceSelection(values, scale), scale);
+    const nextValues: [number, number] = [
+      values[0] ?? 0,
+      values[1] ?? PRICE_TRACK_STEPS,
+    ];
+    const changedHandle = activeHandleRef.current
+      ?? getChangedPriceHandle(nextValues, committedSliderValues);
+    if (!changedHandle) return;
+
+    const snappedSelection = snapPriceSelectionForHandle(
+      sliderValuesToPriceSelection(nextValues, scale),
+      committedSelection,
+      scale,
+      changedHandle,
+    );
     const nextSliderValues = priceSelectionToSliderValues(snappedSelection, scale);
     const queryBounds = priceSelectionToQueryBounds(snappedSelection, scale);
+    lastSliderValuesRef.current = nextSliderValues;
+    activeHandleRef.current = null;
+    setActiveHandle(null);
     setSliderValues(nextSliderValues);
 
     if (onCommit) {
@@ -133,11 +178,12 @@ export function CatalogPriceFilter({
         value={[minPosition, maxPosition]}
         thumbCount={2}
         thumbProps={thumbProps}
+        thumbIndicatorMode="track"
         trackClassName="bg-border-default"
         rangeClassName="bg-brand"
         aria-label={t("priceRangeAria")}
         className="relative z-10 h-11"
-        onValueChange={(values) => setSliderValues([values[0] ?? 0, values[1] ?? PRICE_TRACK_STEPS])}
+        onValueChange={updateSliderValues}
         onValueCommit={commitSliderValues}
       />
     </div>

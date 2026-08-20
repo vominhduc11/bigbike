@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.media.MediaReferenceItem;
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpdateMediaRequest;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.bigbike.bigbike_backend.service.admin.MediaReferenceService;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -26,6 +27,9 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @Validated
 @RestController
@@ -217,6 +222,29 @@ public class AdminMediaController extends AdminControllerSupport {
         return apiResponseFactory.data(adminMediaService.getMediaDetail(mediaId), request);
     }
 
+    @GetMapping("/{mediaId}/download")
+    public ResponseEntity<StreamingResponseBody> downloadMedia(
+            @PathVariable UUID mediaId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.read");
+        AdminMediaService.MediaDownload download = adminMediaService.openDownload(mediaId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(download.mimeType()));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(download.filename(), StandardCharsets.UTF_8)
+                .build());
+        if (download.size() != null && download.size() >= 0) {
+            headers.setContentLength(download.size());
+        }
+        StreamingResponseBody body = output -> {
+            try (java.io.InputStream inputStream = download.inputStream()) {
+                inputStream.transferTo(output);
+            }
+        };
+        return ResponseEntity.ok().headers(headers).body(body);
+    }
+
     @PatchMapping("/{mediaId}")
     public ApiDataResponse<AdminMediaDetailResponse> updateMedia(
             @PathVariable UUID mediaId,
@@ -226,20 +254,6 @@ public class AdminMediaController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "media.write");
         return apiResponseFactory.data(
                 adminMediaService.updateMedia(mediaId, resolveAdminId(), body), request);
-    }
-
-    @PostMapping(value = "/{mediaId}/replace", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiDataResponse<AdminMediaDetailResponse> replaceFile(
-            @PathVariable UUID mediaId,
-            @RequestParam("file") MultipartFile file,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "media.write");
-        UUID actorId = resolveAdminId();
-        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminMedia(actorId)) {
-            return apiResponseFactory.data(
-                    adminMediaService.replaceFile(mediaId, file, actorId), request);
-        }
     }
 
     @DeleteMapping("/{mediaId}")

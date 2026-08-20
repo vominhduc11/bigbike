@@ -5612,17 +5612,22 @@
         }
       }
     },
-    "/api/v1/admin/media/{mediaId}/replace": {
-      "post": {
+    "/api/v1/admin/media/{mediaId}/download": {
+      "get": {
         "tags": ["Admin Media"],
-        "summary": "Replace an image while keeping its public URL (admin)",
-        "operationId": "adminReplaceMedia",
+        "summary": "Download the original media object (admin)",
+        "operationId": "adminDownloadMedia",
+        "description": "Requires media.read. Streams the original object recorded in MinIO as an attachment, including media rows in DELETED status. URL-only external media has no downloadable object.",
         "security": [{ "AdminBearerAuth": [] }],
         "parameters": [{ "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, WebP, GIF, or sanitized SVG; maximum 200 MB" } } } } } },
         "responses": {
-          "200": { "description": "Updated media detail" },
-          "400": { "$ref": "#/components/responses/ValidationError" },
+          "200": {
+            "description": "Original media bytes",
+            "headers": {
+              "Content-Disposition": { "description": "Attachment filename from originalFilename", "schema": { "type": "string" } }
+            },
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" }

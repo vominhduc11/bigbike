@@ -1,4 +1,5 @@
 import type { TestInfo } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import { test, expect, expectRuntimeClean, type Page } from '../fixtures/admin-test'
 import { expectHeaderNotOverlappingContent, expectNoHorizontalOverflow, navigateSpa } from '../utils/quality'
 
@@ -17,6 +18,19 @@ const VIDEO_FIXTURE_BASE64 = [
 
 function mediaCard(page: Page, marker: string) {
   return page.locator('.medialib-card').filter({ hasText: marker }).first()
+}
+
+async function downloadFromButton(page: Page, button: ReturnType<Page['getByRole']>, expectedFilename: string) {
+  const pageCount = page.context().pages().length
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    button.click(),
+  ])
+  expect(download.suggestedFilename()).toBe(expectedFilename)
+  expect(page.context().pages()).toHaveLength(pageCount)
+  const path = await download.path()
+  expect(path).toBeTruthy()
+  return readFile(path!)
 }
 
 async function captureLibrary(page: Page, testInfo: TestInfo) {
@@ -44,16 +58,17 @@ test.describe('media-library', () => {
     expectRuntimeClean(collect)
   })
 
-  test('tải ảnh/video, sửa, xoá mềm, khôi phục và xoá vĩnh viễn tệp thử nghiệm', async ({ adminPage, collect }) => {
+  test('tải ảnh/video, tải bản gốc, sửa, xoá mềm, khôi phục và xoá vĩnh viễn tệp thử nghiệm', async ({ adminPage, collect }) => {
     test.skip(Boolean(process.env.MEDIA_CAPTURE_ONLY), 'Chỉ chụp ảnh trước/sau, không thay đổi dữ liệu.')
     test.setTimeout(120_000)
 
-    const marker = `e2e_media_${RUN_ID}`
-    const videoMarker = `e2e_video_${RUN_ID}`
+    const marker = `E2E_MEDIA_${RUN_ID}`
+    const videoMarker = `E2E_VIDEO_${RUN_ID}`
     const filename = `${marker}.svg`
     const updatedTitle = `E2E_MEDIA_${RUN_ID}_ĐÃ_SỬA`
     let mediaId: string | null = null
     let videoId: string | null = null
+    let imageFileSize = 0
     let apiOrigin = ''
     let authorization = ''
 
@@ -69,13 +84,14 @@ test.describe('media-library', () => {
 
       await test.step('tải, hiển thị và xoá sạch MP4 hợp lệ', async () => {
         const fileInput = adminPage.locator('input[type="file"][multiple]')
+        const videoBytes = Buffer.from(VIDEO_FIXTURE_BASE64, 'base64')
         const [response] = await Promise.all([
           adminPage.waitForResponse((item) => item.request().method() === 'POST'
             && new URL(item.url()).pathname.endsWith('/api/v1/admin/media')),
           fileInput.setInputFiles({
             name: `${videoMarker}.mp4`,
             mimeType: 'video/mp4',
-            buffer: Buffer.from(VIDEO_FIXTURE_BASE64, 'base64'),
+            buffer: videoBytes,
           }),
         ])
         expect(response.status(), 'API tải video phải trả 201').toBe(201)
@@ -89,15 +105,29 @@ test.describe('media-library', () => {
         const card = mediaCard(adminPage, videoMarker)
         await expect(card).toBeVisible({ timeout: 15_000 })
         await expect(card.locator('video')).toHaveCount(1)
+        const cardDownload = card.getByRole('button', { name: 'Tải về máy', exact: true })
+        await expect(cardDownload).toBeVisible()
+        const downloadedVideo = await downloadFromButton(adminPage, cardDownload, `${videoMarker}.mp4`)
+        expect(downloadedVideo.equals(videoBytes), 'Video tải về phải đúng bản gốc').toBeTruthy()
 
         const headers = { Authorization: authorization }
         const softDeleted = await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${videoId}`, { headers })
         expect(softDeleted.status(), 'API xoá mềm video phải trả 204').toBe(204)
+        await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
+        const trashCard = mediaCard(adminPage, videoMarker)
+        await expect(trashCard).toBeVisible()
+        const downloadedTrashVideo = await downloadFromButton(
+          adminPage,
+          trashCard.getByRole('button', { name: 'Tải về máy', exact: true }),
+          `${videoMarker}.mp4`,
+        )
+        expect(downloadedTrashVideo.equals(videoBytes), 'Video trong thùng rác vẫn phải tải đúng bản gốc').toBeTruthy()
         const hardDeleted = await adminPage.request.delete(
           `${apiOrigin}/api/v1/admin/media/${videoId}?permanent=true`, { headers },
         )
         expect(hardDeleted.status(), 'API xoá vĩnh viễn video phải trả 204').toBe(204)
         videoId = null
+        await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
       })
 
       await test.step('tải SVG hợp lệ lên thư viện', async () => {
@@ -112,10 +142,22 @@ test.describe('media-library', () => {
         const payload = await response.json()
         mediaId = payload?.data?.id ?? null
         expect(mediaId, 'Không lấy được id media vừa tải').toBeTruthy()
+        imageFileSize = Number(payload?.data?.fileSize) || 0
 
         const search = adminPage.getByRole('searchbox')
         await search.fill(marker)
-        await expect(mediaCard(adminPage, marker)).toBeVisible({ timeout: 15_000 })
+        const card = mediaCard(adminPage, marker)
+        await expect(card).toBeVisible({ timeout: 15_000 })
+        await expect(card.getByRole('button', { name: /thay file|replace file/i })).toHaveCount(0)
+        const replaceResponse = await adminPage.request.post(
+          `${apiOrigin}/api/v1/admin/media/${mediaId}/replace`, { headers: { Authorization: authorization } })
+        expect(replaceResponse.status(), 'Đường thay file đã bị gỡ phải trả 404').toBe(404)
+        const downloadedImage = await downloadFromButton(
+          adminPage,
+          card.getByRole('button', { name: 'Tải về máy', exact: true }),
+          filename,
+        )
+        expect(downloadedImage.length, 'Ảnh tải về phải là object gốc, không phải biến thể').toBe(imageFileSize)
       })
 
       await test.step('mở chi tiết và cập nhật metadata', async () => {
@@ -132,6 +174,26 @@ test.describe('media-library', () => {
         ])
         expect(response.status(), 'API sửa media phải trả 200').toBe(200)
         await expect(panel).toBeHidden()
+
+        await card.getByRole('button', { name: 'Sửa', exact: true }).click()
+        const detailPanel = adminPage.getByRole('complementary', { name: 'Chỉnh sửa thông tin ảnh/video' })
+        await expect(detailPanel).toBeVisible()
+        const detailDownload = detailPanel.getByRole('button', { name: 'Tải về máy', exact: true })
+        await expect(detailDownload).toBeVisible()
+        const downloadedFromDetail = await downloadFromButton(adminPage, detailDownload, filename)
+        expect(downloadedFromDetail.length).toBe(imageFileSize)
+
+        await detailPanel.getByRole('button', { name: 'Xem to', exact: true }).click()
+        const lightbox = adminPage.getByRole('dialog', { name: filename })
+        await expect(lightbox).toBeVisible()
+        const lightboxDownload = lightbox.getByRole('button', { name: 'Tải về máy', exact: true })
+        await expect(lightboxDownload).toBeVisible()
+        const downloadedFromLightbox = await downloadFromButton(adminPage, lightboxDownload, filename)
+        expect(downloadedFromLightbox.length).toBe(imageFileSize)
+        await lightbox.getByRole('button', { name: 'Đóng', exact: true }).click()
+        await expect(lightbox).toBeHidden()
+        await detailPanel.getByRole('button', { name: 'Đóng', exact: true }).click()
+        await expect(detailPanel).toBeHidden()
       })
 
       await test.step('xoá mềm rồi khôi phục từ Thùng rác', async () => {
@@ -148,6 +210,13 @@ test.describe('media-library', () => {
         await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
         card = mediaCard(adminPage, marker)
         await expect(card).toBeVisible()
+        await expect(card.getByRole('button', { name: 'Tải về máy', exact: true })).toBeVisible()
+        const downloadedTrashImage = await downloadFromButton(
+          adminPage,
+          card.getByRole('button', { name: 'Tải về máy', exact: true }),
+          filename,
+        )
+        expect(downloadedTrashImage.length).toBe(imageFileSize)
         const [restored] = await Promise.all([
           adminPage.waitForResponse((item) => item.request().method() === 'POST'
             && new URL(item.url()).pathname.endsWith(`/api/v1/admin/media/${mediaId}/restore`)),

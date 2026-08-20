@@ -381,7 +381,7 @@ class Phase1KOpenApiContractTest {
                 "/api/v1/admin/media/bulk-hard-delete",
                 "/api/v1/admin/media/{mediaId}",
                 "/api/v1/admin/media/{mediaId}/references",
-                "/api/v1/admin/media/{mediaId}/replace",
+                "/api/v1/admin/media/{mediaId}/download",
                 "/api/v1/admin/media/{mediaId}/restore",
                 "/api/v1/admin/media-folders",
                 "/api/v1/admin/media-folders/{id}");

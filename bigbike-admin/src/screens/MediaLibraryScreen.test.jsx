@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaLibraryScreen } from './MediaLibraryScreen'
 
 // Khoá lại kết quả đợt tinh gọn 2026-07: màn Thư viện chỉ còn 4 điều khiển lọc,
-// một kiểu xem (lưới), tối đa 3 nút trên mỗi thẻ ảnh, và không còn đường nào xoá
+// một kiểu xem (lưới), các nút thao tác dùng chung, và không còn đường nào xoá
 // vĩnh viễn hàng loạt ngay trên mặt tiền.
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   fetchMediaFolders: vi.fn(),
   fetchMediaReferences: vi.fn(),
   deleteMedia: vi.fn(),
+  downloadMedia: vi.fn(),
   hardDeleteMedia: vi.fn(),
   restoreMedia: vi.fn(),
   uploadMedia: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock('../lib/adminApi', () => ({
   fetchMediaFolders: mocks.fetchMediaFolders,
   fetchMediaReferences: mocks.fetchMediaReferences,
   deleteMedia: mocks.deleteMedia,
+  downloadMedia: mocks.downloadMedia,
   hardDeleteMedia: mocks.hardDeleteMedia,
   restoreMedia: mocks.restoreMedia,
   uploadMedia: mocks.uploadMedia,
@@ -65,11 +67,17 @@ vi.mock('../lib/useUrlSyncedState', async () => {
 // Sidebar thư mục và lightbox có luồng dữ liệu riêng, không thuộc phạm vi bài test này.
 vi.mock('../components/MediaFolderSidebar', () => ({ MediaFolderSidebar: () => null }))
 vi.mock('../components/MediaPreviewLightbox', () => ({ MediaPreviewLightbox: () => null }))
-vi.mock('../lib/contracts', () => ({ resolveThumbUrl: (m) => m.publicUrl }))
+vi.mock('../lib/contracts', () => ({
+  resolveThumbUrl: (m) => m.publicUrl,
+  isDownloadableMedia: (m) => m?.storageProvider === 'MINIO' && Boolean(m?.filePath),
+}))
 
 const activeMedia = {
   id: 'media_1',
   filename: 'catalog/mu-bao-hiem.jpg',
+  originalFilename: 'mu-bao-hiem.jpg',
+  filePath: 'uploads/media_1/mu-bao-hiem.jpg',
+  storageProvider: 'MINIO',
   publicUrl: '/media/catalog/mu-bao-hiem.jpg',
   mimeType: 'image/jpeg',
   title: 'Mũ bảo hiểm',
@@ -125,16 +133,16 @@ describe('MediaLibraryScreen — thanh lọc đã tinh gọn', () => {
 })
 
 describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
-  it('tối đa 3 nút thao tác trên thẻ ảnh đang hoạt động', async () => {
+  it('hiện nút tải cùng các nút thao tác trên thẻ ảnh đang hoạt động', async () => {
     renderScreen()
     const thumb = await screen.findByTitle('catalog/mu-bao-hiem.jpg')
     const card = thumb.closest('.medialib-card')
 
     const actions = within(card).getAllByRole('button')
       .filter((b) => b.classList.contains('medialib-icon-btn'))
-    expect(actions).toHaveLength(3)
+    expect(actions).toHaveLength(4)
     expect(actions.map((b) => b.getAttribute('title')))
-      .toEqual(['media.copyUrl', 'common.edit', 'common.delete'])
+      .toEqual(['media.copyUrl', 'media.download', 'common.edit', 'common.delete'])
   })
 
   it('nút thao tác luôn nằm trên vùng bấm xem lớn', async () => {
@@ -155,6 +163,7 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     await screen.findByTitle('catalog/mu-bao-hiem.jpg')
 
     expect(screen.queryByRole('button', { name: /media\.hardDelete/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'media.download' })).toBeInTheDocument()
   })
 
   it('người chỉ có quyền xem vẫn sao chép được link ảnh', async () => {
@@ -162,6 +171,7 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     await screen.findByTitle('catalog/mu-bao-hiem.jpg')
 
     expect(screen.getByRole('button', { name: 'media.copyUrl' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'media.download' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'common.edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'common.delete' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'common.upload' })).not.toBeInTheDocument()
@@ -176,6 +186,26 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
     await screen.findByTitle('catalog/mu-bao-hiem.jpg')
     expect(screen.queryByRole('button', { name: /media\.previewNamed/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'media.copyUrl' })).not.toBeInTheDocument()
+  })
+
+  it('ẩn nút tải khi media chỉ có URL ngoài hoặc không có object MinIO', async () => {
+    mocks.fetchMedia.mockResolvedValue(listResponse([{ ...activeMedia, storageProvider: 'EXTERNAL', filePath: null }]))
+    renderScreen()
+
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+    expect(screen.queryByRole('button', { name: 'media.download' })).not.toBeInTheDocument()
+  })
+
+  it('tải được file khi chỉ có quyền xem và báo lỗi nếu tải thất bại', async () => {
+    const user = userEvent.setup()
+    mocks.downloadMedia.mockRejectedValue(Object.assign(new Error('Mất kết nối'), { status: 0 }))
+    renderScreen({ canUpdate: false })
+
+    const card = (await screen.findByTitle('catalog/mu-bao-hiem.jpg')).closest('.medialib-card')
+    await user.click(within(card).getByRole('button', { name: 'media.download' }))
+
+    await waitFor(() => expect(mocks.downloadMedia).toHaveBeenCalledWith(activeMedia.id, activeMedia.originalFilename))
+    expect(mocks.toast.error).toHaveBeenCalledWith('media.actionNetworkError')
   })
 
   it('xoá lỗi vẫn giữ tệp và bảng chi tiết để người dùng thử lại', async () => {

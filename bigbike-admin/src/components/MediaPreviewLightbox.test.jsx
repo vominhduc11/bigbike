@@ -57,4 +57,15 @@ describe('MediaPreviewLightbox', () => {
     fireEvent.keyDown(dialog, { key: 'Tab' })
     expect(document.activeElement).toBe(close)
   })
+
+  it('hiện nút tải cho object lưu trong MinIO và gọi callback với item hiện tại', async () => {
+    const onDownload = vi.fn()
+    const storedItems = items.map((item) => ({ ...item, storageProvider: 'MINIO', filePath: `uploads/${item.filename}` }))
+    render(<MediaPreviewLightbox items={storedItems} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDownload={onDownload} />)
+
+    const button = screen.getByRole('button', { name: 'media.download' })
+    expect(button).toHaveAttribute('title', 'media.download')
+    await fireEvent.click(button)
+    expect(onDownload).toHaveBeenCalledWith(storedItems[0])
+  })
 })

@@ -5,12 +5,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
@@ -21,13 +25,18 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import io.minio.MinioClient;
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.RemoveObjectArgs;
+import io.minio.StatObjectArgs;
+import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import okhttp3.Headers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +70,8 @@ class AdminMediaP0Test {
     private static final String ADMIN_PASS        = "Admin@P0Test1234";
     private static final String SUPER_ADMIN_EMAIL = "p0media-sa-" + UUID.randomUUID() + "@bigbike.test";
     private static final String SUPER_ADMIN_PASS  = "SuperAdmin@P0Test1234";
+    private static final String SHOP_MANAGER_EMAIL = "p0media-sm-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String SHOP_MANAGER_PASS  = "ShopManager@P0Test1234";
 
     @MockitoBean
     MinioClient minioClient;
@@ -74,6 +85,7 @@ class AdminMediaP0Test {
     private MockMvc mockMvc;
     private String adminToken;
     private String superAdminToken;
+    private String shopManagerToken;
 
     @BeforeEach
     void setup() throws Exception {
@@ -82,8 +94,10 @@ class AdminMediaP0Test {
                 .build();
         ensureAdminUser();
         ensureSuperAdminUser();
+        ensureShopManagerUser();
         adminToken      = loginUser(ADMIN_EMAIL, ADMIN_PASS);
         superAdminToken = loginUser(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASS);
+        shopManagerToken = loginUser(SHOP_MANAGER_EMAIL, SHOP_MANAGER_PASS);
     }
 
     // ── Upload ────────────────────────────────────────────────────────────────
@@ -98,6 +112,97 @@ class AdminMediaP0Test {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.mimeType").value("image/png"));
+    }
+
+    @Test
+    void upload_preservesOriginalFilenameForDownload() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "ảnh gốc 2026.png", "image/png", pngBytes(2, 2));
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.originalFilename").value("ảnh gốc 2026.png"));
+    }
+
+    @Test
+    void download_originalObject_returnsAttachmentWithOriginalFilename() throws Exception {
+        byte[] originalBytes = "original-media-bytes".getBytes();
+        UUID mediaId = createTestMedia("/media/uploads/download-" + UUID.randomUUID() + "/source.mp4");
+        MediaEntity media = mediaRepo.findById(mediaId).orElseThrow();
+        media.setOriginalFilename("video gốc.mp4");
+        media.setMimeType("video/mp4");
+        media.setFileSize((long) originalBytes.length);
+        mediaRepo.save(media);
+        when(minioClient.getObject(any(GetObjectArgs.class)))
+                .thenReturn(new GetObjectResponse(
+                        Headers.of(), "bucket", media.getFilePath(), null,
+                        new ByteArrayInputStream(originalBytes)));
+
+        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "video/mp4"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(
+                        "filename*=UTF-8''video%20g%E1%BB%91c.mp4")))
+                .andExpect(content().bytes(originalBytes));
+    }
+
+    @Test
+    void download_deletedMedia_isAllowedWithMediaRead() throws Exception {
+        byte[] originalBytes = "deleted-media-bytes".getBytes();
+        UUID mediaId = createDeletedTestMedia("/media/uploads/download-deleted-" + UUID.randomUUID() + "/source.jpg");
+        MediaEntity media = mediaRepo.findById(mediaId).orElseThrow();
+        media.setOriginalFilename("deleted-source.jpg");
+        media.setFileSize((long) originalBytes.length);
+        mediaRepo.save(media);
+        when(minioClient.getObject(any(GetObjectArgs.class)))
+                .thenReturn(new GetObjectResponse(
+                        Headers.of(), "bucket", media.getFilePath(), null,
+                        new ByteArrayInputStream(originalBytes)));
+
+        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(originalBytes));
+    }
+
+    @Test
+    void download_withoutToken_returns401() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/download-noauth-" + UUID.randomUUID() + "/source.jpg");
+
+        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void download_withoutMediaRead_returns403() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/download-forbidden-" + UUID.randomUUID() + "/source.jpg");
+
+        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+                        .header("Authorization", "Bearer " + shopManagerToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void download_missingObject_returns404() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/download-missing-" + UUID.randomUUID() + "/source.jpg");
+        doThrow(new IOException("object missing"))
+                .when(minioClient).statObject(any(StatObjectArgs.class));
+
+        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void replaceRoute_isGone() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/no-replace-" + UUID.randomUUID() + "/source.jpg");
+
+        mockMvc.perform(post("/api/v1/admin/media/" + mediaId + "/replace")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -390,29 +495,6 @@ class AdminMediaP0Test {
     }
 
     @Test
-    void replaceRasterWithSvg_clearsStaleDimensions() throws Exception {
-        UUID mediaId = createTestMedia("/media/uploads/replace-" + UUID.randomUUID() + "/img.jpg");
-        MediaEntity media = mediaRepo.findById(mediaId).orElseThrow();
-        media.setWidth(1600);
-        media.setHeight(900);
-        media.setBucket("historical-media-bucket");
-        mediaRepo.save(media);
-        byte[] svg = ("<svg xmlns=\"http://www.w3.org/2000/svg\" data-id=\"" + UUID.randomUUID()
-                + "\"><path d=\"M0 0h10v10H0z\"/></svg>").getBytes();
-        MockMultipartFile file = new MockMultipartFile("file", "replacement.svg", "image/svg+xml", svg);
-
-        mockMvc.perform(multipart("/api/v1/admin/media/" + mediaId + "/replace")
-                        .file(file)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        MediaEntity replaced = mediaRepo.findById(mediaId).orElseThrow();
-        assertThat(replaced.getWidth()).isNull();
-        assertThat(replaced.getHeight()).isNull();
-        assertThat(replaced.getMimeType()).isEqualTo("image/svg+xml");
-    }
-
-    @Test
     void updateMedia_unknownFolder_returns404() throws Exception {
         UUID mediaId = createTestMedia("/media/uploads/folder-" + UUID.randomUUID() + "/img.jpg");
 
@@ -533,6 +615,21 @@ class AdminMediaP0Test {
         });
     }
 
+    private void ensureShopManagerUser() {
+        adminUserRepo.findByEmail(SHOP_MANAGER_EMAIL).orElseGet(() -> {
+            AdminUserEntity manager = new AdminUserEntity();
+            manager.setEmail(SHOP_MANAGER_EMAIL);
+            manager.setPasswordHash(passwordService.hash(SHOP_MANAGER_PASS));
+            manager.setDisplayName("P0 Media Test Shop Manager");
+            manager.setRole("SHOP_MANAGER");
+            manager.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            manager.setCreatedAt(now);
+            manager.setUpdatedAt(now);
+            return adminUserRepo.save(manager);
+        });
+    }
+
     private String loginUser(String email, String password) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -556,6 +653,7 @@ class AdminMediaP0Test {
     private UUID createTestMedia(String publicUrl, String status) {
         MediaEntity m = new MediaEntity();
         m.setFilePath(publicUrl.replaceFirst("^/media/", ""));
+        m.setOriginalFilename(m.getFilePath().substring(m.getFilePath().lastIndexOf('/') + 1));
         m.setPublicUrl(publicUrl);
         m.setStorageProvider("MINIO");
         m.setMimeType("image/jpeg");

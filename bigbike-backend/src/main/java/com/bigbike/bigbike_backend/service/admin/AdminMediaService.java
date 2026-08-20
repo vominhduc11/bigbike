@@ -22,13 +22,15 @@ import com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.buildSort;
 import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.nvl;
-import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.sameMimeGroup;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.preserveOriginalFilename;
 import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.sanitizeFilename;
 import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.startsWith;
 import tools.jackson.databind.ObjectMapper;
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.StatObjectArgs;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,6 +111,7 @@ public class AdminMediaService {
 
         String mimeType = file.getContentType() != null
                 ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+        String originalFilename = preserveOriginalFilename(file.getOriginalFilename());
         if (file.getSize() > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
                     "File exceeds 200 MB limit.");
@@ -217,6 +220,7 @@ public class AdminMediaService {
         Instant now = Instant.now();
         MediaEntity media = new MediaEntity();
         media.setFilePath(objectKey);
+        media.setOriginalFilename(originalFilename);
         media.setPublicUrl(publicUrl);
         media.setStorageProvider(MINIO_PROVIDER);
         media.setBucket(bucket);
@@ -241,110 +245,6 @@ public class AdminMediaService {
                         "variants", variants.keySet()))));
 
         return toDetail(saved);
-    }
-
-    /**
-     * Replace the underlying file of an existing media record while keeping the
-     * URL and DB id stable. Re-extracts dimensions and re-generates variants.
-     *
-     * <p>Used to update an image without breaking links anywhere it's referenced.
-     */
-    @Transactional
-    public AdminMediaDetailResponse replaceFile(UUID mediaId, MultipartFile file, UUID adminId) {
-        validateMimeContent(file);
-        MediaEntity media = mediaRepo.findById(mediaId)
-                .orElseThrow(() -> new NotFoundException("Media not found."));
-
-        String newMime = file.getContentType() != null
-                ? file.getContentType().toLowerCase(Locale.ROOT) : "";
-        // Replacing across mime families breaks too many assumptions (image → audio, etc.)
-        if (media.getMimeType() != null && !sameMimeGroup(media.getMimeType(), newMime)) {
-            throw ValidationException.fromField("file", "MIME_GROUP_MISMATCH",
-                    "Replacement must be the same media type (image/video/audio).");
-        }
-        if (file.getSize() > MAX_UPLOAD_BYTES) {
-            throw ValidationException.fromField("file", "FILE_TOO_LARGE",
-                    "File exceeds 200 MB limit.");
-        }
-
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to read upload bytes: " + e.getMessage(), e);
-        }
-        // SVG: strip scripts/handlers/external refs before storing (also validates it IS an SVG).
-        if (SVG_MIME.equals(newMime)) {
-            bytes = SvgSanitizer.sanitize(bytes);
-        }
-
-        // Extract raster dimensions for metadata before overwriting storage. Replacement follows
-        // the same no-shared-minimum rule as a new library upload.
-        Integer width = null, height = null;
-        if (RASTER_IMAGE_TYPES.contains(newMime)) {
-            try {
-                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                if (img != null) { width = img.getWidth(); height = img.getHeight(); }
-            } catch (IOException ignored) {}
-        }
-
-        // Downscale the stored original (MEDIA_RULE_006) — same reasoning as uploadMedia().
-        if (newMime.startsWith("image/")) {
-            bytes = imageCompressionService.compress(bytes, newMime, ADMIN_ORIGINAL_PROFILE);
-            if (RASTER_IMAGE_TYPES.contains(newMime)) {
-                try {
-                    BufferedImage compressedImg = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                    if (compressedImg != null) { width = compressedImg.getWidth(); height = compressedImg.getHeight(); }
-                } catch (IOException ignored) {}
-            }
-        }
-
-        String contentSha256 = sha256Hex(bytes);
-        mediaRepo.findByContentSha256(contentSha256)
-                .filter(other -> !other.getId().equals(mediaId))
-                .ifPresent(other -> {
-                    throw new ConflictException(
-                            "An identical media object already exists; reuse that media item instead.");
-                });
-
-        String before = snapshot(media);
-        String objectKey = media.getFilePath();
-        String bucket = media.getBucket() != null && !media.getBucket().isBlank()
-                ? media.getBucket()
-                : minioProperties.getBucket();
-
-        // Overwrite original at the same key — URL stays valid for everyone referencing it
-        try {
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(objectKey)
-                            .stream(new java.io.ByteArrayInputStream(bytes), bytes.length, -1)
-                            .contentType(newMime)
-                            .build());
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to overwrite file in storage: " + e.getMessage(), e);
-        }
-
-        // Old variants are stale — remove them, then regenerate
-        imageVariantService.deleteVariants(objectKey, bucket);
-        Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, newMime, bucket);
-
-        media.setMimeType(newMime);
-        media.setFileSize((long) bytes.length);
-        media.setContentSha256(contentSha256);
-        // Replacing a raster with SVG/undecodable legacy image must clear stale
-        // dimensions instead of reporting the previous file's width/height.
-        media.setWidth(width);
-        media.setHeight(height);
-        media.setSizes(variants.isEmpty() ? null : toJson(variants));
-        media.setUpdatedAt(Instant.now());
-        mediaRepo.save(media);
-
-        auditLogWriter.save(auditLogFactory.build(
-                "ADMIN", adminId, "MEDIA_FILE_REPLACED", "MEDIA", mediaId, before, snapshot(media)));
-
-        return toDetail(media);
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -530,6 +430,43 @@ public class AdminMediaService {
                 .orElseThrow(() -> new NotFoundException("Media not found."));
         return toDetail(media);
     }
+
+    @Transactional(readOnly = true)
+    public MediaDownload openDownload(UUID mediaId) {
+        MediaEntity media = mediaRepo.findById(mediaId)
+                .orElseThrow(() -> new NotFoundException("Media not found."));
+        if (!MINIO_PROVIDER.equalsIgnoreCase(media.getStorageProvider())
+                || media.getFilePath() == null || media.getFilePath().isBlank()) {
+            throw new NotFoundException("Media object is not available for download.");
+        }
+
+        String bucket = media.getBucket() != null && !media.getBucket().isBlank()
+                ? media.getBucket()
+                : minioProperties.getBucket();
+        String filename = media.getOriginalFilename();
+        if (filename == null || filename.isBlank()) {
+            filename = preserveOriginalFilename(media.getFilePath());
+        }
+        String mimeType = media.getMimeType() == null || media.getMimeType().isBlank()
+                ? "application/octet-stream" : media.getMimeType();
+        try {
+            // Confirm the object exists before returning a streaming response so a missing
+            // historical object is reported as 404 rather than failing after headers are sent.
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(media.getFilePath())
+                    .build());
+            InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(media.getFilePath())
+                    .build());
+            return new MediaDownload(inputStream, filename, mimeType, media.getFileSize());
+        } catch (Exception e) {
+            throw new NotFoundException("Media object is not available for download.");
+        }
+    }
+
+    public record MediaDownload(InputStream inputStream, String filename, String mimeType, Long size) {}
 
     // ── Update metadata ───────────────────────────────────────────────────────
 
@@ -725,7 +662,7 @@ public class AdminMediaService {
 
     private AdminMediaListItemResponse toListItemWithUsageAndTags(MediaEntity m, int usageCount, List<String> tags) {
         return new AdminMediaListItemResponse(
-                m.getId(), m.getLegacyId(), m.getFilePath(), m.getPublicUrl(),
+                m.getId(), m.getLegacyId(), m.getFilePath(), m.getOriginalFilename(), m.getPublicUrl(),
                 m.getStorageProvider(),
                 m.getMimeType(), m.getFileSize(), m.getWidth(), m.getHeight(),
                 m.getAltText(), m.getTitle(),
@@ -737,7 +674,7 @@ public class AdminMediaService {
         var refs = mediaReferenceService.getReferences(m);
         List<String> tags = tagRepo.tagsFor(m.getId());
         return new AdminMediaDetailResponse(
-                m.getId(), m.getLegacyId(), m.getFilePath(), m.getPublicUrl(),
+                m.getId(), m.getLegacyId(), m.getFilePath(), m.getOriginalFilename(), m.getPublicUrl(),
                 m.getStorageProvider(),
                 m.getMimeType(), m.getFileSize(), m.getWidth(), m.getHeight(),
                 m.getAltText(), m.getTitle(),

@@ -14,7 +14,7 @@ class RateLimitPolicyCatalogTest {
         assertTier("POST", "/api/v1/chat/leads", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/chat/leads/decline", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/customer/me/avatar", RateLimitTier.CUSTOMER_MEDIA);
-        assertTier("POST", "/api/v1/admin/media/abc/replace", RateLimitTier.ADMIN_MEDIA);
+        assertTier("POST", "/api/v1/admin/media", RateLimitTier.ADMIN_MEDIA);
         assertTier("POST", "/api/v1/admin/products/import/validate", RateLimitTier.ADMIN_IMPORT_VALIDATE);
         assertTier("POST", "/api/v1/admin/products/import/commit", RateLimitTier.ADMIN_IMPORT_COMMIT);
         assertTier("GET", "/api/v1/admin/reports/orders/export", RateLimitTier.ADMIN_EXPORT);
@@ -34,6 +34,8 @@ class RateLimitPolicyCatalogTest {
     void methodAndNearPathDoNotOverMatch() {
         assertThat(catalog.resolve("GET", "/api/v1/chat/leads")).isEmpty();
         assertThat(catalog.resolve("POST", "/api/v1/cartoon/items")).isEmpty();
+        assertThat(catalog.resolve("POST", "/api/v1/admin/media/abc/replace").orElse(null))
+                .isNotEqualTo(RateLimitTier.ADMIN_MEDIA);
     }
 
     @Test

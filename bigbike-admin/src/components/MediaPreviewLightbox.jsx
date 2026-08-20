@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, X as XIcon, Music, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X as XIcon, Music, FileText, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDialogA11y } from '@/lib/useDialogA11y'
 import { useBodyScrollLock } from './media-picker/useModalBehavior'
@@ -11,7 +11,7 @@ import { useBodyScrollLock } from './media-picker/useModalBehavior'
  * - When only `media` provided, shows a single item without nav.
  * - Click backdrop or press Escape to close.
  */
-export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate }) {
+export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate, onDownload }) {
   const { t } = useTranslation()
   const dialogRef = useRef(null)
   // A3: focus-trap + đưa/trả focus + Escape cho overlay tự dựng.
@@ -60,6 +60,13 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
         className="absolute right-4 top-4 z-10 h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white">
         <XIcon size={22} />
       </Button>
+      {onDownload && (
+        <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDownload(current) }}
+          aria-label={t('media.download')} title={t('media.download')}
+          className="absolute right-16 top-4 z-10 h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white">
+          <Download size={20} />
+        </Button>
+      )}
 
       {/* Counter */}
       {hasNav && (

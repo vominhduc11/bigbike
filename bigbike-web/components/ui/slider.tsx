@@ -17,14 +17,25 @@ export type SliderProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.
   rangeClassName?: string;
   /** Optional classes for the small visual indicator inside each 44px hit area. */
   thumbIndicatorClassName?: string[];
+  /** Positions the visible indicator on the track while keeping the 44px thumb hit area. */
+  thumbIndicatorMode?: "thumb" | "track";
 };
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   SliderProps
->(({ className, thumbCount, thumbProps, trackClassName, rangeClassName, thumbIndicatorClassName, value, defaultValue, min = 0, max = 100, ...props }, ref) => {
+>(({ className, thumbCount, thumbProps, trackClassName, rangeClassName, thumbIndicatorClassName, thumbIndicatorMode = "thumb", value, defaultValue, min = 0, max = 100, ...props }, ref) => {
   const count = thumbCount ?? value?.length ?? defaultValue?.length ?? 1;
   const values = value ?? defaultValue ?? [];
+  const indicatorLeft = (thumbValue: number | undefined) => {
+    if (thumbValue == null || max <= min) return undefined;
+    const position = Math.min(1, Math.max(0, (thumbValue - min) / (max - min)));
+    return `clamp(0px, calc(${position * 100}% - 0.5rem), calc(100% - 1rem))`;
+  };
+  const indicatorClassName = (index: number) => cn(
+    "block h-4 w-4 !rounded-full border-2 border-brand bg-background shadow-sm",
+    thumbIndicatorClassName?.[index],
+  );
 
   return (
     <SliderPrimitive.Root
@@ -37,10 +48,31 @@ const Slider = React.forwardRef<
       {...props}
     >
       <SliderPrimitive.Track
+        data-slider-track="true"
         className={cn("relative h-1 w-full grow overflow-hidden rounded-none bg-muted", trackClassName)}
       >
-        <SliderPrimitive.Range className={cn("absolute h-full bg-primary", rangeClassName)} />
+        <SliderPrimitive.Range
+          data-slider-range="true"
+          className={cn("absolute h-full bg-primary", rangeClassName)}
+        />
       </SliderPrimitive.Track>
+      {thumbIndicatorMode === "track" ? Array.from({ length: Math.max(1, count) }, (_, index) => {
+        const left = indicatorLeft(values[index]);
+        if (left == null) return null;
+        return (
+          <span
+            key={`track-indicator-${index}`}
+            aria-hidden="true"
+            data-slider-thumb-indicator="true"
+            data-slider-thumb-indicator-index={index}
+            className={cn(
+              "pointer-events-none absolute top-1/2 z-20 h-4 w-4 -translate-y-1/2",
+              indicatorClassName(index),
+            )}
+            style={{ left }}
+          />
+        );
+      }) : null}
       {Array.from({ length: Math.max(1, count) }, (_, index) => (
         <SliderPrimitive.Thumb
           key={index}
@@ -50,21 +82,21 @@ const Slider = React.forwardRef<
             thumbProps?.[index]?.className,
           )}
         >
-          <span
-            aria-hidden="true"
-            data-slider-thumb-indicator="true"
-            className={cn(
-              "block h-4 w-4 !rounded-full border-2 border-brand bg-background shadow-sm",
-              thumbIndicatorClassName?.[index],
-            )}
-            style={{
-              transform: values[index] != null && values[index] <= min
-                ? "translateX(-50%)"
-                : values[index] != null && values[index] >= max
-                  ? "translateX(50%)"
-                  : undefined,
-            }}
-          />
+          {thumbIndicatorMode === "thumb" ? (
+            <span
+              aria-hidden="true"
+              data-slider-thumb-indicator="true"
+              data-slider-thumb-indicator-index={index}
+              className={indicatorClassName(index)}
+              style={{
+                transform: values[index] != null && values[index] <= min
+                  ? "translateX(-50%)"
+                  : values[index] != null && values[index] >= max
+                    ? "translateX(50%)"
+                    : undefined,
+              }}
+            />
+          ) : null}
         </SliderPrimitive.Thumb>
       ))}
     </SliderPrimitive.Root>

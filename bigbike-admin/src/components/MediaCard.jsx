@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Eye, Pencil, Trash2, RotateCcw, Music, FileText, ImageOff, Copy } from 'lucide-react'
+import { Eye, Pencil, Trash2, RotateCcw, Music, FileText, ImageOff, Copy, Download } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -12,12 +12,11 @@ const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
 const isAudio = (m) => m && m.startsWith('audio/')
 
-// Tối đa 3 nút nổi trên mỗi thẻ: Copy URL · Sửa · Xoá (thùng rác: chỉ Khôi phục).
 // Xoá vĩnh viễn cố ý KHÔNG có ở đây — chỉ trong bảng chi tiết ở thùng rác.
 export function MediaCard({
   media, selected, focused, deleting,
   onToggleSelect, onPreview,
-  onEdit, onViewDetail, onDelete, onRestore,
+  onEdit, onViewDetail, onDelete, onRestore, onDownload,
 }) {
   const { t } = useTranslation()
   const [previewFailed, setPreviewFailed] = useState(false)
@@ -101,7 +100,7 @@ export function MediaCard({
 
         {/* Copy URL chỉ cần quyền xem — không gộp vào điều kiện quyền sửa, nếu không
             người chỉ có quyền xem sẽ mất luôn cả nút sao chép link. */}
-        {(media.publicUrl || onEdit || onViewDetail || onDelete || onRestore) && (
+        {(media.publicUrl || onEdit || onViewDetail || onDelete || onRestore || onDownload) && (
           <div className="medialib-action-overlay z-10">
             <div className="medialib-overlay-actions pointer-events-auto">
               {media.publicUrl && (
@@ -109,6 +108,13 @@ export function MediaCard({
                   className="medialib-icon-btn"
                   title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
                   <Copy size={14} />
+                </Button>
+              )}
+              {onDownload && (
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDownload() }}
+                  className="medialib-icon-btn"
+                  title={t('media.download')} aria-label={t('media.download')}>
+                  <Download size={14} />
                 </Button>
               )}
               {onEdit && (

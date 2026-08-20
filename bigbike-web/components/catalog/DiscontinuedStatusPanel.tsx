@@ -44,18 +44,20 @@ export function DiscontinuedStatusPanel({
   return (
     <section
       aria-labelledby="discontinued-product-title"
-      className="space-y-5 border border-border bg-card p-5 md:p-8"
+      className="flex flex-col border border-border bg-card p-5 md:p-8"
       data-discontinued-status
     >
-      <p className="m-0 inline-flex min-h-8 items-center border border-brand px-3 py-1.5 font-cta text-b5-label font-bold uppercase tracking-wide text-brand">
-        {t("discontinuedLabel")}
-      </p>
-      <h1 id="discontinued-product-title" className="m-0 font-body text-a1-title font-semibold leading-title text-foreground">
-        {name}
-      </h1>
-      <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{t("discontinuedDescription")}</p>
+      <div className="flex flex-col gap-1.5">
+        <p data-discontinued-label className="m-0 inline-flex min-h-8 items-center border border-brand px-3 py-1.5 font-cta text-b5-label font-bold uppercase tracking-wide text-brand">
+          {t("discontinuedLabel")}
+        </p>
+        <h1 id="discontinued-product-title" className="m-0 font-body text-a1-title font-semibold leading-title text-foreground">
+          {name}
+        </h1>
+      </div>
+      <p data-discontinued-description className="m-0 mt-6 text-a4-content leading-relaxed text-muted-foreground">{t("discontinuedDescription")}</p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div data-discontinued-actions className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {equivalentHref ? (
           <Button asChild variant="primary" className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase">
             <a href={equivalentHref}>{t("discontinuedEquivalentLink")}</a>
@@ -83,7 +85,7 @@ export function DiscontinuedStatusPanel({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-a5-meta text-muted-foreground">
+      <div data-discontinued-meta className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-a5-meta text-muted-foreground">
         {displayBrandName ? (
           <span>
             {t("brand")}: {brand?.slug ? <LocalizedLink kind="brand" viSlug={brand.slug} className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">{displayBrandName}</LocalizedLink> : displayBrandName}
@@ -97,7 +99,7 @@ export function DiscontinuedStatusPanel({
       </div>
 
       {categorySlug ? (
-        <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="inline-flex min-h-11 items-center text-a4-content font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">
+        <LocalizedLink data-discontinued-category-link kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="mt-5 inline-flex min-h-11 items-center text-a4-content font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">
           {t("discontinuedCategoryLink")}
         </LocalizedLink>
       ) : null}

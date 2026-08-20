@@ -60,7 +60,7 @@ session token and API token are not written into rate-limit keys, metrics or app
 | `CHAT` | `POST /api/v1/chat/messages`, `/leads`, `/leads/decline` | IP + HMAC conversation | 10/minute |
 | `OAUTH` | OAuth authorize/callback | IP + opaque state HMAC when present | 20/minute |
 | `ADMIN_MUTATION` | Admin write/default expensive command | Admin account + IP | 60/minute |
-| `ADMIN_MEDIA` | Admin media upload/replace | Admin account + IP | 30/minute, 2 concurrent/account, 10 global |
+| `ADMIN_MEDIA` | Admin media upload | Admin account + IP | 30/minute, 2 concurrent/account, 10 global |
 | `ADMIN_IMPORT` | Product import validate/commit | Admin account + IP | validate 6/hour, commit 2/hour, 1 global |
 | `ADMIN_EXPORT` | Product/report export | Admin account + IP | 12/hour, 3 global |
 | `INTERNAL` | `/api/internal/**` | HMAC internal token + IP | 300/minute |

@@ -17,13 +17,6 @@ final class MediaServiceHelpers {
 
     private static final Set<String> ALLOWED_SORT_KEYS = Set.of("createdAt", "fileSize", "title", "usageCount");
 
-    static boolean sameMimeGroup(String a, String b) {
-        if (a == null || b == null) return false;
-        int slashA = a.indexOf('/'), slashB = b.indexOf('/');
-        if (slashA < 0 || slashB < 0) return a.equalsIgnoreCase(b);
-        return a.substring(0, slashA).equalsIgnoreCase(b.substring(0, slashB));
-    }
-
     static boolean startsWith(String s, String prefix) {
         return s != null && s.toLowerCase(Locale.ROOT).startsWith(prefix);
     }
@@ -43,5 +36,16 @@ final class MediaServiceHelpers {
         // Keep extension intact, sanitize the rest
         String name = original.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase(Locale.ROOT);
         return name.length() > 200 ? name.substring(0, 200) : name;
+    }
+
+    /** Preserve the uploader-facing basename for downloads without allowing path traversal. */
+    static String preserveOriginalFilename(String original) {
+        if (original == null || original.isBlank()) return "upload";
+        String basename = original.replace('\\', '/');
+        int slash = basename.lastIndexOf('/');
+        if (slash >= 0) basename = basename.substring(slash + 1);
+        basename = basename.replaceAll("[\\p{Cntrl}]", "").strip();
+        return basename.isBlank() || ".".equals(basename) || "..".equals(basename)
+                ? "upload" : basename;
     }
 }

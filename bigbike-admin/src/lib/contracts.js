@@ -850,9 +850,16 @@ export function normalizeCustomer(input) {
 
 export function normalizeMediaItem(input) {
   const s = input && typeof input === 'object' ? input : {}
+  const filePath = toTrimmedStringLocal(s.filePath) || undefined
+  const storedName = toTrimmedStringLocal(s.originalFilename)
+    || toTrimmedStringLocal(s.filename)
+    || filePath
+  const filename = storedName?.split(/[\\/]/).pop() || 'unknown'
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown-media',
-    filename: toTrimmedStringLocal(s.filename) || toTrimmedStringLocal(s.filePath) || 'unknown',
+    filename,
+    originalFilename: filename,
+    filePath,
     publicUrl: toTrimmedStringLocal(s.publicUrl) || toTrimmedStringLocal(s.url) || undefined,
     mimeType: toTrimmedStringLocal(s.mimeType) || 'application/octet-stream',
     fileSize: toIntegerLocal(s.fileSize, 0),
@@ -870,6 +877,10 @@ export function normalizeMediaItem(input) {
     tags: Array.isArray(s.tags) ? s.tags : [],
     sizes: parseSizesJson(s.sizes),
   }
+}
+
+export function isDownloadableMedia(media) {
+  return media?.storageProvider === 'MINIO' && Boolean(media?.filePath)
 }
 
 function parseSizesJson(raw) {

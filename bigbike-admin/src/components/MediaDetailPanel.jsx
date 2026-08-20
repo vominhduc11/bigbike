@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { X as XIcon, Copy, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, ImageOff, RefreshCw } from 'lucide-react'
-import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminApi'
+import { X as XIcon, Copy, Download, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, ImageOff } from 'lucide-react'
+import { fetchMediaFolders, updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { showConfirm } from '../lib/confirm'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getMediaReferenceAdminPath, REFERENCE_TYPE_KEYS, formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
-import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES } from '../lib/mediaConstants'
 
 
 function formatDate(iso) {
@@ -38,7 +37,7 @@ function detailActionError(t, error, fallback) {
  * Slide-in detail panel — does not block the grid behind it.
  * Shows preview, editable metadata, technical info, references.
  */
-export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete, onRestore, onHardDelete, canUpdate, canHardDelete, actionBusy = false, folders: foldersProp }) {
+export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDownload, onDelete, onRestore, onHardDelete, canUpdate, canHardDelete, actionBusy = false, folders: foldersProp }) {
   const { t } = useTranslation()
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
@@ -49,21 +48,17 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const [foldersLocal, setFoldersLocal] = useState([])
   const folders = Array.isArray(foldersProp) ? foldersProp : foldersLocal
   const [saving, setSaving] = useState(false)
-  const [replacing, setReplacing] = useState(false)
   const [error, setError] = useState('')
-  // Thao tác hiếm + không hoàn tác được (thay ảnh) và danh sách biến thể kỹ thuật
-  // gom vào đây, đóng sẵn — luồng chính chỉ còn xem, sửa mô tả, phân loại, xoá.
+  // Danh sách biến thể kỹ thuật được gom vào đây, đóng sẵn để giữ luồng chính gọn.
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [previewFailed, setPreviewFailed] = useState(false)
   const { refs, refsLoading, refsError, retryRefs } = useMediaReferences(media)
-  const replaceInputRef = useRef(null)
 
   const isImage = media.mimeType?.startsWith('image/')
   const isVideo = media.mimeType?.startsWith('video/')
   const isAudio = media.mimeType?.startsWith('audio/')
   const isTrash = media.status === 'DELETED'
   const filename = (media.filename ?? media.publicUrl ?? '').split('/').pop()
-  const canReplace = canUpdate && !isTrash && isImage
   const hasVariants = Boolean(media.sizes && Object.keys(media.sizes).length > 0)
 
   const dirty =
@@ -160,41 +155,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       .catch(() => toast.error(t('media.copyFailed')))
   }
 
-  async function handleReplaceClick() { replaceInputRef.current?.click() }
-
-  async function handleReplaceFile(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    if (!IMAGE_MEDIA_MIME_TYPES.includes(file.type)) {
-      toast.error(t('media.unsupportedType', { type: file.type || t('common.unknown') }))
-      return
-    }
-    if (file.size > MAX_MEDIA_UPLOAD_BYTES) {
-      toast.error(t('media.fileTooLarge', {
-        size: formatBytes(file.size),
-        limit: formatBytes(MAX_MEDIA_UPLOAD_BYTES),
-      }))
-      return
-    }
-    // Thay file có hiệu lực ngay ở MỌI nơi đang dùng (giữ nguyên URL) và không hoàn tác được →
-    // bắt buộc xác nhận trước khi upload.
-    const ok = await showConfirm(
-      t('media.replaceConfirm'),
-      t('media.replaceConfirmTitle', { defaultValue: 'Thay ảnh?' }),
-      { variant: 'danger' },
-    )
-    if (!ok) return
-    setReplacing(true)
-    try {
-      const result = await replaceMediaFile(media.id, file)
-      onSaved(result.item)
-      toast.success(t('media.replaceSuccess'))
-    } catch (replaceError) {
-      toast.error(detailActionError(t, replaceError, t('media.replaceError')))
-    } finally { setReplacing(false) }
-  }
-
   return (
     <aside className="mediadetail-panel" role="complementary" aria-label={t('media.editTitle')}>
       <header className="mediadetail-header">
@@ -238,6 +198,12 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
               title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
               <Copy size={14} />
             </Button>
+            {onDownload && (
+              <Button variant="outline" size="icon" onClick={() => onDownload(media)} className="shrink-0"
+                title={t('media.download')} aria-label={t('media.download')}>
+                <Download size={14} />
+              </Button>
+            )}
           </div>
         </section>
 
@@ -324,29 +290,13 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           )}
         </section>
 
-        {/* Nâng cao — thao tác hiếm, đóng sẵn */}
-        {(hasVariants || canReplace) && (
+        {/* Nâng cao — thông tin kỹ thuật, đóng sẵn */}
+        {hasVariants && (
           <CollapsibleSection
             title={t('media.advancedSection')}
             open={advancedOpen}
             onToggle={() => setAdvancedOpen((s) => !s)}
           >
-            {canReplace && (
-              <div className="flex flex-col gap-1.5">
-                {/* Raw hidden file input is required to trigger the OS file picker. */}
-                <input ref={replaceInputRef} type="file" accept={IMAGE_MEDIA_MIME_TYPES.join(',')}
-                  className="hidden" onChange={handleReplaceFile} />
-                <Button variant="outline" size="sm" onClick={handleReplaceClick}
-                  loading={replacing} className="w-full">
-                  <RefreshCw size={13} />
-                  {t('media.replaceFile')}
-                </Button>
-                <p className="text-xs text-muted-foreground m-0">
-                  {t('media.replaceHint')}
-                </p>
-              </div>
-            )}
-
             {hasVariants && (
               <div className="mt-3">
                 <p className="mediadetail-section-title">{t('media.variants')}</p>

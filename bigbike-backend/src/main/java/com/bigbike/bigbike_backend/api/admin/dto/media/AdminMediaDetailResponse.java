@@ -8,6 +8,7 @@ public record AdminMediaDetailResponse(
         UUID id,
         Long legacyId,
         String filePath,
+        String originalFilename,
         String publicUrl,
         String storageProvider,
         String mimeType,

@@ -16,7 +16,7 @@ Evidence:
 ### Media fields
 
 - Canonical public media shape remains `image`, `gallery[]`, and `videos[]` at the product/content contract level.
-- Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, and storage metadata.
+- Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, storage metadata, and `originalFilename`. New uploads preserve the safe basename supplied by the uploader (including Unicode and extension); historical rows are backfilled from the stored object path when no original name was previously recorded. The authenticated admin download contract always streams the stored MinIO object, including `DELETED` rows, never a thumbnail/variant or an external URL-only video.
 - `media.content_sha256` (V369) stores the lowercase SHA-256 of the bytes actually held in object storage. It is nullable for historical rows, format-checked, and unique when present. Live migration and admin upload use it to reuse identical content even when filenames differ; a checksum must never be populated until the object bytes have been read and verified.
 - Allowlist for **new Admin Media Library uploads** includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, and MP4 video only. Audio was removed by the owner decision recorded in `BUSINESS_RULES.md` § Media Rules (AUD-074); historical audio or other legacy objects already present in storage are not deleted automatically. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
 

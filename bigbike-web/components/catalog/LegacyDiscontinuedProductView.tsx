@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import { Container } from "@/components/layout/Container";
 import { DiscontinuedStatusPanel } from "@/components/catalog/DiscontinuedStatusPanel";
-import { DiscontinuedSearchForm } from "@/components/catalog/DiscontinuedSearchForm";
 import { DiscontinuedSuggestions } from "@/components/catalog/DiscontinuedSuggestions";
 import { DiscontinuedTrustStrip } from "@/components/catalog/DiscontinuedTrustStrip";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
@@ -35,7 +34,7 @@ export async function LegacyDiscontinuedProductView({
   const categorySlugEn = breadcrumbCategories[breadcrumbCategories.length - 1]?.slugEn;
 
   return (
-    <main id="main-content">
+    <main id="main-content" className="bb-heroless">
       <Container>
         <nav className="py-6 text-a5-meta text-muted-foreground md:py-8" aria-label={tA11y("breadcrumbNav")}>
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
@@ -93,7 +92,6 @@ export async function LegacyDiscontinuedProductView({
         <div className="space-y-8 pb-16 md:space-y-10">
           <DiscontinuedTrustStrip />
           <DiscontinuedSuggestions products={suggestions} />
-          <DiscontinuedSearchForm />
           <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground">{t("safetyDisclaimer")}</p>
         </div>
       </Container>

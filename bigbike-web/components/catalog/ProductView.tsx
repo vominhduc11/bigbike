@@ -32,7 +32,6 @@ import { WriteReviewDialog } from "@/components/catalog/WriteReviewDialog";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
 import { DiscontinuedProductOverview } from "@/components/catalog/DiscontinuedProductOverview";
-import { DiscontinuedSearchForm } from "@/components/catalog/DiscontinuedSearchForm";
 import { DiscontinuedSuggestions } from "@/components/catalog/DiscontinuedSuggestions";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
@@ -474,7 +473,6 @@ export function ProductView({
         {product.discontinued ? (
           <div className="space-y-8 pt-8 md:space-y-10 md:pt-10">
             <DiscontinuedSuggestions products={discontinuedSuggestions} />
-            <DiscontinuedSearchForm />
             <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground">{tProduct("safetyDisclaimer")}</p>
           </div>
         ) : null}

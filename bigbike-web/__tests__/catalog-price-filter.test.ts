@@ -4,11 +4,14 @@ import {
   buildPriceScale,
   formatPriceDisplay,
   formatPriceInput,
+  getChangedPriceHandle,
   getPriceDisplayRange,
   normalizePriceSelection,
   priceRangeHasSelection,
   priceSelectionToQueryBounds,
   priceSelectionToSliderValues,
+  snapPriceBound,
+  snapPriceSelectionForHandle,
   sliderValuesToPriceSelection,
   snapPriceSelection,
 } from "@/lib/utils/catalog-price-filter";
@@ -73,6 +76,45 @@ describe("catalog price filter", () => {
     expect(live.minPrice).toBeGreaterThan(scale.minPrice);
     expect(live.maxPrice).toBeLessThan(scale.maxPrice);
     expect(snapped).toEqual({ minPrice: 2_000_000, maxPrice: 12_000_000 });
+  });
+
+  it("identifies exactly which handle changed", () => {
+    expect(getChangedPriceHandle([120, 900], [100, 900])).toBe("min");
+    expect(getChangedPriceHandle([100, 920], [100, 900])).toBe("max");
+    expect(getChangedPriceHandle([100, 900], [100, 900])).toBeNull();
+    expect(getChangedPriceHandle([120, 920], [100, 900])).toBeNull();
+  });
+
+  it("snaps only the dragged bound and preserves the untouched bound", () => {
+    const scale = buildPriceScale(range);
+    let committed = { minPrice: 1_000_000, maxPrice: 4_500_000 };
+
+    for (const minPrice of [1_240_000, 1_860_000, 2_140_000, 2_740_000, 3_160_000]) {
+      committed = snapPriceSelectionForHandle(
+        { minPrice, maxPrice: 4_500_000.0001 },
+        committed,
+        scale,
+        "min",
+      );
+      expect(committed.maxPrice).toBe(4_500_000);
+    }
+
+    expect(snapPriceBound(5_210_000, scale, "max")).toBe(6_000_000);
+    let maxCommitted = { minPrice: 2_000_000, maxPrice: 4_500_000 };
+    for (const maxPrice of [5_210_000, 6_240_000, 7_100_000, 8_250_000, 9_100_000]) {
+      maxCommitted = snapPriceSelectionForHandle(
+        { minPrice: 2_000_000.0001, maxPrice },
+        maxCommitted,
+        scale,
+        "max",
+      );
+      expect(maxCommitted.minPrice).toBe(2_000_000);
+    }
+    expect(maxCommitted.maxPrice).toBe(10_000_000);
+    expect(priceSelectionToQueryBounds(committed, scale)).toEqual({
+      minPrice: 3_000_000,
+      maxPrice: 4_500_000,
+    });
   });
 
   it("maps full visual endpoints to an empty URL range", () => {

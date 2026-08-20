@@ -88,7 +88,8 @@ trùng, sau đó theo kiểu hàng suy ra từ tên (ví dụ áo với áo, qu�
 găng với găng), rồi mới bổ sung hàng khác trong nhóm; nếu nhóm không còn hàng
 đang bán thì dùng nhóm cha hoặc thứ tự bán chạy hiện hành. Trang có thể bỏ khung
 ảnh hoàn toàn khi không có ảnh, giữ breadcrumb đủ cây nhóm hàng, link thương hiệu/
-nhóm hàng, dải cam kết, nút Zalo, ô tìm kiếm và cảnh báo an toàn ở cuối trang.
+nhóm hàng, dải cam kết, nút Zalo và cảnh báo an toàn ở cuối trang. Theo quyết định
+owner ngày 20/08/2026, trang không còn ô tìm kiếm cuối trang.
 Đây là quyết định hiển thị mới, không phải khôi phục bố cục lịch sử cũ.
 Nếu registry không có bản ghi tương ứng, sản phẩm vẫn tuân thủ đường đọc
 `PUBLISHED`/`TRASH` thông thường; không được tự dựng tên hoặc đích mới.

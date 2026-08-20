@@ -571,7 +571,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 ### 5. Thư viện ảnh/video (Media)
 
-**Quyền:** mọi đường đọc dùng `media.read`; upload/sửa metadata/thay file/chuyển thư mục/xóa mềm/khôi phục dùng `media.write`; xóa vĩnh viễn đơn hoặc bulk dùng wildcard `*` (SUPER_ADMIN), không chỉ `media.write`. Xem thêm `PERMISSION_MATRIX.md` § Media Library permissions.
+**Quyền:** mọi đường đọc, gồm tải file, dùng `media.read`; upload/sửa metadata/chuyển thư mục/xóa mềm/khôi phục dùng `media.write`; xóa vĩnh viễn đơn hoặc bulk dùng wildcard `*` (SUPER_ADMIN), không chỉ `media.write`. Kho ảnh không có chức năng thay file. Xem thêm `PERMISSION_MATRIX.md` § Media Library permissions.
 
 | Endpoint | Hành vi hiện hành |
 |---|---|
@@ -581,8 +581,8 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 | `GET /api/v1/admin/media/tags?prefix=&limit=` | Danh sách thẻ phổ biến hoặc autocomplete theo prefix; limit được chặn trong 1..50. |
 | `GET /api/v1/admin/media/{id}` | Chi tiết media, gồm `sizes`, `usageCount`, `references`, `folderId`, `tags`; không tồn tại → `404`. |
 | `GET /api/v1/admin/media/{id}/references` | Mỗi tham chiếu trả `type`, `id`, `name`, `adminPath`. `adminPath` chỉ được trỏ tới route quản trị hợp lệ dưới `/admin`; tham chiếu sản phẩm và ảnh/biến thể sản phẩm mở `/admin/products/{productId}`. Nếu không xác định được route an toàn hoặc entity không còn tồn tại thì client hiển thị dạng chỉ đọc. |
+| `GET /api/v1/admin/media/{id}/download` | Tải riêng object gốc từ MinIO dưới dạng `attachment`, dùng `media.read`, không phân biệt `ACTIVE`/`DELETED`; tên file lấy từ `originalFilename`. Nếu media chỉ có URL ngoài hoặc object không tồn tại → `404`. |
 | `PATCH /api/v1/admin/media/{id}` | Cập nhật `altText`, `title`, `status=ACTIVE|INACTIVE|DELETED`, `folderId`/`clearFolder`, `tags` (tối đa 50 thẻ, mỗi thẻ tối đa 64 ký tự). `clearFolder=true` thắng `folderId`. Folder không tồn tại → `404`. |
-| `POST /api/v1/admin/media/{id}/replace` | Thay object nhưng giữ nguyên id/URL; file mới tối đa 200 MB và phải cùng nhóm MIME cấp cao nhất (image/video/...) với file cũ. Recompute checksum, dung lượng, kích thước và variants; checksum trùng item khác → `409`. |
 | `DELETE /api/v1/admin/media/{id}` | Xóa mềm: đặt `status="DELETED"`; response `204`. |
 | `POST /api/v1/admin/media/{id}/restore` | Đặt `status="ACTIVE"`; trả detail đã cập nhật. |
 | `DELETE /api/v1/admin/media/{id}?permanent=true` | Chỉ khi `status="DELETED"` và không còn tham chiếu; sai trạng thái/đang dùng → `409`. Xóa object gốc khỏi đúng bucket trước; storage lỗi thì giữ nguyên DB row. |

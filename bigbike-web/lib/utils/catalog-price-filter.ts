@@ -12,6 +12,8 @@ export type PriceSelection = {
   maxPrice: number;
 };
 
+export type PriceHandle = "min" | "max";
+
 export type NormalizedPriceSelection = PriceSelection & {
   queryMinPrice?: number;
   queryMaxPrice?: number;
@@ -233,21 +235,59 @@ export function sliderValuesToPriceSelection(
   };
 }
 
+/** Returns the handle whose slider coordinate changed from the committed pair. */
+export function getChangedPriceHandle(
+  values: number[],
+  committedValues: [number, number],
+): PriceHandle | null {
+  const minChanged = Math.abs((values[0] ?? 0) - committedValues[0]) > 0.001;
+  const maxChanged = Math.abs((values[1] ?? PRICE_TRACK_STEPS) - committedValues[1]) > 0.001;
+  if (minChanged === maxChanged) return null;
+  return minChanged ? "min" : "max";
+}
+
+/** Snaps one price bound without changing the other bound. */
+export function snapPriceBound(
+  value: number,
+  scale: PriceScale,
+  handle: PriceHandle,
+): number {
+  const step = priceStepAt(value);
+  const rounded = handle === "min" ? roundDown(value, step) : roundUp(value, step);
+  return clamp(rounded, scale.minPrice, scale.maxPrice);
+}
+
+/**
+ * Commits one handle while carrying the other handle from the last committed
+ * selection. This prevents inverse density-scale rounding from moving a
+ * handle the customer did not touch.
+ */
+export function snapPriceSelectionForHandle(
+  selection: PriceSelection,
+  committedSelection: PriceSelection,
+  scale: PriceScale,
+  handle: PriceHandle,
+): PriceSelection {
+  if (handle === "min") {
+    const minPrice = snapPriceBound(selection.minPrice, scale, "min");
+    return minPrice <= committedSelection.maxPrice
+      ? { minPrice, maxPrice: committedSelection.maxPrice }
+      : { minPrice: committedSelection.maxPrice, maxPrice: committedSelection.maxPrice };
+  }
+
+  const maxPrice = snapPriceBound(selection.maxPrice, scale, "max");
+  return committedSelection.minPrice <= maxPrice
+    ? { minPrice: committedSelection.minPrice, maxPrice }
+    : { minPrice: committedSelection.minPrice, maxPrice: committedSelection.minPrice };
+}
+
 /** Snaps lower/upper bounds outward only after the user releases the handle. */
 export function snapPriceSelection(
   selection: PriceSelection,
   scale: PriceScale,
 ): PriceSelection {
-  const minPrice = clamp(
-    roundDown(selection.minPrice, priceStepAt(selection.minPrice)),
-    scale.minPrice,
-    scale.maxPrice,
-  );
-  const maxPrice = clamp(
-    roundUp(selection.maxPrice, priceStepAt(selection.maxPrice)),
-    scale.minPrice,
-    scale.maxPrice,
-  );
+  const minPrice = snapPriceBound(selection.minPrice, scale, "min");
+  const maxPrice = snapPriceBound(selection.maxPrice, scale, "max");
   return minPrice <= maxPrice
     ? { minPrice, maxPrice }
     : { minPrice: maxPrice, maxPrice: minPrice };

@@ -1,5 +1,6 @@
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import {
   expectNoHorizontalOverflow,
@@ -37,6 +38,7 @@ async function assertDiscontinuedPage(
   locale: "vi" | "en",
   slug: string,
   viewport: "desktop" | "mobile",
+  testInfo: TestInfo,
 ) {
   const guards = installPageGuards(page);
   await page.setViewportSize(viewport === "desktop" ? { width: 1440, height: 1000 } : { width: 390, height: 844 });
@@ -45,11 +47,65 @@ async function assertDiscontinuedPage(
 
   await expect(page.locator("main").first()).toBeVisible();
   await expect(page.locator("h1")).toHaveCount(1);
+  const statusPanel = page.locator("[data-discontinued-status]");
+  await expect(statusPanel).toBeVisible();
   await expect(
     page.getByText(locale === "en" ? "Product discontinued" : "Sản phẩm đã ngừng kinh doanh").first(),
   ).toBeVisible();
-  await expect(page.locator('form[role="search"] input[type="search"]')).toBeVisible();
+  await expect(statusPanel.locator('form[role="search"], input[type="search"]')).toHaveCount(0);
   await expect(page.locator("[data-purchase-actions], [data-purchase-add], .bb-pdp-sticky-cta")).toHaveCount(0);
+
+  const spacing = await page.evaluate(() => {
+    type Box = { top: number; bottom: number };
+    const box = (selector: string): Box | null => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    };
+    const gap = (from: Box | null, to: Box | null): number | null => {
+      if (!from || !to) return null;
+      return Math.round((to.top - from.bottom) * 100) / 100;
+    };
+    const label = box("[data-discontinued-label]");
+    const title = box("#discontinued-product-title");
+    const description = box("[data-discontinued-description]");
+    const actions = box("[data-discontinued-actions]");
+    const meta = box("[data-discontinued-meta]");
+    const category = box("[data-discontinued-category-link]");
+    return {
+      labelToTitle: gap(label, title),
+      titleToDescription: gap(title, description),
+      descriptionToActions: gap(description, actions),
+      actionsToMeta: gap(actions, meta),
+      metaToCategory: gap(meta, category),
+    };
+  });
+
+  expect(spacing.labelToTitle, "nhãn → tên hàng phải dùng gap-1.5 như nhóm eyebrow của PDP").toBeCloseTo(6, 0);
+  expect(spacing.titleToDescription, "tên hàng → mô tả phải dùng mt-6 như PDP").toBeCloseTo(24, 0);
+  expect(spacing.descriptionToActions, "mô tả → cụm nút phải dùng mt-8 như PDP").toBeCloseTo(32, 0);
+  expect(spacing.actionsToMeta, "cụm nút → thông tin cuối phải giữ mt-5").toBeCloseTo(20, 0);
+  if (spacing.metaToCategory !== null) {
+    expect(spacing.metaToCategory, "thông tin → link nhóm hàng phải giữ mt-5").toBeCloseTo(20, 0);
+  }
+  const spacingReport = {
+    target: target.envName,
+    locale,
+    viewport,
+    measuredPx: spacing,
+    reference: {
+      labelToTitle: "PDP eyebrow grouping: gap-1.5 = 6px",
+      titleToDescription: "PDP short-description separation: mt-6 = 24px",
+      descriptionToActions: "PDP section/action separation: mt-8 = 32px",
+      actionsToMeta: "Existing card rhythm: mt-5 = 20px",
+    },
+  };
+  console.log(`[discontinued-spacing] ${JSON.stringify(spacingReport)}`);
+  await testInfo.attach(`discontinued-spacing-${target.envName}-${locale}-${viewport}`, {
+    body: Buffer.from(JSON.stringify(spacingReport, null, 2), "utf8"),
+    contentType: "application/json",
+  });
 
   const gallery = page.locator("[data-product-gallery-main]");
   if (target.expectsImage === true) await expect(gallery).toBeVisible();
@@ -70,8 +126,19 @@ async function assertDiscontinuedPage(
   await expectNoHorizontalOverflow(page, `${target.name} ${locale} ${viewport}`);
   expectNoSeriousIssues(guards, `${target.name} ${locale} ${viewport}`);
 
+  const artifactPhase = process.env.DISCONTINUED_ARTIFACT_PHASE?.trim() || "after";
+  const artifactDir = path.join("test-results", "discontinued-product", artifactPhase);
+  const artifactName = `${target.envName}-${locale}-${viewport}`;
+  await mkdir(artifactDir, { recursive: true });
   await page.screenshot({
-    path: path.join("test-results", "discontinued-product", `${target.envName}-${locale}-${viewport}.png`),
+    path: path.join(artifactDir, `${artifactName}-top.png`),
+    fullPage: false,
+  });
+  await statusPanel.screenshot({
+    path: path.join(artifactDir, `${artifactName}-card.png`),
+  });
+  await page.screenshot({
+    path: path.join(artifactDir, `${artifactName}-full.png`),
     fullPage: true,
   });
 }
@@ -85,7 +152,7 @@ for (const target of TARGETS) {
           !slug,
           `Not run: set ${target.envName} to a real slug from the connected discontinued-product data before running this scenario.`,
         );
-        await assertDiscontinuedPage(page, target, locale, slug!, viewport);
+        await assertDiscontinuedPage(page, target, locale, slug!, viewport, testInfo);
       });
     }
   }

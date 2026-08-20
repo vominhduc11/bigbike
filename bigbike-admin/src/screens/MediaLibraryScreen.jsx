@@ -19,6 +19,7 @@ import {
   bulkMoveMedia,
   bulkRestoreMedia,
   deleteMedia,
+  downloadMedia,
   fetchMedia,
   fetchMediaFolders,
   fetchMediaReferences,
@@ -27,6 +28,7 @@ import {
   restoreMedia,
   uploadMedia,
 } from '../lib/adminApi'
+import { isDownloadableMedia } from '../lib/contracts'
 import { useDebounce } from '../lib/useDebounce'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
@@ -259,6 +261,14 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     finally { setDeleting(null) }
   }
 
+  async function handleDownload(media) {
+    try {
+      await downloadMedia(media.id, media.originalFilename || media.filename)
+    } catch (e) {
+      toast.error(mediaActionError(t, e, t('media.downloadError')))
+    }
+  }
+
   async function handleHardDelete(media) {
     // Cảnh báo mạnh hơn cho hành động không thể hoàn tác: cho admin thấy số nơi
     // đang dùng file trước khi xoá vĩnh viễn khỏi kho (tiêu chí 7.6).
@@ -382,6 +392,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onViewDetail: !isRefreshing && (isTrash || !canUpdate) ? () => setEditingMedia(media) : null,
     onDelete: canUpdate && !isRefreshing && !isTrash ? () => handleDelete(media.id) : null,
     onRestore: canUpdate && !isRefreshing && isTrash ? () => handleRestore(media.id) : null,
+    onDownload: !isRefreshing && isDownloadableMedia(media) ? () => handleDownload(media) : null,
   })
 
   const panelOpen = !!editingMedia
@@ -641,6 +652,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           folders={folders}
           onSaved={handleMediaSaved}
           onClose={() => setEditingMedia(null)}
+          onDownload={isDownloadableMedia(editingMedia) ? handleDownload : null}
           onPreview={() => {
             const idx = state.items.findIndex((m) => m.id === editingMedia.id)
             if (idx >= 0) setPreviewIndex(idx)
@@ -655,6 +667,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           items={state.items}
           index={previewIndex}
           onNavigate={(i) => setPreviewIndex(i)}
+          onDownload={isDownloadableMedia(state.items[previewIndex]) ? handleDownload : null}
           onClose={() => setPreviewIndex(null)} />
       )}
     </div>

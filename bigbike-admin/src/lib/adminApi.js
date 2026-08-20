@@ -186,6 +186,47 @@ async function requestJson(endpoint, options = {}) {
   return payload
 }
 
+async function requestBlob(endpoint, fallbackFilename = 'download') {
+  const url = `${API_BASE}${endpoint}`
+  const { accessToken } = readTokens()
+  const dispatchBlob = (token) => {
+    const headers = { Accept: 'application/octet-stream' }
+    if (token) headers.Authorization = `Bearer ${token}`
+    return fetch(url, { method: 'GET', headers })
+  }
+
+  let response = await dispatchBlob(accessToken)
+  if (response.status === 401 && accessToken) {
+    const newAccess = await performTokenRefresh()
+    if (newAccess) response = await dispatchBlob(newAccess)
+    if (response.status === 401) {
+      clearTokens()
+      if (authErrorListener) authErrorListener()
+    }
+  }
+
+  if (!response.ok) {
+    if (response.status === 403 && authorizationErrorListener) authorizationErrorListener()
+    let payload = null
+    try { payload = await response.json() } catch { payload = null }
+    const error = payload?.error || {}
+    throw new ApiClientError(
+      normalizeApiErrorMessage(error, response.status),
+      response.status,
+      error.code || 'REQUEST_FAILED',
+      error.details || [],
+      parseRetryAfter(response.headers.get('Retry-After')),
+    )
+  }
+
+  const contentDisposition = response.headers.get('Content-Disposition') || ''
+  const encodedName = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+  const quotedName = contentDisposition.match(/filename="?([^";]+)"?/i)?.[1]
+  let filename = encodedName ? decodeURIComponent(encodedName) : quotedName
+  if (!filename) filename = fallbackFilename || 'download'
+  return { blob: await response.blob(), filename }
+}
+
 // Admin auth API
 
 export async function loginAdmin({ email, password }) {
@@ -1114,14 +1155,21 @@ export async function deleteMediaFolder(id) {
   await requestJson(`/admin/media-folders/${id}`, { method: 'DELETE' })
 }
 
-export async function replaceMediaFile(mediaId, file) {
-  const form = new FormData()
-  form.append('file', file)
-  const payload = await requestJson(`/admin/media/${mediaId}/replace`, {
-    method: 'POST',
-    body: form,
-  })
-  return { item: normalizeMediaItem(payload?.data || {}) }
+export async function downloadMedia(mediaId, fallbackFilename) {
+  const { blob, filename } = await requestBlob(`/admin/media/${mediaId}/download`, fallbackFilename)
+  if (typeof URL?.createObjectURL !== 'function' || typeof document === 'undefined') {
+    throw new ApiClientError('Không thể tạo file tải xuống trong trình duyệt.', 0, 'DOWNLOAD_UNSUPPORTED')
+  }
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = filename
+  anchor.rel = 'noopener'
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 }
 
 export async function fetchMediaTags(prefix) {

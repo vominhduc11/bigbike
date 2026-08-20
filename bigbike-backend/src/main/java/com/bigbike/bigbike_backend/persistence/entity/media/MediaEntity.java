@@ -27,6 +27,9 @@ public class MediaEntity {
     @Column(name = "file_path", nullable = false, columnDefinition = "text")
     private String filePath;
 
+    @Column(name = "original_filename", columnDefinition = "text")
+    private String originalFilename;
+
     @Column(name = "public_url", columnDefinition = "text")
     private String publicUrl;
 

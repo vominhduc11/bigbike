@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { ApiClientError, mapValidationErrors } from './adminApi'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiClientError, downloadMedia, mapValidationErrors } from './adminApi'
 
 describe('mapValidationErrors', () => {
   it('giữ Retry-After để UI có thể hướng dẫn thử lại thay vì tự lặp vô hạn', () => {
@@ -97,5 +97,37 @@ describe('mapValidationErrors', () => {
     expect(mapValidationErrors(error)).toEqual({
       statusCode: 'Mã phản hồi chỉ có thể là 301 hoặc 410.',
     })
+  })
+})
+
+describe('downloadMedia', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.stubGlobal('fetch', vi.fn())
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:media-download')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  })
+
+  it('fetches the authenticated blob, uses Content-Disposition filename, and downloads without a new tab', async () => {
+    const response = {
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'Content-Disposition': "attachment; filename*=UTF-8''%E1%BA%A3nh%20g%E1%BB%91c.png" }),
+      blob: vi.fn().mockResolvedValue(new Blob(['original-bytes'], { type: 'image/png' })),
+    }
+    fetch.mockResolvedValue(response)
+
+    await downloadMedia('media-1', 'fallback.png')
+
+    expect(fetch).toHaveBeenCalledWith('/api/v1/admin/media/media-1/download', expect.objectContaining({
+      method: 'GET',
+      headers: { Accept: 'application/octet-stream' },
+    }))
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled()
+    const anchor = HTMLAnchorElement.prototype.click.mock.instances[0]
+    expect(anchor.download).toBe('ảnh gốc.png')
+    expect(anchor.target).toBe('')
   })
 })

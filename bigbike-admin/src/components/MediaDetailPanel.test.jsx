@@ -81,27 +81,31 @@ describe('MediaDetailPanel reference links', () => {
   })
 })
 
-// "Thay ảnh" ghi đè file ở MỌI nơi đang dùng và không hoàn tác được → phải nằm
-// trong mục Nâng cao đóng sẵn, không phơi ra ngay khi mở bảng chi tiết.
 describe('MediaDetailPanel — mục Nâng cao', () => {
-  it('giấu Thay ảnh cho tới khi mở mục Nâng cao', async () => {
-    const user = userEvent.setup()
-    renderPanel({ canUpdate: true })
-
-    expect(screen.queryByRole('button', { name: /media\.replaceFile/ })).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /media\.advancedSection/ }))
-    expect(screen.getByRole('button', { name: /media\.replaceFile/ })).toBeInTheDocument()
-  })
-
-  it('không hiện mục Nâng cao khi không có quyền sửa và ảnh không có biến thể', () => {
+  it('không hiện mục Nâng cao khi không có biến thể', () => {
     renderPanel({ canUpdate: false })
     expect(screen.queryByRole('button', { name: /media\.advancedSection/ })).not.toBeInTheDocument()
   })
 
-  it('không cho thay ảnh khi file đang ở thùng rác', () => {
-    renderPanel({ canUpdate: true, media: { status: 'DELETED' } })
-    expect(screen.queryByRole('button', { name: /media\.advancedSection/ })).not.toBeInTheDocument()
+  it('chỉ hiển thị biến thể trong mục Nâng cao', async () => {
+    const user = userEvent.setup()
+    renderPanel({ media: { sizes: { thumb: '/media/thumb.jpg' } } })
+
+    await user.click(screen.getByRole('button', { name: /media\.advancedSection/ }))
+    expect(screen.getByText('media.variants')).toBeInTheDocument()
+    expect(screen.queryByText(/replace/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('MediaDetailPanel — tải file', () => {
+  it('hiện nút tải ở bảng chi tiết khi được cung cấp callback', async () => {
+    const onDownload = vi.fn()
+    renderPanel({ onDownload })
+
+    const button = screen.getByRole('button', { name: 'media.download' })
+    expect(button).toHaveAttribute('title', 'media.download')
+    await userEvent.setup().click(button)
+    expect(onDownload).toHaveBeenCalledWith(expect.objectContaining({ id: 'media_1' }))
   })
 })
 
