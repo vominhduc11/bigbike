@@ -1,7 +1,13 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render as testingRender, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuditLogListScreen } from './AuditLogListScreen'
+
+function render(ui) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return testingRender(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
 
 const mocks = vi.hoisted(() => ({
   fetchAuditLogs: vi.fn(),
