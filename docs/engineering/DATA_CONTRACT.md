@@ -120,12 +120,12 @@ The admin upsert request no longer accepts a `name` field for a variant (`Varian
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Cart and audit retention data (V1045)
+### Cart and audit retention data (V1046)
 
 `carts.expires_at` is the authoritative expiry for a cart in retention scope. Only `ACTIVE` and
 `MERGED` carts may have their expiry acted on; `CONVERTED` carts are never a purge candidate. The
 application writes expiry as the last valid cart interaction plus 30 days. For an historical
-`ACTIVE`/`MERGED` row whose expiry is null, V1045 sets it once to the last known
+`ACTIVE`/`MERGED` row whose expiry is null, V1046 sets it once to the last known
 `updated_at` (or `created_at` when necessary) plus 30 days; it never backfills or purges a
 `CONVERTED` row.
 

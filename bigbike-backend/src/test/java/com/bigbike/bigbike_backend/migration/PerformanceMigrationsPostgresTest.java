@@ -19,7 +19,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** Runs V1045–V1047 against a minimal PostgreSQL schema without relying on legacy data migrations. */
+/** Runs V1045–V1048 against a minimal PostgreSQL schema without relying on legacy data migrations. */
 @Testcontainers(disabledWithoutDocker = true)
 class PerformanceMigrationsPostgresTest {
 
@@ -43,7 +43,7 @@ class PerformanceMigrationsPostgresTest {
     }
 
     @Test
-    void v1045BackfillsOnlyRetentionCartsAndCreatesTheRollbackLedger() throws Exception {
+    void v1046BackfillsOnlyRetentionCartsAndCreatesTheRollbackLedger() throws Exception {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             createCartSchema(statement);
             Instant old = Instant.parse("2026-06-01T00:00:00Z");
@@ -54,7 +54,7 @@ class PerformanceMigrationsPostgresTest {
                     ('00000000-0000-0000-0000-000000000103', 'CONVERTED', 'VND', '%s', '%s')
                     """.formatted(old, old, old, old, old, old));
 
-            executeMigration(statement, "V1045__add_cart_purge_backup_and_retention_indexes.sql");
+            executeMigration(statement, "V1046__add_cart_purge_backup_and_retention_indexes.sql");
 
             assertThat(booleanValue(statement, "select expires_at is not null from carts where id = '00000000-0000-0000-0000-000000000101'"))
                     .isTrue();
@@ -72,7 +72,7 @@ class PerformanceMigrationsPostgresTest {
     }
 
     @Test
-    void v1046LinksOnlyAnUnambiguousOptionAndThenRequiresBothForeignKeys() throws Exception {
+    void v1047LinksOnlyAnUnambiguousOptionAndThenRequiresBothForeignKeys() throws Exception {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             createVariantSchema(statement);
             statement.execute("insert into attributes (id, code, name) values ('color', 'color', 'Màu sắc')");
@@ -82,7 +82,7 @@ class PerformanceMigrationsPostgresTest {
                     values ('00000000-0000-0000-0000-000000000201', 'Color', 'Red')
                     """);
 
-            executeMigration(statement, "V1046__require_complete_variant_attribute_links.sql");
+            executeMigration(statement, "V1047__require_complete_variant_attribute_links.sql");
 
             assertThat(value(statement, "select attribute_id from product_variant_options where id = '00000000-0000-0000-0000-000000000201'"))
                     .isEqualTo("color");
@@ -100,7 +100,7 @@ class PerformanceMigrationsPostgresTest {
     }
 
     @Test
-    void v1046StopsSafelyWhenAnOptionCannotBeMatchedUniquely() throws Exception {
+    void v1047StopsSafelyWhenAnOptionCannotBeMatchedUniquely() throws Exception {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             createVariantSchema(statement);
             statement.execute("""
@@ -109,17 +109,17 @@ class PerformanceMigrationsPostgresTest {
                     """);
             connection.setAutoCommit(false);
 
-            assertThatThrownBy(() -> executeMigration(statement, "V1046__require_complete_variant_attribute_links.sql"))
+            assertThatThrownBy(() -> executeMigration(statement, "V1047__require_complete_variant_attribute_links.sql"))
                     .isInstanceOf(SQLException.class)
-                    .hasMessageContaining("V1046 đã dừng an toàn");
+                    .hasMessageContaining("V1047 đã dừng an toàn");
             connection.rollback();
         }
     }
 
     @Test
-    void v1047InstallsTheSlowStatementExtensionWhenPostgresWasPreloaded() throws Exception {
+    void v1048InstallsTheSlowStatementExtensionWhenPostgresWasPreloaded() throws Exception {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
-            executeMigration(statement, "V1047__enable_pg_stat_statements.sql");
+            executeMigration(statement, "V1048__enable_pg_stat_statements.sql");
             assertThat(booleanValue(statement, "select exists (select 1 from pg_extension where extname = 'pg_stat_statements')"))
                     .isTrue();
         }

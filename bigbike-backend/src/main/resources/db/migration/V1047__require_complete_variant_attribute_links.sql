@@ -90,7 +90,7 @@ begin
 
     if unresolved_count > 0 then
         raise exception using
-            message = format('V1046 đã dừng an toàn: %s dòng product_variant_options chưa có đúng một liên kết thuộc tính/giá trị chắc chắn.', unresolved_count),
+            message = format('V1047 đã dừng an toàn: %s dòng product_variant_options chưa có đúng một liên kết thuộc tính/giá trị chắc chắn.', unresolved_count),
             detail = format('Mẫu mã dòng cần rà soát thủ công: %s', coalesce(sample_ids, 'không có')),
             hint = 'Hãy sửa nội dung tuỳ chọn hoặc từ điển thuộc tính được liệt kê, sau đó chạy lại triển khai. Không đoán liên kết.';
     end if;

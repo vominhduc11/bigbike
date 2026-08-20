@@ -1194,7 +1194,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // V1046 bảo đảm cả hai khoá ngoại; không dò lại bằng văn bản tại đây.
+        // V1047 bảo đảm cả hai khoá ngoại; không dò lại bằng văn bản tại đây.
         String attributeValueId = publicView || value == null ? null : value.getId();
 
         return new ProductVariantOption(

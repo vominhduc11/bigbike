@@ -25,7 +25,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** Exercises the PostgreSQL batch SQL and the V1045–V1047 schema on a real database. */
+/** Exercises the PostgreSQL batch SQL and the V1045–V1048 schema on a real database. */
 @SpringBootTest
 @ActiveProfiles("tc")
 @Testcontainers(disabledWithoutDocker = true)

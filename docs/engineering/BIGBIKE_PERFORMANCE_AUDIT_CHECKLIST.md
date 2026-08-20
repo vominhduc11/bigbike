@@ -25,7 +25,7 @@ máy chủ thật.
 1. Java dùng G1GC trong đúng giới hạn container 1 GB, heap tối đa vẫn 75% bộ nhớ giới hạn.
 2. Lịch 02:45 `Asia/Ho_Chi_Minh` dọn cart `ACTIVE`/`MERGED` đã quá 30 ngày, mỗi giao dịch tối đa
    500 giỏ, luôn ghi số lượng và thời lượng kể cả bằng 0. Lần tương tác hợp lệ gia hạn 30 ngày;
-   V1045 bù một lần mốc trống cũ từ `updated_at`/`created_at` + 30 ngày cho `ACTIVE`/`MERGED`;
+   V1046 bù một lần mốc trống cũ từ `updated_at`/`created_at` + 30 ngày cho `ACTIVE`/`MERGED`;
    `CONVERTED` bị loại trừ tuyệt đối.
 3. Dọn tồn đọng dùng backup theo mã lần chạy và có khôi phục đúng mã đó; backup giữ 90 ngày.
 4. Migration chỉ liên kết biến thể khi kết quả chắc chắn duy nhất; còn dòng không chắc chắn thì
@@ -53,7 +53,7 @@ docker compose --env-file .env.vps exec -T postgres sh -c \
 docker compose --env-file .env.vps exec -T postgres sh -c \
   'pg_restore -l >/dev/null' < "$backup_file"
 
-# 2. Kiểm tra cấu hình và triển khai source/image có V1045–V1047.
+# 2. Kiểm tra cấu hình và triển khai source/image có V1045–V1048.
 docker compose --env-file .env.vps config >/dev/null
 docker compose --env-file .env.vps build bigbike-backend
 
