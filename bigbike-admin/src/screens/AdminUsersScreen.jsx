@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -27,6 +28,7 @@ import { PasswordInput } from '../components/PasswordInput'
 import { getRoleDisplayName } from './roles/constants'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
+const EMPTY_ROLES = []
 
 // Đủ để bắt lỗi nhập sai phổ biến phía client; backend vẫn là nguồn xác thực cuối.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -167,6 +169,7 @@ export function AdminUsersScreen({
   isSuperAdmin,
 }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
 
   // ── List state ──────────────────────────────────────────────────────────
   const [query, setQuery] = useState(INITIAL_QUERY)
@@ -175,23 +178,20 @@ export function AdminUsersScreen({
   const [statusFilter, setStatusFilter] = useState('')
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
-  const [listState, setListState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   // Sắp xếp phía client (endpoint admin users không hỗ trợ sort server-side).
   const [sort, setSort] = useState({ key: null, dir: 'asc' })
 
   // ── Canonical role catalog ──────────────────────────────────────────────
-  const [roles, setRoles] = useState([])
-  const [rolesError, setRolesError] = useState(false)
-  useEffect(() => {
-    if (!canReadRoles) {
-      return undefined
-    }
-    // Lỗi tải danh sách vai trò không còn bị nuốt: hiện cảnh báo để admin
-    // biết danh sách vai trò có thể chưa đầy đủ (thay vì lặng lẽ thiếu lựa chọn).
-    fetchRoles()
-      .then((r) => { setRoles(r.items || []); setRolesError(false) })
-      .catch(() => setRolesError(true))
-  }, [canReadRoles])
+  const rolesQuery = useQuery({
+    queryKey: ['roles'],
+    queryFn: fetchRoles,
+    enabled: canReadRoles,
+  })
+  // Lỗi tải danh sách vai trò không còn bị nuốt: hiện cảnh báo để admin
+  // biết danh sách vai trò có thể chưa đầy đủ (thay vì lặng lẽ thiếu lựa chọn).
+  const roles = rolesQuery.data?.items ?? EMPTY_ROLES
+  const [rolesWarningDismissed, setRolesWarningDismissed] = useState(false)
+  const rolesError = rolesQuery.isError && !rolesWarningDismissed
 
   const roleOptions = useMemo(() => {
     return roles.map((role) => role.id).filter(Boolean)
@@ -275,19 +275,32 @@ export function AdminUsersScreen({
   )
 
   // ── Load list ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    let active = true
-    fetchAdminUsers(query)
-      .then((r) => {
-        if (!active) return
-        setListState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' })
-      })
-      .catch((e) => {
-        if (!active) return
-        setListState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
-      })
-    return () => { active = false }
-  }, [query])
+  const usersQuery = useQuery({
+    queryKey: ['admin-users', query],
+    queryFn: () => fetchAdminUsers(query),
+    placeholderData: keepPreviousData,
+  })
+  const usersData = usersQuery.data
+  const listState = {
+    status: usersQuery.isPending
+      ? 'loading'
+      : usersQuery.isError && !usersData
+        ? 'error'
+        : 'success',
+    items: usersData?.items || [],
+    pagination: usersData?.pagination || null,
+    warning: '',
+    error: usersQuery.error?.message || '',
+  }
+  const updateCachedUser = useCallback((item, { prepend = false } = {}) => {
+    queryClient.setQueryData(['admin-users', query], (previous) => ({
+      ...previous,
+      items: prepend
+        ? [item, ...(previous?.items || [])]
+        : (previous?.items || []).map((user) => (user.id === item.id ? item : user)),
+    }))
+    queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+  }, [query, queryClient])
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
@@ -483,7 +496,7 @@ export function AdminUsersScreen({
         newPassword: editForm.newPassword.trim() || undefined,
       }
       const r = await updateAdminUser(editUser.id, payload)
-      setListState((p) => ({ ...p, items: p.items.map((u) => (u.id === editUser.id ? r.item : u)) }))
+      updateCachedUser(r.item)
       setEditUser(r.item)
       // Đồng bộ form với dữ liệu vừa lưu + xoá ô mật khẩu để không bị coi là còn thay đổi
       // (tránh hỏi "bỏ thay đổi?" nhầm khi đóng sau khi đã lưu thành công).
@@ -508,7 +521,7 @@ export function AdminUsersScreen({
     } finally {
       setEditSaving(false)
     }
-  }, [editUser, editForm, currentUserId, canChangeRoles, clearEditDraft, t])
+  }, [editUser, editForm, currentUserId, canChangeRoles, clearEditDraft, t, updateCachedUser])
 
   // Kiểm tra hợp lệ phía client cho form tạo mới — trả về true nếu hợp lệ.
   function validateCreateForm() {
@@ -559,7 +572,7 @@ export function AdminUsersScreen({
         displayName: createForm.displayName.trim(),
         role: createForm.role,
       })
-      setListState((p) => ({ ...p, items: [r.item, ...p.items] }))
+      updateCachedUser(r.item, { prepend: true })
       setInviteInfo({ email: r.item.email, emailSent: r.inviteEmailSent, inviteUrl: r.inviteUrl })
       closeCreate()
     } catch (err) {
@@ -603,7 +616,7 @@ export function AdminUsersScreen({
     setTogglingId(user.id)
     try {
       const r = await updateAdminUser(user.id, { status: activating ? 'ACTIVE' : 'DISABLED' })
-      setListState((p) => ({ ...p, items: p.items.map((x) => (x.id === user.id ? r.item : x)) }))
+      updateCachedUser(r.item)
       toast.success(activating ? t('adminUsers.activatedToast') : t('adminUsers.lockedToast'))
     } catch (err) {
       toast.error(getAdminUserErrorMessage(err, t))
@@ -828,7 +841,7 @@ export function AdminUsersScreen({
       ) : null}
 
       {rolesError && (
-        <Alert tone="warning" icon={AlertCircle} dismissible onDismiss={() => setRolesError(false)}>
+        <Alert tone="warning" icon={AlertCircle} dismissible onDismiss={() => setRolesWarningDismissed(true)}>
           {t('adminUsers.rolesLoadError', { defaultValue: 'Không tải được danh sách vai trò. Không thể bảo đảm lựa chọn vai trò đầy đủ; thử tải lại trang.' })}
         </Alert>
       )}
