@@ -41,12 +41,12 @@ describe('VideoBlockEditor writable sources', () => {
     )
 
     expect(screen.getByRole('option', { name: 'YouTube' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /TikTok/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Facebook/i })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Upload / media library' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: /TikTok/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: /Facebook/i })).not.toBeInTheDocument()
   })
 
-  it('legacy block không làm vỡ editor và yêu cầu chọn nguồn mới', () => {
+  it('block TikTok/Facebook hợp lệ không làm vỡ editor', () => {
     render(
       <VideoBlockEditor
         block={{
@@ -59,7 +59,7 @@ describe('VideoBlockEditor writable sources', () => {
       />,
     )
 
-    expect(screen.getByText('Legacy block source must be replaced')).toBeInTheDocument()
+    expect(screen.queryByText('Legacy block source must be replaced')).not.toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Video source' })).toHaveTextContent('Choose a new source')
   })
 })

@@ -48,6 +48,7 @@ public class CatalogReadService {
     private final SizeScaleCatalogService sizeScaleCatalogService;
     private final CatalogVisualFacetCatalogService visualFacetCatalogService;
     private final OrderLineItemJpaRepository orderLineItemRepo;
+    private final ProductRichHtmlImageEnricher richHtmlImageEnricher;
 
     @Autowired
     public CatalogReadService(
@@ -57,7 +58,8 @@ public class CatalogReadService {
             ProductJpaRepository productRepo,
             SizeScaleCatalogService sizeScaleCatalogService,
             CatalogVisualFacetCatalogService visualFacetCatalogService,
-            OrderLineItemJpaRepository orderLineItemRepo
+            OrderLineItemJpaRepository orderLineItemRepo,
+            ProductRichHtmlImageEnricher richHtmlImageEnricher
     ) {
         this.catalogReadRepository = catalogReadRepository;
         this.sortParser = sortParser;
@@ -66,6 +68,7 @@ public class CatalogReadService {
         this.sizeScaleCatalogService = sizeScaleCatalogService;
         this.visualFacetCatalogService = visualFacetCatalogService;
         this.orderLineItemRepo = orderLineItemRepo;
+        this.richHtmlImageEnricher = richHtmlImageEnricher;
     }
 
     /** Source-compatible constructor for focused unit tests predating visual facets. */
@@ -77,7 +80,7 @@ public class CatalogReadService {
             SizeScaleCatalogService sizeScaleCatalogService
     ) {
         this(catalogReadRepository, sortParser, paginationService, productRepo,
-                sizeScaleCatalogService, null, null);
+                sizeScaleCatalogService, null, null, null);
     }
 
     /** Source-compatible overload for internal callers that do not expose storefront size filters. */
@@ -365,7 +368,7 @@ public class CatalogReadService {
         Optional<Product> published = catalogReadRepository.findProductBySlug(slug, lang)
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED);
         if (published.isPresent()) {
-            return published.get();
+            return enrichRichHtml(published.get());
         }
         boolean trashed = productRepo.findBySlug(slug)
                 .map(p -> p.getPublishStatus() == PublishStatus.TRASH)
@@ -386,6 +389,7 @@ public class CatalogReadService {
                 .or(() -> catalogReadRepository.findProductByIdPublicView(key, lang))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(item -> !item.discontinued())
+                .map(this::enrichRichHtml)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
@@ -401,6 +405,10 @@ public class CatalogReadService {
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(item -> !item.discontinued())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    private Product enrichRichHtml(Product product) {
+        return richHtmlImageEnricher == null ? product : richHtmlImageEnricher.enrich(product);
     }
 
     public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage, String lang) {

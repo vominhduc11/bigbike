@@ -28,31 +28,34 @@ function pathsOf(result) {
 }
 
 describe('MEDIA_RULE_004 — writable video sources', () => {
-  it('product videos and gallery accept YouTube/upload and reject legacy providers', () => {
+  it('product videos and gallery accept the three approved external sources and internal upload', () => {
     const schema = createProductSchema(t, false)
     const valid = schema.safeParse(baseForm({
       videos: [
         { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: '', type: 'youtube' },
+        { url: 'https://www.tiktok.com/@x/video/7412345678901234567', title: '', type: 'tiktok' },
+        { url: 'https://www.facebook.com/x/videos/123', title: '', type: 'facebook' },
         { url: '/media/videos/demo.mp4', title: '', type: 'upload' },
       ],
       gallery: [
         { mediaType: 'video', videoUrl: '/media/videos/gallery.mp4', provider: 'upload', url: '', alt: '' },
+        { mediaType: 'video', videoUrl: 'https://www.facebook.com/x/videos/123', provider: 'facebook', url: '', alt: '' },
       ],
     }))
     expect(valid.success).toBe(true)
 
-    const legacy = schema.safeParse(baseForm({
+    const rejected = schema.safeParse(baseForm({
       videos: [
-        { url: 'https://www.tiktok.com/@x/video/7412345678901234567', title: '', type: 'tiktok' },
+        { url: 'https://youtu.be/dQw4w9WgXcQ', title: '', type: 'youtube' },
       ],
       gallery: [
-        { mediaType: 'video', videoUrl: 'https://www.facebook.com/x/videos/123', provider: 'facebook', url: '', alt: '' },
+        { mediaType: 'video', videoUrl: 'https://fb.watch/abc', provider: 'facebook', url: '', alt: '' },
       ],
     }))
-    expect(pathsOf(legacy)).toEqual(expect.arrayContaining(['videos.0.url', 'gallery.0.videoUrl']))
+    expect(pathsOf(rejected)).toEqual(expect.arrayContaining(['videos.0.url', 'gallery.0.videoUrl']))
   })
 
-  it('article video blocks reject TikTok/Facebook but accept YouTube/upload', () => {
+  it('article video blocks accept the same approved sources', () => {
     const schema = createContentSchema(t, true, 'article')
     const base = {
       slug: 'article-video',
@@ -64,18 +67,15 @@ describe('MEDIA_RULE_004 — writable video sources', () => {
     }
 
     for (const block of [
-      { type: 'video', provider: 'youtube', url: 'https://youtu.be/dQw4w9WgXcQ' },
+      { type: 'video', provider: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
       { type: 'video', provider: 'upload', url: '/media/videos/article.mp4' },
+      { type: 'video', provider: 'tiktok', url: 'https://www.tiktok.com/@x/video/7412345678901234567' },
+      { type: 'video', provider: 'facebook', url: 'https://www.facebook.com/x/videos/123' },
     ]) {
       expect(schema.safeParse({ ...base, bodyBlocks: [block] }).success).toBe(true)
     }
 
-    for (const block of [
-      { type: 'video', provider: 'tiktok', url: 'https://www.tiktok.com/@x/video/7412345678901234567' },
-      { type: 'video', provider: 'facebook', url: 'https://www.facebook.com/x/videos/123' },
-    ]) {
-      expect(pathsOf(schema.safeParse({ ...base, bodyBlocks: [block] }))).toContain('bodyBlocks.0.url')
-    }
+    expect(pathsOf(schema.safeParse({ ...base, bodyBlocks: [{ type: 'video', provider: 'tiktok', url: 'https://vt.tiktok.com/short' }] }))).toContain('bodyBlocks.0.url')
   })
 })
 

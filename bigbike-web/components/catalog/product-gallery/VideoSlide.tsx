@@ -1,18 +1,24 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Image from "next/image";
 import type { VideoAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
-import { facebookEmbedUrl, getTikTokId, getYouTubeId, isFacebookVideoUrl, tiktokEmbedUrl } from "./media";
+import {
+  facebookEmbedUrl,
+  getTikTokId,
+  getYouTubeId,
+  isFacebookVideoUrl,
+  tiktokEmbedUrl,
+  videoThumbUrl,
+} from "./media";
 
-// Nạp YouTube IFrame API một lần cho cả trang. Dùng để biết khi khách BẤM PLAY và
-// khi video XEM HẾT (YouTube nhúng iframe chéo miền nên không có sự kiện DOM trực
-// tiếp). Không hề tự phát — chỉ lắng nghe trạng thái người dùng thao tác.
 type YTPlayer = { destroy?: () => void; pauseVideo?: () => void; getPlayerState?: () => number };
 type YTPlayerOptions = {
   width?: string | number;
   height?: string | number;
   videoId?: string;
+  host?: string;
   playerVars?: Record<string, string | number>;
   events?: { onStateChange?: (e: { data: number }) => void };
 };
@@ -25,150 +31,175 @@ type YTWindow = { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void };
 let ytApiPromise: Promise<void> | null = null;
 function loadYouTubeApi(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
-  const w = window as unknown as YTWindow;
-  if (w.YT?.Player) return Promise.resolve();
+  const windowWithYt = window as unknown as YTWindow;
+  if (windowWithYt.YT?.Player) return Promise.resolve();
   if (ytApiPromise) return ytApiPromise;
   ytApiPromise = new Promise<void>((resolve) => {
-    const prev = w.onYouTubeIframeAPIReady;
-    w.onYouTubeIframeAPIReady = () => {
-      prev?.();
+    const previous = windowWithYt.onYouTubeIframeAPIReady;
+    windowWithYt.onYouTubeIframeAPIReady = () => {
+      previous?.();
       resolve();
     };
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(script);
   });
   return ytApiPromise;
 }
 
 type VideoSlideProps = {
   video: VideoAsset;
-  /** true khi slide này đang hiển thị; false khi khách chuyển sang slide khác → dừng video. */
   active?: boolean;
-  /** Gọi khi khách BẮT ĐẦU phát video → dừng tự chạy dải ảnh để khỏi cắt ngang clip. */
   onPlay?: () => void;
-  /** Gọi khi video TẠM DỪNG → chạy lại dải ảnh ngay (không sang slide). */
   onPause?: () => void;
-  /** Gọi khi video XEM HẾT → KHÔNG phát lại; đối xử như một tấm ảnh: đợi 3 giây rồi tự sang slide kế. */
   onEnded?: () => void;
 };
 
-/** Slide video trong carousel ảnh chính: YouTube/TikTok/Facebook → iframe embed; video thư viện → thẻ <video controls>.
- *  Video KHÔNG tự phát — khách phải bấm mới chạy. `onPlay`/`onPause`/`onEnded` chỉ phản
- *  ánh thao tác của khách để điều khiển dải ảnh tự chạy. */
+/**
+ * Gallery video facade: the initial PDP only contains a poster and a Play button.
+ * The actual player (and the YouTube API) is mounted after the customer chooses
+ * to play it. This keeps provider scripts/iframes out of the initial page load.
+ */
 export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSlideProps) {
   const url = video.url ?? "";
   const ytId = getYouTubeId(url);
   const tiktokId = ytId ? null : getTikTokId(url);
   const isFacebook = !ytId && !tiktokId && isFacebookVideoUrl(url);
-  const resolved = resolveMediaUrl(url) ?? url;
-  const title = video.title ?? "Video";
-
+  const resolvedUrl = resolveMediaUrl(url) ?? url;
+  const posterUrl = videoThumbUrl(video);
+  const title = video.title?.trim() || "Video";
+  const [activated, setActivated] = useState(false);
+  const [ytFallback, setYtFallback] = useState(false);
   const ytHostRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const nativeVideoRef = useRef<HTMLVideoElement | null>(null);
   const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  // Khi YouTube API bị chặn (adblock/mạng) thì sau ~4s vẫn không gắn được player →
-  // hạ xuống iframe nhúng thường để video VẪN xem được (đánh đổi: lúc này không bắt
-  // được sự kiện play nên dải ảnh không tự dừng — trường hợp hiếm).
-  const [ytFallback, setYtFallback] = useState(false);
 
-  // YouTube: ĐỂ CHÍNH API tự dựng iframe từ một <div> rỗng (thay vì gắn vào iframe có
-  // sẵn — kiểu cũ khiến onStateChange thường KHÔNG bắn → dải ảnh không biết video đang
-  // chạy và vẫn nhảy slide). API tự dựng iframe nên sự kiện PLAYING/PAUSED/ENDED bắn
-  // tin cậy. Bọc trong wrapper: API thay thế <div> con bằng iframe của nó; React chỉ
-  // quản <div> ngoài nên không xung đột khi gỡ DOM.
+  function activate() {
+    setActivated(true);
+    // YouTube and internal video begin from this same customer gesture. TikTok
+    // and Facebook report playback unreliably, so ProductGallery keeps its
+    // focus-based fallback instead of assuming that their embed is playing.
+    if (ytId || (!tiktokId && !isFacebook)) onPlay?.();
+  }
+
   useEffect(() => {
-    if (!ytId) return;
+    if (!activated || !ytId) return;
     let cancelled = false;
     let player: YTPlayer | null = null;
     const fallbackTimer = window.setTimeout(() => {
       if (!cancelled) setYtFallback(true);
     }, 8000);
+
     loadYouTubeApi().then(() => {
       if (cancelled) return;
-      const YT = (window as unknown as YTWindow).YT;
-      if (!YT?.Player || !ytHostRef.current) {
+      const yt = (window as unknown as YTWindow).YT;
+      if (!yt?.Player || !ytHostRef.current) {
         setYtFallback(true);
         return;
       }
       window.clearTimeout(fallbackTimer);
-      player = new YT.Player(ytHostRef.current, {
+      player = new yt.Player(ytHostRef.current, {
         width: "100%",
         height: "100%",
         videoId: ytId,
-        // KHÔNG có autoplay → khách phải bấm mới chạy. playsinline để iOS không ép
-        // mở toàn màn hình; rel=0 hạn chế gợi ý video lạ khi xem hết.
-        playerVars: { playsinline: 1, rel: 0 },
+        host: "https://www.youtube-nocookie.com",
+        playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
         events: {
-          onStateChange: (e: { data: number }) => {
-            if (e.data === YT.PlayerState.PLAYING) onPlay?.();
-            else if (e.data === YT.PlayerState.PAUSED) onPause?.();
-            else if (e.data === YT.PlayerState.ENDED) onEnded?.();
+          onStateChange: (event) => {
+            if (event.data === yt.PlayerState.PLAYING) onPlay?.();
+            else if (event.data === yt.PlayerState.PAUSED) onPause?.();
+            else if (event.data === yt.PlayerState.ENDED) onEnded?.();
           },
         },
       });
       ytPlayerRef.current = player;
     });
+
     return () => {
       cancelled = true;
       window.clearTimeout(fallbackTimer);
       try {
         player?.destroy?.();
       } catch {
-        // iframe có thể đã bị React gỡ trước — bỏ qua.
+        // The iframe may already have been removed while changing slides.
       }
       ytPlayerRef.current = null;
     };
-  }, [ytId, onPlay, onPause, onEnded]);
+  }, [activated, ytId, onEnded, onPause, onPlay]);
 
-  // CHỐT CHẶN: một số trình duyệt/môi trường KHÔNG bắn `onStateChange` dù đã gắn API
-  // → web không biết video đang chạy → dải ảnh vẫn nhảy slide sau 3s. Vì vậy chủ động
-  // HỎI trạng thái player mỗi 300ms (chỉ khi slide đang active): đang chạy/đệm → khoá,
-  // tạm dừng → mở khoá, xem hết → mở khoá để sang slide kế. Idempotent với onStateChange.
-  // Trạng thái YouTube: -1 chưa bắt đầu, 0 hết, 1 đang chạy, 2 tạm dừng, 3 đang đệm, 5 đã nạp.
   useEffect(() => {
-    if (!ytId || active === false) return;
-    let last = -1;
-    const id = window.setInterval(() => {
-      const st = ytPlayerRef.current?.getPlayerState?.();
-      if (typeof st !== "number" || st === last) return;
-      last = st;
-      if (st === 1 || st === 3) onPlay?.();
-      else if (st === 2) onPause?.();
-      else if (st === 0) onEnded?.();
+    if (!activated || !ytId || active === false) return;
+    let previousState = -1;
+    const intervalId = window.setInterval(() => {
+      const state = ytPlayerRef.current?.getPlayerState?.();
+      if (typeof state !== "number" || state === previousState) return;
+      previousState = state;
+      if (state === 1 || state === 3) onPlay?.();
+      else if (state === 2) onPause?.();
+      else if (state === 0) onEnded?.();
     }, 300);
-    return () => window.clearInterval(id);
-  }, [ytId, active, onPlay, onPause, onEnded]);
+    return () => window.clearInterval(intervalId);
+  }, [activated, active, ytId, onEnded, onPause, onPlay]);
 
-  // Khi slide này bị deactivate (khách chuyển sang slide khác) → dừng video ngay.
   useEffect(() => {
     if (active !== false) return;
     try {
       ytPlayerRef.current?.pauseVideo?.();
     } catch {
-      // player có thể chưa sẵn sàng — bỏ qua.
+      // The player may not be ready yet.
     }
-    videoRef.current?.pause();
+    nativeVideoRef.current?.pause();
   }, [active]);
+
+  if (!activated) {
+    return (
+      <button
+        type="button"
+        className="relative block h-full w-full cursor-pointer overflow-hidden bg-black text-white focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-4px]"
+        onClick={activate}
+        aria-label={`Play ${title}`}
+        data-product-gallery-video-play
+      >
+        {posterUrl ? (
+          <Image
+            src={posterUrl}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 60vw"
+            unoptimized
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <span className="block h-full w-full bg-black" aria-hidden="true" />
+        )}
+        <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-hidden="true">
+          <svg viewBox="0 0 48 48" className="h-14 w-14 fill-white drop-shadow" focusable="false">
+            <path d="M15 10.6v26.8L37 24 15 10.6Z" />
+          </svg>
+        </span>
+      </button>
+    );
+  }
 
   if (ytId && !ytFallback) {
     return (
-      <div className="relative block h-full w-full bg-black [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0">
-        {/* <div> này bị YouTube API thay bằng iframe của nó. */}
+      <div className="relative block h-full w-full bg-black [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0" data-product-gallery-video-player>
         <div ref={ytHostRef} id={ytFrameId} />
       </div>
     );
   }
 
-  if (ytId && ytFallback) {
+  if (ytId) {
     return (
       <iframe
-        className="block w-full h-full border-none bg-black"
-        src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1`}
+        className="block h-full w-full border-none bg-black"
+        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&enablejsapi=1&playsinline=1&rel=0`}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
+        data-product-gallery-video-player
       />
     );
   }
@@ -176,11 +207,12 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   if (tiktokId) {
     return (
       <iframe
-        className="block w-full h-full border-none bg-black"
+        className="block h-full w-full border-none bg-black"
         src={tiktokEmbedUrl(tiktokId)}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         allowFullScreen
+        data-product-gallery-video-player
       />
     );
   }
@@ -188,26 +220,29 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   if (isFacebook) {
     return (
       <iframe
-        className="block w-full h-full border-none bg-black"
+        className="block h-full w-full border-none bg-black"
         src={facebookEmbedUrl(url)}
         title={title}
         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
+        data-product-gallery-video-player
       />
     );
   }
 
   return (
     <video
-      ref={videoRef}
-      className="block w-full h-full object-contain bg-black"
-      src={resolved}
+      ref={nativeVideoRef}
+      className="block h-full w-full bg-black object-contain"
+      src={resolvedUrl}
       controls
+      autoPlay
       playsInline
       poster={video.thumbnail?.url}
       onPlay={onPlay}
       onPause={onPause}
       onEnded={onEnded}
+      data-product-gallery-video-player
     />
   );
 }

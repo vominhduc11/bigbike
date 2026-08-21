@@ -94,11 +94,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     categoriesResult.data ?? [],
   );
   const faqs = safeArray(product.faqs);
-  const videos = safeArray(product.videos);
 
   // Bộ JSON-LD cho PDP (mỗi loại 1 thẻ <script>): Product (kèm aggregateRating
   // khi có review thật), BreadcrumbList, FAQPage (khi có FAQ), VideoObject (mỗi
-  // video có thumbnail). Hàm builder tự bỏ field rỗng → không khai schema lỗi.
+  // video thật sự hiển thị, đủ dữ liệu). Hàm builder tự bỏ field rỗng → không
+  // khai schema lỗi.
   // SEO sống ở server component; phần thân hiển thị do <ProductView> đảm nhiệm.
   const jsonLdBlocks: string[] = [
     serializeJsonLd(buildProductJsonLd(product, canonicalPath)),
@@ -107,7 +107,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   if (faqs.length > 0) {
     jsonLdBlocks.push(serializeJsonLd(buildFaqPageJsonLd(faqs)));
   }
-  for (const videoLd of buildVideoObjectsJsonLd(videos, product)) {
+  for (const videoLd of buildVideoObjectsJsonLd(product)) {
     jsonLdBlocks.push(serializeJsonLd(videoLd));
   }
 

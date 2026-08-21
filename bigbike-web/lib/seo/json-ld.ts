@@ -1,4 +1,4 @@
-import type { Article, Brand, Category, CategorySummary, Product, VideoAsset } from "@/lib/contracts/public";
+import type { Article, Brand, Category, CategorySummary, GalleryMedia, Product, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 import {
   normalizeStorefrontUrl,
   toArticleListPath,
@@ -44,16 +44,11 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
   const locale = localeFromPath(canonicalPathOverride);
   const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug, locale));
   const images = collectProductImages(product);
-  const priceCurrency = product.price?.currency ?? "VND";
-  const offers = buildProductOffers(product, canonicalUrl, priceCurrency);
   const primaryCategory = product.category ?? product.categories?.[0];
-
-  return {
+  const common = {
     "@context": "https://schema.org",
-    "@type": "Product",
     name: product.name,
     description: product.seo?.description ?? product.shortDescription ?? product.description ?? "",
-    sku: product.sku ?? undefined,
     image: images.length > 0 ? images : undefined,
     brand: product.brand?.name
       ? {
@@ -64,16 +59,27 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
     category: isPublicProductCategory(primaryCategory) ? primaryCategory.name : undefined,
     url: canonicalUrl,
     inLanguage: locale,
-    offers,
-    // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
-    // bao giờ khai khống — vi phạm guideline Google (checklist #23).
     aggregateRating: buildAggregateRating(product),
-    // CỐ Ý KHÔNG khai positiveNotes/negativeNotes (gỡ 2026-08-06, thay cho V175).
-    // Google chỉ hỗ trợ rich result ưu/nhược điểm cho trang ĐÁNH GIÁ biên tập độc
-    // lập, không cho trang bán hàng của chính người bán — khai ở đây là sai loại
-    // trang và có nguy cơ bị phạt thủ công toàn site. Ưu/nhược điểm vẫn hiển thị
-    // cho khách dưới dạng HTML thường qua <ProductProsCons>, chỉ không vào JSON-LD.
-    // Không thêm lại dưới bất kỳ tên nào (positiveNotes, negativeNotes, Review, pros, cons).
+  };
+
+  // Historical/discontinued pages remain a single historical product at their
+  // current address. They must not be recast as a saleable ProductGroup.
+  const variants = (product.variants ?? []).filter((variant) => Boolean(variant.id) && Boolean(variant.name?.trim()));
+  if (product.discontinued || variants.length === 0) {
+    return {
+      ...common,
+      "@type": "Product",
+      sku: product.sku ?? undefined,
+      offers: buildProductOffers(product, canonicalUrl),
+    };
+  }
+
+  return {
+    ...common,
+    "@type": "ProductGroup",
+    productGroupID: product.sku ?? product.id,
+    variesBy: buildVariesBy(variants),
+    hasVariant: variants.map((variant) => buildVariantProductJsonLd(variant, product, canonicalUrl)),
   };
 }
 
@@ -488,11 +494,18 @@ function collectProductImages(product: Product): string[] {
   return Array.from(images);
 }
 
-function buildProductOffers(product: Product, canonicalUrl: string, priceCurrency: string): JsonLdObject | undefined {
-  // Price is product-level only; variant prices are intentionally excluded so
-  // SEO offers stay consistent with what the storefront actually displays.
-  const sale = product.price?.salePrice;
-  const retail = product.price?.retailPrice;
+function buildProductOffers(product: Product, canonicalUrl: string): JsonLdObject | undefined {
+  return buildOffer(product.price, product.stockState, canonicalUrl, product.discontinued === true);
+}
+
+function buildOffer(
+  priceSource: Product["price"] | ProductVariant["price"],
+  stockState: Product["stockState"],
+  canonicalUrl: string,
+  discontinued = false,
+): JsonLdObject | undefined {
+  const sale = priceSource?.salePrice;
+  const retail = priceSource?.retailPrice;
   const price =
     typeof sale === "number" && Number.isFinite(sale)
       ? sale
@@ -507,13 +520,36 @@ function buildProductOffers(product: Product, canonicalUrl: string, priceCurrenc
   return {
     "@type": "Offer",
     url: canonicalUrl,
-    priceCurrency,
+    priceCurrency: priceSource?.currency ?? "VND",
     price,
-    availability: product.discontinued
+    availability: discontinued
       ? "https://schema.org/Discontinued"
-      : stockStateToAvailability(product.stockState),
+      : stockStateToAvailability(stockState),
     itemCondition: "https://schema.org/NewCondition",
   };
+}
+
+function buildVariantProductJsonLd(variant: ProductVariant, product: Product, canonicalUrl: string): JsonLdObject {
+  const price = variant.price ?? product.price;
+  const stockState = variant.isAvailable ? "IN_STOCK" : "OUT_OF_STOCK";
+  return {
+    "@type": "Product",
+    "@id": `${canonicalUrl}#variant-${encodeURIComponent(variant.id)}`,
+    name: `${product.name} - ${variant.name}`,
+    sku: variant.sku ?? undefined,
+    image: variant.image?.url ? [toCanonicalUrl(variant.image.url)] : undefined,
+    offers: buildOffer(price, stockState, canonicalUrl),
+  };
+}
+
+function buildVariesBy(variants: ProductVariant[]): string[] | undefined {
+  const fields = new Set<string>();
+  for (const option of variants.flatMap((variant) => variant.options ?? [])) {
+    const normalized = option.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (/(color|colour|mau)/.test(normalized)) fields.add("https://schema.org/color");
+    if (/(size|kich co)/.test(normalized)) fields.add("https://schema.org/size");
+  }
+  return fields.size > 0 ? Array.from(fields) : undefined;
 }
 
 function stockStateToAvailability(stockState: Product["stockState"]): string {
@@ -594,46 +630,89 @@ export function buildCategoryCollectionJsonLd(
   };
 }
 
-/**
- * VideoObject cho các video nhúng trong gallery PDP (checklist #20). Mỗi video
- * cần thumbnailUrl + uploadDate để Google chấp nhận — thiếu thumbnail thì bỏ qua
- * video đó thay vì khai schema lỗi. uploadDate dùng ngày tạo sản phẩm làm proxy
- * (không có ngày upload video riêng). YouTube → embedUrl; nguồn khác → contentUrl.
- */
-export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product): JsonLdObject[] {
-  const fallbackThumb = product.image?.url ?? product.gallery?.[0]?.image?.url;
-  const uploadDate = product.createdAt;
+/** VideoObject is emitted only for a video the PDP actually displays. */
+export function buildVideoObjectsJsonLd(product: Product): JsonLdObject[];
+/** Kept for focused callers/tests that supply an already-visible video list. */
+export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product): JsonLdObject[];
+export function buildVideoObjectsJsonLd(
+  productOrVideos: Product | VideoAsset[],
+  suppliedProduct?: Product,
+): JsonLdObject[] {
+  const product = Array.isArray(productOrVideos) ? suppliedProduct : productOrVideos;
+  if (!product) return [];
+  const videos = Array.isArray(productOrVideos) ? productOrVideos : collectDisplayedProductVideos(product);
+  const canonicalUrl = toCanonicalUrl(product.seo?.canonicalUrl ?? toProductPath(product.slug));
+  const seenIds = new Set<string>();
+  const objects: JsonLdObject[] = [];
 
-  return (videos ?? [])
-    .map((video): JsonLdObject | null => {
-      const url = video?.url?.trim();
-      if (!url) return null;
+  for (const video of videos) {
+    const id = video.id?.trim();
+    const url = video.url?.trim();
+    const name = video.title?.trim();
+    const description = video.description?.trim();
+    const uploadDate = video.uploadedOn?.trim() || product.createdAt?.trim();
+    const embedUrl = url ? toVideoEmbedUrl(url) : undefined;
+    const thumbnailUrl = video.thumbnail?.url?.trim() || youTubeThumbnailUrl(url);
+    if (!id || seenIds.has(id) || !url || !name || !description || !uploadDate || !thumbnailUrl) continue;
+    seenIds.add(id);
 
-      const thumbnailUrl = video.thumbnail?.url ?? fallbackThumb;
-      if (!thumbnailUrl) return null;
+    objects.push({
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "@id": `${canonicalUrl}#video-${encodeURIComponent(id)}`,
+      name,
+      description,
+      thumbnailUrl: [toCanonicalUrl(thumbnailUrl)],
+      uploadDate,
+      duration: toIsoDuration(video.durationSeconds),
+      publisher: {
+        "@type": "Organization",
+        name: "BigBike",
+        url: toCanonicalUrl("/"),
+      },
+      embedUrl,
+      contentUrl: embedUrl ? undefined : toCanonicalUrl(url),
+    });
+  }
+  return objects;
+}
 
-      const name = video.title?.trim() || product.name;
-      const embedUrl = toVideoEmbedUrl(url);
+function collectDisplayedProductVideos(product: Product): VideoAsset[] {
+  const galleryVideos = (product.gallery ?? [])
+    .filter((media): media is GalleryMedia => media?.mediaType === "video" && Boolean(media.videoUrl))
+    .map((media) => ({
+      id: media.id,
+      url: media.videoUrl ?? undefined,
+      provider: media.provider ?? media.videoProvider ?? undefined,
+      title: media.title ?? undefined,
+      titleEn: media.titleEn,
+      thumbnail: media.image ?? null,
+      description: media.description,
+      descriptionEn: media.descriptionEn,
+      durationSeconds: media.durationSeconds,
+      uploadedOn: media.uploadedOn,
+    }));
+  return [...galleryVideos, ...(product.videos ?? [])];
+}
 
-      return {
-        "@context": "https://schema.org",
-        "@type": "VideoObject",
-        name,
-        description: video.description?.trim() || video.title?.trim() || product.shortDescription || product.name,
-        thumbnailUrl: [toCanonicalUrl(thumbnailUrl)],
-        uploadDate,
-        embedUrl,
-        contentUrl: embedUrl ? undefined : toCanonicalUrl(url),
-      };
-    })
-    .filter((item): item is JsonLdObject => item !== null);
+function youTubeThumbnailUrl(url: string | undefined): string | undefined {
+  const id = url?.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([\w-]{11})/)?.[1];
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : undefined;
+}
+
+function toIsoDuration(seconds: number | null | undefined): string | undefined {
+  if (!Number.isInteger(seconds) || !seconds || seconds < 0) return undefined;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return `PT${hours ? `${hours}H` : ""}${minutes ? `${minutes}M` : ""}${remainingSeconds ? `${remainingSeconds}S` : ""}`;
 }
 
 function toVideoEmbedUrl(url: string): string | undefined {
   const yt = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
   );
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?enablejsapi=1&playsinline=1&rel=0`;
   const tt = url.match(
     /(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)(\d{6,30})/,
   );

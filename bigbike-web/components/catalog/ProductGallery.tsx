@@ -360,6 +360,12 @@ export function ProductGallery({
         )}
       </div>
 
+      {activeItem?.kind === "video" && activeItem.asset.description?.trim() ? (
+        <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground" data-product-gallery-video-description>
+          {activeItem.asset.description.trim()}
+        </p>
+      ) : null}
+
       {count > 1 && (
         // Dải thumbnail nằm ngang ngay dưới ảnh chính. Mũi tên trái/phải chỉ render
         // khi thumbnail thực sự cần cuộn (`showThumbArrows`). `px-9` chừa chỗ cho 2

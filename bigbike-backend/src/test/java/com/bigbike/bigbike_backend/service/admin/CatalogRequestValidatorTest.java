@@ -464,37 +464,36 @@ class CatalogRequestValidatorTest {
     }
 
     @Test
-    void validateProductRequest_rejectsLegacyProductVideoProvider() {
-        String legacyUrl = "https://www.facebook.com/BigBike/videos/1234567890";
-        when(homeVideoUrlPolicy.isAllowedForProvider("facebook", legacyUrl)).thenReturn(false);
+    void validateProductRequest_acceptsFacebookProductVideoProvider() {
+        String videoUrl = "https://www.facebook.com/BigBike/videos/1234567890";
+        when(homeVideoUrlPolicy.isAllowedForProvider("facebook", videoUrl)).thenReturn(true);
 
         VideoRequest video = new VideoRequest();
         video.setProvider("facebook");
-        video.setUrl(legacyUrl);
+        video.setUrl(videoUrl);
         UpsertProductRequest request = createBaseRequest();
         request.setVideos(List.of(video));
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         validator.validateProductRequest(request, null, true, false, errors);
 
-        assertThat(errors).anySatisfy(error ->
-                assertThat(error.field()).isEqualTo("videos[0].url"));
+        assertThat(errors).noneMatch(error -> error.field().equals("videos[0].url"));
     }
 
     @Test
-    void validateProductRequest_rejectsLegacyGalleryAndVariantGalleryProviders() {
-        String legacyUrl = "https://www.tiktok.com/@bigbike/video/7251234567890123456";
-        when(homeVideoUrlPolicy.isAllowedForProvider("tiktok", legacyUrl)).thenReturn(false);
+    void validateProductRequest_acceptsTikTokGalleryAndVariantGalleryProviders() {
+        String videoUrl = "https://www.tiktok.com/@bigbike/video/7251234567890123456";
+        when(homeVideoUrlPolicy.isAllowedForProvider("tiktok", videoUrl)).thenReturn(true);
 
         GalleryImageRequest productGallery = new GalleryImageRequest();
         productGallery.setMediaType("video");
         productGallery.setVideoProvider("tiktok");
-        productGallery.setVideoUrl(legacyUrl);
+        productGallery.setVideoUrl(videoUrl);
 
         GalleryImageRequest variantGallery = new GalleryImageRequest();
         variantGallery.setMediaType("video");
         variantGallery.setVideoProvider("tiktok");
-        variantGallery.setVideoUrl(legacyUrl);
+        variantGallery.setVideoUrl(videoUrl);
         VariantRequest variant = new VariantRequest();
         variant.setSku("VIDEO-VARIANT");
         variant.setRetailPrice(BigDecimal.TEN);
@@ -508,7 +507,7 @@ class CatalogRequestValidatorTest {
         validator.validateProductRequest(request, null, true, false, errors);
 
         assertThat(errors).extracting(ApiErrorDetail::field)
-                .contains("gallery[0].videoUrl", "variants[0].gallery[0].videoUrl");
+                .doesNotContain("gallery[0].videoUrl", "variants[0].gallery[0].videoUrl");
     }
 
     @Test

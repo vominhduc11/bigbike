@@ -245,7 +245,7 @@ describe('HighlightsHtmlEditor data safety', () => {
 })
 
 describe('Video editors only expose writable sources', () => {
-  it('video sản phẩm chỉ có YouTube và Upload / media library, đồng thời chọn được video thư viện', async () => {
+  it('video sản phẩm có đủ nguồn được duyệt và vẫn chọn được video thư viện', async () => {
     const user = userEvent.setup()
 
     function Harness() {
@@ -258,8 +258,8 @@ describe('Video editors only expose writable sources', () => {
     render(<Harness />)
     expect(screen.getByRole('button', { name: 'YouTube' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Upload / media library' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /TikTok/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Facebook/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /TikTok/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Facebook/i })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Upload / media library' }))
     await user.click(screen.getByRole('button', { name: 'Pick from library' }))
@@ -268,32 +268,32 @@ describe('Video editors only expose writable sources', () => {
     expect(screen.getByText('library.mp4')).toBeInTheDocument()
   })
 
-  it('video sản phẩm và gallery legacy hiện cảnh báo nhưng không hiện lựa chọn legacy', () => {
+  it('video sản phẩm và gallery nhận đúng URL TikTok/Facebook đầy đủ', () => {
     const { rerender } = render(
       <VideoEditor
-        items={[{ _key: 'legacy', url: 'https://www.tiktok.com/@x/video/1234567890123456789', type: '' }]}
+        items={[{ _key: 'legacy', url: 'https://www.tiktok.com/@x/video/1234567890123456789', type: 'tiktok' }]}
         onChange={() => {}}
-        validationErrors={{ 'videos.0.url': 'Source must be replaced' }}
+        validationErrors={{}}
       />,
     )
-    expect(screen.getByText('Legacy source must be replaced')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /TikTok/i })).not.toBeInTheDocument()
+    expect(screen.queryByText('Legacy source must be replaced')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /TikTok/i })).toBeInTheDocument()
 
     rerender(
       <GalleryEditor
         items={[{
           _key: 'legacy-gallery',
           mediaType: 'video',
-          provider: '',
+          provider: 'facebook',
           videoUrl: 'https://www.facebook.com/x/videos/123',
           url: '',
           alt: '',
         }]}
         onChange={() => {}}
-        validationErrors={{ 'gallery.0.videoUrl': 'Source must be replaced' }}
+        validationErrors={{}}
       />,
     )
-    expect(screen.getByText('Legacy gallery source must be replaced')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Facebook/i })).not.toBeInTheDocument()
+    expect(screen.queryByText('Legacy gallery source must be replaced')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Facebook/i })).toBeInTheDocument()
   })
 })

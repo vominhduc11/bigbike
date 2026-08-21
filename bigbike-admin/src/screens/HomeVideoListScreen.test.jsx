@@ -10,6 +10,8 @@ vi.mock('react-i18next', () => ({
       'homeVideos.addButton': 'Add video',
       'homeVideos.formSource': 'Video source',
       'homeVideos.sourceYoutube': 'YouTube',
+      'homeVideos.sourceTikTok': 'TikTok',
+      'homeVideos.sourceFacebook': 'Facebook',
       'homeVideos.sourceUpload': 'Upload / media library',
       'homeVideos.legacySourceWarning': 'Legacy source must be replaced',
       'homeVideos.statusVisible': 'Visible',
@@ -96,16 +98,16 @@ describe('HomeVideoListScreen video sources', () => {
     })
   })
 
-  it('legacy record vẫn mở được nhưng form chỉ có YouTube và Upload / media library', async () => {
+  it('bản ghi TikTok đầy đủ mở được với đủ bốn nguồn hợp lệ', async () => {
     const user = userEvent.setup()
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'Edit' }))
 
-    expect(screen.getByText('Legacy source must be replaced')).toBeInTheDocument()
+    expect(screen.queryByText('Legacy source must be replaced')).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'YouTube' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Upload / media library' })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /TikTok/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /Facebook/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /TikTok/i })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /Facebook/i })).toBeInTheDocument()
   })
 })

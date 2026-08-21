@@ -184,6 +184,7 @@ export function normalizeGalleryMedia(input) {
   if (isVideo) {
     if (!videoUrl) return undefined
     return {
+      id: toTrimmedString(input.id) || undefined,
       mediaType: 'video',
       videoUrl,
       provider: toTrimmedString(input.provider || input.videoProvider) || undefined,
@@ -193,6 +194,12 @@ export function normalizeGalleryMedia(input) {
       width: image?.width,
       height: image?.height,
       mimeType: image?.mimeType,
+      title: toTrimmedString(input.title) || undefined,
+      titleEn: toTrimmedString(input.titleEn) || undefined,
+      description: toTrimmedString(input.description) || undefined,
+      descriptionEn: toTrimmedString(input.descriptionEn) || undefined,
+      durationSeconds: Number.isInteger(input.durationSeconds) ? input.durationSeconds : undefined,
+      uploadedOn: toTrimmedString(input.uploadedOn) || undefined,
     }
   }
   if (!image) return undefined
@@ -221,9 +228,13 @@ export function normalizeVideoAsset(input) {
     id: toTrimmedString(input.id) || undefined,
     url,
     title: toTrimmedString(input.title) || undefined,
+    titleEn: toTrimmedString(input.titleEn) || undefined,
     provider: toTrimmedString(input.provider) || undefined,
     thumbnail: normalizeImageAsset(input.thumbnail),
     description: toTrimmedString(input.description) || undefined,
+    descriptionEn: toTrimmedString(input.descriptionEn) || undefined,
+    durationSeconds: Number.isInteger(input.durationSeconds) ? input.durationSeconds : undefined,
+    uploadedOn: toTrimmedString(input.uploadedOn) || undefined,
   }
 }
 

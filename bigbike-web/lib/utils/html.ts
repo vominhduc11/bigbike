@@ -29,7 +29,7 @@ export function sanitizeRichHtml(
   const normalizedHtml = options.rewriteMediaUrls ? rewriteLegacyMediaUrls(rawHtml) : rawHtml;
   const withoutShortcodes = stripWpShortcodes(normalizedHtml);
   const allowedAttr = options.allowInlineStyles
-    ? [...ALLOWED_ATTR, "style", "dir", "srcset", "sizes", "decoding", "fetchpriority"]
+    ? [...ALLOWED_ATTR, "style", "dir", "srcset", "sizes", "fetchpriority"]
     : ALLOWED_ATTR;
 
   const allowedTags = options.allowStyleTags
@@ -154,7 +154,7 @@ const ALLOWED_TAGS = [
 const ALLOWED_ATTR = [
   "aria-label", "class", "id", "title",
   "href", "rel", "target",
-  "allow", "allowfullscreen", "loading", "src", "data-src",
+  "allow", "allowfullscreen", "loading", "decoding", "src", "data-src",
   "alt", "width", "height",
   "colspan", "rowspan", "scope",
   "controls", "controlslist", "disablepictureinpicture", "muted", "playsinline",

@@ -366,7 +366,7 @@ final class AdminMutationValidators {
             errors.add(new ApiErrorDetail(
                     field,
                     "INVALID_VALUE",
-                    "Video source must be YouTube or upload, and the URL must match its provider."
+                    "Video source must be YouTube, TikTok, Facebook or an internal upload, and the URL must match its provider."
             ));
         }
     }

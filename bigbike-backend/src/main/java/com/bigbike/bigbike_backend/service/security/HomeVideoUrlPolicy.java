@@ -1,6 +1,8 @@
 package com.bigbike.bigbike_backend.service.security;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.service.video.FacebookUrlParser;
+import com.bigbike.bigbike_backend.service.video.TikTokUrlParser;
 import com.bigbike.bigbike_backend.service.video.YouTubeUrlParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,7 +19,9 @@ public class HomeVideoUrlPolicy {
             throw ValidationException.fromField(field, "REQUIRED", field + " is required.");
         }
 
-        if (YouTubeUrlParser.isYouTubeUrl(normalized)
+        if (YouTubeUrlParser.isFullYouTubeUrl(normalized)
+                || TikTokUrlParser.isTikTokUrl(normalized)
+                || FacebookUrlParser.isFacebookVideoUrl(normalized)
                 || safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl(normalized)) {
             return normalized;
         }
@@ -25,7 +29,7 @@ public class HomeVideoUrlPolicy {
         throw ValidationException.fromField(
                 field,
                 "INVALID_VALUE",
-                "videoUrl must be a supported YouTube URL or an approved internal media URL."
+                "videoUrl must be a full YouTube, TikTok or Facebook video URL, or an approved internal media URL."
         );
     }
 
@@ -41,7 +45,9 @@ public class HomeVideoUrlPolicy {
             return false;
         }
         return switch (normalizedProvider) {
-            case "youtube" -> YouTubeUrlParser.isYouTubeUrl(normalizedUrl);
+            case "youtube" -> YouTubeUrlParser.isFullYouTubeUrl(normalizedUrl);
+            case "tiktok" -> TikTokUrlParser.isTikTokUrl(normalizedUrl);
+            case "facebook" -> FacebookUrlParser.isFacebookVideoUrl(normalizedUrl);
             case "upload" -> safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl(normalizedUrl);
             default -> false;
         };

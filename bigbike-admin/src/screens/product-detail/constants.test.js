@@ -11,6 +11,8 @@ import {
   cleanDescriptionBlocks,
   computeAttrSetWarning,
   getPublishReadiness,
+  formatVideoDuration,
+  parseVideoDuration,
   productEnglishReady,
   resolveColorChangeMedia,
   toPayload,
@@ -216,9 +218,16 @@ describe('media metadata round-trip', () => {
         mimeType: 'image/webp',
       },
       {
+        id: '6b2249a2-39c8-4e22-b73c-08e2bb5938a5',
         mediaType: 'video',
         videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
         provider: 'youtube',
+        title: 'Video giới thiệu mũ',
+        titleEn: 'Helmet introduction video',
+        description: 'Video giới thiệu đầy đủ về mũ bảo hiểm.',
+        descriptionEn: 'A full introduction to the helmet.',
+        durationSeconds: 125,
+        uploadedOn: '2026-08-20',
         rawUrl: '/media/video-poster.jpg',
         alt: 'Video giới thiệu mũ',
         width: 1280,
@@ -269,8 +278,8 @@ describe('media metadata round-trip', () => {
       height: 630,
       mimeType: 'image/png',
     })
-    expect(payload.gallery).toEqual([
-      {
+    expect(payload.gallery).toEqual(expect.arrayContaining([
+      expect.objectContaining({
         mediaType: 'image',
         url: '/media/gallery-1.webp',
         alt: 'Mặt trước mũ',
@@ -278,8 +287,9 @@ describe('media metadata round-trip', () => {
         height: 1200,
         mimeType: 'image/webp',
         sortOrder: 0,
-      },
-      {
+      }),
+      expect.objectContaining({
+        id: '6b2249a2-39c8-4e22-b73c-08e2bb5938a5',
         mediaType: 'video',
         videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
         videoProvider: 'youtube',
@@ -288,9 +298,15 @@ describe('media metadata round-trip', () => {
         width: 1280,
         height: 720,
         mimeType: 'image/jpeg',
+        title: 'Video giới thiệu mũ',
+        titleEn: 'Helmet introduction video',
+        description: 'Video giới thiệu đầy đủ về mũ bảo hiểm.',
+        descriptionEn: 'A full introduction to the helmet.',
+        durationSeconds: 125,
+        uploadedOn: '2026-08-20',
         sortOrder: 1,
-      },
-    ])
+      }),
+    ]))
     expect(payload.variants[0]).toEqual(expect.objectContaining({
       imageUrl: '/media/variant-black.png',
       imageAlt: 'Mũ màu đen',
@@ -337,24 +353,45 @@ describe('media metadata round-trip', () => {
     expect(payload.gallery[0].mediaType).toBe('video')
   })
 
-  it('không tự đổi nguồn legacy thành YouTube và không phát sinh payload TikTok/Facebook', () => {
-    const legacyItem = structuredClone(item)
-    legacyItem.videos = [{
+  it('giữ nguồn TikTok/Facebook đầy đủ và metadata video khi mở rồi lưu', () => {
+    const videoItem = structuredClone(item)
+    videoItem.videos = [{
+      id: '6c2249a2-39c8-4e22-b73c-08e2bb5938a5',
       url: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
       provider: 'tiktok',
-      title: 'Legacy TikTok',
+      title: 'TikTok BigBike',
+      titleEn: 'BigBike TikTok',
+      description: 'Video TikTok giới thiệu sản phẩm.',
+      descriptionEn: 'TikTok product introduction.',
+      durationSeconds: 61,
+      uploadedOn: '2026-08-20',
+      thumbnail: { url: '/media/tiktok-poster.jpg' },
     }]
-    legacyItem.gallery[1].provider = 'facebook'
-    legacyItem.gallery[1].videoUrl = 'https://www.facebook.com/bigbike/videos/123456789'
+    videoItem.gallery[1].provider = 'facebook'
+    videoItem.gallery[1].videoUrl = 'https://www.facebook.com/bigbike/videos/123456789'
 
-    const form = buildFormFromItem(legacyItem)
-    expect(form.videos[0].type).toBe('')
-    expect(form.gallery[1].provider).toBe('')
+    const form = buildFormFromItem(videoItem)
+    expect(form.videos[0].type).toBe('tiktok')
+    expect(form.gallery[1].provider).toBe('facebook')
 
     const payload = toPayload(form)
-    expect(JSON.stringify(payload)).not.toMatch(/tiktok|facebook/i)
-    expect(payload.videos).toHaveLength(0)
-    expect(payload.gallery.some((item) => item.mediaType === 'video')).toBe(false)
+    expect(payload.videos[0]).toMatchObject({
+      id: '6c2249a2-39c8-4e22-b73c-08e2bb5938a5',
+      provider: 'tiktok',
+      durationSeconds: 61,
+      uploadedOn: '2026-08-20',
+      thumbnailUrl: '/media/tiktok-poster.jpg',
+    })
+    expect(payload.gallery.find((entry) => entry.mediaType === 'video')).toMatchObject({ videoProvider: 'facebook' })
+  })
+
+  it('đổi thời lượng chuẩn giữa form và số giây, chỉ nhận MM:SS hoặc HH:MM:SS', () => {
+    expect(parseVideoDuration('02:05')).toBe(125)
+    expect(parseVideoDuration('01:02:03')).toBe(3723)
+    expect(parseVideoDuration('75')).toBeNull()
+    expect(parseVideoDuration('01:70')).toBeNull()
+    expect(formatVideoDuration(125)).toBe('02:05')
+    expect(formatVideoDuration(3723)).toBe('01:02:03')
   })
 })
 

@@ -1307,11 +1307,18 @@ Evidence: `UpsertProductRequest.java` (`highlights` field + `HighlightsRequest` 
 `V331__add_product_jsonb_content_columns.sql`, `V332__MigrateProductChildContentToJsonb.java`,
 `V333__drop_product_child_content_tables.sql`.
 
-### Product video description — `videos[].description` (V175)
+### Product video metadata — `videos[]` và `gallery[].video` (2026-08-21)
 
-`videos[]` trong upsert request nhận thêm `description` (`@Size(max = 5000)`), 1 ngôn
-ngữ. Trả về trên product detail là `videos[].description`. Web render caption dưới
-video embed và đưa vào `description` của schema.org `VideoObject`.
+`POST /api/v1/admin/products` và `PATCH /api/v1/admin/products/{id}` nhận/trả đầy đủ
+metadata cho từng video cấp sản phẩm và video trong gallery: `id`, `title`, `titleEn`,
+`description`, `descriptionEn`, `durationSeconds`, `uploadedOn`, URL, provider và thumbnail/poster.
+`id` do server tạo cho item mới và được client round-trip khi sửa. `durationSeconds` là số giây
+không âm; form admin nhận `MM:SS`/`HH:MM:SS` rồi đổi trước khi gửi. `uploadedOn` là ngày đăng
+thật, có thể để trống. Public `lang=en` resolve từng trường English về Vietnamese khi rỗng.
+
+Provider ghi mới là `youtube`, `tiktok`, `facebook` hoặc `upload` (MinIO nội bộ); link rút gọn
+và URL không khớp provider bị từ chối. Web chỉ phát structured data cho video thực sự hiển thị,
+có mô tả và poster/thumbnail của chính video; ngày đăng trống mới fallback về ngày tạo sản phẩm.
 
 Evidence: `VideoRequest.java` (`description`), `ProductVideoEntity.description`,
 `VideoAsset.description`, `AdminCatalogMutationService.applyVideos`,
@@ -1330,15 +1337,17 @@ Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutati
 ### Gallery media — ảnh + video trong gallery (V248)
 
 `gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
-`GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
-(link YouTube hoặc URL MinIO khi là video), `videoProvider` (`youtube`|`upload`) trên đường ghi.
+`GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`,
+`videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`) và metadata video song ngữ/ID/thời lượng/ngày đăng
+khi là video.
 Item ảnh dùng `url`/`alt` như cũ; item video dùng `videoUrl`+`videoProvider`,
 còn `url`/`alt` (nếu có) là **thumbnail/poster**.
 Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
 vẫn lấy ảnh ĐẦU TIÊN là **ảnh** (bỏ qua item video).
 
 Read: `GET /api/v1/products/{slug}` + admin read trả `gallery`/`variants[].gallery` dạng
-`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider }`; `image.alt` vẫn là text
+`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider, id, title, titleEn,
+description, descriptionEn, durationSeconds, uploadedOn }`; `image.alt` vẫn là text
 thay thế cho SEO/trợ năng. (Từng có thêm `caption` — V294 — nhưng đã bỏ ở V295, không còn trong contract.)
 **Tách biệt với `videos`**
 (mục "Video" riêng dưới PDP — lưu ở `products.videos` JSONB từ V334/V335/V336, **wire
@@ -1645,10 +1654,11 @@ Storefront truyền `getLocale()` vào `lang`.
 
 **Đọc admin:** `GET /api/v1/admin/home-videos` trả thêm `titleEn` thô để editor sửa
 song ngữ. **Ghi:** `POST/PATCH /api/v1/admin/home-videos` nhận thêm `titleEn` (tùy
-chọn, ≤255); PATCH gửi `titleEn` blank → xóa bản EN. `videoUrl` khi ghi chỉ nhận
-URL YouTube hợp lệ hoặc URL video media nội bộ; TikTok/Facebook và host khác trả
-`400 INVALID_VALUE`. PATCH không gửi `videoUrl` vẫn cho phép cập nhật field khác và
-giữ nguyên URL legacy. Public/admin GET tiếp tục trả URL legacy để xem trước/render.
+chọn, ≤255); PATCH gửi `titleEn` blank → xóa bản EN. `videoUrl` khi ghi chỉ nhận URL
+đầy đủ hợp lệ của YouTube, TikTok, Facebook hoặc URL video media nội bộ; link rút gọn,
+host và nền tảng khác trả `400 INVALID_VALUE`. PATCH không gửi `videoUrl` vẫn cho phép
+cập nhật field khác và giữ nguyên URL legacy. Public/admin GET tiếp tục trả URL legacy
+để xem trước/render.
 
 Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
 `PublicHomeVideoResponse.from(video, lang)`, `AdminHomeVideoService`,

@@ -20,28 +20,24 @@ class HomeVideoUrlPolicyTest {
     }
 
     @Test
-    void allowsOnlyYoutubeAndApprovedUploadForMatchingProvider() {
+    void allowsApprovedExternalProvidersAndInternalUploadForMatchingProvider() {
         assertThat(policy.isAllowedForProvider(
                 "youtube", "https://www.youtube.com/watch?v=dQw4w9WgXcQ")).isTrue();
+        assertThat(policy.isAllowedForProvider(
+                "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456")).isTrue();
+        assertThat(policy.isAllowedForProvider(
+                "facebook", "https://www.facebook.com/BigBike/videos/1234567890")).isTrue();
 
         when(safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl("/media/product-review.mp4")).thenReturn(true);
         assertThat(policy.isAllowedForProvider("upload", "/media/product-review.mp4")).isTrue();
     }
 
     @Test
-    void rejectsTikTokAndFacebookProvidersIncludingFullUrls() {
-        assertThat(policy.isAllowedForProvider(
-                "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456")).isFalse();
-        assertThat(policy.isAllowedForProvider(
-                "facebook", "https://www.facebook.com/BigBike/videos/1234567890")).isFalse();
+    void rejectsShortenedVideoUrls() {
         assertThat(policy.isAllowedForProvider("tiktok", "https://vt.tiktok.com/ZSabcDEF/")).isFalse();
         assertThat(policy.isAllowedForProvider("facebook", "https://fb.watch/abcdEF123/")).isFalse();
-
-        assertThatThrownBy(() -> policy.validateOrThrow(
-                "https://www.tiktok.com/@bigbike/video/7251234567890123456", "videoUrl"))
-                .isInstanceOf(com.bigbike.bigbike_backend.api.error.ValidationException.class);
-        assertThatThrownBy(() -> policy.validateOrThrow(
-                "https://www.facebook.com/BigBike/videos/1234567890", "videoUrl"))
+        assertThat(policy.isAllowedForProvider("youtube", "https://youtu.be/dQw4w9WgXcQ")).isFalse();
+        assertThatThrownBy(() -> policy.validateOrThrow("https://youtu.be/dQw4w9WgXcQ", "videoUrl"))
                 .isInstanceOf(com.bigbike.bigbike_backend.api.error.ValidationException.class);
     }
 

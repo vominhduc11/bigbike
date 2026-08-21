@@ -66,11 +66,18 @@ export type LegacyDiscontinuedProduct = {
  * Tách biệt với `videos` (mục "Video" riêng dưới PDP).
  */
 export type GalleryMedia = {
+  id?: string;
   mediaType?: "image" | "video";
   image?: ImageAsset | null;
   videoUrl?: string | null;
   provider?: string | null;
   videoProvider?: string | null;
+  title?: string | null;
+  titleEn?: string | null;
+  description?: string | null;
+  descriptionEn?: string | null;
+  durationSeconds?: number | null;
+  uploadedOn?: string | null;
 };
 
  type SliderImage = {
@@ -113,10 +120,14 @@ export type VideoAsset = {
   id?: string;
   url?: string;
   title?: string;
+  titleEn?: string | null;
   thumbnail?: ImageAsset | null;
   provider?: string | null;
-  /** Mô tả 2–3 câu nội dung video (V175) → caption + VideoObject.description. */
+  /** Mô tả hiện cho khách và dùng nguyên văn cho VideoObject.description. */
   description?: string | null;
+  descriptionEn?: string | null;
+  durationSeconds?: number | null;
+  uploadedOn?: string | null;
 };
 
  type SeoMeta = {
@@ -511,6 +522,8 @@ export type HomeVideo = {
   embedUrl: string | null;
   autoThumbnailUrl: string | null;
   thumbnail: ImageAsset | null;
+  /** Present for PDP videos; homepage data may leave it blank. */
+  description?: string | null;
 };
 
 export type HomeHighlightItem = {

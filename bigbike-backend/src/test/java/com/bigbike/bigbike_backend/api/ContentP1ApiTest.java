@@ -161,11 +161,13 @@ class ContentP1ApiTest {
     }
 
     @Test
-    void articleVideoBlockAcceptsYoutubeAndUploadOnly() throws Exception {
+    void articleVideoBlockAcceptsApprovedFullSourcesOnly() throws Exception {
         long ts = System.currentTimeMillis();
 
         for (String[] source : new String[][] {
                 { "youtube", "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+                { "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456" },
+                { "facebook", "https://www.facebook.com/BigBike/videos/1234567890" },
                 { "upload", "/media/articles/demo.mp4" }
         }) {
             String payload = """
@@ -189,21 +191,22 @@ class ContentP1ApiTest {
                     .andExpect(jsonPath("$.data.bodyBlocks[0].provider").value(source[0]));
         }
 
-        for (String[] legacy : new String[][] {
-                { "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456" },
-                { "facebook", "https://www.facebook.com/BigBike/videos/1234567890" }
+        for (String[] invalid : new String[][] {
+                { "youtube", "https://youtu.be/dQw4w9WgXcQ" },
+                { "tiktok", "https://vt.tiktok.com/ZSabcDEF/" },
+                { "facebook", "https://fb.watch/abcdEF123/" }
         }) {
             String payload = """
                     {
-                      "slug": "article-video-legacy-%s-%s",
-                      "title": "Video legacy %s",
+                      "slug": "article-video-invalid-%s-%s",
+                      "title": "Video invalid %s",
                       "publishStatus": "DRAFT",
-                      "translations": { "en": { "title": "Legacy video %s" } },
+                      "translations": { "en": { "title": "Invalid video %s" } },
                       "bodyBlocks": [
                         { "type": "video", "provider": "%s", "url": "%s" }
                       ]
                     }
-                    """.formatted(legacy[0], ts, legacy[0], legacy[0], legacy[0], legacy[1]);
+                    """.formatted(invalid[0], ts, invalid[0], invalid[0], invalid[0], invalid[1]);
 
             mockMvc.perform(post("/api/v1/admin/content/articles")
                             .contentType(MediaType.APPLICATION_JSON)

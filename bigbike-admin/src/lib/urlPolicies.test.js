@@ -87,14 +87,17 @@ describe('isAllowedMediaVideoUrl', () => {
 })
 
 describe('validateHomeVideoUrl chỉ cho phép nguồn ghi mới', () => {
-  it('nhận YouTube và video trong thư viện media', () => {
-    expect(validateHomeVideoUrl('https://youtu.be/dQw4w9WgXcQ')).toMatchObject({ valid: true, source: 'youtube' })
+  it('nhận URL YouTube đầy đủ, TikTok/Facebook và video trong thư viện media', () => {
+    expect(validateHomeVideoUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toMatchObject({ valid: true, source: 'youtube' })
+    expect(validateHomeVideoUrl('https://www.tiktok.com/@a/video/7412345678901234567')).toMatchObject({ valid: true, source: 'tiktok' })
+    expect(validateHomeVideoUrl('https://www.facebook.com/a/videos/1')).toMatchObject({ valid: true, source: 'facebook' })
     expect(validateHomeVideoUrl('/media/videos/demo.mp4')).toMatchObject({ valid: true, source: 'upload' })
   })
 
-  it('từ chối TikTok, Facebook và nền tảng ngoài danh sách', () => {
-    expect(validateHomeVideoUrl('https://www.tiktok.com/@a/video/7412345678901234567').valid).toBe(false)
-    expect(validateHomeVideoUrl('https://www.facebook.com/a/videos/1').valid).toBe(false)
+  it('từ chối link rút gọn và nền tảng ngoài danh sách', () => {
+    expect(validateHomeVideoUrl('https://youtu.be/dQw4w9WgXcQ').valid).toBe(false)
+    expect(validateHomeVideoUrl('https://vt.tiktok.com/ZSabc123/').valid).toBe(false)
+    expect(validateHomeVideoUrl('https://fb.watch/abc123/').valid).toBe(false)
     expect(validateHomeVideoUrl('https://vimeo.com/123').valid).toBe(false)
     expect(validateHomeVideoUrl('').reason).toBe('required')
   })

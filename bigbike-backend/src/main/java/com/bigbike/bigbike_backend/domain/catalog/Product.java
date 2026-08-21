@@ -113,4 +113,22 @@ public record Product(
     public String gender() {
         return genders == null || genders.isEmpty() ? null : String.join("|", genders);
     }
+
+    /** Copy a detail product while enriching only public rich HTML image attributes. */
+    public Product withRichHtml(
+            String resolvedDescription,
+            List<DescriptionBlock> resolvedDescriptionBlocks,
+            SuitabilitySection resolvedSuitabilitySection,
+            SizeGuideSection resolvedSizeGuideSection
+    ) {
+        return new Product(
+                id, sku, slug, slugEn, name, shortDescription, resolvedDescription,
+                brand, category, categories, image, gallery, videos, price, variants, stockState,
+                available, publishStatus, discontinued, sizeScaleId, homepageBlock, homepageOrder,
+                rating, ratingCount, faqs, commitments, highlights, originBrandCountry, sizeGuide,
+                suitabilityAdvisory, specifications, specStats, trustBadges, quickAnswerSummary,
+                genders, relatedProducts, accessoryProducts, resolvedDescriptionBlocks,
+                resolvedSuitabilitySection, resolvedSizeGuideSection, seo, translations, createdAt, updatedAt
+        );
+    }
 }

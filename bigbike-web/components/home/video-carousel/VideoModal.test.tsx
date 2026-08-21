@@ -66,4 +66,16 @@ describe("VideoModal legacy read compatibility", () => {
       "https://cdn.example.com/legacy-source#t=0.001",
     );
   });
+
+  it("hiển thị mô tả thật ngay dưới trình phát khi video sản phẩm có mô tả", () => {
+    render(
+      <VideoModal
+        videos={[{ ...homeVideo("https://cdn.example.com/product.mp4"), description: "Mô tả khách đang xem." }]}
+        activeIndex={0}
+        {...callbacks}
+      />,
+    );
+
+    expect(screen.getByText("Mô tả khách đang xem.")).toBeInTheDocument();
+  });
 });

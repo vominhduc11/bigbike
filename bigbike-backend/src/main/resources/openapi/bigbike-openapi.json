@@ -10877,13 +10877,21 @@
         "type": "string",
         "enum": [
           "youtube",
+          "tiktok",
+          "facebook",
           "upload"
         ],
-        "description": "Providers accepted on write. TikTok/Facebook may exist only in legacy read responses."
+        "description": "Accepted external providers are YouTube, TikTok and Facebook using full URLs; upload is an internal Media Library video. Short URLs are rejected."
       },
       "GalleryImageWriteRequest": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Server-managed stable ID for a video gallery item; round-trip it when editing."
+          },
           "mediaType": {
             "type": "string",
             "enum": [
@@ -10895,7 +10903,7 @@
             "type": "string",
             "maxLength": 2048,
             "nullable": true,
-            "description": "For video items: a YouTube URL or an internal Media Library video URL matching videoProvider."
+            "description": "For video items: a full YouTube, TikTok or Facebook URL, or an internal Media Library video URL matching videoProvider."
           },
           "videoProvider": {
             "allOf": [
@@ -10928,6 +10936,36 @@
             "maxLength": 100,
             "nullable": true
           },
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "titleEn": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "descriptionEn": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "uploadedOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "sortOrder": {
             "type": "integer",
             "nullable": true
@@ -10937,13 +10975,24 @@
       "VideoWriteRequest": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Server-managed stable video ID; round-trip it when editing."
+          },
           "url": {
             "type": "string",
             "maxLength": 2048,
             "nullable": true,
-            "description": "YouTube URL or internal Media Library video URL matching provider."
+            "description": "Full YouTube, TikTok or Facebook URL, or an internal Media Library video URL matching provider."
           },
           "title": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "titleEn": {
             "type": "string",
             "maxLength": 255,
             "nullable": true
@@ -10961,6 +11010,21 @@
             "maxLength": 5000,
             "nullable": true
           },
+          "descriptionEn": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "uploadedOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "thumbnailUrl": {
             "type": "string",
             "maxLength": 2048,
@@ -10970,6 +11034,53 @@
             "type": "integer",
             "nullable": true
           }
+        }
+      },
+      "GalleryMediaResponse": {
+        "type": "object",
+        "description": "A product or variant gallery item. Video metadata is locale-resolved on public reads; English source fields remain available on admin reads.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "nullable": true },
+          "mediaType": { "type": "string", "enum": ["image", "video"] },
+          "image": { "$ref": "#/components/schemas/ImageAsset", "nullable": true },
+          "videoUrl": { "type": "string", "nullable": true },
+          "videoProvider": { "$ref": "#/components/schemas/WritableVideoProvider", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "titleEn": { "type": "string", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "descriptionEn": { "type": "string", "nullable": true },
+          "durationSeconds": { "type": "integer", "minimum": 0, "nullable": true },
+          "uploadedOn": { "type": "string", "format": "date", "nullable": true }
+        }
+      },
+      "VideoAssetResponse": {
+        "type": "object",
+        "description": "A product video. title/description are the same values rendered to the customer and used for VideoObject when schema eligibility is met.",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "nullable": true },
+          "url": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "titleEn": { "type": "string", "nullable": true },
+          "thumbnail": { "$ref": "#/components/schemas/ImageAsset", "nullable": true },
+          "provider": { "$ref": "#/components/schemas/WritableVideoProvider", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "descriptionEn": { "type": "string", "nullable": true },
+          "durationSeconds": { "type": "integer", "minimum": 0, "nullable": true },
+          "uploadedOn": { "type": "string", "format": "date", "nullable": true }
+        }
+      },
+      "ProductVariantResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "sku": { "type": "string", "nullable": true },
+          "name": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "object" } },
+          "price": { "$ref": "#/components/schemas/ProductPrice", "nullable": true },
+          "stockState": { "type": "string", "enum": ["IN_STOCK", "OUT_OF_STOCK"] },
+          "isAvailable": { "type": "boolean" },
+          "image": { "$ref": "#/components/schemas/ImageAsset", "nullable": true },
+          "gallery": { "type": "array", "items": { "$ref": "#/components/schemas/GalleryMediaResponse" } }
         }
       },
       "ProductVariantRequest": {
@@ -11371,13 +11482,13 @@
           "gallery": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/GalleryMediaResponse"
             }
           },
           "videos": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/VideoAssetResponse"
             }
           },
           "price": {
@@ -11386,7 +11497,7 @@
           "variants": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/ProductVariantResponse"
             }
           },
           "stockState": {

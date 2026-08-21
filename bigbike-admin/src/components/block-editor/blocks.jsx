@@ -240,7 +240,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fCaption = isEn ? 'captionEn' : 'caption'
-  const provider = ['youtube', 'upload'].includes(block.provider) ? block.provider : undefined
+  const provider = ['youtube', 'tiktok', 'facebook', 'upload'].includes(block.provider) ? block.provider : undefined
   const changeProvider = async (nextProvider) => {
     if (provider === nextProvider) return
     if ((block.url || '').trim()) {
@@ -260,14 +260,16 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="youtube">{t('products.detail.blocks.videoYouTube')}</SelectItem>
+          <SelectItem value="tiktok">{t('products.detail.video.tiktok')}</SelectItem>
+          <SelectItem value="facebook">{t('products.detail.video.facebook')}</SelectItem>
           <SelectItem value="upload">{t('products.detail.blocks.videoUpload')}</SelectItem>
         </SelectContent>
       </Select>
-      {provider === 'youtube' ? (
+      {['youtube', 'tiktok', 'facebook'].includes(provider) ? (
         <div className="flex items-center gap-2">
           <Input
             aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-            placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
+            placeholder={t(`products.detail.video.${provider}Placeholder`, { defaultValue: 'Đường dẫn video đầy đủ' })}
             value={block.url || ''}
             onChange={(e) => onChange({ url: e.target.value })}
             disabled={disabled || isEn}

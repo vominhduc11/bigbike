@@ -9,8 +9,8 @@ const YOUTUBE_HOSTS = new Set([
   'www.youtube-nocookie.com',
 ])
 
-// Chỉ dùng để đọc/xem trước dữ liệu legacy. Không dùng các helper TikTok/Facebook
-// này trong validation hoặc payload ghi mới (MEDIA_RULE_004).
+// TikTok/Facebook chỉ nhận URL video đầy đủ. Các host link rút gọn không nằm trong
+// danh sách này nên không thể đi qua validation/payload ghi mới (MEDIA_RULE_004).
 const TIKTOK_HOSTS = new Set([
   'tiktok.com',
   'www.tiktok.com',
@@ -110,6 +110,15 @@ export function extractAllowedYouTubeId(value) {
   return null
 }
 
+/** Write policy: keep legacy youtu.be readable, but require a full YouTube URL for new saves. */
+export function extractWritableYouTubeId(value) {
+  const normalized = trimToNull(value)
+  const id = extractAllowedYouTubeId(normalized)
+  if (!id) return null
+  const parsed = parseUrl(normalized)
+  return parsed?.hostname.toLowerCase() === 'youtu.be' ? null : id
+}
+
 export function extractAllowedTikTokId(value) {
   const normalized = trimToNull(value)
   if (!normalized || hasUnsafePrefix(normalized)) {
@@ -181,8 +190,14 @@ export function validateHomeVideoUrl(value) {
   if (!normalized) {
     return { valid: false, normalized: '', reason: 'required' }
   }
-  if (extractAllowedYouTubeId(normalized)) {
+  if (extractWritableYouTubeId(normalized)) {
     return { valid: true, normalized, source: 'youtube' }
+  }
+  if (extractAllowedTikTokId(normalized)) {
+    return { valid: true, normalized, source: 'tiktok' }
+  }
+  if (isAllowedFacebookVideoUrl(normalized)) {
+    return { valid: true, normalized, source: 'facebook' }
   }
   if (isAllowedMediaVideoUrl(normalized)) {
     return { valid: true, normalized, source: 'upload' }

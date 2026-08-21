@@ -5,7 +5,12 @@
 import { createContext } from 'react'
 import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
-import { extractAllowedYouTubeId, isAllowedMediaVideoUrl } from '../../lib/urlPolicies'
+import {
+  extractAllowedTikTokId,
+  extractWritableYouTubeId,
+  isAllowedFacebookVideoUrl,
+  isAllowedMediaVideoUrl,
+} from '../../lib/urlPolicies'
 import { generateId } from '@/lib/utils'
 import { normalizeGenders } from '../../lib/contracts'
 import { formatMoneyInput, toMoneyNumberOrNull } from '../../lib/moneyInput'
@@ -19,7 +24,9 @@ export const SYSTEM_BRAND_ID = 'uncategorized-brand'
 
 function isWritableVideoInput(provider, url) {
   const normalizedUrl = (url || '').trim()
-  if (provider === 'youtube') return Boolean(extractAllowedYouTubeId(normalizedUrl))
+  if (provider === 'youtube') return Boolean(extractWritableYouTubeId(normalizedUrl))
+  if (provider === 'tiktok') return Boolean(extractAllowedTikTokId(normalizedUrl))
+  if (provider === 'facebook') return isAllowedFacebookVideoUrl(normalizedUrl)
   if (provider === 'upload') return isAllowedMediaVideoUrl(normalizedUrl)
   return false
 }
@@ -74,10 +81,32 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null
 }
 
+export function parseVideoDuration(value) {
+  const parts = String(value || '').trim().split(':')
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d{1,2}$/.test(part))) return null
+  const numbers = parts.map(Number)
+  const [hours, minutes, seconds] = numbers.length === 3
+    ? numbers
+    : numbers.length === 2 ? [0, numbers[0], numbers[1]] : [0, 0, numbers[0]]
+  if (minutes > 59 || seconds > 59) return null
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+export function formatVideoDuration(seconds) {
+  if (!Number.isInteger(seconds) || seconds < 0) return ''
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const rest = seconds % 60
+  const pad = (value) => String(value).padStart(2, '0')
+  return hours ? `${pad(hours)}:${pad(minutes)}:${pad(rest)}` : `${pad(minutes)}:${pad(rest)}`
+}
+
 export function inferVideoType(url, provider) {
-  if (provider === 'youtube' || provider === 'upload') return provider
+  if (['youtube', 'tiktok', 'facebook', 'upload'].includes(provider)) return provider
   if (provider) return ''
   if (extractYouTubeId(url)) return 'youtube'
+  if (extractAllowedTikTokId(url)) return 'tiktok'
+  if (isAllowedFacebookVideoUrl(url)) return 'facebook'
   if (isAllowedMediaVideoUrl(url)) return 'upload'
   return url ? '' : 'youtube'
 }
@@ -547,6 +576,7 @@ export function buildFormFromItem(item) {
     })),
     gallery: (v.gallery || []).map((img) => ({
       _key: generateId(),
+      id: img.id || '',
       mediaType: img.mediaType || 'image',
       url: img.rawUrl || img.url || '',
       alt: img.alt || '',
@@ -555,6 +585,12 @@ export function buildFormFromItem(item) {
       mimeType: img.mimeType ?? null,
       videoUrl: img.videoUrl || '',
       provider: inferVideoType(img.videoUrl || '', img.provider),
+      title: img.title || '',
+      titleEn: img.titleEn || '',
+      description: img.description || '',
+      descriptionEn: img.descriptionEn || '',
+      duration: formatVideoDuration(img.durationSeconds),
+      uploadedOn: img.uploadedOn || '',
     })),
     imageUrl: v.image?.url || '',
     imageAlt: v.image?.alt || '',
@@ -621,6 +657,7 @@ export function buildFormFromItem(item) {
     seoOgImageMimeType: item.seo?.ogImage?.mimeType ?? null,
     gallery: (item.gallery || []).map((img) => ({
       _key: generateId(),
+      id: img.id || '',
       mediaType: img.mediaType || 'image',
       url: img.rawUrl || img.url || '',
       alt: img.alt || '',
@@ -629,11 +666,23 @@ export function buildFormFromItem(item) {
       mimeType: img.mimeType ?? null,
       videoUrl: img.videoUrl || '',
       provider: inferVideoType(img.videoUrl || '', img.provider),
+      title: img.title || '',
+      titleEn: img.titleEn || '',
+      description: img.description || '',
+      descriptionEn: img.descriptionEn || '',
+      duration: formatVideoDuration(img.durationSeconds),
+      uploadedOn: img.uploadedOn || '',
     })),
     videos: (item.videos || []).map((v) => ({
+      _key: v.id || generateId(),
+      id: v.id || '',
       url: v.url || '',
       title: v.title || '',
+      titleEn: v.titleEn || '',
       description: v.description || '',
+      descriptionEn: v.descriptionEn || '',
+      duration: formatVideoDuration(v.durationSeconds),
+      uploadedOn: v.uploadedOn || '',
       type: inferVideoType(v.url || '', v.provider),
       thumbnailUrl: v.thumbnail?.url || '',
     })),
@@ -925,14 +974,21 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     .map((img, i) => (
       img.mediaType === 'video'
         ? {
+            id: img.id || undefined,
             mediaType: 'video',
             videoUrl: (img.videoUrl || '').trim(),
-            videoProvider: ['youtube', 'upload'].includes(img.provider) ? img.provider : undefined,
+            videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider) ? img.provider : undefined,
             url: (img.url || '').trim() || null,
             alt: (img.alt || '').trim() || null,
             width: img.width ?? null,
             height: img.height ?? null,
             mimeType: img.mimeType ?? null,
+            title: (img.title || '').trim() || undefined,
+            titleEn: (img.titleEn || '').trim() || undefined,
+            description: (img.description || '').trim() || undefined,
+            descriptionEn: (img.descriptionEn || '').trim() || undefined,
+            durationSeconds: parseVideoDuration(img.duration),
+            uploadedOn: (img.uploadedOn || '').trim() || undefined,
             sortOrder: i,
           }
         : {
@@ -949,11 +1005,16 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
   payload.videos = form.videos
     .filter((v) => isWritableVideoInput(v.type, v.url))
     .map((v, i) => ({
+      id: v.id || undefined,
       url: v.url.trim(),
       title: v.title.trim() || undefined,
+      titleEn: (v.titleEn || '').trim() || undefined,
       description: (v.description || '').trim() || undefined,
-      provider: ['youtube', 'upload'].includes(v.type) ? v.type : undefined,
-      thumbnailUrl: v.type === 'upload' ? (v.thumbnailUrl?.trim() || undefined) : undefined,
+      descriptionEn: (v.descriptionEn || '').trim() || undefined,
+      durationSeconds: parseVideoDuration(v.duration),
+      uploadedOn: (v.uploadedOn || '').trim() || undefined,
+      provider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(v.type) ? v.type : undefined,
+      thumbnailUrl: v.thumbnailUrl?.trim() || undefined,
       sortOrder: i,
     }))
 
@@ -1028,15 +1089,22 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
         : (img.url || '').trim())
       .map((img, j) => (
         img.mediaType === 'video'
-          ? {
+        ? {
+              id: img.id || undefined,
               mediaType: 'video',
               videoUrl: (img.videoUrl || '').trim(),
-              videoProvider: ['youtube', 'upload'].includes(img.provider) ? img.provider : undefined,
+              videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider) ? img.provider : undefined,
               url: (img.url || '').trim() || null,
               alt: (img.alt || '').trim() || null,
               width: img.width ?? null,
               height: img.height ?? null,
               mimeType: img.mimeType ?? null,
+              title: (img.title || '').trim() || undefined,
+              titleEn: (img.titleEn || '').trim() || undefined,
+              description: (img.description || '').trim() || undefined,
+              descriptionEn: (img.descriptionEn || '').trim() || undefined,
+              durationSeconds: parseVideoDuration(img.duration),
+              uploadedOn: (img.uploadedOn || '').trim() || undefined,
               sortOrder: j,
             }
           : {

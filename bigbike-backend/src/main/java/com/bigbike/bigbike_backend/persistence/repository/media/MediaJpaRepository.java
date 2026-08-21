@@ -16,5 +16,7 @@ public interface MediaJpaRepository extends JpaRepository<MediaEntity, UUID>,
 
     Optional<MediaEntity> findByContentSha256(String contentSha256);
 
+    List<MediaEntity> findByPublicUrlIn(java.util.Collection<String> publicUrls);
+
     List<MediaEntity> findByStorageProvider(String storageProvider);
 }

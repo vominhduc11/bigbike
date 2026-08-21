@@ -63,6 +63,19 @@ public final class YouTubeUrlParser {
         return extractId(url) != null;
     }
 
+    /** Full YouTube URL for new writes. The youtu.be shortener is read-compatible only. */
+    public static boolean isFullYouTubeUrl(String url) {
+        if (extractId(url) == null) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url.trim()).normalize();
+            return !"youtu.be".equals(lower(uri.getHost()));
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
     private static String extractQueryParam(String rawQuery, String paramName) {
         if (rawQuery == null || rawQuery.isBlank()) {
             return null;

@@ -36,6 +36,7 @@ import { useUrlSyncedState } from '@/lib/useUrlSyncedState'
 import { useContentLang } from '../lib/contentLang'
 import {
   extractAllowedYouTubeId,
+  extractWritableYouTubeId,
   extractAllowedTikTokId,
   tiktokEmbedUrl,
   isAllowedFacebookVideoUrl,
@@ -374,7 +375,11 @@ export function HomeVideoListScreen({ canUpdate }) {
       titleEn: video.titleEn || '',
       videoType: (video.youtubeId || extractAllowedYouTubeId(video.videoUrl))
         ? 'youtube'
-        : (isAllowedMediaVideoUrl(video.videoUrl) ? 'upload' : ''),
+        : (extractAllowedTikTokId(video.videoUrl)
+            ? 'tiktok'
+            : (isAllowedFacebookVideoUrl(video.videoUrl)
+                ? 'facebook'
+                : (isAllowedMediaVideoUrl(video.videoUrl) ? 'upload' : ''))),
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.rawUrl || video.thumbnail?.url || '',
       thumbnailAlt: video.thumbnail?.alt || '',
@@ -425,19 +430,23 @@ export function HomeVideoListScreen({ canUpdate }) {
       errors.title = t('homeVideos.validationTitle')
     }
     const videoCheck = validateHomeVideoUrl(values.videoUrl)
-    if (!['youtube', 'upload'].includes(values.videoType)) {
+    if (!['youtube', 'tiktok', 'facebook', 'upload'].includes(values.videoType)) {
       errors.videoUrl = t('homeVideos.validationSource')
       return errors
     }
     const invalidMessage = values.videoType === 'youtube'
       ? t('homeVideos.validationYoutube')
-      : t('homeVideos.validationUpload')
+      : values.videoType === 'tiktok'
+        ? t('homeVideos.validationTikTok')
+        : values.videoType === 'facebook'
+          ? t('homeVideos.validationFacebook')
+          : t('homeVideos.validationUpload')
     if (!videoCheck.valid) {
       errors.videoUrl = invalidMessage
-    } else if (values.videoType === 'youtube' && !extractAllowedYouTubeId(values.videoUrl)) {
+    } else if (values.videoType === 'youtube' && !extractWritableYouTubeId(values.videoUrl)) {
       errors.videoUrl = t('homeVideos.validationYoutube')
-    } else if (values.videoType === 'upload' && videoCheck.source !== 'upload') {
-      errors.videoUrl = t('homeVideos.validationUpload')
+    } else if (videoCheck.source !== values.videoType) {
+      errors.videoUrl = invalidMessage
     }
     return errors
   }
@@ -801,19 +810,31 @@ export function HomeVideoListScreen({ canUpdate }) {
                 {t('homeVideos.sourceYoutube')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
+                <RadioGroupItem value="tiktok" />
+                {t('homeVideos.sourceTikTok')}
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <RadioGroupItem value="facebook" />
+                {t('homeVideos.sourceFacebook')}
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
                 <RadioGroupItem value="upload" />
                 {t('homeVideos.sourceUpload')}
               </label>
             </RadioGroup>
           </div>
 
-          {form.videoType === 'youtube' ? (
+          {['youtube', 'tiktok', 'facebook'].includes(form.videoType) ? (
             <div className="flex flex-col gap-1">
               <FormField
-                label={t('homeVideos.formYoutubeUrl')}
+                label={form.videoType === 'youtube'
+                  ? t('homeVideos.formYoutubeUrl')
+                  : form.videoType === 'tiktok' ? t('homeVideos.formTikTokUrl') : t('homeVideos.formFacebookUrl')}
                 required
                 error={fieldErrors.videoUrl}
-                helper={t('homeVideos.youtubeHint')}
+                helper={form.videoType === 'youtube'
+                  ? t('homeVideos.youtubeHint')
+                  : form.videoType === 'tiktok' ? t('homeVideos.tiktokHint') : t('homeVideos.facebookHint')}
               >
                 <Input
                   required
@@ -821,7 +842,11 @@ export function HomeVideoListScreen({ canUpdate }) {
                   value={form.videoUrl}
                   onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
                   onBlur={() => validateField('videoUrl')}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder={form.videoType === 'youtube'
+                    ? 'https://www.youtube.com/watch?v=...'
+                    : form.videoType === 'tiktok'
+                      ? 'https://www.tiktok.com/@account/video/...'
+                      : 'https://www.facebook.com/account/videos/...'}
                 />
               </FormField>
               {youtubePreviewId && (

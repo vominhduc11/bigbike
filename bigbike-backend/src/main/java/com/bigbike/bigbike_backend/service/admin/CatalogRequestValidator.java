@@ -242,7 +242,7 @@ public class CatalogRequestValidator {
                         errors.add(new ApiErrorDetail(
                                 "videos[" + i + "].url",
                                 "INVALID_VALUE",
-                                "Video source must be YouTube or upload, and the URL must match its provider."
+                                "Video source must be YouTube, TikTok, Facebook or an internal upload, and the URL must match its provider."
                         ));
                     }
                     String thumbnailUrl = AdminMutationValidators.trimToNull(videoReq.getThumbnailUrl());
@@ -438,7 +438,7 @@ public class CatalogRequestValidator {
                 errors.add(new ApiErrorDetail(
                         fieldPrefix + ".videoUrl",
                         "INVALID_VALUE",
-                        "Video source must be YouTube or upload, and the URL must match its provider."
+                        "Video source must be YouTube, TikTok, Facebook or an internal upload, and the URL must match its provider."
                 ));
             }
             String thumbnailUrl = AdminMutationValidators.trimToNull(imgReq.getUrl());

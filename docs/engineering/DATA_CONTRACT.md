@@ -912,26 +912,27 @@ media hỗn hợp ảnh+video ở `V248__add_gallery_media_video.sql`. Nay là 1
 nullable trên `products` (`gallery`), theo đúng khuôn vật lý như `description_blocks`
 / `faqs` / `commitments` / `highlights`.
 
-Shape: JSON array of `GalleryMedia { mediaType, image: ImageAsset|null, videoUrl,
-videoProvider }` — `image: ImageAsset { id, url, alt, width, height, mimeType }`.
-`mediaType="image"` → `image` là ảnh, `videoUrl`/`videoProvider` null. `mediaType="video"`
+Shape: JSON array of `GalleryMedia { id, mediaType, image: ImageAsset|null, videoUrl,
+videoProvider, title, titleEn, description, descriptionEn, durationSeconds, uploadedOn }`
+— `image: ImageAsset { id, url, alt, width, height, mimeType }`.
+`mediaType="image"` → `image` là ảnh, các trường video null. `mediaType="video"`
 → `image` là thumbnail/poster tuỳ chọn (có thể null), `videoUrl`+`videoProvider`
-là video. Request ghi chỉ nhận `videoProvider` `youtube|upload` và URL phải khớp provider.
-Response đọc có thể còn trả `tiktok|facebook` cho dữ liệu legacy; đây không phải giá trị hợp lệ để ghi lại.
+là video cùng metadata song ngữ/thời lượng/ngày đăng. Request ghi nhận `youtube|tiktok|facebook|upload`
+và URL đầy đủ khớp provider; `upload` chỉ là file nội bộ.
 
-Upsert DTO (`GalleryImageRequest`, wire shape **không đổi** qua lần chuyển này) nhận
-`url`/`alt`/`width`/`height`/`mimeType`/`mediaType`/`videoUrl`/`videoProvider`/`sortOrder`.
+Upsert DTO (`GalleryImageRequest`) round-trips optional `id` and nhận
+`url`/`alt`/`width`/`height`/`mimeType`/`mediaType`/`videoUrl`/`videoProvider`/
+`title`/`titleEn`/`description`/`descriptionEn`/`durationSeconds`/`uploadedOn`/`sortOrder`.
 Full-replace; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ; thứ tự lưu
 = thứ tự sau khi sort theo `sortOrder` (null → dùng index gốc), stable — giống hệt cơ
-chế `ordered()` đã dùng cho `faqs`/`commitments`/`highlights`. Ảnh trong item có `id`
-luôn `null` (request không mang field id trên wire). Exposed trên public + admin
+chế `ordered()` đã dùng cho `faqs`/`commitments`/`highlights`. Video luôn được service
+gán/preserve ID ổn định. Exposed trên public + admin
 product detail responses là `gallery` array trên domain `Product`; product *list*
 responses trả `[]` (detail-only).
 
 **Validation khi ghi:** URL ảnh đã lưu trên entity hiện tại tiếp tục được grandfather theo
-`MEDIA_RULE_003`. Video không dùng cơ chế grandfather khi request có gửi lại item video:
-`videoProvider` phải là `youtube|upload` và URL phải khớp provider. PATCH bỏ hẳn field
-gallery thì dữ liệu video legacy không bị đụng.
+`MEDIA_RULE_003`. Video phải dùng URL đầy đủ của `youtube|tiktok|facebook` hoặc file
+nội bộ `upload`; PATCH bỏ hẳn field gallery thì dữ liệu hiện có không bị đụng.
 
 Status: `CONFIRMED_FROM_CODE` — `GalleryMedia`/`ImageAsset` domain record, `GalleryImageRequest`,
 `ProductFieldApplier.applyGallery`, `ProductGalleryConverter` JSONB converter trên
@@ -939,7 +940,8 @@ Status: `CONFIRMED_FROM_CODE` — `GalleryMedia`/`ImageAsset` domain record, `Ga
 `V1__create_catalog_content_tables.sql`, `V248__add_gallery_media_video.sql`,
 `V334__add_product_gallery_videos_jsonb_columns.sql`,
 `V335__MigrateProductGalleryVideosToJsonb.java`,
-`V336__drop_product_gallery_videos_tables.sql`.
+`V336__drop_product_gallery_videos_tables.sql`,
+`V1049__add_product_video_metadata.sql`.
 
 ### Product videos — `products.videos` JSONB (V1 → V175 → V334/V335/V336)
 
@@ -949,21 +951,25 @@ trên). Ban đầu là bảng con `product_videos` (`V1__create_catalog_content_
 thêm cột `description` ở `V175__add_product_seo_template_fields.sql`. Nay là 1 cột
 JSONB nullable trên `products` (`videos`), theo đúng khuôn vật lý như `faqs`/`commitments`.
 
-Shape: JSON array of `VideoAsset { id, url, title, thumbnail: ImageAsset|null, provider,
-description }`. `description` (2-3 câu, V175) render dưới embed + `VideoObject.description`
-(schema.org JSON-LD), 1 ngôn ngữ (không song ngữ).
+Shape: JSON array of `VideoAsset { id, url, title, titleEn, thumbnail: ImageAsset|null,
+provider, description, descriptionEn, durationSeconds, uploadedOn }`. `id` is a
+server-managed stable UUID string; `titleEn`/`descriptionEn` are nullable and public English
+reads fall back to Vietnamese. The same locale-resolved `description` renders immediately below
+the player and is the only source for `VideoObject.description`. `durationSeconds` is nullable
+and non-negative; `uploadedOn` is a nullable ISO local date supplied by the editor.
 
-Upsert DTO (`VideoRequest`, wire shape **không đổi**) nhận `url`/`title`/`provider`/
-`description`/`thumbnailUrl`/`sortOrder`. Full-replace; item thiếu `url` bị bỏ; thứ tự
+Upsert DTO (`VideoRequest`) round-trips the optional server-managed `id`, and accepts
+`url`/`title`/`titleEn`/`provider`/`description`/`descriptionEn`/`durationSeconds`/
+`uploadedOn`/`thumbnailUrl`/`sortOrder`. Full-replace; item thiếu `url` bị bỏ; thứ tự
 lưu = thứ tự sau khi sort theo `sortOrder` (null → dùng index gốc), giống `applyGallery`.
-`id`/`thumbnail.id` luôn `null` (request không mang các field id trên wire). Exposed
+The service assigns an ID for every new item and preserves a valid existing ID; `thumbnail.id`
+remains null. Exposed
 trên public + admin product detail responses là `videos` array trên domain `Product`;
 product *list* responses trả `[]` (detail-only).
 
-Khi ghi, `provider` chỉ nhận `youtube|upload` và URL phải khớp provider; TikTok/Facebook
-hoặc provider lạ trả `400 INVALID_VALUE`. Response đọc vẫn có thể chứa provider legacy
-để dữ liệu cũ render an toàn. PATCH không gửi `videos` giữ nguyên cột JSONB hiện có;
-gửi lại item legacy bắt buộc thay nguồn.
+Khi ghi, `provider` nhận `youtube|tiktok|facebook|upload` và URL phải khớp provider;
+URL rút gọn hoặc provider lạ trả `400 INVALID_VALUE`. `upload` phải là video nội bộ.
+PATCH không gửi `videos` giữ nguyên cột JSONB hiện có.
 
 Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `VideoRequest`,
 `ProductFieldApplier.applyVideos`, `ProductVideosConverter` JSONB converter trên
@@ -971,7 +977,8 @@ Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `Vide
 `V1__create_catalog_content_tables.sql`, `V175__add_product_seo_template_fields.sql`,
 `V334__add_product_gallery_videos_jsonb_columns.sql`,
 `V335__MigrateProductGalleryVideosToJsonb.java`,
-`V336__drop_product_gallery_videos_tables.sql`.
+`V336__drop_product_gallery_videos_tables.sql`,
+`V1049__add_product_video_metadata.sql`.
 
 ### Product gender flags — `products.gender_male` / `products.gender_female` (V1030)
 
@@ -1013,7 +1020,7 @@ Evidence: `ProductEntity.java`, `Product.java`, `CatalogReadService.java` (`matc
 `JpaCatalogReadRepository.toGalleryMedia` (dùng chung với product-level).
 
 Domain: `Product.gallery` và `ProductVariant.gallery` cùng dùng `List<GalleryMedia>`
-(`GalleryMedia(mediaType, image, videoUrl, videoProvider)`) — không đổi từ V248.
+với metadata video đã nêu ở trên.
 
 Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`,
 `V295__drop_gallery_caption_columns.sql`, `ProductVariantGalleryImageEntity` (biến
@@ -1191,7 +1198,8 @@ product detail dùng JSONB/HTML cùng dòng để tránh bảng dịch phụ d�
 | `seo_description` | `seo_description_en` | `TEXT` |
 
 **Field `*En` trong JSONB:** `description_blocks`, `suitability_section`, `faqs`,
-`commitments`, `highlights` giữ bản tiếng Anh inline trong từng object. Các khối
+`commitments`, `highlights`, `videos` và video item trong `gallery` giữ bản tiếng Anh inline
+trong từng object. Các khối
 HTML-only (`specifications`, `specStats`, `trustBadges`) dùng cột `_en`
 riêng trên `products`.
 

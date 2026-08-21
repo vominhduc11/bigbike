@@ -801,8 +801,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getImageHeight(),
                         entity.getImageMimeType()
                 ),
-                toGallery(entity),
-                toVideos(entity),
+                toGallery(entity, publicView, locale),
+                toVideos(entity, publicView, locale),
                 new ProductPrice(
                         entity.getRetailPrice(),
                         entity.getSalePrice(),
@@ -987,21 +987,30 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    private List<GalleryMedia> toGallery(ProductEntity entity) {
-        return entity.getGallery() == null ? List.of() : entity.getGallery();
+    private List<GalleryMedia> toGallery(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getGallery() == null) {
+            return List.of();
+        }
+        return entity.getGallery().stream()
+                .map(item -> resolveGalleryMedia(item, publicView, locale))
+                .toList();
     }
 
     /** Map một dòng gallery (ảnh/video) → {@link GalleryMedia}. Null khi thiếu nội dung (ảnh rỗng / video thiếu url). */
     private GalleryMedia toGalleryMedia(
-            String mediaType, String videoUrl, String videoProvider,
+            String mediaType, String videoId, String videoUrl, String videoProvider,
+            String title, String titleEn, String description, String descriptionEn,
+            Integer durationSeconds, java.time.LocalDate uploadedOn,
             String imageId, String imageUrl, String imageAlt,
-            Integer width, Integer height, String mimeType) {
+            Integer width, Integer height, String mimeType, boolean publicView, String locale) {
         ImageAsset image = toImageAsset(imageId, imageUrl, imageAlt, width, height, mimeType);
         if ("video".equals(mediaType)) {
             if (videoUrl == null || videoUrl.isBlank()) {
                 return null;
             }
-            return GalleryMedia.ofVideo(image, videoUrl, videoProvider);
+            return resolveGalleryMedia(GalleryMedia.ofVideo(
+                    videoId, image, videoUrl, videoProvider, title, titleEn, description, descriptionEn,
+                    durationSeconds, uploadedOn), publicView, locale);
         }
         if (image == null) {
             return null;
@@ -1009,8 +1018,31 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return GalleryMedia.ofImage(image);
     }
 
-    private List<VideoAsset> toVideos(ProductEntity entity) {
-        return entity.getVideos() == null ? List.of() : entity.getVideos();
+    private static GalleryMedia resolveGalleryMedia(GalleryMedia media, boolean publicView, String locale) {
+        if (media == null || !"video".equals(media.mediaType()) || !publicView) {
+            return media;
+        }
+        return GalleryMedia.ofVideo(
+                media.id(), media.image(), media.videoUrl(), media.videoProvider(),
+                pick(media.title(), media.titleEn(), locale), null,
+                pick(media.description(), media.descriptionEn(), locale), null,
+                media.durationSeconds(), media.uploadedOn());
+    }
+
+    private List<VideoAsset> toVideos(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getVideos() == null) {
+            return List.of();
+        }
+        if (!publicView) {
+            return entity.getVideos();
+        }
+        return entity.getVideos().stream()
+                .map(video -> new VideoAsset(
+                        video.id(), video.url(), pick(video.title(), video.titleEn(), locale), null,
+                        video.thumbnail(), video.provider(),
+                        pick(video.description(), video.descriptionEn(), locale), null,
+                        video.durationSeconds(), video.uploadedOn()))
+                .toList();
     }
 
     /**
@@ -1151,9 +1183,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 : entity.getGallery().stream()
                         .sorted(VARIANT_GALLERY_ORDER)
                         .map(item -> toGalleryMedia(
-                                item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
+                                item.getMediaType(), item.getVideoId(), item.getVideoUrl(), item.getVideoProvider(),
+                                item.getTitle(), item.getTitleEn(), item.getDescription(), item.getDescriptionEn(),
+                                item.getDurationSeconds(), item.getUploadedOn(),
                                 item.getImageId(), item.getImageUrl(), item.getImageAlt(),
-                                item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
+                                item.getImageWidth(), item.getImageHeight(), item.getImageMimeType(), publicView, locale
                         ))
                         .filter(m -> m != null)
                         .toList();

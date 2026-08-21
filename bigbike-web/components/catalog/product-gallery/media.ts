@@ -73,10 +73,16 @@ export function splitGalleryMedia(items: GalleryMedia[] | undefined): { images: 
   for (const m of items ?? []) {
     if (m?.mediaType === "video") {
       const v: VideoAsset = {
+        id: m.id,
         url: m.videoUrl ?? undefined,
         provider: m.provider ?? m.videoProvider ?? undefined,
         thumbnail: m.image ?? null,
-        title: m.image?.alt ?? undefined,
+        title: m.title ?? m.image?.alt ?? undefined,
+        titleEn: m.titleEn,
+        description: m.description,
+        descriptionEn: m.descriptionEn,
+        durationSeconds: m.durationSeconds,
+        uploadedOn: m.uploadedOn,
       };
       if (isSupportedVideo(v)) videos.push(v);
     } else if (m?.image) {
@@ -102,10 +108,16 @@ export function buildGalleryItems(items: GalleryMedia[] | undefined): GalleryIte
   for (const m of items ?? []) {
     if (m?.mediaType === "video") {
       const v: VideoAsset = {
+        id: m.id,
         url: m.videoUrl ?? undefined,
         provider: m.provider ?? m.videoProvider ?? undefined,
         thumbnail: m.image ?? null,
-        title: m.image?.alt ?? undefined,
+        title: m.title ?? m.image?.alt ?? undefined,
+        titleEn: m.titleEn,
+        description: m.description,
+        descriptionEn: m.descriptionEn,
+        durationSeconds: m.durationSeconds,
+        uploadedOn: m.uploadedOn,
       };
       if (isSupportedVideo(v)) out.push({ kind: "video", asset: v });
     } else if (m?.image) {

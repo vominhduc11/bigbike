@@ -354,6 +354,59 @@ test.describe('product-crud', () => {
     expectRuntimeClean(collect)
   })
 
+  test('product-crud · lưu lại metadata video ở dải ảnh và khối Video', async ({ adminPage, collect }) => {
+    test.skip(!createdProductId, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công nên không có sản phẩm để sửa')
+    test.setTimeout(90_000)
+
+    await navigateSpa(adminPage, `/admin/products/${createdProductId}`)
+
+    await test.step('thêm video dải ảnh với metadata song ngữ', async () => {
+      const galleryCard = sectionCard(adminPage, 'Bộ ảnh sản phẩm')
+      await galleryCard.getByRole('button', { name: 'Thêm video', exact: true }).click()
+      await galleryCard.getByPlaceholder(/YouTube/).fill('https://www.youtube.com/watch?v=abcdefghijk')
+      await galleryCard.getByLabel('Tiêu đề video', { exact: true }).fill('Video dải ảnh kiểm thử')
+      await galleryCard.getByLabel('Tiêu đề video (tiếng Anh)', { exact: true }).fill('Gallery test video')
+      await galleryCard.getByLabel('Mô tả video', { exact: true }).fill('Mô tả hiện bên dưới video dải ảnh.')
+      await galleryCard.getByLabel('Mô tả video (tiếng Anh)', { exact: true }).fill('Description shown below the gallery video.')
+      await galleryCard.getByLabel('Thời lượng', { exact: true }).fill('01:25')
+      await galleryCard.getByLabel('Ngày đăng thật', { exact: true }).fill('2026-08-20')
+    })
+
+    await test.step('thêm video khối dưới trang với metadata song ngữ', async () => {
+      await adminPage.getByRole('button', { name: 'Video & bán kèm', exact: true }).click()
+      const videoCard = sectionCard(adminPage, 'Video')
+      await videoCard.getByRole('button', { name: 'Thêm video', exact: true }).click()
+      await videoCard.getByLabel('Liên kết video', { exact: true }).fill('https://www.youtube.com/watch?v=12345678901')
+      await videoCard.getByLabel('Tiêu đề video', { exact: true }).fill('Video sản phẩm kiểm thử')
+      await videoCard.getByLabel('Tiêu đề video (tiếng Anh)', { exact: true }).fill('Product test video')
+      await videoCard.getByLabel('Mô tả video', { exact: true }).fill('Mô tả hiện trong cửa sổ xem video.')
+      await videoCard.getByLabel('Mô tả video (tiếng Anh)', { exact: true }).fill('Description shown in the video viewer.')
+      await videoCard.getByLabel('Thời lượng', { exact: true }).fill('01:25')
+      await videoCard.getByLabel('Ngày đăng thật', { exact: true }).fill('2026-08-20')
+    })
+
+    await test.step('lưu, mở lại và xác nhận metadata còn nguyên', async () => {
+      const [response] = await Promise.all([
+        adminPage.waitForResponse((r) => r.request().method() === 'PATCH' && r.url().includes(`/admin/products/${createdProductId}`)),
+        adminPage.getByRole('button', { name: 'Lưu thay đổi' }).click(),
+      ])
+      expect(response.status(), 'API phải lưu metadata video').toBeLessThan(300)
+      await gotoAdmin(adminPage, `/admin/products/${createdProductId}`)
+
+      const galleryCard = sectionCard(adminPage, 'Bộ ảnh sản phẩm')
+      await expect(galleryCard.getByLabel('Mô tả video', { exact: true })).toHaveValue('Mô tả hiện bên dưới video dải ảnh.')
+      await expect(galleryCard.getByLabel('Thời lượng', { exact: true })).toHaveValue('01:25')
+
+      await adminPage.getByRole('button', { name: 'Video & bán kèm', exact: true }).click()
+      const videoCard = sectionCard(adminPage, 'Video')
+      await expect(videoCard.getByLabel('Mô tả video', { exact: true })).toHaveValue('Mô tả hiện trong cửa sổ xem video.')
+      await expect(videoCard.getByLabel('Thời lượng', { exact: true })).toHaveValue('01:25')
+      await expect(videoCard.getByLabel('Ngày đăng thật', { exact: true })).toHaveValue('2026-08-20')
+    })
+
+    expectRuntimeClean(collect)
+  })
+
   test('product-crud · Product List blocks publishing when image is missing', async ({ adminPage }, testInfo) => {
     validationProductSku = `${productSku(testInfo.retry)}-NOIMAGE`
     await navigateSpa(adminPage, '/admin/products/new')

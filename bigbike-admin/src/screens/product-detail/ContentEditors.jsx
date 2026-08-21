@@ -41,7 +41,7 @@ export function IconChevronUp() {
   )
 }
 
-export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable }) {
+export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable, validationErrors, errorPrefix }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
@@ -113,11 +113,19 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               onClick={() => { void changeProvider('upload') }} disabled={disabled}>
               {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
             </Button>
+            <Button type="button" variant={provider === 'tiktok' ? 'default' : 'ghost'} size="sm"
+              onClick={() => { void changeProvider('tiktok') }} disabled={disabled}>
+              {t('products.detail.video.tiktok')}
+            </Button>
+            <Button type="button" variant={provider === 'facebook' ? 'default' : 'ghost'} size="sm"
+              onClick={() => { void changeProvider('facebook') }} disabled={disabled}>
+              {t('products.detail.video.facebook')}
+            </Button>
           </div>
-          {provider === 'youtube' ? (
+          {['youtube', 'tiktok', 'facebook'].includes(provider) ? (
             <Input
               type="text"
-              placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
+              placeholder={t(`products.detail.video.${provider}Placeholder`)}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
@@ -137,6 +145,13 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
             {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
           </Button>
+          <VideoMetadataFields
+            item={item}
+            onUpdate={onUpdate}
+            disabled={disabled}
+            validationErrors={validationErrors}
+            errorPrefix={errorPrefix}
+          />
           {urlError && <small className="field-error">{urlError}</small>}
         </div>
         {pickerOpen && (
@@ -235,7 +250,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   )
 }
 
-export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true }) {
+export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true, errorPrefix = 'gallery' }) {
   const { t } = useTranslation()
 
   function updateItem(index, patch) {
@@ -275,7 +290,9 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
             onUpdate={(patch) => updateItem(index, patch)}
             onRemove={() => removeItem(index)}
             disabled={disabled}
-            urlError={validationErrors[`gallery.${index}.videoUrl`] || validationErrors[`gallery.${index}.url`]}
+            urlError={validationErrors[`${errorPrefix}.${index}.videoUrl`] || validationErrors[`${errorPrefix}.${index}.url`]}
+            validationErrors={validationErrors}
+            errorPrefix={`${errorPrefix}.${index}`}
           />
         )}
         footer={!disabled && (
@@ -301,16 +318,62 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
   )
 }
 
+function VideoMetadataFields({ item, onUpdate, disabled, validationErrors = {}, errorPrefix }) {
+  const { t } = useTranslation()
+  const durationError = validationErrors[`${errorPrefix}.duration`]
+  return (
+    <div className="grid gap-2">
+      <label className="grid gap-1 text-sm font-medium text-foreground">
+        {t('products.detail.video.titleLabel')}
+        <Input value={item.title || ''} onChange={(event) => onUpdate({ title: event.target.value })} disabled={disabled} />
+      </label>
+      <label className="grid gap-1 text-sm font-medium text-foreground">
+        {t('products.detail.video.titleEnLabel')}
+        <Input value={item.titleEn || ''} onChange={(event) => onUpdate({ titleEn: event.target.value })} disabled={disabled} />
+      </label>
+      <label className="grid gap-1 text-sm font-medium text-foreground">
+        {t('products.detail.video.descriptionLabel')}
+        <Textarea value={item.description || ''} onChange={(event) => onUpdate({ description: event.target.value })} disabled={disabled} />
+      </label>
+      <label className="grid gap-1 text-sm font-medium text-foreground">
+        {t('products.detail.video.descriptionEnLabel')}
+        <Textarea value={item.descriptionEn || ''} onChange={(event) => onUpdate({ descriptionEn: event.target.value })} disabled={disabled} />
+      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="grid gap-1 text-sm font-medium text-foreground">
+          {t('products.detail.video.durationLabel')}
+          <Input
+            value={item.duration || ''}
+            placeholder={t('products.detail.video.durationPlaceholder')}
+            onChange={(event) => onUpdate({ duration: event.target.value })}
+            disabled={disabled}
+            aria-invalid={Boolean(durationError)}
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-medium text-foreground">
+          {t('products.detail.video.uploadedOnLabel')}
+          <Input type="date" value={item.uploadedOn || ''} onChange={(event) => onUpdate({ uploadedOn: event.target.value })} disabled={disabled} />
+        </label>
+      </div>
+      {durationError && <small className="field-error">{durationError}</small>}
+    </div>
+  )
+}
+
 export function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
   const { t } = useTranslation()
   const [pickerOpenIndex, setPickerOpenIndex] = useState(null)
+  const [thumbnailPickerOpenIndex, setThumbnailPickerOpenIndex] = useState(null)
   const getMediaAltSync = useMediaAltSyncList()
 
   function updateItem(index, patch) {
     onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
+    onChange([...items, {
+      _key: generateId(), url: '', title: '', titleEn: '', description: '', descriptionEn: '',
+      duration: '', uploadedOn: '', type: 'youtube', thumbnailUrl: '',
+    }])
   }
   async function removeItem(index) {
     const hasContent = Boolean((items[index]?.url || '').trim())
@@ -361,6 +424,24 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 </Button>
                 <Button
                   type="button"
+                  variant={type === 'tiktok' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => changeType(index, 'tiktok')}
+                  disabled={disabled}
+                >
+                  {t('products.detail.video.tiktok')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={type === 'facebook' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => changeType(index, 'facebook')}
+                  disabled={disabled}
+                >
+                  {t('products.detail.video.facebook')}
+                </Button>
+                <Button
+                  type="button"
                   variant={type === 'upload' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => changeType(index, 'upload')}
@@ -370,10 +451,10 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 </Button>
               </div>
 
-              {type === 'youtube' ? (
+              {['youtube', 'tiktok', 'facebook'].includes(type) ? (
                 <div>
                   <Input className={urlError  ? 'border-danger' : undefined}
-                    placeholder={t('products.detail.video.youtubePlaceholder')}
+                    placeholder={t(`products.detail.video.${type}Placeholder`)}
                     aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
@@ -435,20 +516,15 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   {urlError && <small className="mt-1 block field-error">{urlError}</small>}
                 </div>
               )}
-              <Input
-                placeholder={t('products.detail.video.titlePlaceholder')}
-                aria-label={t('products.detail.video.titleLabel', { defaultValue: 'Tiêu đề video' })}
-                value={item.title || ''}
-                onChange={(e) => updateItem(index, { title: e.target.value })}
-                onBlur={(e) => getMediaAltSync(item._key ?? index).flushAltSync(e.target.value)}
+              <Button variant="outline" size="sm" onClick={() => setThumbnailPickerOpenIndex(index)} disabled={disabled} className="self-start">
+                {item.thumbnailUrl ? t('products.detail.video.changeThumbnail') : t('products.detail.video.pickThumbnail')}
+              </Button>
+              <VideoMetadataFields
+                item={item}
+                onUpdate={(patch) => updateItem(index, patch)}
                 disabled={disabled}
-              />
-              <Input
-                placeholder={t('products.detail.video.descriptionPlaceholder')}
-                aria-label={t('products.detail.video.descriptionLabel', { defaultValue: 'Mô tả video' })}
-                value={item.description || ''}
-                onChange={(e) => updateItem(index, { description: e.target.value })}
-                disabled={disabled}
+                validationErrors={validationErrors}
+                errorPrefix={`videos.${index}`}
               />
             </div>
             <Button
@@ -477,6 +553,17 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
             setPickerOpenIndex(null)
           }}
           onClose={() => setPickerOpenIndex(null)}
+        />
+      )}
+      {thumbnailPickerOpenIndex !== null && (
+        <MediaPickerModal
+          recommend={IMAGE_RECO.productImage}
+          kind="image"
+          onSelect={(url) => {
+            updateItem(thumbnailPickerOpenIndex, { thumbnailUrl: url })
+            setThumbnailPickerOpenIndex(null)
+          }}
+          onClose={() => setThumbnailPickerOpenIndex(null)}
         />
       )}
     </div>

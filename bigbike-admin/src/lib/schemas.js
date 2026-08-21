@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { isAllowedMediaVideoUrl } from './urlPolicies'
+import {
+  extractAllowedTikTokId,
+  extractWritableYouTubeId,
+  isAllowedFacebookVideoUrl,
+  isAllowedMediaVideoUrl,
+} from './urlPolicies'
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const URL_REGEX = /^https?:\/\//
@@ -9,6 +14,16 @@ const URL_REGEX = /^https?:\/\//
 const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
 const SEO_MARKUP_REGEX = /<\s*\/?\s*[a-z][^>]*>/i
 export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
+
+function isValidVideoDuration(value) {
+  if (!String(value || '').trim()) return true
+  const parts = String(value).trim().split(':')
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d{1,2}$/.test(part))) return false
+  const numbers = parts.map(Number)
+  const minutes = numbers.length === 3 ? numbers[1] : numbers.length === 2 ? numbers[0] : 0
+  const seconds = numbers.at(-1)
+  return minutes <= 59 && seconds <= 59
+}
 
 function validatePlainSeoText(value, path, ctx, message) {
   if (SEO_MARKUP_REGEX.test(String(value ?? ''))) {
@@ -111,15 +126,31 @@ export function createProductSchema(t, isCreate = false) {
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
       gallery: z.array(z.object({
+        _key: z.string().optional(),
+        id: z.string().optional(),
         url: z.string(),
         alt: z.string().optional(),
         mediaType: z.string().optional(),
         videoUrl: z.string().optional(),
         provider: z.string().optional(),
+        title: z.string().max(255).optional(),
+        titleEn: z.string().max(255).optional(),
+        description: z.string().max(5000).optional(),
+        descriptionEn: z.string().max(5000).optional(),
+        duration: z.string().optional(),
+        uploadedOn: z.string().optional(),
       })).max(50, 'Thư viện ảnh tối đa 50 ảnh.').optional(),
       videos: z.array(z.object({
+        _key: z.string().optional(),
+        id: z.string().optional(),
         url: z.string(),
         title: z.string(),
+        titleEn: z.string().max(255).optional(),
+        description: z.string().max(5000).optional(),
+        descriptionEn: z.string().max(5000).optional(),
+        duration: z.string().optional(),
+        uploadedOn: z.string().optional(),
+        thumbnailUrl: z.string().optional(),
         type: z.string().optional(),
       })).max(20, 'Danh sách video tối đa 20 video.').optional(),
       faqs: z.array(z.object({
@@ -151,11 +182,19 @@ export function createProductSchema(t, isCreate = false) {
         imageUrl: z.string().optional(),
         options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
         gallery: z.array(z.object({
+          _key: z.string().optional(),
+          id: z.string().optional(),
           url: z.string(),
           alt: z.string().optional(),
           mediaType: z.string().optional(),
           videoUrl: z.string().optional(),
           provider: z.string().optional(),
+          title: z.string().max(255).optional(),
+          titleEn: z.string().max(255).optional(),
+          description: z.string().max(5000).optional(),
+          descriptionEn: z.string().max(5000).optional(),
+          duration: z.string().optional(),
+          uploadedOn: z.string().optional(),
         })).optional(),
       })).max(200, 'Biến thể tối đa 200 mục.').optional(),
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),
@@ -428,7 +467,7 @@ export function createProductSchema(t, isCreate = false) {
       }
 
       const validateVideoSource = (provider, url, path) => {
-        if (!['youtube', 'upload'].includes(provider)) {
+        if (!['youtube', 'tiktok', 'facebook', 'upload'].includes(provider)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: t('products.detail.video.legacySourceError'),
@@ -442,8 +481,14 @@ export function createProductSchema(t, isCreate = false) {
           }
           return
         }
-        if (!/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))[A-Za-z0-9_-]{11}/.test(url)) {
+        if (provider === 'youtube' && !extractWritableYouTubeId(url)) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidYoutubeUrl'), path })
+        }
+        if (provider === 'tiktok' && !extractAllowedTikTokId(url)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidTikTokUrl'), path })
+        }
+        if (provider === 'facebook' && !isAllowedFacebookVideoUrl(url)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidFacebookUrl'), path })
         }
       }
 
@@ -460,6 +505,9 @@ export function createProductSchema(t, isCreate = false) {
         }
         if (img.mediaType === 'video' && (img.videoUrl || '').trim()) {
           validateVideoSource(img.provider, img.videoUrl.trim(), ['gallery', i, 'videoUrl'])
+          if (!isValidVideoDuration(img.duration)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidDuration'), path: ['gallery', i, 'duration'] })
+          }
         }
       })
 
@@ -476,6 +524,9 @@ export function createProductSchema(t, isCreate = false) {
           return
         }
         validateVideoSource(v.type, url, ['videos', i, 'url'])
+        if (!isValidVideoDuration(v.duration)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidDuration'), path: ['videos', i, 'duration'] })
+        }
       })
 
       // Validate variants.
@@ -518,6 +569,9 @@ export function createProductSchema(t, isCreate = false) {
           }
           if (img.mediaType === 'video' && (img.videoUrl || '').trim()) {
             validateVideoSource(img.provider, img.videoUrl.trim(), ['variants', i, 'gallery', j, 'videoUrl'])
+            if (!isValidVideoDuration(img.duration)) {
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidDuration'), path: ['variants', i, 'gallery', j, 'duration'] })
+            }
           }
         })
       })
@@ -751,7 +805,7 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
     data.bodyBlocks?.forEach((block, index) => {
       if (block?.type !== 'video') return
       const url = String(block.url || '').trim()
-      if (!['youtube', 'upload'].includes(block.provider)) {
+      if (!['youtube', 'tiktok', 'facebook', 'upload'].includes(block.provider)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: t('products.detail.blocks.legacySourceError'),
@@ -763,11 +817,22 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
           message: t('products.detail.video.invalidUploadUrl'),
           path: ['bodyBlocks', index, 'url'],
         })
-      } else if (block.provider === 'youtube'
-        && !/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))[A-Za-z0-9_-]{11}/.test(url)) {
+      } else if (block.provider === 'youtube' && !extractWritableYouTubeId(url)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: t('products.detail.video.invalidYoutubeUrl'),
+          path: ['bodyBlocks', index, 'url'],
+        })
+      } else if (block.provider === 'tiktok' && !extractAllowedTikTokId(url)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.video.invalidTikTokUrl'),
+          path: ['bodyBlocks', index, 'url'],
+        })
+      } else if (block.provider === 'facebook' && !isAllowedFacebookVideoUrl(url)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.video.invalidFacebookUrl'),
           path: ['bodyBlocks', index, 'url'],
         })
       }

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 final class ProductFieldApplier {
 
@@ -51,9 +52,16 @@ final class ProductFieldApplier {
             if (isVideo ? videoUrl == null : url == null) continue;
             if (isVideo) {
                 gallery.add(GalleryMedia.ofVideo(
+                        stableVideoId(req.getId()),
                         buildImageAsset(url, req.getAlt(), req.getWidth(), req.getHeight(), req.getMimeType()),
                         videoUrl,
-                        AdminMutationValidators.trimToNull(req.getVideoProvider())));
+                        AdminMutationValidators.trimToNull(req.getVideoProvider()),
+                        AdminMutationValidators.trimToNull(req.getTitle()),
+                        AdminMutationValidators.trimToNull(req.getTitleEn()),
+                        AdminMutationValidators.trimToNull(req.getDescription()),
+                        AdminMutationValidators.trimToNull(req.getDescriptionEn()),
+                        req.getDurationSeconds(),
+                        req.getUploadedOn()));
             } else {
                 gallery.add(GalleryMedia.ofImage(
                         buildImageAsset(url, req.getAlt(), req.getWidth(), req.getHeight(), req.getMimeType())));
@@ -86,12 +94,16 @@ final class ProductFieldApplier {
             String thumbnailUrl = AdminMutationValidators.trimToNull(req.getThumbnailUrl());
             ImageAsset thumbnail = buildImageAsset(thumbnailUrl, null, null, null, null);
             videos.add(new VideoAsset(
-                    null,
+                    stableVideoId(req.getId()),
                     url,
                     AdminMutationValidators.trimToNull(req.getTitle()),
+                    AdminMutationValidators.trimToNull(req.getTitleEn()),
                     thumbnail,
                     AdminMutationValidators.trimToNull(req.getProvider()),
-                    AdminMutationValidators.trimToNull(req.getDescription())));
+                    AdminMutationValidators.trimToNull(req.getDescription()),
+                    AdminMutationValidators.trimToNull(req.getDescriptionEn()),
+                    req.getDurationSeconds(),
+                    req.getUploadedOn()));
         }
         entity.setVideos(videos);
     }
@@ -288,6 +300,13 @@ final class ProductFieldApplier {
             img.setMediaType(isVideo ? "video" : "image");
             img.setVideoUrl(isVideo ? videoUrl : null);
             img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
+            img.setVideoId(isVideo ? stableVideoId(req.getId()) : null);
+            img.setTitle(isVideo ? AdminMutationValidators.trimToNull(req.getTitle()) : null);
+            img.setTitleEn(isVideo ? AdminMutationValidators.trimToNull(req.getTitleEn()) : null);
+            img.setDescription(isVideo ? AdminMutationValidators.trimToNull(req.getDescription()) : null);
+            img.setDescriptionEn(isVideo ? AdminMutationValidators.trimToNull(req.getDescriptionEn()) : null);
+            img.setDurationSeconds(isVideo ? req.getDurationSeconds() : null);
+            img.setUploadedOn(isVideo ? req.getUploadedOn() : null);
             img.setImageUrl(url);
             img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
             img.setImageWidth(req.getWidth());
@@ -295,6 +314,18 @@ final class ProductFieldApplier {
             img.setImageMimeType(AdminMutationValidators.trimToNull(req.getMimeType()));
             existing.add(img);
         }
+    }
+
+    private static String stableVideoId(String candidate) {
+        String normalized = AdminMutationValidators.trimToNull(candidate);
+        if (normalized != null) {
+            try {
+                return UUID.fromString(normalized).toString();
+            } catch (IllegalArgumentException ignored) {
+                // Bean Validation returns the field error at the boundary; this is a defensive fallback.
+            }
+        }
+        return UUID.randomUUID().toString();
     }
 
     public static void applyImage(ProductEntity entity, ImageAssetRequest request) {

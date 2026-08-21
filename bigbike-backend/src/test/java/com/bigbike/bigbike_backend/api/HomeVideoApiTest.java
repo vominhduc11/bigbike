@@ -73,11 +73,13 @@ class HomeVideoApiTest {
     }
 
     @Test
-    void createHomeVideo_rejectsTikTokAndFacebook() throws Exception {
-        for (String videoUrl : new String[] {
+    void createHomeVideo_acceptsFullTikTokAndFacebookUrls() throws Exception {
+        String[] videoUrls = {
                 "https://www.tiktok.com/@bigbike/video/7251234567890123456",
                 "https://www.facebook.com/BigBike/videos/1234567890"
-        }) {
+        };
+        for (int index = 0; index < videoUrls.length; index++) {
+            String videoUrl = videoUrls[index];
             mockMvc.perform(post("/api/v1/admin/home-videos")
                             .header("X-Admin-Permissions", "home_videos.write")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -85,12 +87,12 @@ class HomeVideoApiTest {
                                     {
                                       "title": "Legacy source",
                                       "videoUrl": "%s",
-                                      "sortOrder": 2,
+                                      "sortOrder": %d,
                                       "isActive": true
                                     }
-                                    """.formatted(videoUrl)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.error.details[0].field").value("videoUrl"));
+                                    """.formatted(videoUrl, 2 + index)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.data.videoUrl").value(videoUrl));
         }
     }
 
@@ -163,7 +165,7 @@ class HomeVideoApiTest {
     }
 
     @Test
-    void legacyHomeVideo_canBeReadAndPatchedWithoutResubmittingVideoUrl() throws Exception {
+    void tiktokHomeVideo_canBeReadAndPatchedWithFullVideoUrl() throws Exception {
         HomeVideoEntity legacy = homeVideo("hv_legacy_tiktok", 22, true);
         legacy.setVideoUrl("https://www.tiktok.com/@bigbike/video/7251234567890123456");
         legacy.setYoutubeId(null);
@@ -186,8 +188,8 @@ class HomeVideoApiTest {
                         .header("X-Admin-Permissions", "home_videos.write")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"videoUrl\":\"" + legacy.getVideoUrl() + "\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("videoUrl"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.videoUrl").value(legacy.getVideoUrl()));
     }
 
     @Test

@@ -1000,7 +1000,6 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
                 onChange={(next) => updateField('gallery', next)}
                 disabled={disabled}
                 validationErrors={fieldErrors}
-                allowVideo={false}
               />
             )}
           </div>

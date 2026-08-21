@@ -321,7 +321,8 @@ public class FullProductCatalogCsvExportService {
         if (gallery == null) return result;
         for (ProductVariantGalleryImageEntity item : gallery) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", item.getId()); row.put("sortOrder", item.getSortOrder()); row.put("mediaType", item.getMediaType()); row.put("videoUrl", item.getVideoUrl()); row.put("videoProvider", item.getVideoProvider());
+            row.put("id", item.getId()); row.put("sortOrder", item.getSortOrder()); row.put("mediaType", item.getMediaType()); row.put("videoId", item.getVideoId()); row.put("videoUrl", item.getVideoUrl()); row.put("videoProvider", item.getVideoProvider());
+            row.put("title", item.getTitle()); row.put("titleEn", item.getTitleEn()); row.put("description", item.getDescription()); row.put("descriptionEn", item.getDescriptionEn()); row.put("durationSeconds", item.getDurationSeconds()); row.put("uploadedOn", item.getUploadedOn());
             row.put("image", image(item.getImageId(), item.getImageUrl(), item.getImageAlt(), item.getImageWidth(), item.getImageHeight(), item.getImageMimeType())); result.add(row);
         }
         return result;

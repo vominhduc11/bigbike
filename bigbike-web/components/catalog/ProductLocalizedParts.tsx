@@ -216,6 +216,7 @@ export function ProductVideosSection({ videos }: { videos: VideoAsset[] }) {
     embedUrl: null,
     autoThumbnailUrl: null,
     thumbnail: v.thumbnail ?? null,
+    description: v.description ?? null,
   }));
 
   return <HomeVideoCarousel videos={homeVideos} surface="light" compact />;

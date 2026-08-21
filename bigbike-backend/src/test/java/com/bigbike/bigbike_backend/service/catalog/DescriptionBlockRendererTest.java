@@ -350,11 +350,10 @@ class DescriptionBlockRendererTest {
         assertThat(validator.validate(uploadVideo)).isEmpty();
 
         for (String provider : List.of("tiktok", "facebook")) {
-            var legacyVideo = new DescriptionBlock.VideoBlock();
-            legacyVideo.setProvider(provider);
-            legacyVideo.setUrl("https://legacy.example/video");
-            assertThat(validator.validate(legacyVideo))
-                    .anyMatch(cv -> cv.getPropertyPath().toString().equals("provider"));
+            var platformVideo = new DescriptionBlock.VideoBlock();
+            platformVideo.setProvider(provider);
+            platformVideo.setUrl("https://example.com/video");
+            assertThat(validator.validate(platformVideo)).isEmpty();
         }
 
         var callout = new DescriptionBlock.CalloutBlock();

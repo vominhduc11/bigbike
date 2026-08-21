@@ -24,6 +24,7 @@ export function VideoModal({
   const tA = useTranslations("A11y");
   const video = videos[activeIndex];
   const title = safeText(video.title, "");
+  const description = safeText(video.description, "");
   const ariaTitle = title || tA("watchVideoFallback");
   // TikTok/Facebook video sản phẩm map sang HomeVideo với embedUrl=null → tự dựng embed từ videoUrl.
   const fallbackUrl = !video.embedUrl && !video.youtubeId ? (video.videoUrl ?? "") : "";
@@ -252,8 +253,14 @@ export function VideoModal({
         {title && (
           <div className="px-4 py-3">
             <p className="m-0 font-body text-a4-content font-semibold text-white">{title}</p>
+            {description ? <p className="mt-1 mb-0 font-body text-a5-meta leading-relaxed text-white/80">{description}</p> : null}
           </div>
         )}
+        {!title && description ? (
+          <div className="px-4 py-3">
+            <p className="m-0 font-body text-a5-meta leading-relaxed text-white/80">{description}</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
