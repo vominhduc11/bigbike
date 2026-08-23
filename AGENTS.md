@@ -143,7 +143,7 @@ Dùng cho: Homepage, Category/listing, PDP, Search, Cart, Checkout, SEO content,
 | Role / user type | `docs/business/USER_ROLES.md` |
 | Module / feature scope | `docs/business/MODULE_CATALOG.md` |
 | State transition (đơn hàng, trả hàng, sản phẩm) | `docs/business/STATE_MACHINES.md` section entity đó |
-| Design token / style | `bigbike-admin/src/styles/admin-tokens.css` + Section 6 |
+| Design token / style | `bigbike-admin/STYLEGUIDE.md`; `bigbike-admin/src/styles/admin-tokens.css` + Section 6 |
 | Brand assets | `bigbike-admin/public/brand/` |
 | OpenAPI raw schema | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 
@@ -180,7 +180,7 @@ Bản export WordPress cục bộ trước đây đã được chủ dự án xo
 | **Technical architecture / API contract / data contract / permission / deployment** | [docs/engineering/](docs/engineering/) — `ARCHITECTURE.md`, `API_CONTRACT.md`, `DATA_CONTRACT.md`, `API_FLOW_MAP.md`, `PERMISSION_MATRIX.md`, `TESTING_GUIDE.md`, `DEPLOYMENT_GUIDE.md`, `INTEGRATION_GUIDE.md`, `TRACEABILITY_MATRIX.md` |
 | **Docs governance / agent operating rules** | This `AGENTS.md` + canonical docs under `docs/` |
 | **Latest docs↔code audit / known mismatches** | `docs/audits/` (historical; canonical docs still win) |
-| **Brand identity, logo, colors, typography, copy** | `bigbike-web/STYLEGUIDE.md`, `bigbike-web/styles/brand-tokens.css`, `bigbike-admin/src/styles/admin-tokens.css` |
+| **Brand identity, logo, colors, typography, copy** | `bigbike-web/STYLEGUIDE.md`, `bigbike-web/styles/brand-tokens.css`, `bigbike-admin/STYLEGUIDE.md`, `bigbike-admin/src/styles/admin-tokens.css` |
 | **Brand assets (logos, icons, fonts, favicons)** | `bigbike-web/public/brand/` + `bigbike-admin/public/brand/` |
 | **Backend OpenAPI raw schema** (machine-readable companion to `API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 | **Backend phase implementation reports** (historical) | `bigbike-backend/docs/` |
@@ -357,7 +357,7 @@ Tailwind utility classes / CSS variables     ← text-primary, bg-brand, var(--a
 ```
 
 **Quy tắc:**
-- **Màu**: **Primary = đỏ `#FF0C09`** (dark `#FF5A4D`) dùng chung cho cả CTA/active/selected/focus/link và brand chrome (logo, sidebar active, nav badge, notification pip), cùng giá trị đỏ thương hiệu chính thức của `bigbike-web`. Thương hiệu đỏ `--admin-color-brand-red` (`--bb-brand`) giờ là alias thuần của primary color. Danger giữ token danger riêng. Tham chiếu qua CSS variable / Tailwind token, không hardcode hex.
+- **Màu**: tách ba vai trò. **Brand light = `#FF0C09`** chỉ cho logo/vạch menu/badge điều hướng/chấm thông báo; **Primary light = `#E50A07`**, hover/active `#CC0906` cho CTA/active/selected/focus/link; Danger giữ token riêng. Dark mode giữ nguyên Primary/Brand `#FF5A4D` như trước. Tham chiếu qua token, không hardcode hex. Source of truth: `bigbike-admin/STYLEGUIDE.md` + `admin-tokens.css`.
 - **Font**: `Inter` (body/UI/content), `Oswald` (display — số KPI, wordmark, tiêu đề H1), `JetBrains Mono` (mã/SKU/ID). Đã cài qua `@fontsource`. Không dùng Exo/Bungee trong admin.
 - **Scale / spacing**: type scale + thang 4px theo `admin-tokens.css` (`--admin-text-*`, `--admin-space-*`).
 - **Border radius**: theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px). Dùng **token ngữ nghĩa** cho từng nhóm component, **không hardcode px**: `--admin-radius-card` (= md 12px) cho card/panel/`bb-table-wrap`/KPI/filter-bar; `--admin-radius-control` (= sm 8px) cho button/input/select/menu/dropdown/pagination; `--admin-radius-thumb` (= xs 5px) cho ảnh thumbnail trong dòng bảng. `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
@@ -438,13 +438,14 @@ Trước khi tạo bất kỳ component mới nào, **phải check** danh sách 
 | `BulkActionBar` | Thanh action khi chọn nhiều row |
 | `RichTextEditor` | Editor soạn thảo nội dung |
 | `StatePanel` | Panel trạng thái + action (state machine UI) |
-| `DetailSection` | Section có tiêu đề trong trang detail |
+| `DetailSection` | Khối nội dung cấp màn duy nhất: title/description/badge/action/required/no-padding |
+| `ScreenSkeleton` | Loading cấp màn duy nhất với variant `table`, `form`, `cards` |
 | `DateRangePicker` | Chọn khoảng ngày cho filter/report |
 | `ExportButton` | Nút export dữ liệu |
 | `ReadOnlyBanner` | Banner cảnh báo màn hình read-only |
 | `TagInput` | Input nhập nhiều tag/label |
 | `MediaPickerModal` / `VideoPickerModal` / `ImageUrlInput` | Chọn / nhập media |
-| `MediaCard` / `MediaCardSkeleton` / `MediaPreviewLightbox` / `MediaListRow` / `MediaDetailModal` / `MediaDetailPanel` / `MediaFolderSidebar` | Media library UI |
+| `MediaCard` / `MediaPreviewLightbox` / `MediaListRow` / `MediaDetailModal` / `MediaDetailPanel` / `MediaFolderSidebar` | Media library UI |
 | `NotificationBell` / `OrderNotificationToast` | Realtime notification |
 | `ErrorBoundary` | Bắt lỗi render, hiển thị fallback |
 
@@ -452,13 +453,13 @@ Trước khi tạo bất kỳ component mới nào, **phải check** danh sách 
 
 | Component | Dùng cho |
 |---|---|
-| `Screen` | Wrapper chuẩn cho mọi trang (padding, max-width, scroll) |
-| `ScreenHeader` | Header trang: tiêu đề + breadcrumb + action button |
+| `Screen` | Wrapper chuẩn cho mọi trang; bề rộng do khung ngoài 1700px quản lý, không nhận `maxWidth` |
+| `ScreenHeader` | Header cấp trang duy nhất: tiêu đề + breadcrumb/eyebrow + mô tả + action |
 | `FilterBar` | Thanh filter: search + select + date range |
 | `SummaryCard` | Card chỉ số tổng quan (dashboard, report) |
 | `Tabs` | Tab navigation trong trang |
 | `Modal` | Modal wrapper chuẩn |
-| `StickyActionBar` | Thanh action dính dưới màn hình (form save/cancel) |
+| `StickyActionBar` | Thanh action duy nhất của form cấp trang: Huỷ → Xem trước nếu có → Lưu ngoài cùng bên phải |
 | `MobileCardList` | List dạng card trên mobile thay table |
 | `FormField` | Field wrapper: label + input + error message |
 
@@ -472,6 +473,7 @@ Trước khi tạo bất kỳ component mới nào, **phải check** danh sách 
 - ❌ Tạo `MyConfirmModal` khi `ConfirmDialog` đã có; `MyTable` khi `AdminTable` đã có; `MyPagination` khi `PaginationControls` đã có; v.v.
 - ❌ Copy-paste component có sẵn rồi sửa nhỏ — phải extend hoặc dùng thẳng.
 - ❌ Layout wrapper mới khi `Screen`, `ScreenHeader`, `FilterBar`, `Modal` đã đáp ứng.
+- ❌ Khôi phục `SectionCard`, `.mono`, skeleton tự chế, header dựng tay hoặc bề rộng riêng từng màn. Dùng `DetailSection`, `font-mono`, `ScreenSkeleton`, `ScreenHeader` và khung ngoài 1700px.
 - ❌ Tạo component mà không check danh sách trước.
 
 ### 6.5 Encoding và chính tả tiếng Việt — không mojibake, phải có dấu
@@ -547,7 +549,7 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 - **Bo góc token-hoá**: `.bb-card` (+ KPI/filter-bar/table-wrap/state) dùng `--bb-r-card` (12px); `.bb-btn`/`.bb-icon-btn`/`.bb-input`/`.bb-select`/menu/dropdown dùng `--bb-r-control` (8px); `.bb-product-thumb` + `.thumbnail-wrap` dùng `--admin-radius-thumb` (5px). shadcn `ui/button|input|select` (trigger) cũng trỏ `--admin-radius-control` để đồng bộ với `bb-btn`. Không còn hardcode px bo góc trong các class này.
 - **Vạch màu trái theo trạng thái**: `.bb-row-accent--{success|warning|danger|info|neutral}` (đặt `border-left` trên `td:first-child`) — opt-in qua `rowClassName` của `AdminTable`, tái dùng tone-map trong `components/StatusBadge.jsx` để đồng màu với chấm badge cùng dòng. Thay cho `.audit-row-danger` cũ.
 - **Sticky action bar glass**: `.sticky-action-bar` (trong `admin-layout.css`) dùng `--admin-color-surface-glass` + `backdrop-filter: blur` (trong `@supports`, có fallback nền đục).
-- **`SectionCard` dùng chung**: đặt tại `src/components/SectionCard.jsx` (props `{title, badge, required, children}`, tiêu đề `<h3>`). Không copy bản riêng ở từng screen (đã gỡ 2 bản trùng ở `product-detail/` và `content-detail/`).
+- **Bố cục cấp màn duy nhất**: `ScreenHeader` cho header, `DetailSection` cho khối nội dung, `ScreenSkeleton` cho loading và `StickyActionBar` cho form cấp trang. `SectionCard`, `.mono`, skeleton tự chế và bề rộng riêng từng màn đã bị loại bỏ, không được khôi phục.
 
 #### Khi thêm class mới vào file CSS
 
