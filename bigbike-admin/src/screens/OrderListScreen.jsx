@@ -12,6 +12,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { FilterChips } from '../components/FilterChips'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
+import { ScreenHeader } from '../components/layout'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { exportOrdersCsv, fetchOrders, updateOrderStatus } from '../lib/adminApi'
@@ -289,7 +290,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
       key: 'orderNumber',
       label: t('orders.colOrder'),
       render: (order) => (
-        <span className="mono flex items-center gap-2">
+          <span className="flex items-center gap-2 font-mono">
           {formatText(order.orderNumber)}
         </span>
       ),
@@ -399,14 +400,11 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('orders.eyebrow')}</p>
-          <h1>{t('orders.title')}</h1>
-          <p className="bb-muted">{t('orders.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
-          {canExport && (
+      <ScreenHeader
+        eyebrow={t('orders.eyebrow')}
+        title={t('orders.title')}
+        description={t('orders.description')}
+        actions={canExport ? (
             <ExportButton
               onExport={async () => {
                 await exportOrdersCsv({
@@ -420,9 +418,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
             >
               {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
             </ExportButton>
-          )}
-        </div>
-      </div>
+        ) : null}
+      />
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
       {!canUpdate ? (

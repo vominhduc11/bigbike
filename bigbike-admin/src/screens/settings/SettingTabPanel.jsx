@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StickyActionBar } from '@/components/layout'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { DetailSection } from '@/components/DetailSection'
 import { cn } from '@/lib/utils'
 import { SettingField } from './SettingField'
 import {
@@ -96,25 +97,23 @@ export function SettingTabPanel({
 
   return (
     <>
-      <div className="bb-card overflow-hidden">
-        <div className="bb-card-header">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3>{title}</h3>
-              {dirtyCount > 0 ? (
-                <span className="bb-badge bb-badge-warning">
-                  {t('settings.unsavedShort', { count: dirtyCount, defaultValue: '{{count}} chưa lưu' })}
-                </span>
-              ) : null}
-            </div>
-            <p>{description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}</p>
-          </div>
+      <DetailSection
+        className="overflow-hidden"
+        headingLevel={3}
+        title={title}
+        description={description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
+        badge={dirtyCount > 0 ? (
+          <span className="bb-badge bb-badge-warning">
+            {t('settings.unsavedShort', { count: dirtyCount, defaultValue: '{{count}} chưa lưu' })}
+          </span>
+        ) : null}
+        action={(
           <span className="bb-badge bb-badge-neutral">
             {t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
           </span>
-        </div>
-
-        <div className="bb-card-body space-y-5">
+        )}
+        contentClassName="space-y-5"
+      >
           {sections.map(({ sec, fields }, idx) => {
             const meta = SECTION_GUIDE[sec]
             const secTitle = sectionTitle(sec, t)
@@ -128,25 +127,21 @@ export function SettingTabPanel({
 
             if (idx === 0) {
               return (
-                <section key={sec} className="rounded-md border border-border bg-surface-muted p-4">
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
-                    <div className="min-w-0">
-                      <h4 className="m-0 text-base font-semibold text-foreground">{secTitle}</h4>
-                      {secDescription ? (
-                        <p className="mb-0 mt-1 text-sm text-muted-foreground">{secDescription}</p>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {meta?.internal ? (
-                        <span className="bb-badge bb-badge-neutral">
-                          <Lock size={12} aria-hidden="true" /> {internalLabel}
-                        </span>
-                      ) : null}
-                      {dirtyBadge}
-                    </div>
-                  </div>
+                <DetailSection
+                  key={sec}
+                  headingLevel={4}
+                  title={secTitle}
+                  description={secDescription}
+                  badge={dirtyBadge}
+                  action={meta?.internal ? (
+                    <span className="bb-badge bb-badge-neutral">
+                      <Lock size={12} aria-hidden="true" /> {internalLabel}
+                    </span>
+                  ) : null}
+                  className="bg-surface-muted"
+                >
                   {renderFields(fields)}
-                </section>
+                </DetailSection>
               )
             }
 
@@ -164,8 +159,7 @@ export function SettingTabPanel({
               </CollapsibleSection>
             )
           })}
-        </div>
-      </div>
+      </DetailSection>
 
       {canUpdate && (dirtyCount > 0 || saving || saveSuccess || saveError) ? (
         <StickyActionBar ariaLabel={t('common.actionBarLabel')} info={actionInfo}>

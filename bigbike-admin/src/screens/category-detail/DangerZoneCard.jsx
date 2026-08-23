@@ -1,20 +1,23 @@
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DetailSection } from '@/components/DetailSection'
 
 export function DangerZoneCard({ onHardDelete, pending, isDeleted, onRestore, restorePending }) {
   const { t } = useTranslation()
   return (
-    <div className="bb-card border-danger-border">
-      <div className="bb-card-body flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <strong className="flex items-center gap-2 text-danger">
+    <DetailSection
+      className="border-danger-border"
+      headingLevel={3}
+      title={(
+        <span className="flex items-center gap-2 text-danger">
             <AlertTriangle size={14} aria-hidden="true" />
             {t('categories.detail.dangerZoneTitle')}
-          </strong>
-          <p className="bb-muted mt-1 text-xs">{t('categories.detail.dangerZoneDesc')}</p>
-        </div>
-        <div className="flex gap-2">
+        </span>
+      )}
+      description={t('categories.detail.dangerZoneDesc')}
+      action={(
+        <div className="flex flex-wrap gap-2">
           {isDeleted ? (
             <Button
               type="button"
@@ -33,7 +36,7 @@ export function DangerZoneCard({ onHardDelete, pending, isDeleted, onRestore, re
             {t('categories.detail.hardDeleteBtn')}
           </Button>
         </div>
-      </div>
-    </div>
+      )}
+    />
   )
 }

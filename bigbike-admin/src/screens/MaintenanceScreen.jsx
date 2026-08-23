@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { SectionCard } from '../components/SectionCard'
+import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
@@ -125,7 +125,7 @@ export function MaintenanceScreen() {
         />
       )}
 
-      <SectionCard
+      <DetailSection
         title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })}
         badge={(
           <span className={`bb-badge ${tone.badge}`}>
@@ -161,9 +161,9 @@ export function MaintenanceScreen() {
             {t('maintenance.updatedAt', { defaultValue: 'Cập nhật lần cuối' })}: {formatDateTime(data.updatedAt)}
           </p>
         )}
-      </SectionCard>
+      </DetailSection>
 
-      <SectionCard title={t('maintenance.detailsTitle', { defaultValue: 'Thông tin hiển thị cho nhân viên' })}>
+      <DetailSection title={t('maintenance.detailsTitle', { defaultValue: 'Thông tin hiển thị cho nhân viên' })}>
         <div className="flex flex-col gap-4">
           <FormField
             label={t('maintenance.staffNote', { defaultValue: 'Lời nhắn cho nhân viên' })}
@@ -191,7 +191,7 @@ export function MaintenanceScreen() {
             />
           </FormField>
         </div>
-      </SectionCard>
+      </DetailSection>
 
       {canToggle && (
         <div className="sticky-action-bar flex flex-wrap items-center gap-2">

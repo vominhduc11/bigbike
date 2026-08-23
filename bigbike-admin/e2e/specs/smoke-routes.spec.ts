@@ -48,3 +48,27 @@ test('smoke · create/new forms render', async ({ adminPage, collect }) => {
   }
   expect(issues, `Create forms with problems:\n${issues.join('\n')}`).toEqual([])
 })
+
+test('smoke · standard content blocks and sticky form actions stay consistent', async ({ adminPage }) => {
+  const formRoutes = [
+    { path: '/admin/products/new', cancel: /Huỷ|Cancel/i, preview: /Xem trước|Preview/i },
+    { path: '/admin/categories/new', cancel: /Huỷ|Cancel/i },
+    { path: '/admin/brands/new', cancel: /Huỷ|Cancel/i },
+    { path: '/admin/content/article/new', cancel: /Huỷ|Cancel/i, preview: /Xem trước|Preview/i },
+  ]
+
+  for (const route of formRoutes) {
+    await navigateSpa(adminPage, route.path)
+    await expect(adminPage.locator('.detail-section').first()).toBeVisible()
+    await adminPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    const bar = adminPage.locator('.sticky-action-bar').last()
+    await expect(bar).toBeVisible()
+    const buttons = bar.getByRole('button')
+    await expect(buttons.first()).toHaveText(route.cancel)
+    await expect(buttons.last()).toHaveText(/Lưu|Tạo|Save|Create/i)
+    if (route.preview) await expect(bar.getByRole('button', { name: route.preview })).toBeVisible()
+  }
+
+  await navigateSpa(adminPage, '/admin/reviews')
+  await expect(adminPage.locator('.detail-section')).toHaveCount(2)
+})

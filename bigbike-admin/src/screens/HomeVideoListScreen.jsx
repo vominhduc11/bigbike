@@ -27,6 +27,9 @@ import { MediaRequirementHint } from '../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenHeader, StickyActionBar } from '../components/layout'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
@@ -620,11 +623,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-2.5" aria-busy="true" aria-label={t('homeVideos.loading')}>
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="bb-skeleton-block" style={{ height: 82 }} />
-        ))}
-      </div>
+      <ScreenSkeleton variant="cards" count={4} showHeader={false} />
     )
   }
   if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} actionLabel={t('common.retry')} onAction={() => refetch()} />
@@ -740,30 +739,23 @@ export function HomeVideoListScreen({ canUpdate }) {
     <div>
       {!canUpdate && <ReadOnlyBanner />}
 
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}</p>
-          <h1>{t('homeVideos.title')}</h1>
-          <p className="bb-muted">{t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}</p>
-        </div>
-        {canUpdate && !showForm && (
-          <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}
+        title={t('homeVideos.title')}
+        description={t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}
+        actions={canUpdate && !showForm ? (
             <Button
               type="button"
               onClick={openCreateForm}
             >
               <Plus size={14} />{t('homeVideos.addButton')}
             </Button>
-          </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {showForm && (
-        <div className="bb-card mb-4">
-          <div className="bb-card-header">
-            <h2>{editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}</h2>
-          </div>
-          <form onSubmit={handleSubmit} className="bb-card-body flex flex-col gap-3">
+        <DetailSection title={editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')} className="mb-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {fieldErrors.form ? (
             <div
               role="alert"
@@ -935,16 +927,16 @@ export function HomeVideoListScreen({ canUpdate }) {
             {t('homeVideos.formIsActive')}
           </label>
 
-          <div className="flex gap-2.5">
-            <Button type="submit" loading={isBusy}>
-              {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
-            </Button>
+          <StickyActionBar ariaLabel={t('common.actions')}>
             <Button type="button" variant="secondary" onClick={handleCancelForm}>
               {t('common.cancel')}
             </Button>
-          </div>
+            <Button type="submit" loading={isBusy}>
+              {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
+            </Button>
+          </StickyActionBar>
           </form>
-        </div>
+        </DetailSection>
       )}
 
       {canUpdate && items.length > 0 ? (

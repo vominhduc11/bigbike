@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Bot, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DetailSection } from '../components/DetailSection'
-import { SectionCard } from '../components/SectionCard'
 import { StatePanel } from '../components/StatePanel'
 import { Screen, ScreenHeader } from '../components/layout'
 import { fetchChatConversation } from '../lib/adminApi'
@@ -144,7 +143,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
         </div>
 
         <aside className="grid content-start gap-4">
-          <SectionCard title={t('chatAdmin.detail.summary')} headingLevel={2}>
+      <DetailSection title={t('chatAdmin.detail.summary')} headingLevel={2}>
             <dl className="grid gap-4">
               <DetailValue label={t('chatAdmin.columns.language')}>{conversation.locale.toUpperCase()}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.turns')}>{conversation.turnCount}</DetailValue>
@@ -160,9 +159,9 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
               <DetailValue label={t('chatAdmin.columns.lastMessage')}>{formatDateTime(conversation.lastMessageAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.detail.endedReason')}>{endedReasonLabel(conversation.endedReason, t)}</DetailValue>
             </dl>
-          </SectionCard>
+      </DetailSection>
 
-          <SectionCard title={t('chatAdmin.detail.assistedOrders')} headingLevel={2}>
+      <DetailSection title={t('chatAdmin.detail.assistedOrders')} headingLevel={2}>
             {conversation.orderAttributions.length > 0 ? (
               <ul className="grid gap-3">
                 {conversation.orderAttributions.map((attribution) => (
@@ -176,9 +175,9 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                 ))}
               </ul>
             ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noAssistedOrders')}</p>}
-          </SectionCard>
+      </DetailSection>
 
-          <SectionCard title={t('chatAdmin.detail.lead')} headingLevel={2}>
+      <DetailSection title={t('chatAdmin.detail.lead')} headingLevel={2}>
             {conversation.lead ? (
               <dl className="grid gap-4">
                 <DetailValue label={t('chatAdmin.detail.leadName')}>{conversation.lead.name}</DetailValue>
@@ -188,7 +187,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                 <DetailValue label={t('chatAdmin.detail.consentedAt')}>{formatDateTime(conversation.lead.consentedAt)}</DetailValue>
               </dl>
             ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noLead')}</p>}
-          </SectionCard>
+      </DetailSection>
         </aside>
       </div>
     </Screen>

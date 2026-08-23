@@ -16,6 +16,8 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { ScreenHeader } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
@@ -27,6 +29,7 @@ import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useHasPermission } from '@/lib/auth'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { customerRowAccent } from '../lib/statusTone'
 
 // Backend accepts all CustomerStatus values for an explicit admin status change.
 // Keep local to avoid importing one lazy-loaded screen from another.
@@ -47,12 +50,6 @@ const INITIAL_QUERY = {
   emailVerified: 'ALL',
   page: 1,
   pageSize: 20,
-}
-
-// N5: khung skeleton cùng chiều cao 1 thẻ .bb-kpi thật, dự trữ không gian ngay từ lần
-// render đầu tiên (cùng cách DashboardScreen.jsx làm với khối bb-kpi-grid của nó).
-function SkeletonBlock() {
-  return <div className="bb-skeleton-block h-30" />
 }
 
 function CustomerStatusBadge({ value }) {
@@ -166,7 +163,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   const items = state.items || []
@@ -330,14 +327,11 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('customers.eyebrow')}</p>
-          <h1>{t('customers.title')}</h1>
-          <p className="bb-muted">{t('customers.description')}</p>
-        </div>
-        {canExport && (
-          <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('customers.eyebrow')}
+        title={t('customers.title')}
+        description={t('customers.description')}
+        actions={canExport ? (
             <ExportButton
               onExport={async () => {
                 try {
@@ -354,9 +348,8 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             >
               {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
             </ExportButton>
-          </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentCustomerItems} onSelect={(item) => navigate(`/admin/customers/${item.id}`)} />
@@ -423,7 +416,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       ) : (
         <div className="bb-kpi-grid bb-kpi-grid-4">
           {[...Array(4)].map((_, i) => (
-            <SkeletonBlock key={i} height={120} />
+              <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
           ))}
         </div>
       )}
@@ -522,6 +515,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
               pageSize={query.pageSize}
               onRowClick={(c) => navigate(`/admin/customers/${c.id}`)}
               rowHref={(c) => `/admin/customers/${c.id}`}
+              rowClassName={(customer) => customerRowAccent(customer.status)}
               mobileCard={mobileCard}
             />
           </div>

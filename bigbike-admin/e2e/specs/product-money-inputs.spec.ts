@@ -54,7 +54,7 @@ test('product money inputs stay local and clean at desktop/tablet/mobile viewpor
   await navigateSpa(adminPage, `/admin/products/${productId}`)
   await waitForScreenReady(adminPage)
 
-  const pricingCard = adminPage.locator('.bb-card').filter({ hasText: 'Giá & trạng thái' }).first()
+  const pricingCard = adminPage.locator('.detail-section').filter({ hasText: 'Giá & trạng thái' }).first()
   await expect(pricingCard.getByLabel(/Giá niêm yết/).first()).toBeVisible()
 
   for (const viewport of VIEWPORTS) {

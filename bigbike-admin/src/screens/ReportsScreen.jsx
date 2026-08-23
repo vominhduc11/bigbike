@@ -16,6 +16,9 @@ import { useHasPermission } from '../lib/auth'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExportButton } from '../components/ExportButton'
@@ -59,11 +62,6 @@ function TrendPill({ direction, label }) {
   )
 }
 
-// Khối giữ chỗ khớp layout khi đang tải (thay panel chữ → không nhảy layout).
-function SkeletonBlock({ height = 120 }) {
-  return <div className="bb-skeleton-block" style={{ height }} />
-}
-
 // Ranked table card — bb-* classes; sort client-side trên cột số (top-N ≤ 1000 dòng).
 function RankTable({ title, rows, cols, noDataLabel }) {
   const [sortKey, setSortKey] = useState(null)
@@ -96,9 +94,7 @@ function RankTable({ title, rows, cols, noDataLabel }) {
   const indexedRows = sortedRows.map((r, i) => ({ ...r, id: r.id ?? i, _idx: i + 1 }))
 
   return (
-    <div className="bb-card">
-      <div className="bb-card-header"><h3>{title}</h3></div>
-      <div className="bb-card-body bb-card-body--flush">
+    <DetailSection title={title} headingLevel={3} noPadding>
         {sortedRows.length === 0 ? (
           <StatePanel tone="neutral" title={noDataLabel} />
         ) : (
@@ -110,8 +106,7 @@ function RankTable({ title, rows, cols, noDataLabel }) {
             onSortChange={(key, dir) => { setSortKey(key); setSortDir(dir) }}
           />
         )}
-      </div>
-    </div>
+    </DetailSection>
   )
 }
 
@@ -301,13 +296,12 @@ export function ReportsScreen() {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('reports.eyebrow')}</p>
-          <h1>{t('reports.title')}</h1>
-          <p className="bb-muted">{t('reports.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('reports.eyebrow')}
+        title={t('reports.title')}
+        description={t('reports.description')}
+        actions={(
+          <>
           <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>
             {presetTabs.map((tab) => (
               <Button
@@ -322,7 +316,7 @@ export function ReportsScreen() {
               </Button>
             ))}
           </div>
-          {preset === 'custom' && (
+          {preset === 'custom' ? (
             <>
               <Input
                 type="date"
@@ -344,7 +338,7 @@ export function ReportsScreen() {
                 onChange={(e) => setCustomTo(e.target.value)}
               />
             </>
-          )}
+          ) : null}
           <div className="flex gap-2">
             <ExportButton
               disabled={!canExport || !shouldFetch}
@@ -361,8 +355,9 @@ export function ReportsScreen() {
               {t('reports.exportCustomers')}
             </ExportButton>
           </div>
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
@@ -370,14 +365,14 @@ export function ReportsScreen() {
         <>
           <div className="bb-kpi-grid bb-kpi-grid-4">
             {[...Array(4)].map((_, i) => (
-              <SkeletonBlock key={i} height={120} />
+              <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
             ))}
           </div>
-          <SkeletonBlock height={240} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
           <div style={{ height: 16 }} />
           <div className="bb-grid-2">
-            <SkeletonBlock height={280} />
-            <SkeletonBlock height={280} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
           </div>
         </>
       )}
@@ -433,14 +428,12 @@ export function ReportsScreen() {
           </div>
 
           {/* Revenue trend chart */}
-          <div className="bb-card mb-4">
-            <div className="bb-card-header">
-              <div>
-                <h3>{t('reports.chartDailyRevenue')}</h3>
-                <p>{t('dashboard.revenueChart.subtitle')}</p>
-              </div>
-            </div>
-            <div className="bb-card-body">
+          <DetailSection
+            className="mb-4"
+            title={t('reports.chartDailyRevenue')}
+            description={t('dashboard.revenueChart.subtitle')}
+            headingLevel={3}
+          >
               {state.data.dailyRevenue?.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
@@ -484,14 +477,11 @@ export function ReportsScreen() {
                   {t('reports.notEnoughDataForChart')}
                 </div>
               )}
-            </div>
-          </div>
+          </DetailSection>
 
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
-            <div className="bb-card mb-4">
-              <div className="bb-card-header"><h3>{t('reports.chartTopProducts')}</h3></div>
-              <div className="bb-card-body">
+            <DetailSection className="mb-4" title={t('reports.chartTopProducts')} headingLevel={3}>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
                     data={state.data.topProducts.slice(0, 5)}
@@ -522,8 +512,7 @@ export function ReportsScreen() {
                     <Bar dataKey="revenue" fill="var(--admin-color-primary)" radius={[0, 3, 3, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            </div>
+            </DetailSection>
           )}
 
           {/* Tables row */}

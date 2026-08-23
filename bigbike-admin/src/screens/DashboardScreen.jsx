@@ -15,6 +15,9 @@ import {
 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
@@ -78,10 +81,6 @@ function clickableProps(onActivate, label) {
       }
     },
   }
-}
-
-function SkeletonBlock({ height = 280 }) {
-  return <div className="bb-skeleton-block" style={{ height }} />
 }
 
 function useViewportEntered() {
@@ -258,17 +257,13 @@ export function DashboardScreen({ navigate }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('dashboard.eyebrow')}</p>
-          <h1>
-            {firstName
-              ? t(`dashboard.${greetingKey}`, { name: firstName })
-              : t(`dashboard.${greetingKey}Fallback`)}
-          </h1>
-          <p className="bb-muted">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
-        </div>
-        <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('dashboard.eyebrow')}
+        title={firstName
+          ? t(`dashboard.${greetingKey}`, { name: firstName })
+          : t(`dashboard.${greetingKey}Fallback`)}
+        description={t('dashboard.greetingDesc', { date: todayLabel })}
+        actions={(
           <div
             className="bb-seg"
             role="group"
@@ -286,8 +281,8 @@ export function DashboardScreen({ navigate }) {
               </Button>
             ))}
           </div>
-        </div>
-      </div>
+        )}
+      />
 
       {state.status === 'error' && (
         <StatePanel
@@ -303,13 +298,13 @@ export function DashboardScreen({ navigate }) {
         <>
           <div className="bb-kpi-grid bb-kpi-grid-4">
             {[...Array(4)].map((_, i) => (
-              <SkeletonBlock key={i} height={120} />
+                <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
             ))}
           </div>
-          <SkeletonBlock height={84} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
           <div className="bb-grid-2-1">
-            <SkeletonBlock height={300} />
-            <SkeletonBlock height={300} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
           </div>
         </>
       )}
@@ -407,22 +402,21 @@ export function DashboardScreen({ navigate }) {
 
           {/* Charts row — 2:1 layout */}
           <div className="bb-grid-2-1">
-            <div className="bb-card">
-              <div className="bb-card-header">
-                <div>
-                  <h3>{t('dashboard.revenueChart.title')}</h3>
-                  <p>{t('dashboard.revenueChart.subtitle', { period: selectedPeriodLabel })}</p>
-                </div>
-              </div>
-              <div className="bb-card-body">
-                <div ref={revenueChartRef} data-testid="dashboard-revenue-chart-slot">
+            <DetailSection
+              title={t('dashboard.revenueChart.title')}
+              description={t('dashboard.revenueChart.subtitle', { period: selectedPeriodLabel })}
+              headingLevel={3}
+            >
+              <div ref={revenueChartRef} data-testid="dashboard-revenue-chart-slot">
                 {revenueData.length > 0 ? (
                   <>
                     {isRevenueChartVisible ? (
-                      <Suspense fallback={<SkeletonBlock height={260} />}>
+                      <Suspense fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}>
                         <RevenueAreaChart revenueData={revenueData} />
                       </Suspense>
-                    ) : <SkeletonBlock height={260} />}
+                    ) : (
+                      <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+                    )}
                     {zeroRevenueDays > 0 && (
                       <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
                         <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -444,16 +438,13 @@ export function DashboardScreen({ navigate }) {
                   />
                 )}
                 </div>
-              </div>
-            </div>
+            </DetailSection>
 
-            <div className="bb-card">
-              <div className="bb-card-header">
-                <div>
-                  <h3>{t('dashboard.orderStatusChart.title')}</h3>
-                  <p>{t('dashboard.orderStatusChart.subtitle', { period: selectedPeriodLabel })}</p>
-                </div>
-                {pieTotal > 0 && (
+            <DetailSection
+              title={t('dashboard.orderStatusChart.title')}
+              description={t('dashboard.orderStatusChart.subtitle', { period: selectedPeriodLabel })}
+              headingLevel={3}
+              action={pieTotal > 0 ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -462,17 +453,18 @@ export function DashboardScreen({ navigate }) {
                   >
                     {t('dashboard.orderStatusChart.viewAll')}<ArrowRight size={14} aria-hidden="true" />
                   </Button>
-                )}
-              </div>
-              <div className="bb-card-body">
-                <div ref={statusChartRef} data-testid="dashboard-status-chart-slot">
+              ) : null}
+            >
+              <div ref={statusChartRef} data-testid="dashboard-status-chart-slot">
                 {pieTotal > 0 ? (
                   <div>
                     {isStatusChartVisible ? (
-                      <Suspense fallback={<SkeletonBlock height={200} />}>
+                      <Suspense fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}>
                         <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
                       </Suspense>
-                    ) : <SkeletonBlock height={200} />}
+                    ) : (
+                      <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+                    )}
                     <div className="mt-3 flex flex-col gap-3">
                       {pieDataWithTotal.map((d, index) => {
                         const percentage = pieTotal > 0 ? (d.count / pieTotal) * 100 : 0
@@ -527,19 +519,16 @@ export function DashboardScreen({ navigate }) {
                   />
                 )}
                 </div>
-              </div>
-            </div>
+            </DetailSection>
           </div>
 
           {/* Attention items */}
-          <div className="bb-card mb-4">
-            <div className="bb-card-header">
-              <div>
-                <h3>{t('dashboard.attention.title')}</h3>
-                <p>{t('dashboard.attention.description')}</p>
-              </div>
-            </div>
-            <div className="bb-card-body">
+          <DetailSection
+            className="mb-4"
+            title={t('dashboard.attention.title')}
+            description={t('dashboard.attention.description')}
+            headingLevel={3}
+          >
               {showInventoryWarning && (
                 <StatePanel
                   tone="warning"
@@ -547,7 +536,7 @@ export function DashboardScreen({ navigate }) {
                 />
               )}
               {invIsLoading && !hasInventoryData && (
-                <SkeletonBlock height={72} />
+                    <ScreenSkeleton variant="cards" count={1} showHeader={false} />
               )}
               {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
                   ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
@@ -585,18 +574,18 @@ export function DashboardScreen({ navigate }) {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
+          </DetailSection>
 
           {/* O9 — Vừa xem gần đây */}
           <RecentItemsChips items={recentOrderItems} onSelect={(item) => navigate(`/admin/orders/${item.id}`)} />
 
           {/* Recent orders + top products */}
           <div className="bb-grid-2">
-            <div className="bb-card">
-              <div className="bb-card-header">
-                <h3>{t('dashboard.recentOrders.title')}</h3>
-                {recentOrders.length > 0 && (
+            <DetailSection
+              title={t('dashboard.recentOrders.title')}
+              headingLevel={3}
+              noPadding
+              action={recentOrders.length > 0 ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -605,9 +594,8 @@ export function DashboardScreen({ navigate }) {
                   >
                     {t('dashboard.recentOrders.viewAll')}<ArrowRight size={14} aria-hidden="true" />
                   </Button>
-                )}
-              </div>
-              <div className="bb-card-body--flush">
+              ) : null}
+            >
                 {recentOrders.length > 0 ? (
                   <>
                   <div className="hide-on-mobile">
@@ -624,7 +612,7 @@ export function DashboardScreen({ navigate }) {
                       <tbody>
                         {recentOrders.map((order) => (
                           <tr key={order.id}>
-                            <td className="mono">
+                      <td className="font-mono">
                               <div className="flex flex-col">
                                 <Button variant="unstyled"
                                   type="button"
@@ -666,7 +654,7 @@ export function DashboardScreen({ navigate }) {
                   </MobileCardList>
                   </>
                 ) : (
-                  <div className="bb-card-body">
+                  <div className="p-4">
                     <StatePanel
                       tone="neutral"
                       title={t('dashboard.recentOrders.empty')}
@@ -676,13 +664,13 @@ export function DashboardScreen({ navigate }) {
                     />
                   </div>
                 )}
-              </div>
-            </div>
+            </DetailSection>
 
-            <div className="bb-card">
-              <div className="bb-card-header">
-                <h3>{t('dashboard.topProducts.title')}</h3>
-                {topProducts.length > 0 && canReadProducts && (
+            <DetailSection
+              title={t('dashboard.topProducts.title')}
+              headingLevel={3}
+              noPadding
+              action={topProducts.length > 0 && canReadProducts ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -691,9 +679,8 @@ export function DashboardScreen({ navigate }) {
                   >
                     {t('dashboard.topProducts.viewAll')}<ArrowRight size={14} aria-hidden="true" />
                   </Button>
-                )}
-              </div>
-              <div className="bb-card-body--flush">
+              ) : null}
+            >
                 {topProducts.length > 0 ? (
                   <>
                   <div className="hide-on-mobile">
@@ -751,7 +738,7 @@ export function DashboardScreen({ navigate }) {
                   </MobileCardList>
                   </>
                 ) : (
-                  <div className="bb-card-body">
+                  <div className="p-4">
                     <StatePanel
                       tone="neutral"
                       title={t('dashboard.topProducts.empty')}
@@ -761,8 +748,7 @@ export function DashboardScreen({ navigate }) {
                     />
                   </div>
                 )}
-              </div>
-            </div>
+            </DetailSection>
           </div>
         </>
       )}

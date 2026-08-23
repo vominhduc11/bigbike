@@ -103,8 +103,8 @@ vi.mock('./product-detail/Layout', () => ({
   RoleBadge: () => null,
   AssignmentBanner: () => null,
 }))
-vi.mock('../components/SectionCard', () => ({
-  SectionCard: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,
+vi.mock('../components/DetailSection', () => ({
+  DetailSection: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,
 }))
 vi.mock('@/components/CollapsibleSection', () => ({
   CollapsibleSection: ({ title, children }) => <section><h2>{title}</h2>{children}</section>,

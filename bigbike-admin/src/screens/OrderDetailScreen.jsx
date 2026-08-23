@@ -7,8 +7,10 @@ import { Alert } from '@/components/ui/alert'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { StickyActionBar } from '../components/layout'
+import { ScreenHeader, StickyActionBar } from '../components/layout'
 import { fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { ORDER_STATUS_TONE } from '../lib/statusTone'
@@ -35,36 +37,10 @@ function readListQuery() {
   }
 }
 
-// N5: khung skeleton phỏng theo bố cục thật (header + action panel + 2 cột card)
-// để tránh dịch chuyển layout (CLS) khi dữ liệu đơn hàng về — cùng cách làm với
-// DashboardScreen.jsx (SkeletonBlock).
-function SkeletonBlock({ className = '' }) {
-  return <div className={`bb-skeleton-block ${className}`} />
-}
-
 function OrderDetailSkeleton({ label }) {
   return (
-    <div role="status" aria-busy="true" aria-label={label}>
-      <span className="sr-only">{label}</span>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title bb-stack-xs">
-          <SkeletonBlock className="h-7 w-64 max-w-full" />
-          <SkeletonBlock className="h-4 w-48 max-w-full" />
-        </div>
-      </div>
-      <div className="mb-4"><SkeletonBlock className="h-20" /></div>
-      <div className="bb-grid-2-1">
-        <div className="bb-stack">
-          <SkeletonBlock className="h-56" />
-          <SkeletonBlock className="h-36" />
-          <SkeletonBlock className="h-36" />
-        </div>
-        <div className="bb-stack">
-          <SkeletonBlock className="h-44" />
-          <SkeletonBlock className="h-40" />
-          <SkeletonBlock className="h-36" />
-        </div>
-      </div>
+    <div aria-label={label}>
+      <ScreenSkeleton variant="form" count={6} label={label} />
     </div>
   )
 }
@@ -327,14 +303,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   return (
     <div className={useMobileStickyActions ? 'pb-32 md:pb-0' : undefined}>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <h1 className="bb-heading-inline">
+      <ScreenHeader
+        title={(
+          <span className="bb-heading-inline">
             {t('orders.detail.eyebrow')}{' '}
-            <span className="mono bb-heading-key">
+            <span className="bb-heading-key font-mono">
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
-          </h1>
+          </span>
+        )}
+        description={(
           <dl className="bb-muted flex flex-wrap items-center gap-x-4 gap-y-1">
             <div className="flex items-center gap-1">
               <dt>{t('orders.detail.orderDate')}</dt>
@@ -342,16 +320,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
             <div className="flex items-center gap-1">
               <dt>{t('orders.detail.paymentMethod')}</dt>
-              <dd className="mono">{paymentMethodLabel}</dd>
+                <dd className="font-mono">{paymentMethodLabel}</dd>
             </div>
           </dl>
-        </div>
-        <div className="bb-screen-actions">
+        )}
+        actions={(
           <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
             {t('orders.detail.backToList')}
           </Button>
-        </div>
-      </div>
+        )}
+      />
 
       {!canUpdate ? <ReadOnlyBanner warning={t('orders.readOnlyWarning')} /> : null}
 
@@ -450,13 +428,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         {/* Left column */}
         <div className="bb-stack">
           {/* Items */}
-          <div className="bb-card">
-            <div className="bb-card-header">
-              <h3>{t('orders.detail.items')} ({(order.items ?? []).length})</h3>
-            </div>
-            <div className="bb-card-body--flush">
+          <DetailSection
+            title={`${t('orders.detail.items')} (${(order.items ?? []).length})`}
+            headingLevel={3}
+            noPadding
+          >
               {(order.items ?? []).length === 0 ? (
-                <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.noItems')}</p></div>
+                <div className="p-4"><p className="bb-muted">{t('orders.detail.noItems')}</p></div>
               ) : (
                 <>
                 <div className="hide-on-mobile">
@@ -547,8 +525,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   </dd>
                 </dl>
               </div>
-            </div>
-          </div>
+          </DetailSection>
 
           {/* Payments — thu gọn mặc định, admin bấm mở khi cần đối chiếu tiền
               (có thể nhiều dòng với đơn thanh toán từng phần / hoàn tiền nhiều đợt). */}
@@ -575,7 +552,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <tbody>
                       {(order.payments ?? []).map((p, i) => (
                         <tr key={p.id ?? i}>
-                          <td className="mono">
+                    <td className="font-mono">
                             {p.paymentMethod
                               ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
                               : formatText()}
@@ -674,9 +651,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         {/* Right column */}
         <div className="bb-stack">
           {/* Customer */}
-          <div className="bb-card">
-            <div className="bb-card-header"><h3>{t('orders.detail.customerInfo')}</h3></div>
-            <div className="bb-card-body">
+          <DetailSection title={t('orders.detail.customerInfo')} headingLevel={3}>
               <dl className="bb-info-grid">
                 <dt>{t('orders.detail.name')}</dt><dd>{formatText(order.customerName)}</dd>
                 <dt>{t('orders.detail.email')}</dt><dd>{formatText(order.customerEmail)}</dd>
@@ -705,13 +680,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   </>
                 )}
               </dl>
-            </div>
-          </div>
+          </DetailSection>
 
           {/* Timestamps */}
-          <div className="bb-card">
-            <div className="bb-card-header"><h3>{t('orders.detail.timestamps')}</h3></div>
-            <div className="bb-card-body">
+          <DetailSection title={t('orders.detail.timestamps')} headingLevel={3}>
               <dl className="bb-info-grid">
                 {order.placedAt && (<><dt>{t('orders.detail.tsPlacedAt')}</dt><dd>{formatDateTime(order.placedAt)}</dd></>)}
                 {order.paidAt && (<><dt>{t('orders.detail.tsPaidAt')}</dt><dd>{formatDateTime(order.paidAt)}</dd></>)}
@@ -719,8 +691,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 {order.cancelledAt && (<><dt>{t('orders.detail.tsCancelledAt')}</dt><dd>{formatDateTime(order.cancelledAt)}</dd></>)}
                 {order.cancelReason && (<><dt>{t('orders.detail.cancelReasonLabel')}</dt><dd>{order.cancelReason}</dd></>)}
               </dl>
-            </div>
-          </div>
+          </DetailSection>
         </div>
       </div>
 

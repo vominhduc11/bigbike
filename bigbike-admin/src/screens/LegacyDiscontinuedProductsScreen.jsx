@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { AdminTable } from '@/components/AdminTable'
+import { ColumnVisibilityToggle } from '@/components/ColumnVisibilityToggle'
 import { FilterSearchInput } from '@/components/FilterSearchInput'
 import { FilterSelect } from '@/components/FilterSelect'
 import { PaginationControls } from '@/components/PaginationControls'
@@ -21,6 +22,8 @@ import {
 import { formatDateTime } from '@/lib/formatters'
 import { useAdminList } from '@/lib/useAdminList'
 import { useDebounce } from '@/lib/useDebounce'
+import { useColumnVisibility } from '@/lib/useColumnVisibility'
+import { enabledRowAccent } from '@/lib/statusTone'
 
 const INITIAL_QUERY = { search: '', enabled: 'ALL', page: 1, pageSize: 20 }
 const EMPTY_FORM = {
@@ -157,6 +160,7 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
       </span>,
     }] : []),
   ], [canUpdate, isTogglePending, toggleProduct])
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:legacy-discontinued')
 
   if (state.status === 'error') {
     return <Screen><StatePanel tone="danger" title="Không tải được danh sách hàng ngừng bán" description={state.error} actionLabel="Thử lại" onAction={() => state.refetch()} /></Screen>
@@ -213,13 +217,14 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
       <FilterBar ariaLabel="Lọc hàng đã ngừng bán">
         <FilterSearchInput value={searchInput} onChange={setSearchInput} placeholder="Tìm tên hoặc địa chỉ cũ" wrapperClassName="min-w-64 flex-1" />
         <FilterSelect value={query.enabled} onValueChange={(enabled) => setQuery((previous) => ({ ...previous, enabled, page: 1 }))} ariaLabel="Trạng thái hiển thị" options={[{ value: 'ALL', label: 'Tất cả trạng thái' }, { value: 'true', label: 'Đang hiển thị' }, { value: 'false', label: 'Đã tắt' }]} />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         <Button type="button" variant="secondary" className="min-h-11" onClick={() => state.refetch()} disabled={state.isFetching}><RefreshCw size={16} className={state.isFetching ? 'animate-spin' : ''} />Làm mới</Button>
       </FilterBar>
 
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel tone="neutral" title="Chưa có hàng cũ phù hợp" description="Thử đổi bộ lọc hoặc thêm một trang lịch sử mới." actionLabel={canUpdate ? 'Thêm hàng cũ' : undefined} onAction={canUpdate ? openCreate : undefined} />
       ) : (
-        <AdminTable columns={columns} rows={state.items} loading={state.status === 'loading'} pageSize={query.pageSize} caption="Danh sách trang mặt hàng đã ngừng bán" onRowClick={canUpdate ? openEdit : undefined} />
+        <AdminTable columns={visibleColumns} rows={state.items} loading={state.status === 'loading'} pageSize={query.pageSize} caption="Danh sách trang mặt hàng đã ngừng bán" rowClassName={(item) => enabledRowAccent(item.enabled)} onRowClick={canUpdate ? openEdit : undefined} />
       )}
       <PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => setQuery((previous) => ({ ...previous, page }))} />
     </Screen>

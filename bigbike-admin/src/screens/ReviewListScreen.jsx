@@ -8,6 +8,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
@@ -16,7 +17,11 @@ import { StatusBadge } from '../components/StatusBadge'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReviewModerationNote } from '../components/ReviewModerationNote'
 import { ReviewStars } from '../components/ReviewStars'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
+import { reviewRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
 import {
   bulkDeleteReviews,
@@ -198,7 +203,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
   const resetFilters = useCallback(() => {
     setSelected([])
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }, [])
 
   const items = useMemo(() => state.items || [], [state.items])
@@ -442,6 +447,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
       },
     },
   ], [bulkBusy, canUpdate, contentLang, handleDelete, handleStatusChange, isSuperAdmin, navigate, pendingId, staleVersions, t])
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:reviews')
 
   const mobileCard = useCallback((review) => {
     const targets = getReviewStatusTargets(review.status)
@@ -521,24 +527,28 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
       {!canUpdate ? <ReadOnlyBanner warning={t('reviews.readOnlyListHint')} /> : null}
       <RecentItemsChips items={recentReviewItems} onSelect={(item) => navigate(`/admin/reviews/${item.id}`)} />
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-3">
-        <section className="rounded-md border border-border bg-surface p-5 lg:col-span-2" aria-labelledby="review-public-score">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div><h2 id="review-public-score" className="font-display text-lg font-semibold">{t('reviews.publicScoreTitle')}</h2><p className="m-0 text-sm text-muted-foreground">{t('reviews.publicScoreHint')}</p></div>
-            {summaryQuery.isError ? <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => summaryQuery.refetch()}>{t('common.retry')}</Button> : null}
-          </div>
-          {summaryLoading ? <div className="h-24 animate-pulse rounded-sm bg-surface-muted" role="status" aria-label={t('reviews.loading')} /> : summaryQuery.isError ? <p className="m-0 text-sm text-danger">{summaryQuery.error?.message || t('reviews.summaryError')}</p> : (
+      {summaryLoading ? (
+        <div className="mb-6">
+          <ScreenSkeleton variant="form" count={2} showHeader={false} />
+        </div>
+      ) : (
+        <div className="mb-6 grid gap-4 lg:grid-cols-3">
+          <DetailSection
+            className="lg:col-span-2"
+            title={t('reviews.publicScoreTitle')}
+            description={t('reviews.publicScoreHint')}
+            action={summaryQuery.isError ? <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => summaryQuery.refetch()}>{t('common.retry')}</Button> : null}
+          >
+          {summaryQuery.isError ? <p className="m-0 text-sm text-danger">{summaryQuery.error?.message || t('reviews.summaryError')}</p> : (
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="min-w-32 text-center"><div className="font-display text-4xl font-semibold text-primary">{Number(summary?.approved?.averageRating || 0).toFixed(1)}</div><ReviewStars rating={summary?.approved?.averageRating} label={t('reviews.publicScore')} /><p className="mt-2 mb-0 text-sm text-muted-foreground">{t('reviews.publicReviewCount', { count: summary?.approved?.totalReviews || 0 })}</p></div>
               <div className="grid grid-cols-3 gap-x-6 gap-y-2 sm:grid-cols-5">{RATING_BREAKDOWN_LEVELS.map((star) => <div key={star} className="flex flex-col gap-1 text-sm"><span className="font-semibold">{star} ★</span><span className="text-muted-foreground">{Number(ratingBreakdown[String(star)] || 0).toLocaleString()}</span></div>)}</div>
             </div>
           )}
-        </section>
+          </DetailSection>
 
-        <section className="rounded-md border border-border bg-surface p-5" aria-labelledby="review-queue">
-          <h2 id="review-queue" className="mb-1 font-display text-lg font-semibold">{t('reviews.needsAction')}</h2>
-          <p className="mb-4 text-sm text-muted-foreground">{t('reviews.queueHint')}</p>
-          {summaryLoading ? <div className="h-20 animate-pulse rounded-sm bg-surface-muted" role="status" aria-label={t('reviews.loading')} /> : summaryQuery.isError ? (
+          <DetailSection title={t('reviews.needsAction')} description={t('reviews.queueHint')}>
+          {summaryQuery.isError ? (
             <div className="grid gap-3">
               <p className="m-0 text-sm text-danger">{t('reviews.summaryError')}</p>
               <Button type="button" variant="ghost" className="min-h-11 justify-self-start" onClick={() => summaryQuery.refetch()}>{t('common.retry')}</Button>
@@ -553,14 +563,16 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
               </Button>
             </div>
           )}
-        </section>
-      </div>
+          </DetailSection>
+        </div>
+      )}
 
       <FilterBar ariaLabel={t('reviews.filterStatus')} className="mb-4">
         <div className="min-w-56 flex-1"><label className="mb-1 block text-xs font-semibold text-muted-foreground" htmlFor="review-search">{t('reviews.searchLabel')}</label><FilterSearchInput value={searchInput} onChange={setSearchInput} placeholder={t('reviews.searchPlaceholder')} ariaLabel={t('reviews.searchLabel')} /></div>
         <label className="grid gap-1 text-xs font-semibold text-muted-foreground">{t('reviews.filterStatus')}<FilterSelect value={query.status} onValueChange={(status) => updateQuery({ status })} ariaLabel={t('reviews.filterStatus')} options={STATUS_OPTIONS.map((status) => ({ value: status, label: status === 'ALL' ? t('common.all') : statusLabel(status, t) }))} /></label>
         <label className="grid gap-1 text-xs font-semibold text-muted-foreground">{t('reviews.filterRating')}<FilterSelect value={query.rating} onValueChange={(rating) => updateQuery({ rating })} ariaLabel={t('reviews.filterRating')} options={RATING_OPTIONS.map((rating) => ({ value: rating, label: rating ? t('reviews.ratingOption', { rating }) : t('reviews.allRatings') }))} /></label>
         <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize })} disabled={state.isFetching} />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         {isFiltered ? <Button type="button" variant="ghost" className="min-h-11" onClick={resetFilters}>{t('common.resetFilters')}</Button> : null}
       </FilterBar>
 
@@ -584,7 +596,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
 
       {state.status === 'error' && items.length === 0 ? <StatePanel tone="danger" title={t('reviews.error')} description={state.error} actionLabel={t('common.retry')} onAction={state.refetch} /> : null}
       {state.status !== 'error' && state.status === 'success' && items.length === 0 ? <StatePanel tone="neutral" title={isFiltered ? t('reviews.empty') : t('reviews.emptyAll')} description={isFiltered ? t('reviews.emptyDesc') : t('reviews.emptyAllDesc')} actionLabel={isFiltered ? t('common.resetFilters') : undefined} onAction={isFiltered ? resetFilters : undefined} /> : null}
-      {state.status !== 'error' && (items.length > 0 || listLoading) ? <AdminTable columns={columns} rows={items} loading={listLoading} pageSize={query.pageSize} selectable={canUpdate} selectedIds={visibleSelected} onSelectionChange={setSelected} onRowClick={(review) => navigate(`/admin/reviews/${review.id}`)} mobileCard={mobileCard} caption={t('reviews.tableCaption')} /> : null}
+      {state.status !== 'error' && (items.length > 0 || listLoading) ? <AdminTable columns={visibleColumns} rows={items} loading={listLoading} pageSize={query.pageSize} selectable={canUpdate} selectedIds={visibleSelected} onSelectionChange={setSelected} onRowClick={(review) => navigate(`/admin/reviews/${review.id}`)} rowClassName={(review) => reviewRowAccent(review.status)} mobileCard={mobileCard} caption={t('reviews.tableCaption')} /> : null}
       <PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => { setSelected([]); setQuery((current) => ({ ...current, page })) }} />
     </Screen>
   )

@@ -35,7 +35,7 @@ Trước khi sửa file source trong [bigbike-backend/](bigbike-backend/), [bigb
 | Frontend workflow / UX | `WORKFLOW_OVERVIEW.md` |
 | Module / feature ownership | `MODULE_CATALOG.md` |
 | `bigbike-web` UI/style | `bigbike-web/STYLEGUIDE.md` + `styles/brand-tokens.css` |
-| `bigbike-admin` UI/style | `bigbike-admin/src/styles/admin-tokens.css` |
+| `bigbike-admin` UI/style | `bigbike-admin/STYLEGUIDE.md` + `bigbike-admin/src/styles/admin-tokens.css` |
 | Permission / role / auth | `PERMISSION_MATRIX.md` + `USER_ROLES.md` |
 | Order/payment/refund/inventory/return | `BUSINESS_RULES.md` + `STATE_MACHINES.md` |
 | Deployment / Dockerfile / env / CI | `DEPLOYMENT_GUIDE.md` + `INTEGRATION_GUIDE.md` |
@@ -88,11 +88,11 @@ Mọi trang/screen phải lấy màu/font/spacing/radius từ **design system c�
 - Font: Chỉ Arial cho toàn bộ `bigbike-web`, gồm body, heading, CTA, nav và display; các fallback lấy từ token. **Oswald và các font display riêng đã gỡ bỏ.**
 - Spacing thang 4px. Radius `rounded-none` mặc định (`rounded-full` chỉ cho phần tử thật sự tròn).
 
-**bigbike-admin** (cascade: `admin-tokens.css` → `index.css` → Tailwind/CSS var):
-- Màu: **Primary = đỏ `#FF0C09`** (dark `#FF5A4D`) dùng chung cho cả CTA/active/selected/focus/link và brand chrome (logo, vạch sidebar active, nav badge, notification pip). Đồng bộ cùng màu đỏ thương hiệu chính thức của `bigbike-web`. Qua token, không hardcode hex.
+**bigbike-admin** (cascade: `STYLEGUIDE.md` → `admin-tokens.css` → `index.css` → Tailwind/CSS var):
+- Màu: tách ba vai trò — Brand light `#FF0C09` cho logo/vạch menu/badge/chấm thông báo; Primary light `#E50A07`, hover/active `#CC0906` cho CTA/active/selected/focus/link; Danger dùng token riêng. Dark giữ Primary/Brand `#FF5A4D`. Qua token, không hardcode hex.
 - Font: Inter (body), Oswald (display/KPI/H1), JetBrains Mono (mã/SKU) — không Exo/Barlow/Bungee.
 - Spacing thang 4px. Radius theo token **ngữ nghĩa** (không hardcode px): card/panel/KPI = `--admin-radius-card` (12px), button/input/select/menu = `--admin-radius-control` (8px), ảnh thumbnail = `--admin-radius-thumb` (5px); nền thang gốc `--admin-radius-*` (xs5/sm8/md12/lg16). Admin **không** `rounded-none` mặc định. Visual data-first nhưng **cân bằng thoáng** (roomier: dòng bảng 48px, cell `py-3`, thẻ bo mềm 12px) — không chật, không hero/campaign trong operational screen.
-- Chi tiết chung (đợt redesign 7/2026): vạch màu trái theo trạng thái ở dòng bảng qua `.bb-row-accent--{tone}` (opt-in `rowClassName`); thanh Lưu dính đáy `.sticky-action-bar` có `backdrop-filter: blur` + nền `--admin-color-surface-glass`; `SectionCard` dùng chung ở `src/components/SectionCard.jsx` (không copy bản riêng từng screen).
+- Bố cục duy nhất: `ScreenHeader` cho header cấp trang, `DetailSection` cho khối nội dung, `ScreenSkeleton` (`table`/`form`/`cards`) cho loading và `StickyActionBar` cho form cấp trang. Không khôi phục `SectionCard`, `.mono`, skeleton tự chế, header dựng tay hoặc bề rộng riêng từng màn; khung ngoài quản lý giới hạn 1700px.
 
 **Cấm (cả 2 app):** arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`) khi đã có token; Tailwind built-in color (`bg-red-500`) thay brand token; import font ngoài danh sách; dùng font/token app này trong app kia; CSS scoped per-page khi Tailwind đủ.
 

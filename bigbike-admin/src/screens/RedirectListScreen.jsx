@@ -24,6 +24,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
+import { enabledRowAccent } from '../lib/statusTone'
 import { useDebounce } from '../lib/useDebounce'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
@@ -368,7 +369,7 @@ export function RedirectListScreen({ canUpdate }) {
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
     setSelected([])
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   function handleSubmit(event) {
@@ -735,6 +736,7 @@ export function RedirectListScreen({ canUpdate }) {
             selectable={canUpdate}
             selectedIds={selected}
             onSelectionChange={setSelected}
+            rowClassName={(redirect) => enabledRowAccent(redirect.enabled)}
           />
           {state.status === 'success' && pagination && (
             <div className="px-4">

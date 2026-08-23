@@ -5,6 +5,7 @@ import { Eye, FileText, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-re
 import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -33,6 +34,7 @@ import { useAdminList } from '../lib/useAdminList'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { publishRowAccent } from '../lib/statusTone'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import {
   CONTENT_SORT_OPTIONS,
   INITIAL_CONTENT_QUERY,
@@ -95,7 +97,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   function resetFilters() {
     setSearchInput(INITIAL_CONTENT_QUERY.search)
     setSelected(new Set())
-    setQuery(INITIAL_CONTENT_QUERY)
+    setQuery((current) => ({ ...INITIAL_CONTENT_QUERY, pageSize: current.pageSize }))
   }
 
   async function refreshContent(item) {
@@ -409,6 +411,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       render: renderRowActions,
     },
   ]
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:content')
 
   function mobileCard(item) {
     return {
@@ -495,6 +498,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
           value={query.pageSize}
           onChange={(pageSize) => updateQuery({ pageSize }, { resetPage: true })}
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         <Button
           type="button"
           variant="secondary"
@@ -560,7 +564,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
-              columns={columns}
+              columns={visibleColumns}
               rows={items}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}

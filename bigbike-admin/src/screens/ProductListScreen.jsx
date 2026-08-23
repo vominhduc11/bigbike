@@ -289,7 +289,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
 
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   const items = useMemo(() => state.items || [], [state.items])
@@ -477,7 +477,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     {
       key: 'sku',
       label: 'SKU',
-      render: (product) => <span className="mono">{formatText(product.sku, t('products.skuFallback'))}</span>,
+      render: (product) => <span className="font-mono">{formatText(product.sku, t('products.skuFallback'))}</span>,
     },
     {
       key: 'price',

@@ -552,15 +552,6 @@
   margin-bottom: 16px;
 }
 
-/* Skeleton loading block */
-.bb-skeleton-block {
-  background: var(--bb-surface);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  animation: bb-pulse 1.8s ease-in-out infinite;
-}
-@keyframes bb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
 /* Recharts custom tooltip */
 .bb-dash-tooltip {
   background: var(--bb-surface);
@@ -706,7 +697,6 @@
 .bb-table tbody tr.selected td { background: var(--bb-primary-subtle); }
 .bb-table tbody tr:last-child td { border-bottom: 0; }
 .bb-table .num { font-variant-numeric: tabular-nums; text-align: right; }
-.bb-table .mono { font-family: var(--bb-font-mono); font-size: 12px; }
 .bb-table .col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .bb-table .col-check { width: 32px; padding-right: 0; }
 /* ─── Empty / loading / error states ───────────────────────────────────────── */
@@ -1088,33 +1078,6 @@
   margin-top: 2px;
   font-size: 12px;
   color: var(--bb-text-muted);
-}
-
-.bb-save-bar {
-  position: sticky;
-  bottom: 16px;
-  z-index: var(--admin-z-sticky);
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-}
-.bb-save-bar-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--bb-text-muted);
-}
-.bb-save-bar-status.danger { color: var(--bb-danger); }
-.bb-save-bar-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .bb-prewrap-strong {

@@ -5,6 +5,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
 import { CollapsibleSection } from '../components/CollapsibleSection'
 import { StickyActionBar } from '../components/layout/StickyActionBar'
+import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { fetchProductAssignment, batchUpdateSettings } from '../lib/adminApi'
 import { queryKeys } from '../lib/queryKeys'
 import { showConfirm } from '../lib/confirm'
@@ -261,11 +262,7 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
           {t('settings.assign.description', { defaultValue: 'Banner phân công hiển thị trên màn tạo/sửa sản phẩm và bài viết — dùng chung 1 nguồn dữ liệu.' })}
         </p>
       ) : (
-        <div className="bb-screen-header">
-          <div className="bb-screen-title">
-            <h1>{t('settings.group_product_assign')}</h1>
-          </div>
-        </div>
+        <ScreenHeader title={t('settings.group_product_assign')} />
       )}
 
       <div className="flex flex-col gap-1 mb-4">

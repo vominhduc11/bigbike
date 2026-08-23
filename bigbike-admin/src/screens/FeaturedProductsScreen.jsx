@@ -13,6 +13,8 @@ import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
+import { StickyActionBar } from '../components/layout/StickyActionBar'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { PublishStatusBadge } from '../components/StatusBadge'
@@ -220,6 +222,10 @@ export function FeaturedProductsScreen({ canUpdate }) {
     saveMutation.mutate(items.map((p) => p.id))
   }
 
+  function handleDiscard() {
+    setInitialized(false)
+  }
+
   const disabledIds = new Set(items.map((p) => p.id))
   const staleItems = items.filter((product) => !isFeaturedLive(product))
 
@@ -230,26 +236,8 @@ export function FeaturedProductsScreen({ canUpdate }) {
 
   if (isLoading) {
     return (
-      <Screen maxWidth="720px">
-        <div
-          className="flex flex-col gap-1"
-          role="status"
-          aria-busy="true"
-          aria-label={t('common.loading')}
-        >
-          {Array.from({ length: 4 }, (_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 p-3 border border-border bg-background animate-pulse"
-            >
-              <div className="w-12 h-12 bg-surface-muted rounded-xs flex-shrink-0" />
-              <div className="flex-1 min-w-0 flex flex-col gap-2">
-                <div className="h-4 w-1/2 bg-surface-muted rounded-xs" />
-                <div className="h-3 w-1/4 bg-surface-muted rounded-xs" />
-              </div>
-            </div>
-          ))}
-        </div>
+      <Screen>
+        <ScreenSkeleton variant="cards" count={4} showHeader={false} />
       </Screen>
     )
   }
@@ -272,20 +260,11 @@ export function FeaturedProductsScreen({ canUpdate }) {
     // Route của màn này yêu cầu sẵn quyền sửa sản phẩm (`routePermission` trong App.jsx),
     // nên không có trường hợp mở được màn mà chỉ được xem — không cần dải "chỉ xem".
     // Owner chốt 2026-07-28: giữ nguyên cách phân quyền này.
-    <Screen maxWidth="720px">
+    <Screen>
       <ScreenHeader
         eyebrow={t('featuredProducts.eyebrow')}
         title={t('featuredProducts.title')}
         description={t('featuredProducts.description')}
-        actions={
-          <Button
-            onClick={handleSave}
-            loading={saveMutation.isPending}
-            disabled={!canUpdate || !isDirty}
-          >
-            {t('featuredProducts.saveButton')}
-          </Button>
-        }
       />
 
       <form
@@ -354,6 +333,15 @@ export function FeaturedProductsScreen({ canUpdate }) {
             </div>
           )}
         </div>
+
+        <StickyActionBar ariaLabel={t('common.actions')}>
+          <Button type="button" variant="outline" onClick={handleDiscard} disabled={!isDirty || saveMutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" loading={saveMutation.isPending} disabled={!canUpdate || !isDirty}>
+            {t('featuredProducts.saveButton')}
+          </Button>
+        </StickyActionBar>
       </form>
     </Screen>
   )

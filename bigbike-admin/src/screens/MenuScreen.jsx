@@ -33,8 +33,11 @@ import { StatePanel } from '../components/StatePanel'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Alert } from '@/components/ui/alert'
 import { BulkActionBar } from '../components/BulkActionBar'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { Button } from '@/components/ui/button'
+import { ScreenHeader } from '../components/layout'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import {
   SYSTEM_SLOTS,
   EMPTY_ITEM,
@@ -58,6 +61,18 @@ import { SortableMenuItem } from './menu/SortableMenuItem'
 
 export function MenuScreen({ canUpdate, canReadCatalog }) {
   const { t } = useTranslation()
+  const menuColumns = useMemo(() => [
+    { key: 'name', label: t('menus.itemLabel'), hideable: false },
+    { key: 'parent', label: t('menus.itemParent') },
+    { key: 'url', label: t('menus.itemUrl') },
+    { key: 'actions', label: t('common.actions'), hideable: false },
+  ], [t])
+  const {
+    hiddenKeys: hiddenMenuColumnKeys,
+    toggle: toggleMenuColumn,
+    allColumns: hideableMenuColumns,
+  } = useColumnVisibility(menuColumns, 'columns:menus')
+  const isMenuColumnVisible = (key) => !hiddenMenuColumnKeys.includes(key)
   // Ngôn ngữ NỘI DUNG (nút VI/EN ở header). Chỉ đổi nhãn hiển thị của mục menu;
   // giao diện admin vẫn cố định tiếng Việt.
   const contentLang = useContentLang()
@@ -551,13 +566,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   return (
     <div>
       {/* ── Header (no create-menu CTA — slots are fixed) ── */}
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('menus.eyebrow')}</p>
-          <h1>{t('menus.title')}</h1>
-          <p className="bb-muted">{t('menus.description')}</p>
-        </div>
-      </div>
+      <ScreenHeader eyebrow={t('menus.eyebrow')} title={t('menus.title')} description={t('menus.description')} />
 
       {warning && <ReadOnlyBanner warning={warning} />}
       {!canReadCatalog ? (
@@ -618,6 +627,11 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                   placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc đường dẫn...' })}
                   ariaLabel={t('menus.searchAria', { defaultValue: 'Tìm kiếm mục menu' })}
                 />
+                <ColumnVisibilityToggle
+                  allColumns={hideableMenuColumns}
+                  hiddenKeys={hiddenMenuColumnKeys}
+                  onToggle={toggleMenuColumn}
+                />
               </div>
             )}
 
@@ -668,8 +682,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                         {canUpdate && <col className="menu-col-check" />}
                         <col className="menu-col-grip" />
                         <col className="menu-col-label" />
-                        <col className="menu-col-parent" />
-                        <col className="menu-col-url" />
+                        {isMenuColumnVisible('parent') && <col className="menu-col-parent" />}
+                        {isMenuColumnVisible('url') && <col className="menu-col-url" />}
                         {canUpdate && <col className="menu-col-actions" />}
                       </colgroup>
                       <thead>
@@ -688,8 +702,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                             <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>
                           </th>
                           <th scope="col">{t('menus.itemLabel')}</th>
-                          <th scope="col">{t('menus.itemParent')}</th>
-                          <th scope="col">{t('menus.itemUrl')}</th>
+                          {isMenuColumnVisible('parent') && <th scope="col">{t('menus.itemParent')}</th>}
+                          {isMenuColumnVisible('url') && <th scope="col">{t('menus.itemUrl')}</th>}
                           {canUpdate && (
                             <th scope="col">
                               <span className="sr-only">{t('menus.itemActions', { defaultValue: 'Thao tác' })}</span>
@@ -713,6 +727,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                             onToggleSelect={() => toggleItemSelected(item.id)}
                             onToggleStatus={handleToggleItemStatus}
                             isToggling={togglingItemId === item.id}
+                            hiddenKeys={hiddenMenuColumnKeys}
                           />
                         ))}
                       </tbody>

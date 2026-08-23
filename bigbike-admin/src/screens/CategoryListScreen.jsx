@@ -21,7 +21,9 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { BulkActionBar } from '../components/BulkActionBar'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory, previewCategoryPermanentDelete } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -30,6 +32,8 @@ import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
+import { visibilityRowAccent } from '../lib/statusTone'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { queryKeys } from '../lib/queryKeys'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -88,6 +92,19 @@ function SortableTreeRow({ category, depth, renderCategoryRow }) {
 
 export function CategoryListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
+  const categoryColumns = useMemo(() => [
+    { key: 'category', label: t('categories.colCategory'), hideable: false },
+    { key: 'visibility', label: t('categories.colVisibility') },
+    { key: 'homepage', label: t('categories.colHomepage') },
+    { key: 'updatedAt', label: t('categories.colUpdated') },
+    { key: 'actions', label: t('categories.colActions'), hideable: false },
+  ], [t])
+  const {
+    hiddenKeys: hiddenCategoryColumnKeys,
+    toggle: toggleCategoryColumn,
+    allColumns: hideableCategoryColumns,
+  } = useColumnVisibility(categoryColumns, 'columns:categories')
+  const isCategoryColumnVisible = (key) => !hiddenCategoryColumnKeys.includes(key)
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
@@ -410,7 +427,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   function toggleExpand(id) {
@@ -835,6 +852,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           isDimmed && 'cat-row--dimmed',
           sortableProps?.isDragging && 'cat-row--dragging',
           dragSavingId === category.id && 'cat-row--saving',
+          visibilityRowAccent(category.isVisible),
         ].filter(Boolean).join(' ')}>
         {canUpdate && (
           <td className="cat-select-cell">
@@ -917,25 +935,31 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </td>
 
         {/* Display status */}
-        <td>
-          <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
-        </td>
+        {isCategoryColumnVisible('visibility') && (
+          <td>
+            <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
+          </td>
+        )}
 
         {/* Homepage */}
-        <td>
-          <span className="text-sm text-foreground">
-            {category.showOnHomepage === true
-              ? t('common.yes')
-              : category.showOnHomepage === false
-                ? t('common.no')
-                : t('common.unknown')}
-          </span>
-        </td>
+        {isCategoryColumnVisible('homepage') && (
+          <td>
+            <span className="text-sm text-foreground">
+              {category.showOnHomepage === true
+                ? t('common.yes')
+                : category.showOnHomepage === false
+                  ? t('common.no')
+                  : t('common.unknown')}
+            </span>
+          </td>
+        )}
 
         {/* Updated */}
-        <td className="align-right">
-          <span className="text-xs text-muted-foreground">{formatDateTime(category.updatedAt)}</span>
-        </td>
+        {isCategoryColumnVisible('updatedAt') && (
+          <td className="align-right">
+            <span className="text-xs text-muted-foreground">{formatDateTime(category.updatedAt)}</span>
+          </td>
+        )}
 
         {/* Actions */}
         <td className="align-right">
@@ -1113,6 +1137,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
           />
         )}
+        <ColumnVisibilityToggle
+          allColumns={hideableCategoryColumns}
+          hiddenKeys={hiddenCategoryColumnKeys}
+          onToggle={toggleCategoryColumn}
+        />
         <div className="flex min-w-full flex-wrap items-center gap-3 border-t border-border pt-3">
           <div
             className="bb-seg"
@@ -1233,32 +1262,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {useTreeMode && (
         <div className="cat-tree-wrap">
           {allCatsResult == null ? (
-            <div className="bb-card">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap hide-on-mobile">
-                  <table className="cat-tree-table cat-table-tree" aria-busy="true">
-                    <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
-                    <tbody>
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <tr key={i} className="skel-row">
-                          {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                            <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <MobileCardList className="p-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <li key={i} className="mobile-card animate-pulse">
-                      <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
-                      <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
-                    </li>
-                  ))}
-                </MobileCardList>
-              </div>
-            </div>
+            <ScreenSkeleton variant="table" count={8} showHeader={false} />
           ) : visibleTreeRows.length === 0 ? (
             <CategoryEmptyState
               searchTerm={searchTerm}
@@ -1282,7 +1286,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                     >
                       <table className="cat-tree-table cat-table-tree">
                         <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenCategoryColumnKeys} />
                         <tbody>
                           {visibleTreeRows.map((row) =>
                             canUpdate && !searchTerm
@@ -1332,36 +1336,22 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             />
           ) : null}
 
-          {flatModeStatus === 'loading' || (flatModeStatus === 'success' && flatItems.length > 0) ? (
+          {flatModeStatus === 'loading' ? (
+            <ScreenSkeleton variant="table" count={query.pageSize} showHeader={false} />
+          ) : null}
+
+          {flatModeStatus === 'success' && flatItems.length > 0 ? (
             <div className="bb-card mt-4">
               <div className="bb-card-body bb-card-body--flush">
                 <div className="table-scroll-wrap hide-on-mobile">
                   <table className="cat-tree-table cat-table-flat" aria-busy={flatModeStatus === 'loading'}>
                     <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenCategoryColumnKeys} />
                     <tbody>
-                      {flatModeStatus === 'loading'
-                        ? Array.from({ length: query.pageSize }).map((_, i) => (
-                            <tr key={i} className="skel-row">
-                              {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                                <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                              ))}
-                            </tr>
-                          ))
-                        : flatItems.map((cat) => renderCategoryRow(cat, 0))}
+                      {flatItems.map((cat) => renderCategoryRow(cat, 0))}
                     </tbody>
                   </table>
                 </div>
-                {flatModeStatus === 'loading' ? (
-                  <MobileCardList className="p-3">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <li key={i} className="mobile-card animate-pulse">
-                        <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
-                        <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
-                      </li>
-                    ))}
-                  </MobileCardList>
-                ) : null}
                 {flatModeStatus === 'success' && flatItems.length > 0 ? (
                   <MobileCardList className="p-3">
                     {flatItems.map((cat) => mobileCategoryCard(cat))}

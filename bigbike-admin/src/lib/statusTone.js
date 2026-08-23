@@ -55,3 +55,23 @@ export function publishRowAccent(value) {
 export function orderRowAccent(status) {
   return `bb-row-accent--${ORDER_STATUS_TONE[status] ?? 'muted'}`
 }
+
+export function customerRowAccent(status) {
+  return `bb-row-accent--${CUSTOMER_STATUS_TONE[status] ?? 'muted'}`
+}
+
+export function reviewRowAccent(status) {
+  return `bb-row-accent--${REVIEW_STATUS_TONE[status] ?? 'muted'}`
+}
+
+export function trashRowAccent(inTrash) {
+  return `bb-row-accent--${inTrash === true ? 'danger' : inTrash === false ? 'success' : 'muted'}`
+}
+
+export function visibilityRowAccent(isVisible) {
+  return `bb-row-accent--${isVisible === true ? 'success' : isVisible === false ? 'neutral' : 'muted'}`
+}
+
+export function enabledRowAccent(isEnabled) {
+  return `bb-row-accent--${isEnabled === true ? 'success' : isEnabled === false ? 'neutral' : 'muted'}`
+}

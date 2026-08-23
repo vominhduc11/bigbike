@@ -48,6 +48,7 @@
   --color-border:                  var(--border);
   --color-input:                   var(--input);
   --color-ring:                    var(--ring);
+  --color-placeholder:             var(--admin-color-text-placeholder);
 
   /* Status colors (bg-success-bg, text-warning, border-danger-border…) */
   --color-success:                 var(--admin-color-status-success-text);
@@ -92,6 +93,7 @@
   /* Font families */
   --font-display: var(--admin-font-display);
   --font-body:    var(--admin-font-body);
+  --font-mono:    var(--admin-font-mono);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────────*/
@@ -119,6 +121,11 @@ textarea {
   font: inherit;
 }
 
+::placeholder {
+  color: var(--admin-color-text-placeholder);
+  opacity: 1;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -126,6 +133,22 @@ a {
 
 #root {
   min-height: 100dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
 }
 
 /* ─── Global scrollbar ───────────────────────────────────────────────────────*/
@@ -198,7 +221,6 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-4);
-  max-width: 1400px;
   min-height: 100%;
   width: 100%;
   margin-inline: auto;
@@ -207,7 +229,6 @@ a {
 .align-right {
   text-align: right;
 }
-
 /* ─── Product / media cells ──────────────────────────────────────────────────*/
 .product-cell {
   display: grid;
@@ -239,6 +260,10 @@ a {
 }
 
 .detail-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-4);
   padding: var(--admin-space-4) var(--admin-space-5);
   background: var(--admin-color-surface-muted);
   border-bottom: 1.5px solid var(--admin-color-border-subtle);
@@ -335,7 +360,7 @@ a {
   --rte-canvas-surface-muted:  #f8f9fa;
   --rte-canvas-text:           #111827;
   --rte-canvas-text-secondary: #374151;
-  --rte-canvas-placeholder:    #adb5bd;
+  --rte-canvas-placeholder:    var(--admin-color-text-placeholder);
   --rte-canvas-border-subtle:  #e8eaed;
   --rte-canvas-border-default: #d1d5db;
   /* Khung đệm (mat) quanh canvas trắng cố định — vô hiệu ở light mode. */
@@ -432,7 +457,7 @@ a {
   border-radius: var(--admin-radius-xs);
   padding: 0.1em 0.35em;
   font-size: 0.875em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--admin-font-mono);
 }
 
 .rich-editor-content .tiptap pre {
@@ -701,14 +726,6 @@ a {
   .bb-topbar > .lang-switcher {
     display: none;
   }
-}
-
-/* ── Ultra-wide (≥1920px): expand screen container ──
-   At 1920px viewport the content area is 1612px (1920 - 260px sidebar - 48px padding).
-   The default 1400px cap wastes ~106px on each side. Bump max-width to better use
-   the available space on large monitors without going fully edge-to-edge. */
-@media (min-width: 1920px) {
-  .screen { max-width: 1700px; }
 }
 
 /* ─── Global animation ───────────────────────────────────────────────────────*/

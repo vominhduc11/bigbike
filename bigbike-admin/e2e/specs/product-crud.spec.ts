@@ -51,7 +51,7 @@ const recoveryProductSkus = (process.env.E2E_PRODUCT_CLEANUP_SKUS || '')
   .filter(Boolean)
 
 function sectionCard(page: Page, title: string): Locator {
-  return page.locator('.bb-card').filter({ has: page.locator('.bb-card-header h3', { hasText: title }) })
+  return page.locator('.detail-section').filter({ has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }) })
 }
 
 function escapeRegExp(value: string) {

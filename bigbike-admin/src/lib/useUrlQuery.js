@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { readPageSizePreference } from './pageSizePreference'
 
 /**
  * Syncs a query-param object with the browser URL.
@@ -22,8 +23,12 @@ export function useUrlQuery(defaults) {
 export function readQueryFromUrl(defaults) {
   const params = new URLSearchParams(window.location.search)
   const result = { ...defaults }
+  if (typeof defaults.pageSize === 'number') {
+    result.pageSize = readPageSizePreference(defaults.pageSize)
+  }
   for (const [key, val] of params) {
     if (key in defaults) {
+      if (key === 'pageSize') continue
       const def = defaults[key]
       if (typeof def === 'number') {
         const n = Number(val)

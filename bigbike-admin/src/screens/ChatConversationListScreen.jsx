@@ -5,6 +5,7 @@ import { BadgeDollarSign, Bot, CircleAlert, Clock3, MessageCircle, PhoneCall, Re
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { DetailSection } from '../components/DetailSection'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -15,6 +16,7 @@ import { fetchChatConversations, fetchChatStats } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const INITIAL_QUERY = { from: '', to: '', hasLead: 'ALL', page: 1, pageSize: 20 }
@@ -86,7 +88,9 @@ export function ChatConversationListScreen({ navigate }) {
     setQuery((current) => ({ ...current, ...partial, page: 1 }))
   }, [])
 
-  const resetFilters = useCallback(() => setQuery(INITIAL_QUERY), [])
+  const resetFilters = useCallback(() => {
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
+  }, [])
   const items = state.items || []
   const stats = statsQuery.data
   const isFiltered = Boolean(query.from || query.to || query.hasLead !== 'ALL')
@@ -103,7 +107,6 @@ export function ChatConversationListScreen({ navigate }) {
     { key: 'revenue', label: t('chatAdmin.actions.revenue'), align: 'right', render: (item) => formatVnd(item.revenue) },
     { key: 'conversionRate', label: t('chatAdmin.actions.conversion'), align: 'right', render: (item) => formatPercent(item.conversionRate) },
   ], [t])
-
   const columns = useMemo(() => [
     {
       key: 'startedAt',
@@ -163,6 +166,7 @@ export function ChatConversationListScreen({ navigate }) {
       render: (item) => <span className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(item.lastMessageAt)}</span>,
     },
   ], [t])
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:chat')
 
   return (
     <Screen>
@@ -290,6 +294,7 @@ export function ChatConversationListScreen({ navigate }) {
           ]}
         />
         <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize })} />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         {isFiltered ? <Button type="button" variant="ghost" onClick={resetFilters}>{t('common.resetFilters')}</Button> : null}
       </FilterBar>
 
@@ -301,7 +306,7 @@ export function ChatConversationListScreen({ navigate }) {
         <>
           <AdminTable
             caption={t('chatAdmin.tableCaption')}
-            columns={columns}
+            columns={visibleColumns}
             rows={items}
             loading={state.status === 'loading'}
             pageSize={query.pageSize}

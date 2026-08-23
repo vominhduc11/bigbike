@@ -122,3 +122,75 @@ test('effect · dangerous action shows a confirm dialog; Cancel makes no change'
   await expectNoHorizontalOverflow(adminPage, 'after confirm cancel')
   expectRuntimeClean(collect)
 })
+
+test('effect · reduced motion keeps final state without long transitions', async ({ adminPage }) => {
+  await adminPage.emulateMedia({ reducedMotion: 'reduce' })
+  await navigateSpa(adminPage, '/admin/products')
+
+  const motion = await adminPage.locator('.bb-page-content').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      animationDuration: style.animationDuration,
+      transitionDuration: style.transitionDuration,
+      scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+    }
+  })
+
+  expect(parseFloat(motion.animationDuration) || 0).toBeLessThanOrEqual(0.001)
+  expect(parseFloat(motion.transitionDuration) || 0).toBeLessThanOrEqual(0.001)
+  expect(motion.scrollBehavior).not.toBe('smooth')
+})
+
+test('effect · operational identifiers use JetBrains Mono on key screens', async ({ adminPage }) => {
+  const targets = [
+    ['/admin/products', 'products'],
+    ['/admin/brands', 'brands'],
+    ['/admin/orders', 'orders'],
+    ['/admin/redirects', 'redirects'],
+    ['/admin/audit-logs', 'audit-logs'],
+  ] as const
+
+  let checked = 0
+  for (const [path, label] of targets) {
+    await navigateSpa(adminPage, path)
+    const identifier = adminPage.locator('.font-mono:visible').first()
+    if (await identifier.count() === 0) {
+      test.info().annotations.push({ type: 'data-gap', description: `${label}: không có dòng dữ liệu để đo font` })
+      continue
+    }
+    const family = await identifier.evaluate((element) => getComputedStyle(element).fontFamily)
+    expect(family.toLowerCase(), `${label}: font-mono phải dùng JetBrains Mono`).toContain('jetbrains mono')
+    checked += 1
+  }
+  expect(checked, 'Cần ít nhất một màn có dữ liệu định danh để đo font runtime').toBeGreaterThan(0)
+})
+
+test('effect · page size and column visibility persist per screen', async ({ adminPage }) => {
+  await adminPage.evaluate(() => {
+    localStorage.removeItem('page-size:products')
+    localStorage.removeItem('columns:products')
+  })
+  await navigateSpa(adminPage, '/admin/products')
+
+  const pageSize = adminPage.getByRole('combobox', { name: /Số dòng mỗi trang|Rows per page/i })
+  await pageSize.click()
+  await adminPage.getByRole('option', { name: /50/ }).click()
+  await expect.poll(() => adminPage.evaluate(() => localStorage.getItem('page-size:products'))).toBe('50')
+
+  const columnsButton = adminPage.getByRole('button', { name: /Cột hiển thị|Columns/i })
+  await columnsButton.click()
+  const firstColumn = adminPage.getByRole('menuitemcheckbox').first()
+  const columnLabel = (await firstColumn.textContent())?.trim()
+  expect(columnLabel).toBeTruthy()
+  await firstColumn.click()
+  await adminPage.keyboard.press('Escape')
+
+  await navigateSpa(adminPage, '/admin/orders')
+  await navigateSpa(adminPage, '/admin/products')
+  await expect(pageSize).toContainText('50')
+  await columnsButton.click()
+  await expect(adminPage.getByRole('menuitemcheckbox', { name: columnLabel! })).toHaveAttribute('aria-checked', 'false')
+  await adminPage.getByRole('menuitemcheckbox', { name: columnLabel! }).click()
+  await adminPage.keyboard.press('Escape')
+  await adminPage.evaluate(() => localStorage.removeItem('page-size:products'))
+})

@@ -28,6 +28,7 @@ import { queryKeys } from '../lib/queryKeys'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { BrandCombobox } from './product-detail/BrandCombobox'
@@ -123,7 +124,7 @@ import {
   RoleBadge,
   AssignmentBanner,
 } from './product-detail/Layout'
-import { SectionCard } from '../components/SectionCard'
+import { DetailSection } from '../components/DetailSection'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
@@ -917,51 +918,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [savedFlash, setSavedFlash] = useState(false)
 
   if (state.status === 'loading') {
-    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
-    // về, vì trang thật có header + tabs + nhiều SectionCard chứ không phải một panel nhỏ.
-    // ScreenSkeleton.jsx (dùng cho Suspense route-level) có hình dạng bảng/danh sách, không
-    // khớp trang chi tiết có tab — nên dựng khung riêng bằng div thuần + animate-pulse.
     return (
-      <Screen maxWidth="1440px">
-        <div className="animate-pulse" aria-hidden="true">
-          <header className="bb-screen-header">
-            <div className="bb-screen-title flex flex-col gap-2">
-              <div className="h-3 w-28 rounded-xs bg-surface-muted" />
-              <div className="h-7 w-72 max-w-full rounded-xs bg-surface-muted" />
-              <div className="h-3 w-56 max-w-full rounded-xs bg-surface-muted" />
-            </div>
-          </header>
-
-          <div className="mb-4 flex flex-wrap gap-2">
-            <div className="h-9 w-28 rounded-sm bg-surface-muted" />
-            <div className="h-9 w-20 rounded-sm bg-surface-muted" />
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="bb-card">
-              <div className="h-10 border-b border-border bg-surface-muted/60" />
-              <div className="bb-card-body flex flex-col gap-3">
-                <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-                <div className="h-9 w-full rounded-sm bg-surface-muted" />
-                <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
-              </div>
-            </div>
-            <div className="bb-card">
-              <div className="h-10 border-b border-border bg-surface-muted/60" />
-              <div className="bb-card-body flex flex-col gap-3">
-                <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
-                <div className="h-32 w-full rounded-sm bg-surface-muted" />
-              </div>
-            </div>
-            <div className="bb-card">
-              <div className="h-10 border-b border-border bg-surface-muted/60" />
-              <div className="bb-card-body flex flex-col gap-3">
-                <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-                <div className="h-20 w-full rounded-sm bg-surface-muted" />
-              </div>
-            </div>
-          </div>
-        </div>
+      <Screen>
+        <ScreenSkeleton variant="form" count={3} />
       </Screen>
     )
   }
@@ -1155,7 +1114,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     {/* @container: các lưới trong form co theo BỀ RỘNG CỘT NÀY, không theo cửa sổ —
         khi kéo khung xem trước rộng ra làm cột hẹp lại thì lưới tự về 1 cột, không chật. */}
     <div className="@container min-w-0 flex-1 basis-0">
-    <Screen maxWidth="1440px">
+    <Screen>
         <ScreenHeader
           eyebrow={t('products.detail.eyebrow')}
           title={isCreate
@@ -1310,7 +1269,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
 
               {/* ── Card: Thông tin cơ bản ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionBasic')}
                 required
                 badge={
@@ -1613,10 +1572,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                 </div>
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Ảnh đại diện ── */}
-              <SectionCard title={t('products.detail.mainImageTitle')} required={isPublished} badge={<RoleBadge role="content" />}>
+              <DetailSection title={t('products.detail.mainImageTitle')} required={isPublished} badge={<RoleBadge role="content" />}>
                 <ImageUrlInput
                   value={form.imageUrl}
                   onChange={(url, media) => {
@@ -1631,10 +1590,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   error={validationErrors.imageUrl}
                   recommend={IMAGE_RECO.productImage}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Gallery (ảnh phụ) — ngay dưới Ảnh đại diện, không bắt buộc ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.gallerySectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -1651,10 +1610,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Giá & trạng thái ── */}
-              <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
+              <DetailSection title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
                 {variantsDeletedToEmpty && form.variants.length === 0 && (
                   <Alert tone="warning" size="sm" className="mb-4">
                     {t('products.detail.variantsEmptyWarning')}
@@ -1774,10 +1733,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </span>
                   </div>
                 </div>
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.variantSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -1804,10 +1763,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   sizeScalesLoading={sizeScalesLoading}
                   onSizeScaleChange={(value) => updateField('sizeScaleId', value || '')}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) — không bắt buộc ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -1834,12 +1793,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onHtmlChange={(v) => langChange('trustBadges', v)}
                   aiPromptBuilder={getProductAiPrompt}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — web render khối này NGAY DƯỚI CTA mua hàng
                   (đầu trang, cùng nguồn dữ liệu lặp lại ở Trust "Mua tại BigBike.vn" #11 cuối trang) —
                   đặt cùng Nhóm 1 để khớp vị trí ưu tiên cao trên web, không nằm chung nhóm Video/Phụ kiện. ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionCommitments')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -1863,7 +1822,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   contentLang={contentLang}
                 />
-              </SectionCard>
+              </DetailSection>
               </CollapsibleSection>
 
               {/* ══ Nhóm 2: Nội dung trang ══ */}
@@ -1877,7 +1836,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
 
               {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionSpecStats')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -1902,10 +1861,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onHtmlChange={(v) => langChange('specStats', v)}
                   aiPromptBuilder={getProductAiPrompt}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
                 badge={<RoleBadge role="content" />}
               >
@@ -1926,10 +1885,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     {validationErrors.quickAnswerSummary}
                   </span>
                 )}
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })}
                 badge={<RoleBadge role="content" />}
               >
@@ -1947,10 +1906,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     contentLang={contentLang}
                   />
                 </Field>
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
                 badge={<RoleBadge role="content" />}
               >
@@ -2029,10 +1988,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </div>
                   </div>
                 )}
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionRelated')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -2091,10 +2050,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Phù hợp với ai (#7) — field riêng form.suitabilitySection (V327/V328) ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.blocks.blockTypeSuitability')}
                 badge={<RoleBadge role="content" />}
               >
@@ -2115,10 +2074,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     onChange={(patch) => updateField('suitabilitySection', { ...suitabilitySection, ...patch })}
                   />
                 )}
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Bảng size (#8) — field riêng form.sizeGuideSection (V327/V328) ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.blocks.blockTypeSizeGuide')}
                 badge={<RoleBadge role="content" />}
               >
@@ -2139,10 +2098,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     onChange={(patch) => updateField('sizeGuideSection', { ...sizeGuideSection, ...patch })}
                   />
                 )}
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Thông số ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.specsSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -2160,10 +2119,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onHtmlChange={(v) => langChange('specifications', v)}
                   aiPromptBuilder={getProductAiPrompt}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: FAQ ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionFaqs')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -2189,7 +2148,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   contentLang={contentLang}
                   aiPromptBuilder={getProductAiPrompt}
                 />
-              </SectionCard>
+              </DetailSection>
 
               </CollapsibleSection>
 
@@ -2204,7 +2163,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
 
               {/* ── Card: Video ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.videoSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -2221,10 +2180,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                 />
-              </SectionCard>
+              </DetailSection>
 
               {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
-              <SectionCard
+              <DetailSection
                 title={t('products.detail.sectionAccessories')}
                 badge={
                   <div className="flex items-center gap-1.5">
@@ -2283,7 +2242,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
-              </SectionCard>
+              </DetailSection>
               </CollapsibleSection>
             </>
           )}
@@ -2291,7 +2250,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           {activeTab === 'seo' && (
             <>
               {/* ── Card: SEO ── */}
-              <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
+              <DetailSection title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
                 {/* Live Google SERP preview */}
                 <div className="mb-4 rte-canvas-frame">
                   <div className="p-3 border border-border bg-white">
@@ -2419,7 +2378,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     ))}
                   </div>
                 </div>
-              </SectionCard>
+              </DetailSection>
             </>
           )}
         </form>
@@ -2441,7 +2400,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </span>
           }
         >
-
+          <Button
+            variant="outline"
+            type="button"
+            className="min-h-11"
+            disabled={isSubmitting}
+            onClick={() => navigate('/admin/products')}
+          >
+            {t('common.cancel')}
+          </Button>
           {canUpdate && (
             <Button
               variant="outline"

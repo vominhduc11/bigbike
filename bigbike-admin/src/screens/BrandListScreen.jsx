@@ -13,9 +13,12 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
+import { trashRowAccent } from '../lib/statusTone'
 import { deleteBrand, fetchBrands, permanentDeleteBrand, restoreBrand } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -97,7 +100,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   const items = (state.items || []).filter((brand) => brand.slug !== SYSTEM_BRAND_SLUG)
@@ -309,6 +312,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       render: renderRowActions,
     },
   ]
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:brands')
 
   const activeFilterChips = [
     ...(query.search ? [{
@@ -392,6 +396,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           onChange={(pageSize) => updateQuery({ pageSize }, true)}
           className="min-h-11"
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         <Button
           type="button"
           variant="secondary"
@@ -446,13 +451,14 @@ export function BrandListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
         <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
           <AdminTable
-            columns={columns}
+            columns={visibleColumns}
             rows={items}
             caption={t('brands.tableCaption', { defaultValue: 'Danh sách thương hiệu' })}
             loading={state.status === 'loading'}
             pageSize={query.pageSize}
             onRowClick={(brand) => navigate(`/admin/brands/${brand.id}`)}
             rowHref={(brand) => `/admin/brands/${brand.id}`}
+            rowClassName={(brand) => trashRowAccent(brandTrashStatus(brand.isVisible))}
             mobileCard={mobileCard}
           />
           {state.status === 'success' && state.pagination ? (

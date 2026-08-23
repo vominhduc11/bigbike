@@ -21,8 +21,8 @@ const CAPTURE_VIEWPORTS = ['1440x900', '768x1024', '375x812']
   .map((name) => VIEWPORTS.find((viewport) => viewport.name === name)!)
 
 function sectionCard(page: Page, title: string): Locator {
-  return page.locator('.bb-card').filter({
-    has: page.locator('.bb-card-header :is(h2,h3,h4)', { hasText: title }),
+  return page.locator('.detail-section').filter({
+    has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }),
   })
 }
 

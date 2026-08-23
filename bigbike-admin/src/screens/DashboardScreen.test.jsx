@@ -138,8 +138,8 @@ describe('DashboardScreen', () => {
     await waitFor(() => expect(observers).toHaveLength(2))
     expect(screen.queryByTestId('revenue-chart')).not.toBeInTheDocument()
     expect(screen.queryByTestId('status-chart')).not.toBeInTheDocument()
-    expect(screen.getByTestId('dashboard-revenue-chart-slot').querySelector('.bb-skeleton-block')).not.toBeNull()
-    expect(screen.getByTestId('dashboard-status-chart-slot').querySelector('.bb-skeleton-block')).not.toBeNull()
+    expect(screen.getByTestId('dashboard-revenue-chart-slot').querySelector('[role="status"]')).not.toBeNull()
+    expect(screen.getByTestId('dashboard-status-chart-slot').querySelector('[role="status"]')).not.toBeNull()
 
     await act(async () => observers[0].callback([{ isIntersecting: true }]))
     expect(await screen.findByTestId('revenue-chart')).toHaveTextContent('1 points')

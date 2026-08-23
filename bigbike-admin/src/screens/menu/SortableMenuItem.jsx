@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 
 export function SortableMenuItem({
   item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting,
-  selected, onToggleSelect, onToggleStatus, isToggling,
+  selected, onToggleSelect, onToggleStatus, isToggling, hiddenKeys = [],
 }) {
   const { t } = useTranslation()
   const isInactive = item.status === 'INACTIVE'
@@ -70,14 +70,18 @@ export function SortableMenuItem({
           )}
         </div>
       </td>
-      <td>
-        <span className="menu-item-parent-cell" title={parentLabel || rootLabel}>
-          {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
-        </span>
-      </td>
-      <td>
-        <span className="menu-item-url-cell" title={item.url}>{item.url}</span>
-      </td>
+      {!hiddenKeys.includes('parent') && (
+        <td>
+          <span className="menu-item-parent-cell" title={parentLabel || rootLabel}>
+            {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
+          </span>
+        </td>
+      )}
+      {!hiddenKeys.includes('url') && (
+        <td>
+          <span className="menu-item-url-cell" title={item.url}>{item.url}</span>
+        </td>
+      )}
       {canUpdate && (
         <td className="menu-item-actions-cell">
           <div className="menu-row-actions">
