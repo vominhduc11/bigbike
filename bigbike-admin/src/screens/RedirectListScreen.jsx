@@ -368,7 +368,7 @@ export function RedirectListScreen({ canUpdate }) {
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
     setSelected([])
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   function handleSubmit(event) {

@@ -17,6 +17,7 @@ import { formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { toast } from '@/lib/toast'
 import { useDebounce } from '../lib/useDebounce'
+import { readPageSizePreference } from '../lib/pageSizePreference'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { Button } from '@/components/ui/button'
@@ -169,7 +170,10 @@ export function AdminUsersScreen({
   const { t } = useTranslation()
 
   // ── List state ──────────────────────────────────────────────────────────
-  const [query, setQuery] = useState(INITIAL_QUERY)
+  const [query, setQuery] = useState(() => ({
+    ...INITIAL_QUERY,
+    pageSize: readPageSizePreference(INITIAL_QUERY.pageSize),
+  }))
   const [searchInput, setSearchInput] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -382,7 +386,7 @@ export function AdminUsersScreen({
     setSearchInput('')
     setRoleFilter('')
     setStatusFilter('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   // Kiểm tra hợp lệ phía client cho drawer sửa — trả về true nếu hợp lệ.

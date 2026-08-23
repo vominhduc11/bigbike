@@ -198,7 +198,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
   const resetFilters = useCallback(() => {
     setSelected([])
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }, [])
 
   const items = useMemo(() => state.items || [], [state.items])

@@ -211,7 +211,7 @@ export function AuditLogListScreen() {
   function handleReset() {
     setSearchInput('')
     setActivePreset(null)
-    setQuery({ ...INITIAL_QUERY })
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
     setState((current) => current.status === 'success'
       ? { ...current, isFetching: true }
       : { ...current, status: 'loading', isFetching: true })

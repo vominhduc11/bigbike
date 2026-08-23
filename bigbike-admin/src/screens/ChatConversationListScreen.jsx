@@ -86,7 +86,9 @@ export function ChatConversationListScreen({ navigate }) {
     setQuery((current) => ({ ...current, ...partial, page: 1 }))
   }, [])
 
-  const resetFilters = useCallback(() => setQuery(INITIAL_QUERY), [])
+  const resetFilters = useCallback(() => {
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
+  }, [])
   const items = state.items || []
   const stats = statsQuery.data
   const isFiltered = Boolean(query.from || query.to || query.hasLead !== 'ALL')

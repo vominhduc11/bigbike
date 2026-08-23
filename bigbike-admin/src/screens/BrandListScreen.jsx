@@ -97,7 +97,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   const items = (state.items || []).filter((brand) => brand.slug !== SYSTEM_BRAND_SLUG)

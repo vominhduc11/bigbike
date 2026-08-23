@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { readPageSizePreference } from './pageSizePreference'
 
 /**
  * State that mirrors itself into the URL query string and reads from it on mount.
@@ -31,7 +32,11 @@ function readFromUrl(defaults, deserialize, prefix) {
   if (typeof window === 'undefined') return { ...defaults }
   const params = new URLSearchParams(window.location.search)
   const result = { ...defaults }
+  if (typeof defaults.pageSize === 'number') {
+    result.pageSize = readPageSizePreference(defaults.pageSize)
+  }
   for (const key of Object.keys(defaults)) {
+    if (key === 'pageSize') continue
     const raw = params.get(prefix + key)
     if (raw === null) continue
     const fn = deserialize[key]

@@ -594,7 +594,7 @@ export function DashboardScreen({ navigate }) {
                       <tbody>
                         {recentOrders.map((order) => (
                           <tr key={order.id}>
-                            <td className="mono">
+                      <td className="font-mono">
                               <div className="flex flex-col">
                                 <Button variant="unstyled"
                                   type="button"

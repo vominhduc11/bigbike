@@ -166,7 +166,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput('')
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   const items = state.items || []

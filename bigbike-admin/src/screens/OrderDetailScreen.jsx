@@ -331,7 +331,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         <div className="bb-screen-title">
           <h1 className="bb-heading-inline">
             {t('orders.detail.eyebrow')}{' '}
-            <span className="mono bb-heading-key">
+              <span className="bb-heading-key font-mono">
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
           </h1>
@@ -342,7 +342,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
             <div className="flex items-center gap-1">
               <dt>{t('orders.detail.paymentMethod')}</dt>
-              <dd className="mono">{paymentMethodLabel}</dd>
+                <dd className="font-mono">{paymentMethodLabel}</dd>
             </div>
           </dl>
         </div>
@@ -575,7 +575,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <tbody>
                       {(order.payments ?? []).map((p, i) => (
                         <tr key={p.id ?? i}>
-                          <td className="mono">
+                    <td className="font-mono">
                             {p.paymentMethod
                               ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
                               : formatText()}

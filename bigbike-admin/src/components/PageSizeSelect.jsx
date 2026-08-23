@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from './FilterSelect'
+import { persistPageSizePreference } from '../lib/pageSizePreference'
 
 const DEFAULT_OPTIONS = [20, 50, 100]
 
@@ -17,7 +18,11 @@ export function PageSizeSelect({ value, onChange, options = DEFAULT_OPTIONS, dis
   return (
     <FilterSelect
       value={String(value)}
-      onValueChange={(v) => onChange(Number(v))}
+      onValueChange={(v) => {
+        const nextValue = Number(v)
+        persistPageSizePreference(nextValue, { options })
+        onChange(nextValue)
+      }}
       ariaLabel={t('common.rowsPerPage')}
       disabled={disabled}
       className={className}

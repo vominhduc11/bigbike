@@ -289,7 +289,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
       key: 'orderNumber',
       label: t('orders.colOrder'),
       render: (order) => (
-        <span className="mono flex items-center gap-2">
+          <span className="flex items-center gap-2 font-mono">
           {formatText(order.orderNumber)}
         </span>
       ),

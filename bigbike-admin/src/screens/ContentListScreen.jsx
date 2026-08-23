@@ -95,7 +95,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   function resetFilters() {
     setSearchInput(INITIAL_CONTENT_QUERY.search)
     setSelected(new Set())
-    setQuery(INITIAL_CONTENT_QUERY)
+    setQuery((current) => ({ ...INITIAL_CONTENT_QUERY, pageSize: current.pageSize }))
   }
 
   async function refreshContent(item) {

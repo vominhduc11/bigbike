@@ -410,7 +410,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
-    setQuery(INITIAL_QUERY)
+    setQuery((current) => ({ ...INITIAL_QUERY, pageSize: current.pageSize }))
   }
 
   function toggleExpand(id) {

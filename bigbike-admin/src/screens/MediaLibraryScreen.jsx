@@ -157,7 +157,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
   function resetFilters() {
     setSearchInput(DEFAULT_QUERY.search)
-    setQuery({ ...DEFAULT_QUERY })
+    setQuery((current) => ({ ...DEFAULT_QUERY, pageSize: current.pageSize }))
   }
 
   // ── Upload (single + multi + drag-drop) ─────────────────────

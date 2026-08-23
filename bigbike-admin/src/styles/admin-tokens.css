@@ -1,10 +1,10 @@
 :root {
   /* ─── Brand ─────────────────────────────────────────────────────────────── */
-  --admin-color-brand-red:         var(--admin-color-primary);
-  --admin-color-brand-red-hover:   var(--admin-color-primary-hover);
-  --admin-color-brand-red-active:  var(--admin-color-primary-active);
-  --admin-color-brand-red-subtle:  var(--admin-color-primary-subtle);
-  --admin-color-brand-red-muted:   var(--admin-color-primary-muted);
+  --admin-color-brand-red:         #ff0c09;
+  --admin-color-brand-red-hover:   #e50a07;
+  --admin-color-brand-red-active:  #cc0906;
+  --admin-color-brand-red-subtle:  #fff1f0;
+  --admin-color-brand-red-muted:   rgba(255, 12, 9, 0.12);
 
   /* ─── Backgrounds ───────────────────────────────────────────────────────── */
   --admin-color-background-app:     #f2f3f5;
@@ -43,7 +43,7 @@
   --admin-color-text-primary:     #111827;
   --admin-color-text-secondary:   #374151;
   --admin-color-text-muted:       #6b7280;
-  --admin-color-text-placeholder: #adb5bd;
+  --admin-color-text-placeholder: #6b7280;
   --admin-color-text-inverse:     #ffffff;
 
   /* ─── Status: Success ───────────────────────────────────────────────────── */
@@ -143,12 +143,12 @@
   --admin-scrollbar-thumb-hover: var(--admin-color-border-strong);
   --admin-scrollbar-track:       transparent;
 
-  /* ─── Primary (đỏ thương hiệu #ff0c09, approved) ─────────────────────────
+  /* ─── Primary (đỏ tương tác đạt WCAG AA trên nền trắng) ──────────────────
      Used for CTA / active / selected / focus / links across the admin.
      Brand red (--admin-color-brand-red) is reserved for brand chrome only:
      sidebar active bar, nav badge, notification pip, logo. ──────────────── */
-  --admin-color-primary:             #ff0c09;
-  --admin-color-primary-hover:       #e50a07;
+  --admin-color-primary:             #e50a07;
+  --admin-color-primary-hover:       #cc0906;
   --admin-color-primary-active:      #cc0906;
   --admin-color-primary-subtle:      #fff1f0;
   --admin-color-primary-subtle-text: #cc0906;
@@ -283,6 +283,12 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
+  /* ─── Brand — dark (giữ nguyên diện mạo trước khi tách primary) ─── */
+  --admin-color-brand-red:         #ff5a4d;
+  --admin-color-brand-red-hover:   #ff7a6f;
+  --admin-color-brand-red-active:  #e8402f;
+  --admin-color-brand-red-subtle:  #2a1310;
+  --admin-color-brand-red-muted:   rgba(255, 90, 77, 0.18);
 
   /* ─── Primary — dark ─── */
   --admin-color-primary:             #ff5a4d;
@@ -325,7 +331,7 @@
   --admin-color-text-primary:     #e6edf3;
   --admin-color-text-secondary:   #8b949e;
   --admin-color-text-muted:       #848e99; /* WCAG AA (A2): #6e7681 chỉ đạt 3.8–4.1:1 trên nền tối → nâng lên ~5.2:1 */
-  --admin-color-text-placeholder: #484f58;
+  --admin-color-text-placeholder: #848e99;
   --admin-color-text-inverse:     #0d1117;
 
   /* ─── Status: Success ─── */
@@ -380,7 +386,7 @@
   --bb-text:             var(--admin-color-text-primary);
   --bb-text-secondary:   #b1bac4;
   --bb-text-muted:       var(--admin-color-text-muted);
-  --bb-text-faint:       #6e7681;
+  --bb-text-faint:       var(--admin-color-text-placeholder);
   --bb-text-inverse:     #0d1117;
   --bb-success:          var(--admin-color-status-success-text);
   --bb-success-bg:       var(--admin-color-status-success-bg);

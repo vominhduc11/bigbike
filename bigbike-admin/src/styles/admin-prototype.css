@@ -709,7 +709,6 @@
 .bb-table tbody tr.selected td { background: var(--bb-primary-subtle); }
 .bb-table tbody tr:last-child td { border-bottom: 0; }
 .bb-table .num { font-variant-numeric: tabular-nums; text-align: right; }
-.bb-table .mono { font-family: var(--bb-font-mono); font-size: 12px; }
 .bb-table .col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .bb-table .col-check { width: 32px; padding-right: 0; }
 .bb-table-foot {

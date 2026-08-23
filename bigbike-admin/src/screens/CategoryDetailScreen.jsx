@@ -673,7 +673,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             {currentSlug ? (
               <>
                 <span aria-hidden="true">/</span>
-                <code className="mono">{currentSlug}</code>
+                  <code className="font-mono">{currentSlug}</code>
               </>
             ) : null}
             {breadcrumbPath ? (
@@ -1070,7 +1070,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <span className="break-words">{parentSummary}</span>
                 </SidebarInfoRow>
                 <SidebarInfoRow label={t('categories.detail.slug')} icon={Link2}>
-                  {currentSlug ? <code className="mono break-all">{currentSlug}</code> : t('common.empty', { defaultValue: 'Chưa có' })}
+                {currentSlug ? <code className="break-all font-mono">{currentSlug}</code> : t('common.empty', { defaultValue: 'Chưa có' })}
                 </SidebarInfoRow>
                 {!isCreate && state.item?.updatedAt ? (
                   <SidebarInfoRow label={t('common.lastUpdated')} icon={Save}>
