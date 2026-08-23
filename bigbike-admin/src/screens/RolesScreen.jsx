@@ -6,6 +6,8 @@ import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { StatePanel } from '@/components/StatePanel'
+import { ScreenSkeleton } from '@/components/ScreenSkeleton'
+import { ScreenHeader } from '@/components/layout'
 import {
   BUILTIN_CATALOG,
   PERM_LABEL_KEY_MAP,
@@ -317,13 +319,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('roles.eyebrow')}</p>
-          <h1>{t('roles.title')}</h1>
-          <p className="bb-muted">{t('roles.description')}</p>
-        </div>
-      </div>
+      <ScreenHeader eyebrow={t('roles.eyebrow')} title={t('roles.title')} description={t('roles.description')} />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -357,23 +353,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         />
       )}
 
-      {/* Loading — skeleton mirroring the two-panel roles-layout */}
-      {loading && (
-        <div className="roles-layout" aria-hidden="true">
-          <div className="roles-sidebar p-3 flex flex-col gap-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bb-skeleton-block h-11" />
-            ))}
-          </div>
-          <div className="roles-detail px-6 py-5 flex flex-col gap-3">
-            <div className="bb-skeleton-block h-7 w-2/5" />
-            <div className="bb-skeleton-block h-14" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bb-skeleton-block h-16" />
-            ))}
-          </div>
-        </div>
-      )}
+      {loading ? <ScreenSkeleton variant="form" count={2} showHeader={false} /> : null}
 
       {/* Error */}
       {!loading && loadError && (

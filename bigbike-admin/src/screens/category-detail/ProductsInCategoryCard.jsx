@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Package } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { AdminTable } from '../../components/AdminTable'
+import { DetailSection } from '../../components/DetailSection'
+import { ScreenSkeleton } from '../../components/ScreenSkeleton'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '@/components/ui/button'
 
@@ -55,13 +57,13 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
   })
 
   return (
-    <div className="bb-card mb-4">
-      <div className="bb-card-header">
-        <div>
-          <h3>{t('categories.detail.productsSectionTitle', { count: productsTotal })}</h3>
-          <p className="sub">{t('categories.detail.productsSectionDesc')}</p>
-        </div>
-        {productsTotal > 0 && (
+    <DetailSection
+      className="mb-4"
+      headingLevel={3}
+      title={t('categories.detail.productsSectionTitle', { count: productsTotal })}
+      description={t('categories.detail.productsSectionDesc')}
+      noPadding
+      action={productsTotal > 0 ? (
           <Button
             type="button"
             variant="ghost"
@@ -70,9 +72,8 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
           >
             {t('categories.detail.productsViewAll', { count: productsTotal })}
           </Button>
-        )}
-      </div>
-      <div className="bb-card-body bb-card-body--flush">
+      ) : null}
+    >
         {permissionDenied ? (
           <div className="p-4">
             <StatePanel
@@ -82,12 +83,8 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
             />
           </div>
         ) : isLoading ? (
-          // T1: khung xương thay vì rơi vào nhánh rỗng trong lúc tải — tránh chớp
-          // nhầm "Chưa có sản phẩm" rồi mới hiện danh sách thật.
-          <div className="animate-pulse flex flex-col gap-2 p-4" aria-hidden="true">
-            <div className="h-10 w-full rounded-sm bg-surface-muted" />
-            <div className="h-10 w-full rounded-sm bg-surface-muted" />
-            <div className="h-10 w-2/3 rounded-sm bg-surface-muted" />
+          <div className="p-4">
+            <ScreenSkeleton variant="table" count={3} showHeader={false} />
           </div>
         ) : isError ? (
           // Trước đây lỗi tải danh sách sản phẩm bị hiểu nhầm thành "Chưa có sản
@@ -122,7 +119,6 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
             mobileCard={mobileCard}
           />
         )}
-      </div>
-    </div>
+    </DetailSection>
   )
 }

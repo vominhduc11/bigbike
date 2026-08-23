@@ -10,7 +10,9 @@ import { useProductPicker } from '../lib/useProductPicker'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { Screen } from '../components/layout/Screen'
+import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { Button } from '@/components/ui/button'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -235,6 +237,10 @@ export function HomeHighlightsScreen({ canUpdate }) {
     saveMutation.mutate({ slotsToSave: body, expectedVersion: highlightsData?.version ?? 0 })
   }
 
+  function handleDiscard() {
+    setInitialized(false)
+  }
+
   async function handleReloadAfterConflict() {
     setHasConflict(false)
     setInitialized(false)
@@ -243,12 +249,8 @@ export function HomeHighlightsScreen({ canUpdate }) {
 
   if (isLoading) {
     return (
-      <Screen maxWidth="720px">
-        <div className="flex flex-col gap-3" aria-busy="true" aria-label={t('common.loading')}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bb-skeleton-block" style={{ height: 140 }} />
-          ))}
-        </div>
+      <Screen>
+        <ScreenSkeleton variant="cards" count={3} showHeader={false} />
       </Screen>
     )
   }
@@ -268,22 +270,13 @@ export function HomeHighlightsScreen({ canUpdate }) {
   }
 
   return (
-    <Screen maxWidth="720px">
+    <Screen>
       {!canUpdate && <ReadOnlyBanner />}
 
       <ScreenHeader
         eyebrow={t('homeHighlights.eyebrow')}
         title={t('homeHighlights.title')}
         description={t('homeHighlights.description')}
-        actions={
-          <Button
-            onClick={handleSave}
-            loading={saveMutation.isPending}
-            disabled={!canUpdate || !hasFilledSlot || hasConflict}
-          >
-            {t('homeHighlights.saveButton')}
-          </Button>
-        }
       />
 
       {hasConflict && (
@@ -318,6 +311,15 @@ export function HomeHighlightsScreen({ canUpdate }) {
           />
         ))}
       </div>
+
+      <StickyActionBar ariaLabel={t('common.actions')}>
+        <Button type="button" variant="outline" onClick={handleDiscard} disabled={!isDirty || saveMutation.isPending}>
+          {t('common.cancel')}
+        </Button>
+        <Button type="button" onClick={handleSave} loading={saveMutation.isPending} disabled={!canUpdate || !hasFilledSlot || hasConflict}>
+          {t('homeHighlights.saveButton')}
+        </Button>
+      </StickyActionBar>
     </Screen>
   )
 }

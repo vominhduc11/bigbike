@@ -11,6 +11,9 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenHeader, StickyActionBar } from '../components/layout'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -427,23 +430,19 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('sliders.eyebrow')}</p>
-          <h1>{t('sliders.title')}</h1>
-          <p className="bb-muted">{t('sliders.description')}</p>
-        </div>
-        {canFullEdit && (
-          <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('sliders.eyebrow')}
+        title={t('sliders.title')}
+        description={t('sliders.description')}
+        actions={canFullEdit ? (
             <Button
               type="button"
               onClick={() => { if (showForm && !editingId) { confirmCloseForm() } else { openAddForm() } }}
             >
               <Plus size={14} />{showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
             </Button>
-          </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
       {canUpdate && !canFullEdit ? (
@@ -451,9 +450,8 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
       ) : null}
 
       {showForm && (
-        <div className="bb-card mb-4">
-          <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
-          <form onSubmit={handleSubmit} className="bb-card-body">
+        <DetailSection title={editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')} className="mb-4">
+          <form onSubmit={handleSubmit}>
             {formError && <p className="mb-3 text-danger">{formError}</p>}
             <p className="bb-muted mb-3 text-xs">
               <span className="text-danger" aria-hidden="true">*</span> {t('sliders.requiredLegend', { defaultValue: 'Bắt buộc' })}
@@ -568,21 +566,15 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                 )}
               </div>
             </div>
-            <div className="mt-4 flex gap-2">
-              <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>
+            <StickyActionBar ariaLabel={t('common.actions')}>
               <Button type="button" variant="outline" onClick={confirmCloseForm}>{t('common.cancel')}</Button>
-            </div>
+              <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>
+            </StickyActionBar>
           </form>
-        </div>
+        </DetailSection>
       )}
 
-      {isLoading && (
-        <div className="flex flex-col gap-2" aria-busy="true" aria-label={t('sliders.loading')}>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="bb-skeleton-block" style={{ height: 96 }} />
-          ))}
-        </div>
-      )}
+      {isLoading ? <ScreenSkeleton variant="cards" count={4} showHeader={false} /> : null}
       {isError && <StatePanel tone="danger" title={t('sliders.error')} description={error?.message} actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['sliders', location] })} />}
       {!isLoading && !isError && visibleItems.length === 0 && (
         filteredByLang ? (

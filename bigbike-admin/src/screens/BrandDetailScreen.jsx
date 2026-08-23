@@ -24,9 +24,11 @@ import { getBrandRequiredProgress, toBrandPayload } from './brandPayload'
 import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatusBadge } from '../components/StatusBadge'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
 import { FormField } from '../components/layout/FormField'
 import { CollapsibleSection } from '../components/CollapsibleSection'
-import { Screen, StickyActionBar } from '../components/layout'
+import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -364,49 +366,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
 
   if (state.status === 'loading') {
-    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
-    // về, vì trang thật có header + 3 bb-card (thông tin cơ bản, hình ảnh, SEO) chứ không
-    // phải một panel nhỏ. Cùng kiểu dựng animate-pulse như ProductDetailScreen.
     return (
       <Screen>
-        <div className="animate-pulse" aria-hidden="true">
-        <div className="bb-screen-header">
-          <div className="bb-screen-title flex flex-col gap-2">
-            <div className="h-3 w-28 rounded-xs bg-surface-muted" />
-            <div className="h-7 w-56 max-w-full rounded-xs bg-surface-muted" />
-            <div className="h-3 w-64 max-w-full rounded-xs bg-surface-muted" />
-          </div>
-          <div className="bb-screen-actions">
-            <div className="h-9 w-28 rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-
-        <div className="bb-card mb-4">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-            <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
-            <div className="h-24 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        <div className="bb-card mb-4">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        <div className="bb-card">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-20 w-full rounded-sm bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-            <div className="h-16 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        </div>
+        <ScreenSkeleton variant="form" count={3} />
       </Screen>
     )
   }
@@ -468,9 +430,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   return (
     <Screen>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">
+      <ScreenHeader
+        eyebrow={(
             <a
               href="/admin/brands"
               onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }}
@@ -478,11 +439,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             >
               <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
             </a>
-          </p>
-          <h1>{isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' }) : t('brands.detail.editTitle')}</h1>
-          <p className="bb-muted">{isCreate ? t('brands.detail.createDesc') : isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : t('brands.detail.editDesc')}</p>
-        </div>
-        <div className="bb-screen-actions">
+        )}
+        title={isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' }) : t('brands.detail.editTitle')}
+        description={isCreate ? t('brands.detail.createDesc') : isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : t('brands.detail.editDesc')}
+        actions={(
+          <>
           {!isCreate && canUpdate && !isSystemBrand && (
             state.item?.isVisible === false ? (
               <Button
@@ -526,8 +487,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               </Button>
             )
           )}
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       {!isCreate ? (
         <dl className="mb-4 grid gap-3 rounded-md border border-border bg-surface p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -628,11 +590,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         }}
       >
         {/* Thông tin cơ bản */}
-        <div className="bb-card mb-4">
-          <div className="bb-card-header">
-            <h2>{t('brands.detail.sectionBasic')}</h2>
-          </div>
-          <div className="bb-card-body">
+        <DetailSection className="mb-4" title={t('brands.detail.sectionBasic')}>
             {!isEnLang ? (
               <p className="text-xs text-muted-foreground mb-3">
                 <span className="text-danger" aria-hidden="true">*</span>{' '}
@@ -673,8 +631,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <span>{t('brands.detail.showOnHomepage')}</span>
               </label>
             </div>
-          </div>
-        </div>
+        </DetailSection>
 
         {/* Mô tả & hình ảnh (tùy chọn) — gom vào nhóm thu gọn, đóng sẵn để form gọn (chống ngợp). */}
         <div className="mb-4">
@@ -771,6 +728,15 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </span>
         )}
       >
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() => navigate('/admin/brands')}
+          disabled={isSubmitting}
+        >
+          {t('common.cancel')}
+        </Button>
         <Button
           type="submit"
           form="brand-form"

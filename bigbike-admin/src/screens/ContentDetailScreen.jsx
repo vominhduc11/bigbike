@@ -56,7 +56,8 @@ import {
   toSlug,
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
-import { SectionCard } from '../components/SectionCard'
+import { DetailSection } from '../components/DetailSection'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
@@ -480,56 +481,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   }
 
   if (state.status === 'loading') {
-    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu về,
-    // vì trang thật có header + tab (Nội dung/SEO & xuất bản) + nhiều SectionCard (Thông tin
-    // chính, Nội dung chính, Hình ảnh) chứ không phải một panel nhỏ. Cùng kiểu dựng
-    // animate-pulse như ProductDetailScreen/CategoryDetailScreen, khớp bố cục riêng của màn này.
     return (
-        <Screen>
-          <div className="animate-pulse" aria-hidden="true">
-            <header className="bb-screen-header">
-              <div className="bb-screen-title flex flex-col gap-2">
-                <div className="h-3 w-28 rounded-xs bg-surface-muted" />
-                <div className="h-7 w-72 max-w-full rounded-xs bg-surface-muted" />
-                <div className="h-3 w-56 max-w-full rounded-xs bg-surface-muted" />
-              </div>
-              <div className="bb-screen-actions">
-                <div className="h-9 w-9 rounded-sm bg-surface-muted" />
-              </div>
-            </header>
-
-            <div className="mb-4 flex flex-wrap gap-2">
-              <div className="h-9 w-28 rounded-sm bg-surface-muted" />
-              <div className="h-9 w-24 rounded-sm bg-surface-muted" />
-            </div>
-
-            <div className="flex flex-col gap-6">
-              <div className="bb-card">
-                <div className="h-10 border-b border-border bg-surface-muted/60" />
-                <div className="bb-card-body flex flex-col gap-3">
-                  <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
-                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
-                </div>
-              </div>
-              <div className="bb-card">
-                <div className="h-10 border-b border-border bg-surface-muted/60" />
-                <div className="bb-card-body flex flex-col gap-3">
-                  <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
-                  <div className="h-60 w-full rounded-sm bg-surface-muted" />
-                </div>
-              </div>
-              <div className="bb-card">
-                <div className="h-10 border-b border-border bg-surface-muted/60" />
-                <div className="bb-card-body flex flex-col gap-3">
-                  <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
-                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </Screen>
+      <Screen>
+        <ScreenSkeleton variant="form" count={3} />
+      </Screen>
     )
   }
 
@@ -767,7 +722,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           {activeTab === 'content' && (
             <>
               {/* ── Card: Thông tin chính ── */}
-              <SectionCard
+        <DetailSection
                 title={t('content.detail.sectionCore')}
                 required
               >
@@ -857,10 +812,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       />
                     </Field>
                 </div>
-              </SectionCard>
+        </DetailSection>
 
               {/* ── Card: Nội dung chính ── */}
-              <SectionCard title={t('content.detail.sectionBody')} required={!isEnLang}>
+        <DetailSection title={t('content.detail.sectionBody')} required={!isEnLang}>
                 <Field
                   full
                   required={!isEnLang}
@@ -890,10 +845,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     )}
                   </div>
                 </Field>
-              </SectionCard>
+        </DetailSection>
 
               {/* ── Card: Hình ảnh — article gallery / page hero ── */}
-              <SectionCard title={t('content.detail.sectionMedia')}>
+        <DetailSection title={t('content.detail.sectionMedia')}>
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field
                     full
@@ -925,10 +880,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     </Field>
                   )}
                 </div>
-              </SectionCard>
+        </DetailSection>
 
               {/* ── Card: Hiển thị ── */}
-              <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
+        <DetailSection title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field required label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select
@@ -969,14 +924,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
                     </div>
                 </div>
-              </SectionCard>
+        </DetailSection>
             </>
           )}
 
           {activeTab === 'seo' && (
             <>
               {/* ── Card: SEO ── */}
-              <SectionCard title={t('content.detail.sectionSeo')}>
+        <DetailSection title={t('content.detail.sectionSeo')}>
                 {/* Live Google SERP preview */}
                 <div className="mb-4 rte-canvas-frame">
                   <div className="p-3 border border-border bg-white">
@@ -1103,7 +1058,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     ))}
                   </div>
                 </div>
-              </SectionCard>
+        </DetailSection>
             </>
           )}
         </form>
@@ -1117,7 +1072,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             </span>
           }
         >
-
+          <Button
+            variant="outline"
+            type="button"
+            className="min-h-11"
+            disabled={isSubmitting}
+            onClick={() => navigate('/admin/content')}
+          >
+            {t('common.cancel')}
+          </Button>
           {canUpdate && (
             <Button
               variant="outline"

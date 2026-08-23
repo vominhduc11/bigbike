@@ -53,3 +53,12 @@ test('responsive · mobile sidebar drawer opens and navigates', async ({ adminPa
   await expect(adminPage).toHaveURL(/\/admin\/products/)
   await expectNoHorizontalOverflow(adminPage, 'orders→products mobile drawer nav')
 })
+
+test('responsive · product and order screens share the same 1920px content width', async ({ adminPage }) => {
+  await adminPage.setViewportSize({ width: 1920, height: 1080 })
+  await navigateSpa(adminPage, '/admin/products')
+  const productWidth = await adminPage.locator('.screen').first().evaluate((element) => element.getBoundingClientRect().width)
+  await navigateSpa(adminPage, '/admin/orders')
+  const orderWidth = await adminPage.locator('.screen').first().evaluate((element) => element.getBoundingClientRect().width)
+  expect(Math.abs(productWidth - orderWidth)).toBeLessThanOrEqual(1)
+})

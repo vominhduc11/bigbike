@@ -101,6 +101,9 @@ vi.mock('../components/StatePanel', () => ({
   ),
 }))
 vi.mock('../components/layout', () => ({
+  ScreenHeader: ({ eyebrow, title, description, actions }) => (
+    <header><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p>{actions}</header>
+  ),
   Modal: ({ open, title, children, actions }) => open ? (
     <div role="dialog" aria-label={title}>
       {children}

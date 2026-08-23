@@ -221,7 +221,6 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-4);
-  max-width: 1400px;
   min-height: 100%;
   width: 100%;
   margin-inline: auto;
@@ -291,27 +290,6 @@ a {
 .align-right {
   text-align: right;
 }
-/* ─── Skeleton loader ────────────────────────────────────────────────────────*/
-@keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.skeleton-cell {
-  display: inline-block;
-  height: 14px;
-  border-radius: var(--admin-radius-xs);
-  background: linear-gradient(
-    90deg,
-    var(--admin-color-surface-muted) 25%,
-    var(--admin-color-border-subtle) 50%,
-    var(--admin-color-surface-muted) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.4s ease-in-out infinite;
-  vertical-align: middle;
-}
-
 /* ─── Product / media cells ──────────────────────────────────────────────────*/
 .product-cell {
   display: grid;
@@ -363,6 +341,10 @@ a {
 }
 
 .detail-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-4);
   padding: var(--admin-space-4) var(--admin-space-5);
   background: var(--admin-color-surface-muted);
   border-bottom: 1.5px solid var(--admin-color-border-subtle);
@@ -825,14 +807,6 @@ a {
   .bb-topbar > .lang-switcher {
     display: none;
   }
-}
-
-/* ── Ultra-wide (≥1920px): expand screen container ──
-   At 1920px viewport the content area is 1612px (1920 - 260px sidebar - 48px padding).
-   The default 1400px cap wastes ~106px on each side. Bump max-width to better use
-   the available space on large monitors without going fully edge-to-edge. */
-@media (min-width: 1920px) {
-  .screen { max-width: 1700px; }
 }
 
 /* ─── Global animation ───────────────────────────────────────────────────────*/

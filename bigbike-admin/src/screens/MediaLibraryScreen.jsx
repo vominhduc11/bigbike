@@ -11,7 +11,7 @@ import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
 import { MediaFolderSidebar } from '../components/MediaFolderSidebar'
 import { FilterChips } from '../components/FilterChips'
 import { BulkActionBar } from '../components/BulkActionBar'
-import { MediaGridSkeleton } from '../components/MediaCardSkeleton'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { MediaCard } from '../components/MediaCard'
 import { showConfirm } from '../lib/confirm'
 import {
@@ -622,7 +622,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       )}
 
       {/* Grid / List */}
-      {state.status === 'loading' && <MediaGridSkeleton count={Math.min(query.pageSize, 24)} />}
+      {state.status === 'loading' && <ScreenSkeleton variant="cards" count={Math.min(query.pageSize, 24)} showHeader={false} />}
       {state.status === 'error' && <StatePanel tone="danger" title={t('media.loadError')} description={state.error}
         actionLabel={t('common.retry')} onAction={() => refreshData()} />}
       {/* T2 — chỉ hiện CTA "Xoá bộ lọc" khi thực sự có bộ lọc đang áp dụng; kho

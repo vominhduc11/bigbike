@@ -63,6 +63,9 @@ vi.mock('../lib/formatters', () => ({
 }))
 
 vi.mock('../components/layout', () => ({
+  ScreenHeader: ({ title, description, actions }) => (
+    <header><h1>{title}</h1><div>{description}</div>{actions}</header>
+  ),
   Modal: ({ open, title, children }) => open
     ? <section role="dialog" aria-label={title}>{children}</section>
     : null,
@@ -153,7 +156,7 @@ describe('OrderDetailScreen', () => {
 
     const { container } = renderScreen()
 
-    expect(container.querySelectorAll('.bb-skeleton-block')).toHaveLength(9)
+    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('orders.detail.loading')
     expect(mocks.fetchOrderDetail).toHaveBeenCalledWith('order-1')
   })

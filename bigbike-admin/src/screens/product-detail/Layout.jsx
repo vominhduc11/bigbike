@@ -82,8 +82,6 @@ export function RoleBadge({ role }) {
   return <span className={cn('bb-role-badge', tone)}>{label}</span>
 }
 
-// SectionCard đã chuyển sang component dùng chung: src/components/SectionCard.jsx
-
 // Inline assignment guide — replaces the icon-only Popover in the header.
 // Thin adapter over the shared, purely-presentational AssignmentBanner (same component the
 // content/article editor's banner renders — both read the SAME product-assignment config, just
@@ -100,5 +98,4 @@ export function AssignmentBanner({ t }) {
   )
 }
 
-// (Đã gỡ CollapsibleGroup — tab sản phẩm nay gấp/mở TỪNG thẻ qua prop `collapsible` của SectionCard,
-// không còn bọc nhóm. Xem ProductDetailScreen openSections + components/SectionCard.jsx.)
+// Các nhóm con trong tab sản phẩm dùng CollapsibleSection; khối nội dung cấp màn dùng DetailSection.

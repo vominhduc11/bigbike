@@ -288,23 +288,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Dashboard section card + atoms
-   Replaces the old inline-styled SectionCard / RevenueTooltip / pie legend.
+   Dashboard section atoms
    ═══════════════════════════════════════════════════════════════════════════ */
-
-.dash-skeleton-block {
-  border-radius: var(--admin-radius-lg);
-  background: var(--admin-color-surface-base);
-  border: 1px solid var(--admin-color-border-subtle);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.5; }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dashboard — KPI trend pill

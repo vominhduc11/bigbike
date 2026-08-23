@@ -12,7 +12,8 @@ import { resolveDisplayUrl } from '@/lib/contracts'
 import { useContentLang } from '@/lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { StickyActionBar } from '@/components/layout'
+import { DetailSection } from '@/components/DetailSection'
+import { ScreenHeader, StickyActionBar } from '@/components/layout'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
@@ -162,11 +163,7 @@ function PageBannerCard({
       : { src: previewSrc(THEME_FALLBACK_ILLUSTRATION, { themeAsset: true }), source: 'fallback' }
 
   return (
-    <div className="bb-card">
-      <div className="bb-card-header">
-        <h3>{pageTitle}</h3>
-      </div>
-      <div className="bb-card-body bb-form-grid">
+    <DetailSection title={pageTitle} headingLevel={3} contentClassName="bb-form-grid">
         <BannerPreview
           bg={bg}
           illustration={illustration}
@@ -218,18 +215,19 @@ function PageBannerCard({
           t={t}
           error={activeErrors[k('image_alt')]}
         />
-      </div>
-    </div>
+    </DetailSection>
   )
 }
 
 // ── Thẻ ảnh mặc định chung ───────────────────────────────────────────────────
 function DefaultsCard({ get, set, canUpdate, t, errors }) {
   return (
-    <div className="bb-card">
-      <div className="bb-card-header"><h3>{t('banners.defaultsTitle')}</h3></div>
-      <div className="bb-card-body bb-form-grid">
-        <p className="bb-muted m-0 text-sm">{t('banners.defaultsDesc')}</p>
+    <DetailSection
+      title={t('banners.defaultsTitle')}
+      description={t('banners.defaultsDesc')}
+      headingLevel={3}
+      contentClassName="bb-form-grid"
+    >
         <div className="bb-form-grid bb-form-grid-2">
           <ImageField
             label={t('banners.defaultBg')}
@@ -250,17 +248,14 @@ function DefaultsCard({ get, set, canUpdate, t, errors }) {
             error={errors['hero_default_illustration_url']}
           />
         </div>
-      </div>
-    </div>
+    </DetailSection>
   )
 }
 
 // ── Thẻ liên kết tới banner ở nơi khác ───────────────────────────────────────
 function CrossLinksCard({ navigate, t }) {
   return (
-    <div className="bb-card">
-      <div className="bb-card-header"><h3>{t('banners.elsewhereTitle')}</h3></div>
-      <div className="bb-card-body bb-link-card-list">
+    <DetailSection title={t('banners.elsewhereTitle')} headingLevel={3} contentClassName="bb-link-card-list">
         <div className="bb-link-card-item">
           <div className="bb-link-card-copy">
             <FolderTree size={18} className="bb-link-card-icon" />
@@ -273,8 +268,7 @@ function CrossLinksCard({ navigate, t }) {
             {t('banners.openCategories')}
           </Button>
         </div>
-      </div>
-    </div>
+    </DetailSection>
   )
 }
 
@@ -426,13 +420,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
       {embedded ? (
         <p className="bb-muted mb-4 mt-0">{t('banners.description')}</p>
       ) : (
-        <div className="bb-screen-header">
-          <div className="bb-screen-title">
-            <p className="bb-screen-eyebrow">{t('banners.eyebrow')}</p>
-            <h1>{t('banners.title')}</h1>
-            <p className="bb-muted">{t('banners.description')}</p>
-          </div>
-        </div>
+        <ScreenHeader eyebrow={t('banners.eyebrow')} title={t('banners.title')} description={t('banners.description')} />
       )}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
@@ -462,8 +450,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
       </div>
 
       {canUpdate && (dirtyKeys.length > 0 || saving || saveSuccess || saveError) && (
-        embedded ? (
-          <StickyActionBar
+        <StickyActionBar
             ariaLabel={t('common.actionBarLabel')}
             info={(
               <span
@@ -488,33 +475,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
             <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
               {t('common.save')}
             </Button>
-          </StickyActionBar>
-        ) : (
-          <div className="bb-card bb-save-bar">
-          <span
-            className={`bb-save-bar-status ${saveError ? 'danger' : ''}`}
-            role={saveError ? 'alert' : undefined}
-          >
-            {saveError ? (
-              <><AlertCircle size={14} /> {saveError}</>
-            ) : saveSuccess ? (
-              <><CheckCircle2 size={15} className="text-success" /> {t('banners.saveSuccess')}</>
-            ) : (
-              <><AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
-            )}
-          </span>
-          <div className="bb-save-bar-actions">
-            {dirtyKeys.length > 0 && (
-              <Button variant="secondary" size="sm" onClick={handleDiscard} disabled={saving}>
-                {t('common.cancel')}
-              </Button>
-            )}
-            <Button size="sm" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
-              {t('common.save')}
-            </Button>
-          </div>
-          </div>
-        )
+        </StickyActionBar>
       )}
     </div>
   )

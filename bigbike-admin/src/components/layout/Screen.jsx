@@ -2,10 +2,9 @@
  * Screen — page container with consistent vertical rhythm.
  * Replaces the ad-hoc <div className="page-inner"> wrapper.
  */
-export function Screen({ children, maxWidth }) {
-  const style = maxWidth ? { maxWidth } : undefined
+export function Screen({ children }) {
   return (
-    <div className="screen" style={style}>
+    <div className="screen">
       {children}
     </div>
   )

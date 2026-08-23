@@ -14,6 +14,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { FilterBar, MobileCardList, Screen, ScreenHeader } from '../components/layout'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
@@ -582,22 +583,21 @@ export function AuditLogListScreen() {
               />
             </div>
 
-            <MobileCardList>
-              {state.status === 'loading'
-                ? Array.from({ length: 4 }, (_, index) => (
-                    <li key={index} className="mobile-card animate-pulse" aria-hidden="true">
-                      <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
-                      <div className="mt-2 h-3 w-3/4 rounded-xs bg-surface-muted" />
-                    </li>
-                  ))
-                : sortedItems.map((log) => (
-                    <AuditCard
-                      key={log.id}
-                      log={log}
-                      onClick={() => handleOpenDetail(log)}
-                    />
-                  ))}
-            </MobileCardList>
+            {state.status === 'loading' ? (
+              <div className="show-on-mobile p-3">
+                <ScreenSkeleton variant="cards" count={4} showHeader={false} />
+              </div>
+            ) : (
+              <MobileCardList>
+                {sortedItems.map((log) => (
+                  <AuditCard
+                    key={log.id}
+                    log={log}
+                    onClick={() => handleOpenDetail(log)}
+                  />
+                ))}
+              </MobileCardList>
+            )}
           </div>
 
           {state.status === 'success' ? (

@@ -9,7 +9,7 @@ import { AdminTable } from '../components/AdminTable'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { FormField } from '../components/layout/FormField'
-import { Modal } from '../components/layout'
+import { Modal, ScreenHeader } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
@@ -34,10 +34,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_MIN_LENGTH = 8
 
 const STATUS_META = {
-  INVITED:   { labelKey: 'adminUsers.statusInvited'   },
-  ACTIVE:    { labelKey: 'adminUsers.statusActive'    },
-  DISABLED:  { labelKey: 'adminUsers.statusDisabled'  },
-  SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
+  INVITED:   { labelKey: 'adminUsers.statusInvited', tone: 'info' },
+  ACTIVE:    { labelKey: 'adminUsers.statusActive', tone: 'success' },
+  DISABLED:  { labelKey: 'adminUsers.statusDisabled', tone: 'danger' },
+  SUSPENDED: { labelKey: 'adminUsers.statusSuspended', tone: 'warning' },
 }
 const MANUALLY_EDITABLE_STATUSES = ['ACTIVE', 'DISABLED', 'SUSPENDED']
 
@@ -53,12 +53,6 @@ const ROLE_BADGE = {
   ADMIN: 'bb-badge-info',
   SHOP_MANAGER: 'bb-badge-info',
   EDITOR: 'bb-badge-neutral',
-}
-const STATUS_BADGE = {
-  INVITED: 'bb-badge-info',
-  ACTIVE: 'bb-badge-success',
-  DISABLED: 'bb-badge-danger',
-  SUSPENDED: 'bb-badge-warning',
 }
 const AVATAR_COLORS = [
   'bg-primary text-primary-foreground',
@@ -125,7 +119,7 @@ function UserStatusBadge({ status, t }) {
   const meta = STATUS_META[status]
   const label = meta ? t(meta.labelKey) : status
   return (
-    <span className={`bb-badge ${STATUS_BADGE[status] || 'bb-badge-neutral'}`}>
+    <span className={`bb-badge bb-badge-${meta?.tone || 'neutral'}`}>
       <span className="dot" />{label || '—'}
     </span>
   )
@@ -801,14 +795,11 @@ export function AdminUsersScreen({
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('adminUsers.eyebrow')}</p>
-          <h1>{t('adminUsers.title')}</h1>
-          <p className="bb-muted">{t('adminUsers.description')}</p>
-        </div>
-        {canUpdate && (
-          <div className="bb-screen-actions">
+      <ScreenHeader
+        eyebrow={t('adminUsers.eyebrow')}
+        title={t('adminUsers.title')}
+        description={t('adminUsers.description')}
+        actions={canUpdate ? (
             <Button
               type="button"
               onClick={openCreate}
@@ -817,9 +808,8 @@ export function AdminUsersScreen({
             >
               <UserPlus size={14} />{t('adminUsers.createBtn')}
             </Button>
-          </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
       {!canUpdate && !listState.warning ? (
@@ -931,6 +921,7 @@ export function AdminUsersScreen({
               sortKey={sort.key}
               sortDir={sort.dir}
               onSortChange={(key, dir) => setSort({ key, dir })}
+              rowClassName={(user) => `bb-row-accent--${STATUS_META[user.status]?.tone ?? 'muted'}`}
             />
           </div>
           {listState.status === 'success' && listState.pagination && (

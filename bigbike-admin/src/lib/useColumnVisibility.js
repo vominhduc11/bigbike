@@ -1,5 +1,15 @@
 import { useCallback, useState } from 'react'
 
+const FIXED_COLUMN_KEYS = new Set([
+  'select', 'selection', 'drag', 'reorder', 'sortOrder', 'actions',
+  'product', 'category', 'brand', 'title', 'name', 'orderNumber',
+  'customer', 'review', 'author', 'user', 'email', 'sourcePattern',
+])
+
+function isFixedColumn(column) {
+  return column.hideable === false || FIXED_COLUMN_KEYS.has(column.key)
+}
+
 // T7 — cho phép admin tự ẩn/hiện cột trên các bảng dữ liệu. `columns` giữ
 // nguyên định dạng AdminTable đã dùng ({key,label,...}); trả về đúng mảng đó
 // đã lọc theo lựa chọn hiện tại, lưu vào localStorage theo `storageKey`.
@@ -15,6 +25,7 @@ export function useColumnVisibility(columns, storageKey) {
   })
 
   const toggle = useCallback((key) => {
+    if (columns.some((column) => column.key === key && isFixedColumn(column))) return
     setHiddenKeys((previous) => {
       const next = previous.includes(key)
         ? previous.filter((k) => k !== key)
@@ -26,9 +37,9 @@ export function useColumnVisibility(columns, storageKey) {
       }
       return next
     })
-  }, [storageKey])
+  }, [columns, storageKey])
 
-  const visibleColumns = columns.filter((c) => !hiddenKeys.includes(c.key))
+  const visibleColumns = columns.filter((column) => isFixedColumn(column) || !hiddenKeys.includes(column.key))
 
-  return { visibleColumns, hiddenKeys, toggle, allColumns: columns }
+  return { visibleColumns, hiddenKeys, toggle, allColumns: columns.filter((column) => !isFixedColumn(column)) }
 }

@@ -25,6 +25,7 @@ import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { IntroContentField } from './category-detail/IntroContentField'
@@ -50,7 +51,7 @@ import { Button } from '@/components/ui/button'
 import { ProductsInCategoryCard } from './category-detail/ProductsInCategoryCard'
 import { DangerZoneCard } from './category-detail/DangerZoneCard'
 import { DetailSection } from '../components/DetailSection'
-import { FormField, Screen, ScreenHeader } from '../components/layout'
+import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 
 function CategoryMetricCard({ label, value, icon: Icon, tone = 'info', hint, compact = false }) {
   return (
@@ -549,55 +550,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   }, [isDirty, isSubmitting, navigate, t])
 
   if (state.status === 'loading') {
-    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
-    // về, vì trang thật có header + nhiều bb-card (thông tin cơ bản, slug, SEO, sản phẩm)
-    // chứ không phải một panel nhỏ. Cùng kiểu dựng animate-pulse như ProductDetailScreen.
-    return (
-      <div className="animate-pulse" aria-hidden="true">
-        <div className="bb-screen-header">
-          <div className="bb-screen-title flex flex-col gap-2">
-            <div className="h-3 w-32 rounded-xs bg-surface-muted" />
-            <div className="h-7 w-64 max-w-full rounded-xs bg-surface-muted" />
-            <div className="h-3 w-48 max-w-full rounded-xs bg-surface-muted" />
-          </div>
-          <div className="bb-screen-actions">
-            <div className="h-9 w-32 rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-
-        <div className="bb-card mb-4">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-            <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
-            <div className="h-24 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        <div className="bb-card mb-4">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        <div className="bb-card mb-4">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
-            <div className="h-9 w-full rounded-sm bg-surface-muted" />
-            <div className="h-16 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-        <div className="bb-card">
-          <div className="h-10 border-b border-border bg-surface-muted/60" />
-          <div className="bb-card-body flex flex-col gap-3">
-            <div className="h-10 w-full rounded-sm bg-surface-muted" />
-            <div className="h-10 w-full rounded-sm bg-surface-muted" />
-          </div>
-        </div>
-      </div>
-    )
+    return <ScreenSkeleton variant="form" count={4} />
   }
 
   if (state.status === 'error') {
@@ -685,19 +638,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </span>
         )}
         badge={!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : null}
-        actions={(
-          <div className="flex flex-wrap justify-end gap-2">
-            {!isEnLang && (
-              <span className="inline-flex min-h-9 items-center text-xs text-muted-foreground">
-                {requiredProgressText}
-              </span>
-            )}
-            <Button type="submit" form="category-form" className="min-h-11" disabled={isReadOnly || !isDirty} loading={isSubmitting}>
-              <Save size={16} aria-hidden="true" />
-              {isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
-            </Button>
-          </div>
-        )}
       />
 
       {draftRecovery && (
@@ -1096,33 +1036,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               ) : null}
             </DetailSection>
 
-            <DetailSection
-              title={t('categories.detail.saveSection', { defaultValue: 'Lưu thay đổi' })}
-              description={isReadOnly
-                ? t('categories.detail.saveDisabledHint', { defaultValue: 'Màn hình đang ở chế độ chỉ xem hoặc bị khóa.' })
-                : t('categories.detail.saveSectionDesc', { defaultValue: 'Kiểm tra mục bắt buộc rồi lưu khi đã sẵn sàng.' })}
-            >
-              <div className="grid gap-3">
-                {!isEnLang ? (
-                  <div className="rounded-sm border border-border bg-surface-muted p-3">
-                    <div className="mb-1 flex items-center justify-between gap-3 text-sm font-semibold">
-                      <span>{t('categories.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}</span>
-                      <span>{requiredFieldsFilled}/{requiredFieldsTotal}</span>
-                    </div>
-                    <p className="m-0 text-xs text-muted-foreground">{requiredProgressText}</p>
-                  </div>
-                ) : null}
-                <Button type="submit" form="category-form" className="min-h-11 w-full" disabled={isReadOnly || !isDirty} loading={isSubmitting}>
-                  <Save size={16} aria-hidden="true" />
-                  {isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
-                </Button>
-                <Button type="button" variant="secondary" className="min-h-11 w-full" onClick={() => navigate('/admin/categories')}>
-                  <ArrowLeft size={16} aria-hidden="true" />
-                  {t('categories.detail.backToList')}
-                </Button>
-              </div>
-            </DetailSection>
-
             {!isCreate && canUpdate && !isUncategorized && (
               <DangerZoneCard
                 onHardDelete={handleHardDelete}
@@ -1134,6 +1047,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             )}
           </aside>
         </div>
+        <StickyActionBar info={!isEnLang ? requiredProgressText : undefined} ariaLabel={t('common.actions')}>
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => navigate('/admin/categories')} disabled={isSubmitting}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" className="min-h-11" disabled={isReadOnly || !isDirty} loading={isSubmitting}>
+            <Save size={16} aria-hidden="true" />
+            {isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
+          </Button>
+        </StickyActionBar>
       </form>
     </Screen>
   )

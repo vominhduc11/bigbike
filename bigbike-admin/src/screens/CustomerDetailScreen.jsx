@@ -33,7 +33,7 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { FormField, Screen, ScreenHeader } from '../components/layout'
+import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { useQueryClient } from '@tanstack/react-query'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'PENDING', 'DISABLED', 'BLOCKED']
@@ -688,7 +688,11 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                     disabled={mutationBusy}
                   />
                 </FormField>
-                <div className="flex flex-wrap gap-2 pt-1">
+                <StickyActionBar ariaLabel={t('common.actions')}>
+                  <Button type="button" variant="outline" className="min-h-11" onClick={handleEditCancel} disabled={mutationBusy}>
+                    <X size={16} aria-hidden="true" />
+                    {t('common.cancel')}
+                  </Button>
                   <Button
                     type="submit"
                     className="min-h-11"
@@ -698,11 +702,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                     <Save size={16} aria-hidden="true" />
                     {t('common.save')}
                   </Button>
-                  <Button type="button" variant="outline" className="min-h-11" onClick={handleEditCancel} disabled={mutationBusy}>
-                    <X size={16} aria-hidden="true" />
-                    {t('common.cancel')}
-                  </Button>
-                </div>
+                </StickyActionBar>
               </form>
             )}
           </DetailSection>
