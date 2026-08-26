@@ -2775,6 +2775,22 @@
     "emptyDescription": "Hội thoại mới với Trợ lý BigBike sẽ xuất hiện tại đây.",
     "emptyFiltered": "Không có hội thoại phù hợp với bộ lọc đang chọn.",
     "tableCaption": "Danh sách hội thoại của Trợ lý BigBike",
+    "tableTitle": "Danh sách hội thoại",
+    "tableDescription": "Nội dung chính từ {{from}} đến {{to}}; bảng có 7 cột.",
+    "tasks": {
+      "title": "Việc cần làm",
+      "description": "Ưu tiên câu hỏi chưa xử lý, dữ liệu sản phẩm cần bổ sung và phản hồi chưa đúng ý từ {{from}} đến {{to}}."
+    },
+    "today": {
+      "title": "Hôm nay",
+      "description": "Năm số liệu snapshot của hôm nay; không đổi khi thay khoảng ngày bên dưới.",
+      "conversations": "Hội thoại hôm nay",
+      "aiCalls": "Lượt AI đã dùng",
+      "aiCallsDetail": "Trên trần {{count}} lượt/ngày",
+      "leads": "Liên hệ mới hôm nay",
+      "cost": "Tiền AI hôm nay",
+      "monthCost": "Tiền AI tháng này"
+    },
     "filters": {
       "label": "Bộ lọc hội thoại",
       "from": "Từ ngày",
@@ -2806,12 +2822,12 @@
     },
     "costs": {
       "title": "Tiền AI đang tiêu",
-      "description": "Chi phí ước tính từ token thực tế, tách phần trả lời khách, đọc ảnh và các lần chạy nội bộ.",
+      "description": "Chi phí từ {{from}} đến {{to}}; tổng tháng vẫn bao gồm các lần lập chỉ mục và chấm điểm.",
       "today": "Tổng hôm nay",
       "month": "Tổng tháng này",
       "averageConversation": "Trung bình mỗi hội thoại",
-      "text": "Trả lời chữ tháng này",
-      "images": "Đọc ảnh tháng này",
+      "text": "Trả lời chữ trong khoảng đã chọn",
+      "images": "Đọc ảnh trong khoảng đã chọn",
       "internal": "Chấm điểm và lập chỉ mục",
       "todayDetail": "Hôm nay: {{cost}}",
       "internalDetail": "Lập chỉ mục: {{index}} · Bộ đề: {{evaluation}}"
@@ -2833,16 +2849,17 @@
     },
     "quality": {
       "title": "Chất lượng trả lời",
-      "description": "Phân loại theo kết quả do hệ thống ghi nhận, không suy đoán lại ở màn quản trị.",
+      "description": "Phân loại từ {{from}} đến {{to}} theo kết quả do hệ thống ghi nhận.",
       "direct": "Trả lời thẳng",
       "productResults": "Trong đó {{count}} câu có kết quả sản phẩm",
       "clarifications": "Hỏi lại để làm rõ",
       "outOfScope": "Ngoài phạm vi",
-      "refusals": "Từ chối nội dung"
+      "refusals": "Từ chối nội dung",
+      "fallbackRate": "Tỉ lệ phải lùi về bản nhanh"
     },
     "leadFunnel": {
       "title": "Phễu liên hệ",
-      "description": "Biểu mẫu hiện khi khách chủ động bấm Gặp nhân viên; hai dòng lời mời cũ chỉ dùng đối chiếu dữ liệu lịch sử.",
+      "description": "Dữ liệu từ {{from}} đến {{to}}; hai dòng lời mời cũ chỉ dùng đối chiếu dữ liệu lịch sử.",
       "callbackFormOpened": "Khách đã mở biểu mẫu",
       "sequence1": "Lời mời lần 1 đã hiện",
       "sequence2": "Lời mời lần 2 đã hiện",
@@ -2874,6 +2891,7 @@
       "loadError": "Không tải được đánh giá của khách",
       "helpful": "Đúng ý",
       "unhelpful": "Chưa đúng ý",
+      "summary": "Đúng ý: {{helpful}} · Chưa đúng ý: {{unhelpful}} trong khoảng đã chọn.",
       "topIssues": "Các lỗi được báo nhiều nhất",
       "empty": "Chưa có câu trả lời nào bị báo chưa đúng ý.",
       "recent": "Câu bị báo chưa đúng ý nhiều nhất",
@@ -2894,7 +2912,7 @@
     },
     "salesFunnel": {
       "title": "Phễu bán hàng từ chat",
-      "description": "Tính theo ngày bắt đầu hội thoại; đơn được ghi nhận theo lần chạm hợp lệ cuối cùng trong 7 ngày.",
+      "description": "Từ {{from}} đến {{to}}; đơn được ghi nhận theo lần chạm hợp lệ cuối cùng trong 7 ngày.",
       "conversations": "Hội thoại",
       "productViews": "Bấm xem sản phẩm",
       "cartAdds": "Thêm vào giỏ",
@@ -2926,6 +2944,7 @@
       "title": "Dữ liệu sản phẩm cần bổ sung",
       "description": "Sản phẩm thiếu dữ liệu quan trọng được xếp lên đây để chủ shop sửa ngay trong màn Sản phẩm.",
       "permissionDenied": "Bạn cần quyền xem sản phẩm để mở danh sách dữ liệu còn thiếu.",
+      "summary": "Thiếu size: {{size}} · Thiếu thông số: {{specs}} · Mã màu/mẫu: {{raw}} · Thiếu phụ kiện: {{accessories}}.",
       "missingSize": "Thiếu hướng dẫn size",
       "missingSpecs": "Thiếu thông số kỹ thuật",
       "rawOptions": "Còn màu/mẫu dạng mã",
@@ -2946,7 +2965,7 @@
     },
     "actions": {
       "title": "Hiệu quả nút gợi ý",
-      "description": "Theo dõi từ lượt bấm đến thêm giỏ, đơn hàng và doanh thu đã được xác minh.",
+      "description": "Theo dõi từ {{from}} đến {{to}}: lượt bấm, thêm giỏ, đơn hàng và doanh thu đã được xác minh.",
       "caption": "Hiệu quả từng nút gợi ý trong Trợ lý BigBike",
       "empty": "Chưa có lượt bấm nút gợi ý",
       "emptyDescription": "Số liệu sẽ xuất hiện sau khi khách dùng các nút bước tiếp trong chat.",
@@ -3015,6 +3034,8 @@
       },
       "messageTelemetry": "{{tokens}} token · {{requests}} yêu cầu · {{latency}} · {{cost}}",
       "summary": "Tóm tắt hội thoại",
+      "assistedOrdersSummary": "Đơn được hỗ trợ · doanh thu",
+      "contactSummary": "Thông tin liên hệ khách để lại",
       "tokens": "Tổng token",
       "providerRequests": "Yêu cầu tới nhà cung cấp",
       "endedReason": "Trạng thái kết thúc",
@@ -3316,6 +3337,24 @@
       "pricing": "Giá công bố cho 1 triệu token: vào {{input}} · ra {{output}}",
       "verifiedAt": "Kiểm tra tài khoản gần nhất: {{time}}",
       "descriptionsAreEstimates": "Nhanh/chậm là đặc tính dự kiến của dòng model; số tốc độ thực tế chỉ xuất hiện sau khi shop chạy bộ đề. Giá trên là giá công bố, chi phí mỗi câu phụ thuộc số token thật."
+    },
+    "assistantOperationalStats": {
+      "title": "Số liệu vận hành Trợ lý BigBike",
+      "description": "Số liệu kỹ thuật dùng để so sánh model trước khi đổi trong Cài đặt. Token/request lấy theo hôm nay; model, fallback và chi phí nội bộ lấy theo tháng; tốc độ có thêm cửa sổ 14 ngày.",
+      "permissionDenied": "Bạn cần quyền xem cài đặt để xem số liệu vận hành của trợ lý.",
+      "loadError": "Không tải được số liệu vận hành trợ lý",
+      "tokensToday": "Tổng token hôm nay",
+      "providerRequestsToday": "Yêu cầu nhà cung cấp hôm nay",
+      "averageLatencyToday": "Thời gian trả lời TB hôm nay",
+      "latency14Days": "Tốc độ p95 trong 14 ngày",
+      "p50": "p50: {{value}}",
+      "fallbacksThisMonth": "Lần lùi về bản nhanh tháng này",
+      "noFallbackReason": "Chưa ghi nhận lý do",
+      "indexCostThisMonth": "Chi phí lập chỉ mục tháng này",
+      "evaluationCostThisMonth": "Chi phí chấm điểm tháng này",
+      "modelUsage": "Bản AI thực tế đã phục vụ trong tháng",
+      "modelUsageLine": "{{count}} lượt · {{cost}}",
+      "emptyModels": "Chưa có lượt phục vụ nào được ghi nhận trong tháng."
     },
     "assistantEvaluation": {
       "title": "So sánh chất lượng ngoài luồng khách thật",

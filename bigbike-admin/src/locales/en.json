@@ -2775,6 +2775,22 @@
     "emptyDescription": "New conversations with BigBike Assistant will appear here.",
     "emptyFiltered": "No conversations match the selected filters.",
     "tableCaption": "BigBike Assistant conversation list",
+    "tableTitle": "Conversation list",
+    "tableDescription": "The main content from {{from}} to {{to}}; the table has seven columns.",
+    "tasks": {
+      "title": "Work to do",
+      "description": "Prioritize unresolved questions, missing product data and unhelpful feedback from {{from}} to {{to}}."
+    },
+    "today": {
+      "title": "Today",
+      "description": "Five snapshot metrics for today; they do not change when the date range below changes.",
+      "conversations": "Conversations today",
+      "aiCalls": "AI calls used",
+      "aiCallsDetail": "Of a daily limit of {{count}}",
+      "leads": "New follow-ups today",
+      "cost": "AI spend today",
+      "monthCost": "AI spend this month"
+    },
     "filters": {
       "label": "Conversation filters",
       "from": "From",
@@ -2806,12 +2822,12 @@
     },
     "costs": {
       "title": "AI spend",
-      "description": "Estimated from actual token use, separated into customer replies, image analysis and internal runs.",
+      "description": "Spend from {{from}} to {{to}}; the monthly total still includes indexing and evaluation runs.",
       "today": "Total today",
       "month": "Total this month",
       "averageConversation": "Average per conversation",
-      "text": "Text replies this month",
-      "images": "Image analysis this month",
+      "text": "Text replies in selected period",
+      "images": "Image analysis in selected period",
       "internal": "Evaluation and indexing",
       "todayDetail": "Today: {{cost}}",
       "internalDetail": "Indexing: {{index}} · Benchmark: {{evaluation}}"
@@ -2833,16 +2849,17 @@
     },
     "quality": {
       "title": "Reply quality",
-      "description": "Uses the result category recorded by the system; the admin screen does not infer it again.",
+      "description": "Classified from {{from}} to {{to}} using the result category recorded by the system.",
       "direct": "Direct answers",
       "productResults": "Including {{count}} replies with product results",
       "clarifications": "Clarifying questions",
       "outOfScope": "Out of scope",
-      "refusals": "Content refusals"
+      "refusals": "Content refusals",
+      "fallbackRate": "Fallback rate"
     },
     "leadFunnel": {
       "title": "Follow-up funnel",
-      "description": "The form opens when customers actively choose Contact staff; the two invitation rows remain for historical comparison only.",
+      "description": "Data from {{from}} to {{to}}; the two invitation rows remain for historical comparison only.",
       "callbackFormOpened": "Customers who opened the form",
       "sequence1": "First invitation shown",
       "sequence2": "Second invitation shown",
@@ -2874,6 +2891,7 @@
       "loadError": "Customer ratings could not be loaded",
       "helpful": "Helpful",
       "unhelpful": "Not helpful",
+      "summary": "Helpful: {{helpful}} · Not helpful: {{unhelpful}} in the selected period.",
       "topIssues": "Most reported problems",
       "empty": "No replies have been marked as unhelpful.",
       "recent": "Most criticized questions",
@@ -2894,7 +2912,7 @@
     },
     "salesFunnel": {
       "title": "Chat sales funnel",
-      "description": "Cohorted by conversation start date; an order uses the last eligible assistant touch within seven days.",
+      "description": "From {{from}} to {{to}}; an order uses the last eligible assistant touch within seven days.",
       "conversations": "Conversations",
       "productViews": "Product views",
       "cartAdds": "Cart additions",
@@ -2926,6 +2944,7 @@
       "title": "Product data to complete",
       "description": "Products missing sales-critical information are listed here so the shop owner can open and fix them directly.",
       "permissionDenied": "Product read permission is required to view missing product data.",
+      "summary": "Missing sizes: {{size}} · Missing specifications: {{specs}} · Raw colour/model codes: {{raw}} · Missing accessories: {{accessories}}.",
       "missingSize": "Missing size guides",
       "missingSpecs": "Missing specifications",
       "rawOptions": "Raw colour/model codes",
@@ -2946,7 +2965,7 @@
     },
     "actions": {
       "title": "Suggested-action performance",
-      "description": "Tracks verified clicks through cart lines, orders and revenue.",
+      "description": "From {{from}} to {{to}}: tracks verified clicks through cart lines, orders and revenue.",
       "caption": "Performance by BigBike Assistant suggested action",
       "empty": "No suggested-action clicks yet",
       "emptyDescription": "Metrics appear after customers use next-step buttons in chat.",
@@ -3015,6 +3034,8 @@
       },
       "messageTelemetry": "{{tokens}} tokens · {{requests}} requests · {{latency}} · {{cost}}",
       "summary": "Conversation summary",
+      "assistedOrdersSummary": "Supported orders · revenue",
+      "contactSummary": "Customer contact details",
       "tokens": "Total tokens",
       "providerRequests": "Provider requests",
       "endedReason": "End state",
@@ -3316,6 +3337,24 @@
       "pricing": "Published price per 1 million tokens: input {{input}} · output {{output}}",
       "verifiedAt": "Account last checked: {{time}}",
       "descriptionsAreEstimates": "Speed labels describe the expected model tier; measured latency appears only after the shop runs the benchmark. Published token prices are shown, while cost per answer depends on actual token use."
+    },
+    "assistantOperationalStats": {
+      "title": "BigBike Assistant operational metrics",
+      "description": "Technical metrics for comparing models before changing the setting. Tokens/requests use today; models, fallbacks and internal costs use the month; latency also includes a 14-day window.",
+      "permissionDenied": "Settings read permission is required to view assistant operational metrics.",
+      "loadError": "Assistant operational metrics could not be loaded",
+      "tokensToday": "Total tokens today",
+      "providerRequestsToday": "Provider requests today",
+      "averageLatencyToday": "Average response time today",
+      "latency14Days": "14-day p95 response time",
+      "p50": "p50: {{value}}",
+      "fallbacksThisMonth": "Fallbacks this month",
+      "noFallbackReason": "No reason recorded",
+      "indexCostThisMonth": "Indexing cost this month",
+      "evaluationCostThisMonth": "Evaluation cost this month",
+      "modelUsage": "Models that actually served replies this month",
+      "modelUsageLine": "{{count}} uses · {{cost}}",
+      "emptyModels": "No served model usage has been recorded this month."
     },
     "assistantEvaluation": {
       "title": "Offline quality comparison",

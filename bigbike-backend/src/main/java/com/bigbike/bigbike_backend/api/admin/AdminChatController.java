@@ -129,10 +129,14 @@ public class AdminChatController extends AdminControllerSupport {
     public ApiDataResponse<AdminChatStatsResponse> stats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "chat.read");
-        return apiResponseFactory.data(adminChatService.stats(date), request);
+        devAdminAuthService.requireAnyPermission(request, "chat.read", "settings.read");
+        return apiResponseFactory.data(adminChatService.stats(date, from, to), request);
     }
 
     @GetMapping("/handoffs")

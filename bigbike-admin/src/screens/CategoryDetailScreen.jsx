@@ -51,27 +51,11 @@ import { Button } from '@/components/ui/button'
 import { ProductsInCategoryCard } from './category-detail/ProductsInCategoryCard'
 import { DangerZoneCard } from './category-detail/DangerZoneCard'
 import { DetailSection } from '../components/DetailSection'
+import { KpiCard } from '../components/KpiCard'
 import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 
 function CategoryMetricCard({ label, value, icon: Icon, tone = 'info', hint, compact = false }) {
-  return (
-    <div className="bb-kpi">
-      <div className="bb-kpi-head">
-        <span>{label}</span>
-        <span className={`bb-kpi-icon ${tone}`}>
-          {Icon ? <Icon size={15} aria-hidden="true" /> : null}
-        </span>
-      </div>
-      <div className={compact ? 'flex min-h-7 items-center text-sm font-semibold text-foreground' : 'bb-kpi-value'}>
-        {value}
-      </div>
-      {hint ? (
-        <div className="bb-kpi-foot">
-          <span className="bb-kpi-foot-label">{hint}</span>
-        </div>
-      ) : null}
-    </div>
-  )
+  return <KpiCard label={label} value={value} icon={Icon ? <Icon size={15} aria-hidden="true" /> : null} tone={tone} detail={hint} compact={compact} />
 }
 
 function SidebarInfoRow({ label, children, icon: Icon }) {

@@ -1929,12 +1929,17 @@ export async function fetchAdminChatImageBlob(imageId) {
   }
 }
 
-export async function fetchChatStats(date) {
+export async function fetchChatStats(input) {
   try {
-    const payload = await requestJson('/admin/chat/stats', { query: { date } })
+    const params = typeof input === 'string' ? { date: input } : (input || {})
+    const payload = await requestJson('/admin/chat/stats', {
+      query: { date: params.date, from: params.from, to: params.to },
+    })
     const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
     return withLiveData({
       date: safeChatString(data.date),
+      periodFrom: safeChatString(data.periodFrom),
+      periodTo: safeChatString(data.periodTo),
       aiCalls: safeChatCount(data.aiCalls),
       conversations: safeChatCount(data.conversations),
       leads: safeChatCount(data.leads),

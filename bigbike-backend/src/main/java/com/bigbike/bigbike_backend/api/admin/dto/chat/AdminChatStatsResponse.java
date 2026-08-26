@@ -6,6 +6,8 @@ import java.util.List;
 
 public record AdminChatStatsResponse(
         LocalDate date,
+        LocalDate periodFrom,
+        LocalDate periodTo,
         long aiCalls,
         long conversations,
         long leads,

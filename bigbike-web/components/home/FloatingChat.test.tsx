@@ -386,11 +386,36 @@ describe("FloatingChat", () => {
     await user.click(screen.getByRole("button", { name: "open" }));
     expect(await screen.findByText("Xin chào từ Trợ lý BigBike")).toBeInTheDocument();
     expect(document.body.querySelector("[data-bigbike-onboarding]")).toBeInTheDocument();
-    expect(document.body.querySelectorAll("[data-bigbike-onboarding] button")).toHaveLength(4);
+    expect(document.body.querySelectorAll("[data-bigbike-onboarding] button")).toHaveLength(0);
+    expect(document.body.querySelectorAll("[data-bigbike-quick-prompts] button")).toHaveLength(4);
+    expect(document.body.querySelector("[data-bigbike-conversation] [data-bigbike-quick-prompts]")).toBeNull();
     expect(screen.getByRole("button", { name: "talkToStaff" })).toBeInTheDocument();
 
     const avatar = document.body.querySelector("[data-bigbike-avatar] svg");
     expect(avatar).toBeInTheDocument();
+  });
+
+  it("keeps long configured quick prompts readable while sending the complete source text", async () => {
+    const longPrompt = "Tìm mẫu mũ touring màu đen, còn hàng, phù hợp đi xa và trong ngân sách dưới 5 triệu đồng";
+    api.fetchChatAvailability.mockResolvedValue({
+      mode: "AI",
+      greeting: "Xin chào từ Trợ lý BigBike",
+      quickPrompts: [longPrompt],
+      maxTurns: 12,
+      contacts: {},
+    });
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+
+    await user.click(screen.getByRole("button", { name: "open" }));
+    const prompt = await screen.findByRole("button", { name: longPrompt });
+    expect(prompt).toHaveClass("min-h-11", "normal-case");
+    expect(prompt.querySelector(".line-clamp-2")).toHaveTextContent(longPrompt);
+
+    await user.click(prompt);
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalled());
+    expect(api.streamChatMessage.mock.calls[0]?.[0]).toBe(longPrompt);
+    expect(document.querySelector("[data-bigbike-quick-prompts]")).not.toBeInTheDocument();
   });
 
   it("keeps the desktop page interactive and uses a mobile-only backdrop", async () => {
@@ -1226,6 +1251,11 @@ describe("FloatingChat", () => {
     render(<FloatingChat />);
 
     await user.click(screen.getByRole("button", { name: "open" }));
+    const memoryToggle = screen.getByRole("button", { name: "memoryDisclosure" });
+    expect(memoryToggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(memoryToggle);
+    expect(memoryToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "disableMemory" })).toBeInTheDocument();
     await user.type(await screen.findByLabelText("messageLabel"), "Lưu câu này");
     await user.click(screen.getByRole("button", { name: "send" }));
     expect(await screen.findAllByText("Nội dung cần xoá ngay.")).not.toHaveLength(0);

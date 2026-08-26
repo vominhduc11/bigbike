@@ -24,6 +24,7 @@ import { readDraft, useDraftAutosave } from '../lib/useDraftAutosave'
 import { recordRecentItem } from '@/lib/useRecentItems'
 import { CustomerStatusReasonModal } from '../components/CustomerStatusReasonModal'
 import { DetailSection } from '../components/DetailSection'
+import { KpiCard } from '../components/KpiCard'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -157,22 +158,7 @@ function EmptyInline({ icon: Icon, children }) {
 }
 
 function MetricCard({ label, value, icon: Icon, tone = 'info', money = false, hint }) {
-  return (
-    <div className="bb-kpi">
-      <div className="bb-kpi-head">
-        <span>{stripTrailingColon(label)}</span>
-        <span className={`bb-kpi-icon ${tone}`}>
-          {Icon ? <Icon size={15} aria-hidden="true" /> : null}
-        </span>
-      </div>
-      <div className={money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{value}</div>
-      {hint ? (
-        <div className="bb-kpi-foot">
-          <span className="bb-kpi-foot-label">{hint}</span>
-        </div>
-      ) : null}
-    </div>
-  )
+  return <KpiCard label={stripTrailingColon(label)} value={value} icon={Icon ? <Icon size={15} aria-hidden="true" /> : null} tone={tone} money={money} detail={hint} />
 }
 
 export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {

@@ -14,6 +14,7 @@ import { AdminTable } from '../components/AdminTable'
 import { CustomerStatusReasonModal } from '../components/CustomerStatusReasonModal'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
+import { KpiCard } from '../components/KpiCard'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
@@ -359,50 +360,38 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           tương ứng nên giữ dạng số liệu tĩnh. */}
       {summary ? (
         <div className="bb-kpi-grid bb-kpi-grid-4">
-          <div className="bb-kpi">
-            <div className="bb-kpi-head">
-              <span className="bb-kpi-icon danger"><Users size={15} /></span>
-              <span>{t('customers.kpi.total')}</span>
-            </div>
-            <div className="bb-kpi-value">{summary.total.toLocaleString(i18n.language)}</div>
-            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.totalHint')}</span></div>
-          </div>
-          <div className="bb-kpi">
-            <div className="bb-kpi-head">
-              <span className="bb-kpi-icon warning"><Crown size={15} /></span>
-              <span>{t('customers.kpi.vip')}</span>
-            </div>
-            <div className="bb-kpi-value">{summary.vip.toLocaleString(i18n.language)}</div>
-            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.vipHint')}</span></div>
-          </div>
-          <div className="bb-kpi">
-            <div className="bb-kpi-head">
-              <span className="bb-kpi-icon info"><UserPlus size={15} /></span>
-              <span>{t('customers.kpi.new30d')}</span>
-            </div>
-            <div className="bb-kpi-value">{summary.newLast30Days.toLocaleString(i18n.language)}</div>
-            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.new30dHint')}</span></div>
-          </div>
-          <div
-            className={`bb-kpi clickable${activeRegisteredFilter ? ' active' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-label={t('customers.kpi.activeFilterAria', { defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động' })}
+          <KpiCard
+            label={t('customers.kpi.total')}
+            value={summary.total.toLocaleString(i18n.language)}
+            icon={<Users size={15} />}
+            tone="danger"
+            detail={t('customers.kpi.totalHint')}
+          />
+          <KpiCard
+            label={t('customers.kpi.vip')}
+            value={summary.vip.toLocaleString(i18n.language)}
+            icon={<Crown size={15} />}
+            tone="warning"
+            detail={t('customers.kpi.vipHint')}
+          />
+          <KpiCard
+            label={t('customers.kpi.new30d')}
+            value={summary.newLast30Days.toLocaleString(i18n.language)}
+            icon={<UserPlus size={15} />}
+            tone="info"
+            detail={t('customers.kpi.new30dHint')}
+          />
+          <KpiCard
+            label={t('customers.kpi.active')}
+            value={summary.active.toLocaleString(i18n.language)}
+            icon={<UserCheck size={15} />}
+            tone="success"
+            clickable
+            active={activeRegisteredFilter}
+            ariaLabel={t('customers.kpi.activeFilterAria', { defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động' })}
             onClick={toggleActiveRegisteredFilter}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                toggleActiveRegisteredFilter()
-              }
-            }}
-          >
-            <div className="bb-kpi-head">
-              <span className="bb-kpi-icon success"><UserCheck size={15} /></span>
-              <span>{t('customers.kpi.active')}</span>
-            </div>
-            <div className="bb-kpi-value">{summary.active.toLocaleString(i18n.language)}</div>
-            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.activeHint')}</span></div>
-          </div>
+            detail={t('customers.kpi.activeHint')}
+          />
         </div>
       ) : summaryError ? (
         // (a) Trước đây summary lỗi để skeleton chạy vô hạn — nay hiện trạng thái lỗi + Thử lại.

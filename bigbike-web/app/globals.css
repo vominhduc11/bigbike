@@ -385,6 +385,7 @@ body {
   --bb-floating-action-gap: var(--bb-space-5);
   --bb-floating-action-right: max(var(--bb-space-4), env(safe-area-inset-right));
   --bb-floating-chat-bottom: calc(var(--bb-mobile-nav-height, 3.75rem) + env(safe-area-inset-bottom) + var(--bb-space-6));
+  --bb-floating-chat-panel-height: clamp(35rem, 80dvh, 47.5rem);
   --bb-floating-scroll-top-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap));
   --bb-floating-chat-panel-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-2));
 }

@@ -64,7 +64,7 @@ File này dùng làm nền cho:
 | Guest / Customer | Gửi ảnh khi owner đã bật, xem lại ảnh của chính hội thoại, xoá lịch sử và ảnh của chính mình | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_057`–`059` |
 | Admin có `chat.read` | Xem transcript và ảnh riêng tư thuộc hội thoại để tiếp nhận | Lấy URL ảnh công khai; xem ảnh nếu thiếu `chat.read`; thay đổi model chỉ bằng quyền đọc chat | `CHAT_RULE_059`, `PERMISSION_MATRIX.md` |
 | Admin có `chat.reply` | Thực hiện các thao tác handoff hiện hành; quyền này vẫn phụ thuộc `chat.read` | Sửa/xoá ảnh hoặc transcript; đổi cấu hình AI nếu thiếu `settings.write` | `CHAT_RULE_047`, `CHAT_RULE_059` |
-| Owner/Admin có `settings.read` / `settings.write` | Xem model khả dụng, chi phí và kết quả bộ đề; đổi model trợ lý, bật/tắt đọc ảnh, thay trần ảnh, chạy bộ đề trong trần 2 USD | Đổi model kiểm duyệt đánh giá khi chỉ đổi model trợ lý; xem nội dung ảnh nếu thiếu `chat.read` | `CHAT_RULE_053`–`057` |
+| Owner/Admin có `settings.read` / `settings.write` | Xem model khả dụng, chi phí, kết quả bộ đề và telemetry vận hành của trợ lý; đổi model trợ lý, bật/tắt đọc ảnh, thay trần ảnh, chạy bộ đề trong trần 2 USD | Đổi model kiểm duyệt đánh giá khi chỉ đổi model trợ lý; xem transcript/ảnh riêng tư nếu thiếu `chat.read` | `CHAT_RULE_053`–`057`, `CHAT_RULE_056_UI_SETTINGS` |
 | System | Gửi ảnh đã kiểm tra tới Gemini để nhận diện, ghi usage/cost, tự lùi model và xoá object theo retention | Log ảnh/PII; giữ ảnh ngoài hạn 90 ngày; coi model output là bằng chứng catalog | `CHAT_RULE_055`–`059` |
 
 ### Role: Guest / Visitor

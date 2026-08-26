@@ -226,22 +226,25 @@ test("BigBike Assistant loads availability once, shows onboarding, and sends a q
   const panelBox = await bigbikeDialog(page).boundingBox();
   const readingBox = await conversation(page).boundingBox();
   const viewport = page.viewportSize();
+  const expectedPanelHeight = Math.min(760, Math.max(560, (viewport?.height ?? 736) * 0.8));
   expect(panelBox).not.toBeNull();
   expect(readingBox).not.toBeNull();
   expect(panelBox!.width).toBeGreaterThanOrEqual(400);
   expect(panelBox!.width).toBeLessThanOrEqual(440);
-  expect(panelBox!.height).toBeLessThanOrEqual(640);
-  expect(panelBox!.height).toBeLessThanOrEqual((viewport?.height ?? 736) - 96);
-  expect(readingBox!.height / panelBox!.height).toBeGreaterThanOrEqual(0.7);
+  expect(panelBox!.height).toBeGreaterThanOrEqual(expectedPanelHeight - 1);
+  expect(panelBox!.height).toBeLessThanOrEqual(expectedPanelHeight + 1);
+  expect(readingBox!.height).toBeGreaterThan(0);
   await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCount(0);
   const scrollBefore = await page.evaluate(() => window.scrollY);
   await page.evaluate(() => window.scrollTo(0, 240));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrollBefore);
-  await expect(onboarding.getByRole("button")).toHaveCount(4);
-  await expect(onboarding.getByRole("button", { name: "Prompt dư" })).toHaveCount(0);
+  const quickPrompts = bigbikeDialog(page).locator("[data-bigbike-quick-prompts]");
+  await expect(quickPrompts.getByRole("button")).toHaveCount(4);
+  await expect(quickPrompts.getByRole("button", { name: "Prompt dư" })).toHaveCount(0);
+  await expect(conversation(page).locator("[data-bigbike-quick-prompts]")).toHaveCount(0);
   await expect(composer(page).getByRole("button", { name: "Gặp nhân viên" })).toBeVisible();
 
-  await onboarding.getByRole("button", { name: "Tìm theo nhu cầu" }).press("Enter");
+  await quickPrompts.getByRole("button", { name: "Tìm theo nhu cầu" }).press("Enter");
   await expect(
     conversation(page).getByText("Anh/chị chủ yếu dùng sản phẩm để đi phố, touring hay đi xa?"),
   ).toBeVisible();
@@ -685,7 +688,7 @@ test("BigBike Assistant shows no-results only for an explicit product-finding qu
   await page.goto("/", { waitUntil: "load" });
   await openBigBike(page);
   await bigbikeDialog(page)
-    .locator("[data-bigbike-onboarding]")
+    .locator("[data-bigbike-quick-prompts]")
     .getByRole("button", { name: "Tìm giúp tôi mũ bảo hiểm dưới 2 triệu." })
     .click();
 

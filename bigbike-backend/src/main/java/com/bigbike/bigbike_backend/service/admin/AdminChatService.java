@@ -143,10 +143,29 @@ public class AdminChatService {
     }
 
     public AdminChatStatsResponse stats(LocalDate requestedDate) {
+        return stats(requestedDate, null, null);
+    }
+
+    public AdminChatStatsResponse stats(
+            LocalDate requestedDate,
+            LocalDate requestedFrom,
+            LocalDate requestedTo
+    ) {
         LocalDate date = requestedDate == null ? LocalDate.now(VN_ZONE) : requestedDate;
-        Instant from = date.atStartOfDay(VN_ZONE).toInstant();
-        Instant to = date.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
-        long aiCalls = chatAiQuotaService.usedOn(date);
+        boolean hasRequestedPeriod = requestedFrom != null || requestedTo != null;
+        LocalDate periodTo = requestedTo == null ? date : requestedTo;
+        LocalDate periodFrom = requestedFrom == null ? periodTo : requestedFrom;
+        if (periodFrom.isAfter(periodTo)) {
+            LocalDate swap = periodFrom;
+            periodFrom = periodTo;
+            periodTo = swap;
+        }
+        Instant from = periodFrom.atStartOfDay(VN_ZONE).toInstant();
+        Instant to = periodTo.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
+        Instant snapshotTo = date.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
+        long aiCalls = hasRequestedPeriod
+                ? messageRepo.countAiUsesBetween(from, to)
+                : chatAiQuotaService.usedOn(date);
         long conversations = conversationRepo
                 .countByStartedAtGreaterThanEqualAndStartedAtLessThan(from, to);
         long leads = leadRepo.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(from, to);
@@ -157,47 +176,48 @@ public class AdminChatService {
         BigDecimal assistedRevenue = zero(attributionRepo.sumAssistedRevenueBetween(from, to));
         ChatAssistantSettings.Snapshot settings = assistantSettings.load("vi");
         int limit = settings.dailyLimit();
+        long snapshotAiCalls = chatAiQuotaService.usedOn(date);
         Instant monthFrom = date.withDayOfMonth(1).atStartOfDay(VN_ZONE).toInstant();
         Instant monthTo = date.withDayOfMonth(1).plusMonths(1).atStartOfDay(VN_ZONE).toInstant();
-        Map<String, CategoryCost> dayCosts = costMap(
+        Map<String, CategoryCost> periodCosts = costMap(
                 usageEventRepo.summarizeCategories(from, to));
         Map<String, CategoryCost> monthCosts = costMap(
                 usageEventRepo.summarizeCategories(monthFrom, monthTo));
-        BigDecimal legacyDayCost = zero(messageRepo.sumLegacyCostBetween(from, to));
+        BigDecimal legacyPeriodCost = zero(messageRepo.sumLegacyCostBetween(from, to));
         BigDecimal legacyMonthCost = zero(messageRepo.sumLegacyCostBetween(monthFrom, monthTo));
-        BigDecimal textDayCost = categoryCost(dayCosts, "CUSTOMER_TEXT").add(legacyDayCost);
+        BigDecimal textPeriodCost = categoryCost(periodCosts, "CUSTOMER_TEXT").add(legacyPeriodCost);
         BigDecimal textMonthCost = categoryCost(monthCosts, "CUSTOMER_TEXT").add(legacyMonthCost);
-        BigDecimal imageDayCost = categoryCost(dayCosts, "CUSTOMER_IMAGE");
+        BigDecimal imagePeriodCost = categoryCost(periodCosts, "CUSTOMER_IMAGE");
         BigDecimal imageMonthCost = categoryCost(monthCosts, "CUSTOMER_IMAGE");
-        BigDecimal indexDayCost = categoryCost(dayCosts, "PRODUCT_IMAGE_INDEX");
+        BigDecimal indexPeriodCost = categoryCost(periodCosts, "PRODUCT_IMAGE_INDEX");
         BigDecimal indexMonthCost = categoryCost(monthCosts, "PRODUCT_IMAGE_INDEX");
-        BigDecimal evaluationDayCost = categoryCost(dayCosts, "EVALUATION");
+        BigDecimal evaluationPeriodCost = categoryCost(periodCosts, "EVALUATION");
         BigDecimal evaluationMonthCost = categoryCost(monthCosts, "EVALUATION");
-        BigDecimal todayCost = textDayCost.add(imageDayCost).add(indexDayCost).add(evaluationDayCost);
+        BigDecimal periodCost = textPeriodCost.add(imagePeriodCost)
+                .add(indexPeriodCost).add(evaluationPeriodCost);
         BigDecimal monthlyCost = textMonthCost.add(imageMonthCost)
                 .add(indexMonthCost).add(evaluationMonthCost);
-        long monthAiConversations = usageEventRepo
-                .countCustomerAiConversationsBetween(monthFrom, monthTo);
-        BigDecimal customerMonthCost = textMonthCost.add(imageMonthCost);
-        BigDecimal averagePerConversation = monthAiConversations == 0
+        long aiConversations = usageEventRepo.countCustomerAiConversationsBetween(from, to);
+        BigDecimal customerPeriodCost = textPeriodCost.add(imagePeriodCost);
+        BigDecimal averagePerConversation = aiConversations == 0
                 ? BigDecimal.ZERO
-                : customerMonthCost.divide(
-                        BigDecimal.valueOf(monthAiConversations), 8, RoundingMode.HALF_UP);
-        long fallbackToday = usageEventRepo.countFallbacksBetween(from, to);
+                : customerPeriodCost.divide(
+                        BigDecimal.valueOf(aiConversations), 8, RoundingMode.HALF_UP);
+        long fallbackPeriod = usageEventRepo.countFallbacksBetween(from, to);
         long fallbackMonth = usageEventRepo.countFallbacksBetween(monthFrom, monthTo);
-        long monthTextMessages = usageEventRepo.countTextMessagesBetween(monthFrom, monthTo);
-        BigDecimal fallbackRate = monthTextMessages == 0
+        long periodTextMessages = usageEventRepo.countTextMessagesBetween(from, to);
+        BigDecimal fallbackRate = periodTextMessages == 0
                 ? BigDecimal.ZERO
-                : BigDecimal.valueOf(fallbackMonth)
-                        .divide(BigDecimal.valueOf(monthTextMessages), 4, RoundingMode.HALF_UP);
+                : BigDecimal.valueOf(fallbackPeriod)
+                        .divide(BigDecimal.valueOf(periodTextMessages), 4, RoundingMode.HALF_UP);
         Instant monitorFrom = date.minusDays(13).atStartOfDay(VN_ZONE).toInstant();
-        long giveUps14Days = messageRepo.countFallbackMessagesBetween(monitorFrom, to);
-        long replies14Days = messageRepo.countAssistantRepliesBetween(monitorFrom, to);
+        long giveUps14Days = messageRepo.countFallbackMessagesBetween(monitorFrom, snapshotTo);
+        long replies14Days = messageRepo.countAssistantRepliesBetween(monitorFrom, snapshotTo);
         BigDecimal giveUpRate14Days = replies14Days == 0
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(giveUps14Days)
                         .divide(BigDecimal.valueOf(replies14Days), 6, RoundingMode.HALF_UP);
-        List<Integer> monitorLatencies = messageRepo.findAiReplyLatenciesBetween(monitorFrom, to);
+        List<Integer> monitorLatencies = messageRepo.findAiReplyLatenciesBetween(monitorFrom, snapshotTo);
         List<AdminChatModelUsageResponse> modelUsage = usageEventRepo
                 .summarizeModels(monthFrom, monthTo).stream()
                 .map(item -> new AdminChatModelUsageResponse(
@@ -206,11 +226,11 @@ public class AdminChatService {
         BigDecimal warning = settings.monthlyCostWarningUsd();
         List<AdminChatActionStatsResponse> actionStats = actionStats(from, to);
         return new AdminChatStatsResponse(
-                date, aiCalls, conversations, leads, unanswered,
-                value(telemetry.getContentRefusals()), limit, Math.max(0, limit - aiCalls),
+                date, periodFrom, periodTo, aiCalls, conversations, leads, unanswered,
+                value(telemetry.getContentRefusals()), limit, Math.max(0, limit - snapshotAiCalls),
                 value(telemetry.getInputTokens()), value(telemetry.getOutputTokens()),
                 value(telemetry.getThinkingTokens()), value(telemetry.getProviderRequests()),
-                rounded(telemetry.getAverageLatencyMs()), todayCost,
+                rounded(telemetry.getAverageLatencyMs()), periodCost,
                 assistedOrders, assistedRevenue,
                 new AdminChatQualityStatsResponse(
                         value(quality.getAnswers()), value(quality.getProductResults()),
@@ -229,11 +249,11 @@ public class AdminChatService {
                 warning,
                 warning.signum() > 0 && monthlyCost.compareTo(warning) >= 0,
                 new AdminChatCostStatsResponse(
-                        todayCost, monthlyCost, averagePerConversation,
-                        textDayCost, textMonthCost, imageDayCost, imageMonthCost,
-                        indexDayCost, indexMonthCost, evaluationDayCost, evaluationMonthCost),
+                        periodCost, monthlyCost, averagePerConversation,
+                        textPeriodCost, textMonthCost, imagePeriodCost, imageMonthCost,
+                        indexPeriodCost, indexMonthCost, evaluationPeriodCost, evaluationMonthCost),
                 new AdminChatFallbackStatsResponse(
-                        fallbackToday, fallbackMonth, fallbackRate,
+                        fallbackPeriod, fallbackMonth, fallbackRate,
                         usageEventRepo.findLatestFallbackReason(monthFrom, monthTo),
                         giveUps14Days, replies14Days, giveUpRate14Days,
                         BigDecimal.valueOf(5).divide(BigDecimal.valueOf(58), 6, RoundingMode.HALF_UP),

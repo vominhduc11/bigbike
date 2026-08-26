@@ -42,24 +42,8 @@ function sourceLabel(source, t) {
   return labels[source] || t('common.unknown')
 }
 
-function formatNumber(value, locale) {
-  return value == null ? '—' : new Intl.NumberFormat(locale).format(value)
-}
-
-function formatUsd(value, locale) {
-  return value == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(value)
-}
-
 function formatVnd(value, locale) {
   return value == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
-}
-
-function formatLatency(value, locale) {
-  return value == null
-    ? '—'
-    : value >= 1_000
-      ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value / 1_000)} s`
-      : `${new Intl.NumberFormat(locale).format(Math.round(value))} ms`
 }
 
 function leadSourceLabel(source, t) {
@@ -326,17 +310,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content || t('common.unknown')}</p>
                       {!isUser && !isStaff ? (
                         <div className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
-                          <p>{t('chatAdmin.detail.source')}: <span className="font-semibold text-foreground">{sourceLabel(message.source, t)}</span>{message.aiCalled ? ` · ${t('chatAdmin.detail.usedAi')}` : ''}</p>
-                          {message.providerRequestCount != null ? (
-                            <p className="mt-1">
-                              {t('chatAdmin.detail.messageTelemetry', {
-                                tokens: formatNumber((message.inputTokens ?? 0) + (message.outputTokens ?? 0) + (message.thinkingTokens ?? 0), locale),
-                                requests: formatNumber(message.providerRequestCount, locale),
-                                latency: formatLatency(message.latencyMs, locale),
-                                cost: formatUsd(message.estimatedCostUsd, locale),
-                              })}
-                            </p>
-                          ) : <p className="mt-1">{t('chatAdmin.stats.noTelemetry')}</p>}
+                          <p>{t('chatAdmin.detail.source')}: <span className="font-semibold text-foreground">{sourceLabel(message.source, t)}</span></p>
                         </div>
                       ) : null}
                     </article>
@@ -392,51 +366,24 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
         </div>
 
         <aside className="grid content-start gap-4">
-      <DetailSection title={t('chatAdmin.detail.summary')} headingLevel={2}>
-            <dl className="grid gap-4">
+          <DetailSection title={t('chatAdmin.detail.summary')} headingLevel={2}>
+            <dl data-testid="chat-detail-summary" className="grid gap-4">
               <DetailValue label={t('chatAdmin.columns.language')}>{conversation.locale.toUpperCase()}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.turns')}>{conversation.turnCount}</DetailValue>
-              <DetailValue label={t('chatAdmin.columns.aiCalls')}>{conversation.aiCallCount}</DetailValue>
-              <DetailValue label={t('chatAdmin.detail.tokens')}>{conversation.hasTelemetry ? formatNumber((conversation.inputTokens ?? 0) + (conversation.outputTokens ?? 0) + (conversation.thinkingTokens ?? 0), locale) : '—'}</DetailValue>
-              <DetailValue label={t('chatAdmin.detail.providerRequests')}>{conversation.hasTelemetry ? formatNumber(conversation.providerRequests, locale) : '—'}</DetailValue>
-              <DetailValue label={t('chatAdmin.columns.latency')}>{conversation.hasTelemetry ? formatLatency(conversation.averageLatencyMs, locale) : '—'}</DetailValue>
-              <DetailValue label={t('chatAdmin.columns.cost')}>{conversation.hasTelemetry ? formatUsd(conversation.estimatedCostUsd, locale) : '—'}</DetailValue>
-              <DetailValue label={t('chatAdmin.stats.contentRefusals')}>{formatNumber(conversation.contentRefusals, locale)}</DetailValue>
-              <DetailValue label={t('chatAdmin.stats.assistedOrders')}>{formatNumber(conversation.assistedOrders, locale)}</DetailValue>
-              <DetailValue label={t('chatAdmin.columns.assistedRevenue')}>{formatVnd(conversation.assistedRevenue, locale)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.startedAt')}>{formatDateTime(conversation.startedAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.lastMessage')}>{formatDateTime(conversation.lastMessageAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.detail.endedReason')}>{endedReasonLabel(conversation.endedReason, t)}</DetailValue>
+              <DetailValue label={t('chatAdmin.detail.assistedOrdersSummary')}>
+                <div className="grid gap-1">
+                  <span>{conversation.assistedOrders} · {formatVnd(conversation.assistedRevenue, locale)}</span>
+                  {conversation.orderAttributions?.length ? <div className="flex flex-wrap gap-x-2 gap-y-1">{conversation.orderAttributions.map((attribution) => <Button key={attribution.orderLineItemId || `${attribution.orderId}-${attribution.createdAt}`} type="button" variant="link" className="h-auto p-0 font-mono text-xs" onClick={() => navigate(`/admin/orders/${attribution.orderId}`)}>{t('chatAdmin.detail.openOrder', { id: attribution.orderId.slice(0, 8) })}</Button>)}</div> : <span className="text-muted-foreground">{t('chatAdmin.detail.noAssistedOrders')}</span>}
+                </div>
+              </DetailValue>
+              <DetailValue label={t('chatAdmin.detail.contactSummary')}>
+                {conversation.lead ? <div className="grid gap-1"><span>{conversation.lead.name} · {conversation.lead.phone}</span><span className="text-muted-foreground">{leadSourceLabel(conversation.lead.source, t)} · {formatDateTime(conversation.lead.consentedAt)}</span>{conversation.lead.note ? <span className="text-muted-foreground">{conversation.lead.note}</span> : null}</div> : <span className="text-muted-foreground">{t('chatAdmin.detail.noLead')}</span>}
+              </DetailValue>
             </dl>
-      </DetailSection>
-
-      <DetailSection title={t('chatAdmin.detail.assistedOrders')} headingLevel={2}>
-            {conversation.orderAttributions.length > 0 ? (
-              <ul className="grid gap-3">
-                {conversation.orderAttributions.map((attribution) => (
-                  <li key={attribution.orderLineItemId || `${attribution.orderId}-${attribution.createdAt}`} className="rounded-[var(--admin-radius-card)] border border-border bg-surface-muted p-3">
-                    <Button type="button" variant="link" className="h-auto p-0 font-mono text-sm" onClick={() => navigate(`/admin/orders/${attribution.orderId}`)}>
-                      {t('chatAdmin.detail.openOrder', { id: attribution.orderId.slice(0, 8) })}
-                    </Button>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{formatVnd(attribution.attributedAmount, locale)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(attribution.createdAt)}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noAssistedOrders')}</p>}
-      </DetailSection>
-
-      <DetailSection title={t('chatAdmin.detail.lead')} headingLevel={2}>
-            {conversation.lead ? (
-              <dl className="grid gap-4">
-                <DetailValue label={t('chatAdmin.detail.leadName')}>{conversation.lead.name}</DetailValue>
-                <DetailValue label={t('chatAdmin.detail.phone')}>{conversation.lead.phone}</DetailValue>
-                <DetailValue label={t('chatAdmin.detail.note')}>{conversation.lead.note || t('chatAdmin.detail.none')}</DetailValue>
-                <DetailValue label={t('chatAdmin.detail.contactSource')}>{leadSourceLabel(conversation.lead.source, t)}</DetailValue>
-                <DetailValue label={t('chatAdmin.detail.consentedAt')}>{formatDateTime(conversation.lead.consentedAt)}</DetailValue>
-              </dl>
-            ) : <p className="text-sm text-muted-foreground">{t('chatAdmin.detail.noLead')}</p>}
-      </DetailSection>
+          </DetailSection>
         </aside>
       </div>
     </Screen>

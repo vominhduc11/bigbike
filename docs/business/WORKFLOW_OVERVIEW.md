@@ -34,6 +34,12 @@
 | 16 | System/Guest | Hệ thống phân biệt tìm sản phẩm, hàng hỏng, hoá đơn/đơn hàng, hỏi size và ảnh ngoài phạm vi. Chỉ tìm trong hàng thật đang bán, chỉ nói “trông giống”, không đoán size/bảo hành/OCR/giá hay khẳng định cùng sản phẩm | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_058` |
 | 17 | Admin/System | Người có `chat.read` xem được ảnh trong đúng hội thoại; xoá lịch sử hoặc hết 90 ngày sẽ xoá object riêng tư trước khi xoá metadata hội thoại. Người thiếu quyền không lấy được URL công khai hay nội dung ảnh | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_059`, `STATE_MACHINES.md` §15D |
 
+### Admin chat reporting layout (owner decision 2026-08-26)
+
+Màn `/admin/chat` hiển thị theo một mạch cuộn: tiêu đề/Cài đặt, cảnh báo chi phí tháng, hàng chờ nhân viên, bộ lọc ngày, hàng Hôm nay, danh sách hội thoại, Việc cần làm và các nhóm phân tích theo khoảng đã chọn. Hàng Hôm nay không đổi khi đổi bộ lọc. Danh sách hội thoại còn bảy cột; chi tiết hội thoại còn bảy dòng tóm tắt và bỏ telemetry số dưới từng câu trả lời nhưng giữ nguồn câu trả lời và toàn bộ thao tác nhân viên.
+
+Các số kỹ thuật được xem ở Cài đặt → Trợ lý BigBike: token/request trong ngày, model thực tế trong tháng, latency trung bình và p50/p95 14 ngày, số/lý do fallback gần nhất, chi phí lập chỉ mục/chấm điểm. Câu hỏi bó tay, dữ liệu sản phẩm thiếu và feedback vẫn là nhóm Việc cần làm; dữ liệu sản phẩm thiếu giữ bảng từng sản phẩm và chỉ bỏ bốn ô đếm tổng.
+
 ## Account Login Workflow
 
 | Step | Actor | Current flow | Status | Evidence |

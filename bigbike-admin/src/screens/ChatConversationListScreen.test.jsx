@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -8,25 +9,56 @@ vi.mock('react-i18next', () => ({
     i18n: { resolvedLanguage: 'vi' },
     t: (key, values = {}) => ({
       'chatAdmin.guest': 'Khách vãng lai',
+      'chatAdmin.columns.startedAt': 'Bắt đầu',
+      'chatAdmin.columns.customer': 'Khách hàng',
+      'chatAdmin.columns.language': 'Ngôn ngữ',
       'chatAdmin.columns.turns': 'Lượt hỏi',
-      'chatAdmin.columns.aiCalls': 'Lượt gọi AI',
-      'chatAdmin.stats.unanswered': 'Câu chưa trả lời được trong ngày',
-      'chatAdmin.stats.averageLatency': 'Thời gian trả lời trung bình',
-      'chatAdmin.stats.tokens': 'Token đã dùng',
-      'chatAdmin.stats.estimatedCost': 'Chi phí ước tính',
-      'chatAdmin.stats.contentRefusals': 'Nội dung bị từ chối',
-      'chatAdmin.stats.assistedOrders': 'Đơn được trợ lý hỗ trợ',
+      'chatAdmin.columns.assistedRevenue': 'Doanh thu hỗ trợ',
+      'chatAdmin.columns.lead': 'Có liên hệ',
+      'chatAdmin.columns.lastMessage': 'Tin cuối',
+      'chatAdmin.today.title': 'Hôm nay',
+      'chatAdmin.today.conversations': 'Hội thoại hôm nay',
+      'chatAdmin.today.aiCalls': 'Lượt AI đã dùng',
+      'chatAdmin.today.leads': 'Liên hệ mới hôm nay',
+      'chatAdmin.today.cost': 'Tiền AI hôm nay',
+      'chatAdmin.today.monthCost': 'Tiền AI tháng này',
+      'chatAdmin.filters.from': 'Từ ngày',
+      'chatAdmin.filters.to': 'Đến ngày',
+      'chatAdmin.filters.lead': 'Tình trạng để lại liên hệ',
+      'chatAdmin.filters.allLeads': 'Tất cả hội thoại',
+      'chatAdmin.tableTitle': 'Danh sách hội thoại',
+      'chatAdmin.tasks.title': 'Việc cần làm',
+      'chatAdmin.dataGaps.title': 'Dữ liệu sản phẩm cần bổ sung',
+      'chatAdmin.dataGaps.summary': 'Tóm tắt dữ liệu sản phẩm',
+      'chatAdmin.dataGaps.columns.product': 'Sản phẩm',
+      'chatAdmin.dataGaps.columns.gaps': 'Dữ liệu còn thiếu',
+      'chatAdmin.dataGaps.columns.rawOptions': 'Màu/mẫu dạng mã',
+      'chatAdmin.unanswered.title': 'Câu hỏi trợ lý chưa xử lý được',
+      'chatAdmin.feedback.title': 'Khách đánh giá câu trả lời',
+      'chatAdmin.feedback.summary': 'Đánh giá trong khoảng đã chọn',
       'chatAdmin.monthlyWarning.title': 'Chi phí AI tháng này đã chạm ngưỡng cảnh báo',
       'chatAdmin.quality.title': 'Chất lượng trả lời',
       'chatAdmin.quality.direct': 'Trả lời thẳng',
+      'chatAdmin.quality.clarifications': 'Hỏi lại để làm rõ',
+      'chatAdmin.quality.outOfScope': 'Ngoài phạm vi',
+      'chatAdmin.quality.refusals': 'Từ chối nội dung',
+      'chatAdmin.quality.fallbackRate': 'Tỉ lệ phải lùi về bản nhanh',
+      'chatAdmin.salesFunnel.title': 'Phễu bán hàng từ chat',
+      'chatAdmin.costs.title': 'Tiền AI đang tiêu',
+      'chatAdmin.costs.averageConversation': 'Trung bình mỗi hội thoại',
+      'chatAdmin.costs.text': 'Trả lời chữ trong khoảng đã chọn',
+      'chatAdmin.costs.images': 'Đọc ảnh trong khoảng đã chọn',
       'chatAdmin.leadFunnel.title': 'Phễu liên hệ',
       'chatAdmin.leadFunnel.callbackFormOpened': 'Khách đã mở biểu mẫu',
-      'chatAdmin.leadFunnel.sequence2': 'Lời mời lần 2 đã hiện',
+      'chatAdmin.leadFunnel.accepted': 'Đã đồng ý',
+      'chatAdmin.leadFunnel.declined': 'Đã từ chối',
       'chatAdmin.actions.title': 'Hiệu quả nút gợi ý',
       'chatAdmin.actions.types.CHECK_SIZE': 'Kiểm tra size',
     }[key] || values.defaultValue || key),
   }),
 }))
+
+const apiMocks = vi.hoisted(() => ({ fetchChatStats: vi.fn() }))
 
 vi.mock('../lib/adminApi', () => ({
   fetchChatConversations: vi.fn().mockResolvedValue({
@@ -48,7 +80,7 @@ vi.mock('../lib/adminApi', () => ({
     }],
     pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
   }),
-  fetchChatStats: vi.fn().mockResolvedValue({
+  fetchChatStats: apiMocks.fetchChatStats.mockResolvedValue({
     date: '2026-08-09',
     aiCalls: 2,
     conversations: 1,
@@ -147,32 +179,64 @@ function renderScreen() {
 }
 
 describe('ChatConversationListScreen', () => {
-  // Regression: thẻ mobile từng nhận `meta` dạng chuỗi, làm sập cả trang qua ErrorBoundary
-  // ngay khi hội thoại đầu tiên hiện ra.
-  it('hiện danh sách hội thoại kèm thẻ mobile mà không sập', async () => {
+  it('hiện đúng bố cục gọn, bảy cột và không đưa số kỹ thuật vào danh sách', async () => {
     renderScreen()
 
     expect(await screen.findAllByText('Khách vãng lai')).not.toHaveLength(0)
-    expect(screen.getAllByText('Lượt hỏi').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Lượt gọi AI').length).toBeGreaterThan(0)
-    expect(screen.getByText('Câu chưa trả lời được trong ngày')).toBeInTheDocument()
-    expect(screen.getAllByText('4').length).toBeGreaterThan(0)
-    expect(screen.getByText('Thời gian trả lời trung bình')).toBeInTheDocument()
-    expect(screen.getByText('Chi phí ước tính')).toBeInTheDocument()
-    expect(screen.getByText('Nội dung bị từ chối')).toBeInTheDocument()
-    expect(screen.getByText('Đơn được trợ lý hỗ trợ')).toBeInTheDocument()
+    expect(document.querySelectorAll('.bb-kpi')).toHaveLength(21)
+    expect(screen.getByText('Hội thoại hôm nay')).toBeInTheDocument()
+    expect(screen.getByText('Lượt AI đã dùng')).toBeInTheDocument()
+    expect(screen.getByText('Liên hệ mới hôm nay')).toBeInTheDocument()
+    expect(screen.getByText('Tiền AI hôm nay')).toBeInTheDocument()
+    expect(screen.getByText('Tiền AI tháng này')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Bắt đầu' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Khách hàng' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Ngôn ngữ' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Lượt hỏi' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Có liên hệ' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Doanh thu hỗ trợ' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Tin cuối' })).toBeInTheDocument()
+    expect(screen.getByTestId('chat-conversations-table').querySelectorAll('th')).toHaveLength(7)
+    expect(screen.getByTestId('chat-conversations-table').querySelector('.overflow-auto')).toBeInTheDocument()
     expect(screen.getByText('Chi phí AI tháng này đã chạm ngưỡng cảnh báo')).toBeInTheDocument()
     expect(screen.getByText('Chất lượng trả lời')).toBeInTheDocument()
+    expect(screen.getByText('Phễu bán hàng từ chat')).toBeInTheDocument()
+    expect(screen.getByText('Tiền AI đang tiêu')).toBeInTheDocument()
     expect(screen.getByText('Trả lời thẳng')).toBeInTheDocument()
+    expect(screen.getByText('Tỉ lệ phải lùi về bản nhanh')).toBeInTheDocument()
     expect(screen.getByText('Phễu liên hệ')).toBeInTheDocument()
     expect(screen.getByText('Khách đã mở biểu mẫu')).toBeInTheDocument()
-    expect(screen.getByText('Lời mời lần 2 đã hiện')).toBeInTheDocument()
+    expect(screen.getByText('Đã đồng ý')).toBeInTheDocument()
     expect(screen.getByText('Hiệu quả nút gợi ý')).toBeInTheDocument()
     expect(screen.getAllByText('Kiểm tra size').length).toBeGreaterThan(0)
     expect(screen.getByText('Size M còn không?')).toBeInTheDocument()
     expect(screen.getByText('Size M còn hàng không?')).toBeInTheDocument()
-    expect(screen.getByText('chatAdmin.feedback.weeklyTrend')).toBeInTheDocument()
-    expect(screen.getByText('10')).toBeInTheDocument()
-    expect(screen.getByText('131')).toBeInTheDocument()
+    expect(screen.queryByText('Lượt gọi AI')).not.toBeInTheDocument()
+    expect(screen.queryByText('Thời gian trả lời trung bình')).not.toBeInTheDocument()
+    expect(screen.queryByText('Chi phí ước tính')).not.toBeInTheDocument()
+    expect(screen.queryByText('Lời mời lần 2 đã hiện')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Từ ngày').compareDocumentPosition(screen.getByText('Hôm nay')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('keeps the Today snapshot query stable while changing the selected period query', async () => {
+    const user = userEvent.setup()
+    apiMocks.fetchChatStats.mockClear()
+    renderScreen()
+
+    await screen.findAllByText('Khách vãng lai')
+    const initialInputs = apiMocks.fetchChatStats.mock.calls.map(([input]) => input)
+    expect(initialInputs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ date: expect.any(String) }),
+      expect.objectContaining({ date: expect.any(String), from: expect.any(String), to: expect.any(String) }),
+    ]))
+
+    const fromInput = screen.getByLabelText('Từ ngày')
+    await user.clear(fromInput)
+    await user.type(fromInput, '2026-08-01')
+
+    await waitFor(() => expect(apiMocks.fetchChatStats.mock.calls.map(([input]) => input)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ from: '2026-08-01', to: expect.any(String) }),
+    ])))
+    expect(apiMocks.fetchChatStats.mock.calls.some(([input]) => input.from == null && input.to == null)).toBe(true)
   })
 })

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class AdminChatPermissionTest {
 
     @Test
-    void everyAdminChatReadRequiresChatReadPermission() {
+    void transcriptEndpointsKeepChatReadWhileStatsAllowsSettingsRead() {
         AdminChatService service = mock(AdminChatService.class);
         DevAdminAuthService auth = mock(DevAdminAuthService.class);
         ApiResponseFactory responses = mock(ApiResponseFactory.class);
@@ -34,9 +34,11 @@ class AdminChatPermissionTest {
 
         controller.list(1, 20, null, null, null, request);
         controller.get(UUID.randomUUID(), request);
-        controller.stats(null, request);
+        controller.stats(null, null, null, request);
 
-        verify(auth, times(3)).requirePermission(request, "chat.read");
+        verify(auth, times(2)).requirePermission(request, "chat.read");
+        verify(auth).requireAnyPermission(request, "chat.read", "settings.read");
+        verify(service).stats(null, null, null);
     }
 
     @Test

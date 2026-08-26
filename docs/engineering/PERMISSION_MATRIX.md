@@ -89,7 +89,8 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail/stats, phễu, handoff waiting, unanswered và data gaps (data gaps còn cần `products.read`) | `CHAT_RULE_013`, `CHAT_RULE_029`, `CHAT_RULE_040`–`042`, `PermissionCatalog`, migrations `V1016`/`V1052` |
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail, phễu, handoff waiting, unanswered và data gaps (data gaps còn cần `products.read`); cũng được đọc stats | `CHAT_RULE_013`, `CHAT_RULE_029`, `CHAT_RULE_040`–`042`, `PermissionCatalog`, migrations `V1016`/`V1052` |
+| `settings.read` | Theo ma trận settings hiện hành | Snapshot stats không chứa transcript/PII: token/request, model usage, chi phí, latency và fallback telemetry để hiển thị trong Cài đặt → Trợ lý BigBike | `CHAT_RULE_056_UI_SETTINGS`, `API_CONTRACT.md` §Admin chat history |
 | `chat.reply` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Claim/send/return/close handoff; dependency bắt buộc `chat.read` | `CHAT_RULE_040`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
 
 `chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` là quyền ghi hẹp, nhạy cảm, phụ thuộc `chat.read`; lưu đúng admin và thời điểm nhận/gửi/bàn giao nhưng không cho sửa/xoá transcript. Migration đổi mọi role-permission `chat.handle` hiện có sang `chat.reply` và không tự cấp role thường. Chỉ người đang nhận được gửi/bàn giao/đóng. Lead chứa số/Zalo nên list/handoff chung chỉ trả cờ có liên hệ; detail chỉ mở sau `chat.read`.

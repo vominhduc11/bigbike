@@ -68,4 +68,58 @@ class AdminChatServiceStage4StatsTest {
         assertThat(stats.fallbacks().p50LatencyMs14Days()).isEqualTo(200);
         assertThat(stats.fallbacks().p95LatencyMs14Days()).isEqualTo(1_000);
     }
+
+    @Test
+    void usesSelectedPeriodForRangeMetricsButKeepsMonthlyWarningComplete() {
+        ChatConversationJpaRepository conversations = mock(ChatConversationJpaRepository.class);
+        ChatAiUsageEventJpaRepository usage = mock(ChatAiUsageEventJpaRepository.class);
+        ChatMessageJpaRepository messages = mock(ChatMessageJpaRepository.class);
+        ChatLeadJpaRepository leads = mock(ChatLeadJpaRepository.class);
+        ChatOrderAttributionJpaRepository attributions = mock(ChatOrderAttributionJpaRepository.class);
+        ChatInteractionJpaRepository interactions = mock(ChatInteractionJpaRepository.class);
+        CartItemJpaRepository cartItems = mock(CartItemJpaRepository.class);
+        ChatAssistantSettings assistantSettings = mock(ChatAssistantSettings.class);
+        ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
+        ChatMessageJpaRepository.TelemetrySummary telemetry = mock(ChatMessageJpaRepository.TelemetrySummary.class);
+        ChatMessageJpaRepository.QualitySummary quality = mock(ChatMessageJpaRepository.QualitySummary.class);
+        ChatAssistantSettings.Snapshot snapshot = mock(ChatAssistantSettings.Snapshot.class);
+        when(messages.summarizeBetween(any(), any())).thenReturn(telemetry);
+        when(messages.summarizeQualityBetween(any(), any())).thenReturn(quality);
+        when(snapshot.dailyLimit()).thenReturn(400);
+        when(snapshot.monthlyCostWarningUsd()).thenReturn(new BigDecimal("25"));
+        when(assistantSettings.load("vi")).thenReturn(snapshot);
+        when(messages.countAiUsesBetween(any(), any())).thenReturn(7L);
+        when(usage.countCustomerAiConversationsBetween(any(), any())).thenReturn(2L);
+
+        ChatAiUsageEventJpaRepository.CategoryCostSummary text = mock(ChatAiUsageEventJpaRepository.CategoryCostSummary.class);
+        when(text.getCategory()).thenReturn("CUSTOMER_TEXT");
+        when(text.getCostUsd()).thenReturn(new BigDecimal("1.00"));
+        ChatAiUsageEventJpaRepository.CategoryCostSummary image = mock(ChatAiUsageEventJpaRepository.CategoryCostSummary.class);
+        when(image.getCategory()).thenReturn("CUSTOMER_IMAGE");
+        when(image.getCostUsd()).thenReturn(new BigDecimal("0.50"));
+        ChatAiUsageEventJpaRepository.CategoryCostSummary index = mock(ChatAiUsageEventJpaRepository.CategoryCostSummary.class);
+        when(index.getCategory()).thenReturn("PRODUCT_IMAGE_INDEX");
+        when(index.getCostUsd()).thenReturn(new BigDecimal("0.25"));
+        ChatAiUsageEventJpaRepository.CategoryCostSummary evaluation = mock(ChatAiUsageEventJpaRepository.CategoryCostSummary.class);
+        when(evaluation.getCategory()).thenReturn("EVALUATION");
+        when(evaluation.getCostUsd()).thenReturn(new BigDecimal("0.75"));
+        when(usage.summarizeCategories(any(), any()))
+                .thenReturn(List.of(text, image, index, evaluation));
+
+        LocalDate date = LocalDate.of(2026, 8, 26);
+        LocalDate from = LocalDate.of(2026, 8, 20);
+        LocalDate to = LocalDate.of(2026, 8, 22);
+        AdminChatService service = new AdminChatService(
+                conversations, usage, messages, leads, attributions, interactions, cartItems,
+                assistantSettings, quota, mock(ChatImageService.class), mock(ChatMapper.class));
+
+        var stats = service.stats(date, from, to);
+
+        assertThat(stats.periodFrom()).isEqualTo(from);
+        assertThat(stats.periodTo()).isEqualTo(to);
+        assertThat(stats.aiCalls()).isEqualTo(7);
+        assertThat(stats.costs().todayUsd()).isEqualByComparingTo("2.50");
+        assertThat(stats.costs().averagePerConversationUsd()).isEqualByComparingTo("0.75");
+        assertThat(stats.monthlyCostUsd()).isEqualByComparingTo("2.50");
+    }
 }

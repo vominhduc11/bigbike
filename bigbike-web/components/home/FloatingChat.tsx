@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { History, ImagePlus, Loader2, MessageCircle, Minus, Phone, RefreshCw, Send, ThumbsDown, ThumbsUp, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, History, ImagePlus, Loader2, MessageCircle, Minus, Phone, RefreshCw, Send, ThumbsDown, ThumbsUp, Trash2, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -538,6 +538,7 @@ export function FloatingChat({
   const [memorySummary, setMemorySummary] = useState("");
   const [memoryDays, setMemoryDays] = useState(30);
   const [memoryUpdating, setMemoryUpdating] = useState(false);
+  const [memoryExpanded, setMemoryExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletingHistory, setDeletingHistory] = useState(false);
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, FeedbackState>>({});
@@ -709,6 +710,7 @@ export function FloatingChat({
       setContacts(fallbackContacts);
       setGreeting("");
       setInitialPrompts(fallbackPrompts);
+      setMemoryExpanded(false);
       setContactNotice("");
       setContactOpen(false);
       setRetryAvailable(false);
@@ -1790,7 +1792,7 @@ export function FloatingChat({
             event.preventDefault();
             focusLauncherSoon();
           }}
-          className="bb-floating-chat-panel left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-160! md:max-h-[calc(100dvh-6rem)]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
+          className="bb-floating-chat-panel left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-[var(--bb-floating-chat-panel-height)]! md:max-h-[calc(100dvh-var(--bb-floating-chat-bottom))]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
         >
           <DialogHeader className="shrink-0 border-x-0 border-t-0 border-b-4 border-chat bg-surface-dark px-3 pb-3 pt-[max(var(--bb-space-3),env(safe-area-inset-top))] text-primary-foreground md:pt-3">
             <div className="flex min-w-0 items-center gap-2">
@@ -1815,7 +1817,10 @@ export function FloatingChat({
                   className="size-11 min-h-11 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
                   aria-label={t("deleteConversation")}
                   title={t("deleteConversation")}
-                  onClick={() => setConfirmDelete(true)}
+                  onClick={() => {
+                     setConfirmDelete(true);
+                     setMemoryExpanded(true);
+                   }}
                 >
                   <Trash2 className="size-5" aria-hidden="true" />
                 </Button>
@@ -1843,10 +1848,28 @@ export function FloatingChat({
             </div>
           </DialogHeader>
 
-          <div className="shrink-0 border-b border-border bg-background px-4 py-3">
-            <div className="flex items-start gap-3">
-              <History className="mt-0.5 size-4 shrink-0 text-chat" aria-hidden="true" />
-              <div className="min-w-0 flex-1">
+          <div className="shrink-0 border-b border-border bg-background">
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 w-full justify-start gap-2 rounded-none px-4 py-2 text-left hover:scale-100"
+              aria-expanded={memoryExpanded}
+              aria-controls="bigbike-memory-details"
+              onClick={() => setMemoryExpanded((current) => !current)}
+            >
+              <History className="size-4 shrink-0 text-chat" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate font-body text-a5-meta text-muted-foreground">
+                {memoryEnabled
+                  ? memorySummary || t("memoryDisclosure", { days: memoryDays })
+                  : t("memoryDisabledSummary")}
+              </span>
+              <ChevronDown className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`} aria-hidden="true" />
+            </Button>
+            <div
+              id="bigbike-memory-details"
+              className="border-t border-border px-4 py-3"
+              hidden={!memoryExpanded}
+            >
                 <p className="m-0 font-body text-a5-meta leading-relaxed text-muted-foreground">
                   {memoryEnabled
                     ? memorySummary || t("memoryDisclosure", { days: memoryDays })
@@ -1855,7 +1878,7 @@ export function FloatingChat({
                 <Button
                   type="button"
                   variant="link"
-                  className="mt-1 h-auto min-h-0 p-0 font-body text-a5-meta"
+                  className="mt-2 min-h-11 p-0 font-body text-a5-meta"
                   disabled={memoryUpdating}
                   onClick={() => void handleMemoryToggle()}
                 >
@@ -1863,22 +1886,21 @@ export function FloatingChat({
                     ? t("memoryUpdating")
                     : memoryEnabled ? t("disableMemory") : t("enableMemory")}
                 </Button>
-              </div>
+                {confirmDelete ? (
+                  <div className="mt-3 border border-state-warning bg-state-warning-bg p-3" role="alert">
+                    <p className="m-0 font-body text-a5-meta font-semibold text-foreground">{t("confirmDeleteHistory")}</p>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <Button type="button" variant="outline" size="sm" disabled={deletingHistory} onClick={() => setConfirmDelete(false)}>
+                        {t("cancelDeleteHistory")}
+                      </Button>
+                      <Button type="button" size="sm" disabled={deletingHistory} onClick={() => void handleDeleteHistory()}>
+                        {deletingHistory ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+                        {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
             </div>
-            {confirmDelete ? (
-              <div className="mt-3 border border-state-warning bg-state-warning-bg p-3" role="alert">
-                <p className="m-0 font-body text-a5-meta font-semibold text-foreground">{t("confirmDeleteHistory")}</p>
-                <div className="mt-3 flex justify-end gap-2">
-                  <Button type="button" variant="outline" size="sm" disabled={deletingHistory} onClick={() => setConfirmDelete(false)}>
-                    {t("cancelDeleteHistory")}
-                  </Button>
-                  <Button type="button" size="sm" disabled={deletingHistory} onClick={() => void handleDeleteHistory()}>
-                    {deletingHistory ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
-                    {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -1896,13 +1918,14 @@ export function FloatingChat({
             </div>
           ) : (
             <>
-              <div
-                ref={listRef}
-                data-bigbike-conversation
-                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
-                onScroll={onConversationScroll}
-              >
-                <div className="grid gap-4">
+              <div className="relative min-h-0 flex-1">
+                <div
+                  ref={listRef}
+                  data-bigbike-conversation
+                  className="h-full overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
+                  onScroll={onConversationScroll}
+                >
+                  <div className="grid gap-4">
                   {messages.length === 0 ? (
                     <section
                       data-bigbike-onboarding
@@ -1917,7 +1940,7 @@ export function FloatingChat({
                           </p>
                           <h2
                             id="bigbike-onboarding-heading"
-                            className="mt-1 font-body text-a3-section font-semibold leading-title text-foreground"
+                            className="mt-1 font-body text-a4-content font-semibold leading-title text-foreground"
                           >
                             {greeting || defaultGreeting}
                           </h2>
@@ -1927,22 +1950,6 @@ export function FloatingChat({
                         </div>
                       </div>
 
-                      {initialPrompts.length > 0 ? (
-                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                          {initialPrompts.slice(0, 4).map((action) => (
-                            <Button
-                              key={action.id}
-                              type="button"
-                              variant="outline"
-                              className="min-h-16 w-full justify-start whitespace-normal border-border bg-background px-4 py-3 text-left text-foreground hover:border-chat hover:bg-cyan/10 hover:scale-100"
-                              disabled={sending || serviceMode !== "AI" || !visitorToken}
-                              onClick={() => runComposerAction(action)}
-                            >
-                              {action.label}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : null}
                     </section>
                   ) : null}
 
@@ -1990,7 +1997,7 @@ export function FloatingChat({
                           }
                         >
                           <div
-                            className={`border px-4 py-3 font-body text-a4-content leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : isStaff ? "border-surface-dark bg-background" : "border-border bg-background"}`}
+                            className={`border px-4 py-3 font-body text-a5-meta leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : isStaff ? "border-surface-dark bg-background" : "border-border bg-background"}`}
                           >
                             {message.images?.length ? (
                               <div className="mb-3 grid gap-2" data-chat-customer-images>
@@ -2185,6 +2192,29 @@ export function FloatingChat({
                   ) : null}
                 </div>
               </div>
+                {messages.length === 0 && initialPrompts.length > 0 && serviceMode === "AI" && !staffChatActive && !contactOpen ? (
+                  <div data-bigbike-quick-prompts className="pointer-events-none absolute inset-x-4 bottom-2 z-10">
+                    <div className="pointer-events-auto grid gap-2 border border-border bg-background p-2 shadow-[var(--bb-shadow-md)] sm:grid-cols-2">
+                      {initialPrompts.slice(0, 4).map((action) => (
+                        <Button
+                          key={action.id}
+                          type="button"
+                          variant="outline"
+                          aria-label={action.label}
+                          title={action.label}
+                          className="min-h-11 min-w-0 w-full justify-start whitespace-normal border-border bg-background px-3 py-2 text-left font-body text-b4-action font-semibold normal-case leading-title text-foreground hover:border-chat hover:bg-cyan/10 hover:scale-100"
+                          disabled={sending || !visitorToken}
+                          onClick={() => runComposerAction(action)}
+                        >
+                          <span aria-hidden="true" className="min-w-0 line-clamp-2">
+                            {action.label}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+            </div>
 
               <div
                 data-bigbike-composer

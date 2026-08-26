@@ -8545,11 +8545,11 @@
     "/api/v1/admin/chat/stats": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get daily quality, lead funnel, action conversion, monthly cost warning and attributed revenue",
+        "summary": "Get chat snapshot and selected-period quality, funnel, cost and fallback stats",
         "operationId": "getChatStats",
         "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"}}],
-        "responses": {"200":{"description":"Daily stats including explicitly opened callback forms, plus calendar-month USD totals in Asia/Ho_Chi_Minh"},"403":{"$ref":"#/components/responses/Forbidden"}}
+        "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"},"description":"Snapshot anchor for today, current month and 14-day monitoring."},{"name":"from","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period start in Asia/Ho_Chi_Minh."},{"name":"to","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period end in Asia/Ho_Chi_Minh."}],
+        "responses": {"200":{"description":"Snapshot plus selected-period stats; calendar-month USD totals, warning and 14-day monitoring remain anchored to date. Response includes periodFrom and periodTo."},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     }
   },

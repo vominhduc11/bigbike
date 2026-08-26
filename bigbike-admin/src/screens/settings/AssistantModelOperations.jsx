@@ -19,6 +19,7 @@ import {
 } from '@/lib/adminApi'
 import { useHasPermission } from '@/lib/auth'
 import { formatDateTime } from '@/lib/formatters'
+import { AssistantOperationalStats } from './AssistantOperationalStats'
 
 function formatUsd(value, locale, digits = 4) {
   return new Intl.NumberFormat(locale, {
@@ -203,6 +204,7 @@ export function AssistantModelOperations({ canUpdate }) {
 
   return (
     <div className="mb-6 space-y-6">
+      <AssistantOperationalStats />
       {actionError ? (
         <StatePanel tone="danger" title={t('settings.assistantModels.actionError')} description={actionError} />
       ) : null}

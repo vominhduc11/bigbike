@@ -89,6 +89,15 @@ Mọi ca có chữ khách nhìn thấy phải có VI/EN. Automated suite dùng p
 
 ## Release Caveats
 
+### Admin chat UI consolidation (owner decision 2026-08-26)
+
+| # | Ca nghiệm thu | Bằng chứng tự động | Verdict |
+|---:|---|---|---|
+| 23 | `/admin/chat` có đúng 21 ô số, 5 nhóm phân tích, bộ lọc nằm trước số liệu theo khoảng và hàng Hôm nay không đổi khi đổi khoảng. | `ChatConversationListScreen.test.jsx`, range API tests | `REQUIRED` |
+| 24 | Bảng hội thoại có đúng 7 cột và cuộn ngang trong vùng bảng trên mobile. | Chat screen + responsive tests | `REQUIRED` |
+| 25 | Chi tiết hội thoại có đúng 7 dòng tóm tắt, giữ nguồn trả lời và luồng nhân viên, không còn token/request/latency/chi phí dưới từng tin. | `ChatConversationDetailScreen.test.jsx` | `REQUIRED` |
+| 26 | Cài đặt → Trợ lý BigBike hiển thị toàn bộ số kỹ thuật đã chuyển, còn tổng chi phí tháng vẫn bao gồm index/evaluation. | Settings screen + backend stats tests | `REQUIRED` |
+
 | Topic | Current limitation | Status |
 |---|---|---|
 | External payment gateway | No confirmed live provider/webhook contract. New storefront orders use provider `INTERNAL` with manual `COD` or `BANK_TRANSFER`; BACS is legacy-order compatibility only. | `NOT_FOUND_IN_REPO` |

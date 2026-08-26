@@ -150,6 +150,47 @@ describe('admin chat read contract', () => {
     })
   })
 
+  it('sends an explicit inclusive period and preserves the period and full monthly cost breakdown', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
+      data: {
+        date: '2026-08-26',
+        periodFrom: '2026-08-20',
+        periodTo: '2026-08-26',
+        conversations: 7,
+        costs: {
+          todayUsd: 1.25,
+          monthUsd: 18.5,
+          textTodayUsd: 0.75,
+          textMonthUsd: 10,
+          imageTodayUsd: 0.5,
+          imageMonthUsd: 4,
+          indexTodayUsd: 0.1,
+          indexMonthUsd: 3,
+          evaluationTodayUsd: 0.2,
+          evaluationMonthUsd: 1.5,
+        },
+      },
+    }))
+
+    const result = await fetchChatStats({ date: '2026-08-26', from: '2026-08-20', to: '2026-08-26' })
+
+    expect(fetchMock.mock.calls[0][0]).toContain('date=2026-08-26')
+    expect(fetchMock.mock.calls[0][0]).toContain('from=2026-08-20')
+    expect(fetchMock.mock.calls[0][0]).toContain('to=2026-08-26')
+    expect(result).toMatchObject({
+      periodFrom: '2026-08-20',
+      periodTo: '2026-08-26',
+      costs: {
+        todayUsd: 1.25,
+        monthUsd: 18.5,
+        textTodayUsd: 0.75,
+        imageTodayUsd: 0.5,
+        indexMonthUsd: 3,
+        evaluationMonthUsd: 1.5,
+      },
+    })
+  })
+
   it('uses the live model catalog, changes only the assistant model and normalizes evaluation history', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, options = {}) => {
       const value = String(url)

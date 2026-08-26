@@ -18,6 +18,7 @@ import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
+import { KpiCard } from '../components/KpiCard'
 import { ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -402,27 +403,21 @@ export function ReportsScreen() {
             {kpiCards.map((k) => {
               const trend = makeTrend(k.raw, k.prev, t)
               return (
-                <div className="bb-kpi" key={k.key}>
-                  <div className="bb-kpi-head">
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {k.label}
-                      <span
-                        title={k.hint}
-                        aria-label={k.hint}
-                        role="img"
-                        style={{ display: 'inline-flex', cursor: 'help', opacity: 0.65 }}
-                      >
-                        <Info size={13} aria-hidden="true" />
-                      </span>
+                <KpiCard
+                  key={k.key}
+                  label={k.label}
+                  value={k.value}
+                  icon={k.icon}
+                  tone={k.color || 'info'}
+                  money={k.money}
+                  headerExtra={(
+                    <span title={k.hint} aria-label={k.hint} role="img" className="inline-flex cursor-help opacity-70">
+                      <Info size={13} aria-hidden="true" />
                     </span>
-                    <span className={`bb-kpi-icon ${k.color || 'info'}`}>{k.icon}</span>
-                  </div>
-                  <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
-                  <div className="bb-kpi-foot">
-                    <TrendPill {...trend} />
-                    {rangeLabel && <span className="bb-kpi-foot-label">{rangeLabel}</span>}
-                  </div>
-                </div>
+                  )}
+                  footer={<TrendPill {...trend} />}
+                  detail={rangeLabel}
+                />
               )
             })}
           </div>

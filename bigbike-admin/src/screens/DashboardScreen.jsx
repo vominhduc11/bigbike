@@ -20,6 +20,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { RecentItemsChips } from '../components/RecentItemsChips'
+import { KpiCard } from '../components/KpiCard'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { formatVndShort, formatRelativeTime } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
@@ -313,91 +314,53 @@ export function DashboardScreen({ navigate }) {
         <>
           {/* KPI cards */}
           <div className="bb-kpi-grid bb-kpi-grid-4">
-            <div
-              className={`bb-kpi${canReadReports ? ' clickable' : ''}`}
-              {...(canReadReports ? clickableProps(
-                () => navigate('/admin/reports'),
-                t('dashboard.kpi.todayRevenueAria'),
-              ) : {})}
-            >
-              <div className="bb-kpi-head">
-                <span>
-                  {t('dashboard.kpi.todayRevenue')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
-                </span>
-                <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
-              </div>
-              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi?.todayRevenue)}</div>
-              <div className="bb-kpi-foot">
-                <TrendPill {...revenueTrend(data.kpi)} />
-                <span className="bb-kpi-foot-label">
-                  {t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi?.todayPaidRevenue) })}
-                </span>
-              </div>
-            </div>
-
-            <div
-              className="bb-kpi clickable"
-              {...clickableProps(
-                () => navigate('/admin/orders'),
-                t('dashboard.kpi.todayOrdersAria'),
-              )}
-            >
-              <div className="bb-kpi-head">
-                <span>
-                  {t('dashboard.kpi.todayOrders')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
-                </span>
-                <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
-              </div>
-              <div className="bb-kpi-value">{(data.kpi?.todayOrders ?? 0).toLocaleString(numberLocale)}</div>
-              <div className="bb-kpi-foot">
-                <TrendPill {...ordersTrend(data.kpi)} />
-                <span className="bb-kpi-foot-label">{t('dashboard.kpi.todayOrdersHint')}</span>
-              </div>
-            </div>
-
-            <div
-              className="bb-kpi clickable"
-              {...clickableProps(
-                () => navigate('/admin/orders?orderStatus=PENDING'),
-                t('dashboard.kpi.pendingOrdersAria'),
-              )}
-            >
-              <div className="bb-kpi-head">
-                <span>
-                  {t('dashboard.kpi.pendingOrders')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
-                </span>
-                <span className={`bb-kpi-icon ${(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
-                  <Clock size={15} />
-                </span>
-              </div>
-              <div className="bb-kpi-value">{(data.kpi?.pendingOrders ?? 0).toLocaleString(numberLocale)}</div>
-              <div className="bb-kpi-foot">
-                <span className="bb-kpi-foot-label">{t('dashboard.kpi.pendingOrdersHint')}</span>
-              </div>
-            </div>
-
-            <div
-              className={`bb-kpi${canReadProducts ? ' clickable' : ''}`}
-              {...(canReadProducts ? clickableProps(
-                () => navigate('/admin/products?publishStatus=PUBLISHED'),
-                t('dashboard.kpi.activeProductsAria'),
-              ) : {})}
-            >
-              <div className="bb-kpi-head">
-                <span>
-                  {t('dashboard.kpi.activeProducts')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
-                </span>
-                <span className="bb-kpi-icon success"><Package size={15} /></span>
-              </div>
-              <div className="bb-kpi-value">{(data.kpi?.activeProducts ?? 0).toLocaleString(numberLocale)}</div>
-              <div className="bb-kpi-foot">
-                <span className="bb-kpi-foot-label">{t('dashboard.kpi.activeProductsHint')}</span>
-              </div>
-            </div>
+            <KpiCard
+              label={t('dashboard.kpi.todayRevenue')}
+              value={formatVndShort(data.kpi?.todayRevenue)}
+              icon={<CircleDollarSign size={15} />}
+              tone="brand"
+              money
+              clickable={canReadReports}
+              ariaLabel={t('dashboard.kpi.todayRevenueAria')}
+              onClick={canReadReports ? () => navigate('/admin/reports') : undefined}
+              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>}
+              footer={<TrendPill {...revenueTrend(data.kpi)} />}
+              detail={t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi?.todayPaidRevenue) })}
+            />
+            <KpiCard
+              label={t('dashboard.kpi.todayOrders')}
+              value={(data.kpi?.todayOrders ?? 0).toLocaleString(numberLocale)}
+              icon={<ShoppingBag size={15} />}
+              tone="info"
+              clickable
+              ariaLabel={t('dashboard.kpi.todayOrdersAria')}
+              onClick={() => navigate('/admin/orders')}
+              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>}
+              footer={<TrendPill {...ordersTrend(data.kpi)} />}
+              detail={t('dashboard.kpi.todayOrdersHint')}
+            />
+            <KpiCard
+              label={t('dashboard.kpi.pendingOrders')}
+              value={(data.kpi?.pendingOrders ?? 0).toLocaleString(numberLocale)}
+              icon={<Clock size={15} />}
+              tone={(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}
+              clickable
+              ariaLabel={t('dashboard.kpi.pendingOrdersAria')}
+              onClick={() => navigate('/admin/orders?orderStatus=PENDING')}
+              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>}
+              detail={t('dashboard.kpi.pendingOrdersHint')}
+            />
+            <KpiCard
+              label={t('dashboard.kpi.activeProducts')}
+              value={(data.kpi?.activeProducts ?? 0).toLocaleString(numberLocale)}
+              icon={<Package size={15} />}
+              tone="success"
+              clickable={canReadProducts}
+              ariaLabel={t('dashboard.kpi.activeProductsAria')}
+              onClick={canReadProducts ? () => navigate('/admin/products?publishStatus=PUBLISHED') : undefined}
+              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>}
+              detail={t('dashboard.kpi.activeProductsHint')}
+            />
           </div>
 
           {/* Charts row — 2:1 layout */}
