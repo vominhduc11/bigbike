@@ -230,7 +230,9 @@ class CartRetentionPostgresIntegrationTest {
 
     private AuditLogEntity audit(Instant createdAt) {
         AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("SYSTEM");
         log.setAction("RETENTION_TEST");
+        log.setResourceType("AUDIT_RETENTION_TEST");
         log.setCreatedAt(createdAt);
         return log;
     }

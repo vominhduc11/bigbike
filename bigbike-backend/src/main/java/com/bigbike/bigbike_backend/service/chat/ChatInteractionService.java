@@ -14,27 +14,49 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatInteractionService {
 
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatInteractionJpaRepository interactionRepo;
+    private final ChatAttributionTokenService attributionTokenService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** Compatibility constructor for phase-1 unit tests that do not record product views. */
+    public ChatInteractionService(
+            ChatConversationJpaRepository conversationRepo,
+            ChatMessageJpaRepository messageRepo,
+            ChatInteractionJpaRepository interactionRepo
+    ) {
+        this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
+        this.interactionRepo = interactionRepo;
+        this.attributionTokenService = null;
+    }
 
     @Transactional
     public ChatInteractionResponse record(ChatInteractionRequest request, UUID customerId) {
-        ChatConversationEntity conversation = ownedConversation(request.conversationId(), customerId);
+        return record(request, customerId, null);
+    }
+
+    @Transactional
+    public ChatInteractionResponse record(
+            ChatInteractionRequest request, UUID customerId, UUID visitorId) {
+        ChatConversationEntity conversation = ownedConversation(
+                request.conversationId(), customerId, visitorId);
         Optional<ChatInteractionEntity> replay = interactionRepo.findByClientEventId(request.clientEventId());
         if (replay.isPresent()) {
             verifySameEvent(replay.get(), request);
-            return new ChatInteractionResponse(true, replay.get().getId());
+            return responseFor(replay.get(), customerId);
         }
         ChatMessageEntity message = messageRepo.findByIdAndConversationIdAndRole(
                         request.assistantMessageId(), conversation.getId(), "ASSISTANT")
@@ -48,6 +70,7 @@ public class ChatInteractionService {
         entity.setInteractionType(request.type());
         entity.setLeadPromptSequence(shape.leadPromptSequence());
         entity.setActionType(shape.actionType());
+        entity.setProductSlug(shape.productSlug());
         try {
             entity = interactionRepo.saveAndFlush(entity);
         } catch (DataIntegrityViolationException exception) {
@@ -57,7 +80,7 @@ public class ChatInteractionService {
                                     conversation.getId(), message.getId(), request.type(), shape.leadPromptSequence()))
                     .orElseThrow(() -> exception);
         }
-        return new ChatInteractionResponse(true, entity.getId());
+        return responseFor(entity, customerId);
     }
 
     @Transactional(readOnly = true)
@@ -87,16 +110,8 @@ public class ChatInteractionService {
 
     @Transactional
     public int offerSecondLeadAfterVerifiedCart(UUID conversationId, UUID customerId) {
-        if (conversationId == null) return 0;
-        ChatConversationEntity conversation = ownedConversation(conversationId, customerId);
-        if (!"OFFERED".equals(conversation.getLeadOfferStatus())
-                || conversation.getLeadOfferCount() != 1
-                || !hasLeadPromptViewed(conversationId, 1)) {
-            return 0;
-        }
-        conversation.setLeadOfferCount(2);
-        conversationRepo.save(conversation);
-        return 2;
+        // Automatic invitations were retired; customers open the callback form explicitly.
+        return 0;
     }
 
     @Transactional(readOnly = true)
@@ -108,14 +123,96 @@ public class ChatInteractionService {
         UUID verified = verifiedActionOrigin(interactionId, conversationId);
         if (verified == null || productSlug == null || productSlug.isBlank()) return null;
         return messageRepo.countShownProductFromInteraction(
-                conversationId, verified, productSlug) > 0 ? verified : null;
+                conversationId, verified, productSlug) > 0
+                && interactionRepo.findById(verified)
+                        .map(item -> item.getCreatedAt() != null
+                                && !item.getCreatedAt().isBefore(
+                                        Instant.now().minus(ChatAttributionTokenService.WINDOW_HOURS,
+                                                ChronoUnit.HOURS)))
+                        .orElse(false)
+                ? verified : null;
     }
 
-    private ChatConversationEntity ownedConversation(UUID id, UUID customerId) {
+    public ChatAttributionTokenService.Payload verifiedAttributionToken(
+            String token, String productSlug, UUID customerId) {
+        if (attributionTokenService == null) {
+            throw new ConflictException("Ghi nhận từ trợ lý chưa sẵn sàng.");
+        }
+        ChatAttributionTokenService.Payload payload = attributionTokenService.verify(
+                token, productSlug, customerId);
+        ChatInteractionEntity interaction = interactionRepo.findById(payload.interactionId())
+                .filter(item -> "PRODUCT_VIEWED".equals(item.getInteractionType()))
+                .filter(item -> payload.conversationId().equals(item.getConversationId()))
+                .filter(item -> payload.productSlug().equals(item.getProductSlug()))
+                .orElseThrow(() -> new ConflictException("Lần xem sản phẩm từ trợ lý không hợp lệ."));
+        if (interaction.getCreatedAt() == null
+                || interaction.getCreatedAt().isBefore(
+                        Instant.now().minus(ChatAttributionTokenService.WINDOW_HOURS,
+                                ChronoUnit.HOURS))) {
+            throw new ConflictException("Liên kết từ trợ lý đã quá thời hạn ghi nhận 7 ngày.");
+        }
+        return payload;
+    }
+
+    @Transactional
+    public void recordServerCartAdded(
+            ChatAttributionTokenService.Payload payload,
+            UUID assistantMessageId,
+            UUID cartItemId
+    ) {
+        if (payload == null || assistantMessageId == null || cartItemId == null) return;
+        interactionRepo.insertCartAddedIfAbsent(
+                UUID.randomUUID(), payload.conversationId(), assistantMessageId,
+                payload.productSlug(), payload.interactionId(), cartItemId);
+    }
+
+    @Transactional(readOnly = true)
+    public UUID assistantMessageId(UUID interactionId) {
+        return interactionId == null ? null : interactionRepo.findById(interactionId)
+                .map(ChatInteractionEntity::getAssistantMessageId)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Instant interactionAt(UUID interactionId) {
+        return interactionId == null ? null : interactionRepo.findById(interactionId)
+                .map(ChatInteractionEntity::getCreatedAt)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEligibleAtCheckout(
+            UUID interactionId,
+            UUID conversationId,
+            String productSlug,
+            Instant touchAt
+    ) {
+        Instant cutoff = Instant.now().minus(
+                ChatAttributionTokenService.WINDOW_HOURS, ChronoUnit.HOURS);
+        if (conversationId == null || productSlug == null || productSlug.isBlank()
+                || interactionId == null || touchAt == null || touchAt.isBefore(cutoff)) {
+            return false;
+        }
+        return interactionRepo.findById(interactionId)
+                .filter(item -> conversationId.equals(item.getConversationId()))
+                .filter(item -> item.getCreatedAt() != null && !item.getCreatedAt().isBefore(cutoff))
+                .filter(item -> "PRODUCT_VIEWED".equals(item.getInteractionType())
+                        ? productSlug.equals(item.getProductSlug())
+                        : "ACTION_CLICKED".equals(item.getInteractionType())
+                                && messageRepo.countShownProductFromInteraction(
+                                        conversationId, interactionId, productSlug) > 0)
+                .isPresent();
+    }
+
+    private ChatConversationEntity ownedConversation(UUID id, UUID customerId, UUID visitorId) {
         ChatConversationEntity conversation = conversationRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
         UUID owner = conversation.getCustomerId();
-        if ((owner != null && customerId == null) || (owner != null && !owner.equals(customerId))) {
+        boolean customerOwns = owner != null && owner.equals(customerId);
+        boolean visitorOwns = visitorId != null && visitorId.equals(conversation.getVisitorId())
+                && (owner == null || customerOwns);
+        boolean legacyGuest = owner == null && conversation.getVisitorId() == null;
+        if (!customerOwns && !visitorOwns && !legacyGuest) {
             throw new NotFoundException("Không tìm thấy hội thoại.");
         }
         return conversation;
@@ -139,7 +236,15 @@ public class ChatInteractionService {
             if (sequence < 1 || (!cartIssuedSecond && sequence != issued) || request.actionType() != null) {
                 throw new ConflictException("Lời mời liên hệ không hợp lệ.");
             }
-            return new InteractionShape(sequence, null);
+            return new InteractionShape(sequence, null, null);
+        }
+        if ("PRODUCT_VIEWED".equals(request.type())) {
+            String slug = request.productSlug() == null ? null : request.productSlug().trim();
+            if (request.leadPromptSequence() != null || request.actionType() != null
+                    || slug == null || slug.isBlank() || !messageContainsProduct(message, slug)) {
+                throw new ConflictException("Sản phẩm chưa được hiển thị trong câu trả lời này.");
+            }
+            return new InteractionShape(null, null, slug);
         }
         String actionType = request.actionType();
         if (request.leadPromptSequence() != null || !ChatActionCatalog.isAllowed(actionType)) {
@@ -153,7 +258,7 @@ public class ChatInteractionService {
             }
         }
         if (!issued) throw new ConflictException("Nút gợi ý không được phát từ câu trả lời này.");
-        return new InteractionShape(null, actionType);
+        return new InteractionShape(null, actionType, null);
     }
 
     private static void verifySameEvent(ChatInteractionEntity stored, ChatInteractionRequest request) {
@@ -161,10 +266,39 @@ public class ChatInteractionService {
                 || !stored.getAssistantMessageId().equals(request.assistantMessageId())
                 || !stored.getInteractionType().equals(request.type())
                 || !java.util.Objects.equals(stored.getLeadPromptSequence(), request.leadPromptSequence())
-                || !java.util.Objects.equals(stored.getActionType(), request.actionType())) {
+                || !java.util.Objects.equals(stored.getActionType(), request.actionType())
+                || !java.util.Objects.equals(stored.getProductSlug(), request.productSlug())) {
             throw new ConflictException("Mã tương tác đã được dùng cho một sự kiện khác.");
         }
     }
 
-    private record InteractionShape(Integer leadPromptSequence, String actionType) {}
+    private boolean messageContainsProduct(ChatMessageEntity message, String slug) {
+        return jsonContainsProduct(message.getProductsJson(), slug)
+                || jsonContainsProduct(message.getCrossSellProductsJson(), slug);
+    }
+
+    private boolean jsonContainsProduct(String json, String slug) {
+        if (json == null || json.isBlank()) return false;
+        try {
+            for (JsonNode product : objectMapper.readTree(json)) {
+                if (slug.equals(product.path("slug").asText())) return true;
+            }
+            return false;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private ChatInteractionResponse responseFor(ChatInteractionEntity entity, UUID customerId) {
+        if (!"PRODUCT_VIEWED".equals(entity.getInteractionType()) || attributionTokenService == null) {
+            return new ChatInteractionResponse(true, entity.getId());
+        }
+        ChatAttributionTokenService.IssuedToken issued = attributionTokenService.issue(
+                entity.getId(), entity.getConversationId(), entity.getProductSlug(), customerId,
+                entity.getCreatedAt());
+        return new ChatInteractionResponse(
+                true, entity.getId(), issued.token(), issued.expiresAt());
+    }
+
+    private record InteractionShape(Integer leadPromptSequence, String actionType, String productSlug) {}
 }

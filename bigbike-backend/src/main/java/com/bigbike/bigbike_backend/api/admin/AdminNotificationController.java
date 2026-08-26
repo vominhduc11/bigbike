@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.InboxView;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.NotificationView;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +27,13 @@ public class AdminNotificationController extends AdminControllerSupport {
 
     @GetMapping
     public ApiDataResponse<Map<String, Object>> list(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "orders.read");
-        InboxView inbox = notificationService.inboxFor(resolveAdminId());
+        AdminUserProfile user = devAdminAuthService.requireAnyPermission(
+                request, "orders.read", "chat.read");
+        boolean wildcard = user.permissions().contains("*");
+        InboxView inbox = notificationService.inboxFor(
+                resolveAdminId(),
+                wildcard || user.permissions().contains("orders.read"),
+                wildcard || user.permissions().contains("chat.read"));
         List<Map<String, Object>> mapped = inbox.items().stream().map(this::toMap).toList();
         return apiResponseFactory.data(
                 Map.of("unreadCount", inbox.unreadCount(), "items", mapped), request);
@@ -37,7 +43,7 @@ public class AdminNotificationController extends AdminControllerSupport {
     // only ever advances the caller's high-water mark via mark-all-read below.
     @PostMapping("/mark-all-read")
     public ApiDataResponse<Map<String, Object>> markAllRead(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "orders.read");
+        devAdminAuthService.requireAnyPermission(request, "orders.read", "chat.read");
         long remaining = notificationService.markAllReadFor(resolveAdminId());
         return apiResponseFactory.data(Map.of("unreadCount", remaining), request);
     }

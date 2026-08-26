@@ -26,5 +26,8 @@ public record AdminChatStatsResponse(
         List<AdminChatActionStatsResponse> actionStats,
         BigDecimal monthlyCostUsd,
         BigDecimal monthlyCostWarningUsd,
-        boolean monthlyCostWarningExceeded
+        boolean monthlyCostWarningExceeded,
+        AdminChatCostStatsResponse costs,
+        AdminChatFallbackStatsResponse fallbacks,
+        List<AdminChatModelUsageResponse> modelUsage
 ) {}

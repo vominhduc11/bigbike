@@ -13,7 +13,6 @@ import java.time.Instant;
 public record AdminMaintenanceResponse(
         String state,
         String staffNote,
-        Instant expectedAt,
         Instant updatedAt,
         boolean canToggle,
         int uploadCount

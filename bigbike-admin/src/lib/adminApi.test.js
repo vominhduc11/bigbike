@@ -98,6 +98,20 @@ describe('mapValidationErrors', () => {
       statusCode: 'Mã phản hồi chỉ có thể là 301 hoặc 410.',
     })
   })
+
+  it('giữ đúng chỉ số dòng khi giá trị thuộc tính biến thể không còn hợp lệ', () => {
+    const error = new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
+      {
+        field: 'variants[1].options[2].attributeValueId',
+        code: 'MISMATCH',
+        message: 'Giá trị thuộc tính không khớp.',
+      },
+    ])
+
+    expect(mapValidationErrors(error)).toEqual({
+      'variants.1.options.2.attributeValueId': 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.',
+    })
+  })
 })
 
 describe('downloadMedia', () => {

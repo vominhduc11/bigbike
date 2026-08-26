@@ -14,6 +14,21 @@ const URL_REGEX = /^https?:\/\//
 const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
 const SEO_MARKUP_REGEX = /<\s*\/?\s*[a-z][^>]*>/i
 export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
+export const SIZE_ATTRIBUTE_KEYS = new Set(['size', 'kich co'])
+export const MODEL_ATTRIBUTE_KEYS = new Set(['model', 'doi may', 'iphone'])
+
+/**
+ * Canonical grouping used wherever variants compare attribute types. The
+ * dictionary itself remains the source of the final display name; this helper
+ * only keeps legacy aliases such as "Kích cỡ"/"Size" in one logical group.
+ */
+export function getVariantAttributeGroup(name) {
+  const normalized = normalizeVariantToken(name)
+  if (COLOR_ATTRIBUTE_KEYS.has(normalized)) return 'color'
+  if (SIZE_ATTRIBUTE_KEYS.has(normalized)) return 'size'
+  if (MODEL_ATTRIBUTE_KEYS.has(normalized)) return 'model'
+  return normalized
+}
 
 function isValidVideoDuration(value) {
   if (!String(value || '').trim()) return true
@@ -180,7 +195,11 @@ export function createProductSchema(t, isCreate = false) {
         retailPrice: z.string().optional(),
         salePrice: z.string().optional(),
         imageUrl: z.string().optional(),
-        options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
+        options: z.array(z.object({
+          name: z.string(),
+          value: z.string(),
+          attributeValueId: z.string().nullable().optional(),
+        })).optional(),
         gallery: z.array(z.object({
           _key: z.string().optional(),
           id: z.string().optional(),
@@ -329,6 +348,36 @@ export function createProductSchema(t, isCreate = false) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errImageRequired'), path: ['variants', i, 'imageUrl'] })
           }
         }
+
+        // PRODUCT_RULE_008 — every non-empty option is selected from the
+        // attribute dictionary. A blank scratch row is allowed while editing,
+        // but a partially filled row must identify the exact missing field.
+        ;(v?.options ?? []).forEach((option, optionIndex) => {
+          const optionName = String(option?.name ?? '').trim()
+          const optionValue = String(option?.value ?? '').trim()
+          const optionId = String(option?.attributeValueId ?? '').trim()
+          if (!optionName && !optionValue && !optionId) return
+          if (!optionName) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('products.detail.variant.optionNameRequired', {
+                defaultValue: 'Hãy chọn thuộc tính từ danh sách.',
+              }),
+              path: ['variants', i, 'options', optionIndex, 'name'],
+            })
+            return
+          }
+          if (!optionValue || !optionId) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('products.detail.variant.optionValueRequired', {
+                attribute: optionName,
+                defaultValue: 'Hãy chọn giá trị cho thuộc tính này từ danh sách.',
+              }),
+              path: ['variants', i, 'options', optionIndex, 'attributeValueId'],
+            })
+          }
+        })
       })
       // Short description quality: when filled, require enough text to be
       // useful on the PDP. Empty is allowed (PDP just hides the row).

@@ -28,16 +28,18 @@ export async function generateStaticParams() {
   return [];
 }
 
-// Do not prebuild the complete article catalog. A first request creates the page and
-// public API cache tags invalidate it after an admin edit; this preserves genuine ISR
-// while retaining the real 404 and canonical-slug redirect behavior below.
+// Next 16 attempts to prerender this route when no static params are returned, but the
+// request-scoped locale/render tree bails out with DYNAMIC_SERVER_USAGE in production.
+// Keep the route request-rendered so article detail pages finish with real HTML and real
+// 404/308 responses. The API fetches remain data-cached and are invalidated by article tags.
+export const dynamic = "force-dynamic";
 
 type ArticleDetailPageProps = Readonly<{
   params: Promise<{ locale: string; slug: string }>;
 }>;
 
 export async function generateMetadata({ params }: ArticleDetailPageProps): Promise<Metadata> {
-  const { slug = "", locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { slug = "", locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const t = await getTranslations("Blog");
   if (!isValidSlug(slug)) {
@@ -85,7 +87,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 }
 
 export default async function ArticleDetailPage({ params }: ArticleDetailPageProps) {
-  const { slug = "", locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { slug = "", locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const t = await getTranslations("Blog");
   if (!isValidSlug(slug)) {
@@ -98,7 +100,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   }
 
   if (result.data) {
-    const preferredSlug = locale === "en" ? result.data.slugEn?.trim() || result.data.slug : result.data.slug;
+    const preferredSlug =
+      locale === "en" ? result.data.slugEn?.trim() || result.data.slug : result.data.slug;
     if (slug !== preferredSlug) permanentRedirect(toArticlePath(preferredSlug, locale));
   }
 
@@ -117,22 +120,24 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     const errorTitle = t("articleNotFoundTitle");
     return (
       <div>
-          <PageHero
-            title={errorTitle}
-            breadcrumb={[
-              { label: "Bigbike.vn", href: toHomePath(locale) },
-              { label: t("breadcrumb"), href: toArticleListPath(locale) },
-              { label: errorTitle },
-            ]}
-            bgUrl={heroBgUrl}
-            illustrationUrl={heroIllustrationUrl}
-            illustrationAlt={errorTitle}
-          />
-          <div id="main-content">
-            <Container className="pb-10">
-              <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Blog" k="loadFailed" /></p>
-            </Container>
-          </div>
+        <PageHero
+          title={errorTitle}
+          breadcrumb={[
+            { label: "Bigbike.vn", href: toHomePath(locale) },
+            { label: t("breadcrumb"), href: toArticleListPath(locale) },
+            { label: errorTitle },
+          ]}
+          bgUrl={heroBgUrl}
+          illustrationUrl={heroIllustrationUrl}
+          illustrationAlt={errorTitle}
+        />
+        <div id="main-content">
+          <Container className="pb-10">
+            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">
+              <Tr ns="Blog" k="loadFailed" />
+            </p>
+          </Container>
+        </div>
       </div>
     );
   }
@@ -155,7 +160,10 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   // chung với khung xem trước của admin).
   const latestArticles = excludeArticle(latestResult.data ?? [], article.slug);
   const featuredArticles = excludeArticle(featuredResult.data ?? [], article.slug);
-  const highlightedArticles = (featuredArticles.length ? featuredArticles : latestArticles).slice(0, 5);
+  const highlightedArticles = (featuredArticles.length ? featuredArticles : latestArticles).slice(
+    0,
+    5,
+  );
   const newestArticles = latestArticles.slice(0, 5);
   const relatedArticles = latestArticles.slice(0, 4);
 

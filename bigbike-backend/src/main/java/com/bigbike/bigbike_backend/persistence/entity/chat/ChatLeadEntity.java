@@ -39,6 +39,9 @@ public class ChatLeadEntity {
     @Column(nullable = false, length = 16)
     private String source;
 
+    @Column(length = 32)
+    private String purpose;
+
     @Column(name = "consented_at", nullable = false)
     private Instant consentedAt;
 

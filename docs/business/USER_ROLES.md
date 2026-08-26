@@ -57,6 +57,16 @@ File này dùng làm nền cho:
 
 ## 4. Public Website Roles
 
+### Ranh giới vai trò cho Trợ lý BigBike giai đoạn 4
+
+| Actor | Được làm | Không được làm | Căn cứ |
+|---|---|---|---|
+| Guest / Customer | Gửi ảnh khi owner đã bật, xem lại ảnh của chính hội thoại, xoá lịch sử và ảnh của chính mình | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_057`–`059` |
+| Admin có `chat.read` | Xem transcript và ảnh riêng tư thuộc hội thoại để tiếp nhận | Lấy URL ảnh công khai; xem ảnh nếu thiếu `chat.read`; thay đổi model chỉ bằng quyền đọc chat | `CHAT_RULE_059`, `PERMISSION_MATRIX.md` |
+| Admin có `chat.reply` | Thực hiện các thao tác handoff hiện hành; quyền này vẫn phụ thuộc `chat.read` | Sửa/xoá ảnh hoặc transcript; đổi cấu hình AI nếu thiếu `settings.write` | `CHAT_RULE_047`, `CHAT_RULE_059` |
+| Owner/Admin có `settings.read` / `settings.write` | Xem model khả dụng, chi phí và kết quả bộ đề; đổi model trợ lý, bật/tắt đọc ảnh, thay trần ảnh, chạy bộ đề trong trần 2 USD | Đổi model kiểm duyệt đánh giá khi chỉ đổi model trợ lý; xem nội dung ảnh nếu thiếu `chat.read` | `CHAT_RULE_053`–`057` |
+| System | Gửi ảnh đã kiểm tra tới Gemini để nhận diện, ghi usage/cost, tự lùi model và xoá object theo retention | Log ảnh/PII; giữ ảnh ngoài hạn 90 ngày; coi model output là bằng chứng catalog | `CHAT_RULE_055`–`059` |
+
 ### Role: Guest / Visitor
 
 | Field | Value |
@@ -411,6 +421,7 @@ Confirmed evidence:
 - `AdminRolePermissions.MAP` defines built-in role-to-permission mapping.
 - `AdminRolePermissions.MAP` defines built-in role-to-permission mapping.
 - `SUPER_ADMIN` has wildcard `*`.
+- `chat.reply` là quyền vận hành hẹp để nhân viên tiếp nhận, nhắn trực tiếp, bàn giao hoặc kết thúc với khách; nó phụ thuộc `chat.read`, không cho sửa/xoá lịch sử và không tự cấp cho vai trò thường. `SUPER_ADMIN` có qua wildcard; owner cấp `chat.read` + `chat.reply` cho custom role phù hợp ở màn Vai trò. `chat.handle` là tên cũ được migration đổi sang `chat.reply`, không tồn tại song song.
 - Admin user management validates built-in/custom roles and writes audit logs.
 - Role management (`AdminRoleService`) supports listing roles, editing role permissions, creating custom roles and deleting custom roles.
 - **Role governance** (enforced, not just inferred): only the **2 built-in roles** (`SUPER_ADMIN`, `ADMIN`) are **system roles** (`is_system = TRUE`) and cannot be deleted. `V361__retain_two_system_roles.sql` reclassifies every other historical system role—including `SHOP_MANAGER` and `EDITOR`—as custom while preserving permissions and assigned users. `SUPER_ADMIN` permissions are immutable (`*`); custom roles can be edited and can be deleted only when no admin user is still assigned. `CUSTOMER` is a storefront auth role (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.

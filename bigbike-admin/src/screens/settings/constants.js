@@ -4,7 +4,7 @@
 import {
   Store, Phone, Globe, Settings,
   Image as ImageIcon, Users,
-  Bot, Landmark, ShieldCheck,
+  Bot, FileText, Landmark, ShieldCheck,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -117,10 +117,34 @@ export function validateValue(key, value) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
   // Money / stock thresholds must be non-negative numbers.
-  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount') || k === 'ai_assistant_monthly_cost_warning_usd') {
+  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')
+      || k === 'ai_assistant_monthly_cost_warning_usd'
+      || k === 'ai_assistant_conversation_turn_limit'
+      || k === 'ai_assistant_memory_days'
+      || k === 'ai_assistant_image_daily_limit'
+      || k === 'ai_assistant_image_conversation_limit'
+      || k === 'ai_assistant_proactive_product_seconds'
+      || k === 'ai_assistant_proactive_cart_seconds') {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
+    }
+  }
+  if (k === 'ai_assistant_business_hours') {
+    try {
+      const schedule = JSON.parse(value)
+      const days = schedule?.days
+      if (!days || typeof days !== 'object') return 'settings.assistantConfig.invalidBusinessHours'
+      for (const day of ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']) {
+        const item = days[day]
+        if (!item || typeof item.enabled !== 'boolean') return 'settings.assistantConfig.invalidBusinessHours'
+        if (item.enabled && (!/^\d{2}:\d{2}$/.test(item.open || '')
+          || !/^\d{2}:\d{2}$/.test(item.close || '') || item.close <= item.open)) {
+          return 'settings.assistantConfig.invalidBusinessHours'
+        }
+      }
+    } catch {
+      return 'settings.assistantConfig.invalidBusinessHours'
     }
   }
   if (k === 'ai_assistant_abbreviations' || k === 'ai_assistant_answer_templates') {
@@ -143,14 +167,17 @@ export function validateValue(key, value) {
         const ids = new Set()
         for (const item of items) {
           const id = String(item?.id || '').trim()
-          if (!id || !String(item?.topic || '').trim()
+          const enabled = item?.enabled !== false
+          if (enabled && (!id || !String(item?.topic || '').trim()
             || !Array.isArray(item?.triggersVi) || item.triggersVi.length === 0
             || !Array.isArray(item?.triggersEn) || item.triggersEn.length === 0
-            || !String(item?.answerVi || '').trim() || !String(item?.answerEn || '').trim()) {
+            || !String(item?.answerVi || '').trim() || !String(item?.answerEn || '').trim())) {
             return 'settings.assistantConfig.invalid'
           }
-          if (ids.has(id)) return 'settings.assistantConfig.duplicate'
-          ids.add(id)
+          if (id) {
+            if (ids.has(id)) return 'settings.assistantConfig.duplicate'
+            ids.add(id)
+          }
         }
       }
     } catch {
@@ -162,7 +189,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'AI_ASSISTANT'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'STORE_POLICY', 'AI_ASSISTANT'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -201,7 +228,7 @@ export const MAX_ASSIGNMENT_ROLES = 6
 
 export const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
-  'PRODUCT_ASSIGN', 'REVIEW_MODERATION', 'AI_ASSISTANT',
+  'PRODUCT_ASSIGN', 'STORE_POLICY', 'REVIEW_MODERATION', 'AI_ASSISTANT',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -228,8 +255,9 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
 export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'])
 
-// Field cụ thể bị ẩn — hiện không còn field nào (nhóm STORE duy nhất từng ở đây đã gỡ hẳn V310).
-export const HIDDEN_KEYS = new Set()
+// Model trả lời được quản lý bằng bộ chọn động riêng: danh sách phải được xác minh trực tiếp
+// với tài khoản Gemini hiện tại, nên không được rơi về ô text chung dễ nhập sai model.
+export const HIDDEN_KEYS = new Set(['ai_assistant_model'])
 
 export const TAB_META = {
   GENERAL: {
@@ -267,6 +295,11 @@ export const TAB_META = {
     labelKey: 'settings.group_review_moderation',
     descriptionKey: 'settings.groupDescription.reviewModeration',
   },
+  STORE_POLICY: {
+    icon: FileText,
+    labelKey: 'settings.group_store_policy',
+    descriptionKey: 'settings.groupDescription.storePolicy',
+  },
   AI_ASSISTANT: {
     icon: Bot,
     labelKey: 'settings.group_ai_assistant',
@@ -301,6 +334,7 @@ export const KEY_LABELS_VI = {
   // ai_assistant (Trợ lý BigBike — CHAT_RULE_001..024)
   ai_assistant_enabled: 'Bật Trợ lý BigBike',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
+  ai_assistant_conversation_turn_limit: 'Số lượt tư vấn tối đa trong một hội thoại',
   ai_assistant_monthly_cost_warning_usd: 'Ngưỡng cảnh báo chi phí tháng (USD)',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled: 'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
@@ -308,6 +342,21 @@ export const KEY_LABELS_VI = {
   ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
   ai_assistant_abbreviations: 'Từ và cụm viết tắt',
   ai_assistant_answer_templates: 'Câu trả lời mẫu song ngữ',
+  ai_assistant_handoff_email_enabled: 'Gửi email khi khách xin gặp nhân viên',
+  ai_assistant_handoff_email_recipient: 'Email nhận yêu cầu gặp nhân viên',
+  ai_assistant_business_hours: 'Giờ nhân viên trực chat',
+  ai_assistant_memory_days: 'Số ngày trợ lý nhớ khách trên cùng thiết bị',
+  ai_assistant_proactive_enabled: 'Cho trợ lý chủ động mở lời',
+  ai_assistant_proactive_product_seconds: 'Chờ trên trang sản phẩm trước khi mở lời (giây)',
+  ai_assistant_proactive_cart_seconds: 'Chờ khi giỏ có hàng trước khi mở lời (giây)',
+  ai_assistant_image_enabled: 'Cho khách gửi ảnh để trợ lý tìm hàng',
+  ai_assistant_image_daily_limit: 'Số ảnh AI được đọc tối đa mỗi ngày',
+  ai_assistant_image_conversation_limit: 'Số ảnh tối đa trong một hội thoại',
+  // store_policy — nguồn nội dung chung cho trang chính sách và Trợ lý BigBike
+  policy_warranty_title: 'Tiêu đề chính sách bảo hành',
+  policy_warranty_body_html: 'Nội dung chính sách bảo hành',
+  policy_return_exchange_title: 'Tiêu đề chính sách đổi trả và hoàn tiền',
+  policy_return_exchange_body_html: 'Nội dung chính sách đổi trả và hoàn tiền',
   // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
   bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
   bank_account_number: 'Số tài khoản nhận chuyển khoản',
@@ -358,6 +407,8 @@ export const KEY_HINTS_VI = {
     'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
   ai_assistant_daily_limit:
     'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
+  ai_assistant_conversation_turn_limit:
+    'Từ 10 đến 100, mặc định 40. Các vòng khách trả lời câu hỏi làm rõ không bị tính vào trần này.',
   ai_assistant_monthly_cost_warning_usd:
     'Cảnh báo trong quản trị khi tổng chi phí tháng đạt ngưỡng này. Đặt 0 để tắt cảnh báo; không tự khoá Trợ lý BigBike.',
   ai_assistant_recent_turn_pairs:
@@ -372,6 +423,34 @@ export const KEY_HINTS_VI = {
     'Tối đa 100 mục. Hệ thống khớp nguyên cụm, ưu tiên cụm dài hơn và sẽ từ chối mục trùng hoặc va chạm tên hàng.',
   ai_assistant_answer_templates:
     'Tối đa 50 mẫu, mỗi mẫu phải có trigger và câu trả lời đầy đủ bằng tiếng Việt lẫn tiếng Anh.',
+  ai_assistant_handoff_email_enabled:
+    'Chỉ tắt email; khách đang chờ vẫn xuất hiện ngay trong màn quản trị.',
+  ai_assistant_handoff_email_recipient:
+    'Để trống để dùng email quản trị đã khai trên máy chủ. Chỉ nhập một địa chỉ email hợp lệ.',
+  ai_assistant_business_hours:
+    'Khách xin gặp nhân viên ngoài lịch này sẽ được báo giờ trực và mời để lại liên hệ, không bị giữ ở trạng thái chờ vô hạn.',
+  ai_assistant_memory_days:
+    'Từ 1 đến 30 ngày. Khách luôn có thể xem trợ lý đang nhớ gì và tự xoá lịch sử; dữ liệu vẫn tự xoá sau 90 ngày.',
+  ai_assistant_proactive_enabled:
+    'Mặc định tắt. Khi bật, trợ lý chỉ mở lời một lần mỗi phiên, không hiện ở trang thanh toán và không lặp lại sau khi khách đóng.',
+  ai_assistant_proactive_product_seconds:
+    'Từ 15 đến 600 giây. Chỉ áp dụng khi công tắc chủ động mở lời đang bật.',
+  ai_assistant_proactive_cart_seconds:
+    'Từ 15 đến 600 giây. Chỉ áp dụng khi giỏ đang có hàng và khách chưa vào trang thanh toán.',
+  ai_assistant_image_enabled:
+    'Mặc định tắt. Khi bật, khách được báo rõ ảnh sẽ gửi tới Google AI; ảnh lưu riêng trong hệ thống và tự xoá sau 90 ngày hoặc khi khách xoá lịch sử.',
+  ai_assistant_image_daily_limit:
+    'Trần riêng cho phần đọc ảnh, tính theo ngày giờ Việt Nam. Hết lượt ảnh thì chat chữ vẫn hoạt động bình thường.',
+  ai_assistant_image_conversation_limit:
+    'Giới hạn chống lạm dụng trong từng hội thoại. Mỗi lượt chỉ nhận một ảnh JPG, PNG hoặc WebP tối đa 8 MB.',
+  policy_warranty_title:
+    'Dùng chung cho trang Chính sách bảo hành và câu trả lời của Trợ lý BigBike.',
+  policy_warranty_body_html:
+    'Nội dung khách đọc trên website và nội dung Trợ lý BigBike dùng để trả lời phải được cập nhật tại đây.',
+  policy_return_exchange_title:
+    'Dùng chung cho trang Chính sách đổi trả và câu trả lời của Trợ lý BigBike.',
+  policy_return_exchange_body_html:
+    'Nội dung khách đọc trên website và nội dung Trợ lý BigBike dùng để trả lời phải được cập nhật tại đây.',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -476,6 +555,22 @@ export const SECTION_GUIDE = {
     title: 'Câu trả lời mẫu an toàn',
     description: 'Câu mẫu song ngữ cho các chủ đề ổn định; máy chủ vẫn kiểm tra an toàn trước khi lưu.',
   },
+  ai_assistant_live: {
+    title: 'Tiếp nhận khách và ghi nhớ hội thoại',
+    description: 'Giới hạn hội thoại, lịch trực nhân viên và thời gian nối lại nhu cầu của khách.',
+  },
+  ai_assistant_proactive: {
+    title: 'Chủ động mở lời có tiết chế',
+    description: 'Mặc định tắt; chủ shop quyết định có bật và chờ bao lâu trước khi trợ lý gợi ý đúng ngữ cảnh.',
+  },
+  ai_assistant_images: {
+    title: 'Đọc ảnh khách gửi',
+    description: 'Tính năng mặc định tắt, có trần riêng và không được dùng ảnh để đoán chắc sản phẩm, giá, thông số hoặc size.',
+  },
+  store_policy_content: {
+    title: 'Nội dung chính sách dùng chung',
+    description: 'Trang chính sách và Trợ lý BigBike cùng đọc các nội dung này, tránh một nơi đã sửa nhưng nơi còn lại vẫn trả bản cũ.',
+  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -539,6 +634,7 @@ export const KEY_GUIDE = {
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_conversation_turn_limit: ['ai_assistant_live', 'trần lượt tư vấn có nội dung; vòng làm rõ không tính'],
   ai_assistant_monthly_cost_warning_usd: ['ai_assistant_switch', 'ngưỡng cảnh báo tổng chi phí tháng bằng USD; 0 để tắt'],
   ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
@@ -546,6 +642,20 @@ export const KEY_GUIDE = {
   ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
   ai_assistant_abbreviations:           ['ai_assistant_language', 'danh sách từ/cụm viết tắt do chủ shop quản lý'],
   ai_assistant_answer_templates:        ['ai_assistant_templates', 'danh sách câu trả lời mẫu song ngữ do chủ shop quản lý'],
+  ai_assistant_handoff_email_enabled:   ['ai_assistant_switch', 'bật/tắt email báo khách đang chờ nhân viên'],
+  ai_assistant_handoff_email_recipient: ['ai_assistant_switch', 'địa chỉ nhận email báo khách đang chờ'],
+  ai_assistant_business_hours:          ['ai_assistant_live', 'lịch nhân viên có thể tiếp nhận chat theo từng ngày'],
+  ai_assistant_memory_days:             ['ai_assistant_live', 'thời hạn nối nhu cầu trên cùng thiết bị'],
+  ai_assistant_proactive_enabled:       ['ai_assistant_proactive', 'bật/tắt lời mời chủ động, mặc định tắt'],
+  ai_assistant_proactive_product_seconds: ['ai_assistant_proactive', 'thời gian chờ trên trang sản phẩm'],
+  ai_assistant_proactive_cart_seconds:  ['ai_assistant_proactive', 'thời gian chờ khi giỏ có hàng'],
+  ai_assistant_image_enabled:           ['ai_assistant_images', 'bật/tắt toàn bộ nút gửi ảnh trong khung chat'],
+  ai_assistant_image_daily_limit:       ['ai_assistant_images', 'trần lượt đọc ảnh mỗi ngày, tách khỏi lượt chat chữ'],
+  ai_assistant_image_conversation_limit: ['ai_assistant_images', 'trần ảnh trong một hội thoại'],
+  policy_warranty_title:                ['store_policy_content', 'tiêu đề trang và câu trả lời về bảo hành'],
+  policy_warranty_body_html:            ['store_policy_content', 'nội dung trang và câu trả lời về bảo hành'],
+  policy_return_exchange_title:         ['store_policy_content', 'tiêu đề trang và câu trả lời về đổi trả/hoàn tiền'],
+  policy_return_exchange_body_html:     ['store_policy_content', 'nội dung trang và câu trả lời về đổi trả/hoàn tiền'],
 }
 
 export function groupBySection(items) {

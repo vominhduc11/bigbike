@@ -32,6 +32,7 @@ type BigBikeLeadFormProps = {
   onCaptured: () => void;
   onDeclined: () => Promise<void>;
   accountContact?: BigBikeAccountContact;
+  visitorToken?: string;
 };
 
 function maskPhone(phone: string): string {
@@ -48,6 +49,7 @@ export function BigBikeLeadForm({
   onCaptured,
   onDeclined,
   accountContact,
+  visitorToken,
 }: BigBikeLeadFormProps) {
   const t = useTranslations("Support");
   const tValidation = useTranslations("FormValidation");
@@ -74,6 +76,7 @@ export function BigBikeLeadForm({
       await captureChatLead({
         conversationId,
         contactSource: "ACCOUNT",
+        visitorToken,
       });
       onCaptured();
     } catch {
@@ -107,6 +110,7 @@ export function BigBikeLeadForm({
         phone: values.phone,
         note: values.note || undefined,
         contactSource: "FORM",
+        visitorToken,
       });
       onCaptured();
     } catch {
@@ -193,9 +197,14 @@ export function BigBikeLeadForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="grid gap-3 border border-chat bg-background p-4" noValidate>
+    <form
+      aria-labelledby="bigbike-lead-form-title"
+      onSubmit={handleSubmit(submit)}
+      className="grid gap-3 border border-chat bg-background p-4"
+      noValidate
+    >
       <div>
-        <h3 className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
+        <h3 id="bigbike-lead-form-title" className="font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
           {t("leadTitle")}
         </h3>
         <p className="mt-1 font-body text-a5-meta leading-relaxed text-muted-foreground">

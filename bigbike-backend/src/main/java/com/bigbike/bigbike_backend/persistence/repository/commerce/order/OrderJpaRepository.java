@@ -32,7 +32,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
  * payment rows and the full order entity so BigBike Assistant cannot accidentally receive
      * customer-sensitive order detail.
      */
-    @Query("SELECT o.orderNumber, o.status, o.placedAt, o.createdAt, o.totalAmount, o.currency "
+    @Query("SELECT o.id, o.orderNumber, o.status, o.placedAt, o.createdAt, o.totalAmount, o.currency "
             + "FROM OrderEntity o WHERE o.customerId = :customerId "
             + "ORDER BY o.placedAt DESC NULLS LAST, o.createdAt DESC, o.orderNumber DESC")
     List<Object[]> findCustomerOrderSummaries(

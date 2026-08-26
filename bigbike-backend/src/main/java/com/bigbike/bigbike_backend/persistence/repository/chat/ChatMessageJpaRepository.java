@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.repository.chat;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import java.time.Instant;
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,19 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
 
     List<ChatMessageEntity> findByConversationIdOrderByCreatedAtAsc(UUID conversationId);
 
+    List<ChatMessageEntity> findByConversationIdInOrderByConversationIdAscSequenceNoAsc(
+            Collection<UUID> conversationIds);
+
+    List<ChatMessageEntity> findByConversationIdAndSequenceNoGreaterThanOrderBySequenceNoAsc(
+            UUID conversationId, long sequenceNo);
+
+    @Query("select coalesce(max(message.sequenceNo), 0) from ChatMessageEntity message "
+            + "where message.conversationId = :conversationId")
+    long findMaxSequence(@Param("conversationId") UUID conversationId);
+
+    @Query(value = "select nextval('chat_message_sequence')", nativeQuery = true)
+    long nextSequence();
+
     Optional<ChatMessageEntity> findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
             UUID conversationId, String role);
 
@@ -20,6 +34,15 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
 
     Optional<ChatMessageEntity> findByIdAndConversationIdAndRole(
             UUID id, UUID conversationId, String role);
+
+    Optional<ChatMessageEntity>
+    findFirstByConversationIdAndRoleAndSequenceNoLessThanOrderBySequenceNoDesc(
+            UUID conversationId, String role, long beforeSequence);
+
+    List<ChatMessageEntity> findByRoleAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            String role, Instant from, Instant to);
+
+    List<ChatMessageEntity> findTop500ByRoleOrderByCreatedAtDesc(String role);
 
     @Query(value = """
             select count(*)
@@ -79,6 +102,24 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
     long countFallbackMessagesBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("""
+            select count(message)
+            from ChatMessageEntity message
+            where message.role = 'ASSISTANT'
+              and message.createdAt >= :from and message.createdAt < :to
+            """)
+    long countAssistantRepliesBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("""
+            select message.latencyMs
+            from ChatMessageEntity message
+            where message.role = 'ASSISTANT' and message.aiCalled = true
+              and message.latencyMs is not null and message.latencyMs >= 0
+              and message.createdAt >= :from and message.createdAt < :to
+            """)
+    List<Integer> findAiReplyLatenciesBetween(
+            @Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("""
             select
               coalesce(sum(message.inputTokens), 0) as inputTokens,
               coalesce(sum(message.outputTokens), 0) as outputTokens,
@@ -92,6 +133,20 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatMessageEntit
               and message.createdAt >= :from and message.createdAt < :to
             """)
     TelemetrySummary summarizeBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    @Query(value = """
+            select coalesce(sum(message.estimated_cost_usd), 0)
+            from chat_messages message
+            where message.role = 'ASSISTANT'
+              and message.estimated_cost_usd is not null
+              and message.created_at >= :from and message.created_at < :to
+              and not exists (
+                  select 1 from chat_ai_usage_events usage
+                  where usage.message_id = message.id and usage.category = 'CUSTOMER_TEXT'
+              )
+            """, nativeQuery = true)
+    java.math.BigDecimal sumLegacyCostBetween(
+            @Param("from") Instant from, @Param("to") Instant to);
 
     interface TelemetrySummary {
         Long getInputTokens();

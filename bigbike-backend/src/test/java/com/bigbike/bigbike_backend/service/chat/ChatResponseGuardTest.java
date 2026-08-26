@@ -36,6 +36,26 @@ class ChatResponseGuardTest {
     }
 
     @Test
+    @DisplayName("AC23/24/25 VI+EN: fabricated urgency, promises, social proof and raw option codes are blocked")
+    void blocksFabricatedSalesClaimsInBothLanguages() {
+        List<String> vietnamese = List.of(
+                "Mẫu này sắp hết hàng, anh/chị chốt ngay nhé.",
+                "Em sẽ giảm giá riêng cho anh/chị.",
+                "Em giao đúng ngày mai cho anh/chị.",
+                "Nhiều người đang xem và khách khác đánh giá tốt mẫu này.",
+                "Màu tem-xam và ff327-den đang có sẵn.");
+        List<String> english = List.of(
+                "Only a few left, so buy this model now.",
+                "I will discount this item for you.",
+                "Guaranteed delivery tomorrow.",
+                "Many people are viewing it and customers love this model.",
+                "The ronin-red option is available.");
+
+        assertThat(vietnamese).allMatch(copy -> guard.check(copy, List.of(), "vi").isEmpty());
+        assertThat(english).allMatch(copy -> guard.check(copy, List.of(), "en").isEmpty());
+    }
+
+    @Test
     @DisplayName("product cards are capped and require a priced in-stock product")
     void validatesProductCards() {
         ChatProductCardResponse valid = new ChatProductCardResponse(

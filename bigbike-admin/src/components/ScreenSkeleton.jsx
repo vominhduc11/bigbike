@@ -83,7 +83,7 @@ export function ScreenSkeleton({ variant = 'table', count, showHeader = true, la
             <div className="h-5 w-px bg-border" />
             <div className="h-8 w-8 rounded-xs bg-surface" />
           </div>
-          <div className={`${inlineOnly ? 'min-h-32' : 'min-h-60'} bg-surface p-4`}>
+          <div className={`${inlineOnly ? 'min-h-52' : 'min-h-60'} bg-surface p-4`}>
             <div className="h-4 w-3/4 rounded-xs bg-surface-muted" />
             <div className="mt-3 h-4 w-1/2 rounded-xs bg-surface-muted" />
           </div>

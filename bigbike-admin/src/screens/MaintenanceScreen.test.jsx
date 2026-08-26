@@ -31,7 +31,6 @@ vi.mock('@/lib/toast', () => ({
 const NORMAL_DEVELOPER = {
   state: 'NORMAL',
   staffNote: '',
-  expectedAt: null,
   updatedAt: '2026-08-06T10:00:00Z',
   canToggle: true,
   uploadCount: 0,
@@ -49,19 +48,21 @@ function renderScreen() {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.fetchMaintenance.mockResolvedValue(NORMAL_DEVELOPER)
-  mocks.updateMaintenance.mockImplementation(async ({ state }) => ({ ...NORMAL_DEVELOPER, state }))
+  mocks.updateMaintenance.mockImplementation(async ({ state, staffNote }) => ({ ...NORMAL_DEVELOPER, state, staffNote }))
   mocks.showConfirm.mockResolvedValue(true)
   mocks.subscribeAdminWs.mockReturnValue(() => {})
 })
 
 describe('MaintenanceScreen', () => {
-  it('offers all three transitions to a developer', async () => {
+  it('offers one binary switch and no legacy warning or expected-time controls', async () => {
     renderScreen()
 
-    expect(await screen.findByRole('button', { name: /Báo trước cho nhân viên/ })).toBeEnabled()
-    expect(screen.getByRole('button', { name: /Khoá ngay/ })).toBeEnabled()
-    // Already NORMAL, so "unlock" has nothing to do.
-    expect(screen.getByRole('button', { name: /Mở lại/ })).toBeDisabled()
+    const toggle = await screen.findByRole('switch')
+    expect(toggle).toBeEnabled()
+    expect(toggle).not.toBeChecked()
+    expect(screen.queryByText(/Sắp bảo trì/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Báo trước cho nhân viên/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Dự kiến xong lúc/)).not.toBeInTheDocument()
   })
 
   it('hides the controls and explains why when the caller may not toggle', async () => {
@@ -69,7 +70,7 @@ describe('MaintenanceScreen', () => {
     renderScreen()
 
     expect(await screen.findByText(/Chỉ tài khoản kỹ thuật \(DEVELOPER\)/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Khoá ngay/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
 
   it('warns about in-flight uploads before locking, and aborts when declined', async () => {
@@ -78,7 +79,7 @@ describe('MaintenanceScreen', () => {
     mocks.showConfirm.mockResolvedValue(false)
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: /Khoá ngay/ }))
+    await user.click(await screen.findByRole('switch'))
 
     expect(mocks.showConfirm).toHaveBeenCalledWith(
       expect.stringContaining('3'),
@@ -94,23 +95,40 @@ describe('MaintenanceScreen', () => {
 
     const note = await screen.findByRole('textbox')
     await user.type(note, 'Nâng cấp dữ liệu')
-    await user.click(screen.getByRole('button', { name: /Khoá ngay/ }))
+    await user.click(screen.getByRole('switch'))
 
     await waitFor(() => expect(mocks.updateMaintenance).toHaveBeenCalledWith(
       expect.objectContaining({ state: 'ACTIVE', staffNote: 'Nâng cấp dữ liệu' }),
     ))
+    expect(mocks.updateMaintenance.mock.calls[0][0]).not.toHaveProperty('expectedAt')
   })
 
-  /** UPCOMING must not need a confirmation — it changes nothing for staff except a warning. */
-  it('sets the advance warning without a confirm dialog', async () => {
+  it('saves a changed staff note without changing the lock state', async () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: /Báo trước cho nhân viên/ }))
+    await user.type(await screen.findByRole('textbox'), 'Ghi chú mới')
+    await user.click(screen.getByRole('button', { name: /^Lưu$/ }))
+
+    await waitFor(() => expect(mocks.updateMaintenance).toHaveBeenCalledWith({
+      state: 'NORMAL',
+      staffNote: 'Ghi chú mới',
+    }))
+    expect(screen.getByRole('switch')).not.toBeChecked()
+  })
+
+  it('turns the lock off without confirmation', async () => {
+    const user = userEvent.setup()
+    mocks.fetchMaintenance.mockResolvedValue({ ...NORMAL_DEVELOPER, state: 'ACTIVE' })
+    renderScreen()
+
+    const toggle = await screen.findByRole('switch')
+    expect(toggle).toBeChecked()
+    await user.click(toggle)
 
     expect(mocks.showConfirm).not.toHaveBeenCalled()
     await waitFor(() => expect(mocks.updateMaintenance).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'UPCOMING' }),
+      expect.objectContaining({ state: 'NORMAL' }),
     ))
   })
 

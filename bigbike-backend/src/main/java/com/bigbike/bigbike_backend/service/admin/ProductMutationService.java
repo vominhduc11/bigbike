@@ -38,7 +38,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -631,8 +633,23 @@ public class ProductMutationService {
         }
 
         Map<String, ProductVariantEntity> existingById = new HashMap<>();
+        Map<String, Map<String, Deque<ProductVariantOptionEntity>>> legacyDisplayByVariant = new HashMap<>();
         for (ProductVariantEntity v : existing) {
-            if (v.getId() != null) existingById.put(v.getId(), v);
+            if (v.getId() == null) continue;
+            existingById.put(v.getId(), v);
+            if (v.getOptions() == null) continue;
+            for (ProductVariantOptionEntity oldOption : v.getOptions()) {
+                if (oldOption.getAttributeValue() == null
+                        || oldOption.getAttributeValue().getId() == null
+                        || (oldOption.getLegacyDisplayName() == null
+                        && oldOption.getLegacyDisplayValue() == null)) {
+                    continue;
+                }
+                legacyDisplayByVariant
+                        .computeIfAbsent(v.getId(), ignored -> new HashMap<>())
+                        .computeIfAbsent(oldOption.getAttributeValue().getId(), ignored -> new ArrayDeque<>())
+                        .addLast(oldOption);
+            }
         }
 
         Map<String, List<GalleryImageRequest>> galleryByColor = colorGalleryRequests(requests);
@@ -693,13 +710,37 @@ public class ProductMutationService {
                     VariantOptionRequest optReq = req.getOptions().get(j);
                     String oName = AdminMutationValidators.trimToNull(optReq.getOptionName());
                     String oValue = AdminMutationValidators.trimToNull(optReq.getOptionValue());
-                    if (oName == null || oValue == null) continue;
+                    String attributeValueId = AdminMutationValidators.trimToNull(optReq.getAttributeValueId());
+                    String optionField = "variants." + i + ".options." + j;
+                    if (oName == null && oValue == null && attributeValueId == null) continue;
+                    if (oName == null) {
+                        throw ValidationException.fromField(
+                                optionField + ".optionName", "REQUIRED",
+                                "Phải chọn thuộc tính cho mỗi tuỳ chọn biến thể.");
+                    }
+                    if (oValue == null || attributeValueId == null) {
+                        throw ValidationException.fromField(
+                                optionField + ".attributeValueId", "REQUIRED",
+                                "Phải chọn giá trị thuộc tính từ danh sách.");
+                    }
                     ProductVariantOptionEntity opt = new ProductVariantOptionEntity();
                     opt.setVariant(variant);
                     opt.setSortOrder(j);
                     opt.setOptionName(oName);
                     opt.setOptionValue(oValue);
-                    linkAttributeReferences(opt, oName, oValue, AdminMutationValidators.trimToNull(optReq.getAttributeValueId()));
+                    linkAttributeReferences(
+                            opt,
+                            oName,
+                            oValue,
+                            attributeValueId,
+                            optionField + ".attributeValueId"
+                    );
+                    copyLegacyDisplaySnapshot(
+                            opt,
+                            legacyDisplayByVariant
+                                    .getOrDefault(variant.getId(), Map.of())
+                                    .getOrDefault(opt.getAttributeValue().getId(), new ArrayDeque<>())
+                    );
                     options.add(opt);
                 }
             }
@@ -742,7 +783,9 @@ public class ProductMutationService {
         List<String> parts = new ArrayList<>();
         for (ProductVariantOptionEntity opt : options) {
             AttributeValueEntity av = opt.getAttributeValue();
-            String display = (av != null && av.getLabel() != null && !av.getLabel().isBlank())
+            String display = opt.getLegacyDisplayValue() != null && !opt.getLegacyDisplayValue().isBlank()
+                    ? opt.getLegacyDisplayValue()
+                    : (av != null && av.getLabel() != null && !av.getLabel().isBlank())
                     ? av.getLabel()
                     : opt.getOptionValue();
             if (display != null && !display.isBlank()) parts.add(display);
@@ -753,24 +796,40 @@ public class ProductMutationService {
     void linkAttributeReferences(ProductVariantOptionEntity opt,
                                  String optionName, String optionValue,
                                  String attributeValueId) {
+        linkAttributeReferences(opt, optionName, optionValue, attributeValueId,
+                "variants.options.attributeValueId");
+    }
+
+    void linkAttributeReferences(ProductVariantOptionEntity opt,
+                                 String optionName, String optionValue,
+                                 String attributeValueId, String fieldPath) {
         if (attributeValueId == null || attributeValueJpaRepository == null) {
             throw ValidationException.fromField(
-                    "variants.options.attributeValueId", "REQUIRED",
-                    "Phải chọn giá trị thuộc tính hợp lệ cho mỗi tuỳ chọn biến thể.");
+                    fieldPath, "REQUIRED",
+                    "Phải chọn giá trị thuộc tính từ danh sách.");
         }
         AttributeValueEntity value = attributeValueJpaRepository.findById(attributeValueId)
                 .orElseThrow(() -> ValidationException.fromField(
-                        "variants.options.attributeValueId", "NOT_FOUND",
+                        fieldPath, "NOT_FOUND",
                         "Giá trị thuộc tính đã chọn không còn tồn tại."));
         if (value.getAttribute() == null
                 || !matchesAttributeName(value.getAttribute(), optionName)
                 || !matchesOptionValue(value, optionValue)) {
             throw ValidationException.fromField(
-                    "variants.options.attributeValueId", "MISMATCH",
+                    fieldPath, "MISMATCH",
                     "Giá trị thuộc tính không khớp với loại hoặc nhãn tuỳ chọn biến thể.");
         }
         opt.setAttribute(value.getAttribute());
         opt.setAttributeValue(value);
+    }
+
+    private static void copyLegacyDisplaySnapshot(
+            ProductVariantOptionEntity target,
+            Deque<ProductVariantOptionEntity> candidates) {
+        ProductVariantOptionEntity source = candidates.pollFirst();
+        if (source == null) return;
+        target.setLegacyDisplayName(source.getLegacyDisplayName());
+        target.setLegacyDisplayValue(source.getLegacyDisplayValue());
     }
 
     private static boolean matchesOptionValue(AttributeValueEntity value, String optionValue) {

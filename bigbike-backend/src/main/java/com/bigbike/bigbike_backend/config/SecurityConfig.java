@@ -98,6 +98,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**").permitAll()
                         // Public settings and menus
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/policies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
                         // Internal redirect endpoints consumed by bigbike-web middleware.
                         // No PII; lock down at infra layer (private network / IP allowlist) for prod.

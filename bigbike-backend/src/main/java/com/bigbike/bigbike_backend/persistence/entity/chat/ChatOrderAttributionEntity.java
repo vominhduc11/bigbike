@@ -40,6 +40,15 @@ public class ChatOrderAttributionEntity {
     @Column(name = "action_type", length = 48)
     private String actionType;
 
+    @Column(name = "product_slug", length = 255)
+    private String productSlug;
+
+    @Column(name = "touch_at")
+    private Instant touchAt;
+
+    @Column(name = "attribution_window_hours", nullable = false)
+    private int attributionWindowHours = 168;
+
     @Column(name = "attributed_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal attributedAmount;
 

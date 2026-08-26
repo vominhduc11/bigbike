@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadRequest;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferRequest;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatLeadEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
@@ -116,6 +118,47 @@ class ChatLeadConsentTest {
         assertThatThrownBy(() -> service.captureLead(request, null))
                 .isInstanceOf(ForbiddenException.class);
         verify(leads, never()).save(any(ChatLeadEntity.class));
+    }
+
+    @Test
+    void explicitCallbackRequestOpensTheFormOnceAndReplaysByRequestId() {
+        UUID requestId = UUID.randomUUID();
+        ChatConversationEntity conversation = new ChatConversationEntity();
+        conversation.setId(TEST_CONVERSATION);
+        conversation.setLocale("vi");
+        ChatConversationJpaRepository conversations = mock(ChatConversationJpaRepository.class);
+        when(conversations.findByLeadOfferRequestId(requestId))
+                .thenReturn(Optional.empty(), Optional.of(conversation));
+        when(conversations.findByIdForUpdate(TEST_CONVERSATION)).thenReturn(Optional.of(conversation));
+        ChatService service = service(conversations, mock(ChatLeadJpaRepository.class),
+                mock(CustomerJpaRepository.class));
+        ChatLeadOfferRequest request = new ChatLeadOfferRequest(requestId, TEST_CONVERSATION, "vi");
+
+        assertThat(service.offerLead(request, null).status()).isEqualTo("OFFERED");
+        assertThat(conversation.getLeadOfferCount()).isEqualTo(1);
+        assertThat(conversation.getLeadOfferOpenedAt()).isNotNull();
+        assertThat(conversation.getLeadOfferRequestId()).isEqualTo(requestId);
+
+        assertThat(service.offerLead(request, null).conversationId()).isEqualTo(TEST_CONVERSATION);
+        verify(conversations, times(1)).save(conversation);
+    }
+
+    @Test
+    void aNewExplicitRequestCanReopenAPreviouslyDeclinedCallbackForm() {
+        UUID requestId = UUID.randomUUID();
+        ChatConversationEntity conversation = offeredConversation(TEST_CONVERSATION);
+        conversation.setLeadOfferStatus("DECLINED");
+        conversation.setLeadOfferRequestId(UUID.randomUUID());
+        ChatConversationJpaRepository conversations = mock(ChatConversationJpaRepository.class);
+        when(conversations.findByLeadOfferRequestId(requestId)).thenReturn(Optional.empty());
+        when(conversations.findByIdForUpdate(TEST_CONVERSATION)).thenReturn(Optional.of(conversation));
+        ChatService service = service(conversations, mock(ChatLeadJpaRepository.class),
+                mock(CustomerJpaRepository.class));
+
+        assertThat(service.offerLead(
+                new ChatLeadOfferRequest(requestId, TEST_CONVERSATION, "vi"), null).status())
+                .isEqualTo("OFFERED");
+        assertThat(conversation.getLeadOfferRequestId()).isEqualTo(requestId);
     }
 
     private static ChatService service(

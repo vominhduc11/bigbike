@@ -100,13 +100,21 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 - Web and admin have container healthchecks. `CONFIRMED_FROM_CONFIG`
 - The web container self-revalidates its storefront ISR cache on startup via `docker-entrypoint.mjs`: after `next build` bakes a data snapshot into the prerendered pages, the entrypoint waits for the server then POSTs the catalog/content tags to `/api/revalidate` so a fresh start serves backend-fresh data. This runs on every container start — including partial `docker compose up --no-deps` rebuilds — and replaces the former external `bigbike-web-init` one-shot container. `CONFIRMED_FROM_CONFIG`
 - Backend mail sending is optional when SMTP env vars are empty. `CONFIRMED_FROM_CONFIG`
+- `BIGBIKE_MAIL_ADMIN` is required whenever the backend starts, even when SMTP is disabled. Set it in the selected env-file (`.env` locally or `.env.vps` on the VPS); the checked-in examples use `bigbikevnshop@gmail.com`. This is the one shared recipient for new-order and chat-handoff alerts. Missing or malformed values stop backend startup with an explicit configuration error; there is no code or Compose fallback mailbox. `CONFIRMED_FROM_CONFIG`
+- `EmailDispatchService` logs a successful SMTP handoff as provider acceptance only. It does not claim final delivery, because SMTP acceptance cannot confirm that the recipient mailbox accepted the message later. `CONFIRMED_FROM_CODE`
 - **Backend memory and garbage collection** — the backend container remains capped at `1g`; Java
-  uses G1GC with `MaxRAMPercentage=75.0`, so the JVM heap stays within that existing container
-  limit. Do not raise the backend to 4 GB on the shared 8 GB server. This setting is designed to
-  let collection work use the host's available CPU cores without changing the memory allocation.
-  Java emits its G1 collection identification to the backend log, so the shop owner can verify the
-  active collector after deployment. The runtime also uses UTF-8 so Vietnamese operational logs
-  remain readable.
+  uses G1GC with `MaxRAMPercentage=50.0`, so the JVM heap stays within that existing container
+  limit. Do not raise the backend to 4 GB on the shared 8 GB server.
+  **Lowered from 75.0 to 50.0 on 2026-08-21**: at 75.0 the heap ceiling alone was 768 MB, and the
+  JVM's non-heap footprint (metaspace, code cache, ~69 thread stacks, direct buffers) added roughly
+  400 MB, so the container sat at 982 MB / 1024 MB (91.5%) with no headroom — a traffic spike that
+  let G1 grow the heap toward its ceiling would have been OOM-killed. Measured over 3 h of live
+  traffic the live set was only ~140 MB with **zero Full GCs** and 9-36 ms young pauses, so a
+  512 MB ceiling is still ~3.5x the working set. `CONFIRMED_FROM_RUNTIME`
+  This setting is designed to let collection work use the host's available CPU cores without
+  changing the memory allocation. Java emits its G1 collection identification to the backend log,
+  so the shop owner can verify the active collector after deployment. The runtime also uses UTF-8
+  so Vietnamese operational logs remain readable.
 - **Database connections** — the pool reports a checked-out connection held over 5 seconds,
   validates connections before use, keeps idle connections alive, and uses TCP keepalive to detect
   dead network sessions. PostgreSQL's
@@ -205,11 +213,13 @@ credentials for the build operator only, never browser configuration. `CONFIRMED
 
 ## Schema And Migration Notes
 
-- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V1048` after the performance change. `V1045` aligns the chat assistant counter column types with the JPA entities, `V1046` creates the cart-purge backup/restore ledger, `V1047` deterministically repairs and then requires variant attribute links, and `V1048` enables `pg_stat_statements`. Do not edit an existing migration; verify both the migration directory and `flyway_schema_history` for the deployed environment. `OWNER_CONFIRMED_2026-08-20`
+- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`. Chat Phase 3 uses additive `V1055`–`V1060` for counted turns/continuation, live handoff/message ordering/permission rename/business hours, visitor memory, feedback, proactive settings, and expiry of the device identity without shortening 90-day transcript retention. Existing migrations are never edited; verify directory and `flyway_schema_history`. `OWNER_CONFIRMED_2026-08-25`
 - The one-time WordPress live migration must follow [LIVE_MIGRATION_RUNBOOK.md](LIVE_MIGRATION_RUNBOOK.md). The normal Spring `mode=import` runner is legacy rehearsal tooling and is not an authorized production write path. `CONFIRMED_FROM_CODE_2026-08-03`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
 
 ## Deployment Caveats
+
+- **Chat realtime post-deploy check (do not skip):** both public API and Admin vhosts must proxy `/ws` with HTTP/1.1 plus `Upgrade` and `Connection $connection_upgrade`; an empty `Connection` header previously blocked production. Before reload run `nginx -t`, inspect active config with `nginx -T`, then test WebSocket handshakes for both `https://api.bigbike.vn/ws` and the admin proxy. In two clean browsers, have a guest click Gặp nhân viên, claim/reply/return from an authorized admin and confirm messages/status arrive without refresh; disconnect/reconnect customer and confirm history sync has no missing/duplicate sequence. Repeat with an admin lacking chat rights for 403. Watch backend/nginx logs only for status/connection ids, never transcript/token/PII. REST history is the fallback/source of truth if push is blocked.
 
 - Internal redirect endpoints (`/api/internal/**`) are protected by both the `X-Internal-Token` app-level check and an nginx-level block (`deploy/nginx/api.bigbike.vn.conf`, returns `403`) — see PERMISSION_MATRIX.md "Internal Redirect Caveat". `CONFIRMED_FROM_CONFIG`
 - The host's nginx `default_server` for both HTTP and HTTPS must return `404` for a direct server IP or an unrecognised `Host`; it must not proxy, redirect, or serve a shared site's virtual host. Before reload: inspect the exact active file, run `nginx -t`, reload nginx only after it passes, then test the raw IP and the named BigBike host separately. `OWNER_CONFIRMED_2026-08-15`
@@ -221,15 +231,16 @@ Scope: the **admin panel only**. The storefront is never taken down on purpose a
 
 ### Turning maintenance on and off
 
-Sign in to the admin panel with a `DEVELOPER` account and use **Hệ thống → Bảo trì hệ thống**. Three buttons, all manual, both directions — nothing transitions on a timer:
+Sign in to the admin panel with a `DEVELOPER` account and use **Hệ thống → Bảo trì hệ thống**. Use the one lock switch, manually in either direction — nothing transitions on a timer. There is no separate expected-finish-time field; put any useful time in the staff message:
 
-1. **Báo trước cho nhân viên** → `UPCOMING`. Every open admin session gets a realtime warning; staff can still save. Use this to let people finish what they are doing.
-2. **Khoá ngay** → `ACTIVE`. The confirm dialog reports how many admin uploads are still in flight; locking now would break them. From this point the backend rejects every admin write with `423 MAINTENANCE_ACTIVE`, and non-developer staff get a full-screen overlay — they cannot save *or* look anything up, so do not promise them they can still check an order. (The backend itself does not block reads; the block is a deliberate UI decision by the owner.)
-3. **Mở lại** → `NORMAL`. Staff sessions recover on their own within one cycle (STOMP push is immediate; the 60-second poll is the fallback).
+1. Turn the switch on → `ACTIVE`. The confirm dialog reports how many admin uploads are still in flight; locking now would break them. From this point the backend rejects every admin write with `423 MAINTENANCE_ACTIVE`, and non-developer staff get a full-screen overlay — they cannot save *or* look anything up, so do not promise them they can still check an order. (The backend itself does not block reads; the block is a deliberate UI decision by the owner.)
+2. Turn the switch off → `NORMAL`. Staff sessions recover on their own within one cycle (STOMP push is immediate; the 60-second poll is the fallback).
+
+The old `UPCOMING` state and expected-finish-time data are removed by the new migration. A legacy `UPCOMING` value is normalized to `NORMAL` during that migration; it must never be reintroduced by a manual update.
 
 `SUPER_ADMIN` cannot use these buttons — see `PERMISSION_MATRIX.md` §Maintenance Authority for why that is a role-name gate and not a permission.
 
-**Provision two `DEVELOPER` accounts** and seal the second one's credentials with the owner. There is no admin self-service password reset, and `resend-invite` is itself blocked while the lock is `ACTIVE`, so a forgotten password mid-lock is a real deadlock.
+**Provision two `DEVELOPER` accounts** and seal the second one's credentials with the owner. The measured live system on 2026-08-24 has only one `DEVELOPER` account; add and verify the second before relying on the lock in a production maintenance window. There is no admin self-service password reset, and `resend-invite` is itself blocked while the lock is `ACTIVE`, so a forgotten password mid-lock is a real deadlock.
 
 ### Break-glass
 
@@ -270,7 +281,7 @@ Regenerate them with `deploy/maintenance/render-fallback-pages.sh` **on every de
 - **Rate-limit preflight (read-only):** run `docker ps`, then `nginx -T | rg -n 'limit_req_status|limit_conn_status|error_page 429|X-Forwarded-For'`; verify the active files—not only repository copies—show `429`, no `$proxy_add_x_forwarded_for` on a public-to-backend hop, and one known canonical header per hop. Run `bash deploy/nginx/tests/rate-limit-config-test.sh` in the checkout before copying any Nginx file. Do not reload Nginx from this verification step.
 - **Rate-limit behavior (staging/approved preview only):** make one normal API request and inspect `status`, `Retry-After`, `Cache-Control`, `error.code`, `meta.requestId` and `meta.timestamp` after a controlled threshold test. It must be `429 RATE_LIMIT_EXCEEDED`, never `503` or the maintenance body. Do not run a burst/load test against production without an approved window.
 - **Redis behavior (staging):** run two backend replicas against the managed endpoint, consume one test bucket through replica A and confirm replica B sees the same remaining state. Test a rolling restart and provider failover; sensitive routes must remain fail-closed, while cart/checkout fallback is bounded and alerts fire. These tests are a release gate for horizontal scaling.
-- `SELECT * FROM maintenance_state;` returns exactly one `NORMAL` row; `SELECT count(*) FROM role_permissions WHERE role_id='DEVELOPER';` returns 34; the five `maintenance_*` rows are gone from `site_settings`.
+- `SELECT * FROM maintenance_state;` returns exactly one `NORMAL` row; `SELECT state FROM maintenance_state WHERE state NOT IN ('NORMAL','ACTIVE');` returns no rows; `SELECT column_name FROM information_schema.columns WHERE table_name='maintenance_state' AND column_name='expected_at';` returns no rows; the five `maintenance_*` rows are gone from `site_settings`.
 - `GET /api/v1/maintenance/status` and `POST /api/internal/maintenance/state` are gone. Unauthenticated they answer `401`, not `404`: removing their `permitAll` entries drops them into `anyRequest().authenticated()`, so the security chain replies before routing. The point of the check is that neither returns `200` any more. `GET /api/internal/redirects/active` with the internal token → still `200`, proving the shared-token redirect feature survived.
 - `SELECT count(*) FROM role_permissions WHERE role_id='DEVELOPER';` returns 35 after V375 (34 from V374 plus `maintenance.manage`). Editing that role from the Roles screen must be refused — the Edit button is hidden and the API returns `409`.
 - Place a real test order to prove customers are unaffected — do not assume it.
@@ -280,3 +291,14 @@ Regenerate them with `deploy/maintenance/render-fallback-pages.sh` **on every de
 ### Not yet rehearsed
 
 The end-to-end rehearsal on the real stack still has not been run: it needs an agreed quiet-hour window, and Docker lifecycle commands are out of scope for the agent. Treat the sequence above as documented-but-untested until that rehearsal happens.
+
+## Trợ lý BigBike giai đoạn 4 — cấu hình và runbook
+
+- Local dùng `.env`; VPS hiện tại bắt buộc dùng `.env.vps` qua `docker compose --env-file .env.vps ...`. Hai file thật không commit và không được copy đè qua nhau; mọi biến mới chỉ commit trong `.env.example` và `.env.vps.example`.
+- Biến mới: `BIGBIKE_CHAT_FALLBACK_MODEL`, `BIGBIKE_CHAT_PRIMARY_TIMEOUT_SECONDS`, `BIGBIKE_CHAT_MODEL_CATALOG_CACHE_MINUTES`, `BIGBIKE_CHAT_EVALUATION_MAX_COST_USD`, `MINIO_CHAT_PRIVATE_BUCKET`. `BIGBIKE_CHAT_MODEL` chỉ bootstrap/fallback khi DB chưa có setting; owner đổi model từ Cài đặt sau đó.
+- Bucket ảnh chat phải tồn tại nhưng tuyệt đối không có anonymous policy. Startup backend kiểm bucket riêng khác bucket media công khai; nếu trùng hoặc không thể xác minh private, tính năng ảnh fail-closed trong khi chat chữ vẫn hoạt động.
+- Deploy không tự bật ảnh và không tự chạy bộ đề. Sau deploy owner: (1) kiểm model list; (2) chạy bộ đề với một model/lần và cap tối đa 2 USD; (3) chọn model; (4) xem chi phí dự kiến rồi mới bật ảnh. Khi ảnh được bật, backend tự bổ sung/cập nhật dấu vân tay **cục bộ** còn thiếu từ kho media ở lượt đối chiếu đầu tiên; thao tác này không gọi Gemini và không tốn phí AI.
+- Theo dõi 14 ngày sau đổi model: mỗi ngày ghi answers/give-ups/fallback/p50-p95 latency/text cost/image cost; so give-up với baseline thật `5/58 ≈ 9%`. Mẫu lưu lượng khoảng 3 khách/ngày chỉ dùng giám sát, không chia A/B và không tuyên bố thắng nếu dữ liệu chưa đủ.
+- Xoá thử có kiểm soát: upload một fixture không có PII vào hội thoại test, xoá lịch sử, xác minh cả DB metadata và object private biến mất; dùng clock/test fixture cho mốc 90 ngày. Không dùng ảnh hoặc hội thoại khách thật.
+
+Các bước live có chi phí hoặc cần account thật phải do owner chạy sau triển khai; mã nguồn/CI chỉ dùng fake provider. Không gọi hàng loạt Gemini để “test nhanh”.

@@ -4,12 +4,20 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatAvailabilityResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferRequest;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatClarificationResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffStatusResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatNextStepResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferDetailsResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatImageAvailabilityResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatLeadEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
@@ -32,6 +40,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,8 +54,8 @@ import org.springframework.beans.factory.annotation.Value;
 @RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatService {
 
-    public static final int STANDARD_MAX_TURNS = 12;
-    public static final int PRODUCT_PAGE_MAX_TURNS = 20;
+    public static final int STANDARD_MAX_TURNS = 40;
+    public static final int PRODUCT_PAGE_MAX_TURNS = 40;
     /** Compatibility alias for availability and older tests. */
     public static final int MAX_TURNS = STANDARD_MAX_TURNS;
     private final ChatConversationJpaRepository conversationRepo;
@@ -55,12 +66,20 @@ public class ChatService {
     private final ChatToolService toolService;
     private final ChatToolRegistry toolRegistry;
     private final AiChatClient aiClient;
+    private final GeminiModelCatalogService modelCatalogService;
+    private final ChatAiUsageService aiUsageService;
     private final ChatResponseGuard responseGuard;
     private final ChatInputGuard inputGuard = new ChatInputGuard();
     private final ChatAiQuotaService chatAiQuotaService;
     private final ChatInteractionService chatInteractionService;
+    private final ChatSalesAdvisorService salesAdvisorService;
+    private final ChatHandoffService handoffService;
+    private final ChatPhase3Settings phase3Settings;
+    private final ChatVisitorService visitorService;
+    private final ChatImageService chatImageService;
     private final AdminChatWsService adminChatWsService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ConcurrentMap<UUID, ReentrantLock> conversationLocks = new ConcurrentHashMap<>();
 
     @Value("${bigbike.chat.input-cost-usd-per-million:0.30}")
     private BigDecimal inputCostUsdPerMillion = new BigDecimal("0.30");
@@ -90,9 +109,56 @@ public class ChatService {
         this.toolService = toolService;
         this.toolRegistry = toolRegistry;
         this.aiClient = aiClient;
+        this.modelCatalogService = null;
+        this.aiUsageService = null;
         this.responseGuard = responseGuard;
         this.chatAiQuotaService = chatAiQuotaService;
         this.chatInteractionService = null;
+        this.salesAdvisorService = null;
+        this.handoffService = null;
+        this.phase3Settings = null;
+        this.visitorService = null;
+        this.chatImageService = null;
+        this.adminChatWsService = adminChatWsService;
+    }
+
+    /** Compatibility constructor for the phase 2/3 focused tests. */
+    public ChatService(
+            ChatConversationJpaRepository conversationRepo,
+            ChatMessageJpaRepository messageRepo,
+            ChatLeadJpaRepository leadRepo,
+            CustomerJpaRepository customerRepo,
+            ChatAssistantSettings assistantSettings,
+            ChatToolService toolService,
+            ChatToolRegistry toolRegistry,
+            AiChatClient aiClient,
+            ChatResponseGuard responseGuard,
+            ChatAiQuotaService chatAiQuotaService,
+            ChatInteractionService chatInteractionService,
+            ChatSalesAdvisorService salesAdvisorService,
+            ChatHandoffService handoffService,
+            ChatPhase3Settings phase3Settings,
+            ChatVisitorService visitorService,
+            AdminChatWsService adminChatWsService
+    ) {
+        this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
+        this.leadRepo = leadRepo;
+        this.customerRepo = customerRepo;
+        this.assistantSettings = assistantSettings;
+        this.toolService = toolService;
+        this.toolRegistry = toolRegistry;
+        this.aiClient = aiClient;
+        this.modelCatalogService = null;
+        this.aiUsageService = null;
+        this.responseGuard = responseGuard;
+        this.chatAiQuotaService = chatAiQuotaService;
+        this.chatInteractionService = chatInteractionService;
+        this.salesAdvisorService = salesAdvisorService;
+        this.handoffService = handoffService;
+        this.phase3Settings = phase3Settings;
+        this.visitorService = visitorService;
+        this.chatImageService = null;
         this.adminChatWsService = adminChatWsService;
     }
 
@@ -108,46 +174,161 @@ public class ChatService {
                 .limit(4)
                 .toList();
         if (quickPrompts.size() < 3) quickPrompts = ChatAssistantSettings.defaultQuickPrompts(lang);
+        int conversationLimit = currentTurnLimit();
+        ChatPhase3Settings.Proactive proactive = phase3Settings == null
+                ? new ChatPhase3Settings.Proactive(false, 45, 120)
+                : phase3Settings.proactive();
+        ChatAssistantSettings.ImageSettings imageSettings = assistantSettings.imageSettings();
+        if (imageSettings == null) {
+            // Keep availability safe for older adapters/tests that predate image settings.
+            // Production settings always return a value; the compatibility default is off.
+            imageSettings = new ChatAssistantSettings.ImageSettings(false, 20, 3);
+        }
+        boolean imagesEnabled = imageSettings.enabled() && aiClient.isConfigured();
+        String imageDisclosure = "en".equals(lang)
+                ? "Your image is stored privately by BigBike for up to 90 days and sent to Google's AI service for recognition. Do not upload sensitive documents unless needed."
+                : "Ảnh được BigBike lưu riêng tối đa 90 ngày và gửi tới dịch vụ AI của Google để nhận diện. Anh/chị không nên gửi giấy tờ nhạy cảm khi không cần thiết.";
         return new ChatAvailabilityResponse(
                 availability.mode(),
                 "AI".equals(availability.mode()) ? "AI" : "CONTACT",
                 greeting,
                 quickPrompts,
-                MAX_TURNS,
-                settings.contacts());
+                conversationLimit,
+                settings.contacts(),
+                phase3Settings == null ? 30 : phase3Settings.memoryDays(),
+                new com.bigbike.bigbike_backend.api.chat.dto.ChatProactiveSettingsResponse(
+                        proactive.enabled(), proactive.productSeconds(), proactive.cartSeconds()),
+                new ChatImageAvailabilityResponse(
+                        imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, 1,
+                        imageSettings.conversationLimit(), imageSettings.dailyLimit(),
+                        imageDisclosure));
     }
 
-    @Transactional
     public ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
+        UUID lockKey = request.getConversationId() != null
+                ? request.getConversationId()
+                : request.getRequestId() != null ? request.getRequestId() : UUID.randomUUID();
+        ReentrantLock lock = conversationLocks.computeIfAbsent(lockKey, ignored -> new ReentrantLock());
+        lock.lock();
+        try {
+            return sendUnlocked(request, customerId);
+        } finally {
+            lock.unlock();
+            if (!lock.hasQueuedThreads()) conversationLocks.remove(lockKey, lock);
+        }
+    }
+
+    /** Provider waits must never keep a database transaction or connection open. */
+    private ChatMessageResponse sendUnlocked(ChatMessageRequest request, UUID customerId) {
         long startedNanos = System.nanoTime();
         ChatAssistantSettings.Snapshot settings = assistantSettings.load(request.getLang());
+        UUID visitorId = visitorService == null ? null
+                : visitorService.resolveVisitorId(request.getVisitorToken());
         if (request.getRequestId() != null) {
             Optional<ChatMessageResponse> replay = replayStoredResponse(
-                    request.getRequestId(), customerId, settings, resolveMaxTurns(request));
+                    request.getRequestId(), customerId, visitorId, settings, resolveMaxTurns(request));
             if (replay.isPresent()) return replay.get();
         }
         ChatConversationEntity conversation = loadOrCreate(
-                request.getConversationId(), customerId, request.getLang());
+                request.getConversationId(), customerId, visitorId, request.getLang());
         int maxTurns = resolveMaxTurns(request);
+        if ("TURN_LIMIT".equals(conversation.getEndedReason())) {
+            conversation.setEndedReason(null);
+        }
+        if (conversation.getEndedReason() == null && conversation.getCountedTurns() >= maxTurns) {
+            conversation = continueConversation(conversation);
+        }
         UUID originInteractionId = chatInteractionService == null
                 ? null
                 : chatInteractionService.verifiedActionOrigin(
                         request.getOriginInteractionId(), conversation.getId());
 
-        if (conversation.getEndedReason() != null || conversation.getTurnCount() >= maxTurns) {
-            conversation.setEndedReason(conversation.getEndedReason() == null
-                    ? "TURN_LIMIT" : conversation.getEndedReason());
-            conversationRepo.save(conversation);
+        if (conversation.getEndedReason() != null) {
             return contactResponse(
-                    conversation, settings, turnLimitText(request.getLang()), List.of(), maxTurns);
+                    conversation, settings,
+                    endedConversationText(request.getLang(), conversation.getEndedReason(), maxTurns),
+                    List.of(), maxTurns);
         }
 
+        ChatHandoffStatusResponse liveHandoff = handoffService == null
+                ? null : handoffService.liveForConversation(conversation.getId());
+        boolean countCustomerTurn = !isClarificationReply(conversation, request);
+        if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+            if (chatImageService == null) {
+                throw ValidationException.fromField(
+                        "imageIds", "CHAT_IMAGE_DISABLED", "Tính năng đọc ảnh chưa sẵn sàng.");
+            }
+            String customerContent = request.getMessage() == null || request.getMessage().isBlank()
+                    ? ("en".equals(request.getLang()) ? "Sent an image." : "Đã gửi một ảnh.")
+                    : request.getMessage();
+            ChatMessageEntity customerMessage = saveCustomerMessage(
+                    conversation, customerContent, request.getRequestId(), originInteractionId,
+                    countCustomerTurn);
+            if (liveHandoff != null && "ACTIVE".equals(liveHandoff.status())) {
+                chatImageService.attachForStaff(
+                        conversation, customerMessage.getId(), request.getImageIds());
+                conversationRepo.save(conversation);
+                handoffService.customerMessageAdded(conversation.getId());
+                return staffActiveResponse(conversation, settings, liveHandoff, maxTurns);
+            }
+            ChatImageService.ImageTurnResult imageResult = chatImageService.processTurn(
+                    conversation, customerMessage.getId(), request.getImageIds(),
+                    customerContent, request.getLang());
+            boolean handoff = imageResult.handoff();
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> imageActions =
+                    ChatActionCatalog.choose(
+                            customerContent, imageResult.resultKind(), imageResult.products(),
+                            List.of(), settings.contacts());
+            ChatHandoffStatusResponse imageHandoff = createHandoffIfNeeded(
+                    conversation, customerContent, imageResult.products(), handoff);
+            saveAssistantMessage(
+                    conversation, imageResult.answer(), imageResult.source(), false,
+                    imageResult.products(), 0, request.getRequestId(), "PLAIN_TEXT",
+                    imageResult.resultKind(), imageActions, handoff, 0,
+                    Telemetry.local(startedNanos), null, null, imageHandoff);
+            finishTurnIfNeeded(conversation, maxTurns);
+            conversationRepo.save(conversation);
+            return aiResponse(
+                    conversation, settings, imageResult.answer(), imageResult.products(),
+                    imageResult.resultKind(), handoff, 0, imageActions, maxTurns,
+                    null, null, imageHandoff);
+        }
+        if (liveHandoff != null && "ACTIVE".equals(liveHandoff.status())) {
+            saveCustomerMessage(
+                    conversation, request.getMessage(), request.getRequestId(), originInteractionId,
+                    false);
+            conversationRepo.save(conversation);
+            handoffService.customerMessageAdded(conversation.getId());
+            return staffActiveResponse(conversation, settings, liveHandoff, maxTurns);
+        }
         Optional<ChatInputGuard.Decision> inputDecision = inputGuard.evaluate(
                 request.getMessage(), request.getLang());
         if (inputDecision.isPresent()) {
             ChatInputGuard.Decision decision = inputDecision.get();
             saveCustomerMessage(
-                    conversation, request.getMessage(), request.getRequestId(), originInteractionId);
+                    conversation, request.getMessage(), request.getRequestId(), originInteractionId,
+                    countCustomerTurn);
+            if ("CONTACT_FALLBACK".equals(decision.source())) {
+                List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> contactActions =
+                        ChatActionCatalog.choose(
+                                request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts());
+                ChatSalesAdvisorService.Advice advice = salesAdvice(
+                        conversation, request, customerId, settings,
+                        ChatToolService.ConversationContext.empty(), decision.answer(), List.of(),
+                        "CONTACT_FALLBACK", "CONTACT", null, true, contactActions);
+                ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
+                        conversation, request.getMessage(), advice.products(), true);
+                int leadPromptSequence = advice.leadOffer() == null ? 0 : advice.leadOffer().sequence();
+                saveAssistantMessage(
+                        conversation, advice.answer(), "CONTACT_FALLBACK", false, List.of(), 0,
+                        request.getRequestId(), "PLAIN_TEXT", "CONTACT", advice.actions(),
+                        true, leadPromptSequence, Telemetry.local(startedNanos), null,
+                        advice, handoffStatus);
+                conversationRepo.save(conversation);
+                return aiResponse(
+                        conversation, settings, advice.answer(), List.of(), "CONTACT", true,
+                        leadPromptSequence, advice.actions(), maxTurns, null, advice, handoffStatus);
+            }
             finishTurnIfNeeded(conversation, maxTurns);
             boolean ended = conversation.getEndedReason() != null;
             String refusalKind = "OUT_OF_SCOPE".equals(decision.source())
@@ -168,7 +349,8 @@ public class ChatService {
         if (!"AI".equals(availability.mode())) {
             conversation.setEndedReason(endedReason(availability.reason()));
             saveCustomerMessage(
-                    conversation, request.getMessage(), request.getRequestId(), originInteractionId);
+                    conversation, request.getMessage(), request.getRequestId(), originInteractionId,
+                    countCustomerTurn);
             String fallback = contactFallbackText(request.getLang(), fallbackCause(availability.reason()));
             logFallback(availabilityFallbackReason(availability.reason()), FallbackFlow.CONTACT_GATE,
                     "NONE", 0, false);
@@ -192,22 +374,30 @@ public class ChatService {
                 ? List.of()
                 : ChatHistorySanitizer.recentTurns(existingMessages, settings.recentTurnPairs());
         saveCustomerMessage(
-                conversation, request.getMessage(), request.getRequestId(), originInteractionId);
+                conversation, request.getMessage(), request.getRequestId(), originInteractionId,
+                countCustomerTurn);
         Optional<ToolOutcome> fastPath;
         try {
-            fastPath = toolService.resolveFastPath(
-                    request.getMessage(), request.getLang(), customerId, settings, referenceContext);
+            fastPath = request.getClarificationSelection() == null
+                    ? toolService.resolveFastPath(
+                            request.getMessage(), request.getLang(), customerId, settings,
+                            referenceContext)
+                    : toolService.resolveFastPath(
+                            request.getMessage(), request.getLang(), customerId, settings,
+                            referenceContext, request.getClarificationSelection());
         } catch (RuntimeException exception) {
             return recoverableClarification(
                     conversation, settings, request.getLang(), false,
                     request.getRequestId(), startedNanos, maxTurns,
-                    ChatFallbackReason.FAST_PATH_EXCEPTION, "NONE", 0);
+                    ChatFallbackReason.FAST_PATH_EXCEPTION, "NONE", 0,
+                    countCustomerTurn);
         }
 
         if (fastPath.isPresent()) {
             ToolOutcome tool = fastPath.get();
             Optional<ChatResponseGuard.CheckedAnswer> checked = responseGuard.check(
-                    tool.localAnswer(), tool.products(), request.getLang());
+                    tool.localAnswer(), tool.products(), request.getLang(),
+                    tool.requiredDisclosures(), tool.catalogTotals());
             if (checked.isEmpty()) {
                 String reason = responseGuard.rejectionReason(
                         tool.localAnswer(), tool.products(), request.getLang(), List.of(),
@@ -215,11 +405,16 @@ public class ChatService {
                 return recoverableClarification(
                         conversation, settings, request.getLang(), false,
                         request.getRequestId(), startedNanos, maxTurns,
-                        ChatFallbackReason.FAST_PATH_GUARD_REJECTED, reason, tool.products().size());
+                        ChatFallbackReason.FAST_PATH_GUARD_REJECTED, reason, tool.products().size(),
+                        countCustomerTurn);
             }
             ChatResponseGuard.CheckedAnswer safe = checked.get();
-            Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
-                    conversation, safe, request.getLang());
+            if (tool.clarification() != null && countCustomerTurn) {
+                conversation.setCountedTurns(Math.max(0, conversation.getCountedTurns() - 1));
+            }
+            Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = tool.clarification() == null
+                    ? clarifyNearDuplicate(conversation, safe, request.getLang())
+                    : Optional.empty();
             boolean clarifiedDuplicate = duplicateClarification.isPresent();
             if (clarifiedDuplicate) safe = duplicateClarification.get();
             if (tool.leadDeclined() && "OFFERED".equals(conversation.getLeadOfferStatus())) {
@@ -229,38 +424,49 @@ public class ChatService {
                     conversation,
                     clarifiedDuplicate ? false : tool.offTopic(),
                     clarifiedDuplicate ? false : tool.handoffRecommended());
-            String responseKind = resultKind(safe.products(), handoff);
+            String responseKind = resultKind(safe.products(), handoff, tool.clarification());
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> responseActions =
-                    ChatActionCatalog.choose(
-                            request.getMessage(), responseKind, safe.products(), tool.actions(), settings.contacts());
-            boolean leadEligible = !handoff && ChatToolService.shouldOfferLeadPrompt(
-                    request.getMessage(), safe.products(), false);
-            int leadPromptSequence = offerLeadIfEligible(
-                    conversation, leadEligible,
-                    isSecondLeadTrigger(request.getMessage(), safe.products(), referenceContext));
-            saveAssistantMessage(conversation, safe.answer(), clarifiedDuplicate ? "TOOL" : tool.source(),
-                    false, safe.products(), 0,
-                    request.getRequestId(), answerFormat(safe.answer()), responseKind,
-                    responseActions, handoff, leadPromptSequence, Telemetry.local(startedNanos));
+                    tool.clarification() == null ? ChatActionCatalog.choose(
+                            request.getMessage(), responseKind, safe.products(), tool.actions(), settings.contacts())
+                            : List.of();
+            String responseSource = clarifiedDuplicate ? "TOOL" : tool.source();
+            ChatSalesAdvisorService.Advice advice = salesAdvice(
+                    conversation, request, customerId, settings, referenceContext,
+                    safe.answer(), safe.products(), responseSource, responseKind,
+                    tool.clarification(), handoff, responseActions);
+            handoff = advice.handoffRecommended();
+            ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
+                    conversation, request.getMessage(), advice.products(), handoff);
+            responseKind = resultKind(advice.products(), handoff, tool.clarification());
+            int leadPromptSequence = advice.leadOffer() == null ? 0 : advice.leadOffer().sequence();
+            saveAssistantMessage(conversation, advice.answer(), responseSource,
+                    false, advice.products(), 0,
+                    request.getRequestId(), answerFormat(advice.answer()), responseKind,
+                    advice.actions(), handoff, leadPromptSequence, Telemetry.local(startedNanos),
+                    tool.clarification(), advice, handoffStatus);
             saveConversationContext(conversation, toolService.recordConversationContext(
                     conversationContext,
                     request.getMessage(),
                     request.getLang(),
-                    safe.products(),
-                    responseActions,
-                    tool.effectiveSearchScope()));
+                    advice.products(),
+                    advice.actions(),
+                    tool.effectiveSearchScope(),
+                    tool.nextProductDecision()));
             finishTurnIfNeeded(conversation, maxTurns);
             conversationRepo.save(conversation);
             return aiResponse(
                     conversation,
                     settings,
-                    safe.answer(),
-                    safe.products(),
+                    advice.answer(),
+                    advice.products(),
                     responseKind,
                     handoff,
                     leadPromptSequence,
-                    responseActions,
-                    maxTurns);
+                    advice.actions(),
+                    maxTurns,
+                    tool.clarification(),
+                    advice,
+                    handoffStatus);
         }
 
         if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
@@ -284,9 +490,11 @@ public class ChatService {
                 request.getMessage(), request.getLang(), customerId, settings, referenceContext);
         ChatToolService.AssistantCatalogVocabulary vocabulary = toolService.assistantCatalogVocabulary();
         if (vocabulary == null) vocabulary = ChatToolService.AssistantCatalogVocabulary.empty();
-        Optional<AiChatClient.HybridAnswer> ai;
+        String requestedModel = assistantSettings.currentModel();
+        Optional<AiChatClient.ModelAnswer> ai;
         try {
-            ai = aiClient.answer(
+            ai = aiClient.answerWithFallback(
+                    requestedModel,
                     request.getMessage(),
                     request.getLang(),
                     toolRegistry,
@@ -298,7 +506,8 @@ public class ChatService {
         } catch (AiChatClient.SafetyBlockedException exception) {
             String refusal = safetyRefusalText(request.getLang());
             Telemetry safetyTelemetry = telemetry(
-                    startedNanos, exception.usage(), exception.providerCallCount());
+                    startedNanos, exception.usage(), exception.providerCallCount(),
+                    requestedModel, requestedModel, false, null);
             finishTurnIfNeeded(conversation, maxTurns);
             boolean ended = conversation.getEndedReason() != null;
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> safetyActions =
@@ -312,16 +521,20 @@ public class ChatService {
             return refusalResponse(
                     conversation, settings, refusal, "REFUSAL", safetyActions, maxTurns);
         } catch (RuntimeException exception) {
+            log.warn("chat_assistant_provider_failed reason=UNEXPECTED_PROVIDER_ERROR type={}",
+                    exception.getClass().getSimpleName());
             ai = Optional.empty();
         }
         if (ai.isEmpty()) {
             return recoverableClarification(
                     conversation, settings, request.getLang(), true,
                     request.getRequestId(), startedNanos, maxTurns,
-                    ChatFallbackReason.AI_NO_SAFE_RESULT, "NONE", 0);
+                    ChatFallbackReason.AI_NO_SAFE_RESULT, "NONE", 0,
+                    countCustomerTurn);
         }
 
-        AiChatClient.HybridAnswer hybridAnswer = ai.get();
+        AiChatClient.ModelAnswer modelAnswer = ai.get();
+        AiChatClient.HybridAnswer hybridAnswer = modelAnswer.answer();
         List<ChatProductCardResponse> originalProducts = hybridAnswer.products() == null
                 ? List.of() : hybridAnswer.products();
         List<ChatProductCardResponse> safeProducts = responseGuard.retainSafeProducts(originalProducts);
@@ -378,19 +591,18 @@ public class ChatService {
                             ? ChatFallbackReason.UNSAFE_PRODUCT_FILTERED
                             : ChatFallbackReason.AI_GUARD_REJECTED,
                     guardReason,
-                    guardDiagnostic == null ? 0 : guardDiagnostic.productCount());
+                    guardDiagnostic == null ? 0 : guardDiagnostic.productCount(),
+                    countCustomerTurn);
         }
         ChatResponseGuard.CheckedAnswer safe = checked.get();
         Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
                 conversation, safe, request.getLang());
         boolean clarifiedDuplicate = duplicateClarification.isPresent();
         if (clarifiedDuplicate) safe = duplicateClarification.get();
-        boolean interestLead = ChatToolService.shouldOfferLeadPrompt(
-                request.getMessage(), safe.products(), recoveredFromGuard);
         AiChatClient.Answer answer = recoveredFromGuard || clarifiedDuplicate
                 ? new AiChatClient.Answer(
                         safe.answer(), false, false,
-                        hybridAnswer.answer().leadPrompt() || interestLead)
+                        false)
                 : hybridAnswer.answer();
         boolean handoff = applyConversationSignals(
                 conversation, answer.offTopic(), answer.handoffRecommended());
@@ -400,39 +612,56 @@ public class ChatService {
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> responseActions =
                 ChatActionCatalog.choose(
                         request.getMessage(), responseKind, safe.products(), proposedActions, settings.contacts());
-        int leadPromptSequence = offerLeadIfEligible(
-                conversation, !handoff && (answer.leadPrompt() || interestLead),
-                isSecondLeadTrigger(request.getMessage(), safe.products(), referenceContext));
+        String responseSource = recoveredFromGuard || clarifiedDuplicate ? "TOOL" : hybridAnswer.source();
+        ChatSalesAdvisorService.Advice advice = salesAdvice(
+                conversation, request, customerId, settings, referenceContext,
+                safe.answer(), safe.products(), responseSource, responseKind,
+                null, handoff, responseActions);
+        handoff = advice.handoffRecommended();
+        ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
+                conversation, request.getMessage(), advice.products(), handoff);
+        responseKind = resultKind(advice.products(), handoff);
+        int leadPromptSequence = advice.leadOffer() == null ? 0 : advice.leadOffer().sequence();
         saveAssistantMessage(
-                conversation, safe.answer(), recoveredFromGuard || clarifiedDuplicate ? "TOOL" : hybridAnswer.source(),
-                true, safe.products(), 0,
-                request.getRequestId(), answerFormat(safe.answer()), responseKind,
-                responseActions, handoff, leadPromptSequence, telemetry(startedNanos, hybridAnswer));
+                conversation, advice.answer(), responseSource,
+                true, advice.products(), 0,
+                request.getRequestId(), answerFormat(advice.answer()), responseKind,
+                advice.actions(), handoff, leadPromptSequence, telemetry(startedNanos, modelAnswer),
+                null, advice, handoffStatus);
         saveConversationContext(conversation, toolService.recordConversationContext(
                 conversationContext,
                 request.getMessage(),
                 request.getLang(),
-                safe.products(),
-                responseActions,
+                advice.products(),
+                advice.actions(),
                 hybridAnswer.searchScope()));
         finishTurnIfNeeded(conversation, maxTurns);
         conversationRepo.save(conversation);
         return aiResponse(
                 conversation,
                 settings,
-                safe.answer(),
-                safe.products(),
+                advice.answer(),
+                advice.products(),
                 responseKind,
                 handoff || conversation.getEndedReason() != null,
                 leadPromptSequence,
-                responseActions,
-                maxTurns);
+                advice.actions(),
+                maxTurns,
+                null,
+                advice,
+                handoffStatus);
     }
 
     @Transactional
     public ChatLeadResponse captureLead(ChatLeadRequest request, UUID customerId) {
-        ChatConversationEntity conversation = loadExistingForCaller(
-                request.getConversationId(), customerId);
+        return captureLead(request, customerId, null);
+    }
+
+    @Transactional
+    public ChatLeadResponse captureLead(
+            ChatLeadRequest request, UUID customerId, UUID visitorId) {
+        ChatConversationEntity conversation = loadExistingForCallerForUpdate(
+                request.getConversationId(), customerId, visitorId);
         if (!"OFFERED".equals(conversation.getLeadOfferStatus())) {
             throw new ConflictException("Thông tin liên hệ chưa được mời hoặc đã có lựa chọn trước đó.");
         }
@@ -442,6 +671,10 @@ public class ChatService {
 
         ChatLeadEntity lead = new ChatLeadEntity();
         lead.setConversationId(conversation.getId());
+        messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
+                        conversation.getId(), "ASSISTANT")
+                .map(ChatMessageEntity::getLeadOfferReason)
+                .ifPresent(lead::setPurpose);
         if ("ACCOUNT".equals(request.getContactSource())) {
             AccountContact accountContact = resolveAccountContact(customerId);
             lead.setName(accountContact.name());
@@ -498,7 +731,14 @@ public class ChatService {
 
     @Transactional
     public ChatLeadDeclineResponse declineLead(UUID conversationId, UUID customerId) {
-        ChatConversationEntity conversation = loadExistingForCaller(conversationId, customerId);
+        return declineLead(conversationId, customerId, null);
+    }
+
+    @Transactional
+    public ChatLeadDeclineResponse declineLead(
+            UUID conversationId, UUID customerId, UUID visitorId) {
+        ChatConversationEntity conversation = loadExistingForCallerForUpdate(
+                conversationId, customerId, visitorId);
         String status = conversation.getLeadOfferStatus();
         if ("ACCEPTED".equals(status) || leadRepo.existsByConversationId(conversation.getId())) {
             throw new ConflictException("Hội thoại này đã ghi nhận thông tin liên hệ.");
@@ -511,9 +751,50 @@ public class ChatService {
         return new ChatLeadDeclineResponse(true);
     }
 
-    private ChatConversationEntity loadOrCreate(UUID id, UUID customerId, String lang) {
+    @Transactional
+    public ChatLeadOfferResponse offerLead(ChatLeadOfferRequest request, UUID customerId) {
+        return offerLead(request, customerId, null);
+    }
+
+    @Transactional
+    public ChatLeadOfferResponse offerLead(
+            ChatLeadOfferRequest request, UUID customerId, UUID visitorId) {
+        Optional<ChatConversationEntity> replay = conversationRepo.findByLeadOfferRequestId(
+                request.requestId());
+        if (replay.isPresent()) {
+            ChatConversationEntity existing = verifyCaller(replay.get(), customerId, visitorId);
+            return new ChatLeadOfferResponse(existing.getId(), existing.getLeadOfferStatus());
+        }
+
+        ChatConversationEntity conversation = request.conversationId() == null
+                ? createLeadConversation(customerId, visitorId, request.locale())
+                : loadExistingForCallerForUpdate(request.conversationId(), customerId, visitorId);
+        conversation.setLeadOfferRequestId(request.requestId());
+        if ("NONE".equals(conversation.getLeadOfferStatus())
+                || "DECLINED".equals(conversation.getLeadOfferStatus())) {
+            conversation.setLeadOfferStatus("OFFERED");
+            conversation.setLeadOfferCount(1);
+        }
+        if (conversation.getLeadOfferOpenedAt() == null) {
+            conversation.setLeadOfferOpenedAt(Instant.now());
+        }
+        conversationRepo.save(conversation);
+        return new ChatLeadOfferResponse(conversation.getId(), conversation.getLeadOfferStatus());
+    }
+
+    private ChatConversationEntity createLeadConversation(
+            UUID customerId, UUID visitorId, String locale) {
+        ChatConversationEntity conversation = new ChatConversationEntity();
+        conversation.setCustomerId(customerId);
+        conversation.setVisitorId(visitorId);
+        conversation.setLocale("en".equals(locale) ? "en" : "vi");
+        return conversationRepo.save(conversation);
+    }
+
+    private ChatConversationEntity loadOrCreate(
+            UUID id, UUID customerId, UUID visitorId, String lang) {
         if (id != null) {
-            ChatConversationEntity existing = loadExistingForCaller(id, customerId);
+            ChatConversationEntity existing = loadExistingForCaller(id, customerId, visitorId);
             if (existing.getCustomerId() == null && customerId != null) {
                 existing.setCustomerId(customerId);
             }
@@ -521,6 +802,7 @@ public class ChatService {
         }
         ChatConversationEntity conversation = new ChatConversationEntity();
         conversation.setCustomerId(customerId);
+        conversation.setVisitorId(visitorId);
         conversation.setLocale(lang);
         return conversationRepo.save(conversation);
     }
@@ -528,6 +810,7 @@ public class ChatService {
     private Optional<ChatMessageResponse> replayStoredResponse(
             UUID requestId,
             UUID customerId,
+            UUID visitorId,
             ChatAssistantSettings.Snapshot settings,
             int maxTurns
     ) {
@@ -536,7 +819,7 @@ public class ChatService {
         if (stored.isEmpty()) return Optional.empty();
         ChatMessageEntity message = stored.get();
         ChatConversationEntity conversation = loadExistingForCaller(
-                message.getConversationId(), customerId);
+                message.getConversationId(), customerId, visitorId);
         List<ChatProductCardResponse> products = readStoredProducts(message.getProductsJson());
         StoredResponseMetadata metadata = readStoredMetadata(message.getActionMetadata());
         String mode = metadata == null ? "AI" : metadata.mode();
@@ -547,12 +830,25 @@ public class ChatService {
                 : Math.max(0, Math.min(2, metadata.leadPromptSequence()));
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions = metadata == null
                 ? List.of() : metadata.actions() == null ? List.of() : metadata.actions();
+        ChatClarificationResponse clarification = metadata == null ? null : metadata.clarification();
+        List<ChatProductCardResponse> crossSell = metadata == null
+                ? readStoredProducts(message.getCrossSellProductsJson())
+                : metadata.crossSellProducts() == null ? List.of() : metadata.crossSellProducts();
+        String salesStage = metadata != null && metadata.salesStage() != null
+                ? metadata.salesStage()
+                : message.getSalesStage() != null ? message.getSalesStage() : conversation.getSalesStage();
+        ChatNextStepResponse nextStep = metadata == null ? null : metadata.nextStep();
+        ChatHandoffStatusResponse handoffStatus = metadata == null ? null : metadata.handoffStatus();
+        ChatLeadOfferDetailsResponse leadOffer = metadata == null ? null : metadata.leadOffer();
         return Optional.of(new ChatMessageResponse(
                 conversation.getId(), message.getId(), mode, reason, message.getContent(),
                 message.getAnswerFormat(), message.getResultKind(),
                 conversation.getTurnCount(), maxTurns,
-                Math.max(0, maxTurns - conversation.getTurnCount()),
-                products, handoff, leadPrompt, leadPromptSequence, actions, settings.contacts()));
+                remainingTurns(conversation, maxTurns),
+                products, clarification, handoff, leadPrompt, leadPromptSequence, actions,
+                settings.contacts(), crossSell, salesStage, nextStep, handoffStatus, leadOffer,
+                channelState(handoffStatus, conversation), conversation.getCountedTurns(), maxTurns,
+                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns)));
     }
 
     private List<ChatProductCardResponse> readStoredProducts(String raw) {
@@ -574,11 +870,46 @@ public class ChatService {
     }
 
     private ChatConversationEntity loadExistingForCaller(UUID id, UUID customerId) {
+        return loadExistingForCaller(id, customerId, null);
+    }
+
+    private ChatConversationEntity loadExistingForCaller(
+            UUID id, UUID customerId, UUID visitorId) {
+        ChatConversationEntity conversation = conversationRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
+        return verifyCaller(conversation, customerId, visitorId);
+    }
+
+    private ChatConversationEntity loadExistingForCallerForUpdate(UUID id, UUID customerId) {
+        return loadExistingForCallerForUpdate(id, customerId, null);
+    }
+
+    private ChatConversationEntity loadExistingForCallerForUpdate(
+            UUID id, UUID customerId, UUID visitorId) {
         ChatConversationEntity conversation = conversationRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
+        return verifyCaller(conversation, customerId, visitorId);
+    }
+
+    private ChatConversationEntity verifyCaller(
+            ChatConversationEntity conversation,
+            UUID customerId
+    ) {
+        return verifyCaller(conversation, customerId, null);
+    }
+
+    private ChatConversationEntity verifyCaller(
+            ChatConversationEntity conversation,
+            UUID customerId,
+            UUID visitorId
+    ) {
         UUID owner = conversation.getCustomerId();
         if ((owner != null && customerId == null)
                 || (owner != null && !owner.equals(customerId))) {
+            throw new NotFoundException("Không tìm thấy hội thoại.");
+        }
+        if (owner == null && conversation.getVisitorId() != null
+                && !conversation.getVisitorId().equals(visitorId)) {
             throw new NotFoundException("Không tìm thấy hội thoại.");
         }
         return conversation;
@@ -684,7 +1015,7 @@ public class ChatService {
                     ? "The price filter from your previous product request returned no matches, so I removed only that older filter and searched this request again. "
                     + "The products below are the currently available results after that retry. "
                     + "Tell me a new budget if you would like me to narrow the list again."
-                    : "Dạ, tầm giá đã nêu ở lượt trước không có kết quả phù hợp nên em đã bỏ riêng bộ lọc cũ và tìm lại yêu cầu này. "
+                    : "Tầm giá đã nêu ở lượt trước không có kết quả phù hợp nên em đã bỏ riêng bộ lọc cũ và tìm lại yêu cầu này. "
                     + "Các sản phẩm bên dưới là kết quả đang bán sau khi em tìm lại. "
                     + "Anh/chị cho em tầm giá mới nếu muốn em lọc hẹp lại nhé.";
         } else if (hybridAnswer.requiredDisclosures()
@@ -692,7 +1023,7 @@ public class ChatService {
             answer = english
                     ? "I could not find a currently sold product in the price range you requested. "
                     + "The " + cards + " products below are the closest available options."
-                    : "Dạ, em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
+                    : "Em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
                     + cards + " sản phẩm bên dưới là phương án gần nhất đang có.";
         } else if (hybridAnswer.requiredDisclosures()
                 .contains(ChatToolService.RequiredDisclosure.INHERITED_PRICE_RANGE)) {
@@ -700,21 +1031,21 @@ public class ChatService {
                     ? "I am filtering by the price range from your previous product request. "
                     + "I am showing " + cards + " matching product"
                     + (cards == 1 ? " below." : "s below.")
-                    : "Dạ, em đang lọc theo tầm giá anh/chị đã nêu trước đó. "
+                    : "Em đang lọc theo tầm giá anh/chị đã nêu trước đó. "
                     + "Em đang hiển thị " + cards + " sản phẩm phù hợp bên dưới.";
         } else if (hybridAnswer.requiredDisclosures()
                 .contains(ChatToolService.RequiredDisclosure.BROADENED_SEARCH)) {
             answer = english
                     ? "The products below come from a broader search than your original request. "
                     + "Please tell me a more specific name, category or budget so I can narrow the results."
-                    : "Dạ, các sản phẩm bên dưới đến từ tìm kiếm rộng hơn yêu cầu ban đầu của anh/chị. "
+                    : "Các sản phẩm bên dưới đến từ tìm kiếm rộng hơn yêu cầu ban đầu của anh/chị. "
                     + "Anh/chị cho em tên mẫu, loại hàng hoặc tầm giá cụ thể hơn để em lọc lại nhé.";
         } else {
             answer = english
                     ? "I am showing " + cards + " matching product"
                     + (cards == 1 ? " below." : "s below.")
                     + " Please open a product or tell me a different budget if you want me to filter again."
-                    : "Dạ, em đang hiển thị " + cards + " sản phẩm phù hợp bên dưới. "
+                    : "Em đang hiển thị " + cards + " sản phẩm phù hợp bên dưới. "
                     + "Anh/chị có thể mở từng sản phẩm hoặc cho em biết tầm giá khác để em lọc lại nhé.";
         }
         return responseGuard.check(
@@ -748,7 +1079,7 @@ public class ChatService {
                 ? "In the price range you asked about, BigBike has " + total + " matching " + group + ". "
                 + "I am showing " + products.size() + " representative products below from those " + total + " matches. "
                 + "Open a product to review its current details and options."
-                : "Dạ, trong tầm giá anh/chị hỏi, shop có " + total + " mẫu " + group + ". "
+                : "Trong tầm giá anh/chị hỏi, shop có " + total + " mẫu " + group + ". "
                 + "Em đang hiển thị " + products.size() + " sản phẩm tiêu biểu bên dưới trong tổng " + total + " mẫu phù hợp. "
                 + "Anh/chị mở từng sản phẩm để xem thông tin và lựa chọn hiện có nhé.";
         return responseGuard.check(answer, products, lang, Set.of(), totals);
@@ -775,7 +1106,7 @@ public class ChatService {
         String clarification = "en".equals(lang)
                 ? "To make sure I check the right next detail, would you like size, colour, specifications or a different budget? "
                 + "Tell me which one matters most and I will continue from that point instead of repeating the previous answer."
-                : "Dạ, để em kiểm tra đúng ý anh/chị hơn, anh/chị muốn xem size, màu, thông số hay một tầm giá khác ạ? "
+                : "Để em kiểm tra đúng ý hơn, anh/chị muốn xem size, màu, thông số hay một tầm giá khác ạ? "
                 + "Anh/chị cho em biết phần cần xem nhất, em sẽ tra tiếp từ đó thay vì lặp lại câu trả lời trước nhé.";
         return responseGuard.check(clarification, candidate.products(), lang);
     }
@@ -790,6 +1121,9 @@ public class ChatService {
         // because most of its sentence is the same as the previous result.
         if (hasDifferentNumericClaims(first, second)) return false;
         if (first.equals(second)) return true;
+        // A prior sales CTA is appended after this check. Compare the repeated grounded body
+        // too, otherwise that CTA can hide an exact phase-1 duplicate on the next turn.
+        if (first.startsWith(second + " ") || second.startsWith(first + " ")) return true;
         Set<String> left = new java.util.LinkedHashSet<>(List.of(first.split("\\s+")));
         Set<String> right = new java.util.LinkedHashSet<>(List.of(second.split("\\s+")));
         if (Math.min(left.size(), right.size()) < 6) return false;
@@ -865,7 +1199,7 @@ public class ChatService {
         }
         return new ChatToolService.ConversationContext(
                 context.category(), context.brand(), context.minPrice(), context.maxPrice(),
-                slugs, context.awaitingOrderLogin());
+                slugs, context.awaitingOrderLogin(), context.productDecision());
     }
 
     private void saveConversationContext(
@@ -875,26 +1209,40 @@ public class ChatService {
         conversation.setContextJson(writeJson(context));
     }
 
-    private void saveCustomerMessage(ChatConversationEntity conversation, String content) {
-        saveCustomerMessage(conversation, content, null, null);
+    private ChatMessageEntity saveCustomerMessage(ChatConversationEntity conversation, String content) {
+        return saveCustomerMessage(conversation, content, null, null, true);
     }
 
-    private void saveCustomerMessage(
+    private ChatMessageEntity saveCustomerMessage(
             ChatConversationEntity conversation,
             String content,
             UUID requestId,
             UUID originInteractionId
     ) {
+        return saveCustomerMessage(conversation, content, requestId, originInteractionId, true);
+    }
+
+    private ChatMessageEntity saveCustomerMessage(
+            ChatConversationEntity conversation,
+            String content,
+            UUID requestId,
+            UUID originInteractionId,
+            boolean countAsSubstantiveTurn
+    ) {
         conversation.setTurnCount(conversation.getTurnCount() + 1);
+        if (countAsSubstantiveTurn) {
+            conversation.setCountedTurns(conversation.getCountedTurns() + 1);
+        }
         conversation.setLastMessageAt(Instant.now());
         ChatMessageEntity message = new ChatMessageEntity();
         message.setConversationId(conversation.getId());
+        message.setSequenceNo(nextMessageSequence(conversation.getId()));
         message.setRole("CUSTOMER");
         message.setContent(content.trim());
         message.setSource("TOOL");
         message.setRequestId(requestId);
         message.setOriginInteractionId(originInteractionId);
-        messageRepo.save(message);
+        return messageRepo.save(message);
     }
 
     /** Technical orchestration failures stay in chat and become a useful next question. */
@@ -908,9 +1256,13 @@ public class ChatService {
             int maxTurns,
             ChatFallbackReason reason,
             String guardReason,
-            int productCount
+            int productCount,
+            boolean countedAsSubstantiveTurn
     ) {
         conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
+        if (countedAsSubstantiveTurn) {
+            conversation.setCountedTurns(Math.max(0, conversation.getCountedTurns() - 1));
+        }
         boolean repeated = messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
                         conversation.getId(), "ASSISTANT")
                 .map(message -> "CONTACT_FALLBACK".equals(message.getSource())
@@ -919,11 +1271,11 @@ public class ChatService {
         String answer = repeated
                 ? repeatedFallbackText(lang)
                 : ("en".equals(lang)
-                ? "I could not complete that lookup yet. Please send the product name, product type or exact detail you want checked, and I will try again from the current BigBike catalogue."
-                : "Dạ, em chưa lấy được thông tin phù hợp cho câu hỏi này nhưng anh/chị vẫn có thể hỏi tiếp. Anh/chị gửi tên mẫu, loại hàng hoặc chi tiết cần kiểm tra, em sẽ tra lại theo dữ liệu BigBike đang bán nhé.");
+                ? "BigBike Assistant is busy and could not finish that lookup. Please try the same question again, or choose Talk to staff for immediate help."
+                : "Trợ lý BigBike đang bận nên chưa hoàn tất lần tra này. Anh/chị vui lòng hỏi lại đúng câu vừa rồi, hoặc bấm Gặp nhân viên nếu cần hỗ trợ ngay nhé.");
         logFallback(reason, aiCalled ? FallbackFlow.AI : FallbackFlow.FAST_PATH,
                 guardReason, productCount, false);
-        int leadPromptSequence = offerLeadIfEligible(conversation, true, false);
+        int leadPromptSequence = 0;
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions =
                 ChatActionCatalog.choose("", "CLARIFICATION", List.of(), List.of(), settings.contacts());
         saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0,
@@ -939,13 +1291,48 @@ public class ChatService {
         String normalized = ChatToolService.normalize(value == null ? "" : value);
         return normalized.contains("chua lay duoc thong tin phu hop cho cau hoi nay")
                 || normalized.contains("could not complete that lookup yet")
-                || normalized.contains("chua hoan tat duoc lan tra nay");
+                || normalized.contains("chua hoan tat duoc lan tra nay")
+                || normalized.contains("bigbike assistant is busy");
+    }
+
+    private ChatSalesAdvisorService.Advice salesAdvice(
+            ChatConversationEntity conversation,
+            ChatMessageRequest request,
+            UUID customerId,
+            ChatAssistantSettings.Snapshot settings,
+            ChatToolService.ConversationContext context,
+            String answer,
+            List<ChatProductCardResponse> products,
+            String source,
+            String resultKind,
+            ChatClarificationResponse clarification,
+            boolean handoff,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions
+    ) {
+        if (salesAdvisorService == null) {
+            return new ChatSalesAdvisorService.Advice(
+                    answer, products, List.of(), conversation.getSalesStage(),
+                    "ANSWERED", null, null, actions, handoff);
+        }
+        return salesAdvisorService.advise(
+                conversation, request.getMessage(), request.getLang(), customerId, settings,
+                context, answer, products, source, resultKind, clarification, handoff, actions);
+    }
+
+    private ChatHandoffStatusResponse createHandoffIfNeeded(
+            ChatConversationEntity conversation,
+            String question,
+            List<ChatProductCardResponse> products,
+            boolean handoff
+    ) {
+        if (!handoff || handoffService == null) return null;
+        return handoffService.requestFromMessage(conversation, question, products);
     }
 
     private static String repeatedFallbackText(String lang) {
         return "en".equals(lang)
-                ? "I still need a little more detail to help with this. Please tell me the product type, model or price range, and I will filter the products currently sold by BigBike."
-                : "Dạ, em cần anh/chị nói thêm loại hàng, tên mẫu hoặc tầm giá để lọc đúng dữ liệu BigBike đang bán. Anh/chị cho em biết rõ thêm một chi tiết giúp em nhé.";
+                ? "The lookup is still busy. Please try again shortly or choose Talk to staff so BigBike can check it directly."
+                : "Lần tra vẫn đang bận. Anh/chị vui lòng thử lại sau ít phút hoặc bấm Gặp nhân viên để BigBike kiểm tra trực tiếp nhé.";
     }
 
     private void saveAssistantMessage(
@@ -977,8 +1364,55 @@ public class ChatService {
             int leadPromptSequence,
             Telemetry telemetry
     ) {
+        saveAssistantMessage(
+                conversation, content, source, aiCalled, products, aiRetryCount,
+                requestId, answerFormat, resultKind, actions, handoff, leadPromptSequence,
+                telemetry, null);
+    }
+
+    private void saveAssistantMessage(
+            ChatConversationEntity conversation,
+            String content,
+            String source,
+            boolean aiCalled,
+            List<ChatProductCardResponse> products,
+            int aiRetryCount,
+            UUID requestId,
+            String answerFormat,
+            String resultKind,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            boolean handoff,
+            int leadPromptSequence,
+            Telemetry telemetry,
+            ChatClarificationResponse clarification
+    ) {
+        saveAssistantMessage(
+                conversation, content, source, aiCalled, products, aiRetryCount,
+                requestId, answerFormat, resultKind, actions, handoff, leadPromptSequence,
+                telemetry, clarification, null, null);
+    }
+
+    private void saveAssistantMessage(
+            ChatConversationEntity conversation,
+            String content,
+            String source,
+            boolean aiCalled,
+            List<ChatProductCardResponse> products,
+            int aiRetryCount,
+            UUID requestId,
+            String answerFormat,
+            String resultKind,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            boolean handoff,
+            int leadPromptSequence,
+            Telemetry telemetry,
+            ChatClarificationResponse clarification,
+            ChatSalesAdvisorService.Advice salesAdvice,
+            ChatHandoffStatusResponse handoffStatus
+    ) {
         ChatMessageEntity message = new ChatMessageEntity();
         message.setConversationId(conversation.getId());
+        message.setSequenceNo(nextMessageSequence(conversation.getId()));
         message.setRole("ASSISTANT");
         message.setContent(content);
         message.setSource(source);
@@ -990,16 +1424,33 @@ public class ChatService {
                     .map(ChatMessageEntity::getOriginInteractionId)
                     .ifPresent(message::setOriginInteractionId);
         }
+        String mode = conversation.getEndedReason() == null ? "AI" : "CONTACT";
         message.setActionMetadata(writeJson(new StoredResponseMetadata(
-                handoff ? "CONTACT" : "AI",
-                handoff ? "CONTACT" : "AI",
+                mode,
+                mode,
                 handoff,
                 leadPromptSequence > 0,
                 leadPromptSequence,
-                actions == null ? List.of() : List.copyOf(actions))));
+                actions == null ? List.of() : List.copyOf(actions),
+                clarification,
+                salesAdvice == null ? List.of() : salesAdvice.crossSellProducts(),
+                salesAdvice == null ? conversation.getSalesStage() : salesAdvice.salesStage(),
+                salesAdvice == null ? null : salesAdvice.nextStep(),
+                handoffStatus,
+                salesAdvice == null ? null : salesAdvice.leadOffer())));
         message.setAiCalled(aiCalled);
         message.setAiRetryCount(Math.max(0, aiRetryCount));
         message.setProductsJson(products.isEmpty() ? null : writeJson(products));
+        if (salesAdvice != null) {
+            message.setSalesStage(salesAdvice.salesStage());
+            message.setOutcomeCode(salesAdvice.outcomeCode());
+            message.setLeadOfferReason(salesAdvice.leadOffer() == null
+                    ? null : salesAdvice.leadOffer().reason());
+            message.setNextStepType(salesAdvice.nextStep() == null
+                    ? null : salesAdvice.nextStep().type());
+            message.setCrossSellProductsJson(salesAdvice.crossSellProducts().isEmpty()
+                    ? null : writeJson(salesAdvice.crossSellProducts()));
+        }
         Telemetry safeTelemetry = telemetry == null ? Telemetry.empty() : telemetry;
         message.setInputTokens(safeTelemetry.inputTokens());
         message.setOutputTokens(safeTelemetry.outputTokens());
@@ -1007,7 +1458,33 @@ public class ChatService {
         message.setProviderRequestCount(safeTelemetry.providerRequests());
         message.setLatencyMs(safeTelemetry.latencyMs());
         message.setEstimatedCostUsd(safeTelemetry.estimatedCostUsd());
-        messageRepo.save(message);
+        message.setRequestedModel(safeTelemetry.requestedModel());
+        message.setServedModel(safeTelemetry.servedModel());
+        message.setFallbackUsed(safeTelemetry.fallbackUsed());
+        message.setFallbackReason(safeTelemetry.fallbackReason());
+        message = messageRepo.save(message);
+        if (aiCalled && aiUsageService != null && safeTelemetry.servedModel() != null
+                && safeTelemetry.priceEffectiveFrom() != null) {
+            if (safeTelemetry.modelUsages().isEmpty()) {
+                aiUsageService.recordText(
+                        conversation.getId(), message.getId(), safeTelemetry.requestedModel(),
+                        safeTelemetry.servedModel(), safeInt(safeTelemetry.providerRequests()),
+                        safeInt(safeTelemetry.inputTokens()), safeInt(safeTelemetry.outputTokens()),
+                        safeInt(safeTelemetry.thinkingTokens()), safeTelemetry.estimatedCostUsd(),
+                        safeTelemetry.priceEffectiveFrom(), safeTelemetry.fallbackUsed(), true,
+                        safeInt(safeTelemetry.latencyMs()));
+            } else {
+                for (PricedModelUsage usage : safeTelemetry.modelUsages()) {
+                    boolean servedAttempt = usage.modelId().equals(safeTelemetry.servedModel());
+                    aiUsageService.recordText(
+                            conversation.getId(), message.getId(), safeTelemetry.requestedModel(),
+                            usage.modelId(), usage.providerRequests(), usage.inputTokens(),
+                            usage.outputTokens(), usage.thinkingTokens(), usage.estimatedCostUsd(),
+                            usage.priceEffectiveFrom(), safeTelemetry.fallbackUsed() && servedAttempt,
+                            servedAttempt, servedAttempt ? safeInt(safeTelemetry.latencyMs()) : 0);
+                }
+            }
+        }
     }
 
     private boolean applyConversationSignals(
@@ -1022,69 +1499,85 @@ public class ChatService {
             conversation.setConsecutiveOffTopic(0);
         }
         if (handoffRecommended) {
-            conversation.setEndedReason("HANDOFF");
             return true;
         }
         return false;
     }
 
-    private int offerLeadIfEligible(
-            ChatConversationEntity conversation,
-            boolean firstEligible,
-            boolean secondEligible
-    ) {
-        if (firstEligible && "NONE".equals(conversation.getLeadOfferStatus())
-                && conversation.getLeadOfferCount() == 0) {
-            conversation.setLeadOfferStatus("OFFERED");
-            conversation.setLeadOfferCount(1);
-            return 1;
-        }
-        if (secondEligible && "OFFERED".equals(conversation.getLeadOfferStatus())
-                && conversation.getLeadOfferCount() == 1
-                && chatInteractionService != null
-                && chatInteractionService.hasLeadPromptViewed(conversation.getId(), 1)) {
-            conversation.setLeadOfferCount(2);
-            return 2;
-        }
-        return 0;
-    }
-
     private void finishTurnIfNeeded(ChatConversationEntity conversation, int maxTurns) {
-        if (conversation.getTurnCount() >= maxTurns && conversation.getEndedReason() == null) {
-            conversation.setEndedReason("TURN_LIMIT");
-        }
+        // Phase 3 never hard-closes at the cap. The next customer turn moves to a linked
+        // successor conversation before processing, preserving the verified context.
     }
 
     private int resolveMaxTurns(ChatMessageRequest request) {
-        if (request == null || request.getPageContext() == null) return STANDARD_MAX_TURNS;
-        var context = request.getPageContext();
-        return "PRODUCT".equals(context.type())
-                && toolService.isPublicSellableProductSlug(context.productSlug(), request.getLang())
-                ? PRODUCT_PAGE_MAX_TURNS : STANDARD_MAX_TURNS;
+        return currentTurnLimit();
     }
 
-    private static boolean isSecondLeadTrigger(
-            String question,
-            List<ChatProductCardResponse> products,
-            ChatToolService.ConversationContext context
-    ) {
-        String normalized = ChatToolService.normalize(question == null ? "" : question);
-        boolean asksSizeOrStock = normalized.contains("size")
-                || normalized.contains("kich co")
-                || normalized.contains("con hang")
-                || normalized.contains("het hang")
-                || normalized.contains("stock")
-                || normalized.contains("available");
-        if (!asksSizeOrStock) return false;
-        long currentProducts = products == null ? 0 : products.stream()
-                .filter(java.util.Objects::nonNull)
-                .map(ChatProductCardResponse::slug)
-                .filter(slug -> slug != null && !slug.isBlank())
-                .distinct()
-                .count();
-        if (currentProducts > 0) return currentProducts == 1;
-        return context != null && context.productSlugs() != null
-                && context.productSlugs().stream().filter(java.util.Objects::nonNull).distinct().count() == 1;
+    private int currentTurnLimit() {
+        return phase3Settings == null ? MAX_TURNS : phase3Settings.conversationTurnLimit();
+    }
+
+    private long nextMessageSequence(UUID conversationId) {
+        return messageRepo.nextSequence();
+    }
+
+    private boolean isClarificationReply(
+            ChatConversationEntity conversation, ChatMessageRequest request) {
+        if (request.getClarificationSelection() != null) return true;
+        return messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
+                        conversation.getId(), "ASSISTANT")
+                .map(message -> "CLARIFICATION".equals(message.getResultKind()))
+                .orElse(false);
+    }
+
+    private ChatConversationEntity continueConversation(ChatConversationEntity previous) {
+        previous.setEndedReason("CONTINUED");
+        conversationRepo.save(previous);
+        ChatConversationEntity successor = new ChatConversationEntity();
+        successor.setCustomerId(previous.getCustomerId());
+        successor.setVisitorId(previous.getVisitorId());
+        successor.setThreadId(previous.getThreadId() == null ? previous.getId() : previous.getThreadId());
+        successor.setContinuedFromId(previous.getId());
+        successor.setLocale(previous.getLocale());
+        successor.setContextJson(previous.getContextJson());
+        successor.setSalesStage(previous.getSalesStage());
+        successor.setLastNextStepType(previous.getLastNextStepType());
+        return conversationRepo.save(successor);
+    }
+
+    private static int remainingTurns(ChatConversationEntity conversation, int maxTurns) {
+        return Math.max(0, maxTurns - conversation.getCountedTurns());
+    }
+
+    private static String channelState(
+            ChatHandoffStatusResponse handoff, ChatConversationEntity conversation) {
+        if (handoff != null) {
+            return switch (handoff.status()) {
+                case "WAITING" -> "WAITING_FOR_STAFF";
+                case "ACTIVE" -> "STAFF_ACTIVE";
+                case "RETURNED_TO_AI" -> "AI_RESUMED";
+                case "CLOSED" -> "CLOSED";
+                default -> "AI_ACTIVE";
+            };
+        }
+        return "CLOSED".equals(conversation.getEndedReason()) ? "CLOSED" : "AI_ACTIVE";
+    }
+
+    private static com.bigbike.bigbike_backend.api.chat.dto.ChatContinuationResponse continuation(
+            ChatConversationEntity conversation, int maxTurns) {
+        int remaining = remainingTurns(conversation, maxTurns);
+        boolean continued = conversation.getContinuedFromId() != null;
+        if (remaining > 3 && !continued) return null;
+        boolean english = "en".equals(conversation.getLocale());
+        String message = continued
+                ? (english
+                    ? "I continued this chat with the needs and products already discussed. You do not need to repeat them."
+                    : "Em đã nối tiếp hội thoại cùng nhu cầu và sản phẩm mình vừa trao đổi; anh/chị không cần kể lại.")
+                : (english
+                    ? "We can continue in a linked chat or bring in BigBike staff without losing what you have shared."
+                    : "Mình có thể nối tiếp hội thoại hoặc gặp nhân viên BigBike mà không mất những gì anh/chị đã chia sẻ.");
+        return new com.bigbike.bigbike_backend.api.chat.dto.ChatContinuationResponse(
+                true, conversation.getThreadId(), continued ? conversation.getId() : null, message);
     }
 
     private Availability resolveAvailability(ChatAssistantSettings.Snapshot settings) {
@@ -1107,23 +1600,67 @@ public class ChatService {
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns
     ) {
+        return aiResponse(
+                conversation, settings, answer, products, responseKind, handoff,
+                leadPromptSequence, actions, maxTurns, null);
+    }
+
+    private ChatMessageResponse aiResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            String answer,
+            List<ChatProductCardResponse> products,
+            String responseKind,
+            boolean handoff,
+            int leadPromptSequence,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            int maxTurns,
+            ChatClarificationResponse clarification
+    ) {
+        return aiResponse(
+                conversation, settings, answer, products, responseKind, handoff,
+                leadPromptSequence, actions, maxTurns, clarification, null, null);
+    }
+
+    private ChatMessageResponse aiResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            String answer,
+            List<ChatProductCardResponse> products,
+            String responseKind,
+            boolean handoff,
+            int leadPromptSequence,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            int maxTurns,
+            ChatClarificationResponse clarification,
+            ChatSalesAdvisorService.Advice salesAdvice,
+            ChatHandoffStatusResponse handoffStatus
+    ) {
         return new ChatMessageResponse(
                 conversation.getId(),
                 latestAssistantMessageId(conversation.getId()),
-                handoff || conversation.getEndedReason() != null ? "CONTACT" : "AI",
-                handoff || conversation.getEndedReason() != null ? "CONTACT" : "AI",
+                conversation.getEndedReason() != null ? "CONTACT" : "AI",
+                conversation.getEndedReason() != null ? "CONTACT" : "AI",
                 answer,
                 answerFormat(answer),
                 responseKind,
                 conversation.getTurnCount(),
                 maxTurns,
-                Math.max(0, maxTurns - conversation.getTurnCount()),
+                remainingTurns(conversation, maxTurns),
                 List.copyOf(products),
+                clarification,
                 handoff,
                 leadPromptSequence > 0,
                 leadPromptSequence,
                 List.copyOf(actions),
-                settings.contacts());
+                settings.contacts(),
+                salesAdvice == null ? List.of() : salesAdvice.crossSellProducts(),
+                salesAdvice == null ? conversation.getSalesStage() : salesAdvice.salesStage(),
+                salesAdvice == null ? null : salesAdvice.nextStep(),
+                handoffStatus,
+                salesAdvice == null ? null : salesAdvice.leadOffer(),
+                channelState(handoffStatus, conversation), conversation.getCountedTurns(), maxTurns,
+                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
     private ChatMessageResponse contactResponse(
@@ -1143,13 +1680,16 @@ public class ChatService {
                 "CONTACT",
                 conversation.getTurnCount(),
                 maxTurns,
-                Math.max(0, maxTurns - conversation.getTurnCount()),
+                remainingTurns(conversation, maxTurns),
                 List.of(),
+                null,
                 true,
                 false,
                 0,
                 List.copyOf(actions),
-                settings.contacts());
+                settings.contacts(), List.of(), conversation.getSalesStage(), null, null, null,
+                channelState(null, conversation), conversation.getCountedTurns(), maxTurns,
+                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
     private ChatMessageResponse refusalResponse(
@@ -1166,8 +1706,29 @@ public class ChatService {
                 ended ? "CONTACT" : "AI", ended ? "CONTACT" : "AI",
                 answer, "PLAIN_TEXT", responseKind,
                 conversation.getTurnCount(), maxTurns,
-                Math.max(0, maxTurns - conversation.getTurnCount()),
-                List.of(), ended, false, 0, List.copyOf(actions), settings.contacts());
+                remainingTurns(conversation, maxTurns),
+                List.of(), null, ended, false, 0, List.copyOf(actions), settings.contacts(),
+                List.of(), conversation.getSalesStage(), null, null, null,
+                channelState(null, conversation), conversation.getCountedTurns(), maxTurns,
+                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
+    }
+
+    private ChatMessageResponse staffActiveResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            ChatHandoffStatusResponse handoff,
+            int maxTurns
+    ) {
+        String answer = "en".equals(conversation.getLocale())
+                ? "A BigBike staff member is handling this chat and will reply here."
+                : "Nhân viên BigBike đang tiếp nhận và sẽ trả lời anh/chị ngay trong khung chat này.";
+        return new ChatMessageResponse(
+                conversation.getId(), null, "CONTACT", "STAFF_ACTIVE", answer, "PLAIN_TEXT",
+                "CONTACT", conversation.getTurnCount(), maxTurns,
+                remainingTurns(conversation, maxTurns), List.of(), null, true, false, 0,
+                List.of(), settings.contacts(), List.of(), conversation.getSalesStage(), null,
+                handoff, null, "STAFF_ACTIVE", conversation.getCountedTurns(), maxTurns,
+                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
     private UUID latestAssistantMessageId(UUID conversationId) {
@@ -1200,14 +1761,66 @@ public class ChatService {
     }
 
     private static String resultKind(List<ChatProductCardResponse> products, boolean contact) {
-        if (contact) return "CONTACT";
-        return products != null && !products.isEmpty() ? "PRODUCT_RESULTS" : "ANSWER";
+        return resultKind(products, contact, null);
+    }
+
+    private static String resultKind(
+            List<ChatProductCardResponse> products,
+            boolean contact,
+            ChatClarificationResponse clarification
+    ) {
+        if (products != null && !products.isEmpty()) return "PRODUCT_RESULTS";
+        if (clarification != null) return "CLARIFICATION";
+        return contact ? "CONTACT" : "ANSWER";
     }
 
     private Telemetry telemetry(long startedNanos, AiChatClient.HybridAnswer answer) {
         AiChatClient.TokenUsage usage = answer == null
                 ? AiChatClient.TokenUsage.empty() : answer.usage();
-        return telemetry(startedNanos, usage, answer == null ? 0 : answer.providerCallCount());
+        return telemetry(startedNanos, usage, answer == null ? 0 : answer.providerCallCount(),
+                null, null, false, null);
+    }
+
+    private Telemetry telemetry(long startedNanos, AiChatClient.ModelAnswer result) {
+        AiChatClient.HybridAnswer answer = result == null ? null : result.answer();
+        AiChatClient.TokenUsage usage = answer == null
+                ? AiChatClient.TokenUsage.empty() : answer.usage();
+        Telemetry aggregate = telemetry(startedNanos, usage,
+                answer == null ? 0 : answer.providerCallCount(),
+                result == null ? null : result.requestedModel(),
+                result == null ? null : result.servedModel(),
+                result != null && result.fallbackUsed(),
+                result == null ? null : result.fallbackReason());
+        if (result == null || result.modelUsages().isEmpty() || modelCatalogService == null) {
+            return aggregate;
+        }
+        List<PricedModelUsage> pricedUsages = result.modelUsages().stream()
+                .map(this::priceModelUsage)
+                .toList();
+        BigDecimal exactCost = pricedUsages.stream()
+                .map(PricedModelUsage::estimatedCostUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new Telemetry(
+                aggregate.inputTokens(), aggregate.outputTokens(), aggregate.thinkingTokens(),
+                aggregate.providerRequests(), aggregate.latencyMs(), exactCost,
+                aggregate.requestedModel(), aggregate.servedModel(), aggregate.fallbackUsed(),
+                aggregate.fallbackReason(), aggregate.priceEffectiveFrom(), pricedUsages);
+    }
+
+    private PricedModelUsage priceModelUsage(AiChatClient.ModelUsage modelUsage) {
+        ChatModelRegistry.ModelPrice price = modelCatalogService.requirePrice(
+                modelUsage.modelId(), Instant.now());
+        AiChatClient.TokenUsage usage = modelUsage.usage();
+        BigDecimal input = price.inputUsdPerMillion()
+                .multiply(BigDecimal.valueOf(usage.inputTokens()));
+        long billedOutputTokens = (long) usage.outputTokens() + usage.thinkingTokens();
+        BigDecimal output = price.outputUsdPerMillion()
+                .multiply(BigDecimal.valueOf(billedOutputTokens));
+        BigDecimal cost = input.add(output)
+                .divide(BigDecimal.valueOf(1_000_000L), 8, RoundingMode.HALF_UP);
+        return new PricedModelUsage(
+                modelUsage.modelId(), modelUsage.providerRequestCount(), usage.inputTokens(),
+                usage.outputTokens(), usage.thinkingTokens(), cost, price.effectiveFrom());
     }
 
     private Telemetry telemetry(
@@ -1215,20 +1828,47 @@ public class ChatService {
             AiChatClient.TokenUsage usage,
             int providerRequestCount
     ) {
+        return telemetry(startedNanos, usage, providerRequestCount,
+                null, null, false, null);
+    }
+
+    private Telemetry telemetry(
+            long startedNanos,
+            AiChatClient.TokenUsage usage,
+            int providerRequestCount,
+            String requestedModel,
+            String servedModel,
+            boolean fallbackUsed,
+            String fallbackReason
+    ) {
         int latency = elapsedMillis(startedNanos);
-        BigDecimal input = inputCostUsdPerMillion.multiply(BigDecimal.valueOf(usage.inputTokens()));
+        BigDecimal inputRate = inputCostUsdPerMillion;
+        BigDecimal outputRate = outputCostUsdPerMillion;
+        java.time.LocalDate priceEffectiveFrom = null;
+        if (modelCatalogService != null && servedModel != null) {
+            ChatModelRegistry.ModelPrice price = modelCatalogService.requirePrice(servedModel, Instant.now());
+            inputRate = price.inputUsdPerMillion();
+            outputRate = price.outputUsdPerMillion();
+            priceEffectiveFrom = price.effectiveFrom();
+        }
+        BigDecimal input = inputRate.multiply(BigDecimal.valueOf(usage.inputTokens()));
         long billedOutputTokens = (long) usage.outputTokens() + usage.thinkingTokens();
-        BigDecimal output = outputCostUsdPerMillion.multiply(BigDecimal.valueOf(billedOutputTokens));
+        BigDecimal output = outputRate.multiply(BigDecimal.valueOf(billedOutputTokens));
         BigDecimal cost = input.add(output)
                 .divide(BigDecimal.valueOf(1_000_000L), 8, RoundingMode.HALF_UP);
         return new Telemetry(
                 usage.inputTokens(), usage.outputTokens(), usage.thinkingTokens(),
-                providerRequestCount, latency, cost);
+                providerRequestCount, latency, cost, requestedModel, servedModel,
+                fallbackUsed, fallbackReason, priceEffectiveFrom, List.of());
     }
 
     private static int elapsedMillis(long startedNanos) {
         long millis = Math.max(0L, (System.nanoTime() - startedNanos) / 1_000_000L);
         return (int) Math.min(Integer.MAX_VALUE, millis);
+    }
+
+    private static int safeInt(Integer value) {
+        return value == null ? 0 : Math.max(0, value);
     }
 
     private record StoredResponseMetadata(
@@ -1237,7 +1877,13 @@ public class ChatService {
             boolean handoff,
             boolean leadPrompt,
             int leadPromptSequence,
-            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            ChatClarificationResponse clarification,
+            List<ChatProductCardResponse> crossSellProducts,
+            String salesStage,
+            ChatNextStepResponse nextStep,
+            ChatHandoffStatusResponse handoffStatus,
+            ChatLeadOfferDetailsResponse leadOffer
     ) {}
 
     private record Telemetry(
@@ -1246,16 +1892,38 @@ public class ChatService {
             Integer thinkingTokens,
             Integer providerRequests,
             Integer latencyMs,
-            BigDecimal estimatedCostUsd
+            BigDecimal estimatedCostUsd,
+            String requestedModel,
+            String servedModel,
+            boolean fallbackUsed,
+            String fallbackReason,
+            java.time.LocalDate priceEffectiveFrom,
+            List<PricedModelUsage> modelUsages
     ) {
+        private Telemetry {
+            modelUsages = modelUsages == null ? List.of() : List.copyOf(modelUsages);
+        }
+
         static Telemetry empty() {
-            return new Telemetry(null, null, null, null, null, null);
+            return new Telemetry(null, null, null, null, null, null,
+                    null, null, false, null, null, List.of());
         }
 
         static Telemetry local(long startedNanos) {
-            return new Telemetry(0, 0, 0, 0, elapsedMillis(startedNanos), BigDecimal.ZERO);
+            return new Telemetry(0, 0, 0, 0, elapsedMillis(startedNanos), BigDecimal.ZERO,
+                    null, null, false, null, null, List.of());
         }
     }
+
+    private record PricedModelUsage(
+            String modelId,
+            int providerRequests,
+            int inputTokens,
+            int outputTokens,
+            int thinkingTokens,
+            BigDecimal estimatedCostUsd,
+            java.time.LocalDate priceEffectiveFrom
+    ) {}
 
     private static String endedReason(String reason) {
         return switch (reason) {
@@ -1319,19 +1987,33 @@ public class ChatService {
             };
         }
         return switch (cause) {
-            case SERVICE_PAUSED -> "Dạ, Trợ lý BigBike đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case DAILY_LIMIT -> "Dạ, Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case SERVICE_NOT_READY -> "Dạ, Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case PROVIDER_UNAVAILABLE -> "Dạ, lần tra này chưa hoàn tất nhưng anh/chị vẫn có thể hỏi tiếp trong khung chat. Anh/chị thử gửi tên mẫu hoặc chi tiết cần kiểm tra; nếu cần hỗ trợ ngay, nút Gặp nhân viên vẫn luôn có sẵn ạ.";
-            case SAFETY_REVIEW -> "Dạ, em cần anh/chị nói rõ thêm để kiểm tra đúng dữ liệu và không đoán. Anh/chị gửi tên mẫu hoặc chi tiết cần xem; nút Gặp nhân viên vẫn luôn có sẵn nếu mình cần hỗ trợ trực tiếp ạ.";
-            case STAFF_REVIEW -> "Dạ, em cần nhân viên BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case SERVICE_PAUSED -> "Trợ lý BigBike đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case DAILY_LIMIT -> "Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case SERVICE_NOT_READY -> "Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case PROVIDER_UNAVAILABLE -> "Lần tra này chưa hoàn tất nhưng anh/chị vẫn có thể hỏi tiếp trong khung chat. Anh/chị thử gửi tên mẫu hoặc chi tiết cần kiểm tra; nếu cần hỗ trợ ngay, nút Gặp nhân viên vẫn luôn có sẵn ạ.";
+            case SAFETY_REVIEW -> "Em cần anh/chị nói rõ thêm để kiểm tra đúng thông tin và không đoán. Anh/chị gửi tên mẫu hoặc chi tiết cần xem; nút Gặp nhân viên vẫn luôn có sẵn nếu mình cần hỗ trợ trực tiếp ạ.";
+            case STAFF_REVIEW -> "Trường hợp này cần nhân viên BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
         };
     }
 
-    private static String turnLimitText(String lang) {
-        return "en".equals(lang)
-                ? "This conversation has reached its 12-question limit. Please choose Talk to staff to continue with BigBike. Your contact options remain available."
-                : "Dạ, em đã nhận đủ 12 lượt hỏi trong hội thoại này. Anh/chị bấm Gặp nhân viên để BigBike hỗ trợ tiếp nhé. Các kênh liên hệ vẫn luôn có sẵn.";
+    private static String endedConversationText(String lang, String reason, int maxTurns) {
+        boolean english = "en".equals(lang);
+        return switch (reason == null ? "TURN_LIMIT" : reason) {
+            case "OFF_TOPIC" -> english
+                    ? "BigBike Assistant only supports BigBike products and services. Please choose Talk to staff if you need other help."
+                    : "Trợ lý BigBike chỉ hỗ trợ sản phẩm và dịch vụ của shop. Anh/chị bấm Gặp nhân viên để được hỗ trợ thêm nhé.";
+            case "AI_UNAVAILABLE", "DAILY_LIMIT_REACHED", "DISABLED" -> english
+                    ? "BigBike Assistant is busy at the moment. Please try again later or choose Talk to staff for immediate help."
+                    : "Trợ lý BigBike đang bận. Anh/chị vui lòng thử lại sau hoặc bấm Gặp nhân viên để được hỗ trợ ngay nhé.";
+            case "HANDOFF" -> english
+                    ? "This conversation has been passed to BigBike staff. Please use the contact options below to continue."
+                    : "Hội thoại đã được chuyển sang nhân viên BigBike. Anh/chị dùng các kênh liên hệ bên dưới để được hỗ trợ tiếp nhé.";
+            default -> english
+                    ? "This conversation has reached its " + maxTurns
+                    + "-question limit. Please choose Talk to staff to continue."
+                    : "Hội thoại này đã nhận đủ " + maxTurns
+                    + " lượt hỏi. Anh/chị bấm Gặp nhân viên để BigBike hỗ trợ tiếp nhé.";
+        };
     }
 
     private static String trimToNull(String value) {

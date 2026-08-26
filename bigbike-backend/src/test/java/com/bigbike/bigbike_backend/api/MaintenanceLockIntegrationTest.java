@@ -191,16 +191,19 @@ class MaintenanceLockIntegrationTest {
         }
     }
 
-    /** UPCOMING only warns staff; blocking there would make the warning pointless. */
+    /** The admin lock must never intercept the customer checkout path. */
     @Test
-    void upcomingState_doesNotBlockWrites() throws Exception {
-        setState(MaintenanceService.STATE_UPCOMING);
+    void activeLock_doesNotInterceptCustomerCheckout() throws Exception {
+        setState(MaintenanceService.STATE_ACTIVE);
 
-        MvcResult result = mockMvc.perform(delete(WRITE_PATH)
-                        .header("Authorization", "Bearer " + adminToken))
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andReturn();
 
-        assertThat(result.getResponse().getStatus()).isNotEqualTo(423);
+        assertThat(result.getResponse().getStatus())
+                .as("customer checkout must not be turned into an admin maintenance lock")
+                .isNotEqualTo(423);
     }
 
     @Test
@@ -314,14 +317,24 @@ class MaintenanceLockIntegrationTest {
     }
 
     @Test
+    void developer_cannotReintroduceTheRemovedUpcomingState() throws Exception {
+        mockMvc.perform(put(MAINTENANCE_PATH)
+                        .header("Authorization", "Bearer " + developerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"state\":\"UPCOMING\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void developer_canRecordAStaffNoteWithTheState() throws Exception {
         mockMvc.perform(put(MAINTENANCE_PATH)
                         .header("Authorization", "Bearer " + developerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"state\":\"UPCOMING\",\"staffNote\":\"Nâng cấp dữ liệu sản phẩm\"}"))
+                        .content("{\"state\":\"NORMAL\",\"staffNote\":\"Nâng cấp dữ liệu sản phẩm\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.state").value("UPCOMING"))
-                .andExpect(jsonPath("$.data.staffNote").value("Nâng cấp dữ liệu sản phẩm"));
+                .andExpect(jsonPath("$.data.state").value("NORMAL"))
+                .andExpect(jsonPath("$.data.staffNote").value("Nâng cấp dữ liệu sản phẩm"))
+                .andExpect(jsonPath("$.data.expectedAt").doesNotExist());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

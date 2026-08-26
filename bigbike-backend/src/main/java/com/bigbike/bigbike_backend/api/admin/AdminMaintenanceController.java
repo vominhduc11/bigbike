@@ -57,7 +57,7 @@ public class AdminMaintenanceController extends AdminControllerSupport {
     ) {
         requireDeveloper(request);
         MaintenanceStatus status = maintenanceService.setState(
-                body.state(), body.staffNote(), body.expectedAt(), resolveAdminId());
+                body.state(), body.staffNote(), resolveAdminId());
         return apiResponseFactory.data(toResponse(status, true), request);
     }
 
@@ -92,7 +92,6 @@ public class AdminMaintenanceController extends AdminControllerSupport {
         return new AdminMaintenanceResponse(
                 status.state(),
                 status.staffNote(),
-                status.expectedAt(),
                 status.updatedAt(),
                 canToggle,
                 uploadLeaseService.activity().count());

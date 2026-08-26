@@ -29,8 +29,7 @@ class MaintenanceServiceTest {
     }
 
     @Test
-    void acceptsOnlyTheThreeOperationalStates() {
-        assertThat(MaintenanceService.normalizedState(" upcoming ")).isEqualTo("UPCOMING");
+    void acceptsOnlyTheTwoOperationalStates() {
         assertThat(MaintenanceService.normalizedState("ACTIVE")).isEqualTo("ACTIVE");
         assertThat(MaintenanceService.normalizedState("normal")).isEqualTo("NORMAL");
     }
@@ -41,7 +40,7 @@ class MaintenanceServiceTest {
                 .isInstanceOfSatisfying(ValidationException.class, exception -> {
                     assertThat(exception.code()).isEqualTo("VALIDATION_ERROR");
                     assertThat(exception.details()).singleElement().satisfies(detail ->
-                            assertThat(detail.message()).contains("NORMAL, UPCOMING hoặc ACTIVE"));
+                            assertThat(detail.message()).contains("NORMAL hoặc ACTIVE"));
                 });
     }
 
@@ -60,7 +59,7 @@ class MaintenanceServiceTest {
 
     @Test
     void onlyActiveCountsAsLocked() {
-        when(stateRepo.findById(any())).thenReturn(Optional.of(row(MaintenanceService.STATE_UPCOMING)));
+        when(stateRepo.findById(any())).thenReturn(Optional.of(row(MaintenanceService.STATE_NORMAL)));
         assertThat(service.isLocked()).isFalse();
 
         service.invalidateCache();

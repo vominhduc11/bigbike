@@ -4,7 +4,7 @@
 
 import { createContext } from 'react'
 import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
-import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
+import { normalizeVariantToken, isColorAttributeName, getVariantAttributeGroup } from '../../lib/schemas'
 import {
   extractAllowedTikTokId,
   extractWritableYouTubeId,
@@ -1215,7 +1215,10 @@ export function groupsWithErrors(sectionErrors) {
 // KHÔNG so theo attributeValueId (mỗi giá trị màu có id riêng) hay theo value (chỉ so LOẠI
 // thuộc tính, không so giá trị "Đen"/"Đen bóng"/"Trắng").
 export function variantAttributeKey(name) {
-  return isColorAttributeName(name) ? '__color__' : normalizeVariantToken(name)
+  const group = getVariantAttributeGroup(name)
+  return group === 'color' || group === 'size' || group === 'model'
+    ? `__${group}__`
+    : normalizeVariantToken(name)
 }
 
 // Phát hiện biến thể lệch bộ thuộc tính. Mọi biến thể của một sản phẩm nên khai

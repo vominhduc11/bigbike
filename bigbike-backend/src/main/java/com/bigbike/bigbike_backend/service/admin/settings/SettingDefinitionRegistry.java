@@ -226,6 +226,22 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Block HTML SEO ở cuối trang chủ.").build(),
 
+                // ── STORE_POLICY ── (owner decision 2026-08-23).
+                // Dedicated public policy endpoint allowlists these four keys; they intentionally
+                // stay out of GET /settings/public so the common payload does not carry large HTML.
+                SettingDefinition.builder("policy_warranty_title", "store_policy", SettingValueType.STRING)
+                        .required()
+                        .description("Tiêu đề song ngữ trang Chính sách bảo hành.").build(),
+                SettingDefinition.builder("policy_warranty_body_html", "store_policy", SettingValueType.HTML)
+                        .required()
+                        .description("Nội dung song ngữ Chính sách bảo hành dùng chung cho website và Trợ lý BigBike.").build(),
+                SettingDefinition.builder("policy_return_exchange_title", "store_policy", SettingValueType.STRING)
+                        .required()
+                        .description("Tiêu đề song ngữ trang Chính sách đổi trả.").build(),
+                SettingDefinition.builder("policy_return_exchange_body_html", "store_policy", SettingValueType.HTML)
+                        .required()
+                        .description("Nội dung song ngữ Chính sách đổi trả dùng chung cho website và Trợ lý BigBike.").build(),
+
                 // ── STORE: gỡ hẳn V310 — store_currency/store_timezone không có code nào đọc lại
                 // (VND + giờ Việt Nam đã hardcode thẳng nơi khác); tab admin cũng đã ẩn từ trước.
 
@@ -264,9 +280,15 @@ public class SettingDefinitionRegistry {
                 // GEMINI_API_KEY and is never stored in or returned from site_settings.
                 SettingDefinition.builder("ai_assistant_enabled", "ai_assistant", SettingValueType.BOOLEAN)
                         .description("Bật Trợ lý BigBike. Khi tắt, khung chat vẫn giữ Hotline–Zalo–Messenger.").build(),
+                SettingDefinition.builder("ai_assistant_model", "ai_assistant", SettingValueType.STRING)
+                        .readOnly()
+                        .description("Model trả lời được chọn qua danh sách account live; không sửa như ô chữ thường.").build(),
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
+                SettingDefinition.builder("ai_assistant_conversation_turn_limit", "ai_assistant", SettingValueType.INTEGER)
+                        .min(10).max(100)
+                        .description("Số lượt tư vấn có nội dung tối đa trong một hội thoại. Vòng làm rõ không tính.").build(),
                 SettingDefinition.builder("ai_assistant_monthly_cost_warning_usd", "ai_assistant", SettingValueType.DECIMAL)
                         .min(0).max(1_000_000)
                         .description("Ngưỡng cảnh báo chi phí AI theo tháng dương lịch bằng USD; 0 để tắt cảnh báo.").build(),
@@ -282,7 +304,32 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_abbreviations", "ai_assistant", SettingValueType.JSON)
                         .description("Tối đa 100 từ/cụm viết tắt; khớp nguyên cụm, ưu tiên cụm dài và không được va chạm catalog.").build(),
                 SettingDefinition.builder("ai_assistant_answer_templates", "ai_assistant", SettingValueType.JSON)
-                        .description("Tối đa 50 câu mẫu song ngữ; trigger dài nhất duy nhất và câu trả lời phải an toàn.").build()
+                        .description("Tối đa 50 câu mẫu song ngữ; trigger dài nhất duy nhất và câu trả lời phải an toàn.").build(),
+                SettingDefinition.builder("ai_assistant_handoff_email_enabled", "ai_assistant", SettingValueType.BOOLEAN)
+                        .description("Gửi email ngay khi khách xin gặp nhân viên; cảnh báo trong màn quản trị luôn hoạt động.").build(),
+                SettingDefinition.builder("ai_assistant_handoff_email_recipient", "ai_assistant", SettingValueType.STRING)
+                        .description("Email nhận yêu cầu gặp nhân viên; để trống dùng email quản trị từ môi trường.").build(),
+                SettingDefinition.builder("ai_assistant_business_hours", "ai_assistant", SettingValueType.JSON)
+                        .description("Lịch trực nhân viên theo tuần, múi giờ Asia/Ho_Chi_Minh.").build(),
+                SettingDefinition.builder("ai_assistant_memory_days", "ai_assistant", SettingValueType.INTEGER)
+                        .min(1).max(30)
+                        .description("Số ngày nối ngữ cảnh cùng thiết bị; tối đa 30 ngày.").build(),
+                SettingDefinition.builder("ai_assistant_proactive_enabled", "ai_assistant", SettingValueType.BOOLEAN)
+                        .description("Cho Trợ lý chủ động mở lời đúng một lần mỗi phiên; mặc định tắt.").build(),
+                SettingDefinition.builder("ai_assistant_proactive_product_seconds", "ai_assistant", SettingValueType.INTEGER)
+                        .min(15).max(600)
+                        .description("Số giây khách ở trang sản phẩm trước khi gợi ý.").build(),
+                SettingDefinition.builder("ai_assistant_proactive_cart_seconds", "ai_assistant", SettingValueType.INTEGER)
+                        .min(15).max(600)
+                        .description("Số giây giỏ có hàng chưa thanh toán trước khi gợi ý.").build(),
+                SettingDefinition.builder("ai_assistant_image_enabled", "ai_assistant", SettingValueType.BOOLEAN)
+                        .description("Bật đọc ảnh khách gửi; mặc định tắt và độc lập với chat chữ.").build(),
+                SettingDefinition.builder("ai_assistant_image_daily_limit", "ai_assistant", SettingValueType.INTEGER)
+                        .min(1).max(200)
+                        .description("Trần số ảnh được xử lý mỗi ngày theo giờ Việt Nam.").build(),
+                SettingDefinition.builder("ai_assistant_image_conversation_limit", "ai_assistant", SettingValueType.INTEGER)
+                        .min(1).max(10)
+                        .description("Trần số ảnh trong một hội thoại; mỗi lượt vẫn chỉ nhận một ảnh.").build()
         );
     }
 }

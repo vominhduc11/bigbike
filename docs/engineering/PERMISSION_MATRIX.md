@@ -51,7 +51,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
-| Trợ lý BigBike | `chat.read` | — | — | chỉ xem hội thoại/lead/thống kê; không có quyền ghi giai đoạn 1 |
+| Trợ lý BigBike | `chat.read` | — | `chat.reply` | `chat.reply` tiếp nhận/nhắn/bàn giao/kết thúc và phụ thuộc `chat.read`; không sửa transcript/lead |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
@@ -89,9 +89,12 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | `GET /api/v1/admin/chat/conversations`, `GET /api/v1/admin/chat/conversations/{id}`, `GET /api/v1/admin/chat/stats` | `CHAT_RULE_013`, `PermissionCatalog`, migration `V1016` |
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail/stats, phễu, handoff waiting, unanswered và data gaps (data gaps còn cần `products.read`) | `CHAT_RULE_013`, `CHAT_RULE_029`, `CHAT_RULE_040`–`042`, `PermissionCatalog`, migrations `V1016`/`V1052` |
+| `chat.reply` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Claim/send/return/close handoff; dependency bắt buộc `chat.read` | `CHAT_RULE_040`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
 
-`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role qua màn Vai trò. Lead chứa số/Zalo nên API list chỉ trả bản rút gọn; detail chỉ mở sau khi backend đã kiểm tra `chat.read`. Ở storefront, `POST /api/v1/chat/leads` vẫn cho phép nhánh `FORM` của khách vãng lai theo cơ chế sở hữu hội thoại; nhánh `ACCOUNT` chỉ dùng customer id từ phiên `ROLE_CUSTOMER`, không cấp một permission mới và không tin identity/contact do body gửi lên.
+`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` là quyền ghi hẹp, nhạy cảm, phụ thuộc `chat.read`; lưu đúng admin và thời điểm nhận/gửi/bàn giao nhưng không cho sửa/xoá transcript. Migration đổi mọi role-permission `chat.handle` hiện có sang `chat.reply` và không tự cấp role thường. Chỉ người đang nhận được gửi/bàn giao/đóng. Lead chứa số/Zalo nên list/handoff chung chỉ trả cờ có liên hệ; detail chỉ mở sau `chat.read`.
+
+Giai đoạn 4 không tạo quyền mới. Danh mục model, chi phí và kết quả bộ đề là dữ liệu vận hành nên đọc bằng `settings.read`; đổi model, bật/tắt ảnh, thay trần ảnh hoặc chạy bộ đề dùng `settings.write`. Dấu vân tay catalog được backend tự làm mới cục bộ, không mở mutation công khai. Nội dung ảnh khách vẫn là một phần riêng tư của transcript: cả endpoint storefront lẫn admin đều kiểm ownership/`chat.read` ở mỗi lần tải, không phát URL MinIO công khai. `settings.read` đứng một mình không cấp quyền xem ảnh; `chat.read` đứng một mình không cho đổi cấu hình hay chạy bộ đề có chi phí.
 
 ### Catalog / Product permissions
 

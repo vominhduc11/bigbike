@@ -102,6 +102,7 @@ public final class PermissionCatalog {
             write("roles.write", true, "roles.read"),
             entry("audit-logs.read", "audit-logs", Kind.READ, true),
             entry("chat.read", "chat", Kind.READ, true),
+            entry("chat.reply", "chat", Kind.WRITE, true, "chat.read"),
             // Registered so the capability is visible in the Roles screen, and so the maintenance
             // endpoint stops borrowing `settings.write` to authenticate — an unrelated permission
             // that is editable right there, whose removal would silently disable the lock.

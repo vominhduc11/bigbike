@@ -15,6 +15,7 @@ import {
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
 import { getContentLang } from './contentLang'
+import { generateId } from './utils'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 
@@ -269,6 +270,8 @@ export function hasStoredAccessToken() {
 }
 
 function withLiveData(data) {
+  if (Array.isArray(data)) return [...data]
+
   return {
     ...data,
     mode: 'live',
@@ -398,7 +401,7 @@ function normalizeContentMutationPath(_contentType) {
   return 'articles'
 }
 
-export function mapValidationErrors(error) {
+export function mapValidationErrors(error, translate) {
   if (!(error instanceof ApiClientError) || !Array.isArray(error.details)) {
     return {}
   }
@@ -418,7 +421,7 @@ export function mapValidationErrors(error) {
     const rawField = typeof detail.field === 'string' ? detail.field : '_form'
     // Normalize bracket notation variants[0].field -> variants.0.field
     const field = (FIELD_ALIASES[rawField] || rawField).replace(/\[(\d+)\]/g, '.$1')
-    const message = translateValidationMessage(field, detail)
+    const message = translateValidationMessage(field, detail, translate)
 
     if (!acc[field]) {
       acc[field] = message
@@ -427,9 +430,22 @@ export function mapValidationErrors(error) {
   }, {})
 }
 
-function translateValidationMessage(field, detail) {
+function translateValidationMessage(field, detail, translate) {
   const code = typeof detail?.code === 'string' ? detail.code : ''
   const rawMessage = typeof detail?.message === 'string' ? detail.message : ''
+
+  if (/^variants\.\d+\.options\.\d+\.attributeValueId$/.test(field)) {
+    if (code === 'REQUIRED') {
+      return translate
+        ? translate('products.detail.variant.optionValueSelectRequired', { defaultValue: 'Hãy chọn giá trị thuộc tính từ danh sách.' })
+        : 'Hãy chọn giá trị thuộc tính từ danh sách.'
+    }
+    if (code === 'NOT_FOUND' || code === 'MISMATCH') {
+      return translate
+        ? translate('products.detail.variant.optionValueInvalid', { defaultValue: 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.' })
+        : 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.'
+    }
+  }
 
   if (code === 'DUPLICATE' && field === 'slug') {
     return 'Đường dẫn này đã được dùng. Hãy mở bản ghi đang có hoặc đổi đường dẫn khác.'
@@ -1324,13 +1340,12 @@ export async function fetchMaintenance() {
   }
 }
 
-export async function updateMaintenance({ state, staffNote, expectedAt }) {
+export async function updateMaintenance({ state, staffNote }) {
   const payload = await requestJson('/admin/maintenance', {
     method: 'PUT',
     body: {
       state,
       staffNote: staffNote?.trim() ? staffNote.trim() : null,
-      expectedAt: expectedAt || null,
     },
   })
   return payload?.data || null
@@ -1809,7 +1824,11 @@ function normalizeChatMessage(input) {
   }
   return {
     id: safeChatString(s.id),
-    role: s.role === 'USER' || s.role === 'CUSTOMER' ? 'USER' : 'ASSISTANT',
+    sequenceNo: safeChatCount(s.sequenceNo),
+    role: ['USER', 'CUSTOMER', 'ASSISTANT', 'STAFF', 'SYSTEM'].includes(s.role)
+      ? (s.role === 'CUSTOMER' ? 'USER' : s.role)
+      : 'ASSISTANT',
+    staffDisplayName: safeChatString(s.staffDisplayName),
     content: safeChatString(s.content),
     source: safeChatString(s.source),
     aiCalled: Boolean(s.aiCalled),
@@ -1823,6 +1842,18 @@ function normalizeChatMessage(input) {
     latencyMs: nullableChatNumber(s.latencyMs),
     estimatedCostUsd: nullableChatNumber(s.estimatedCostUsd),
     createdAt: safeChatString(s.createdAt),
+    images: Array.isArray(s.images)
+      ? s.images.map((image) => ({
+        id: safeChatString(image?.id),
+        contentPath: safeChatString(image?.contentPath),
+        mimeType: safeChatString(image?.mimeType),
+        width: safeChatCount(image?.width),
+        height: safeChatCount(image?.height),
+        sizeBytes: safeChatCount(image?.sizeBytes),
+        status: safeChatString(image?.status),
+        createdAt: safeChatString(image?.createdAt),
+      })).filter((image) => image.id).slice(0, 1)
+      : [],
   }
 }
 
@@ -1889,6 +1920,15 @@ export async function fetchChatConversation(conversationId) {
   }
 }
 
+export async function fetchAdminChatImageBlob(imageId) {
+  try {
+    const result = await requestBlob(`/admin/chat/images/${encodeURIComponent(imageId)}/content`, 'chat-image')
+    return result.blob
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function fetchChatStats(date) {
   try {
     const payload = await requestJson('/admin/chat/stats', { query: { date } })
@@ -1918,6 +1958,7 @@ export async function fetchChatStats(date) {
         contentRefusals: safeChatCount(data.quality?.contentRefusals),
       },
       leadFunnel: {
+        callbackFormOpened: safeChatCount(data.leadFunnel?.callbackFormOpened),
         sequence1Viewed: safeChatCount(data.leadFunnel?.sequence1Viewed),
         sequence2Viewed: safeChatCount(data.leadFunnel?.sequence2Viewed),
         accepted: safeChatCount(data.leadFunnel?.accepted),
@@ -1934,7 +1975,385 @@ export async function fetchChatStats(date) {
       monthlyCostUsd: nullableChatNumber(data.monthlyCostUsd) ?? 0,
       monthlyCostWarningUsd: nullableChatNumber(data.monthlyCostWarningUsd) ?? 0,
       monthlyCostWarningExceeded: data.monthlyCostWarningExceeded === true,
+      costs: {
+        todayUsd: nullableChatNumber(data.costs?.todayUsd) ?? 0,
+        monthUsd: nullableChatNumber(data.costs?.monthUsd) ?? 0,
+        averagePerConversationUsd: nullableChatNumber(data.costs?.averagePerConversationUsd) ?? 0,
+        textTodayUsd: nullableChatNumber(data.costs?.textTodayUsd) ?? 0,
+        textMonthUsd: nullableChatNumber(data.costs?.textMonthUsd) ?? 0,
+        imageTodayUsd: nullableChatNumber(data.costs?.imageTodayUsd) ?? 0,
+        imageMonthUsd: nullableChatNumber(data.costs?.imageMonthUsd) ?? 0,
+        indexTodayUsd: nullableChatNumber(data.costs?.indexTodayUsd) ?? 0,
+        indexMonthUsd: nullableChatNumber(data.costs?.indexMonthUsd) ?? 0,
+        evaluationTodayUsd: nullableChatNumber(data.costs?.evaluationTodayUsd) ?? 0,
+        evaluationMonthUsd: nullableChatNumber(data.costs?.evaluationMonthUsd) ?? 0,
+      },
+      fallbacks: {
+        today: safeChatCount(data.fallbacks?.today),
+        month: safeChatCount(data.fallbacks?.month),
+        rate: nullableChatNumber(data.fallbacks?.rate) ?? 0,
+        lastReason: safeChatString(data.fallbacks?.lastReason),
+        giveUpCount14Days: safeChatCount(data.fallbacks?.giveUpCount14Days),
+        replyCount14Days: safeChatCount(data.fallbacks?.replyCount14Days),
+        giveUpRate14Days: nullableChatNumber(data.fallbacks?.giveUpRate14Days) ?? 0,
+        baselineGiveUpRate: nullableChatNumber(data.fallbacks?.baselineGiveUpRate) ?? 0.09,
+        p50LatencyMs14Days: nullableChatNumber(data.fallbacks?.p50LatencyMs14Days),
+        p95LatencyMs14Days: nullableChatNumber(data.fallbacks?.p95LatencyMs14Days),
+      },
+      modelUsage: Array.isArray(data.modelUsage) ? data.modelUsage.map((item) => ({
+        modelId: safeChatString(item?.modelId),
+        uses: safeChatCount(item?.uses),
+        costUsd: nullableChatNumber(item?.costUsd) ?? 0,
+      })).filter((item) => item.modelId) : [],
       hasTelemetry: safeChatCount(data.aiCalls) === 0 || (nullableChatNumber(data.providerRequests) ?? 0) > 0,
+    })
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+function normalizeChatFunnel(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    from: safeChatString(s.from),
+    to: safeChatString(s.to),
+    conversations: safeChatCount(s.conversations),
+    productViews: safeChatCount(s.productViews),
+    cartAdds: safeChatCount(s.cartAdds),
+    orders: safeChatCount(s.orders),
+    revenue: nullableChatNumber(s.revenue) ?? 0,
+    conversationToViewRate: nullableChatNumber(s.conversationToViewRate) ?? 0,
+    viewToCartRate: nullableChatNumber(s.viewToCartRate) ?? 0,
+    cartToOrderRate: nullableChatNumber(s.cartToOrderRate) ?? 0,
+    matureThrough: safeChatString(s.matureThrough),
+    complete: s.complete === true,
+  }
+}
+
+export async function fetchChatFunnel(query) {
+  try {
+    const payload = await requestJson('/admin/chat/funnel', {
+      query: { from: query?.from, to: query?.to },
+    })
+    return withLiveData(normalizeChatFunnel(payload?.data))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+function normalizeChatHandoff(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: safeChatString(s.id),
+    conversationId: safeChatString(s.conversationId),
+    status: ['WAITING', 'ACTIVE', 'RETURNED_TO_AI', 'CLOSED'].includes(s.status) ? s.status : 'WAITING',
+    triggerSource: safeChatString(s.triggerSource),
+    customerKind: s.customerKind === 'SIGNED_IN' ? 'SIGNED_IN' : 'GUEST',
+    questionSummary: safeChatString(s.questionSummary),
+    products: Array.isArray(s.products) ? s.products.map((item) => ({
+      slug: safeChatString(item?.slug),
+      name: safeChatString(item?.name),
+    })).filter((item) => item.slug && item.name).slice(0, 8) : [],
+    contactPresent: s.contactPresent === true,
+    requestedAt: safeChatString(s.requestedAt),
+    waitingSeconds: safeChatCount(s.waitingSeconds),
+    assignedAt: safeChatString(s.assignedAt),
+    assignedAdminId: safeChatString(s.assignedAdminId),
+    assignedDisplayName: safeChatString(s.assignedDisplayName),
+    resolvedAt: safeChatString(s.resolvedAt),
+    resolution: safeChatString(s.resolution),
+    withinBusinessHours: s.withinBusinessHours === true,
+    nextOpenAt: safeChatString(s.nextOpenAt),
+  }
+}
+
+export async function fetchChatHandoffs() {
+  try {
+    const payload = await requestJson('/admin/chat/handoffs')
+    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+    return withLiveData({
+      waitingCount: safeChatCount(data.waitingCount),
+      items: Array.isArray(data.items)
+        ? data.items.map(normalizeChatHandoff).filter((item) => item.id && item.conversationId)
+        : [],
+    })
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function acknowledgeChatHandoff(id) {
+  try {
+    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/acknowledge`, {
+      method: 'POST',
+    })
+    return withLiveData(normalizeChatHandoff(payload?.data))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function claimChatHandoff(id) {
+  try {
+    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/claim`, { method: 'POST' })
+    return withLiveData(normalizeChatHandoff(payload?.data))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function sendChatStaffMessage(conversationId, content, requestId = generateId()) {
+  try {
+    const payload = await requestJson(`/admin/chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
+      method: 'POST',
+      body: { requestId, content },
+    })
+    return withLiveData(payload?.data ?? null)
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function returnChatToAi(id, locale = 'vi') {
+  try {
+    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/return-to-ai`, {
+      method: 'POST', body: { locale },
+    })
+    return withLiveData(normalizeChatHandoff(payload?.data))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function closeChatHandoff(id, locale = 'vi') {
+  try {
+    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/close`, {
+      method: 'POST', body: { locale },
+    })
+    return withLiveData(normalizeChatHandoff(payload?.data))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function fetchChatFeedback(query) {
+  try {
+    const payload = await requestJson('/admin/chat/feedback', {
+      query: { from: query?.from, to: query?.to },
+    })
+    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+    return withLiveData({
+      helpful: safeChatCount(data.helpful),
+      unhelpful: safeChatCount(data.unhelpful),
+      issues: Array.isArray(data.issues) ? data.issues.map((item) => ({
+        topicCode: safeChatString(item?.topicCode), reason: safeChatString(item?.reason), total: safeChatCount(item?.total),
+      })) : [],
+      weeklyTrend: Array.isArray(data.weeklyTrend) ? data.weeklyTrend.map((item) => ({
+        weekStart: safeChatString(item?.weekStart), helpful: safeChatCount(item?.helpful), unhelpful: safeChatCount(item?.unhelpful),
+      })) : [],
+      samples: Array.isArray(data.samples) ? data.samples.map((item) => ({
+        feedbackId: safeChatString(item?.feedbackId),
+        conversationId: safeChatString(item?.conversationId),
+        messageId: safeChatString(item?.messageId),
+        question: safeChatString(item?.question),
+        answer: safeChatString(item?.answer),
+        topicCode: safeChatString(item?.topicCode),
+        reason: safeChatString(item?.reason),
+        createdAt: safeChatString(item?.createdAt),
+        total: safeChatCount(item?.total),
+      })).filter((item) => item.feedbackId) : [],
+    })
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function fetchChatFeedbackTemplatePrefill(id) {
+  try {
+    const payload = await requestJson(`/admin/chat/feedback/${encodeURIComponent(id)}/template-prefill`)
+    return withLiveData(payload?.data ?? null)
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function previewAssistantTemplate(body) {
+  try {
+    const payload = await requestJson('/admin/settings/ai-assistant/templates/preview', { method: 'POST', body })
+    return withLiveData(payload?.data ?? null)
+  } catch (error) { throw normalizeError(error) }
+}
+
+function normalizeAssistantModel(input) {
+  const item = input && typeof input === 'object' ? input : {}
+  return {
+    id: safeChatString(item.id),
+    displayName: safeChatString(item.displayName),
+    speedTier: safeChatString(item.speedTier),
+    costTier: safeChatString(item.costTier),
+    speedDescriptionVi: safeChatString(item.speedDescriptionVi),
+    speedDescriptionEn: safeChatString(item.speedDescriptionEn),
+    costDescriptionVi: safeChatString(item.costDescriptionVi),
+    costDescriptionEn: safeChatString(item.costDescriptionEn),
+    inputUsdPerMillion: nullableChatNumber(item.inputUsdPerMillion),
+    outputUsdPerMillion: nullableChatNumber(item.outputUsdPerMillion),
+    supportsImages: item.supportsImages === true,
+    available: item.available === true,
+    selectable: item.selectable === true,
+    reason: safeChatString(item.reason),
+    priceEffectiveFrom: safeChatString(item.priceEffectiveFrom),
+    pricingSource: safeChatString(item.pricingSource),
+  }
+}
+
+function normalizeAssistantModelCatalog(input) {
+  const data = input && typeof input === 'object' ? input : {}
+  return {
+    currentModel: safeChatString(data.currentModel),
+    fallbackModel: safeChatString(data.fallbackModel),
+    reviewModerationModel: safeChatString(data.reviewModerationModel),
+    models: Array.isArray(data.models)
+      ? data.models.map(normalizeAssistantModel).filter((item) => item.id)
+      : [],
+    refreshedAt: safeChatString(data.refreshedAt),
+    stale: data.stale === true,
+  }
+}
+
+export async function fetchAssistantModels(refresh = false) {
+  try {
+    const payload = await requestJson('/admin/chat/models', { query: { refresh } })
+    return withLiveData(normalizeAssistantModelCatalog(payload?.data))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function updateAssistantModel(modelId) {
+  try {
+    const payload = await requestJson('/admin/chat/model', { method: 'PUT', body: { modelId } })
+    return withLiveData(normalizeAssistantModelCatalog(payload?.data))
+  } catch (error) { throw normalizeError(error) }
+}
+
+function normalizeEvaluationResult(input) {
+  const item = input && typeof input === 'object' ? input : {}
+  return {
+    modelId: safeChatString(item.modelId),
+    totalCases: safeChatCount(item.totalCases),
+    passedCases: safeChatCount(item.passedCases),
+    numericCaseCount: safeChatCount(item.numericCaseCount),
+    numericAccuracy: nullableChatNumber(item.numericAccuracy) ?? 0,
+    intentAccuracy: nullableChatNumber(item.intentAccuracy) ?? 0,
+    nonFabricationCaseCount: safeChatCount(item.nonFabricationCaseCount),
+    nonFabricationRate: nullableChatNumber(item.nonFabricationRate) ?? 0,
+    giveUpRate: nullableChatNumber(item.giveUpRate) ?? 0,
+    p50LatencyMs: nullableChatNumber(item.p50LatencyMs),
+    p95LatencyMs: nullableChatNumber(item.p95LatencyMs),
+    inputTokens: safeChatCount(item.inputTokens),
+    outputTokens: safeChatCount(item.outputTokens),
+    thinkingTokens: safeChatCount(item.thinkingTokens),
+    fallbackCount: safeChatCount(item.fallbackCount),
+    estimatedCostUsd: nullableChatNumber(item.estimatedCostUsd) ?? 0,
+    averageCostUsd: nullableChatNumber(item.averageCostUsd) ?? 0,
+  }
+}
+
+function normalizeEvaluationRun(input) {
+  const item = input && typeof input === 'object' ? input : {}
+  return {
+    id: safeChatString(item.id),
+    datasetVersion: safeChatString(item.datasetVersion),
+    datasetChecksum: safeChatString(item.datasetChecksum),
+    modelIds: Array.isArray(item.modelIds) ? item.modelIds.map(safeChatString).filter(Boolean) : [],
+    maxCostUsd: nullableChatNumber(item.maxCostUsd) ?? 0,
+    actualCostUsd: nullableChatNumber(item.actualCostUsd) ?? 0,
+    status: safeChatString(item.status),
+    failureCode: safeChatString(item.failureCode),
+    startedAt: safeChatString(item.startedAt),
+    completedAt: safeChatString(item.completedAt),
+    results: Array.isArray(item.results)
+      ? item.results.map(normalizeEvaluationResult).filter((result) => result.modelId)
+      : [],
+  }
+}
+
+export async function fetchAssistantEvaluationDatasets() {
+  try {
+    const payload = await requestJson('/admin/chat/evaluations/datasets')
+    const items = Array.isArray(payload?.data) ? payload.data : []
+    return withLiveData(items.map((item) => ({
+      version: safeChatString(item?.version),
+      checksum: safeChatString(item?.checksum),
+      caseCount: safeChatCount(item?.caseCount),
+      acceptanceCheckCount: safeChatCount(item?.acceptanceCheckCount),
+      realConversationCaseCount: safeChatCount(item?.realConversationCaseCount),
+      sourceSummary: safeChatString(item?.sourceSummary),
+      descriptionVi: safeChatString(item?.descriptionVi),
+      descriptionEn: safeChatString(item?.descriptionEn),
+      acceptanceCoverage: Array.isArray(item?.acceptanceCoverage)
+        ? item.acceptanceCoverage.map(safeChatString).filter(Boolean)
+        : [],
+      acceptanceRegistryComplete: item?.acceptanceRegistryComplete === true,
+      needsRealQuestionReview: item?.needsRealQuestionReview === true,
+    })).filter((item) => item.version))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function fetchAssistantEvaluationRuns() {
+  try {
+    const payload = await requestJson('/admin/chat/evaluations/runs')
+    const items = Array.isArray(payload?.data) ? payload.data : []
+    return withLiveData(items.map(normalizeEvaluationRun).filter((item) => item.id))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function startAssistantEvaluation(body) {
+  try {
+    const payload = await requestJson('/admin/chat/evaluations/runs', { method: 'POST', body })
+    return withLiveData(normalizeEvaluationRun(payload?.data))
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function createAssistantEvaluationDraft() {
+  try {
+    const payload = await requestJson('/admin/chat/evaluations/dataset-draft', { method: 'POST' })
+    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+    return withLiveData({
+      sanitizedQuestionCount: safeChatCount(data.sanitizedQuestionCount),
+      draftJson: safeChatString(data.draftJson),
+      notice: safeChatString(data.notice),
+    })
+  } catch (error) { throw normalizeError(error) }
+}
+
+export async function fetchChatUnanswered(query) {
+  try {
+    const payload = await requestJson('/admin/chat/unanswered', {
+      query: { from: query?.from, to: query?.to },
+    })
+    const items = Array.isArray(payload?.data) ? payload.data : []
+    return withLiveData({ items: items.map((item) => ({
+      conversationId: safeChatString(item?.conversationId),
+      assistantMessageId: safeChatString(item?.assistantMessageId),
+      customerQuestion: safeChatString(item?.customerQuestion),
+      reason: safeChatString(item?.reason),
+      createdAt: safeChatString(item?.createdAt),
+    })).filter((item) => item.conversationId) })
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function fetchChatDataGaps() {
+  try {
+    const payload = await requestJson('/admin/chat/data-gaps')
+    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+    return withLiveData({
+      affectedProducts: safeChatCount(data.affectedProducts),
+      missingSizeGuides: safeChatCount(data.missingSizeGuides),
+      missingSpecifications: safeChatCount(data.missingSpecifications),
+      rawOptionProducts: safeChatCount(data.rawOptionProducts),
+      missingAccessoryLinks: safeChatCount(data.missingAccessoryLinks),
+      items: Array.isArray(data.items) ? data.items.map((item) => ({
+        productId: safeChatString(item?.productId),
+        slug: safeChatString(item?.slug),
+        name: safeChatString(item?.name),
+        gaps: Array.isArray(item?.gaps) ? item.gaps.filter((gap) => typeof gap === 'string') : [],
+        rawOptions: Array.isArray(item?.rawOptions)
+          ? item.rawOptions.filter((value) => typeof value === 'string').slice(0, 50)
+          : [],
+      })).filter((item) => item.productId) : [],
     })
   } catch (error) {
     throw normalizeError(error)
@@ -2262,6 +2681,18 @@ function normalizeAdminNotification(input) {
     total: parsed.total != null ? Number(parsed.total) : undefined,
     status: parsed.status,
     paymentMethod: parsed.paymentMethod,
+    handoffId: parsed.handoffId ? String(parsed.handoffId) : '',
+    conversationId: parsed.conversationId ? String(parsed.conversationId) : '',
+    questionSummary: safeChatString(parsed.questionSummary),
+    customerKind: safeChatString(parsed.customerKind),
+    contactPresent: parsed.contactPresent === true,
+    products: Array.isArray(parsed.products)
+      ? parsed.products.map((item) => ({
+        slug: safeChatString(item?.slug),
+        name: safeChatString(item?.name),
+      })).filter((item) => item.slug || item.name).slice(0, 8)
+      : [],
+    waitingCount: Number(parsed.waitingCount ?? 0),
     at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
     read: s.isRead === true,
     fromServer: true,

@@ -4,8 +4,6 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.maintenance.MaintenanceStateEntity;
 import com.bigbike.bigbike_backend.persistence.repository.maintenance.MaintenanceStateJpaRepository;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +14,12 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Admin-panel maintenance lock (BUSINESS_RULES {@code MAINTENANCE_RULE_001}..{@code _007}).
+ * Admin-panel maintenance lock (BUSINESS_RULES {@code MAINTENANCE_RULE_001}..{@code _008}).
  *
- * <p>Three states: {@code NORMAL} → {@code UPCOMING} (staff warned, writes still allowed)
- * → {@code ACTIVE} (admin writes rejected with 423 by {@code MaintenanceWriteLockFilter}).
- * Transitions are always manual and always performed by a {@code DEVELOPER} — nothing here
- * auto-transitions, by design: an automatic release could fire mid-migration, which is the
- * exact scenario the lock exists to prevent.
+ * <p>Two states: {@code NORMAL} and {@code ACTIVE} (admin writes rejected with 423 by
+ * {@code MaintenanceWriteLockFilter}). Transitions are always manual and always performed by a
+ * {@code DEVELOPER} — nothing here auto-transitions, by design: an automatic release could fire
+ * mid-migration, which is the exact scenario the lock exists to prevent.
  *
  * <p>The storefront is deliberately untouched by every state.
  */
@@ -31,7 +28,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class MaintenanceService {
 
     public static final String STATE_NORMAL = "NORMAL";
-    public static final String STATE_UPCOMING = "UPCOMING";
     public static final String STATE_ACTIVE = "ACTIVE";
     public static final String TOPIC = "/topic/admin/maintenance";
 
@@ -75,18 +71,15 @@ public class MaintenanceService {
     public MaintenanceStatus setState(
             String rawState,
             String staffNote,
-            String rawExpectedAt,
             UUID updatedBy
     ) {
         String state = normalizedState(rawState);
-        Instant expectedAt = normalizeExpectedAt(rawExpectedAt);
 
         MaintenanceStateEntity entity = stateRepo.findById(MaintenanceStateEntity.SINGLETON_ID)
                 .orElseGet(MaintenanceStateEntity::new);
         entity.setId(MaintenanceStateEntity.SINGLETON_ID);
         entity.setState(state);
         entity.setStaffNote(blankToNull(staffNote));
-        entity.setExpectedAt(expectedAt);
         entity.setUpdatedBy(updatedBy);
         entity.setUpdatedAt(Instant.now());
         stateRepo.save(entity);
@@ -105,11 +98,13 @@ public class MaintenanceService {
 
     private static MaintenanceStatus toStatus(MaintenanceStateEntity entity) {
         if (entity == null) {
-            return new MaintenanceStatus(STATE_NORMAL, null, null, null);
+            return new MaintenanceStatus(STATE_NORMAL, null, null);
         }
-        String state = entity.getState() == null ? STATE_NORMAL : entity.getState();
+        // A forward-only migration removes UPCOMING. Keep reads safe if an old row is briefly
+        // visible during deployment: the removed value is never exposed as a live state.
+        String state = STATE_ACTIVE.equals(entity.getState()) ? STATE_ACTIVE : STATE_NORMAL;
         return new MaintenanceStatus(
-                state, entity.getStaffNote(), entity.getExpectedAt(), entity.getUpdatedAt());
+                state, entity.getStaffNote(), entity.getUpdatedAt());
     }
 
     private void sendAfterCommit(MaintenanceStatus status) {
@@ -127,26 +122,11 @@ public class MaintenanceService {
 
     public static String normalizedState(String rawState) {
         String state = rawState == null ? "" : rawState.trim().toUpperCase();
-        if (!Set.of(STATE_NORMAL, STATE_UPCOMING, STATE_ACTIVE).contains(state)) {
+        if (!Set.of(STATE_NORMAL, STATE_ACTIVE).contains(state)) {
             throw ValidationException.fromField(
-                    "state", "INVALID_VALUE", "Trạng thái bảo trì phải là NORMAL, UPCOMING hoặc ACTIVE.");
+                    "state", "INVALID_VALUE", "Trạng thái bảo trì phải là NORMAL hoặc ACTIVE.");
         }
         return state;
-    }
-
-    private static Instant normalizeExpectedAt(String rawExpectedAt) {
-        if (rawExpectedAt == null || rawExpectedAt.isBlank()) return null;
-        String value = rawExpectedAt.trim();
-        try {
-            return OffsetDateTime.parse(value).toInstant();
-        } catch (DateTimeParseException ex) {
-            try {
-                return Instant.parse(value);
-            } catch (DateTimeParseException ignored) {
-                throw ValidationException.fromField(
-                        "expectedAt", "INVALID_VALUE", "expectedAt phải là thời điểm ISO-8601 hợp lệ.");
-            }
-        }
     }
 
     private static String blankToNull(String value) {

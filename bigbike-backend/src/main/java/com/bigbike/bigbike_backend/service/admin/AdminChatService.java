@@ -2,8 +2,11 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatConversationDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatConversationResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatCostStatsResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatFallbackStatsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatLeadResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatMessageResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatModelUsageResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatStatsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatOrderAttributionResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatActionStatsResponse;
@@ -14,6 +17,7 @@ import com.bigbike.bigbike_backend.mapper.ChatMapper;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatLeadEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.chat.ChatAiUsageEventJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
@@ -23,6 +27,7 @@ import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatOrderAttributionEntity;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
 import com.bigbike.bigbike_backend.service.chat.ChatAiQuotaService;
+import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
@@ -51,6 +56,7 @@ public class AdminChatService {
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final ChatConversationJpaRepository conversationRepo;
+    private final ChatAiUsageEventJpaRepository usageEventRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatLeadJpaRepository leadRepo;
     private final ChatOrderAttributionJpaRepository attributionRepo;
@@ -58,6 +64,7 @@ public class AdminChatService {
     private final CartItemJpaRepository cartItemRepo;
     private final ChatAssistantSettings assistantSettings;
     private final ChatAiQuotaService chatAiQuotaService;
+    private final ChatImageService chatImageService;
     private final ChatMapper chatMapper;
 
     public PageResult<AdminChatConversationResponse> list(
@@ -102,9 +109,15 @@ public class AdminChatService {
     public AdminChatConversationDetailResponse get(UUID id) {
         ChatConversationEntity conversation = conversationRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
-        List<AdminChatMessageResponse> messages = messageRepo
-                .findByConversationIdOrderByCreatedAtAsc(id).stream()
-                .map(chatMapper::toMessage)
+        List<ChatMessageEntity> messageEntities = messageRepo
+                .findByConversationIdOrderByCreatedAtAsc(id);
+        Map<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse>> imagesByMessage =
+                chatImageService.referencesByMessageIds(
+                        messageEntities.stream().map(ChatMessageEntity::getId).toList());
+        List<AdminChatMessageResponse> messages = messageEntities.stream()
+                .map(entity -> includeImages(
+                        chatMapper.toMessage(entity),
+                        imagesByMessage.getOrDefault(entity.getId(), List.of())))
                 .toList();
         AdminChatLeadResponse lead = leadRepo.findByConversationId(id)
                 .map(chatMapper::toLead)
@@ -146,8 +159,50 @@ public class AdminChatService {
         int limit = settings.dailyLimit();
         Instant monthFrom = date.withDayOfMonth(1).atStartOfDay(VN_ZONE).toInstant();
         Instant monthTo = date.withDayOfMonth(1).plusMonths(1).atStartOfDay(VN_ZONE).toInstant();
-        BigDecimal monthlyCost = zero(messageRepo.summarizeBetween(
-                monthFrom, monthTo).getEstimatedCostUsd());
+        Map<String, CategoryCost> dayCosts = costMap(
+                usageEventRepo.summarizeCategories(from, to));
+        Map<String, CategoryCost> monthCosts = costMap(
+                usageEventRepo.summarizeCategories(monthFrom, monthTo));
+        BigDecimal legacyDayCost = zero(messageRepo.sumLegacyCostBetween(from, to));
+        BigDecimal legacyMonthCost = zero(messageRepo.sumLegacyCostBetween(monthFrom, monthTo));
+        BigDecimal textDayCost = categoryCost(dayCosts, "CUSTOMER_TEXT").add(legacyDayCost);
+        BigDecimal textMonthCost = categoryCost(monthCosts, "CUSTOMER_TEXT").add(legacyMonthCost);
+        BigDecimal imageDayCost = categoryCost(dayCosts, "CUSTOMER_IMAGE");
+        BigDecimal imageMonthCost = categoryCost(monthCosts, "CUSTOMER_IMAGE");
+        BigDecimal indexDayCost = categoryCost(dayCosts, "PRODUCT_IMAGE_INDEX");
+        BigDecimal indexMonthCost = categoryCost(monthCosts, "PRODUCT_IMAGE_INDEX");
+        BigDecimal evaluationDayCost = categoryCost(dayCosts, "EVALUATION");
+        BigDecimal evaluationMonthCost = categoryCost(monthCosts, "EVALUATION");
+        BigDecimal todayCost = textDayCost.add(imageDayCost).add(indexDayCost).add(evaluationDayCost);
+        BigDecimal monthlyCost = textMonthCost.add(imageMonthCost)
+                .add(indexMonthCost).add(evaluationMonthCost);
+        long monthAiConversations = usageEventRepo
+                .countCustomerAiConversationsBetween(monthFrom, monthTo);
+        BigDecimal customerMonthCost = textMonthCost.add(imageMonthCost);
+        BigDecimal averagePerConversation = monthAiConversations == 0
+                ? BigDecimal.ZERO
+                : customerMonthCost.divide(
+                        BigDecimal.valueOf(monthAiConversations), 8, RoundingMode.HALF_UP);
+        long fallbackToday = usageEventRepo.countFallbacksBetween(from, to);
+        long fallbackMonth = usageEventRepo.countFallbacksBetween(monthFrom, monthTo);
+        long monthTextMessages = usageEventRepo.countTextMessagesBetween(monthFrom, monthTo);
+        BigDecimal fallbackRate = monthTextMessages == 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(fallbackMonth)
+                        .divide(BigDecimal.valueOf(monthTextMessages), 4, RoundingMode.HALF_UP);
+        Instant monitorFrom = date.minusDays(13).atStartOfDay(VN_ZONE).toInstant();
+        long giveUps14Days = messageRepo.countFallbackMessagesBetween(monitorFrom, to);
+        long replies14Days = messageRepo.countAssistantRepliesBetween(monitorFrom, to);
+        BigDecimal giveUpRate14Days = replies14Days == 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(giveUps14Days)
+                        .divide(BigDecimal.valueOf(replies14Days), 6, RoundingMode.HALF_UP);
+        List<Integer> monitorLatencies = messageRepo.findAiReplyLatenciesBetween(monitorFrom, to);
+        List<AdminChatModelUsageResponse> modelUsage = usageEventRepo
+                .summarizeModels(monthFrom, monthTo).stream()
+                .map(item -> new AdminChatModelUsageResponse(
+                        item.getModelId(), value(item.getUses()), zero(item.getCostUsd())))
+                .toList();
         BigDecimal warning = settings.monthlyCostWarningUsd();
         List<AdminChatActionStatsResponse> actionStats = actionStats(from, to);
         return new AdminChatStatsResponse(
@@ -155,13 +210,15 @@ public class AdminChatService {
                 value(telemetry.getContentRefusals()), limit, Math.max(0, limit - aiCalls),
                 value(telemetry.getInputTokens()), value(telemetry.getOutputTokens()),
                 value(telemetry.getThinkingTokens()), value(telemetry.getProviderRequests()),
-                rounded(telemetry.getAverageLatencyMs()), zero(telemetry.getEstimatedCostUsd()),
+                rounded(telemetry.getAverageLatencyMs()), todayCost,
                 assistedOrders, assistedRevenue,
                 new AdminChatQualityStatsResponse(
                         value(quality.getAnswers()), value(quality.getProductResults()),
                         value(quality.getClarifications()), value(quality.getOutOfScope()),
                         value(telemetry.getContentRefusals())),
                 new AdminChatLeadFunnelResponse(
+                        conversationRepo.countByLeadOfferOpenedAtGreaterThanEqualAndLeadOfferOpenedAtLessThan(
+                                from, to),
                         interactionRepo.countLeadPromptViewsBetween(1, from, to),
                         interactionRepo.countLeadPromptViewsBetween(2, from, to),
                         leads,
@@ -170,7 +227,56 @@ public class AdminChatService {
                 actionStats,
                 monthlyCost,
                 warning,
-                warning.signum() > 0 && monthlyCost.compareTo(warning) >= 0);
+                warning.signum() > 0 && monthlyCost.compareTo(warning) >= 0,
+                new AdminChatCostStatsResponse(
+                        todayCost, monthlyCost, averagePerConversation,
+                        textDayCost, textMonthCost, imageDayCost, imageMonthCost,
+                        indexDayCost, indexMonthCost, evaluationDayCost, evaluationMonthCost),
+                new AdminChatFallbackStatsResponse(
+                        fallbackToday, fallbackMonth, fallbackRate,
+                        usageEventRepo.findLatestFallbackReason(monthFrom, monthTo),
+                        giveUps14Days, replies14Days, giveUpRate14Days,
+                        BigDecimal.valueOf(5).divide(BigDecimal.valueOf(58), 6, RoundingMode.HALF_UP),
+                        percentile(monitorLatencies, 0.50),
+                        percentile(monitorLatencies, 0.95)),
+                modelUsage);
+    }
+
+    private static Map<String, CategoryCost> costMap(
+            List<ChatAiUsageEventJpaRepository.CategoryCostSummary> summaries
+    ) {
+        Map<String, CategoryCost> values = new LinkedHashMap<>();
+        summaries.forEach(item -> values.put(item.getCategory(), new CategoryCost(
+                zero(item.getCostUsd()), value(item.getEventCount()))));
+        return values;
+    }
+
+    private static AdminChatMessageResponse includeImages(
+            AdminChatMessageResponse message,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse> images
+    ) {
+        return new AdminChatMessageResponse(
+                message.id(), message.sequenceNo(), message.role(), message.staffUserId(),
+                message.staffDisplayName(), message.content(), message.source(), message.aiCalled(),
+                message.answerFormat(), message.resultKind(), message.inputTokens(),
+                message.outputTokens(), message.thinkingTokens(), message.providerRequestCount(),
+                message.latencyMs(), message.estimatedCostUsd(), message.productsJson(),
+                message.createdAt(), images);
+    }
+
+    private static BigDecimal categoryCost(Map<String, CategoryCost> costs, String category) {
+        return costs.getOrDefault(category, CategoryCost.ZERO).costUsd();
+    }
+
+    private static Integer percentile(List<Integer> values, double fraction) {
+        if (values == null || values.isEmpty()) return null;
+        List<Integer> sorted = values.stream()
+                .filter(value -> value != null && value >= 0)
+                .sorted()
+                .toList();
+        if (sorted.isEmpty()) return null;
+        int index = (int) Math.ceil(fraction * sorted.size()) - 1;
+        return sorted.get(Math.max(0, Math.min(index, sorted.size() - 1)));
     }
 
     private List<AdminChatActionStatsResponse> actionStats(Instant from, Instant to) {
@@ -272,4 +378,8 @@ public class AdminChatService {
             long assistedOrders,
             BigDecimal assistedRevenue
     ) {}
+
+    private record CategoryCost(BigDecimal costUsd, long eventCount) {
+        private static final CategoryCost ZERO = new CategoryCost(BigDecimal.ZERO, 0);
+    }
 }

@@ -1,8 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { normalizeSizeScaleValue, parseSizeScaleValues } from './sizeScaleUtils'
-import { VariantMatrixWizard } from './VariantEditors'
+import { buildVariantMatrixVariants } from './variantMatrixUtils'
 
 describe('size scale value parser', () => {
   it('keeps the comma-separated order and trims labels', () => {
@@ -23,30 +21,20 @@ describe('size scale value parser', () => {
 })
 
 describe('variant matrix money input', () => {
-  it('passes the shared price to the local form callback without a mutation', async () => {
-    const user = userEvent.setup()
-    const onGenerate = vi.fn()
-    const onClose = vi.fn()
+  it('keeps selected dictionary IDs and shared price on every generated variant', () => {
+    const variants = buildVariantMatrixVariants([
+      { name: 'Màu sắc', valueIds: ['value-red', 'value-blue'], values: ['Đỏ', 'Xanh'] },
+      { name: 'Kích cỡ', valueIds: ['value-m'], values: ['M'] },
+    ], { sharedPrice: '2000000' })
 
-    render(<VariantMatrixWizard onGenerate={onGenerate} onClose={onClose} />)
-
-    const fields = screen.getAllByRole('textbox')
-    await user.type(fields[0], 'Màu')
-    await user.type(fields[1], 'Đỏ,Xanh')
-    await user.type(fields[2], 'Kích thước')
-    await user.type(fields[3], 'M')
-    await user.click(fields[5])
-    fireEvent.change(fields[5], { target: { value: '2.000.000', selectionStart: 9, selectionEnd: 9 } })
-
-    const buttons = screen.getAllByRole('button')
-    await user.click(buttons[buttons.length - 1])
-
-    expect(onGenerate).toHaveBeenCalledTimes(1)
-    expect(onGenerate.mock.calls[0][0]).toHaveLength(2)
-    expect(onGenerate.mock.calls[0][0][0]).toMatchObject({
+    expect(variants).toHaveLength(2)
+    expect(variants[0]).toMatchObject({
       retailPrice: '2000000',
       salePrice: '',
     })
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(variants[0].options).toEqual([
+      { name: 'Màu sắc', value: 'Đỏ', attributeValueId: 'value-red' },
+      { name: 'Kích cỡ', value: 'M', attributeValueId: 'value-m' },
+    ])
   })
 })

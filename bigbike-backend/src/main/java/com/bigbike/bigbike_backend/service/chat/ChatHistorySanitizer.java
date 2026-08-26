@@ -18,7 +18,14 @@ public final class ChatHistorySanitizer {
             "(?iu)(?<![\\p{Alnum}])BB-\\d{8}-[A-Z0-9]{6}(?![\\p{Alnum}])");
     private static final Pattern LABELED_ORDER = Pattern.compile(
             "(?iu)(?:mã|ma)?\\s*(?:đơn|don|order)(?:\\s*(?:hàng|hang|number|no\\.?))?"
-                    + "\\s*[:#-]\\s*[A-Z0-9][A-Z0-9-]{4,}");
+                    + "\\s*[:#-]?\\s*[A-Z0-9][A-Z0-9-]{4,}");
+    private static final Pattern UUID = Pattern.compile(
+            "(?iu)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-"
+                    + "[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![0-9a-f])");
+    private static final Pattern LABELED_NAME = Pattern.compile(
+            "(?iu)(?:tôi\\s+là|toi\\s+la|tên(?:\\s+tôi)?|ten(?:\\s+toi)?|"
+                    + "họ\\s+tên|ho\\s+ten|my\\s+name\\s+is|name)\\s*[:=-]?\\s*"
+                    + "[\\p{L}][\\p{L} .'-]{1,80}(?=,|[.!?;\\r\\n]|$)");
     private static final Pattern LABELED_ADDRESS = Pattern.compile(
             "(?iu)(?:địa\\s*chỉ|dia\\s*chi|address)\\s*[:=-]?\\s*[^.!?\\r\\n]{3,180}");
     private static final Pattern STREET_ADDRESS = Pattern.compile(
@@ -64,8 +71,10 @@ public final class ChatHistorySanitizer {
         redacted = GENERIC_STREET_ADDRESS.matcher(redacted).replaceAll("[ĐỊA CHỈ ĐÃ CHE]");
         redacted = EMAIL.matcher(redacted).replaceAll("[EMAIL ĐÃ CHE]");
         redacted = PHONE.matcher(redacted).replaceAll("[SỐ ĐIỆN THOẠI ĐÃ CHE]");
+        redacted = LABELED_NAME.matcher(redacted).replaceAll("[TÊN ĐÃ CHE]");
         redacted = BIGBIKE_ORDER.matcher(redacted).replaceAll("[MÃ ĐƠN ĐÃ CHE]");
         redacted = LABELED_ORDER.matcher(redacted).replaceAll("[MÃ ĐƠN ĐÃ CHE]");
+        redacted = UUID.matcher(redacted).replaceAll("[MÃ ĐƠN/ID ĐÃ CHE]");
         String compact = WHITESPACE.matcher(redacted).replaceAll(" ").trim();
         return compact.length() <= MAX_MESSAGE_CHARS
                 ? compact

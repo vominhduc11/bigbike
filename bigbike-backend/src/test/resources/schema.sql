@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS media_tags (
 
 CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag);
 
+-- Production creates the global message sequence in Flyway V1056 so customer,
+-- assistant, staff, and system messages cannot collide during live handoff.
+-- H2 tests run with Flyway disabled, therefore they need the same primitive.
+CREATE SEQUENCE IF NOT EXISTS chat_message_sequence START WITH 1 INCREMENT BY 1;
+
 -- Production PostgreSQL provides unaccent() through Flyway V306. Flyway is disabled in
 -- the H2 test profile, so expose the same deterministic normalization for every catalog
 -- test instead of requiring each API test to install its own alias.

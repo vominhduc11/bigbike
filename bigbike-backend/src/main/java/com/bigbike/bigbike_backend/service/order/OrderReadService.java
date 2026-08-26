@@ -99,21 +99,41 @@ public class OrderReadService {
      */
     public List<CustomerOrderSummary> listCustomerOrderSummaries(UUID customerId, int size) {
         int normalizedSize = size <= 0 ? 1 : Math.min(size, 5);
-        return orderRepo.findCustomerOrderSummaries(
-                        customerId, PageRequest.of(0, normalizedSize))
-                .stream()
-                .map(OrderReadService::toCustomerOrderSummary)
+        List<Object[]> rows = orderRepo.findCustomerOrderSummaries(
+                customerId, PageRequest.of(0, normalizedSize));
+        List<UUID> orderIds = rows.stream().map(row -> (UUID) row[0]).toList();
+        Map<UUID, List<CustomerOrderItemSummary>> items = assistantItems(orderIds);
+        return rows.stream()
+                .map(row -> toCustomerOrderSummary(row, items.getOrDefault(
+                        (UUID) row[0], List.of())))
                 .toList();
     }
 
-    private static CustomerOrderSummary toCustomerOrderSummary(Object[] row) {
+    private Map<UUID, List<CustomerOrderItemSummary>> assistantItems(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) return Map.of();
+        Map<UUID, List<CustomerOrderItemSummary>> result = new java.util.LinkedHashMap<>();
+        for (Object[] row : lineItemRepo.findAssistantItemsByOrderIdIn(orderIds)) {
+            List<CustomerOrderItemSummary> current = result.computeIfAbsent(
+                    (UUID) row[0], ignored -> new ArrayList<>());
+            if (current.size() < 5) {
+                current.add(new CustomerOrderItemSummary(
+                        row[1] == null ? "" : row[1].toString(),
+                        row[2] == null ? null : row[2].toString()));
+            }
+        }
+        return result;
+    }
+
+    private static CustomerOrderSummary toCustomerOrderSummary(
+            Object[] row, List<CustomerOrderItemSummary> items) {
         return new CustomerOrderSummary(
-                (String) row[0],
                 (String) row[1],
-                (java.time.Instant) row[2],
+                (String) row[2],
                 (java.time.Instant) row[3],
-                (java.math.BigDecimal) row[4],
-                (String) row[5]);
+                (java.time.Instant) row[4],
+                (java.math.BigDecimal) row[5],
+                (String) row[6],
+                List.copyOf(items));
     }
 
     public record CustomerOrderSummary(
@@ -122,8 +142,22 @@ public class OrderReadService {
             java.time.Instant placedAt,
             java.time.Instant createdAt,
             java.math.BigDecimal totalAmount,
-            String currency
-    ) {}
+            String currency,
+            List<CustomerOrderItemSummary> items
+    ) {
+        public CustomerOrderSummary(
+                String orderNumber,
+                String status,
+                java.time.Instant placedAt,
+                java.time.Instant createdAt,
+                java.math.BigDecimal totalAmount,
+                String currency
+        ) {
+            this(orderNumber, status, placedAt, createdAt, totalAmount, currency, List.of());
+        }
+    }
+
+    public record CustomerOrderItemSummary(String productName, String variantName) {}
 
     // ── Customer order detail (ownership enforced) ────────────────────────────
 

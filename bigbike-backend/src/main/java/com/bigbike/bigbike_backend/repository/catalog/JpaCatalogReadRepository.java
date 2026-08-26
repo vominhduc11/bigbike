@@ -1228,20 +1228,29 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // V1047 bảo đảm cả hai khoá ngoại; không dò lại bằng văn bản tại đây.
+        // V1053 repairs legacy rows before the FK columns become mandatory; the
+        // read path never guesses a dictionary value from free text.
         String attributeValueId = publicView || value == null ? null : value.getId();
 
         return new ProductVariantOption(
-                preferLabel(
-                        attribute != null ? pick(attribute.getName(), attribute.getNameEn(), locale) : null,
-                        option.getOptionName()
-                ),
-                preferLabel(
-                        value != null ? pick(value.getLabel(), value.getLabelEn(), locale) : null,
-                        option.getOptionValue()
-                ),
+                publicView && hasText(option.getLegacyDisplayName())
+                        ? option.getLegacyDisplayName()
+                        : preferLabel(
+                                attribute != null ? pick(attribute.getName(), attribute.getNameEn(), locale) : null,
+                                option.getOptionName()
+                        ),
+                publicView && hasText(option.getLegacyDisplayValue())
+                        ? option.getLegacyDisplayValue()
+                        : preferLabel(
+                                value != null ? pick(value.getLabel(), value.getLabelEn(), locale) : null,
+                                option.getOptionValue()
+                        ),
                 attributeValueId
         );
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private List<CategorySummary> toCategorySummaries(List<CategoryEntity> entities, String locale) {

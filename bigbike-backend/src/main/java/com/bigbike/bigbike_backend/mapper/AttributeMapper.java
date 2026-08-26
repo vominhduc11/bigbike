@@ -10,5 +10,6 @@ import org.mapstruct.ReportingPolicy;
 public interface AttributeMapper {
 
     @Mapping(target = "attributeId", source = "attribute.id")
+    @Mapping(target = "usageCount", ignore = true)
     AttributeValueResponse toResponse(AttributeValueEntity entity);
 }

@@ -248,6 +248,21 @@ public class AdminSettingsService {
         return results;
     }
 
+    /** Dedicated phase-4 write path after live Gemini account validation. */
+    @Transactional
+    public AdminSiteSettingResponse updateAssistantModel(String modelId, UUID adminId) {
+        SiteSettingEntity entity = settingRepo.findBySettingKey("ai_assistant_model")
+                .orElseThrow(() -> new NotFoundException("Setting not found: ai_assistant_model"));
+        String before = snapshot(entity, false);
+        entity.setSettingValue(modelId);
+        entity.setUpdatedAt(Instant.now());
+        settingRepo.save(entity);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ASSISTANT_MODEL_UPDATED", "SITE_SETTING",
+                entity.getId(), before, snapshot(entity, false)));
+        return toAdminResponse(entity);
+    }
+
     // ── Product assignment guide (banner read) ─────────────────────────────────
 
     /**

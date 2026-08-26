@@ -42,6 +42,15 @@ public class ChatInteractionEntity {
     @Column(name = "action_type", length = 48)
     private String actionType;
 
+    @Column(name = "product_slug", length = 255)
+    private String productSlug;
+
+    @Column(name = "source_interaction_id")
+    private UUID sourceInteractionId;
+
+    @Column(name = "cart_item_id")
+    private UUID cartItemId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

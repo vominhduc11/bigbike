@@ -158,7 +158,15 @@ export function PurchaseSection({
     setAddError("");
     setAdding(true);
     try {
-      await addToCart(product.id, quantity, selectedVariant?.id || undefined);
+      await addToCart(
+        product.id,
+        quantity,
+        selectedVariant?.id || undefined,
+        undefined,
+        undefined,
+        false,
+        product.slug,
+      );
     } catch (error) {
       reportStorefrontFailure("add_to_cart", error);
       setAddError(tb("addToCartFailed"));
@@ -271,7 +279,12 @@ export function PurchaseSection({
             </p>
           ) : null}
           <div itemProp="name">
-            <h1 className="mb-5 font-body text-a1-title font-semibold leading-title text-foreground">{name}</h1>
+            <h1
+              data-bigbike-product-name
+              className="mb-5 font-body text-a1-title font-semibold leading-title text-foreground"
+            >
+              {name}
+            </h1>
           </div>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>

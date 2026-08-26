@@ -479,6 +479,24 @@ export function listPublicSettings(lang?: string): Promise<DataResult<PublicSite
   return loadArrayDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
 }
 
+export type PublicStorePolicy = {
+  topic: "warranty" | "return-exchange";
+  title: string;
+  bodyHtml: string;
+};
+
+export function getStorePolicy(
+  topic: PublicStorePolicy["topic"],
+  lang?: string,
+): Promise<DataResult<PublicStorePolicy>> {
+  return loadDataWithQuery(
+    `/api/v1/policies/${topic}`,
+    { lang },
+    300,
+    ["store-policies", `policy:${topic}`, `lang:${lang ?? "vi"}`],
+  );
+}
+
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
  function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
   return loadArrayDataWithQuery<HomeSlider>("/api/v1/sliders", { location }, 3600, ["sliders"]);

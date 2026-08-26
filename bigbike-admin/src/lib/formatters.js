@@ -8,6 +8,18 @@ function activeLocale() {
   return i18n.language === 'en' ? 'en-US' : 'vi-VN'
 }
 
+/** Current calendar date in Vietnam, independent of the viewer machine time zone. */
+export function currentVietnamIsoDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${value.year}-${value.month}-${value.day}`
+}
+
 /**
  * Canonical VND formatter for admin — "1.250.000 ₫" (VI) / "1,250,000 ₫" (EN).
  * Tiền tệ luôn là VND; chỉ cách nhóm chữ số đổi theo ngôn ngữ đang chọn.

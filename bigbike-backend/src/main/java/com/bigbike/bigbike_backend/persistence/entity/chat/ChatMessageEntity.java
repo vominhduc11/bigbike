@@ -33,6 +33,15 @@ public class ChatMessageEntity {
     @Column(nullable = false, length = 16)
     private String role;
 
+    @Column(name = "sequence_no", nullable = false)
+    private long sequenceNo;
+
+    @Column(name = "staff_user_id")
+    private UUID staffUserId;
+
+    @Column(name = "staff_display_name", length = 120)
+    private String staffDisplayName;
+
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 
@@ -80,9 +89,37 @@ public class ChatMessageEntity {
     @Column(name = "estimated_cost_usd", precision = 19, scale = 8)
     private BigDecimal estimatedCostUsd;
 
+    @Column(name = "requested_model", length = 120)
+    private String requestedModel;
+
+    @Column(name = "served_model", length = 120)
+    private String servedModel;
+
+    @Column(name = "fallback_used", nullable = false)
+    private boolean fallbackUsed;
+
+    @Column(name = "fallback_reason", length = 40)
+    private String fallbackReason;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "products_json", columnDefinition = "jsonb")
     private String productsJson;
+
+    @Column(name = "sales_stage", length = 24)
+    private String salesStage;
+
+    @Column(name = "outcome_code", length = 48)
+    private String outcomeCode;
+
+    @Column(name = "lead_offer_reason", length = 32)
+    private String leadOfferReason;
+
+    @Column(name = "next_step_type", length = 48)
+    private String nextStepType;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "cross_sell_products_json", columnDefinition = "jsonb")
+    private String crossSellProductsJson;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

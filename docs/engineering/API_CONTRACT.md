@@ -9,6 +9,25 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
   2. this document
   3. checked-in OpenAPI companion
 - If OpenAPI and controllers drift, controllers and current tests are the verification source until docs are repaired.
+- Drift is detected automatically since 2026-08-21. `springdoc-openapi` generates a live
+  specification from the running controllers at `/v3/api-docs/live`; the hand-curated companion
+  remains the contract and is still served at `/v3/api-docs` by `OpenApiStaticController`.
+  Generation is off by default in every profile (`BIGBIKE_API_DOCS_ENABLED`, default `false`) and
+  hard-disabled under the `prod` profile — the endpoint map is reconnaissance value and
+  `/v3/api-docs/**` + `/swagger-ui/**` are `permitAll` in `SecurityConfig`. `CONFIRMED_FROM_CODE_2026-08-21`
+- `OpenApiContractDriftTest` compares the two endpoint sets on every build and fails when either
+  side moves: an operation that exists in code but not in the companion, or an operation the
+  companion still describes after the code dropped it. Known pre-existing gaps are frozen in
+  `bigbike-backend/src/test/resources/openapi/contract-drift-baseline.json` so the build stays green
+  while new drift is blocked. The baseline may only shrink — remove an entry when its operation is
+  documented here and in the companion. `CONFIRMED_FROM_CODE_2026-08-21`
+- Baseline recorded 2026-08-21: **33 `/api/v1` operations run without a companion entry** — product
+  attributes and attribute values, legacy discontinued products, OAuth account links and the
+  authorize/callback redirects, admin invite (GET/accept/resend), customer password
+  forgot/reset/resend-verification, admin notifications, brand and category detail, admin settings
+  `PATCH`, customer profile `PATCH`, customer order cancel, cart clear, homepage category
+  highlights, product snapshot. Writing their contract entries is a separate task; the exact list
+  lives in the baseline file. `CONFIRMED_FROM_CODE_2026-08-21`
 
 ## Error Envelope
 
@@ -317,7 +336,7 @@ The content-category feature is removed across database, backend, storefront and
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và module Guide Page Builder đã bị gỡ khỏi toàn stack. 8 route thông tin hiện hành — Giới thiệu (`/gioi-thieu`), Liên hệ (`/lien-he`), Hướng dẫn (`/huong-dan` + 2 trang con `size-mu|size-trang-phuc`), và đúng 3 trang chính sách (`chinh-sach-bao-mat-thong-tin|chinh-sach-bao-hanh|chinh-sach-doi-tra-hang`) — nay **đóng cứng trong `bigbike-web`**. Web không gọi backend để đọc/quản lý các trang này.
+> **REMOVED (2026-06-24), ngoại lệ hẹp 2026-08-23.** Module "Trang tĩnh CMS" (pages) và Guide Page Builder vẫn đã gỡ. Tám route thông tin hiện hành, danh sách và sidebar vẫn cố định trong `bigbike-web`. Riêng tiêu đề/thân bài song ngữ của Bảo hành và Đổi trả được đọc từ nguồn `store_policy` dùng chung qua API allowlist bên dưới; đây không phải khôi phục pages CRUD.
 >
 > **Endpoint đã gỡ:**
 > - Public `GET /api/v1/pages`, `GET /api/v1/pages/{slug}` — không còn.
@@ -325,7 +344,11 @@ The content-category feature is removed across database, backend, storefront and
 > - Toàn bộ admin CRUD pages (`POST`/`PATCH`/`DELETE /api/v1/admin/content/pages`, type `PAGE` trong `GET /api/v1/admin/content`) + reference `GET /api/v1/admin/content/reference/pages` — không còn.
 > - Admin guide-page `GET`/`PUT /api/v1/admin/guide-page` — không còn.
 >
-> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin nay **chỉ còn quản lý bài viết (Tin tức)** — xem "Article Content Contract" bên dưới. Sidebar chính sách là danh sách cố định 3 trang trong web; menu location `policy` không còn được admin hoặc storefront sử dụng.
+> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin vẫn **chỉ quản lý bài viết**; sidebar chính sách là danh sách cố định 3 trang và menu location `policy` không trở lại. Hai policy động được chỉnh qua Settings với `settings.read/settings.write`.
+
+### `GET /api/v1/policies/{topic}`
+
+`topic` allowlist: `warranty|return-exchange`; query `lang=vi|en` mặc định `vi`. Response `data`: `{topic,title,bodyHtml,updatedAt}`. Endpoint chỉ nhận bốn setting `store_policy` allowlist làm nguồn điều khoản; các dòng liên hệ trong cả Bảo hành và Đổi trả được điền từ các setting `contact` hiện hành (hotline, Zalo, địa chỉ, giờ mở cửa), không đóng cứng trong policy. Endpoint không nhận setting key động và không đưa policy vào payload `GET /api/v1/settings/public` chung. HTML được validate khi lưu và sanitize khi render; thiếu tiêu đề/thân bài trả trạng thái unavailable có kiểm soát, không rơi về bản policy đóng cứng khác. Trang Bảo mật vẫn tĩnh và không đi endpoint này.
 
 ## Article Content Contract
 
@@ -959,10 +982,10 @@ A variant option (`variants[].options[]`) is returned with these fields:
 
 | Field | Public (`GET /api/v1/products/{slug}`) | Admin (`GET /api/v1/admin/products/{id}`) |
 |---|---|---|
-| `name`, `value` | ✅ human label (e.g. `Màu sắc` / `Đen bóng`) | ✅ |
+| `name`, `value` | ✅ human label / preserved legacy display text (e.g. `Màu sắc` / `Đen bóng`) | ✅ dictionary label used by the editor |
 | `attributeValueId` | ❌ omitted | ✅ the linked dictionary value id |
 
-`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`). `attributeValueId` is mandatory on every admin product-upsert option; the backend rejects a blank, unknown, or mismatched value/attribute reference with `400 VALIDATION_ERROR`. Returning the exact value id lets the admin form round-trip the dictionary link without reconstructing it from display text. It is **admin-only** (`@JsonInclude(NON_NULL)`); the public storefront response never carries it.
+`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`). `attributeValueId` is mandatory on every admin product-upsert option; the backend rejects a blank, unknown, or mismatched value/attribute reference with `400 VALIDATION_ERROR`. Validation details target the exact option (`variants.<variantIndex>.options.<optionIndex>.attributeValueId`) so the admin can mark only the offending row. Returning the exact value id lets the admin form round-trip the dictionary link without reconstructing it from display text. It is **admin-only** (`@JsonInclude(NON_NULL)`); the public storefront response never carries it. Legacy rows repaired by the catalog-link migration retain a private display snapshot so their public option names and values remain unchanged.
 
 Colour variants render on the storefront using the **variant's own gallery image** (the first image of the matching variant), not a per-term colour swatch or hex value. The swatch/hex feature (`colorHex`, `swatchImageUrl`, per-option `swatchImageId`, and the `attribute_values.color_hex` / `attribute_values.swatch_image_id` / `product_variant_options.swatch_image_id` columns) was removed.
 
@@ -972,18 +995,18 @@ Evidence: `ProductVariantOption.java` (record component `attributeValueId`, `@Js
 
 ### Attribute value management — admin catalog endpoints
 
-The colour/value dictionary for variant attributes is read and curated through `AdminAttributeController` (`/api/v1/admin`):
+The attribute/value dictionary for every variant attribute is read and curated through `AdminAttributeController` (`/api/v1/admin`):
 
 | Endpoint | Body | Response | Notes |
 |---|---|---|---|
-| `GET /attributes` | — | **bare array** of `{ id, code, name, kind, valueCount }` | Not wrapped in the `{data}` envelope. |
-| `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, sortOrder }` | Not wrapped. |
+| `GET /attributes` | — | **bare array** of `{ id, code, name, nameEn, kind, valueCount }` | Not wrapped in the `{data}` envelope. |
+| `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, labelEn, sortOrder, usageCount }` | Not wrapped. The same endpoint is used for color, size, model and any custom variation attribute. `usageCount > 0` disables rename/delete in the editor; the backend also returns `409` if a used value is changed. |
 | `POST /attributes` | `{ name, nameEn? }` | `{ data: AttributeSummaryResponse }` | Creates a brand-new attribute type (e.g. "Chất liệu"). `code` (the immutable machine key) is auto-derived from `name` via the same diacritic-insensitive kebab-case rule as attribute values; `kind` is always `"select"`, `is_variation` always `true`. A name whose derived code collides with an existing attribute → `409 CONFLICT`; a name that yields an empty code → `400 VALIDATION_ERROR`. Requires `products.update`. |
 | `PATCH /attributes/{id}` | `{ name }` | `{ data: AttributeSummaryResponse }` | Renames an attribute's display name. **Only `name` changes; `code` is immutable** (variant options resolve to their attribute via the code). Requires `products.update`. |
 | `DELETE /attributes/{id}` | — | `204 No Content` | Deletes an attribute type. **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (see `ATTRIBUTE_RULE_001`). Deleting an unused attribute cascades its (also-unused) values at the DB level (`fk_attribute_values_attribute_id ... on delete cascade`). Requires `products.update`. |
 | `POST /attributes/{attributeId}/values` | `{ label, slug? }` | `{ data: AttributeValueResponse }` | Adds a new value. `slug` defaults to a diacritic-insensitive kebab-case form of `label` (same rule as product slugs, matching storefront colour-filter keys). Duplicate slug within the same attribute → `409 CONFLICT`; a label that yields an empty slug → `400 VALIDATION_ERROR`. Requires `products.update`. |
-| `PATCH /attribute-values/{id}` | `{ label }` | `{ data: AttributeValueResponse }` | Renames an existing value. **Only `label` changes; `slug` is immutable** so variant options that reference it keep working (colour-scoped galleries and web filters key off the slug). Requires `products.update`. |
-| `DELETE /attribute-values/{id}` | — | `204 No Content` | Deletes a single value (e.g. one colour). **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (`ATTRIBUTE_RULE_001`). Requires `products.update`. |
+| `PATCH /attribute-values/{id}` | `{ label, labelEn? }` | `{ data: AttributeValueResponse }` | Renames an unused value. **Only the labels change; `slug` is immutable.** A value used by any variant returns `409 CONFLICT` so public names and filters cannot change accidentally. Requires `products.update`. |
+| `DELETE /attribute-values/{id}` | — | `204 No Content` | Deletes a single unused value. **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (`ATTRIBUTE_RULE_001`). Requires `products.update`. |
 
 The two `GET` endpoints return bare arrays (legacy shape); the admin client (`fetchAttributes` / `fetchAttributeValues`) tolerates both bare arrays and `{data}`. The `POST`/`PATCH`/`DELETE` endpoints use the standard `ApiResponseFactory` envelope (`DELETE` returns an empty `204` body).
 
@@ -2116,9 +2139,8 @@ Readable by **any** signed-in admin — deliberately not permission-gated, becau
 ```json
 {
   "data": {
-    "state": "NORMAL|UPCOMING|ACTIVE",
+    "state": "NORMAL|ACTIVE",
     "staffNote": "Nâng cấp dữ liệu sản phẩm",
-    "expectedAt": "2026-08-06T15:00:00Z",
     "updatedAt": "2026-08-06T14:05:11Z",
     "canToggle": false,
     "uploadCount": 0
@@ -2127,13 +2149,13 @@ Readable by **any** signed-in admin — deliberately not permission-gated, becau
 }
 ```
 
-`canToggle` reports whether **this caller** may change the state, so the frontend never re-derives the role rule. `uploadCount` is the number of in-flight admin uploads, surfaced in the "lock now" confirm dialog. `expectedAt` is display-only and never triggers a transition.
+`canToggle` reports whether **this caller** may change the state, so the frontend never re-derives the role rule. `uploadCount` is the number of in-flight admin uploads, surfaced in the lock confirm dialog. There is no expected-finish-time field; if staff need a time, it belongs in `staffNote`.
 
 ### `PUT /api/v1/admin/maintenance`
 
-Body: `{ "state": "NORMAL|UPCOMING|ACTIVE", "staffNote": "…|null", "expectedAt": "ISO-8601|null" }`.
+Body: `{ "state": "NORMAL|ACTIVE", "staffNote": "…|null" }`.
 
-Restricted to the **`DEVELOPER` role by exact role-name check**, not by permission — `SUPER_ADMIN` receives `403`. See `PERMISSION_MATRIX.md` §Maintenance Authority for why a permission cannot express this. Invalid `state` → `400 VALIDATION_ERROR`. Success returns the same shape as the GET, plus a broadcast on the admin STOMP topic `/topic/admin/maintenance`.
+Restricted to the **`DEVELOPER` role by exact role-name check**, not by permission — `SUPER_ADMIN` receives `403`. See `PERMISSION_MATRIX.md` §Maintenance Authority for why a permission cannot express this. Invalid `state` (including legacy `UPCOMING`) → `400 VALIDATION_ERROR`. Success returns the same shape as the GET, plus a broadcast on the admin STOMP topic `/topic/admin/maintenance`.
 
 ### `423 MAINTENANCE_ACTIVE` — global admin write error
 
@@ -2143,7 +2165,7 @@ While `state = ACTIVE`, `MaintenanceWriteLockFilter` rejects every `POST`/`PUT`/
 
 Customer-facing endpoints are untouched in every state: `POST /api/v1/checkout` has no maintenance guard, and the `ORDERING_PAUSED` error no longer exists.
 
-## Trợ lý ảo AI “Trợ lý BigBike” (Giai đoạn 1, owner decision 2026-08-09)
+## Trợ lý ảo AI “Trợ lý BigBike” (Giai đoạn 1–2, owner decisions 2026-08-09..24)
 
 Mọi response dùng envelope chuẩn `ApiDataResponse`. Ba endpoint storefront chấp nhận cả khách vãng lai và khách đã đăng nhập; nếu có phiên customer hợp lệ, backend tự gắn conversation với customer đó. Client/model không gửi `customerId` hoặc email.
 
@@ -2157,19 +2179,19 @@ Response `data`: `{ mode, reason, greeting, quickPrompts, maxTurns, contacts }`.
 
 ### `POST /api/v1/chat/messages`
 
-Body có `@Valid`: `{ "conversationId": "uuid|null", "requestId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en", "pageContext": {"type":"PRODUCT","productSlug":"slug"}|null, "originInteractionId": "uuid|null" }`. `conversationId` bỏ trống ở lượt đầu; ba field mới/tùy chọn giữ tương thích client cũ. Client mới sinh một UUID cho mỗi logical turn và giữ nguyên `requestId` khi retry. `originInteractionId` chỉ được nhận khi backend xác minh một action click đã phát từ đúng assistant message/conversation/caller. Cùng `requestId` trả lại đúng kết quả đã lưu, không tăng lượt/quota, không gọi provider hoặc tạo tin nhắn lần hai. Mỗi conversation tối đa 12 customer messages ở route thường và 20 khi **request hiện tại** có page context trỏ tới đúng một sản phẩm `PUBLISHED`, còn bán, slug hợp lệ; slug giả vẫn áp trần 12. Conversation đã đóng ở lượt 12 không tự mở lại. Backend tuần tự hoá thao tác ghi của cùng conversation; các hội thoại khác nhau chạy đồng thời. Deadline toàn lượt backend là 65 giây; widget hủy chờ sau 75 giây và không ẩn nút Gặp nhân viên.
+Body có `@Valid`: `{ "conversationId": "uuid|null", "requestId": "uuid|null", "message": "1..1000 ký tự", "lang": "vi|en", "pageContext": {"type":"PRODUCT","productSlug":"slug"}|null, "originInteractionId": "uuid|null", "clarificationSelection": {"clarificationId":"uuid","optionId":"1..80 ký tự"}|null }`. `conversationId` bỏ trống ở lượt đầu; các field tùy chọn giữ tương thích client cũ. Khi khách bấm lựa chọn nhanh, `message` vẫn chứa nhãn đã bấm để transcript dễ đọc; backend chỉ nhận `optionId` nếu `clarificationId` và option khớp lựa chọn đang chờ của đúng conversation, còn lựa chọn cũ/sai bị bỏ và câu chữ được xử lý như input thường. Client sinh một UUID cho mỗi logical turn và giữ nguyên `requestId` khi retry. `originInteractionId` chỉ được nhận khi backend xác minh một action click đã phát từ đúng assistant message/conversation/caller. Cùng `requestId` trả lại đúng kết quả đã lưu — gồm cả lựa chọn làm rõ — không tăng lượt/quota, không gọi provider hoặc tạo tin nhắn lần hai. Mỗi conversation tối đa 16 customer messages ở route thường và 20 khi **request hiện tại** có page context trỏ tới đúng một sản phẩm `PUBLISHED`, còn bán, slug hợp lệ; không có trần riêng cho số vòng hỏi làm rõ nhưng mỗi selection vẫn tính một customer message. Conversation đã đóng theo trần cũ không tự mở lại. Backend tuần tự hoá thao tác ghi của cùng conversation; các hội thoại khác nhau chạy đồng thời. Transaction đọc/lưu đầu lượt phải kết thúc trước provider call; transaction hoàn tất chỉ mở lại sau provider call, nên không giữ connection/row lock trong thời gian chờ 65 giây. Widget hủy chờ sau 75 giây và không ẩn nút Gặp nhân viên.
 
-Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, answerFormat, resultKind, turnCount, maxTurns, remainingTurns, products, handoffRecommended, leadPrompt, leadPromptSequence, actions, contacts }`. `answerFormat` thuộc `PLAIN_TEXT|MARKDOWN`; `resultKind` thuộc `ANSWER|PRODUCT_RESULTS|CLARIFICATION|OUT_OF_SCOPE|REFUSAL|CONTACT`. Markdown chỉ cho đoạn văn, in đậm, danh sách và bảng; cấm HTML, mã, ảnh, link và URL. `products` tối đa 8 phần tử `{slug,name,imageUrl,retailPrice,salePrice,currency,stockState}` và chỉ đến từ catalog đang bán. So sánh trực tiếp tối đa ba mẫu. `leadPromptSequence` thuộc `0|1|2`; `leadPrompt=true` khi sequence lớn hơn 0 để giữ client cũ. `actions` là 2–3 phần tử `{type}` do backend chọn từ allowlist, không nhận nhãn/URL/action từ model; khi không có đủ action an toàn có thể ít hơn và không bịa kênh liên hệ. `CONTACT` luôn kèm contacts thật đang cấu hình; quota/provider/config failure không trả 5xx cho widget.
+Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, answerFormat, resultKind, turnCount, maxTurns, remainingTurns, products, crossSellProducts, clarification, nextStep, handoff, handoffRecommended, leadOffer, leadPrompt, leadPromptSequence, actions, contacts }`. `clarification` giữ shape hiện hành. `nextStep` luôn có dạng `{type,productSlug?,clarificationId?}`; type thuộc allowlist server-owned và có `PAUSE|ANSWER_CLARIFICATION` cho bước không điều hướng. `leadOffer` nullable `{sequence:1|2,reason:HOLD_STOCK|RESTOCK_ALERT|SIZE_ADVICE|QUOTE|STAFF_CONFIRMATION,presentation:string}`; `presentation` là câu giải thích đã địa phương hoá, không phải mã UI. `handoff` nullable `{id,status:WAITING|ACTIVE|RETURNED_TO_AI|CLOSED,requestedAt,assignedDisplayName?,withinBusinessHours,nextOpenAt?,businessHoursText}`. `crossSellProducts` cùng card shape, tối đa 2 và chỉ từ accessory relation đã xác minh. `leadPrompt`/`leadPromptSequence` và `actions` là mirror tương thích của cấu trúc mới; không có logic song song. Product card không chứa proof: client ghi click bằng đúng `assistantMessageId` + slug, backend mới phát token ký sau khi xác minh card thuộc message. `CONTACT` vẫn kèm contacts thật; `WAITING` không khóa input, còn `ACTIVE` chuyển ô nhập sang nhân viên và ngừng gọi AI.
 
-Widget storefront giữ snapshot tối thiểu theo `CHAT_RULE_026`, gồm `conversationId`, `requestId`/interaction đang chờ-thử lại, assistant message id, tin nhắn đã hiển thị, sản phẩm/actions, `remainingTurns`, trạng thái `AI|CONTACT`, lead sequence đã hiện/đã ghi viewed. Snapshot version mới hết hạn cố định sau 24 giờ, vẫn đọc được version cũ, xoá khi khách bấm xoá hoặc đăng xuất. Retry dùng lại đúng id; khôi phục không gọi lại AI và không ghi viewed/click trùng.
+Widget storefront giữ snapshot tối thiểu theo `CHAT_RULE_026`, gồm `conversationId`, `requestId`/interaction đang chờ-thử lại, assistant message id, tin nhắn đã hiển thị, sản phẩm/actions/clarification, `remainingTurns`, trạng thái `AI|CONTACT`, lead sequence đã hiện/đã ghi viewed. Snapshot version 3 hết hạn cố định sau 24 giờ, vẫn đọc được version 1/2 với `clarification=null`, xoá khi khách bấm xoá hoặc đăng xuất. Retry dùng lại đúng id; khôi phục không gọi lại AI và không ghi viewed/click trùng.
 
-Trước quota/AI, backend lọc cục bộ nội dung ngoài phạm vi, người lớn, gây hại/tự hại, xúc phạm, lừa đảo và lái vai; trả câu soạn sẵn VI/EN với nguồn `OUT_OF_SCOPE|CONTENT_REFUSAL|ROLE_DEFENSE`, không gọi Gemini và không dùng quota. Tư vấn bảo hộ có từ ngữ va chạm/tai nạn vẫn được phép nếu không có ý định gây hại. Các fast-path FAQ/shop/order/lead/handoff hiện có cũng không gọi Gemini. Các câu còn lại gửi `CURRENT_QUESTION`, function declarations cố định, metadata catalog công khai và tối đa `ai_assistant_recent_turn_pairs` cặp hỏi–đáp dưới `RECENT_TURNS`; mặc định/tối đa `12`. Mỗi tin lịch sử che email, điện thoại, địa chỉ, mã/số đơn rồi cắt 450 ký tự. Lịch sử chỉ để hiểu ý; mọi dữ kiện phải có function response của lượt hiện tại. `RECENT_VERIFIED_PRODUCTS` tối đa tám slug và chỉ cấp quyền đọc sau allowlist backend.
+Trước quota/AI, backend lọc cục bộ nội dung ngoài phạm vi, người lớn, gây hại/tự hại, xúc phạm, lừa đảo và lái vai, rồi chạy bộ quyết định độ rõ theo `CHAT_RULE_034`–`036`. Bộ quyết định ghép context cấu trúc với câu hiện tại, đếm lại catalog và trả trực tiếp/hỏi một tiêu chí nếu nhận diện được; toàn bộ chuỗi này giữ `ai_called=false`, `provider_request_count=0` và không reserve quota. Tư vấn bảo hộ có từ ngữ va chạm/tai nạn vẫn được phép nếu không có ý định gây hại. FAQ/shop/order/lead/handoff hiện có cũng không gọi Gemini. Chỉ câu đã đủ rõ hoặc ngôn ngữ chưa được parser nội bộ nhận diện mới gửi `CURRENT_QUESTION`, function declarations cố định, metadata catalog công khai và tối đa `ai_assistant_recent_turn_pairs` cặp hỏi–đáp dưới `RECENT_TURNS`; mặc định/tối đa `12`. Mỗi tin lịch sử che email, điện thoại, địa chỉ, mã/số đơn rồi cắt 450 ký tự. Lịch sử chỉ để hiểu ý; mọi dữ kiện phải có function response của lượt hiện tại. `RECENT_VERIFIED_PRODUCTS` tối đa tám slug và chỉ cấp quyền đọc sau allowlist backend.
 
-Model tự hiểu ý định và chọn tool; backend kiểm tra call có liên quan, đúng schema/quyền/giới hạn rồi mới thực thi. Khi `ai_assistant_search_ai_interpretation_enabled=true`, `search_products` dùng tham số AI đã đối chiếu; giá luôn lấy từ parser câu khách hoặc context hợp lệ, còn danh mục/thương hiệu phải khớp metadata công khai duy nhất. Tên/model dùng chuẩn hoá bỏ dấu, tách token có nghĩa và AND token trên name/slug/SKU VI/EN; exact miss không được bỏ định danh để quét rộng. Một ứng viên tên gần đúng duy nhất chỉ tạo câu hỏi xác nhận có nêu tên; 2–3 kết quả thật nêu đủ tên/giá và hỏi chọn; không có ứng viên đủ gần thì nói shop chưa bán, không trả sản phẩm ngẫu nhiên. Context (`category`, `brand`, dải giá, slug công khai, cờ chờ đăng nhập) chỉ đổi từ `acceptedSearchScope` của một search thành công; lượt không tìm giữ nguyên, còn search thành công sang nhóm khác xoá filter/slugs cũ. Nếu bộ lọc kế thừa tạo kết quả rỗng, backend chỉ được bỏ riêng bộ lọc đó và phải nói rõ. `functionResponse` chỉ chứa dữ liệu tối thiểu của tool vừa chạy; không gửi catalog dump hay customer identity.
+Model tự hiểu ý định và chọn tool; backend kiểm tra từng call độc lập về liên quan, schema/quyền/giới hạn rồi mới thực thi. Call sai tạo function response lỗi đã làm sạch với mã cố định và không làm mất call hợp lệ khác; nếu tất cả bị loại, model được chọn cách tra khác một lần trong trần provider. Khi `ai_assistant_search_ai_interpretation_enabled=true`, `search_products` dùng tham số AI đã đối chiếu nhưng current question vẫn cung cấp bộ lọc giá và loại hàng xác định để chặn diễn giải lệch. Giá luôn lấy từ parser câu khách hoặc context hợp lệ, còn danh mục/thương hiệu phải khớp metadata công khai duy nhất. Tên/model dùng chuẩn hoá bỏ dấu, tách token có nghĩa và AND token trên name/slug/SKU VI/EN; tên đầy đủ khớp duy nhất được đọc trực tiếp. `tai nghe|intercom|headset` được phân loại trước cụm gắn mũ chung và không lẫn camera/găng tay. Exact miss không được bỏ định danh để quét rộng. Một ứng viên tên gần đúng duy nhất chỉ tạo câu hỏi xác nhận có nêu tên; 2–3 kết quả thật nêu đủ tên/giá và hỏi chọn; chỉ sau một search catalog thành công trả 0 mới được nói không có mẫu đúng điều kiện. Context (`category`, `brand`, dải giá, slug công khai, cờ chờ đăng nhập) được xóa trước search khi câu hiện tại nêu rõ đổi loại, và chỉ ghi scope mới sau search an toàn. Nếu bộ lọc kế thừa tạo kết quả rỗng, backend chỉ được bỏ riêng bộ lọc đó và phải nói rõ. `functionResponse` chỉ chứa dữ liệu tối thiểu của tool vừa chạy; không gửi catalog dump hay customer identity.
 
-Function registry có bảy tool: `search_products`, `list_categories`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`, `search_articles`. `get_policy` nhận thêm `privacy`. `search_articles` chỉ trả tối đa ba đoạn đã lọc từ bài `PUBLISHED` đúng locale; không trả URL hoặc dữ kiện động. Backend reject unknown tool, JSON/kiểu sai, argument ngoài allowlist, SQL/table/column và mọi identity do model truyền. Một lượt orchestration thực thi tối đa 3 tool, cho phép call hợp lệ chạy song song hoặc nối tiếp, và tối đa 4 Gemini provider requests. Provider retry tối đa một lần cho `429`, `5xx`, connect/read timeout; không retry request/schema/safety/guard. Bốn safety setting Gemini đặt `BLOCK_ONLY_HIGH`; `promptFeedback.blockReason` hoặc `finishReason=SAFETY` trả `CONTENT_REFUSAL`, không trả lỗi kỹ thuật. Guard chỉ nhận dữ kiện có evidence lượt hiện tại, cho tối đa 10 câu/2.000 ký tự và không cắt giữa câu/cảnh báo.
+Function registry có bảy tool: `search_products`, `list_categories`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`, `search_articles`. `get_policy` nhận thêm `privacy`; bảo hành/đổi trả đọc `store_policy`. `get_shop_info` được phép trả nhóm bank allowlist bên cạnh contact/hours. `search_articles` chỉ trả tối đa ba đoạn đã lọc từ bài `PUBLISHED` đúng locale; không trả URL hoặc dữ kiện động. Backend reject unknown tool, JSON/kiểu sai, argument ngoài allowlist, SQL/table/column và mọi identity do model truyền theo từng call. Một lượt orchestration thực thi tối đa 3 tool và 4 Gemini requests. Provider retry tối đa một lần cho `429`, `5xx`, connect/read timeout; không retry request/schema/safety/guard. Bốn safety setting Gemini đặt `BLOCK_ONLY_HIGH`; `promptFeedback.blockReason` hoặc `finishReason=SAFETY` trả `CONTENT_REFUSAL`, không trả lỗi kỹ thuật. Guard chỉ nhận dữ kiện có evidence lượt hiện tại, cho tối đa 10 câu/2.000 ký tự và không cắt giữa câu/cảnh báo.
 
-`get_my_orders` và fast-path đơn đã đăng nhập chỉ chạy khi server context có `CustomerPrincipal`; customer identity không được lấy từ body, nội dung chat hoặc function arguments. Scope `latest` trả đúng một đơn; `recent` trả tối đa 5 đơn, sắp xếp theo `placedAt`, rồi `createdAt`, rồi mã đơn. Backend chỉ project `{orderNumber,status,placedAt,createdAt,totalAmount,currency}` và bản địa hóa trạng thái/tổng tiền trước khi trả khách. Khách vãng lai không tra đơn trong chat, nhận action đăng nhập và trang tra cứu đơn hiện có mà không chạm `OrderReadService`.
+`get_my_orders` và fast-path đơn đã đăng nhập chỉ chạy khi server context có `CustomerPrincipal`; customer identity không được lấy từ body, nội dung chat hoặc function arguments. Scope `latest` trả đúng một đơn; `recent` trả tối đa 5 đơn đang xử lý/gần đây, sắp xếp theo `placedAt`, rồi `createdAt`, rồi mã đơn. Projection là `{orderNumber,status,placedAt,createdAt,totalAmount,currency,items:[{productName,variantName}]}` từ snapshot order line và giới hạn item; tuyệt đối không có address/email/phone/note/order key. Khách vãng lai nhận action đăng nhập/tra cứu mà không chạm `OrderReadService`.
 
 Một logical assistant response có thể dùng 1–4 provider requests nhưng tiêu một daily AI slot. Slot được giữ bằng counter nguyên tử theo ngày Việt Nam trước provider call; retry cùng `requestId` không giữ thêm slot. Fast-path/từ chối cục bộ giữ `ai_called=false`. Assistant message lưu token input/output/thinking, provider request count, latency và estimated cost; public response không lộ tool/payload/telemetry/lỗi kỹ thuật.
 
@@ -2179,21 +2201,41 @@ Body, idempotency, auth/CSRF và kết quả giống `POST /api/v1/chat/messages
 
 ### Chat attribution khi thêm giỏ và checkout
 
-`POST /api/v1/cart/items` nhận thêm `assistantConversationId: uuid|null` và `assistantInteractionId: uuid|null`; response cart thêm `leadPrompt`, `leadPromptSequence` khi chính lần thêm giỏ vừa đủ điều kiện phát lời mời thứ hai. Backend chỉ lưu nguồn cho dòng giỏ khi sản phẩm thật sự đã xuất hiện trong assistant message của đúng hội thoại/caller; interaction chỉ được lưu khi chuỗi action → response/card đã xác minh. Giá trị không hợp lệ bị bỏ, không mở quyền đọc chat. Khi `POST /api/v1/checkout` thành công, backend ghi attribution theo từng order line từ chat bằng giá cuối cùng đã xác nhận và snapshot action type. Phát lại checkout không tạo bản ghi attribution trùng.
+`POST /api/v1/cart/items` giữ các field attribution cũ để tương thích client nhưng chỉ chấp nhận đường cũ khi `assistantInteractionId` là một `ACTION_CLICKED` hợp lệ của đúng hội thoại/sản phẩm; chỉ gửi `assistantConversationId` không được tính nguồn. Endpoint nhận thêm `assistantAttributionToken:string|null`. Token ký product/conversation/message/customer-scope, không chứa PII và không cấp quyền đọc chat. Backend chỉ lưu lần chạm hợp lệ gần nhất; nguồn không hợp lệ hoặc quá 168 giờ bị bỏ mà không làm hỏng add-to-cart. `POST /api/v1/cart/assistant-attributions` nhận đúng một `{productId,attributionToken}` mỗi lần, chỉ gắn nguồn vào các dòng của sản phẩm đó đã có trong cart hiện tại và không đổi quantity/price. Client giữ tối đa 20 proof nhưng gửi từng sản phẩm để mỗi mutation được xác minh độc lập. Checkout bắt buộc có interaction hợp lệ, revalidate event time/product/window, ghi một attribution/order line bằng giá cuối và retry không trùng.
 
 ### `POST /api/v1/chat/interactions`
 
-Body: `{ "clientEventId":"uuid", "conversationId":"uuid", "assistantMessageId":"uuid", "type":"LEAD_PROMPT_VIEWED|ACTION_CLICKED", "leadPromptSequence":0|1|2, "actionType":"allowlisted-action|null" }`. Backend xác minh quyền sở hữu/current guest conversation, message/sequence/action đã thực sự được phát và mã sự kiện idempotent. Response `{ recorded:true, interactionId:"uuid" }`; gọi lại cùng `clientEventId` trả cùng interaction. Endpoint không nhận nội dung, nhãn, URL hoặc PII. CSRF/rate limit giống các mutation chat khác.
+Body: `{ "clientEventId":"uuid", "conversationId":"uuid", "assistantMessageId":"uuid", "type":"LEAD_PROMPT_VIEWED|ACTION_CLICKED|PRODUCT_VIEWED", "leadPromptSequence":0|1|2, "actionType":"allowlisted-action|null", "productSlug":"string|null", "visitorToken":"string|null" }`. Hội thoại guest bắt buộc signed visitor token; hội thoại tài khoản bắt buộc đúng customer hiện tại. `PRODUCT_VIEWED` bắt buộc product slug khớp card chính hoặc card bán kèm của đúng message. Backend dùng server timestamp, idempotent theo `clientEventId`; response `{recorded,interactionId,attributionToken?,attributionExpiresAt?}`. Token chỉ phát sau product view hợp lệ và hết hạn sau đúng 168 giờ. `CART_ADDED` là event server-only, idempotent theo cặp dòng giỏ + product-view nguồn, được ghi sau cart mutation thành công và không nhận trực tiếp từ client.
 
 Action types được backend chọn theo result đã hậu kiểm: `COMPARE_PRODUCTS`, `CHECK_SIZE`, `CHECK_STOCK`, `CHANGE_BUDGET`, `FIND_SIMILAR`, `VIEW_POLICY`, `FIND_PRODUCTS`, `RELATED_ARTICLE_QUESTION`, `CHANGE_NEEDS`, `CONTACT_STAFF`, cộng các action đơn hiện có `LOGIN|ORDER_HISTORY|ORDER_LOOKUP` và kênh liên hệ thật. Mọi action ngoài allowlist bị từ chối.
 
 ### `POST /api/v1/chat/leads`
 
-Body có `@Valid`: `{ "conversationId": "uuid", "contactSource": "FORM|ACCOUNT", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true }`. `contactSource` mặc định là `FORM` để giữ tương thích client cũ. Với `FORM`, backend dùng các trường tên/số/ghi chú do khách gửi sau khi validate; khách vãng lai và tài khoản không đủ điều kiện đi theo nhánh này. Với `ACCOUNT`, caller bắt buộc là khách đã đăng nhập; backend lấy tên và số điện thoại từ customer id trong `CustomerPrincipal` và bản ghi tài khoản hiện tại, bỏ qua `name`/`phone`/`note` trong body, đồng thời không cho caller gán số của tài khoản khác. `ACCOUNT` chỉ hợp lệ khi tên và số tài khoản dùng được; nếu không thì trả lỗi và client phải dùng biểu mẫu đầy đủ. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
+Body có `@Valid`: `{ "conversationId": "uuid", "contactSource": "FORM|ACCOUNT", "name": "0..100", "phone": "số/Zalo hợp lệ", "note": "0..500", "consent": true, "visitorToken":"string|null" }`. Hội thoại guest phải chứng minh ownership bằng signed visitor token. `contactSource` mặc định là `FORM` để giữ tương thích client cũ. Với `FORM`, backend dùng các trường tên/số/ghi chú do khách gửi sau khi validate; khách vãng lai và tài khoản không đủ điều kiện đi theo nhánh này. Với `ACCOUNT`, caller bắt buộc là khách đã đăng nhập; backend lấy tên và số điện thoại từ customer id trong `CustomerPrincipal` và bản ghi tài khoản hiện tại, bỏ qua `name`/`phone`/`note` trong body, đồng thời không cho caller gán số của tài khoản khác. `ACCOUNT` chỉ hợp lệ khi tên và số tài khoản dùng được; nếu không thì trả lỗi và client phải dùng biểu mẫu đầy đủ. `consent` bắt buộc `true`; một conversation chỉ có một lead. Thành công trả `{captured:true}` và tạo thông báo admin. Không có consent → `400 VALIDATION_ERROR`; không log body/phone.
+
+### `POST /api/v1/chat/leads/offer`
+
+Body: `{ "requestId":"uuid", "conversationId":"uuid|null", "locale":"vi|en", "visitorToken":"string|null" }`. Endpoint chỉ được gọi khi khách bấm **Yêu cầu gọi lại** trong panel Gặp nhân viên. Nếu chưa có conversation, backend tạo conversation 0 lượt; nếu có thì xác minh đúng customer hoặc signed visitor token. Cùng `requestId` trả cùng `{conversationId,status:"OFFERED"|"ACCEPTED"|"DECLINED"}` và không tạo conversation/offer thứ hai. Endpoint ghi `lead_offer_opened_at`, không lưu PII, không gọi AI và không tăng turn. Sau đó `POST /chat/leads` vẫn bắt buộc consent và status `OFFERED`.
 
 ### `POST /api/v1/chat/leads/decline`
 
-Body: `{ "conversationId": "uuid" }`. Chỉ hội thoại thuộc caller hiện tại hoặc hội thoại guest đang tiếp tục cùng conversation id mới được cập nhật. Thao tác chuyển `leadOfferStatus` sang `DECLINED`, không lưu PII, không tạo message và không tiêu tốn lượt chat. Gọi lại khi đã `DECLINED` là idempotent; hội thoại đã `ACCEPTED` hoặc không thuộc caller bị từ chối.
+Body: `{ "conversationId": "uuid", "visitorToken":"string|null" }`. Chỉ hội thoại thuộc customer hiện tại hoặc hội thoại guest chứng minh bằng signed visitor token mới được cập nhật; biết riêng conversation id không đủ quyền. Thao tác chuyển `leadOfferStatus` sang `DECLINED`, không lưu PII, không tạo message và không tiêu tốn lượt chat. Gọi lại khi đã `DECLINED` là idempotent; hội thoại đã `ACCEPTED` hoặc không thuộc caller bị từ chối.
+
+### `POST /api/v1/chat/handoffs`
+
+Body: `{ "requestId":"uuid", "conversationId":"uuid|null", "locale":"vi|en", "trigger":"BUTTON|MESSAGE", "visitorToken":"string|null" }`. Chưa có conversation thì tạo conversation 0 lượt; có conversation phải qua own-customer/visitor-token check. Một conversation chỉ có một handoff đang sống (`WAITING|ACTIVE`); retry trả lại row hiện có. Response công khai và object `handoff` đi cùng câu trả lời đều có `channelState`, `withinBusinessHours`, `nextOpenAt`, `businessHoursText`. Ngoài giờ vẫn persist nhưng nói rõ lịch mở cửa, mời để lại liên hệ và không hứa đang có người trực. Persist thành công trước, sau commit mới push `/topic/admin/chat` và queue email. Endpoint không gọi AI hoặc tăng counted turn.
+
+### Public chat session, history, delete, feedback và realtime
+
+| Method | Path | Contract |
+|---|---|---|
+| `POST` | `/api/v1/chat/sessions` | Body `{visitorId:uuid,locale:"vi|en",memoryEnabled:boolean}`; trả signed `visitorToken`, `rememberedThrough` (tối đa 30 ngày từ hoạt động gần nhất), `activeConversationId`, `rememberedContextSummary`. Token chỉ chứng minh visitor id, không chứa PII; khi đã login backend gộp duy nhất các conversation của visitor token hiện tại vào customer hiện tại. `memoryEnabled=false` ngừng nối lại nhưng không âm thầm xóa; web chuyển id/token sang `sessionStorage` để chỉ hoàn tất phiên đang mở và không nhận diện lại ở lần ghé sau. Khách dùng endpoint DELETE riêng có xác nhận để xóa sạch. |
+| `GET` | `/api/v1/chat/conversations/{id}/messages?afterSequence=0` | Chỉ own-customer hoặc signed visitor token; trả message theo `sequence`, role `CUSTOMER|ASSISTANT|STAFF|SYSTEM`, staff label/name snapshot, `channelState`, handoff và continuation. Dùng để initial load/reconnect, không dùng WebSocket làm source of truth. |
+| `DELETE` | `/api/v1/chat/history` | Xác minh current customer hoặc visitor token rồi hard-delete mọi conversation thuộc đúng principal đó; idempotent `{deleted:true}`. Không xóa cart hoặc tài khoản. |
+| `POST` | `/api/v1/chat/messages/{messageId}/feedback` | Body `{rating:"HELPFUL|UNHELPFUL",reason:null|"WRONG_ANSWER|MISUNDERSTOOD|MISSING_INFORMATION|OFF_TOPIC"}`; unhelpful bắt buộc reason, helpful bắt buộc null; đúng own conversation, idempotent update một row/message. |
+| `POST` | `/api/v1/chat/realtime-token` | Body `{conversationId,visitorToken}`; trả token ngắn hạn 5 phút chỉ subscribe `/user/queue/chat` của conversation thuộc caller. Token truyền trong STOMP CONNECT header, không nằm query string/log. |
+
+`POST /chat/messages[/stream]` giữ `mode=AI|CONTACT` để tương thích và thêm `channelState`, `countedTurns`, `turnLimit`, `turnsRemaining`, `continuation`. `channelState` dùng đúng `AI_ACTIVE|WAITING_FOR_STAFF|STAFF_ACTIVE|AI_RESUMED|CLOSED`. `continuation` là `{available,threadId,successorConversationId,message}`: còn ba lượt thì `available=true` và chưa có successor; khi lượt kế tiếp đã tự nối thì `successorConversationId` là hội thoại mới. Nếu handoff `ACTIVE`, endpoint không gọi AI và trả trạng thái nhân viên đang phục vụ. Retry cùng `requestId`, câu hỏi/câu trả lời thuộc vòng clarification và tin hệ thống/staff không tăng `countedTurns`. Successor nằm trong cùng thread, giữ context đã làm sạch và không trả hard `TURN_LIMIT`.
 
 ### Admin chat history (`chat.read`)
 
@@ -2201,9 +2243,21 @@ Body: `{ "conversationId": "uuid" }`. Chỉ hội thoại thuộc caller hiện 
 |---|---|---|
 | `GET` | `/api/v1/admin/chat/conversations` | `page` (≥1), `size` (1–100), `from`/`to` ngày Việt Nam, `hasLead`; item thêm tổng token, chi phí ước tính, độ trễ trung bình, số từ chối, số đơn và doanh thu hỗ trợ. Dữ liệu cũ có telemetry nullable. |
 | `GET` | `/api/v1/admin/chat/conversations/{id}` | Conversation + messages + lead consent; mỗi assistant message có source, answer format/result kind và telemetry nullable; order attributions chỉ hiện trong cùng phạm vi `chat.read`. |
-| `GET` | `/api/v1/admin/chat/stats` | `date=YYYY-MM-DD` tùy chọn; ngoài số lượt/token/độ trễ còn trả `quality:{answers,productResults,clarifications,outOfScope,contentRefusals}`, `leadFunnel:{sequence1Viewed,sequence2Viewed,accepted,declined}`, `actionStats:[{actionType,clicks,cartLines,orders,revenue,conversionRate}]`, `monthlyCostUsd`, `monthlyCostWarningUsd`, `monthlyCostWarningExceeded`, `assistedOrders`, `assistedRevenue`. Tháng tính theo `Asia/Ho_Chi_Minh`; ngưỡng 0 luôn cho `monthlyCostWarningExceeded=false`. |
+| `GET` | `/api/v1/admin/chat/stats` | `date=YYYY-MM-DD` tùy chọn; ngoài số lượt/token/độ trễ còn trả `quality:{answers,productResults,clarifications,outOfScope,contentRefusals}`, `leadFunnel:{callbackFormOpened,sequence1Viewed,sequence2Viewed,accepted,declined}`, `actionStats:[{actionType,clicks,cartLines,orders,revenue,conversionRate}]`, `monthlyCostUsd`, `monthlyCostWarningUsd`, `monthlyCostWarningExceeded`, `assistedOrders`, `assistedRevenue`. Sequence cũ chỉ là lịch sử; UI mới ưu tiên form opened/accepted. Ngày và tháng tính theo `Asia/Ho_Chi_Minh`; mặc định cảnh báo 25 USD, ngưỡng 0 vẫn tắt. |
+| `GET` | `/api/v1/admin/chat/funnel` | `from`/`to`; cohort conversation bắt đầu trong kỳ, trả `{from,to,conversations,productViews,cartAdds,orders,revenue,conversationToViewRate,viewToCartRate,cartToOrderRate,matureThrough,complete}`; event/order theo tới 168 giờ và order distinct. |
+| `GET` | `/api/v1/admin/chat/handoffs` | Trả `{waitingCount,items}` cho `WAITING|ACTIVE`; waiting sắp cũ nhất trước, item có `waitingSeconds`, channel state, assignee và business-hours state. `chat.read`. |
+| `POST` | `/api/v1/admin/chat/handoffs/{id}/claim` | `chat.reply`; conditional `WAITING → ACTIVE`; `409 CONFLICT` với thông báo kèm tên nhân viên nếu người khác đã nhận. |
+| `POST` | `/api/v1/admin/chat/conversations/{id}/messages` | `chat.reply`; body `{requestId,content}`; chỉ current assignee khi `ACTIVE`, persist role `STAFF` + display-name snapshot rồi push customer realtime. |
+| `POST` | `/api/v1/admin/chat/handoffs/{id}/return-to-ai` | `chat.reply`; current assignee `ACTIVE → RETURNED_TO_AI`, tạo `SYSTEM` message và assistant được hoạt động lại. |
+| `POST` | `/api/v1/admin/chat/handoffs/{id}/close` | `chat.reply`; current assignee `ACTIVE → CLOSED`, body optional `{locale}`, tạo thông báo kết thúc lịch sự theo ngôn ngữ khách. |
+| `POST` | `/api/v1/admin/chat/handoffs/{id}/acknowledge` | Alias tương thích một release của `claim`; dùng `chat.reply`, không còn tạo `ACKNOWLEDGED`. |
+| `GET` | `/api/v1/admin/chat/unanswered` | `from`/`to`; tối đa 200 dòng gần nhất gồm câu customer, outcome/source code server-owned, assistant message id, conversation link và thời gian. `chat.read`. |
+| `GET` | `/api/v1/admin/chat/data-gaps` | Không có filter/phân trang ở contract hiện hành; bắt buộc `chat.read` và `products.read`; trả tổng số và danh sách product id/name/slug + `MISSING_SIZE_GUIDE|MISSING_SPECIFICATIONS|RAW_OPTION|NO_ACCESSORIES`; raw option chỉ ở admin. |
+| `GET` | `/api/v1/admin/chat/feedback` | `chat.read`; `from`/`to` theo giờ Việt Nam, trả totals, câu bị chê nhiều, topic server-owned và chuỗi tuần; không trả PII/contact. |
+| `GET` | `/api/v1/admin/chat/feedback/{id}/template-prefill` | `chat.read` + `settings.write`; trả trigger VI/EN từ customer message trước feedback đã làm sạch để mở editor câu chuẩn. |
+| `POST` | `/api/v1/admin/settings/ai-assistant/templates/preview` | `settings.read`; body một template draft + locale + sample question; chạy đúng matcher/guard, trả exact text/source hoặc violations; không gọi AI/không lưu. |
 
-Không có admin mutation trong giai đoạn 1. List/detail/stats đều gọi `requirePermission("chat.read")`.
+Mọi read transcript/feedback gọi `chat.read`; data-gap còn gọi `products.read`. Claim/send/return/close gọi `chat.reply`, quyền này phụ thuộc `chat.read`. Template/abbreviation/settings dùng `settings.read/settings.write` hiện hành.
 
 ### Setting group `ai_assistant` (admin-only)
 
@@ -2211,12 +2265,69 @@ Không có admin mutation trong giai đoạn 1. List/detail/stats đều gọi `
 |---|---|---|---|
 | `ai_assistant_enabled` | `BOOLEAN` | `true` | Công tắc master; false trả `CONTACT`. |
 | `ai_assistant_daily_limit` | `INTEGER` | `400` | Trần lượt trả lời có gọi Gemini/ngày giờ Việt Nam; 0 tắt phần AI. Migration chỉ đổi bản ghi đang đúng `120`. |
+| `ai_assistant_conversation_turn_limit` | `INTEGER` | `40` | Trần substantive customer turns; owner chỉnh 10–100, có hiệu lực request kế tiếp; clarification/retry/staff/system không tính. |
 | `ai_assistant_monthly_cost_warning_usd` | `DECIMAL` | `0` | Ngưỡng cảnh báo chi phí tháng dương lịch theo giờ Việt Nam; 0 tắt cảnh báo, không bao giờ tự khoá AI. |
 | `ai_assistant_recent_turn_pairs` | `INTEGER` | `12` | Số cặp hỏi–đáp gần nhất của chính conversation gửi dưới `RECENT_TURNS`; `0` tắt, tối đa `12`; mỗi tin che PII rồi cắt 450 ký tự. |
 | `ai_assistant_search_ai_interpretation_enabled` | `BOOLEAN` | `true` | Bật cơ chế AI diễn giải rồi backend đối chiếu cho tìm hàng; false quay về cách kiểm chứng cũ ngay, không cần triển khai lại. |
 | `ai_assistant_greeting` | `LONG_TEXT` | câu chào VI/EN | Câu chào đầu widget, dùng `valueEn` cho locale EN. |
 | `ai_assistant_quick_prompts` | `LONG_TEXT` | 4 dòng VI/EN | Mỗi dòng là một nút gợi ý; API chỉ trả 3–4 dòng đầu không rỗng. |
 | `ai_assistant_abbreviations` | `JSON` | danh sách hiện hành | Tối đa 100 `{locale,phrase,expansion,enabled}`; nguyên cụm, dài trước; reject trùng/va chạm catalog. |
-| `ai_assistant_answer_templates` | `JSON` | `[]` | Tối đa 50 `{id,topic,enabled,triggersVi,triggersEn,answerVi,answerEn}`; đủ hai locale, unique longest trigger, hòa thì không trả; guard an toàn khi lưu và khi dùng. |
+| `ai_assistant_answer_templates` | `JSON` | `[]` | Tối đa 50 draft `{id,topic,enabled,triggersVi,triggersEn,answerVi,answerEn}`; mục mới tắt. Draft thiếu/unsafe được lưu kèm violations nhưng bật bị chặn; nội dung không tự sửa. |
+| `ai_assistant_handoff_email_enabled` | `BOOLEAN` | `true` | Bật/tắt riêng email handoff; không ảnh hưởng realtime/hàng chờ. |
+| `ai_assistant_handoff_email_recipient` | `STRING` validated email-or-blank | blank | Blank dùng mailbox nội bộ chung từ `BIGBIKE_MAIL_ADMIN`; giá trị khác vẫn là một override riêng hợp lệ cho handoff. `BIGBIKE_MAIL_ADMIN` là khai báo bắt buộc của deployment và không có fallback email cụ thể. |
+| `ai_assistant_business_hours` | `JSON` | Mon–Fri 09:00–21:00; Sat–Sun 09:00–18:00 | Lịch riêng cho hàng chờ chat theo `Asia/Ho_Chi_Minh`; day có `enabled,open,close`; invalid fail-closed. Owner kiểm và chỉnh tại Cài đặt sau triển khai. |
+| `ai_assistant_memory_days` | `INTEGER` | `30` | Cố định giới hạn quản trị 1–30; giai đoạn 3 dùng 30, retention tổng vẫn 90 ngày. |
+| `ai_assistant_proactive_enabled` | `BOOLEAN` | `false` | Master proactive; tắt mặc định. |
+| `ai_assistant_proactive_product_seconds` | `INTEGER` | `45` | PDP dwell threshold, 15–600 giây. |
+| `ai_assistant_proactive_cart_seconds` | `INTEGER` | `120` | Cart hesitation threshold, 15–600 giây. |
 
 Các key này không `publicAllowed`; storefront đọc qua `availability`, không qua settings public. Khoá Gemini tuyệt đối không thuộc group này.
+
+## Trợ lý BigBike — hợp đồng giai đoạn 4 (owner decision 2026-08-26)
+
+Mọi endpoint dưới đây vẫn dùng `ApiDataResponse`; lỗi upload/quota trả `ApiErrorResponse` có mã ổn định và thông điệp VI/EN, không làm hỏng hội thoại chữ. Model/pricing hiển thị ở admin phải đến từ backend sau khi đối chiếu account live với price registry có ngày hiệu lực; UI không giữ danh sách riêng.
+
+### Phần A — model, fallback, chi phí và bộ đề
+
+| Method | Path | Permission | Contract |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/chat/models` | `settings.read` | Trả `{currentModel,fallbackModel,reviewModerationModel,models:[{id,displayName,speedTier,costTier,inputUsdPerMillion,outputUsdPerMillion,supportsImages,available,selectable,reason,priceEffectiveFrom}],refreshedAt,stale}`. Chỉ model stable, hỗ trợ `generateContent`, account live nhìn thấy và có giá đã xác minh mới `selectable=true`. Không lộ API key. |
+| `PUT` | `/api/v1/admin/chat/model` | `settings.write` | Body `{modelId}`; backend refresh/validate model đang selectable rồi lưu `ai_assistant_model`. Request chat kế tiếp dùng ngay. Không ghi/đổi `review_moderation_model` hoặc env kiểm duyệt. |
+| `GET` | `/api/v1/admin/chat/evaluations/datasets` | `settings.read` | Danh sách version/checksum; `caseCount` là số prompt thực sự chạy qua model, `acceptanceCheckCount` là số ca trong registry hồi quy, `acceptanceRegistryComplete` chỉ nói registry có đủ ID giai đoạn 1–4. Không được đánh tráo ba số này và không trả raw PII. |
+| `POST` | `/api/v1/admin/chat/evaluations/dataset-draft` | đồng thời `chat.read` + `settings.write` | Đọc tối đa 500 câu CUSTOMER mới nhất ngay trên backend, che tên/điện thoại/email/địa chỉ/mã đơn/UUID trước khi trả file JSON; gắn locale/topic và đúng shape scorer. Tất cả case mang `DRAFT_REQUIRES_HUMAN_VERIFICATION`, chưa được runner dùng cho tới khi owner kiểm lại PII và điền ground truth từ dữ liệu shop thật. Raw transcript không được trả. |
+| `POST` | `/api/v1/admin/chat/evaluations/runs` | `settings.write` | Body `{datasetVersion,modelIds:[1..4],maxCostUsd}`; `0 < maxCostUsd <= 2.00`. Chạy ngoài quota khách và từ chối trước request kế tiếp nếu projected/actual cost vượt cap. Trả run id/status. |
+| `GET` | `/api/v1/admin/chat/evaluations/runs` | `settings.read` | Lịch sử run bất biến, dataset checksum, model, counts, scores, fallback, latency, tokens, actual/estimated cost, created/completed time và failure reason sạch. |
+| `GET` | `/api/v1/admin/chat/evaluations/compare?runIds=...` | `settings.read` | Bảng cạnh nhau: `numericCaseCount` + `numericAccuracy`, `intentAccuracy`, `nonFabricationCaseCount` + `nonFabricationRate`, `giveUpRate`, `p50LatencyMs`, `p95LatencyMs`, `averageCostUsd`; scorer deterministic từ expected facts/rules, không gọi AI chấm AI. Metric có applicable count bằng 0 hiển thị `—`, không suy thành một tỷ lệ giả. |
+
+`GET /api/v1/admin/chat/stats` mở rộng thêm `costs:{todayUsd,monthUsd,averagePerConversationUsd,textTodayUsd,textMonthUsd,imageTodayUsd,imageMonthUsd,indexTodayUsd,indexMonthUsd,evaluationTodayUsd,evaluationMonthUsd}`, `fallbacks:{today,month,rate,lastReason,giveUpCount14Days,replyCount14Days,giveUpRate14Days,baselineGiveUpRate,p50LatencyMs14Days,p95LatencyMs14Days}` và `modelUsage`. `rate` là tỷ lệ phải lùi model trong tháng; không được đánh tráo với tỷ lệ chịu thua. Cửa sổ theo dõi gồm 14 ngày lịch kết thúc ở `date`, tỷ lệ chịu thua dùng số assistant reply có `source=CONTACT_FALLBACK` chia tổng assistant reply, còn tốc độ chỉ lấy lượt thực sự gọi AI. Dữ liệu tính từ usage ledger/message telemetry; row cũ nullable không bị suy thành model/cost giả. Mốc cũ hiển thị đúng `5/58 ≈ 9%` cạnh số đo mới, không tự kết luận khi mẫu quá ít.
+
+Mỗi response chat lưu `requestedModel`, `servedModel`, `fallbackUsed`, `fallbackReason`; các field telemetry chỉ có trong admin/detail, không trả public. Model chính có budget 35 giây; fallback chia sẻ deadline toàn lượt 65 giây và tổng tối đa 4 provider requests hiện hành. Progress SSE cố định vẫn được phát trong lúc chờ.
+
+### Phần B — upload, xem và gắn ảnh
+
+`GET /api/v1/chat/availability` thêm `images:{enabled,maxBytes,maxPerTurn,maxPerConversation,dailyLimit,disclosure}`. `enabled=false` mặc định; định dạng nhận được cố định theo hợp đồng upload JPG/PNG/WebP bên dưới. Disclosure VI/EN phải nói ảnh được gửi tới Google Gemini để nhận diện và được lưu tối đa 90 ngày; widget phải hiển thị trước khi khách chọn/gửi ảnh.
+
+| Method | Path | Auth/ownership | Contract |
+|---|---|---|---|
+| `POST` multipart | `/api/v1/chat/images` | customer session hoặc signed visitor token trong header `X-Chat-Visitor-Token` | Fields `requestId`, optional `conversationId`, `lang`, `file`. Nếu chưa có conversation, backend tạo conversation 0 lượt thuộc caller. Kiểm feature flag, idempotency, 1 ảnh/request, 3/conversation, 20/ngày, 8 MB, Tika MIME + decode, JPG/PNG/WebP; re-encode rồi lưu private. Trả `{conversationId,image:{id,mimeType,width,height,sizeBytes,status,contentPath,createdAt}}`. |
+| `GET` | `/api/v1/chat/images/{id}/content` | đúng customer hoặc signed visitor của conversation qua header `X-Chat-Visitor-Token` | Stream bytes với `private,no-store`, không redirect/presign URL; deleted/rejected trả 404. |
+| `GET` | `/api/v1/admin/chat/images/{id}/content` | `chat.read` | Cùng stream riêng tư; thiếu quyền trả 403, kể cả có image id. |
+| `POST` | `/api/v1/admin/chat/product-image-index/rebuild` | `settings.write` | Owner-triggered, idempotent một job đang chạy; chỉ ảnh chính của sản phẩm `PUBLISHED` còn bán; trả job/status/counters/cost. Không tự chạy khi deploy. |
+| `GET` | `/api/v1/admin/chat/product-image-index` | `settings.read` | Trả model/version, indexed/eligible/missing/failed, last run/cost; không trả vector. |
+
+`POST /api/v1/chat/messages[/stream]` đổi body thành `message: 0..1000` và thêm `imageIds: UUID[0..1]`; ít nhất một trong `message`/`imageIds` phải có. Image phải đang `PENDING`, thuộc đúng conversation/caller và chưa dùng ở lượt khác; backend gắn vào customer message theo cùng request id rồi chuyển `ATTACHED` trước khi xét quota/vision. Retry idempotent không tính lại quota/vision. Response/history/admin message thêm `images:[{id,mimeType,width,height,sizeBytes,status,contentPath}]`, không có object key/tên tệp/hash.
+
+Nhánh ảnh dùng mã ổn định `PRODUCT_SEARCH|DAMAGED_PRODUCT|ORDER_DOCUMENT|SIZE_FROM_PERSON|OUT_OF_SCOPE|UNRECOGNIZED|UNSAFE`. `DAMAGED_PRODUCT` tạo/mời handoff mà không phán đoán bảo hành; `ORDER_DOCUMENT` chỉ hướng dẫn luồng tra đơn; `SIZE_FROM_PERSON` hướng dẫn đo; `OUT_OF_SCOPE/UNSAFE` từ chối; chỉ `PRODUCT_SEARCH` được tìm catalog. Câu trả lời match luôn dùng wording bất định “trông giống/looks similar”, chỉ card sản phẩm sống đã hậu kiểm; không match phải nói chưa nhận ra hoặc trả group candidates, không khẳng định cùng sản phẩm/giá/chữ/thông số từ ảnh.
+
+Mã lỗi upload public: `CHAT_IMAGE_DISABLED`, `CHAT_IMAGE_TOO_LARGE`, `CHAT_IMAGE_UNSUPPORTED_TYPE`, `CHAT_IMAGE_INVALID`, `CHAT_IMAGE_TURN_LIMIT`, `CHAT_IMAGE_CONVERSATION_LIMIT`, `CHAT_IMAGE_NOT_FOUND`. Hết trần đọc ảnh trong ngày hoặc ảnh unsafe trả câu VI/EN an toàn trong luồng chat, không tiêu AI slot chữ và không chặn tin nhắn chữ kế tiếp.
+
+### Setting group `ai_assistant` — key giai đoạn 4
+
+| Key | Type | Default | Validation / meaning |
+|---|---|---|---|
+| `ai_assistant_model` | `STRING` | env `BIGBIKE_CHAT_MODEL` | Chỉ lưu model đang `selectable`; request kế tiếp có hiệu lực. |
+| `ai_assistant_image_enabled` | `BOOLEAN` | `false` | Master ảnh độc lập với chat chữ. |
+| `ai_assistant_image_daily_limit` | `INTEGER` | `20` | `1..200`; 0 không dùng để bật/tắt, dùng master switch. |
+| `ai_assistant_image_conversation_limit` | `INTEGER` | `3` | `1..10`; server vẫn cố định tối đa 1/lượt và 8 MB. |
+
+Các giá trị owner đã chốt cho giai đoạn 4 là 1 ảnh/lượt, 3 ảnh/hội thoại, 20 ảnh/ngày, 8 MB và 2 USD/evaluation run. Thay đổi giới hạn ngoài khoảng contract cần cập nhật docs trước.

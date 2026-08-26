@@ -228,7 +228,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     const result = schema.safeParse(baseForm({
       retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '',
-        options: [{ name: 'Màu sắc', value: 'Đỏ' }, { name: 'Size', value: 'M' }] }],
+        options: [{ name: 'Màu sắc', value: 'Đỏ', attributeValueId: 'color-red' }, { name: 'Size', value: 'M', attributeValueId: 'size-m' }] }],
     }))
     expect(result.success).toBe(false)
     expect(pathsOf(result)).toContain('variants.0.imageUrl')
@@ -239,7 +239,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     const result = schema.safeParse(baseForm({
       retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
       variants: [{ name: 'M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '',
-        options: [{ name: 'Size', value: 'M' }] }],
+        options: [{ name: 'Size', value: 'M', attributeValueId: 'size-m' }] }],
     }))
     expect(result.success).toBe(true)
     expect(pathsOf(result)).not.toContain('variants.0.imageUrl')
@@ -250,9 +250,19 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     const result = schema.safeParse(baseForm({
       retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '/media/red.jpg',
-        options: [{ name: 'Màu sắc', value: 'Đỏ' }, { name: 'Size', value: 'M' }] }],
+        options: [{ name: 'Màu sắc', value: 'Đỏ', attributeValueId: 'color-red' }, { name: 'Size', value: 'M', attributeValueId: 'size-m' }] }],
     }))
     expect(result.success).toBe(true)
+  })
+
+  it('requires a dictionary value id on every non-empty option and points to that exact row', () => {
+    const schema = createProductSchema(t, true)
+    const result = schema.safeParse(baseForm({
+      variants: [{ name: 'M', sku: 'VAR-1', retailPrice: '100000',
+        options: [{ name: 'Size', value: 'M' }] }],
+    }))
+    expect(result.success).toBe(false)
+    expect(pathsOf(result)).toContain('variants.0.options.0.attributeValueId')
   })
 
   it('an empty variants array behaves like "no variants" (sku/retailPrice required at product level)', () => {

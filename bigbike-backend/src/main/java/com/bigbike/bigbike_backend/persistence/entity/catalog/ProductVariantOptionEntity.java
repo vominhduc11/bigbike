@@ -43,4 +43,16 @@ public class ProductVariantOptionEntity {
     @Column(nullable = false)
     private String optionValue;
 
+    /**
+     * The original option text for rows repaired from legacy free-text data.
+     * These snapshots are deliberately private to the persistence layer: the
+     * public catalog keeps showing the text customers already saw, while the
+     * admin editor uses the linked dictionary labels.
+     */
+    @Column(name = "legacy_display_name")
+    private String legacyDisplayName;
+
+    @Column(name = "legacy_display_value")
+    private String legacyDisplayValue;
+
 }

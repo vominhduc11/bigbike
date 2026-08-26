@@ -6,5 +6,6 @@ public record AttributeValueResponse(
         String slug,
         String label,
         String labelEn,
-        int sortOrder
+        int sortOrder,
+        long usageCount
 ) {}

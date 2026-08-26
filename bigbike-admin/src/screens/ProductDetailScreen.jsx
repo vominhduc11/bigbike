@@ -771,7 +771,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       }
     },
     onError: (error) => {
-      const fieldErrors = mapValidationErrors(error)
+      const fieldErrors = mapValidationErrors(error, t)
       setValidationErrors(fieldErrors)
       // N2: lỗi lưu kèm nút "Thử lại" (lưu lại) — chỉ khi KHÔNG phải lỗi ràng buộc
       // theo trường (lỗi field thì hiện ngay dưới ô, bấm lưu lại cũng vô ích cho tới

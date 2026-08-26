@@ -8,5 +8,8 @@ public record ChatAvailabilityResponse(
         String greeting,
         List<String> quickPrompts,
         int maxTurns,
-        ChatContactResponse contacts
+        ChatContactResponse contacts,
+        int memoryDays,
+        ChatProactiveSettingsResponse proactive,
+        ChatImageAvailabilityResponse images
 ) {}

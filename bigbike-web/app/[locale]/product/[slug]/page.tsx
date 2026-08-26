@@ -27,10 +27,15 @@ export async function generateStaticParams() {
   return [];
 }
 
+// Canonical English slug redirects must be emitted as an HTTP Location response. Without
+// this guard Next may prerender the first request and return a 308 body without Location.
+// Catalog API calls remain data-cached by their existing fetch tags.
+export const dynamic = "force-dynamic";
+
 type ProductDetailPageProps = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   if (!isValidSlug(slug)) return {};
   const result = await getProductBySlug(slug, locale);
@@ -71,7 +76,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
@@ -121,7 +126,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         />
       ))}
       <AltSlugRegistrar kind="product" viSlug={product.slug} enSlug={product.slugEn ?? null} />
-      <ProductView product={product} settings={settings} breadcrumbCategories={breadcrumbCategories} />
+      <ProductView
+        product={product}
+        settings={settings}
+        breadcrumbCategories={breadcrumbCategories}
+      />
     </>
   );
 }

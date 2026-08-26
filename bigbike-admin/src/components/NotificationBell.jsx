@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Bell, Check, ShoppingCart } from 'lucide-react'
+import { AlertCircle, Bell, Check, MessageCircle, ShoppingCart } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
 import { useAuth, useHasPermission } from '../lib/auth'
@@ -21,14 +21,16 @@ const MAX_ITEMS = 30
 // dùng chung 1 key 'bb-admin-notifications', logout không xoá → đăng nhập tài khoản khác
 // trên cùng trình duyệt đọc được thông báo (số đơn/khách/giá trị) của tài khoản trước,
 // kể cả khi tài khoản mới không có quyền orders.read. Namespace theo email → cô lập.
-function storageKeyFor(identity) {
-  return `bb-admin-notifications:${identity || 'anon'}`
+function storageKeyFor(identity, scopes) {
+  return `bb-admin-notifications:${identity || 'anon'}:${scopes}`
 }
 
 // Dedupe key shared by WS events and server-persisted items: an order can raise both
 // a NEW_ORDER and later ORDER_UPDATE event, so key on orderId + type.
 function keyOf(it) {
-  return it.orderId ? `${it.orderId}:${it.type}` : `id:${it.id}`
+  if (it.orderId) return `${it.orderId}:${it.type}`
+  if (it.handoffId) return `${it.handoffId}:${it.type}`
+  return `id:${it.id}`
 }
 
 function loadStored(storageKey) {
@@ -62,11 +64,12 @@ export function NotificationBell({ navigate }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const hasPermission = useHasPermission()
-  // Chuông chỉ dành cho tài khoản có quyền đọc đơn (AUD-017) — không render/không fetch
-  // cho tài khoản không có orders.read.
   const canViewOrders = hasPermission('orders.read')
-  const storageKey = storageKeyFor(user?.email)
-  const [items, setItems] = useState(() => (canViewOrders ? loadStored(storageKey) : []))
+  const canViewChat = hasPermission('chat.read')
+  const canViewNotifications = canViewOrders || canViewChat
+  const scopes = `${canViewOrders ? 'orders' : ''}${canViewChat ? '-chat' : ''}`
+  const storageKey = storageKeyFor(user?.email, scopes)
+  const [items, setItems] = useState(() => (canViewNotifications ? loadStored(storageKey) : []))
   const [open, setOpen] = useState(false)
   // Lỗi khi nạp danh sách từ server (V102): dùng để phân biệt "chưa có thông báo"
   // với "không tải được" thay vì nuốt lỗi im lặng.
@@ -83,13 +86,13 @@ export function NotificationBell({ navigate }) {
   if (activeKey !== storageKey) {
     setActiveKey(storageKey)
     setSeenUnread(new Set())
-    setItems(canViewOrders ? loadStored(storageKey) : [])
+    setItems(canViewNotifications ? loadStored(storageKey) : [])
   }
 
   useEffect(() => {
-    if (!canViewOrders) return undefined
-    const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
-      if (!event?.orderId) return
+    if (!canViewNotifications) return undefined
+    const unsubscribers = []
+    const addItem = (event) => {
       setItems((prev) => {
         const next = [
           { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now(), read: false, ...event },
@@ -98,15 +101,25 @@ export function NotificationBell({ navigate }) {
         persist(storageKey, next)
         return next
       })
-    })
-    return unsubscribe
-  }, [canViewOrders, storageKey])
+    }
+    if (canViewOrders) {
+      unsubscribers.push(subscribeAdminWs('/topic/admin/orders', (event) => {
+        if (event?.orderId) addItem(event)
+      }))
+    }
+    if (canViewChat) {
+      unsubscribers.push(subscribeAdminWs('/topic/admin/chat', (event) => {
+        if (event?.type === 'CHAT_HANDOFF_WAITING' && event?.conversationId) addItem(event)
+      }))
+    }
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+  }, [canViewChat, canViewNotifications, canViewOrders, storageKey])
 
   // Hydrate from the server-persisted notification store so a fresh browser or a
   // previously-offline admin catches up on stored order events, not only live WS ones.
   // Read state is now per-admin server-side, so item.read reflects THIS admin only.
   useEffect(() => {
-    if (!canViewOrders) return undefined
+    if (!canViewNotifications) return undefined
     let active = true
     fetchAdminNotifications()
       .then(({ items: serverItems }) => {
@@ -136,7 +149,7 @@ export function NotificationBell({ navigate }) {
         if (active) setLoadError(true)
       })
     return () => { active = false }
-  }, [canViewOrders, storageKey])
+  }, [canViewNotifications, storageKey])
 
   const unread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
 
@@ -178,12 +191,12 @@ export function NotificationBell({ navigate }) {
     persist(storageKey, [])
   }
 
-  function openOrder(item) {
-    if (item.orderId) navigate(`/admin/orders/${item.orderId}`)
+  function openNotification(item) {
+    if (item.conversationId) navigate(`/admin/chat/${item.conversationId}`)
+    else if (item.orderId) navigate(`/admin/orders/${item.orderId}`)
   }
 
-  // Không có quyền đọc đơn → không hiển thị chuông (AUD-017).
-  if (!canViewOrders) return null
+  if (!canViewNotifications) return null
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
@@ -243,19 +256,27 @@ export function NotificationBell({ navigate }) {
               return (
                 <DropdownMenuItem
                   key={item.id}
-                  onSelect={() => openOrder(item)}
+                  onSelect={() => openNotification(item)}
                   className={cn(
                     'flex items-start gap-3 rounded-none border-b border-border px-4 py-3 last:border-b-0',
                     fresh && 'bg-surface-selected',
                   )}
                 >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
-                    <ShoppingCart size={15} aria-hidden="true" />
+                    {item.conversationId
+                      ? <MessageCircle size={15} aria-hidden="true" />
+                      : <ShoppingCart size={15} aria-hidden="true" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="block text-sm font-semibold text-foreground">
-                        {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
+                        {item.type === 'CHAT_HANDOFF_WAITING'
+                          ? t('notifications.chatHandoff')
+                          : item.type === 'CHAT_LEAD'
+                            ? t('notifications.chatLead')
+                            : item.type === 'NEW_ORDER'
+                              ? t('notifications.newOrder')
+                              : t('notifications.orderUpdate')}
                       </span>
                       {fresh && (
                         <>
@@ -265,8 +286,12 @@ export function NotificationBell({ navigate }) {
                       )}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {item.orderNumber || t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
-                      {item.customerName ? ` — ${item.customerName}` : ''}
+                      {item.conversationId
+                        ? item.questionSummary || (item.customerKind === 'SIGNED_IN'
+                          ? t('notifications.signedInCustomer')
+                          : t('notifications.guestCustomer'))
+                        : item.orderNumber || t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
+                      {!item.conversationId && item.customerName ? ` — ${item.customerName}` : ''}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}

@@ -15,7 +15,7 @@
 | Checkout UI | `POST /api/v1/checkout` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
 | Customer address UI | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
 | Customer orders UI | `/api/v1/customer/orders` | `CustomerOrderController` -> `OrderReadService` | Own order list/detail | `CONFIRMED_FROM_CODE` |
-| Storefront Trợ lý BigBike | `GET /api/v1/chat/availability`; `POST /api/v1/chat/messages`; `POST /api/v1/chat/messages/stream`; `POST /api/v1/chat/leads`; `POST /api/v1/cart/items` | `ChatController` -> local input guard -> `ChatService` -> `ChatToolService` -> `AiChatClient`; cart attribution qua `CartService` | Lưu chat tối đa 90 ngày; snapshot web tối đa 24 giờ giữ `conversationId` và `requestId`. Stream chỉ phát progress code cố định rồi final đã kiểm duyệt. Tối đa 8 thẻ; chọn biến thể/thêm giỏ trong chat. Lead vẫn cần consent. | `OWNER_CONFIRMED_2026-08-18` |
+| Storefront Trợ lý BigBike | session/history/delete/messages/stream/interactions/leads/handoffs/feedback/realtime-token; cart + assistant-attributions | Visitor/account ownership -> clarity/count policy -> staff-state gate -> verified tools/guard; REST ghi, STOMP chỉ báo/sync; cart revalidate | Memory cùng thiết bị 30 ngày, retention 90 ngày; clarification không tính trần; staff ACTIVE chặn AI; feedback/proactive không gọi AI nền. | `OWNER_CONFIRMED_2026-08-25` |
 | Storefront login screen (`/dang-nhap`, `/dang-ky`) | `POST /api/v1/customer/auth/login` (+ `remember`), `POST /register`, `GET /oauth/{provider}/authorize` + `/callback` | `CustomerAuthController` / `CustomerOAuthController` -> `CustomerAuthService` / `CustomerOAuthService` | Session cookies issued; `remember` drives refresh-cookie lifetime; OAuth links-or-creates the customer | `CONFIRMED_FROM_CODE` |
 | Product review panel | `GET /api/products/{productId}/reviews` qua BFF chỉ-đọc; `POST /api/v1/products/{productId}/reviews` và `/reviews/photos` gọi thẳng API public từ trình duyệt với `credentials: include` | `PublicReviewController` -> `PublicReviewService` | Gửi trực tiếp giữ đúng `bb_session` của host API để backend tự lấy danh tính khách đã đăng nhập, đồng thời giữ IP thật cho hai hạn mức gửi đánh giá/tải ảnh; review mới ở `PENDING`, ảnh upload được claim nguyên tử khi submit và upload bỏ dở được dọn sau 24 giờ (`REVIEW_RULE_007`, `REVIEW_RULE_009`–`REVIEW_RULE_011`) | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin media UI | `/api/v1/admin/media`, `/api/v1/admin/media/{id}/download` | `AdminMediaController` -> `AdminMediaService` | Tải lên và quản lý metadata trong MinIO; tải riêng object gốc bằng stream xác thực; không có đường thay file | `CONFIRMED_FROM_CODE` |
@@ -26,7 +26,7 @@
 | Admin Orders list + CSV | `GET /api/v1/admin/orders`; `GET /api/v1/admin/reports/orders/export` | `AdminOrderController` / `AdminReportController` -> shared order filter specification | List and CSV share `q`/`status`/`from`/`to`; calendar dates use `Asia/Ho_Chi_Minh`. CSV returns every matching order across pages with no 10,000-row cap (`ORDER_RULE_011`/`ORDER_RULE_012`). | `CONFIRMED_FROM_CODE` |
 | Admin Customers list/detail + CSV | `GET /api/v1/admin/customers`, `/summary`, `/{customerId}`; `PATCH /{customerId}`, `PATCH /{customerId}/status`, `DELETE /{customerId}/avatar`; `GET /api/v1/admin/reports/customers/export` | `AdminCustomerController` / `AdminReportController` -> `AdminCustomerService` / `AdminCustomerCsvExportService` | List and CSV share `q`/`status`/`synthetic`/`emailVerified`; CSV returns every match without a row cap. Purchase KPIs exclude cancelled orders; registered-account KPIs exclude synthetic rows. Admin profile edits are limited to display name/phone, synthetic status is locked, and a real avatar removal writes an audit event (`CUSTOMER_RULE_004`–`CUSTOMER_RULE_009`). | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin live order feed | WebSocket `/ws` + topic `/topic/admin/orders` | `WebSocketConfig` + `AdminOrderWsService` | Admin push notifications after commit | `CONFIRMED_FROM_CODE` |
-| Admin lịch sử Trợ lý BigBike | `GET /api/v1/admin/chat/conversations`, `/{id}`, `/stats` | `AdminChatController` -> `AdminChatService` | Chỉ đọc, `chat.read`; thêm token, chi phí, độ trễ, từ chối nội dung, đơn và doanh thu hỗ trợ; telemetry dữ liệu cũ nullable | `OWNER_CONFIRMED_2026-08-18` |
+| Admin vận hành Trợ lý BigBike | conversations/detail/stats/funnel/handoffs/feedback/unanswered/data-gaps + claim/send/return/close + template preview | `AdminChatController` -> chat/handoff/feedback/settings services | Read bằng `chat.read`; live reply bằng `chat.reply`; data-gap thêm `products.read`; template bằng settings permissions; STOMP dùng broker hiện có | `OWNER_CONFIRMED_2026-08-25` |
 
 ## Flow Highlights
 
@@ -41,6 +41,19 @@ frontend/backend classification code; a product must be explicitly assigned
 before its size options can be saved.
 
 Status: `OWNER_CONFIRMED_2026-08-14`
+
+### Admin variant attribute dictionary
+
+`admin product editor -> GET /admin/attributes -> GET /admin/attributes/{id}/values -> select attribute value -> product upsert with attributeValueId`
+
+Every variant attribute uses the same dictionary flow. The editor can create a
+new value in place and immediately select it; it never falls back to free-text
+values. The backend remains authoritative for the attribute/value relationship,
+and rejects an empty, unknown or mismatched dictionary id at the exact option
+field. Used values cannot be renamed or deleted, so public variant labels and
+filters remain stable.
+
+Status: `OWNER_CONFIRMED_2026-08-24`
 
 ### Catalog filters
 
@@ -108,9 +121,11 @@ Status: `REMOVED`
 
 ### Trợ lý BigBike
 
-`widget + pageContext hiện tại -> xác minh PDP để chọn trần 12|20 -> local input guard trước quota -> idempotency theo requestId -> khóa đúng conversation -> context không PII + tối đa 12 cặp lịch sử đã che/cắt -> atomic reserve một slot nếu cần AI -> Gemini hiểu ý/chọn dữ liệu với thinking budget 1.024 -> backend validate tool/argument/slug/quyền -> tối đa 3 tool song song/nối tiếp và 4 provider requests -> final không thinking, tối đa 2.048 output token -> guard Markdown giới hạn, 10 câu/2.000 ký tự, tối đa 8 card -> backend chuẩn hóa resultKind + chọn action cố định -> lưu một cặp message + telemetry -> stream chỉ phát ba progress cố định và final đã duyệt; web timeout 75 giây`
+`widget + pageContext hiện tại -> xác minh PDP để chọn trần 16|20 -> local input guard -> transaction ngắn lưu đầu lượt rồi đóng -> idempotency/khóa đúng conversation -> ghép context cấu trúc + clarification selection -> bộ quyết định độ rõ đếm catalog sống -> trả ngay hoặc hỏi một tiêu chí với tối đa 12 lựa chọn, không quota/AI -> chỉ khi đã rõ mới atomic reserve một slot -> Gemini hiểu ý/chọn dữ liệu ngoài transaction DB -> backend validate từng tool call độc lập -> tối đa 3 tool/4 provider requests -> transaction ngắn lưu final + replay metadata -> guard 10 câu/2.000 ký tự, tối đa 8 card -> backend chuẩn hóa resultKind/action/clarification -> stream chỉ phát ba progress cố định và final đã duyệt; web timeout 75 giây`
 
-`search_products -> chuẩn hoá/đối chiếu alias với catalog thật -> parser giá giữ 500 k, không ánh xạ chung hong/gt/k -> CatalogReadService -> published + sellable + priced -> tối đa 8 sản phẩm`; context giữ thứ tự nhóm gần nhất qua câu chính sách, còn so sánh trực tiếp dùng tối đa ba mẫu. Mọi dữ kiện lịch sử phải tra lại ở lượt hiện tại.
+`product clarity -> chuẩn hoá/đối chiếu alias với catalog thật -> parser giá giữ 500 k, không ánh xạ chung hong/gt/k -> gộp câu hiện tại với group/need/filter đã biết -> đếm active và in-stock candidate riêng -> unknown group: count + options, không card -> known group trên 8: một câu nhu cầu/filter + tối đa 3 card tiêu biểu -> tối đa 8: kết quả cuối`; context giữ tiêu chí đã trả lời/đã thử và thứ tự nhóm gần nhất qua câu chính sách. Hai cây mũ được hợp/khử trùng chỉ trong assistant. So sánh trực tiếp dùng tối đa ba mẫu. Mọi dữ kiện lịch sử phải tra lại ở lượt hiện tại.
+
+`khách chọn tùy em -> lấy candidate còn hàng -> completed linked order stats trong đúng scope -> đủ >=10 đơn khác nhau và >=2 sản phẩm thì xếp theo units sold -> chưa đủ thì FEATURED_GRID -> không có featured thì gần median effective price -> trả đúng một lựa chọn + căn cứ`; không đọc review, không chọn hàng hết kho và không đổi query popularity chung của storefront.
 
 `list_categories -> CatalogReadService -> nhóm hàng công khai + tổng sản phẩm đang bán của từng nhóm -> functionResponse`; không trả danh sách sản phẩm, giá hoặc tồn kho chi tiết.
 
@@ -118,6 +133,12 @@ Status: `REMOVED`
 
 `đơn đã đăng nhập -> CustomerPrincipal từ SecurityContext -> OrderReadService customer summary projection -> chỉ orderNumber/status/placedAt/createdAt/totalAmount/currency -> bản địa hóa backend`; Gemini `get_my_orders` giữ cùng ranh giới khi cần. Guest-order dừng ở local action LOGIN/ORDER_LOOKUP và không chạm order repository.
 
-`assistant response đủ điều kiện -> leadPromptSequence=1 -> storefront render -> interaction LEAD_PROMPT_VIEWED`; nếu ignored và lượt sau hỏi size/stock đúng một mẫu hoặc add cart từ chat thì `sequence=2`; `accept -> chat_leads + admin notification`, `decline -> terminal không PII`. `action click -> idempotent interaction -> originInteractionId trên lượt tiếp -> assistant response/product card -> assistantInteractionId khi add cart -> checkout -> attribution action type + revenue`; mọi bước đều xác minh conversation/message/action/product. `local refusal -> OUT_OF_SCOPE|CONTENT_REFUSAL|ROLE_DEFENSE, không quota`; `Gemini safety block -> CONTENT_REFUSAL`; lỗi tạm provider retry một lần trong trần 4 request. Cleanup chat đặt liên kết nullable nhưng giữ action type và số tiền báo cáo.
+`greeting/general request -> BROWSING -> một câu nhu cầu`; `hai mẫu -> CHOOSING -> khác biệt đã xác minh -> một ưu tiên -> chốt một`; `size/stock/final price/delivery/warranty -> DECIDING -> gỡ lo, không mở mẫu`; `own order -> POST_PURCHASE -> order snapshot only`. Stage có thể lùi và được lưu trong context không PII.
+
+`eligible exact-product interest/missing data -> leadOffer(reason, sequence<=2) -> consent -> chat_leads`; greeting/general policy/angry/declined không offer. `Gặp nhân viên -> WAITING -> claim(chat.reply) -> ACTIVE -> STAFF messages -> RETURNED_TO_AI|CLOSED`; assistant chỉ chạy ngoài ACTIVE. `visitor token -> history/sync 30 ngày -> optional login merge current device -> own-history delete`. `assistant message -> helpful/unhelpful reason -> weekly aggregation -> template prefill`. `product/cart dwell + setting on + once/session + not checkout -> local proactive copy`. `product card proof -> live variant revalidate -> cart -> checkout`; mọi retry idempotent, guest proof không cấp quyền đọc chat.
+
+Giai đoạn 4 — Phần A: `Settings -> GET /admin/chat/models -> Gemini models.list bằng account hiện tại -> giao với allowlist stable + price registry theo ngày -> owner PUT model -> site_settings -> request kế tiếp snapshot model`; review moderation tiếp tục đọc key/env riêng. `chat turn -> primary deadline 35s -> success hoặc fallback model nhanh trong trần logical turn 65s/4 provider requests -> guard -> final`; mọi request ghi model yêu cầu/model phục vụ/fallback reason/tokens/latency vào usage ledger. `Admin evaluation -> dataset version đã review + expected facts cố định -> provider adapter ngoài quota khách -> deterministic scorer -> run/results lưu DB -> bảng so sánh`; không AI-as-judge, không A/B khách thật và hard cap 2 USD/run.
+
+Giai đoạn 4 — Phần B: `widget disclosure -> multipart upload -> ownership + feature flag + 1/turn,3/thread,20/day -> Tika MIME + decode/re-encode -> private MinIO -> chat_images PENDING/ATTACHED`; `message(imageId) -> intent/safety vision -> hàng hỏng/hóa đơn/size/ngoài phạm vi dùng nhánh an toàn -> product-search -> dấu vân tay ảnh khách trong-memory so với fingerprint ảnh catalog nội bộ -> chỉ match cụ thể khi hash hoặc score+margin qua ngưỡng -> revalidate PUBLISHED/còn bán -> wording guard “trông giống” -> response`. Vision chỉ được phân loại intent/nhóm, không tự cấp bằng chứng match model. `history/admin detail -> metadata ảnh -> authenticated content endpoint -> private object stream`. `DELETE history|retention job -> mark DELETING -> delete object -> delete/cascade metadata`; object lỗi được retry, không xoá metadata trước làm mất đường dọn rác.
 
 Status: `OWNER_CONFIRMED_2026-08-18`

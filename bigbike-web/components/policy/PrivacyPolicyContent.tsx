@@ -56,6 +56,14 @@ const COPY = {
   },
   zaloLabel: { vi: "Zalo", en: "Zalo" },
   s6Title: { vi: "6. Bảo vệ dữ liệu", en: "6. Data protection" },
+  s7Title: {
+    vi: "7. Ảnh gửi trong Trợ lý BigBike",
+    en: "7. Images sent to BigBike Assistant",
+  },
+  s7Intro: {
+    vi: "Tính năng gửi ảnh mặc định tắt và chỉ xuất hiện khi BigBike chủ động bật. Trước khi chọn ảnh, khung chat sẽ nhắc rõ cách ảnh được xử lý.",
+    en: "Image upload is off by default and appears only after BigBike enables it. Before you select an image, chat clearly explains how it will be handled.",
+  },
   footerNote: {
     vi: "Chính sách này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại bigbike.vn.",
     en: "This policy may be updated over time. The latest version is always published at bigbike.vn.",
@@ -71,12 +79,20 @@ const COLLECT: Bi[] = [
     vi: "Email (nếu đăng ký tài khoản hoặc nhận thông tin khuyến mãi)",
     en: "Email (if you register an account or subscribe to promotions)",
   },
+  {
+    vi: "Ảnh và câu hỏi kèm theo nếu khách chủ động dùng tính năng gửi ảnh trong Trợ lý BigBike",
+    en: "An image and its accompanying question when you choose to use image upload in BigBike Assistant",
+  },
 ];
 
 const PURPOSE: Bi[] = [
   { vi: "Xử lý đơn hàng và giao hàng", en: "Process and deliver orders" },
   { vi: "Liên hệ xác nhận đơn, tư vấn sau bán", en: "Confirm orders and provide after-sales support" },
   { vi: "Gửi thông tin khuyến mãi (nếu khách đồng ý)", en: "Send promotions (with your consent)" },
+  {
+    vi: "Phân loại mục đích của ảnh và đối chiếu với hàng BigBike đang bán để hỗ trợ tư vấn",
+    en: "Classify the image's purpose and compare it with products BigBike currently sells for customer support",
+  },
 ];
 
 const ANALYTICS: string[] = [
@@ -97,6 +113,10 @@ const SHARE: Bi[] = [
     vi: "Google, Meta — dữ liệu ẩn danh phục vụ quảng cáo",
     en: "Google, Meta — anonymous data for advertising",
   },
+  {
+    vi: "Dịch vụ AI Google (Gemini) — ảnh và câu hỏi kèm theo, chỉ khi khách chủ động gửi ảnh để nhận diện",
+    en: "Google's AI service (Gemini) — the image and accompanying question, only when you choose image recognition",
+  },
 ];
 
 const RIGHTS: Bi[] = [
@@ -110,6 +130,29 @@ const PROTECT: Bi[] = [
   {
     vi: "Không bán thông tin khách hàng cho bên thứ ba vì mục đích thương mại",
     en: "We do not sell customer information to third parties for commercial purposes",
+  },
+];
+
+const CHAT_IMAGES: Bi[] = [
+  {
+    vi: "Bản ảnh BigBike lưu nằm trong kho riêng tư nội bộ, không có đường dẫn công khai; chỉ nhân viên có quyền xem hội thoại mới xem được.",
+    en: "BigBike's stored copy stays in private internal storage with no public URL; only staff permitted to view conversations can access it.",
+  },
+  {
+    vi: "Ảnh được gửi tới dịch vụ AI Google (Gemini) để nhận diện. BigBike dùng kết quả như mức độ tương đồng, không coi đó là xác nhận chắc chắn về sản phẩm, giá, thông số, bảo hành, đơn hàng hoặc size.",
+    en: "The image is sent to Google's AI service (Gemini) for recognition. BigBike treats the result as similarity only, not certain confirmation of a product, price, specification, warranty, order detail, or size.",
+  },
+  {
+    vi: "Ảnh tự động bị xoá khi hết hạn lưu 90 ngày. Nếu khách xoá lịch sử trò chuyện, ảnh trong lịch sử đó cũng bị xoá.",
+    en: "Images are automatically deleted after the 90-day retention period. Deleting chat history also deletes images attached to that history.",
+  },
+  {
+    vi: "Ảnh không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi ảnh và mô tả nhu cầu bằng chữ.",
+    en: "Inappropriate images may be blocked and not processed further. You can always avoid image upload and describe your request in text.",
+  },
+  {
+    vi: "Nếu ảnh có giấy tờ, hoá đơn hoặc màn hình đơn hàng, khách nên che tên, số điện thoại, địa chỉ, mã đơn và thông tin không cần thiết trước khi gửi.",
+    en: "If an image contains a document, invoice, or order screen, please cover names, phone numbers, addresses, order codes, and any unnecessary details before sending it.",
   },
 ];
 
@@ -195,6 +238,11 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
       {/* 6. Bảo vệ dữ liệu */}
       <SectionTitle>{t(lang, COPY.s6Title)}</SectionTitle>
       <Bullets lang={lang} items={PROTECT} />
+
+      {/* 7. Ảnh khách chủ động gửi trong chat */}
+      <SectionTitle>{t(lang, COPY.s7Title)}</SectionTitle>
+      <p className="mb-3 leading-body">{t(lang, COPY.s7Intro)}</p>
+      <Bullets lang={lang} items={CHAT_IMAGES} />
 
       <p className="text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
     </div>

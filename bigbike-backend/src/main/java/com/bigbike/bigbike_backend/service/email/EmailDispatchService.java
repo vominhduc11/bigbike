@@ -39,18 +39,24 @@ public class EmailDispatchService {
         return mailSender != null;
     }
 
-    public void send(String to, String subject, String templateName, Context context) {
-        sendInternal(to, null, subject, templateName, context);
+    /**
+     * Hands a rendered message to the configured mail provider.
+     *
+     * @return {@code true} when the provider call returned without an error; this is not a
+     * delivery receipt from the recipient mailbox
+     */
+    public boolean send(String to, String subject, String templateName, Context context) {
+        return sendInternal(to, null, subject, templateName, context);
     }
 
-    public void sendWithReplyTo(String to, String replyTo, String subject, String templateName, Context context) {
-        sendInternal(to, replyTo, subject, templateName, context);
+    public boolean sendWithReplyTo(String to, String replyTo, String subject, String templateName, Context context) {
+        return sendInternal(to, replyTo, subject, templateName, context);
     }
 
-    private void sendInternal(String to, String replyTo, String subject, String templateName, Context context) {
+    private boolean sendInternal(String to, String replyTo, String subject, String templateName, Context context) {
         if (mailSender == null) {
             log.info("Mail not configured — skipped: template={}, to={}", templateName, to);
-            return;
+            return false;
         }
         try {
             String html = templateEngine.process("email/" + templateName, context);
@@ -64,9 +70,14 @@ public class EmailDispatchService {
             helper.setSubject(subject);
             helper.setText(html, true);
             mailSender.send(message);
-            log.info("Email sent: template={}, to={}", templateName, to);
+            log.info(
+                    "Email handed off to mail provider; delivery not confirmed: template={}, to={}",
+                    templateName,
+                    to);
+            return true;
         } catch (Exception e) {
             log.warn("Failed to send email: template={}, to={}, error={}", templateName, to, e.getMessage());
+            return false;
         }
     }
 }

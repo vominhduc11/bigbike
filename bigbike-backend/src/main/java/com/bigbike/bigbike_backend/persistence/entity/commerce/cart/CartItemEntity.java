@@ -50,6 +50,9 @@ public class CartItemEntity {
     @Column(name = "assistant_interaction_id")
     private UUID assistantInteractionId;
 
+    @Column(name = "assistant_attributed_at")
+    private Instant assistantAttributedAt;
+
     @Column(length = 255)
     private String sku;
 

@@ -31,6 +31,30 @@ public interface ChatOrderAttributionJpaRepository
             @Param("from") Instant from,
             @Param("to") Instant to);
 
+    @Query(value = """
+            select count(distinct attribution.order_id)
+            from chat_order_attributions attribution
+            join chat_conversations conversation on conversation.id = attribution.conversation_id
+            where conversation.started_at >= :from and conversation.started_at < :to
+              and attribution.touch_at >= conversation.started_at
+              and attribution.touch_at < conversation.started_at + interval '168 hours'
+            """, nativeQuery = true)
+    long countOrdersForConversationCohort(
+            @Param("from") Instant from,
+            @Param("to") Instant to);
+
+    @Query(value = """
+            select coalesce(sum(attribution.attributed_amount), 0)
+            from chat_order_attributions attribution
+            join chat_conversations conversation on conversation.id = attribution.conversation_id
+            where conversation.started_at >= :from and conversation.started_at < :to
+              and attribution.touch_at >= conversation.started_at
+              and attribution.touch_at < conversation.started_at + interval '168 hours'
+            """, nativeQuery = true)
+    java.math.BigDecimal sumRevenueForConversationCohort(
+            @Param("from") Instant from,
+            @Param("to") Instant to);
+
     @Query("""
             select attribution.actionType as actionType,
                    count(distinct attribution.orderId) as orders,

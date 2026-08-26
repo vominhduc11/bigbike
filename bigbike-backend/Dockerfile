@@ -24,4 +24,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-XX:+UseContainerSupport", "-XX:+UseG1GC", "-XX:MaxRAMPercentage=75.0", "-Xlog:gc=info:stdout:time,level,tags", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-XX:+UseContainerSupport", "-XX:+UseG1GC", "-XX:MaxRAMPercentage=50.0", "-Xlog:gc=info:stdout:time,level,tags", "-jar", "app.jar"]

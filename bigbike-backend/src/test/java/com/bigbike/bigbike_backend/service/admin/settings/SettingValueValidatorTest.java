@@ -104,6 +104,9 @@ class SettingValueValidatorTest {
 
     private static final SettingDefinition HTML_DEF =
             SettingDefinition.builder("footer_html", "content", SettingValueType.HTML).build();
+    private static final SettingDefinition ASSISTANT_TEMPLATES_DEF =
+            SettingDefinition.builder(
+                    "ai_assistant_answer_templates", "ai_assistant", SettingValueType.JSON).build();
 
     @Test
     void html_allowsInternalMediaImages() {
@@ -134,6 +137,37 @@ class SettingValueValidatorTest {
         ValidationException ex = assertThrows(ValidationException.class,
                 () -> validator.validate("footer_html", html, HTML_DEF));
         assertThat(ex.details().get(0).code()).isEqualTo("EXTERNAL_IMAGE");
+    }
+
+    @Test
+    void assistantTemplateRejectsAnEnabledDiscountPromiseWithAnOwnerFacingCode() {
+        String json = """
+                [{"id":"sale","topic":"promotion","enabled":true,
+                  "triggersVi":["có giảm giá không"],"triggersEn":["is there a discount"],
+                  "answerVi":"Shop hứa giảm giá 10% cho anh/chị.",
+                  "answerEn":"The shop promises a 10% discount."}]
+                """;
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> validator.validate(
+                        "ai_assistant_answer_templates", json, ASSISTANT_TEMPLATES_DEF));
+
+        assertThat(ex.details().get(0).code()).isEqualTo("DISCOUNT_PROMISE");
+        assertThat(ex.details().get(0).message()).contains("vi phạm", "DISCOUNT_PROMISE");
+    }
+
+    @Test
+    void assistantTemplateKeepsUnsafeDraftContentUnchangedWhileItIsDisabled() {
+        String json = """
+                [{"id":"draft","topic":"delivery","enabled":false,
+                  "triggersVi":[],"triggersEn":[],
+                  "answerVi":"Shop hứa giao ngày mai.",
+                  "answerEn":"The shop promises delivery tomorrow."}]
+                """;
+
+        assertThatCode(() -> validator.validate(
+                "ai_assistant_answer_templates", json, ASSISTANT_TEMPLATES_DEF))
+                .doesNotThrowAnyException();
     }
 
     private static String buildRoles(int count) {

@@ -85,6 +85,40 @@ class WebSocketConfigAccessTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void chatTopicRequiresTheDedicatedReadPermission() {
+        when(permissionService.getPermissionsForRole("LIMITED")).thenReturn(List.of());
+        assertThat(inbound.preSend(connectMessage(), mock(MessageChannel.class))).isNotNull();
+        assertThatThrownBy(() -> inbound.preSend(
+                subscribeMessage("/topic/admin/chat"), mock(MessageChannel.class)))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        when(permissionService.getPermissionsForRole("LIMITED")).thenReturn(List.of("chat.read"));
+        assertThat(inbound.preSend(
+                subscribeMessage("/topic/admin/chat"), mock(MessageChannel.class))).isNotNull();
+    }
+
+    @Test
+    void customerRealtimeTokenCanOnlySubscribeToItsReadOnlyChatQueue() {
+        UUID conversationId = UUID.randomUUID();
+        Claims customerClaims = mock(Claims.class);
+        when(customerClaims.getSubject()).thenReturn(conversationId.toString());
+        when(customerClaims.get("scope", String.class)).thenReturn("chat-realtime");
+        when(jwtService.parseAccessToken("chat-token")).thenReturn(customerClaims);
+        MessageChannel channel = mock(MessageChannel.class);
+
+        assertThat(inbound.preSend(
+                connectMessage("customer-session", "chat-token"), channel)).isNotNull();
+        assertThat(inbound.preSend(
+                subscribeMessage("customer-session", "/user/queue/chat"), channel)).isNotNull();
+        assertThatThrownBy(() -> inbound.preSend(
+                subscribeMessage("customer-session", "/topic/admin/chat"), channel))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> inbound.preSend(
+                sendMessage("customer-session", "/app/admin/presence"), channel))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     private ChannelInterceptor captureInboundInterceptor(WebSocketConfig config) {
         ChannelRegistration registration = mock(ChannelRegistration.class);
         config.configureClientInboundChannel(registration);
@@ -102,15 +136,30 @@ class WebSocketConfigAccessTest {
     }
 
     private Message<?> connectMessage() {
+        return connectMessage(SESSION_ID, "access-token");
+    }
+
+    private Message<?> connectMessage(String sessionId, String token) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
-        accessor.setSessionId(SESSION_ID);
-        accessor.addNativeHeader("Authorization", "Bearer access-token");
+        accessor.setSessionId(sessionId);
+        accessor.addNativeHeader("Authorization", "Bearer " + token);
         return message(accessor);
     }
 
     private Message<?> subscribeMessage(String destination) {
+        return subscribeMessage(SESSION_ID, destination);
+    }
+
+    private Message<?> subscribeMessage(String sessionId, String destination) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
-        accessor.setSessionId(SESSION_ID);
+        accessor.setSessionId(sessionId);
+        accessor.setDestination(destination);
+        return message(accessor);
+    }
+
+    private Message<?> sendMessage(String sessionId, String destination) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SEND);
+        accessor.setSessionId(sessionId);
         accessor.setDestination(destination);
         return message(accessor);
     }

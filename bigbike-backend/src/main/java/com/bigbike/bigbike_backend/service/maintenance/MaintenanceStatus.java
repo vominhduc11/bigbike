@@ -11,6 +11,5 @@ import java.time.Instant;
 public record MaintenanceStatus(
         String state,
         String staffNote,
-        Instant expectedAt,
         Instant updatedAt
 ) {}

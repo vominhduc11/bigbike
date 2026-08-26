@@ -39,10 +39,6 @@ public class MaintenanceStateEntity {
     @Column(name = "staff_note", columnDefinition = "text")
     private String staffNote;
 
-    /** Display-only estimate of when work finishes. Never drives a transition. */
-    @Column(name = "expected_at")
-    private Instant expectedAt;
-
     @Column(name = "updated_by")
     private UUID updatedBy;
 

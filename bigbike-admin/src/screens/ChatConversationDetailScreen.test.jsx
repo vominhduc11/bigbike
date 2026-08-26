@@ -3,11 +3,19 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ fetchChatConversation: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  fetchChatConversation: vi.fn(),
+  fetchChatHandoffs: vi.fn(),
+  claimChatHandoff: vi.fn(),
+  sendChatStaffMessage: vi.fn(),
+  returnChatToAi: vi.fn(),
+  closeChatHandoff: vi.fn(),
+}))
 
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
+    i18n: { resolvedLanguage: 'vi' },
     t: (key, values = {}) => {
       if (key === 'chatAdmin.detail.messageTelemetry') {
         return `${values.tokens} token · ${values.requests} yêu cầu · ${values.latency} · ${values.cost}`
@@ -23,7 +31,19 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('../lib/adminApi', () => ({ fetchChatConversation: mocks.fetchChatConversation }))
+vi.mock('../lib/adminApi', () => ({
+  fetchChatConversation: mocks.fetchChatConversation,
+  fetchChatHandoffs: mocks.fetchChatHandoffs,
+  claimChatHandoff: mocks.claimChatHandoff,
+  sendChatStaffMessage: mocks.sendChatStaffMessage,
+  returnChatToAi: mocks.returnChatToAi,
+  closeChatHandoff: mocks.closeChatHandoff,
+}))
+vi.mock('../lib/auth', () => ({
+  useAuth: () => ({ user: { id: 'admin-1' } }),
+  useHasPermission: () => () => true,
+}))
+vi.mock('../lib/adminWebSocket', () => ({ subscribeAdminWs: () => () => {} }))
 
 const { ChatConversationDetailScreen } = await import('./ChatConversationDetailScreen')
 
@@ -79,7 +99,10 @@ function renderScreen(navigate = vi.fn()) {
 }
 
 describe('ChatConversationDetailScreen', () => {
-  beforeEach(() => mocks.fetchChatConversation.mockReset())
+  beforeEach(() => {
+    Object.values(mocks).forEach((mock) => mock.mockReset())
+    mocks.fetchChatHandoffs.mockResolvedValue({ items: [] })
+  })
 
   it('hiện nguồn từ chối, số đo và đơn hàng được trợ lý hỗ trợ', async () => {
     mocks.fetchChatConversation.mockResolvedValue({ item: baseConversation })
@@ -104,5 +127,40 @@ describe('ChatConversationDetailScreen', () => {
     renderScreen()
 
     expect(await screen.findByText('Dữ liệu cũ chưa có số đo')).toBeInTheDocument()
+  })
+
+  it('khóa ô trả lời khi một nhân viên khác đã tiếp nhận', async () => {
+    mocks.fetchChatConversation.mockResolvedValue({ item: baseConversation })
+    mocks.fetchChatHandoffs.mockResolvedValue({ items: [{
+      id: 'handoff-1',
+      conversationId: 'conversation-1',
+      status: 'ACTIVE',
+      assignedAdminId: 'admin-2',
+      assignedDisplayName: 'Lan',
+    }] })
+    renderScreen()
+
+    expect(await screen.findByText('chatAdmin.detail.live.composerLocked')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'chatAdmin.detail.live.replyLabel' })).not.toBeInTheDocument()
+  })
+
+  it('gửi tin và bàn giao lại khi đúng nhân viên đang tiếp nhận', async () => {
+    const user = userEvent.setup()
+    mocks.fetchChatConversation.mockResolvedValue({ item: baseConversation })
+    mocks.fetchChatHandoffs.mockResolvedValue({ items: [{
+      id: 'handoff-1',
+      conversationId: 'conversation-1',
+      status: 'ACTIVE',
+      assignedAdminId: 'admin-1',
+      assignedDisplayName: 'Minh',
+    }] })
+    mocks.sendChatStaffMessage.mockResolvedValue({})
+    mocks.returnChatToAi.mockResolvedValue({})
+    renderScreen()
+
+    const input = await screen.findByRole('textbox', { name: 'chatAdmin.detail.live.replyLabel' })
+    await user.type(input, 'Em kiểm tra size cho anh/chị ngay ạ.')
+    await user.click(screen.getByRole('button', { name: 'chatAdmin.detail.live.send' }))
+    expect(mocks.sendChatStaffMessage).toHaveBeenCalledWith('conversation-1', 'Em kiểm tra size cho anh/chị ngay ạ.')
   })
 })

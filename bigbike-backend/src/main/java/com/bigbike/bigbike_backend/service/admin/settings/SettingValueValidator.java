@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantOptionJpaRepository;
+import com.bigbike.bigbike_backend.service.chat.ChatTemplatePolicy;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.net.URI;
@@ -74,6 +75,7 @@ public class SettingValueValidator {
     private static final int MAX_ASSIGNMENT_ROLES = 6;
     private static final String ASSISTANT_ABBREVIATIONS_KEY = "ai_assistant_abbreviations";
     private static final String ASSISTANT_TEMPLATES_KEY = "ai_assistant_answer_templates";
+    private static final String ASSISTANT_BUSINESS_HOURS_KEY = "ai_assistant_business_hours";
     private static final Pattern TEMPLATE_URL = Pattern.compile(
             "(?i)(?:https?://|www\\.|(?:zalo|facebook|messenger)\\.me)");
     private static final Pattern TEMPLATE_PHONE = Pattern.compile("(?<!\\d)(?:\\+?84|0)\\d{8,10}(?!\\d)");
@@ -301,6 +303,33 @@ public class SettingValueValidator {
             validateAssistantAbbreviations(key, node);
         } else if (ASSISTANT_TEMPLATES_KEY.equals(key)) {
             validateAssistantTemplates(key, node);
+        } else if (ASSISTANT_BUSINESS_HOURS_KEY.equals(key)) {
+            validateAssistantBusinessHours(key, node);
+        }
+    }
+
+    private void validateAssistantBusinessHours(String key, JsonNode node) {
+        if (!node.isObject()
+                || !"Asia/Ho_Chi_Minh".equals(node.path("timezone").asString())
+                || !node.path("days").isObject()) {
+            throw fail(key, "BUSINESS_HOURS_INVALID",
+                    "Lịch trực phải dùng múi giờ Asia/Ho_Chi_Minh và có đủ các ngày trong tuần.");
+        }
+        Pattern time = Pattern.compile("^(?:[01]\\d|2[0-3]):[0-5]\\d$");
+        for (String day : List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
+            JsonNode value = node.path("days").path(day);
+            if (!value.isObject() || !value.path("enabled").isBoolean()) {
+                throw fail(key, "BUSINESS_HOURS_DAY_INVALID", "Thiếu hoặc sai cấu hình ngày " + day + ".");
+            }
+            if (value.path("enabled").asBoolean()) {
+                String open = value.path("open").asString("");
+                String close = value.path("close").asString("");
+                if (!time.matcher(open).matches() || !time.matcher(close).matches()
+                        || !java.time.LocalTime.parse(close).isAfter(java.time.LocalTime.parse(open))) {
+                    throw fail(key, "BUSINESS_HOURS_TIME_INVALID",
+                            "Giờ đóng phải sau giờ mở trong cùng ngày " + day + ".");
+                }
+            }
         }
     }
 
@@ -339,20 +368,27 @@ public class SettingValueValidator {
                 throw fail(key, "TEMPLATE_ID_INVALID", "Mỗi câu mẫu cần id và topic hợp lệ.");
             }
             if (!ids.add(id)) throw fail(key, "TEMPLATE_ID_DUPLICATE", "Id câu mẫu bị trùng: " + id);
-            validateTriggerList(key, item.path("triggersVi"), "triggersVi");
-            validateTriggerList(key, item.path("triggersEn"), "triggersEn");
+            boolean enabled = item.path("enabled").asBoolean(false);
+            validateTriggerList(key, item.path("triggersVi"), "triggersVi", enabled);
+            validateTriggerList(key, item.path("triggersEn"), "triggersEn", enabled);
             String answerVi = item.path("answerVi").asString("").trim();
             String answerEn = item.path("answerEn").asString("").trim();
-            if (answerVi.isBlank() || answerEn.isBlank()) {
+            if (enabled && (answerVi.isBlank() || answerEn.isBlank())) {
                 throw fail(key, "BILINGUAL_ANSWER_REQUIRED", "Câu mẫu phải có đủ câu trả lời Việt và Anh.");
             }
-            validateSafeTemplateAnswer(key, answerVi);
-            validateSafeTemplateAnswer(key, answerEn);
+            if (enabled) {
+                validateSafeTemplateAnswer(key, answerVi);
+                validateSafeTemplateAnswer(key, answerEn);
+            }
         }
     }
 
-    private void validateTriggerList(String key, JsonNode triggers, String field) {
-        if (!triggers.isArray() || triggers.size() == 0) {
+    private void validateTriggerList(String key, JsonNode triggers, String field, boolean required) {
+        if (!triggers.isArray()) {
+            if (!required && triggers.isMissingNode()) return;
+            throw fail(key, "TRIGGER_INVALID", field + " phải là danh sách.");
+        }
+        if (required && triggers.size() == 0) {
             throw fail(key, "BILINGUAL_TRIGGER_REQUIRED", field + " phải có ít nhất một trigger.");
         }
         Set<String> seen = new HashSet<>();
@@ -366,13 +402,10 @@ public class SettingValueValidator {
     }
 
     private void validateSafeTemplateAnswer(String key, String answer) {
-        if (answer.length() > 2_000) throw fail(key, "ANSWER_TOO_LONG", "Câu trả lời mẫu quá 2.000 ký tự.");
-        if (TEMPLATE_URL.matcher(answer).find()
-                || TEMPLATE_PHONE.matcher(answer).find()
-                || TEMPLATE_DYNAMIC_PRICE.matcher(answer).find()
-                || TEMPLATE_TECHNICAL_CODE.matcher(answer).find()
-                || TEMPLATE_UNSAFE_PROMISE.matcher(answer).find()) {
-            throw fail(key, "UNSAFE_TEMPLATE", "Câu mẫu chứa URL, giá, số liên hệ, mã kỹ thuật hoặc lời hứa không được phép.");
+        List<String> violations = ChatTemplatePolicy.violations(answer);
+        if (!violations.isEmpty()) {
+            throw fail(key, violations.get(0),
+                    "Câu mẫu chưa thể bật vì vi phạm: " + String.join(", ", violations) + ".");
         }
     }
 

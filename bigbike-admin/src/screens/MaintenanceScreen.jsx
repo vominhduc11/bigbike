@@ -1,36 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock3, Lock, ShieldCheck } from 'lucide-react'
+import { Lock, ShieldCheck } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
-import { FormField } from '../components/layout/FormField'
+import { FormField, StickyActionBar } from '../components/layout'
 import { showConfirm } from '../lib/confirm'
 import { fetchMaintenance, updateMaintenance } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatDateTime } from '../lib/formatters'
 
-const STATES = { NORMAL: 'NORMAL', UPCOMING: 'UPCOMING', ACTIVE: 'ACTIVE' }
-
-/** `datetime-local` needs a local `YYYY-MM-DDTHH:mm`; the API speaks ISO-8601 instants. */
-function toLocalInput(iso) {
-  if (!iso) return ''
-  const parsed = new Date(iso)
-  if (Number.isNaN(parsed.getTime())) return ''
-  const offset = parsed.getTimezoneOffset() * 60_000
-  return new Date(parsed.getTime() - offset).toISOString().slice(0, 16)
-}
-
-function toIso(localValue) {
-  if (!localValue) return null
-  const parsed = new Date(localValue)
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
-}
+const STATES = { NORMAL: 'NORMAL', ACTIVE: 'ACTIVE' }
 
 /**
  * Dev-only control for the admin-panel maintenance lock.
@@ -46,7 +31,6 @@ export function MaintenanceScreen() {
   // `null` means "not edited yet" so the server value shows through without an effect that
   // copies data into state (which would fight whatever the developer is currently typing).
   const [noteDraft, setNoteDraft] = useState(null)
-  const [expectedDraft, setExpectedDraft] = useState(null)
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['maintenance'],
@@ -60,13 +44,12 @@ export function MaintenanceScreen() {
   }), [queryClient])
 
   const staffNote = noteDraft ?? (data?.staffNote || '')
-  const expectedAt = expectedDraft ?? toLocalInput(data?.expectedAt)
+  const noteChanged = noteDraft !== null && noteDraft !== (data?.staffNote || '')
 
   const mutation = useMutation({
-    mutationFn: (state) => updateMaintenance({ state, staffNote, expectedAt: toIso(expectedAt) }),
+    mutationFn: (state) => updateMaintenance({ state, staffNote }),
     onSuccess: (result) => {
       setNoteDraft(null)
-      setExpectedDraft(null)
       queryClient.setQueryData(['maintenance'], result)
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
       toast.success(t('maintenance.saved', { defaultValue: 'Đã cập nhật trạng thái bảo trì.' }))
@@ -74,14 +57,15 @@ export function MaintenanceScreen() {
     onError: (error) => toast.error(error?.message || t('common.saveFailed')),
   })
 
-  const state = data?.state || STATES.NORMAL
+  // Treat any stale/unknown response as NORMAL. The removed UPCOMING state must never be
+  // rendered as a third option while old data is being cleaned up.
+  const state = data?.state === STATES.ACTIVE ? STATES.ACTIVE : STATES.NORMAL
   const canToggle = data?.canToggle === true
   const uploadCount = data?.uploadCount || 0
   const busy = mutation.isPending
 
   const tone = useMemo(() => {
     if (state === STATES.ACTIVE) return { label: t('maintenance.stateActive', { defaultValue: 'Đang khoá' }), badge: 'bb-badge-danger', Icon: Lock }
-    if (state === STATES.UPCOMING) return { label: t('maintenance.stateUpcoming', { defaultValue: 'Sắp bảo trì' }), badge: 'bb-badge-warning', Icon: Clock3 }
     return { label: t('maintenance.stateNormal', { defaultValue: 'Bình thường' }), badge: 'bb-badge-success', Icon: ShieldCheck }
   }, [state, t])
 
@@ -167,7 +151,7 @@ export function MaintenanceScreen() {
         <div className="flex flex-col gap-4">
           <FormField
             label={t('maintenance.staffNote', { defaultValue: 'Lời nhắn cho nhân viên' })}
-            helper={t('maintenance.staffNoteHint', { defaultValue: 'Hiện trên thông báo bảo trì của mọi nhân viên đang đăng nhập.' })}
+            helper={t('maintenance.staffNoteHint', { defaultValue: 'Đây là lời nhắn duy nhất nhân viên đọc trên màn hình bị khoá. Nếu cần báo giờ, ghi vào đây.' })}
           >
             <Textarea
               rows={3}
@@ -175,51 +159,44 @@ export function MaintenanceScreen() {
               value={staffNote}
               disabled={!canToggle || busy}
               onChange={(event) => setNoteDraft(event.target.value)}
-              placeholder={t('maintenance.staffNotePlaceholder', { defaultValue: 'Ví dụ: Đang nâng cấp dữ liệu sản phẩm, dự kiến xong 15:00.' })}
-            />
-          </FormField>
-
-          <FormField
-            label={t('maintenance.expectedAt', { defaultValue: 'Dự kiến xong lúc' })}
-            helper={t('maintenance.expectedAtHint', { defaultValue: 'Chỉ để hiển thị — hệ thống không tự khoá hay tự mở theo mốc này.' })}
-          >
-            <Input
-              type="datetime-local"
-              value={expectedAt}
-              disabled={!canToggle || busy}
-              onChange={(event) => setExpectedDraft(event.target.value)}
+              placeholder={t('maintenance.staffNotePlaceholder', { defaultValue: 'Ví dụ: Đang nâng cấp dữ liệu sản phẩm. Dự kiến xong 15:00.' })}
             />
           </FormField>
         </div>
       </DetailSection>
 
       {canToggle && (
-        <div className="sticky-action-bar flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            disabled={busy || state === STATES.UPCOMING}
-            onClick={() => apply(STATES.UPCOMING)}
-          >
-            <Clock3 size={16} aria-hidden="true" />
-            {t('maintenance.warnStaff', { defaultValue: 'Báo trước cho nhân viên' })}
-          </Button>
-          <Button
-            variant="danger"
-            disabled={busy || state === STATES.ACTIVE}
-            onClick={() => apply(STATES.ACTIVE)}
-          >
-            <Lock size={16} aria-hidden="true" />
-            {t('maintenance.lockNow', { defaultValue: 'Khoá ngay' })}
-          </Button>
-          <Button
-            variant="default"
-            disabled={busy || state === STATES.NORMAL}
-            onClick={() => apply(STATES.NORMAL)}
-          >
-            <ShieldCheck size={16} aria-hidden="true" />
-            {t('maintenance.unlock', { defaultValue: 'Mở lại' })}
-          </Button>
-        </div>
+        <StickyActionBar
+          ariaLabel={t('maintenance.toggleLabel', { defaultValue: 'Khoá trang quản trị' })}
+          info={(
+            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {t('maintenance.toggleLabel', { defaultValue: 'Khoá trang quản trị' })}
+              </span>
+              <span aria-live="polite">{tone.label}</span>
+            </span>
+          )}
+        >
+          {noteChanged && (
+            <Button
+              variant="default"
+              disabled={busy}
+              onClick={() => mutation.mutate(state)}
+            >
+              {t('common.save', { defaultValue: 'Lưu' })}
+            </Button>
+          )}
+          <label className="inline-flex min-h-11 items-center gap-3 text-sm font-semibold" htmlFor="maintenance-lock-toggle">
+            <Switch
+              id="maintenance-lock-toggle"
+              checked={state === STATES.ACTIVE}
+              disabled={busy}
+              onCheckedChange={(checked) => apply(checked ? STATES.ACTIVE : STATES.NORMAL)}
+              aria-label={t('maintenance.toggleAria', { defaultValue: 'Bật hoặc tắt khoá trang quản trị' })}
+            />
+            <span>{tone.label}</span>
+          </label>
+        </StickyActionBar>
       )}
     </div>
   )

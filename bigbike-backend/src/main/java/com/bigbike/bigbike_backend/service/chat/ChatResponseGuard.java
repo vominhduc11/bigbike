@@ -51,6 +51,20 @@ public class ChatResponseGuard {
             "(?i)(?<![\\p{Alnum}._%+-])[\\p{Alnum}._%+-]+@[\\p{Alnum}.-]+\\.[a-z]{2,}(?![\\p{Alnum}])");
     private static final Pattern PRIVATE_PHONE = Pattern.compile(
             "(?<![\\p{Alnum}])(?:\\+?84|0)(?:[ .()\\-]*\\d){8,10}(?!\\d)");
+    private static final Pattern FALSE_URGENCY_OR_SOCIAL_PROOF = Pattern.compile(
+            "\\b(?:sap\\s+het\\s+hang|chi\\s+con\\s+(?:vai|mot|hai|ba|\\d+)\\s+(?:cai|chiec|mon)|"
+                    + "nhieu\\s+nguoi\\s+(?:dang\\s+)?(?:xem|mua)|khach\\s+(?:hang\\s+)?(?:khac\\s+)?danh\\s+gia|"
+                    + "da\\s+ban\\s+(?:duoc\\s+)?\\d+|ban\\s+chay|chi\\s+hom\\s+nay|co\\s+hoi\\s+cuoi|"
+                    + "only\\s+(?:a\\s+)?few\\s+left|only\\s+\\d+\\s+left|selling\\s+fast|limited\\s+stock|"
+                    + "many\\s+people\\s+are\\s+(?:viewing|buying)|customers?\\s+love|reviewers?\\s+say|"
+                    + "best[-\\s]?sell(?:er|ing)|ends\\s+today|last\\s+chance|countdown)\\b",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern UNSUPPORTED_PERSONAL_PROMISE = Pattern.compile(
+            "\\b(?:em\\s+(?:se|co\\s+the)\\s+(?:giam|tang|mien\\s+phi)|"
+                    + "giao\\s+(?:chac\\s+chan|dung|vao\\s+ngay|truoc\\s+ngay)|"
+                    + "i\\s+(?:will|can)\\s+(?:discount|give|include|offer\\s+free\\s+shipping)|"
+                    + "free\\s+shipping\\s+for\\s+you|guaranteed\\s+delivery|arrive\\s+(?:on|by)\\s+)\\b",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern VIETNAMESE_TEXT = Pattern.compile("[à-ỹÀ-ỸđĐ]");
     private static final Pattern VI_PRONOUNS = Pattern.compile("(?i)(?:\\bem\\b|anh/chị|anh chi)");
     private static final Pattern CUSTOMER_ADDRESSED_AS_EM = Pattern.compile(
@@ -185,6 +199,11 @@ public class ChatResponseGuard {
         }
         if (RAW_CURRENCY.matcher(content).find()) return "RAW_CURRENCY";
         if (URL.matcher(content).find()) return "URL";
+        String normalizedSalesCopy = ChatToolService.normalize(content);
+        if (FALSE_URGENCY_OR_SOCIAL_PROOF.matcher(normalizedSalesCopy).find()
+                || UNSUPPORTED_PERSONAL_PROMISE.matcher(normalizedSalesCopy).find()) {
+            return "UNSUPPORTED_SALES_CLAIM";
+        }
         if (!isSafeCustomerText(content, lang)) return "WRONG_LANGUAGE";
         if (hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
             return "UNSUPPORTED_CATALOG_CLAIM";
@@ -270,6 +289,11 @@ public class ChatResponseGuard {
     ) {
         if (currentTurnTools == null || currentTurnTools.isEmpty()) return Optional.empty();
         if (answer == null || EMAIL.matcher(answer).find()) return Optional.empty();
+        String normalizedSalesCopy = ChatToolService.normalize(answer);
+        if (FALSE_URGENCY_OR_SOCIAL_PROOF.matcher(normalizedSalesCopy).find()
+                || UNSUPPORTED_PERSONAL_PROMISE.matcher(normalizedSalesCopy).find()) {
+            return Optional.empty();
+        }
         Set<String> allowedPhones = extractPhones(publicShopPhoneSources);
         Matcher phones = PRIVATE_PHONE.matcher(answer);
         while (phones.find()) {
@@ -438,7 +462,11 @@ public class ChatResponseGuard {
                 || containsRawInternalSlug(content, lang)
                 || RAW_CURRENCY.matcher(content).find()
                 || URL.matcher(content).find()
-                || FORBIDDEN_RICH_CONTENT.matcher(content).find()) {
+                || FORBIDDEN_RICH_CONTENT.matcher(content).find()
+                || FALSE_URGENCY_OR_SOCIAL_PROOF.matcher(
+                        ChatToolService.normalize(content)).find()
+                || UNSUPPORTED_PERSONAL_PROMISE.matcher(
+                        ChatToolService.normalize(content)).find()) {
             return false;
         }
         return !"en".equals(lang)
@@ -466,7 +494,7 @@ public class ChatResponseGuard {
     }
 
     /**
-     * Product cards are intentionally limited to three, so a response must not turn them into a
+     * Product cards are intentionally limited, so a response must not turn them into a
      * catalogue conclusion. CHAT_RULE_020 opens one narrow exception: a current search may carry
      * exact backend totals for its verified scope and, separately, its applied price range.
      */

@@ -85,7 +85,7 @@ class ChatInteractionServiceTest {
     }
 
     @Test
-    void secondLeadRequiresTheFirstPromptToHaveBeenViewed() {
+    void automaticSecondLeadOfferIsDisabledEvenForLegacyViewedPrompts() {
         UUID conversationId = UUID.randomUUID();
         ChatConversationEntity conversation = conversation(conversationId);
         conversation.setLeadOfferStatus("OFFERED");
@@ -95,9 +95,9 @@ class ChatInteractionServiceTest {
                 conversationId, "LEAD_PROMPT_VIEWED", 1)).thenReturn(false, true);
 
         assertThat(service.offerSecondLeadAfterVerifiedCart(conversationId, null)).isZero();
-        assertThat(service.offerSecondLeadAfterVerifiedCart(conversationId, null)).isEqualTo(2);
-        assertThat(conversation.getLeadOfferCount()).isEqualTo(2);
-        verify(conversations).save(conversation);
+        assertThat(service.offerSecondLeadAfterVerifiedCart(conversationId, null)).isZero();
+        assertThat(conversation.getLeadOfferCount()).isEqualTo(1);
+        verify(conversations, never()).save(any());
     }
 
     private static ChatConversationEntity conversation(UUID id) {

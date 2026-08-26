@@ -1,16 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { VariantPicker } from "@/components/catalog/purchase/VariantPicker";
 import Link from "@/i18n/StorefrontLink";
-import { fetchPublicProduct, type ChatProductCard } from "@/lib/api/client-api";
+import {
+  attachCartAssistantAttribution,
+  fetchPublicProduct,
+  recordChatInteraction,
+  type ChatProductCard,
+} from "@/lib/api/client-api";
+import { saveChatAttributionProof } from "@/lib/chat/chat-attribution";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/contracts/public";
-import { toProductPath } from "@/lib/utils/routes";
+import { toCartPath, toCheckoutPath, toProductPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 import { collectAttributeNames, findMatchingVariant } from "@/lib/utils/variant-match";
 import type { Locale } from "@/i18n/locale";
@@ -18,10 +24,9 @@ import type { Locale } from "@/i18n/locale";
 type BigBikeProductCardProps = {
   product: ChatProductCard;
   locale: Locale;
-  compact?: boolean;
   conversationId?: string;
-  assistantInteractionId?: string;
-  onLeadPrompt?: (sequence: 1 | 2) => void;
+  assistantMessageId?: string;
+  visitorToken?: string;
 };
 
 function effectivePrice(product: ChatProductCard): number | null {
@@ -44,10 +49,9 @@ function formatPrice(product: ChatProductCard, locale: Locale): string | null {
 export function BigBikeProductCard({
   product,
   locale,
-  compact = false,
   conversationId,
-  assistantInteractionId,
-  onLeadPrompt,
+  assistantMessageId,
+  visitorToken,
 }: BigBikeProductCardProps) {
   const t = useTranslations("Support");
   const { addToCart } = useCart();
@@ -57,7 +61,9 @@ export function BigBikeProductCard({
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
   const [noticeKind, setNoticeKind] = useState<"error" | "success" | "info">("info");
+  const [cartCount, setCartCount] = useState<number | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const attributionRequestRef = useRef<Promise<string | null> | null>(null);
   const name = product.name?.trim();
   const slug = product.slug?.trim();
   const variants = useMemo(() => detail?.variants ?? [], [detail?.variants]);
@@ -68,6 +74,45 @@ export function BigBikeProductCard({
   );
 
   if (!name || !slug) return null;
+
+  async function ensureAttribution(): Promise<string | null> {
+    if (!conversationId || !assistantMessageId) return null;
+    if (attributionRequestRef.current) return attributionRequestRef.current;
+    attributionRequestRef.current = (async () => {
+      try {
+        const interaction = await recordChatInteraction({
+          clientEventId: crypto.randomUUID(),
+          conversationId,
+          assistantMessageId,
+          type: "PRODUCT_VIEWED",
+          productSlug: slug,
+          visitorToken,
+        });
+        const token = interaction.attributionToken?.trim();
+        const expiresAt = interaction.attributionExpiresAt
+          ? new Date(interaction.attributionExpiresAt).getTime()
+          : Number.NaN;
+        if (!token || !Number.isFinite(expiresAt)) return null;
+        saveChatAttributionProof({ productSlug: slug, token, expiresAt });
+
+        // If this product was already in the current cart, attach the new last touch without
+        // changing its quantity or price. A missing cart line is expected and safely ignored.
+        try {
+          const loaded = detail ?? await fetchPublicProduct(slug, locale);
+          if (!detail) setDetail(loaded);
+          await attachCartAssistantAttribution(loaded.id, token);
+        } catch {
+          // The normal add-to-cart path will apply the proof later.
+        }
+        return token;
+      } catch {
+        return null;
+      } finally {
+        attributionRequestRef.current = null;
+      }
+    })();
+    return attributionRequestRef.current;
+  }
 
   async function loadDetail(): Promise<Product | null> {
     if (detail) return detail;
@@ -86,23 +131,14 @@ export function BigBikeProductCard({
     }
   }
 
-  async function showVariantPicker() {
-    setPickerOpen(true);
-    const loaded = await loadDetail();
-    if (loaded && (!loaded.variants || loaded.variants.length === 0)) {
-      setNoticeKind("info");
-      setNotice(t("noVariantNeeded"));
-    }
-  }
-
   function pick(attr: string, value: string) {
     setNotice("");
     setSelectedOptions((current) => ({ ...current, [attr]: value }));
   }
 
-  async function handleAdd() {
+  async function handleAdd(loadedOverride?: Product) {
     if (adding || loading) return;
-    const loaded = await loadDetail();
+    const loaded = loadedOverride ?? await loadDetail();
     if (!loaded) return;
     const loadedVariants = loaded.variants ?? [];
     const loadedAttributes = Array.from(collectAttributeNames(loadedVariants));
@@ -123,20 +159,41 @@ export function BigBikeProductCard({
     setAdding(true);
     setNotice("");
     try {
-      const cart = assistantInteractionId
-        ? await addToCart(loaded.id, 1, variant?.id, conversationId, assistantInteractionId)
-        : await addToCart(loaded.id, 1, variant?.id, conversationId);
-      if (cart?.leadPromptSequence === 1 || cart?.leadPromptSequence === 2) {
-        onLeadPrompt?.(cart.leadPromptSequence);
-      }
+      const attributionToken = await ensureAttribution();
+      const cart = await addToCart(
+        loaded.id,
+        1,
+        variant?.id,
+        conversationId,
+        undefined,
+        true,
+        slug,
+        attributionToken ?? undefined,
+      );
       setNoticeKind("success");
-      setNotice(t("addedToCart"));
+      const selection = variant?.name?.trim() || Object.values(selectedOptions).filter(Boolean).join(" / ");
+      setNotice(selection
+        ? t("addedToCartDetailWithVariant", { name, variant: selection })
+        : t("addedToCartDetail", { name }));
+      setCartCount(cart.items.reduce((sum, item) => sum + item.quantity, 0));
     } catch {
       setNoticeKind("error");
       setNotice(t("addToCartError"));
     } finally {
       setAdding(false);
     }
+  }
+
+  async function handleChooseBuy() {
+    if (adding || loading) return;
+    const loaded = await loadDetail();
+    if (!loaded) return;
+    const loadedVariants = loaded.variants ?? [];
+    if (loadedVariants.length > 0 && !pickerOpen) {
+      setPickerOpen(true);
+      return;
+    }
+    await handleAdd(loaded);
   }
 
   const price = formatPrice(product, locale);
@@ -149,13 +206,16 @@ export function BigBikeProductCard({
   return (
     <article
       data-bigbike-product-card
-      className={cn(
-        "group flex min-w-0 flex-col border border-border bg-background transition-colors hover:border-brand focus-within:border-brand",
-        compact ? "w-72 shrink-0 snap-start" : "w-full",
-      )}
+      className="group flex w-full min-w-0 max-w-full flex-col overflow-hidden border border-border bg-background transition-colors hover:border-brand focus-within:border-brand"
     >
-      <div className="flex min-w-0">
-        <div className="flex size-28 shrink-0 items-center justify-center overflow-hidden border-r border-border bg-secondary md:size-30">
+      <Link
+        href={toProductPath(slug, locale)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex min-w-0 text-inherit no-underline"
+        onClick={() => void ensureAttribution()}
+      >
+        <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden border-r border-border bg-secondary">
           <MediaImage
             image={product.imageUrl ? { url: product.imageUrl } : null}
             altFallback={name}
@@ -179,46 +239,62 @@ export function BigBikeProductCard({
             </p>
           </div>
         </div>
-      </div>
+      </Link>
       <div className="grid gap-2 border-t border-border p-3">
-        <Button asChild variant="primary" size="sm" className="min-h-11 w-full px-3">
-          <Link href={toProductPath(slug, locale)}>{t("viewProduct")}</Link>
-        </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant="outline" size="sm" className="min-h-11 px-2" disabled={loading} onClick={() => void showVariantPicker()}>
-            {loading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-            {t("chooseVariant")}
-          </Button>
-          <Button type="button" size="sm" className="min-h-11 px-2" disabled={loading || adding || product.stockState === "OUT_OF_STOCK"} onClick={() => void handleAdd()}>
-            {adding ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ShoppingCart className="size-4" aria-hidden="true" />}
-            {adding ? t("addingToCart") : t("addToCart")}
-          </Button>
-        </div>
         {pickerOpen && detail && variants.length > 0 ? (
-          <div className="border-t border-border pt-3">
+          <div className="min-w-0 max-w-full overflow-hidden border-b border-border pb-3">
             <VariantPicker
               variants={variants}
               attributeNames={attributeNames}
               selectedOptions={selectedOptions}
               onPick={pick}
+              disableUnavailableOptions
             />
             {selectedVariant && (!selectedVariant.isAvailable || selectedVariant.stockState === "OUT_OF_STOCK") ? (
               <p className="mt-3 font-body text-a5-meta font-semibold text-destructive">{t("selectedVariantOutOfStock")}</p>
             ) : null}
           </div>
         ) : null}
+        {noticeKind !== "success" ? (
+          <Button
+            type="button"
+            size="sm"
+            className="min-h-11 w-full px-3"
+            disabled={loading || adding || product.stockState === "OUT_OF_STOCK"}
+            onClick={() => void handleChooseBuy()}
+          >
+            {adding || loading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ShoppingCart className="size-4" aria-hidden="true" />}
+            {adding || loading ? t("addingToCart") : t("chooseBuy")}
+          </Button>
+        ) : null}
         {notice ? (
-          <p
+          <div
             role="status"
             className={cn(
-              "font-body text-a5-meta",
+              "min-w-0 border p-3 font-body text-a5-meta",
               noticeKind === "error" && "font-semibold text-destructive",
-              noticeKind === "success" && "font-semibold text-success",
+              noticeKind === "success" && "border-success bg-background text-foreground",
               noticeKind === "info" && "text-muted-foreground",
             )}
           >
-            {notice}
-          </p>
+            {noticeKind === "success" ? (
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="font-semibold leading-relaxed">{notice}</p>
+                  {cartCount != null ? <p className="mt-1 text-muted-foreground">{t("cartItemCount", { count: cartCount })}</p> : null}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button asChild variant="outline" size="sm" className="min-h-11 min-w-0 px-2">
+                      <Link href={toCartPath(locale)}>{t("viewCart")}</Link>
+                    </Button>
+                    <Button asChild size="sm" className="min-h-11 min-w-0 px-2">
+                      <Link href={toCheckoutPath(locale)}>{t("checkout")}</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : notice}
+          </div>
         ) : null}
       </div>
     </article>

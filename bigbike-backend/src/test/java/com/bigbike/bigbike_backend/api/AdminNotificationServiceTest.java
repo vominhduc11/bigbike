@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.InboxView;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.NotificationView;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import com.bigbike.bigbike_backend.service.ws.ChatHandoffWsEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -89,5 +90,25 @@ class AdminNotificationServiceTest {
         // AUD-026: offline admin catching up sees who ordered and how much.
         assertThat(payload).contains("\"customerName\":\"Nguyễn Văn A\"");
         assertThat(payload).contains("\"total\":1500000");
+    }
+
+    @Test
+    void inboxIsPermissionScopedBetweenOrdersAndChat() {
+        service.persistFromWsEvent(newOrderEvent());
+        service.persistChatHandoff(new ChatHandoffWsEvent(
+                "CHAT_HANDOFF_WAITING", UUID.randomUUID(), UUID.randomUUID(),
+                "Size M còn không?",
+                java.util.List.of(new ChatHandoffWsEvent.ProductReference("mu-a", "Mũ A")),
+                false, "GUEST", Instant.now(), 1));
+
+        InboxView ordersOnly = service.inboxFor(UUID.randomUUID(), true, false);
+        InboxView chatOnly = service.inboxFor(UUID.randomUUID(), false, true);
+
+        assertThat(ordersOnly.items()).allMatch(item ->
+                !item.notification().getType().startsWith("CHAT_"));
+        assertThat(chatOnly.items()).isNotEmpty().allMatch(item ->
+                item.notification().getType().startsWith("CHAT_"));
+        assertThat(chatOnly.items()).extracting(item -> item.notification().getPayload())
+                .allMatch(payload -> !payload.contains("phone") && !payload.contains("email"));
     }
 }

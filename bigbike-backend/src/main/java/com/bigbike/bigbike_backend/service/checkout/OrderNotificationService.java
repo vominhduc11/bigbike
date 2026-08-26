@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.checkout;
 
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
+import com.bigbike.bigbike_backend.service.email.InternalMailRecipient;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -23,17 +24,17 @@ public class OrderNotificationService {
             Set.of("PROCESSING", "COMPLETED", "CANCELLED");
 
     private final EmailDispatchService emailDispatch;
-    private final String adminEmail;
+    private final InternalMailRecipient internalMailRecipient;
     private final String adminBaseUrl;
     private final String siteBaseUrl;
 
     public OrderNotificationService(
             EmailDispatchService emailDispatch,
-            @Value("${bigbike.mail.admin:info@bigbike.vn}") String adminEmail,
+            InternalMailRecipient internalMailRecipient,
             @Value("${bigbike.admin.base-url:https://admin.bigbike.vn}") String adminBaseUrl,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl) {
         this.emailDispatch = emailDispatch;
-        this.adminEmail = adminEmail;
+        this.internalMailRecipient = internalMailRecipient;
         this.adminBaseUrl = adminBaseUrl;
         this.siteBaseUrl = siteBaseUrl;
     }
@@ -63,13 +64,17 @@ public class OrderNotificationService {
         ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
                 + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
 
-        emailDispatch.send(
+        boolean acceptedByProvider = emailDispatch.send(
                 customerEmail,
                 "[BigBike] Xác nhận đơn hàng #" + order.getOrderNumber(),
                 "order-confirmation",
                 ctx);
 
-        log.info("Order confirmation sent for order {}.", order.getOrderNumber());
+        if (acceptedByProvider) {
+            log.info(
+                    "Order confirmation handed off to mail provider; delivery not confirmed for order {}.",
+                    order.getOrderNumber());
+        }
     }
 
     // ── Admin: new order notification ─────────────────────────────────────────
@@ -89,11 +94,16 @@ public class OrderNotificationService {
         ctx.setVariable("source", order.getSource() != null ? order.getSource() : "WEB");
         ctx.setVariable("adminOrderUrl", adminBaseUrl + "/orders/" + order.getId());
 
-        emailDispatch.send(
-                adminEmail,
+        boolean acceptedByProvider = emailDispatch.send(
+                internalMailRecipient.address(),
                 "[BigBike] Đơn hàng mới #" + order.getOrderNumber() + " — " + formatVnd(order.getTotalAmount()),
                 "admin-new-order",
                 ctx);
+        if (acceptedByProvider) {
+            log.info(
+                    "New-order notification handed off to mail provider; delivery not confirmed for order {}.",
+                    order.getOrderNumber());
+        }
     }
 
     // ── Customer: order status update ─────────────────────────────────────────
@@ -120,13 +130,18 @@ public class OrderNotificationService {
         ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
                 + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
 
-        emailDispatch.send(
+        boolean acceptedByProvider = emailDispatch.send(
                 customerEmail,
                 "[BigBike] " + content.subjectPrefix() + " #" + order.getOrderNumber(),
                 "order-status-update",
                 ctx);
 
-        log.info("Order status update ({}) sent for order {}.", newStatus, order.getOrderNumber());
+        if (acceptedByProvider) {
+            log.info(
+                    "Order status update ({}) handed off to mail provider; delivery not confirmed for order {}.",
+                    newStatus,
+                    order.getOrderNumber());
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

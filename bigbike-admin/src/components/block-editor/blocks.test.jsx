@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -12,6 +14,10 @@ vi.mock('react-i18next', () => ({
       'products.detail.blocks.videoUrlLabel': 'Video URL',
       'products.detail.blocks.videoUrlPlaceholder': 'YouTube URL',
       'products.detail.blocks.videoCaptionPlaceholder': 'Caption',
+      'products.detail.blocks.collapse': 'Thu gọn khối',
+      'products.detail.blocks.expand': 'Mở khối',
+      'products.detail.blocks.duplicate': 'Nhân bản',
+      'products.detail.blocks.remove': 'Xoá khối',
     }[key] || key),
   }),
 }))
@@ -28,7 +34,7 @@ vi.mock('@/components/ui/select', () => ({
   SelectValue: ({ placeholder }) => <span>{placeholder}</span>,
 }))
 
-import { VideoBlockEditor } from './blocks'
+import { BlockCard, VideoBlockEditor } from './blocks'
 
 describe('VideoBlockEditor writable sources', () => {
   it('chỉ hiện YouTube và Upload / media library', async () => {
@@ -61,5 +67,41 @@ describe('VideoBlockEditor writable sources', () => {
 
     expect(screen.queryByText('Legacy block source must be replaced')).not.toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Video source' })).toHaveTextContent('Choose a new source')
+  })
+})
+
+describe('BlockCard collapse lifecycle', () => {
+  it('đóng/mở khối không làm mất nội dung và không tạo lại layout ngoài ý muốn', async () => {
+    function Harness() {
+      const [collapsed, setCollapsed] = useState(false)
+      return (
+        <BlockCard
+          block={{ _key: 'paragraph-1', type: 'paragraph', html: '<p>Nội dung khối</p>' }}
+          disabled={false}
+          structDisabled={false}
+          contentLang="vi"
+          sortable={null}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((value) => !value)}
+          insertMenu={[]}
+          onInsertBelow={() => {}}
+          onUpdate={() => {}}
+          onRemove={() => {}}
+          onDuplicate={() => {}}
+          productMode
+        />
+      )
+    }
+
+    render(<Harness />)
+    const collapseButton = screen.getByRole('button', { name: 'Thu gọn khối' })
+    expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
+
+    await userEvent.click(collapseButton)
+    const expandButton = screen.getByRole('button', { name: 'Mở khối' })
+    expect(expandButton).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(expandButton)
+    expect(screen.getByRole('button', { name: 'Thu gọn khối' })).toHaveAttribute('aria-expanded', 'true')
   })
 })

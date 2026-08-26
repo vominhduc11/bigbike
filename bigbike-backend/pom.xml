@@ -32,6 +32,8 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+		<!-- springdoc 3.0.3 is built against Spring Boot 4.0.5 — the exact parent version above. -->
+		<springdoc.version>3.0.3</springdoc.version>
 		<!-- MinIO 8.6.0 requires OkHttp 4.x; pin to prevent Spring Boot BOM from overriding -->
 		<okhttp3.version>4.12.0</okhttp3.version>
 	</properties>
@@ -211,6 +213,16 @@
 		     2026-08-08, REVIEW_RULE_012/013) — same approach the previous Gemini
 		     integration used, so no extra SDK dependency is needed here. -->
 
+		<!-- springdoc-openapi: sinh đặc tả OpenAPI trực tiếp từ controller đang chạy.
+		     Đặc tả biên tập tay (openapi/bigbike-openapi.json) vẫn là hợp đồng chuẩn; bản sinh
+		     tự động dùng để phát hiện lệch (OpenApiContractDriftTest) và để thử API qua Swagger UI.
+		     Tắt mặc định ở mọi profile — bật bằng BIGBIKE_API_DOCS_ENABLED=true, prod ép tắt cứng. -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -365,6 +377,12 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>-Dfile.encoding=UTF-8</argLine>
+					<!-- The Docker daemon used by local/CI tests rejects docker-java's legacy
+					     1.32 default. Pin the minimum server-supported API so PostgreSQL
+					     Testcontainers tests run instead of being silently skipped. -->
+					<systemPropertyVariables>
+						<api.version>1.40</api.version>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 		</plugins>

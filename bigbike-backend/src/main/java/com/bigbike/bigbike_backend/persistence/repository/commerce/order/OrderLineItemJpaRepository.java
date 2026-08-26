@@ -24,6 +24,11 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
     @Query("SELECT li.order.id, li.productName FROM OrderLineItemEntity li WHERE li.order.id IN :orderIds ORDER BY li.order.id")
     List<Object[]> findProductNamesByOrderIdIn(@Param("orderIds") List<UUID> orderIds);
 
+    /** Minimal line snapshot used only after the owning customer order query has resolved ids. */
+    @Query("SELECT li.order.id, li.productName, li.variantName FROM OrderLineItemEntity li "
+            + "WHERE li.order.id IN :orderIds ORDER BY li.order.id, li.createdAt, li.id")
+    List<Object[]> findAssistantItemsByOrderIdIn(@Param("orderIds") List<UUID> orderIds);
+
     // ── Dashboard: top products by revenue ───────────────────────────────────
     // Groups by productId so each product has a single stable row;
     // skips legacy line items that have no productId.
@@ -93,4 +98,27 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
         "GROUP BY COALESCE(li.product_pk, li.product_id::text)",
         nativeQuery = true)
     List<Object[]> catalogUnitsSoldByProduct();
+
+    /** Assistant ranking: completed orders only, with a stable linked catalog key. */
+    @Query(value =
+        "SELECT COALESCE(li.product_pk, li.product_id::text) AS product_key, " +
+        "       COALESCE(SUM(li.quantity), 0) AS units_sold, " +
+        "       COUNT(DISTINCT o.id) AS completed_order_count " +
+        "FROM order_line_items li " +
+        "JOIN orders o ON o.id = li.order_id " +
+        "WHERE o.status = 'COMPLETED' " +
+        "  AND (li.product_pk IS NOT NULL OR li.product_id IS NOT NULL) " +
+        "GROUP BY COALESCE(li.product_pk, li.product_id::text)",
+        nativeQuery = true)
+    List<Object[]> assistantCompletedSalesByProduct();
+
+    /** Distinct completed orders touching the current, already verified product scope. */
+    @Query(value =
+        "SELECT COUNT(DISTINCT o.id) " +
+        "FROM order_line_items li " +
+        "JOIN orders o ON o.id = li.order_id " +
+        "WHERE o.status = 'COMPLETED' " +
+        "  AND COALESCE(li.product_pk, li.product_id::text) IN (:productKeys)",
+        nativeQuery = true)
+    long countAssistantCompletedOrdersForProducts(@Param("productKeys") List<String> productKeys);
 }

@@ -17,8 +17,10 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.core.read.ListAppender;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffStatusResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
+import com.bigbike.bigbike_backend.api.chat.dto.ChatPageContextRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
@@ -42,6 +44,97 @@ class ChatServiceFallbackTest {
             "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
     private static final ChatContactResponse CONTACTS = new ChatContactResponse(
             "0900000000", "https://zalo.me/shop", "https://m.me/shop", "Shop", "Shop");
+
+    @Test
+    @DisplayName("AC5: an active staff claim stores the customer message without invoking the assistant")
+    void activeStaffClaimStopsAutomaticAssistantReplies() {
+        Fixture fixture = fixture(true, 60, 0);
+        UUID handoffId = UUID.randomUUID();
+        when(fixture.handoffService.liveForConversation(CONVERSATION_ID)).thenReturn(
+                new ChatHandoffStatusResponse(
+                        handoffId, "ACTIVE", Instant.now(), "STAFF_ACTIVE", "Minh",
+                        true, null, "Thứ Hai–Thứ Sáu 09:00–21:00"));
+
+        ChatMessageResponse response = fixture.service.send(request("Size M còn hàng không?"), null);
+
+        assertThat(response.channelState()).isEqualTo("STAFF_ACTIVE");
+        assertThat(response.handoff().id()).isEqualTo(handoffId);
+        assertThat(response.countedTurns()).isZero();
+        verify(fixture.handoffService).customerMessageAdded(CONVERSATION_ID);
+        verify(fixture.aiClient, never()).answer(
+                anyString(), anyString(), any(ChatToolRegistry.class), anyBoolean(),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any());
+        verify(fixture.toolService, never()).resolveFastPath(
+                anyString(), anyString(), any(), any(), any());
+        verify(fixture.messageRepo).save(argThat(message ->
+                "CUSTOMER".equals(message.getRole())));
+    }
+
+    @Test
+    @DisplayName("three deterministic clarification turns reserve no AI quota and call no provider")
+    void multiRoundClarificationIsFreeOfProviderCalls() {
+        Fixture fixture = fixture(true, 60, 0);
+        ChatToolService.ProductDecisionContext groupState = new ChatToolService.ProductDecisionContext(
+                null, null, null, null, null, List.of("GROUP"),
+                new ChatToolService.PendingClarification(
+                        UUID.randomUUID(), "GROUP", List.of(
+                        new ChatToolService.PendingClarificationOption(
+                                "group-helmet", "Mũ bảo hiểm", "FILTER", "helmet", 13L),
+                        new ChatToolService.PendingClarificationOption(
+                                "show-all", "Cứ cho em xem tất cả", "BYPASS", "show-all", null))));
+        ChatToolService.ProductDecisionContext useState = new ChatToolService.ProductDecisionContext(
+                "helmet", null, null, null, null, List.of("GROUP", "USE_CASE"),
+                new ChatToolService.PendingClarification(
+                        UUID.randomUUID(), "USE_CASE", List.of(
+                        new ChatToolService.PendingClarificationOption(
+                                "use-long-tour", "Đi tour đường dài", "FILTER", "long-tour", 5L),
+                        new ChatToolService.PendingClarificationOption(
+                                "show-all", "Cứ cho em xem tất cả", "BYPASS", "show-all", null))));
+        ChatToolService.ProductDecisionContext finalState = new ChatToolService.ProductDecisionContext(
+                "helmet", "long-tour", null, null, null,
+                List.of("GROUP", "USE_CASE"), null);
+        ChatToolService.ToolOutcome first = ChatToolService.ToolOutcome.clarification(
+                "Em đã lọc theo mức giá anh/chị nêu. Anh/chị cần nhóm hàng nào ạ?",
+                List.of(), new ChatToolService.SearchScope(null, null, null, 5_000_000L), groupState);
+        ChatToolService.ToolOutcome second = ChatToolService.ToolOutcome.clarification(
+                "Em gửi một lựa chọn còn hàng tiêu biểu; đây chưa phải kết quả cuối. Anh/chị chủ yếu đi phố hay đi tour đường dài ạ?",
+                List.of(card()), new ChatToolService.SearchScope("mu-bao-hiem", null, null, 5_000_000L),
+                useState);
+        ChatToolService.ToolOutcome third = ChatToolService.ToolOutcome.decided(
+                "Em đã đủ thông tin và hiển thị lựa chọn còn hàng phù hợp bên dưới.",
+                List.of(card()), new ChatToolService.SearchScope("mu-bao-hiem", null, null, 5_000_000L),
+                finalState);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenReturn(Optional.of(first), Optional.of(second), Optional.of(third));
+
+        ChatMessageResponse one = fixture.service.send(request("dưới 5 triệu"), null);
+        ChatMessageResponse two = fixture.service.send(request("mũ bảo hiểm"), null);
+        ChatMessageResponse three = fixture.service.send(request("đi tour đường dài"), null);
+
+        assertThat(one.clarification()).isNotNull();
+        assertThat(two.clarification()).isNotNull();
+        assertThat(three.clarification()).isNull();
+        assertThat(one.countedTurns()).isZero();
+        assertThat(two.countedTurns()).isZero();
+        assertThat(three.countedTurns()).isEqualTo(1);
+        assertThat(one.turnsRemaining()).isEqualTo(ChatService.MAX_TURNS);
+        assertThat(two.turnsRemaining()).isEqualTo(ChatService.MAX_TURNS);
+        assertThat(three.turnsRemaining()).isEqualTo(ChatService.MAX_TURNS - 1);
+        verify(fixture.quota, never()).tryReserve(anyInt());
+        verify(fixture.aiClient, never()).answer(
+                anyString(), anyString(), any(ChatToolRegistry.class), anyBoolean(),
+                any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any());
+        ArgumentCaptor<ChatMessageEntity> messages = ArgumentCaptor.forClass(ChatMessageEntity.class);
+        verify(fixture.messageRepo, atLeast(3)).save(messages.capture());
+        assertThat(messages.getAllValues().stream()
+                .filter(message -> "ASSISTANT".equals(message.getRole())))
+                .allSatisfy(message -> {
+                    assertThat(message.isAiCalled()).isFalse();
+                    assertThat(message.getProviderRequestCount()).isZero();
+                });
+    }
 
     @Test
     @DisplayName("a fast-path guard rejection keeps the conversation open and refunds the turn")
@@ -116,10 +209,18 @@ class ChatServiceFallbackTest {
         assertThat(response.mode()).isEqualTo("AI");
         assertThat(response.products()).extracting(ChatProductCardResponse::slug)
                 .containsExactly("safe-card");
+        assertThat(response.resultKind()).isEqualTo("PRODUCT_RESULTS");
         assertThat(response.answer())
                 .contains("hiển thị 1 sản phẩm")
                 .doesNotContain("Sản phẩm đã hết hàng", "sold-out-card");
         assertThat(fixture.conversation.getTurnCount()).isEqualTo(1);
+
+        ArgumentCaptor<ChatMessageEntity> savedMessages = ArgumentCaptor.forClass(ChatMessageEntity.class);
+        verify(fixture.messageRepo, atLeast(2)).save(savedMessages.capture());
+        assertThat(savedMessages.getAllValues())
+                .filteredOn(message -> "ASSISTANT".equals(message.getRole()))
+                .extracting(ChatMessageEntity::getResultKind)
+                .containsExactly("PRODUCT_RESULTS");
     }
 
     @Test
@@ -206,7 +307,7 @@ class ChatServiceFallbackTest {
         priorFallback.setSource("CONTACT_FALLBACK");
         when(fixture.messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
                 CONVERSATION_ID, "ASSISTANT"))
-                .thenReturn(Optional.empty(), Optional.of(priorFallback));
+                .thenReturn(Optional.empty(), Optional.empty(), Optional.of(priorFallback));
 
         ChatMessageResponse first = fixture.service.send(request("Câu hỏi bị chặn lần một"), null);
         ChatMessageResponse second = fixture.service.send(request("Câu hỏi bị chặn lần hai"), null);
@@ -215,8 +316,8 @@ class ChatServiceFallbackTest {
         assertRecoverable(second, fixture.conversation);
         assertThat(second.answer())
                 .isNotEqualTo(first.answer())
-                .contains("cho em biết rõ")
-                .doesNotContain("kết quả đã xác minh", "nội dung trả lời an toàn");
+                .contains("đang bận", "Gặp nhân viên")
+                .doesNotContain("kết quả đã xác minh", "nội dung trả lời an toàn", "shop hiện chưa có");
     }
 
     @Test
@@ -277,7 +378,8 @@ class ChatServiceFallbackTest {
         ChatMessageResponse response = fixture.service.send(request("Câu hỏi cần kiểm tra"), null);
 
         assertRecoverable(response, fixture.conversation);
-        assertThat(response.answer()).contains("vẫn có thể hỏi tiếp", "em sẽ tra lại");
+        assertThat(response.answer()).contains("đang bận", "hỏi lại", "Gặp nhân viên")
+                .doesNotContain("shop hiện chưa có", "không bán");
     }
 
     @Test
@@ -322,15 +424,62 @@ class ChatServiceFallbackTest {
     }
 
     @Test
-    @DisplayName("the twelfth turn closes the conversation without saving a thirteenth customer message")
-    void turnLimitClosesConversation() {
+    @DisplayName("AC3: reaching the substantive cap creates a linked successor without a hard stop")
+    void turnLimitCreatesLinkedContinuation() {
         Fixture fixture = fixture(true, 60, 0);
-        fixture.conversation.setTurnCount(ChatService.MAX_TURNS);
+        fixture.conversation.setCountedTurns(ChatService.MAX_TURNS);
 
-        ChatMessageResponse response = fixture.service.send(request("Câu hỏi thứ mười ba"), null);
+        ChatMessageResponse response = fixture.service.send(request("Size M còn hàng không?"), null);
 
-        assertClosed(response, fixture.conversation, "TURN_LIMIT", ChatService.MAX_TURNS);
-        verify(fixture.messageRepo, never()).save(any(ChatMessageEntity.class));
+        assertThat(fixture.conversation.getEndedReason()).isEqualTo("CONTINUED");
+        assertThat(response.conversationId()).isNotEqualTo(CONVERSATION_ID);
+        assertThat(response.continuation()).isNotNull();
+        assertThat(response.continuation().available()).isTrue();
+        assertThat(response.continuation().successorConversationId())
+                .isEqualTo(response.conversationId());
+        assertThat(response.continuation().message()).contains("không cần kể lại");
+        assertThat(response.mode()).isEqualTo("AI");
+    }
+
+    @Test
+    @DisplayName("each stored end reason tells the customer the truthful reason")
+    void endedReasonsUseDistinctCustomerCopy() {
+        Fixture offTopic = fixture(true, 60, 0);
+        offTopic.conversation.setEndedReason("OFF_TOPIC");
+        assertThat(offTopic.service.send(request("Hỏi tiếp"), null).answer())
+                .contains("chỉ hỗ trợ sản phẩm và dịch vụ").doesNotContain("lượt hỏi");
+
+        Fixture unavailable = fixture(true, 60, 0);
+        unavailable.conversation.setEndedReason("AI_UNAVAILABLE");
+        assertThat(unavailable.service.send(request("Hỏi tiếp"), null).answer())
+                .contains("đang bận", "thử lại sau").doesNotContain("lượt hỏi");
+
+        Fixture handoff = fixture(true, 60, 0);
+        handoff.conversation.setEndedReason("HANDOFF");
+        assertThat(handoff.service.send(request("Hỏi tiếp"), null).answer())
+                .contains("đã được chuyển sang nhân viên").doesNotContain("lượt hỏi");
+    }
+
+    @Test
+    @DisplayName("AC2: product-page advice uses the same adjustable 40-turn default")
+    void productPageUsesCurrentConversationLimit() {
+        Fixture fixture = fixture(true, 60, 0);
+        when(fixture.toolService.isPublicSellableProductSlug("ls2-ff800-storm", "vi"))
+                .thenReturn(true);
+        when(fixture.toolService.resolveFastPath(anyString(), eq("vi"), isNull(), any(), any()))
+                .thenReturn(Optional.of(ChatToolService.ToolOutcome.local(
+                        "Dạ, em sẽ kiểm tra size và tồn kho của mẫu này cho anh/chị.",
+                        "TEMPLATE", false, false, false)));
+        ChatMessageRequest productRequest = ChatMessageRequest.builder()
+                .conversationId(CONVERSATION_ID)
+                .message("Hỏi tiếp")
+                .lang("vi")
+                .pageContext(new ChatPageContextRequest("PRODUCT", "ls2-ff800-storm"))
+                .build();
+
+        ChatMessageResponse response = fixture.service.send(productRequest, null);
+        assertThat(response.maxTurns()).isEqualTo(ChatService.MAX_TURNS);
+        assertThat(response.turnLimit()).isEqualTo(ChatService.MAX_TURNS);
     }
 
     private static void assertRecoverable(
@@ -443,7 +592,12 @@ class ChatServiceFallbackTest {
         conversation.setId(CONVERSATION_ID);
         conversation.setLocale("vi");
 
-        when(conversations.findByIdForUpdate(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+        when(conversations.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+        when(conversations.save(any(ChatConversationEntity.class))).thenAnswer(invocation -> {
+            ChatConversationEntity saved = invocation.getArgument(0);
+            if (saved.getId() == null) saved.setId(UUID.randomUUID());
+            return saved;
+        });
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
                 enabled,
                 dailyLimit,
@@ -453,12 +607,17 @@ class ChatServiceFallbackTest {
                 "",
                 "",
                 ""));
+        when(settings.currentModel()).thenReturn("gemini-2.5-flash");
         ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
         when(quota.usedToday()).thenReturn(spent);
         when(quota.tryReserve(anyInt())).thenReturn(true);
         when(aiClient.isConfigured()).thenReturn(true);
+        bridgeModelAwareAnswer(aiClient);
         when(toolService.assistantCatalogVocabulary())
                 .thenReturn(ChatToolService.AssistantCatalogVocabulary.empty());
+        ChatHandoffService handoffService = mock(ChatHandoffService.class);
+        ChatPhase3Settings phase3Settings = mock(ChatPhase3Settings.class);
+        when(phase3Settings.conversationTurnLimit()).thenReturn(ChatService.MAX_TURNS);
 
         ChatService service = new ChatService(
                 conversations,
@@ -471,8 +630,29 @@ class ChatServiceFallbackTest {
                 aiClient,
                 new ChatResponseGuard(),
                 quota,
+                null,
+                null,
+                handoffService,
+                phase3Settings,
+                null,
                 mock(AdminChatWsService.class));
-        return new Fixture(service, conversation, toolService, aiClient, quota, messages);
+        return new Fixture(
+                service, conversation, toolService, aiClient, quota, messages, handoffService);
+    }
+
+    private static void bridgeModelAwareAnswer(AiChatClient client) {
+        when(client.answerWithFallback(
+                anyString(), anyString(), anyString(), any(ChatToolRegistry.class),
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
+                .thenAnswer(invocation -> client.answer(
+                                invocation.getArgument(1), invocation.getArgument(2),
+                                invocation.getArgument(3), invocation.getArgument(4),
+                                invocation.getArgument(5), invocation.getArgument(6),
+                                invocation.getArgument(7), invocation.getArgument(8))
+                        .map(answer -> new AiChatClient.ModelAnswer(
+                                answer, invocation.getArgument(0), invocation.getArgument(0),
+                                false, null)));
     }
 
     private record Fixture(
@@ -481,6 +661,7 @@ class ChatServiceFallbackTest {
             ChatToolService toolService,
             AiChatClient aiClient,
             ChatAiQuotaService quota,
-            ChatMessageJpaRepository messageRepo
+            ChatMessageJpaRepository messageRepo,
+            ChatHandoffService handoffService
     ) {}
 }

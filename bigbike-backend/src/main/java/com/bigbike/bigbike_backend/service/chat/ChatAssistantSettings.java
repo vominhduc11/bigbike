@@ -15,9 +15,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jsoup.Jsoup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +35,11 @@ public class ChatAssistantSettings {
     public static final String KEY_QUICK_PROMPTS = "ai_assistant_quick_prompts";
     public static final String KEY_ABBREVIATIONS = "ai_assistant_abbreviations";
     public static final String KEY_ANSWER_TEMPLATES = "ai_assistant_answer_templates";
+    public static final String KEY_MODEL = "ai_assistant_model";
+    public static final String KEY_IMAGE_ENABLED = "ai_assistant_image_enabled";
+    public static final String KEY_IMAGE_DAILY_LIMIT = "ai_assistant_image_daily_limit";
+    public static final String KEY_IMAGE_CONVERSATION_LIMIT =
+            "ai_assistant_image_conversation_limit";
     public static final String SETTING_GROUP = "ai_assistant";
     public static final int DEFAULT_DAILY_LIMIT = 400;
     public static final int DEFAULT_RECENT_TURN_PAIRS = 12;
@@ -55,6 +62,33 @@ public class ChatAssistantSettings {
 
     private final SiteSettingJpaRepository settingRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${bigbike.chat.model:gemini-2.5-flash}")
+    private String bootstrapModel = "gemini-2.5-flash";
+
+    @Transactional(readOnly = true)
+    public String currentModel() {
+        String configured = settingRepo.findBySettingKey(KEY_MODEL)
+                .map(SiteSettingEntity::getSettingValue)
+                .map(String::trim)
+                .filter(value -> value.matches("[a-z0-9][a-z0-9.-]{0,119}"))
+                .orElse(bootstrapModel == null ? "" : bootstrapModel.trim());
+        return configured.isBlank() ? "gemini-2.5-flash" : configured;
+    }
+
+    @Transactional(readOnly = true)
+    public ImageSettings imageSettings() {
+        Map<String, SiteSettingEntity> settings = settingRepo.findAll().stream()
+                .collect(Collectors.toMap(SiteSettingEntity::getSettingKey, Function.identity()));
+        return new ImageSettings(
+                readBoolean(settings, KEY_IMAGE_ENABLED, false),
+                ranged(readInteger(settings, KEY_IMAGE_DAILY_LIMIT, 20), 1, 200, 20),
+                ranged(readInteger(settings, KEY_IMAGE_CONVERSATION_LIMIT, 3), 1, 10, 3));
+    }
+
+    private static int ranged(int value, int min, int max, int fallback) {
+        return value < min || value > max ? fallback : value;
+    }
 
     public static String defaultGreeting(String lang) {
         return "en".equals(lang) ? DEFAULT_GREETING_EN : DEFAULT_GREETING_VI;
@@ -88,7 +122,15 @@ public class ChatAssistantSettings {
                         settings, KEY_RECENT_TURN_PAIRS, DEFAULT_RECENT_TURN_PAIRS)),
                 readDecimal(settings, KEY_MONTHLY_COST_WARNING_USD, BigDecimal.ZERO),
                 readAbbreviations(settings),
-                readAnswerTemplates(settings));
+                readAnswerTemplates(settings),
+                new BankDetails(
+                        value(settings, "bank_name"),
+                        value(settings, "bank_account_number"),
+                        value(settings, "bank_account_holder"),
+                        value(settings, "bank_branch")),
+                policy(settings, "policy_warranty_title", "policy_warranty_body_html", english),
+                policy(settings, "policy_return_exchange_title",
+                        "policy_return_exchange_body_html", english));
     }
 
     private static List<String> prompts(String raw, boolean english) {
@@ -205,6 +247,18 @@ public class ChatAssistantSettings {
                 ? "" : setting.getSettingValue().trim();
     }
 
+    private static PolicyText policy(
+            Map<String, SiteSettingEntity> settings,
+            String titleKey,
+            String bodyKey,
+            boolean english
+    ) {
+        String title = localized(settings, titleKey, english, "");
+        String html = localized(settings, bodyKey, english, "");
+        String text = html.isBlank() ? "" : Jsoup.parseBodyFragment(html).text().trim();
+        return new PolicyText(title, text);
+    }
+
     public record Snapshot(
             boolean enabled,
             int dailyLimit,
@@ -218,8 +272,32 @@ public class ChatAssistantSettings {
             int recentTurnPairs,
             BigDecimal monthlyCostWarningUsd,
             List<Abbreviation> abbreviations,
-            List<AnswerTemplate> answerTemplates
+            List<AnswerTemplate> answerTemplates,
+            BankDetails bankDetails,
+            PolicyText warrantyPolicy,
+            PolicyText returnExchangePolicy
     ) {
+        public Snapshot(
+                boolean enabled,
+                int dailyLimit,
+                boolean searchAiInterpretationEnabled,
+                String greeting,
+                List<String> quickPrompts,
+                ChatContactResponse contacts,
+                String address,
+                String openingHoursWeekday,
+                String openingHoursWeekend,
+                int recentTurnPairs,
+                BigDecimal monthlyCostWarningUsd,
+                List<Abbreviation> abbreviations,
+                List<AnswerTemplate> answerTemplates
+        ) {
+            this(enabled, dailyLimit, searchAiInterpretationEnabled, greeting, quickPrompts,
+                    contacts, address, openingHoursWeekday, openingHoursWeekend, recentTurnPairs,
+                    monthlyCostWarningUsd, abbreviations, answerTemplates,
+                    BankDetails.empty(), PolicyText.empty(), PolicyText.empty());
+        }
+
         public Snapshot(
                 boolean enabled,
                 int dailyLimit,
@@ -235,7 +313,8 @@ public class ChatAssistantSettings {
             this(
                     enabled, dailyLimit, searchAiInterpretationEnabled, greeting, quickPrompts,
                     contacts, address, openingHoursWeekday, openingHoursWeekend, recentTurnPairs,
-                    BigDecimal.ZERO, defaultAbbreviations(), List.of());
+                    BigDecimal.ZERO, defaultAbbreviations(), List.of(),
+                    BankDetails.empty(), PolicyText.empty(), PolicyText.empty());
         }
 
         public Snapshot(
@@ -262,7 +341,10 @@ public class ChatAssistantSettings {
                     0,
                     BigDecimal.ZERO,
                     defaultAbbreviations(),
-                    List.of());
+                    List.of(),
+                    BankDetails.empty(),
+                    PolicyText.empty(),
+                    PolicyText.empty());
         }
 
         public Snapshot(
@@ -288,7 +370,10 @@ public class ChatAssistantSettings {
                     0,
                     BigDecimal.ZERO,
                     defaultAbbreviations(),
-                    List.of());
+                    List.of(),
+                    BankDetails.empty(),
+                    PolicyText.empty(),
+                    PolicyText.empty());
         }
 
         public Snapshot {
@@ -298,6 +383,10 @@ public class ChatAssistantSettings {
                     ? BigDecimal.ZERO : monthlyCostWarningUsd;
             abbreviations = abbreviations == null ? List.of() : List.copyOf(abbreviations);
             answerTemplates = answerTemplates == null ? List.of() : List.copyOf(answerTemplates);
+            bankDetails = bankDetails == null ? BankDetails.empty() : bankDetails;
+            warrantyPolicy = warrantyPolicy == null ? PolicyText.empty() : warrantyPolicy;
+            returnExchangePolicy = returnExchangePolicy == null
+                    ? PolicyText.empty() : returnExchangePolicy;
         }
 
         public Map<String, String> abbreviationMap() {
@@ -319,14 +408,14 @@ public class ChatAssistantSettings {
         }
 
         public Optional<String> matchAnswerTemplate(String question, String lang) {
-            String normalized = ChatToolService.normalize(question == null ? "" : question);
+            String normalized = ChatTemplatePolicy.normalizeMatchText(question);
             List<TemplateMatch> matches = new ArrayList<>();
             for (AnswerTemplate template : answerTemplates) {
                 if (template == null || !template.enabled()) continue;
                 List<String> triggers = "en".equals(lang) ? template.triggersEn() : template.triggersVi();
                 if (triggers == null) continue;
                 for (String trigger : triggers) {
-                    String candidate = ChatToolService.normalize(trigger == null ? "" : trigger);
+                    String candidate = ChatTemplatePolicy.normalizeMatchText(trigger);
                     if (!candidate.isBlank() && containsWholePhrase(normalized, candidate)) {
                         matches.add(new TemplateMatch(candidate.length(), template));
                     }
@@ -341,6 +430,31 @@ public class ChatAssistantSettings {
             if (winners.size() != 1) return Optional.empty();
             String answer = "en".equals(lang) ? winners.get(0).answerEn() : winners.get(0).answerVi();
             return answer == null || answer.isBlank() ? Optional.empty() : Optional.of(answer.trim());
+        }
+    }
+
+    public record ImageSettings(boolean enabled, int dailyLimit, int conversationLimit) {}
+
+    public record BankDetails(String bankName, String accountNumber, String accountHolder, String branch) {
+        public static BankDetails empty() {
+            return new BankDetails("", "", "", "");
+        }
+
+        public boolean complete() {
+            return bankName != null && !bankName.isBlank()
+                    && accountNumber != null && !accountNumber.isBlank()
+                    && accountHolder != null && !accountHolder.isBlank()
+                    && branch != null && !branch.isBlank();
+        }
+    }
+
+    public record PolicyText(String title, String text) {
+        public static PolicyText empty() {
+            return new PolicyText("", "");
+        }
+
+        public boolean available() {
+            return text != null && !text.isBlank();
         }
     }
 

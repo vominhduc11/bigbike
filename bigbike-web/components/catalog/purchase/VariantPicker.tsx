@@ -28,11 +28,13 @@ export function VariantPicker({
   attributeNames,
   selectedOptions,
   onPick,
+  disableUnavailableOptions = false,
 }: {
   variants: ProductVariant[];
   attributeNames: string[];
   selectedOptions: Record<string, string>;
   onPick: (attr: string, value: string) => void;
+  disableUnavailableOptions?: boolean;
 }) {
   return (
     <div data-variant-picker className="space-y-6">
@@ -72,6 +74,7 @@ export function VariantPicker({
                   <RadioGroupItem
                     key={o.value}
                     value={o.value}
+                    disabled={disableUnavailableOptions && !optInStock}
                     onClick={() => {
                       if (checked) onPick(attr, o.value);
                     }}
@@ -82,6 +85,7 @@ export function VariantPicker({
                       !color && "size-13 px-1",
                       color && "size-13 bg-cover bg-center p-0",
                       !optInStock && !checked && "opacity-45",
+                      disableUnavailableOptions && !optInStock && "cursor-not-allowed",
                     )}
                     style={color && swatch ? { backgroundImage: `url(${swatch})` } : undefined}
                   >

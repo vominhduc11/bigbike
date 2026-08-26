@@ -79,4 +79,46 @@ public class ImageCompressionService {
             return source;
         }
     }
+
+    /**
+     * Decodes and writes a fresh raster file so EXIF/GPS/XMP and the original encoder metadata are
+     * not carried into private customer storage. Unlike {@link #compress}, this method never falls
+     * back to the original bytes: {@code null} means the caller must reject or use a format-specific
+     * metadata scrubber.
+     */
+    public byte[] reencodeWithoutMetadata(
+            byte[] source,
+            String mimeType,
+            CompressionProfile profile
+    ) {
+        if (source == null || source.length == 0) return null;
+        BufferedImage decoded;
+        try {
+            decoded = ImageIO.read(new ByteArrayInputStream(source));
+        } catch (IOException exception) {
+            return null;
+        }
+        if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0) return null;
+        boolean preserveAlpha = "image/png".equalsIgnoreCase(mimeType)
+                || "image/webp".equalsIgnoreCase(mimeType)
+                || decoded.getColorModel().hasAlpha();
+        String outputFormat = preserveAlpha ? "png" : "jpg";
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            var builder = Thumbnails.of(decoded);
+            if (decoded.getWidth() > profile.maxWidth()
+                    || decoded.getHeight() > profile.maxHeight()) {
+                builder = builder.size(profile.maxWidth(), profile.maxHeight());
+            } else {
+                builder = builder.scale(1.0d);
+            }
+            builder.outputFormat(outputFormat);
+            if (!preserveAlpha) builder.outputQuality(profile.jpegQuality());
+            builder.toOutputStream(output);
+            byte[] result = output.toByteArray();
+            return result.length == 0 ? null : result;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
 }

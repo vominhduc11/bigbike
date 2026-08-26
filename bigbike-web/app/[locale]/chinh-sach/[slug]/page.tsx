@@ -3,16 +3,14 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getStaticPage } from "@/lib/content/static-pages";
-import { listPublicSettings } from "@/lib/api/public-api";
+import { getStorePolicy } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { PrivacyPolicyContent } from "@/components/policy/PrivacyPolicyContent";
-import { WarrantyPolicyContent, type WarrantyContact } from "@/components/policy/WarrantyPolicyContent";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { StaticSidebarLayout } from "@/components/layout/StaticSidebarLayout";
 import type { PolicySidebarItem } from "@/components/layout/PolicySidebar";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { RichContent } from "@/components/layout/RichContent";
-import { pickSetting } from "@/lib/utils/settings";
 import { toHomePath, translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
@@ -72,31 +70,38 @@ async function renderPolicyForLocale(slug: string, locale: Locale) {
     notFound();
   }
 
-  const settingsResult = await listPublicSettings(locale);
-  const settings = settingsResult?.data ?? [];
+  const policyTopic = slug === WARRANTY_SLUG
+    ? "warranty"
+    : slug === RETURN_SLUG ? "return-exchange" : null;
+  const livePolicy = policyTopic ? (await getStorePolicy(policyTopic, locale)).data : null;
   const t = await getTranslations({ locale, namespace: "StaticPage" });
   const tBreadcrumb = await getTranslations({ locale, namespace: "Breadcrumb" });
-  const pageTitle = page.title || t("policy.title");
+  const pageTitle = livePolicy?.title || page.title || t("policy.title");
   const sidebarItems = buildStaticSidebarItems(locale, slug);
 
   let bodyNode: ReactNode;
-  if (slug === WARRANTY_SLUG) {
-    const contact: WarrantyContact = {
-      hotline: pickSetting(settings, ["hotline"]),
-      zalo: pickSetting(settings, ["hotline_2"]),
-      zaloUrl: pickSetting(settings, ["zalo_url"]),
-      address: pickSetting(settings, ["contact_address"]),
-      hoursWeekday: pickSetting(settings, ["opening_hours_weekday"]),
-      hoursWeekend: pickSetting(settings, ["opening_hours_weekend"]),
-    };
-    bodyNode = <WarrantyPolicyContent locale={locale} contact={contact} />;
-  } else if (slug === PRIVACY_SLUG) {
+  if (slug === PRIVACY_SLUG) {
     bodyNode = <PrivacyPolicyContent locale={locale} />;
-  } else {
+  } else if (livePolicy?.bodyHtml) {
     bodyNode = (
       <RichContent
-        html={sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true, locale })}
+        html={sanitizeRichHtml(livePolicy.bodyHtml, { allowInlineStyles: true, locale })}
       />
+    );
+  } else {
+    bodyNode = (
+      <section
+        className="border border-border bg-muted p-6"
+        role="status"
+        aria-live="polite"
+      >
+        <h2 className="text-lg font-bold uppercase text-foreground">
+          {t("policy.temporarilyUnavailableTitle")}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          {t("policy.temporarilyUnavailableDescription")}
+        </p>
+      </section>
     );
   }
 
@@ -138,4 +143,3 @@ function buildStaticSidebarItems(locale: Locale, currentSlug: string): PolicySid
     },
   ];
 }
-

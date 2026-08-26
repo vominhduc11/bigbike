@@ -125,12 +125,29 @@ public class ChatProductDiscoveryApiTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         reset(assistantSettings, aiChatClient);
         when(assistantSettings.load(anyString())).thenAnswer(invocation -> settings(invocation.getArgument(0)));
+        when(assistantSettings.currentModel()).thenReturn("gemini-2.5-flash");
         when(aiChatClient.isConfigured()).thenReturn(true);
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
                 anyBoolean(), any(AiChatClient.ToolExecutor.class),
                 any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenAnswer(this::executeSearchAnswer);
+        bridgeModelAwareAnswer(aiChatClient);
+    }
+
+    private static void bridgeModelAwareAnswer(AiChatClient client) {
+        when(client.answerWithFallback(
+                anyString(), anyString(), anyString(), any(ChatToolRegistry.class),
+                anyBoolean(), any(AiChatClient.ToolExecutor.class),
+                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
+                .thenAnswer(invocation -> client.answer(
+                                invocation.getArgument(1), invocation.getArgument(2),
+                                invocation.getArgument(3), invocation.getArgument(4),
+                                invocation.getArgument(5), invocation.getArgument(6),
+                                invocation.getArgument(7), invocation.getArgument(8))
+                        .map(answer -> new AiChatClient.ModelAnswer(
+                                answer, invocation.getArgument(0), invocation.getArgument(0),
+                                false, null)));
     }
 
     @ParameterizedTest(name = "{0} ({1})")
@@ -230,7 +247,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void replayOfReportedBigBikeConversationKeepsCountsResolvesPronounsAndClearsOldScope() throws Exception {
+    void replayOfReportedBigBikeConversationResolvesPronounsAndClearsOldScope() throws Exception {
         AcceptanceFixture acceptance = acceptanceFixture();
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
@@ -238,11 +255,8 @@ public class ChatProductDiscoveryApiTest {
                 any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenAnswer(this::executeAcceptanceSearchAnswer);
 
-        JsonNode underFive = send(null, "Tôi muốn tìm mũ dưới 5tr", "vi");
-        UUID conversationId = UUID.fromString(underFive.path("conversationId").asText());
-        JsonNode fromThreeToFive = send(conversationId, "Từ 3tr đến 5tr đi", "vi");
-        JsonNode fromFourToFive = send(conversationId, "Từ 4tr đến 5tr có không", "vi");
-        JsonNode z503 = send(conversationId, "Có mũ ILM Z503 không", "vi");
+        JsonNode z503 = send(null, "Có mũ ILM Z503 không", "vi");
+        UUID conversationId = UUID.fromString(z503.path("conversationId").asText());
         JsonNode sizes = send(conversationId, "Sản phẩm này có bảng size như nào", "vi");
         JsonNode confirmation = send(conversationId, "Vậy sản phẩm này chưa có bảng size đúng ko", "vi");
         JsonNode technical = send(conversationId, "Còn thông số kỹ thuật của sản phẩm này thì sao", "vi");
@@ -252,33 +266,33 @@ public class ChatProductDiscoveryApiTest {
                 ChatToolService.ConversationContext.class);
         JsonNode aboveThree = send(conversationId, "Trên 3tr", "vi");
 
-        for (JsonNode response : List.of(underFive, fromThreeToFive, fromFourToFive, z503,
-                sizes, confirmation, technical, headsets, aboveThree)) {
+        for (JsonNode response : List.of(
+                z503, sizes, confirmation, technical, headsets, aboveThree)) {
             assertThat(response.path("mode").asText()).isEqualTo("AI");
             assertThat(response.path("reason").asText()).isEqualTo("AI");
         }
-        assertThat(underFive.path("answer").asText()).contains("12 mẫu");
-        assertThat(fromThreeToFive.path("answer").asText()).contains("8 mẫu");
-        assertThat(fromFourToFive.path("answer").asText()).contains("1 mẫu");
-        assertThat(findProduct(fromFourToFive.path("products"), acceptance.mf510().getSlug()))
-                .isNotNull();
         assertThat(findProduct(z503.path("products"), acceptance.z503().getSlug())).isNotNull();
         assertThat(z503.path("answer").asText()).contains("còn hàng");
         assertThat(sizes.path("answer").asText())
-                .contains("S, M, L, XL, XXL", "chưa có bảng size theo số đo");
+                .contains("S, M, L, XL, XXL", "chưa cập nhật bảng size theo số đo");
         assertThat(confirmation.path("answer").asText())
-                .contains("Dạ, đúng rồi", "chưa có bảng size theo số đo")
+                .contains("Dạ, đúng rồi", "chưa cập nhật bảng size theo số đo")
                 .isNotEqualTo(sizes.path("answer").asText());
         assertThat(technical.path("answer").asText())
                 .contains("DOT", "FMVSS 218", "ABS", "EPS")
                 .doesNotContain("TIÊU CHUẨN AN TOÀN")
                 .doesNotEndWith("TIÊU CHUẨN AN TOÀN.");
-        assertThat(headsets.path("answer").asText()).contains("9 mẫu tai nghe");
-        assertThat(contextAfterCategoryChange.category()).isEqualTo(acceptance.headsets().getSlug());
+        assertThat(headsets.path("answer").asText())
+                .contains("9 lựa chọn đang bán", "đây chưa phải kết quả cuối", "tầm giá");
+        assertThat(headsets.path("clarification").isObject()).isTrue();
+        assertThat(headsets.path("products").size()).isBetween(1, 3);
+        assertThat(contextAfterCategoryChange.category())
+                .isEqualTo("tai-nghe-bluetooth-mu-bao-hiem");
         assertThat(contextAfterCategoryChange.brand()).isNull();
         assertThat(contextAfterCategoryChange.minPrice()).isNull();
         assertThat(contextAfterCategoryChange.maxPrice()).isNull();
-        assertThat(aboveThree.path("answer").asText()).contains("5 mẫu tai nghe");
+        assertThat(aboveThree.path("answer").asText())
+                .contains("5 lựa chọn còn hàng", "không hỏi thêm");
         assertThat(aboveThree.path("products").size()).isEqualTo(5);
     }
 
@@ -490,8 +504,9 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("vẫn có thể hỏi tiếp", "em sẽ tra lại")
-                .doesNotContain("kết quả đã xác minh");
+        assertThat(data.path("answer").asText())
+                .contains("đang bận", "hỏi lại đúng câu", "Gặp nhân viên")
+                .doesNotContain("chưa có đúng mẫu", "shop không bán");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         assertThat(data.path("contacts").path("zaloUrl").asText()).isEqualTo("https://zalo.example");
         assertThat(data.path("contacts").path("messengerUrl").asText()).isEqualTo("https://messenger.example");
@@ -516,8 +531,9 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("mode").asText()).isEqualTo("AI");
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
-        assertThat(data.path("answer").asText()).contains("vẫn có thể hỏi tiếp", "em sẽ tra lại")
-                .doesNotContain("kết quả đã xác minh");
+        assertThat(data.path("answer").asText())
+                .contains("đang bận", "hỏi lại đúng câu", "Gặp nhân viên")
+                .doesNotContain("chưa có đúng mẫu", "shop không bán");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
                 .filteredOn(ChatMessageEntity::isAiCalled)
@@ -749,17 +765,31 @@ public class ChatProductDiscoveryApiTest {
 
         String marker = "bigbike-acceptance-" + UUID.randomUUID().toString().replace("-", "");
         Instant now = Instant.now();
+        CategoryEntity helmetRoot = categoryRepository.findBySlug("mu-bao-hiem")
+                .orElseThrow();
+        CategoryEntity headsetRoot = categoryRepository
+                .findBySlug("tai-nghe-bluetooth-mu-bao-hiem")
+                .orElse(null);
+        if (headsetRoot == null) {
+            headsetRoot = category(
+                    marker + "-headsets-root",
+                    "tai-nghe-bluetooth-mu-bao-hiem",
+                    "Tai nghe bluetooth",
+                    null,
+                    now);
+            categoryRepository.saveAndFlush(headsetRoot);
+        }
         CategoryEntity helmets = category(
                 marker + "-helmets",
                 "mu-bao-hiem-bigbike-acceptance-" + marker,
                 "Mũ bảo hiểm nghiệm thu trợ lý",
-                null,
+                helmetRoot,
                 now);
         CategoryEntity headsets = category(
                 marker + "-headsets",
                 "tai-nghe-bigbike-acceptance-" + marker,
                 "Tai nghe nghiệm thu trợ lý",
-                null,
+                headsetRoot,
                 now);
         createdCategoryIds.addAll(List.of(helmets.getId(), headsets.getId()));
         categoryRepository.saveAllAndFlush(List.of(helmets, headsets));

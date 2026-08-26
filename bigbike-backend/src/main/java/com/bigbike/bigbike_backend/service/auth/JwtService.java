@@ -71,6 +71,18 @@ public class JwtService {
         return generateAccessToken(userId, email, role, 0L);
     }
 
+    /** Five-minute, conversation-scoped token used only in the STOMP CONNECT header. */
+    public String generateChatRealtimeToken(String conversationId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(conversationId)
+                .claim("scope", "chat-realtime")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(300)))
+                .signWith(signingKey)
+                .compact();
+    }
+
     /**
      * Parses and validates an access token. Throws {@link JwtException} for
      * invalid, expired, or malformed tokens.

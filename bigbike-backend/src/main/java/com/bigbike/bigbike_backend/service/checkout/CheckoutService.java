@@ -161,15 +161,28 @@ public class CheckoutService {
         for (CartItemEntity cartItem : items) {
             OrderLineItemEntity lineItem = lineItemRepo.save(
                     buildLineItemFromCart(savedOrder, cartItem, now));
-            if (cartItem.getAssistantConversationId() != null
+            String attributedProductSlug = cartItem.getProductPk() == null ? null
+                    : productRepo.findById(cartItem.getProductPk())
+                            .map(ProductEntity::getSlug)
+                            .orElse(null);
+            Instant attributedTouchAt = cartItem.getAssistantAttributedAt() != null
+                    ? cartItem.getAssistantAttributedAt() : cartItem.getUpdatedAt();
+            if (chatInteractionService.isEligibleAtCheckout(
+                        cartItem.getAssistantInteractionId(),
+                        cartItem.getAssistantConversationId(),
+                        attributedProductSlug,
+                        attributedTouchAt)
                     && !chatOrderAttributionRepo.existsByOrderLineItemId(lineItem.getId())) {
                 ChatOrderAttributionEntity attribution = new ChatOrderAttributionEntity();
                 attribution.setOrderId(savedOrder.getId());
                 attribution.setOrderLineItemId(lineItem.getId());
-                    attribution.setConversationId(cartItem.getAssistantConversationId());
-                    attribution.setInteractionId(cartItem.getAssistantInteractionId());
-                    attribution.setActionType(chatInteractionService.actionType(
-                            cartItem.getAssistantInteractionId()));
+                attribution.setConversationId(cartItem.getAssistantConversationId());
+                attribution.setInteractionId(cartItem.getAssistantInteractionId());
+                attribution.setActionType(chatInteractionService.actionType(
+                        cartItem.getAssistantInteractionId()));
+                attribution.setProductSlug(attributedProductSlug);
+                attribution.setTouchAt(attributedTouchAt);
+                attribution.setAttributionWindowHours(168);
                 attribution.setAttributedAmount(lineItem.getLineTotal());
                 attribution.setCurrency(savedOrder.getCurrency());
                 attribution.setCreatedAt(now);

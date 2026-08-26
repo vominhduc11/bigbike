@@ -91,4 +91,12 @@ describe("Ranh giới stream — điều kiện để mã trạng thái HTTP ho�
   it("vẫn giữ trang 404 trong segment [locale] (có header/footer)", () => {
     expect(existsSync(join(LOCALE, "not-found.tsx"))).toBe(true);
   });
+
+  it.each([
+    ["product/[slug]/page.tsx", "sản phẩm"],
+    ["tin-tuc/[slug]/page.tsx", "bài viết"],
+  ])("%s giữ render động để %s phát đúng status/Location", (relativeFile: string) => {
+    const source = readFileSync(join(LOCALE, relativeFile), "utf8");
+    expect(source).toContain('export const dynamic = "force-dynamic";');
+  });
 });

@@ -121,6 +121,14 @@ describe('computeAttrSetWarning — khóa chuẩn thuộc tính màu', () => {
     expect(computeAttrSetWarning(items, t)).toBeNull()
   })
 
+  it('coi Kích cỡ/Size và Đời máy/Model là cùng loại thuộc tính', () => {
+    const items = [
+      variant({ key: 'a', name: '15 Pro - M', options: [opt('Đời máy', '15 Pro'), opt('Kích cỡ', 'M')] }),
+      variant({ key: 'b', name: '15 Pro Max - L', options: [opt('Model', '15 Pro Max'), opt('Size', 'L')] }),
+    ]
+    expect(computeAttrSetWarning(items, t)).toBeNull()
+  })
+
   it('trả null khi chưa khai thuộc tính nào', () => {
     expect(computeAttrSetWarning([variant({ key: 'a', options: [] })], t)).toBeNull()
   })

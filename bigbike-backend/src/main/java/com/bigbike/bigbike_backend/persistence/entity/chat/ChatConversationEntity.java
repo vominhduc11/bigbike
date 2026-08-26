@@ -31,11 +31,23 @@ public class ChatConversationEntity {
     @Column(name = "customer_id")
     private UUID customerId;
 
+    @Column(name = "visitor_id")
+    private UUID visitorId;
+
+    @Column(name = "thread_id", nullable = false)
+    private UUID threadId;
+
+    @Column(name = "continued_from_id")
+    private UUID continuedFromId;
+
     @Column(nullable = false, length = 2)
     private String locale;
 
     @Column(name = "turn_count", nullable = false)
     private int turnCount;
+
+    @Column(name = "counted_turns", nullable = false)
+    private int countedTurns;
 
     @Column(name = "ai_call_count", nullable = false)
     private int aiCallCount;
@@ -49,10 +61,25 @@ public class ChatConversationEntity {
     @Column(name = "lead_offer_count", nullable = false)
     private int leadOfferCount;
 
+    @Column(name = "lead_offer_request_id", unique = true)
+    private UUID leadOfferRequestId;
+
+    @Column(name = "lead_offer_opened_at")
+    private Instant leadOfferOpenedAt;
+
     /** Server-only, non-PII catalog/order follow-up context; see DATA_CONTRACT.md. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "context_json", columnDefinition = "jsonb")
     private String contextJson;
+
+    @Column(name = "sales_stage", nullable = false, length = 24)
+    private String salesStage = "BROWSING";
+
+    @Column(name = "last_next_step_type", length = 48)
+    private String lastNextStepType;
+
+    @Column(name = "declined_next_step_type", length = 48)
+    private String declinedNextStepType;
 
     @Column(name = "ended_reason", length = 32)
     private String endedReason;
@@ -75,6 +102,8 @@ public class ChatConversationEntity {
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
+        if (id == null) id = UUID.randomUUID();
+        if (threadId == null) threadId = id;
         if (startedAt == null) startedAt = now;
         if (lastMessageAt == null) lastMessageAt = now;
         if (createdAt == null) createdAt = now;

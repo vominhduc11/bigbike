@@ -30,6 +30,10 @@
 ### Notable architectural realities
 
 - OpenAPI is a checked-in companion file, not an automatically trusted source without verification. `CONFIRMED_FROM_STRUCTURE`
+  Since 2026-08-21 the companion is cross-checked on every build against a springdoc-generated
+  live specification (`OpenApiContractDriftTest`), with the 33 known gaps frozen in
+  `contract-drift-baseline.json`. The generated document is off by default in every profile
+  (`BIGBIKE_API_DOCS_ENABLED`) and hard-disabled under `prod`. `CONFIRMED_FROM_CODE_2026-08-21`
 - POS (point-of-sale / walk-in) was **removed** platform-wide (owner decision 2026-06-23) — BigBike is online-only. The POS endpoints, `AdminPosController` / `PosOrderService`, and the `pos.*` permissions no longer exist; all sales go through the storefront checkout. `REMOVED`
 - Serial-number tracking was removed platform-wide (2026-06-23, V259). Inventory is a **boolean availability toggle** (2026-06-23, V261): per-variant `is_available` / per-no-variant-product `stock_state`, set by hand; no tracked quantity, no auto-decrement on sale (admin marks "Hết hàng" manually, oversell not auto-prevented). The quantity columns are kept but dormant. The warranty feature was removed entirely (2026-06-23, V266) — no warranty records, services, lookup, or `/bao-hanh` page. `CONFIRMED_FROM_CODE`
 - Receipt tables exist in the schema, but a receiving service/controller was not confirmed in the current Java layer. `NOT_FOUND_IN_REPO`
@@ -81,5 +85,6 @@ Kiến trúc render: **ISR on-demand + SSG + CSR hybrid — KHÔNG SSR.** `CONFI
 
 - `docs/business/` defines scope and behavior.
 - `docs/engineering/` defines technical contracts and boundaries.
-- `bigbike-openapi.json` is the machine-readable API companion.
+- `bigbike-openapi.json` is the machine-readable API companion — the contract, served at `/v3/api-docs`.
+- `/v3/api-docs/live` (springdoc, developer machines only) is the generated cross-check, never the contract.
 - Historical audits and phase reports are evidence only.

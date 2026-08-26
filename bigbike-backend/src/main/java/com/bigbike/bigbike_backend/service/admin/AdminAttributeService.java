@@ -9,7 +9,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.mapper.AttributeMapper;
 import com.bigbike.bigbike_backend.util.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
@@ -33,7 +32,6 @@ public class AdminAttributeService {
     private final AttributeValueJpaRepository valueRepo;
     private final ProductVariantOptionJpaRepository variantOptionRepo;
     private final AuditLogWriter auditLogWriter;
-    private final AttributeMapper attributeMapper;
     private final AuditLogFactory auditLogFactory;
     private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
@@ -58,7 +56,7 @@ public class AdminAttributeService {
         attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
         return valueRepo.findAllByAttributeIdOrderBySortOrderAsc(attributeId).stream()
-                .map(attributeMapper::toResponse)
+                .map(this::toValueResponse)
                 .toList();
     }
 
@@ -213,17 +211,23 @@ public class AdminAttributeService {
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_CREATED", "ATTRIBUTE", null, null, attributeValueSnapshot(saved)));
         catalogReferenceCacheEvictor.evictAllAfterCommit();
-        return attributeMapper.toResponse(saved);
+        return toValueResponse(saved);
     }
 
     /**
-     * Rename an existing value. Only the display label changes; the slug stays
-     * immutable so existing variant options that reference it keep working.
+     * Rename an unused value. Used values are immutable so public variant names,
+     * filters and media matching cannot change underneath existing products.
      */
     @Transactional
     public AttributeValueResponse updateValueLabel(String valueId, UpdateAttributeValueRequest request, UUID adminId) {
         AttributeValueEntity entity = valueRepo.findById(valueId)
                 .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
+        long usageCount = variantOptionRepo.countByAttributeValue_Id(valueId);
+        if (usageCount > 0) {
+            throw new ConflictException(
+                    "Giá trị \"" + entity.getLabel() + "\" đang được " + usageCount
+                            + " biến thể sử dụng, không thể đổi tên.");
+        }
         String before = attributeValueSnapshot(entity);
         entity.setLabel(request.label().trim());
         // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
@@ -234,7 +238,7 @@ public class AdminAttributeService {
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_UPDATED", "ATTRIBUTE", null, before, attributeValueSnapshot(saved)));
         catalogReferenceCacheEvictor.evictAllAfterCommit();
-        return attributeMapper.toResponse(saved);
+        return toValueResponse(saved);
     }
 
     /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */
@@ -253,6 +257,18 @@ public class AdminAttributeService {
                 + "\",\"slug\":\"" + esc(v.getSlug())
                 + "\",\"label\":\"" + esc(v.getLabel())
                 + "\",\"labelEn\":\"" + esc(v.getLabelEn()) + "\"}";
+    }
+
+    private AttributeValueResponse toValueResponse(AttributeValueEntity value) {
+        return new AttributeValueResponse(
+                value.getId(),
+                value.getAttribute() == null ? null : value.getAttribute().getId(),
+                value.getSlug(),
+                value.getLabel(),
+                value.getLabelEn(),
+                value.getSortOrder(),
+                variantOptionRepo.countByAttributeValue_Id(value.getId())
+        );
     }
 
     private static String esc(String s) {

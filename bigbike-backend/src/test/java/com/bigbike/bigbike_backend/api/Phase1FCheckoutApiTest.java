@@ -636,7 +636,7 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkout_attributesOnlyVerifiedChatCartLine_andRetryDoesNotDuplicateRevenue() throws Exception {
+    void checkout_attributesOnlyVerifiedProductClick_andRetryDoesNotDuplicateRevenue() throws Exception {
         ProductEntity product = createTestProduct(
                 "Assistant-attributed product", 1_590_000, null, PublishStatus.PUBLISHED);
         ChatConversationEntity conversation = new ChatConversationEntity();
@@ -648,23 +648,39 @@ class Phase1FCheckoutApiTest {
         assistant.setContent("Sản phẩm đã được kiểm tra.");
         assistant.setSource("TOOL");
         assistant.setProductsJson("[{\"slug\":\"" + product.getSlug() + "\"}]");
-        chatMessageRepo.save(assistant);
+        assistant.setActionMetadata("{}");
+        assistant = chatMessageRepo.save(assistant);
 
         GuestSession session = newGuestSession();
         ProductEntity unshown = createTestProduct(
                 "Product not shown by assistant", 990_000, null, PublishStatus.PUBLISHED);
+        MvcResult interaction = mockMvc.perform(post("/api/v1/chat/interactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clientEventId\":\"" + UUID.randomUUID()
+                                + "\",\"conversationId\":\"" + conversation.getId()
+                                + "\",\"assistantMessageId\":\"" + assistant.getId()
+                                + "\",\"type\":\"PRODUCT_VIEWED\",\"productSlug\":\""
+                                + product.getSlug() + "\"}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attributionToken").isString())
+                .andReturn();
+        String attributionToken = extractJsonValue(
+                interaction.getResponse().getContentAsString(), "attributionToken");
+
+        // A mismatched proof never blocks the sale, but that line is not attributed.
         mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\":\"" + unshown.getId()
-                                + "\",\"quantity\":1,\"assistantConversationId\":\""
-                                + conversation.getId() + "\"}")
+                                + "\",\"quantity\":1,\"assistantAttributionToken\":\""
+                                + attributionToken + "\"}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\":\"" + product.getId()
-                                + "\",\"quantity\":2,\"assistantConversationId\":\""
-                                + conversation.getId() + "\"}")
+                                + "\",\"quantity\":2,\"assistantAttributionToken\":\""
+                                + attributionToken + "\"}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk());
 

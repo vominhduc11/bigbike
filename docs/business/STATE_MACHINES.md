@@ -62,6 +62,7 @@ File này liên quan trực tiếp đến:
 | Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. An automatic moderator may additionally drive `PENDING → SPAM\|TRASH` (never `APPROVED`) — §15A "Automatic moderation actor". | Backend service + optimistic version | `OWNER_CONFIRMED_2026-08-08` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`/`012`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
 | Chat lead invitation | `lead_offer_status` + `lead_offer_count` | `NONE`, `OFFERED`, `ACCEPTED`, `DECLINED`; count `0..2` | Lời mời 1 phát theo câu trả lời đủ điều kiện; lời mời 2 chỉ sau viewed/ignored và trigger xác minh; accept/decline kết thúc. | Backend service + DB constraints + idempotent interaction | `OWNER_CONFIRMED_2026-08-20` | `CHAT_RULE_012`, `CHAT_RULE_029`, V1041 |
+| Chat staff handoff | `chat_handoff_requests.status` | `WAITING`, `ACTIVE`, `RETURNED_TO_AI`, `CLOSED` | Yêu cầu → một nhân viên nhận nguyên tử → bàn giao lại AI hoặc đóng; không có hai người cùng nhận. | Backend row lock/conditional update + DB constraints | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_045`–`047`, V1056 |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
 ## 4. Product State Machine
@@ -848,6 +849,37 @@ Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 
 Status: `OWNER_CONFIRMED_2026-08-20`; backend/test evidence được bổ sung cùng V1041.
 
+## 15C. Trợ lý BigBike — nhân viên tiếp nhận hội thoại
+
+| From | To | Trigger / guard | Customer-visible result |
+|---|---|---|---|
+| — | `WAITING` | Khách bấm/nói gặp nhân viên; idempotent theo request/conversation. Ngoài giờ vẫn lưu nhưng không hứa đang có người trực. | Báo đang chờ trong giờ, hoặc báo lần mở cửa kế tiếp và mời để lại liên hệ ngoài giờ. |
+| `WAITING` | `ACTIVE` | Admin có `chat.reply`; conditional update chỉ thành công nếu chưa ai nhận. | Nhãn cho biết nhân viên BigBike đang trả lời; trợ lý ngừng tự động. |
+| `ACTIVE` | `RETURNED_TO_AI` | Chỉ người đang nhận, hoặc owner wildcard mở khóa có audit. | Tin hệ thống báo nhân viên đã bàn giao và trợ lý tiếp tục. |
+| `ACTIVE` | `CLOSED` | Chỉ người đang nhận, hoặc owner wildcard mở khóa có audit. | Tin hệ thống kết thúc lịch sự, vẫn có lối mở hội thoại nối tiếp. |
+
+Forbidden: `WAITING → RETURNED_TO_AI|CLOSED`; người không nhận không được gửi/bàn giao/đóng; `RETURNED_TO_AI|CLOSED` không quay lại `ACTIVE` trên cùng handoff; assistant không tạo tin khi `ACTIVE`. Claim thứ hai trả `409` với người đang nhận. Dữ liệu `ACKNOWLEDGED` cũ được đọc như lịch sử đã đóng, không tự mở lại.
+
+Status: `OWNER_CONFIRMED_2026-08-25`; `CHAT_RULE_040`, `CHAT_RULE_045`–`047`.
+
+## 15D. Trợ lý BigBike — vòng đời ảnh khách gửi
+
+| From | To | Guard / side effect |
+|---|---|---|
+| — | `PENDING` | Feature bật, disclosure bắt buộc đã hiển thị trước nút chọn/gửi, ownership hợp lệ, JPG/PNG/WebP ≤8 MB và trong trần ba ảnh/thread. Object đã re-encode nằm trong private bucket. |
+| `PENDING` | `ATTACHED` | Cùng customer/visitor + request id gắn ảnh vào customer message; retry idempotent. |
+| `ATTACHED` | `PROCESSING` | Staff chưa ACTIVE và atomic daily image slot còn; slot không hoàn lại sau provider call. |
+| `PROCESSING` | `READY` | Intent/evidence server-owned đã lưu; outward answer vẫn đi qua anti-fabrication guard. |
+| `PROCESSING` | `UNRECOGNIZED` | Không đủ evidence/threshold; không gắn một product cụ thể. |
+| `PROCESSING` | `REJECTED_UNSAFE` | Provider safety/intent chặn; object bị xóa ngay, transcript chỉ giữ placeholder/reason. |
+| `ATTACHED` | `LIMIT_SKIPPED` | Hết daily slot; ảnh vẫn chỉ người sở hữu/`chat.read` xem, chat chữ tiếp tục. |
+| `PENDING|ATTACHED|READY|UNRECOGNIZED|LIMIT_SKIPPED` | `DELETING` | Customer xóa history, retention 90 ngày hoặc pending quá một giờ. |
+| `DELETING` | `DELETED` | MinIO xác nhận object không còn rồi DB mới được xóa/cascade; lỗi storage giữ trạng thái để retry và không báo success giả. |
+
+Forbidden: public bucket/URL; token trong query; reuse ảnh làm history provider ở lượt sau; lưu raw filename/EXIF/embedding khách; `UNRECOGNIZED → READY` không có customer upload mới hoặc calibration/evidence mới.
+
+Status: `OWNER_CONFIRMED_2026-08-26`; `CHAT_RULE_057`–`059`.
+
 ## 16. Cross-Entity State Dependencies
 
 | Source Entity | Source State | Affected Entity | Required / Resulting State | Reason | Status |
@@ -986,13 +1018,13 @@ Documentation này được tạo bằng thao tác đọc/inspect repository qua
 Phạm vi: **chỉ trang quản trị**. Storefront không có state machine bảo trì (`BUSINESS_RULES` `MAINTENANCE_RULE_001`).
 
 ```text
-NORMAL ──(dev bấm "Báo trước")──> UPCOMING ──(dev bấm "Khoá ngay")──> ACTIVE
-  ^                                                                      |
-  └──────────────────────────(dev bấm "Mở lại")─────────────────────────┘
+NORMAL ──(DEVELOPER bật khoá)──> ACTIVE
+  ^                                  |
+  └────────(DEVELOPER tắt khoá)─────┘
 ```
 
 - `NORMAL`: nhân viên thao tác bình thường.
-- `UPCOMING`: nhân viên nhận cảnh báo realtime để lưu việc đang làm dở; **không chặn ghi** — chặn ở đây sẽ làm cảnh báo trở nên vô nghĩa.
 - `ACTIVE`: backend từ chối mọi thao tác ghi admin bằng `423 MAINTENANCE_ACTIVE` (đọc không bị chặn ở tầng backend, nhưng giao diện che kín toàn màn với nhân viên nên thực tế họ không tra cứu được). Riêng `DEVELOPER` vẫn ghi được, nếu không thì chính người khoá cũng không mở lại được.
-- Mọi chuyển trạng thái đều **thủ công**, do `DEVELOPER` bấm, theo cả hai chiều. Không có timer, không có `@Scheduled`, không tự động nhả khoá (`MAINTENANCE_RULE_006`).
+- Mọi chuyển trạng thái đều **thủ công**, do `DEVELOPER` bấm công tắc, theo cả hai chiều. Không có timer, không có `@Scheduled`, không tự động nhả khoá (`MAINTENANCE_RULE_006`).
+- `UPCOMING` là trạng thái lịch sử không còn hợp lệ. Khi cập nhật dữ liệu, hệ thống chuẩn hoá dữ liệu cũ về `NORMAL` và xoá giờ dự kiến.
 - Trạng thái nằm ở bảng riêng `maintenance_state` (1 dòng, có `CHECK` constraint), không nằm trong `site_settings`.

@@ -1,18 +1,16 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock3, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchMaintenance } from '../lib/adminApi'
-import { formatDateTime } from '../lib/formatters'
 
 function normalizeStatus(value) {
   const source = value?.data && typeof value.data === 'object' ? value.data : value
   if (!source || typeof source !== 'object') return null
   return {
-    state: String(source.state || 'NORMAL').toUpperCase(),
+    state: String(source.state || 'NORMAL').toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'NORMAL',
     staffNote: source.staffNote || '',
-    expectedAt: source.expectedAt || null,
     // Absent on the STOMP payload: the topic is broadcast, while canToggle is per-caller.
     // Keep it undefined there so the merge below can preserve the polled value.
     canToggle: source.canToggle,
@@ -49,30 +47,27 @@ export function MaintenanceOverlay() {
       ...(prev || {}),
       state: next.state,
       staffNote: next.staffNote,
-      expectedAt: next.expectedAt,
     }))
   }), [queryClient])
 
-  if (!data || !['UPCOMING', 'ACTIVE'].includes(data.state)) return null
+  if (!data || data.state !== 'ACTIVE') return null
 
-  const isActive = data.state === 'ACTIVE'
   const canToggle = data.canToggle === true
-  const expected = data.expectedAt ? formatDateTime(data.expectedAt) : ''
 
   const details = (
-    <>
-      {data.staffNote ? <p className="mb-0 mt-2">{data.staffNote}</p> : null}
-      {expected ? (
-        <p className="mb-0 mt-2 text-muted-foreground">
-          {t('maintenance.expectedAt', { defaultValue: 'Dự kiến xong lúc' })}: {expected}
-        </p>
-      ) : null}
-    </>
+    <div className="mt-4 rounded-[var(--admin-radius-control)] border border-border bg-muted p-3">
+      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t('maintenance.overlayStaffNote', { defaultValue: 'Lời nhắn cho nhân viên' })}
+      </p>
+      <p className="mb-0 mt-1 whitespace-pre-wrap text-sm text-foreground">
+        {data.staffNote || t('maintenance.noStaffNote', { defaultValue: 'Chưa có lời nhắn.' })}
+      </p>
+    </div>
   )
 
   // Blocking modal: staff cannot save anything, so don't let them keep typing into a form
   // whose submit the server will refuse.
-  if (isActive && !canToggle) {
+  if (!canToggle) {
     return (
       <div
         className="fixed inset-0 z-[var(--admin-z-overlay)] flex items-center justify-center bg-black/60 p-4"
@@ -112,22 +107,11 @@ export function MaintenanceOverlay() {
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        {isActive
-          ? <Lock className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
-          : <Clock3 className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />}
+        <Lock className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
         <div className="min-w-0 text-sm text-foreground">
           <p className="m-0 font-semibold">
-            {isActive
-              ? t('maintenance.bannerActive', { defaultValue: 'Bạn đang khoá trang quản trị để bảo trì.' })
-              : t('maintenance.bannerUpcoming', { defaultValue: 'Trang quản trị sắp bảo trì.' })}
+            {t('maintenance.bannerActive', { defaultValue: 'Bạn đang khoá trang quản trị để bảo trì.' })}
           </p>
-          {!isActive ? (
-            <p className="mb-0 mt-1">
-              {t('maintenance.bannerUpcomingHint', {
-                defaultValue: 'Hãy lưu lại các thay đổi đang làm dở. Hiện tại bạn vẫn lưu được bình thường.',
-              })}
-            </p>
-          ) : null}
           {details}
         </div>
       </div>

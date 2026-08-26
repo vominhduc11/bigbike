@@ -9,18 +9,34 @@ import {
 } from "./chat-persistence";
 
 const snapshot: ChatPersistenceSnapshot = {
-  version: 2,
+  version: 3,
   expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
   locale: "vi",
   conversationId: "conversation-persistence",
   messages: [
-    { id: "user-1", role: "USER", content: "Tìm giúp tôi một mẫu phù hợp" },
+    {
+      id: "user-1",
+      role: "USER",
+      content: "Mũ bảo hiểm",
+      clarificationSelection: {
+        clarificationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        optionId: "group-helmet",
+      },
+    },
     {
       id: "assistant-1",
       role: "ASSISTANT",
       content: "Em đang kiểm tra các mẫu phù hợp.",
       products: [{ slug: "mu-test", name: "Mũ kiểm thử", stockState: "IN_STOCK" }],
       actions: [{ type: "ORDER_LOOKUP" }],
+      clarification: {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        criterion: "USE_CASE",
+        options: [
+          { id: "use-long-tour", label: "Đi tour đường dài", count: 5, kind: "FILTER" },
+          { id: "show-all", label: "Cứ cho em xem tất cả", count: null, kind: "BYPASS" },
+        ],
+      },
       noResults: false,
     },
   ],
@@ -53,24 +69,42 @@ describe("chat persistence", () => {
   });
 
   it("upgrades a valid version-one snapshot without losing its active lead prompt", () => {
-    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({
-      version: 1,
-      expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
-      locale: "vi",
-      conversationId: "legacy-conversation",
-      messages: [{ id: "assistant-old", role: "ASSISTANT", content: "Nội dung cũ" }],
-      remainingTurns: 5,
-      serviceMode: "AI",
-      leadPrompt: true,
-      leadCaptured: false,
-      leadDeclined: false,
-    }));
+    window.localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
+        locale: "vi",
+        conversationId: "legacy-conversation",
+        messages: [{ id: "assistant-old", role: "ASSISTANT", content: "Nội dung cũ" }],
+        remainingTurns: 5,
+        serviceMode: "AI",
+        leadPrompt: true,
+        leadCaptured: false,
+        leadDeclined: false,
+      }),
+    );
 
     expect(readChatSnapshot()).toMatchObject({
-      version: 2,
+      version: 3,
       conversationId: "legacy-conversation",
       leadPromptSequence: 1,
       viewedLeadSequences: [],
+    });
+  });
+
+  it("upgrades a valid version-two snapshot to the current format", () => {
+    window.localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({
+        ...snapshot,
+        version: 2,
+      }),
+    );
+
+    expect(readChatSnapshot()).toMatchObject({
+      version: 3,
+      conversationId: snapshot.conversationId,
     });
   });
 

@@ -35,6 +35,17 @@ vi.mock('react-i18next', () => ({
       'products.detail.faqs.questionPlaceholder': 'Question *',
       'products.detail.faqs.answerPlaceholder': 'Answer *',
       'products.detail.faqs.empty': 'No questions',
+      'products.detail.faqs.addFaq': 'Add FAQ',
+      'products.detail.faqs.removeFaq': 'Remove FAQ',
+      'products.detail.specs.modeStructured': 'Structured input',
+      'products.detail.specs.modeHtml': 'Paste HTML',
+      'products.detail.specs.namePlaceholder': 'Spec name',
+      'products.detail.specs.nameLabel': 'Spec name',
+      'products.detail.specs.valuePlaceholder': 'Spec value',
+      'products.detail.specs.valueFormatHint': 'Spec value hint',
+      'products.detail.specs.addSpec': 'Add spec',
+      'products.detail.specs.removeSpec': 'Remove spec',
+      'products.detail.dragToReorder': 'Reorder item',
       'products.detail.video.fromLibrary': 'Upload / media library',
       'products.detail.video.pickFromLibrary': 'Pick from library',
       'products.detail.video.legacySourceWarning': 'Legacy source must be replaced',
@@ -74,17 +85,19 @@ vi.mock('../../components/VideoPickerModal', () => ({
 }))
 
 vi.mock('../../components/Sortable', () => ({
-  SortableList: ({ items, renderItem, footer }) => (
+  SortableList: ({ items, renderItem, footer, onReorder }) => (
     <div>{items.map((item, index) => (
       <div key={item._key || index}>{renderItem(item, { setNodeRef: () => {}, style: {}, handleProps: {} }, index)}</div>
-    ))}{footer}</div>
+    ))}{footer}
+      {onReorder && <button type="button" aria-label="Reorder items" onClick={() => onReorder([...items].reverse())}>Reorder</button>}
+    </div>
   ),
   DragHandle: ({ disabled, label }) => <button type="button" disabled={disabled} aria-label={label}>Drag</button>,
 }))
 
 vi.mock('../../lib/confirm', () => ({ showConfirm: vi.fn() }))
 
-import { FaqEditor, GalleryEditor, HighlightsEditor, HighlightsHtmlEditor, VideoEditor } from './ContentEditors'
+import { FaqEditor, GalleryEditor, HighlightsEditor, HighlightsHtmlEditor, SpecificationsEditor, VideoEditor } from './ContentEditors'
 import { showConfirm } from '../../lib/confirm'
 
 function FaqHarness() {
@@ -92,6 +105,28 @@ function FaqHarness() {
     { _key: 'first', question: 'Có kèm Pinlock không?', answer: '<p>Có.</p>', questionEn: 'Does it include Pinlock?', answerEn: '<p>Yes.</p>' },
   ])
   return <FaqEditor items={items} onChange={setItems} validationErrors={{}} />
+}
+
+function SpecificationsHarness() {
+  const [html, setHtml] = useState(
+    '<table class="shop_attributes"><tbody><tr><th scope="row">Trọng lượng</th><td>1.4 kg</td></tr></tbody></table>',
+  )
+  return <SpecificationsEditor html={html} onHtmlChange={setHtml} />
+}
+
+function DynamicFaqHarness() {
+  const [contentLang, setContentLang] = useState('vi')
+  const [items, setItems] = useState([
+    { _key: 'first', question: 'Câu hỏi một?', answer: '<p>Đáp án một.</p>', questionEn: 'Question one?', answerEn: '<p>Answer one.</p>' },
+    { _key: 'second', question: 'Câu hỏi hai?', answer: '<p>Đáp án hai.</p>', questionEn: 'Question two?', answerEn: '<p>Answer two.</p>' },
+  ])
+  return (
+    <div>
+      <button type="button" onClick={() => setContentLang('vi')}>Switch VI</button>
+      <button type="button" onClick={() => setContentLang('en')}>Switch EN</button>
+      <FaqEditor items={items} onChange={setItems} validationErrors={{}} contentLang={contentLang} />
+    </div>
+  )
 }
 
 describe('HighlightsEditor structured mode', () => {
@@ -220,6 +255,57 @@ describe('FaqEditor HTML tab', () => {
     expect(onChange).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ question: 'Câu hỏi mới?', answer: '<p>Đáp án mới.</p>' }),
     ]))
+  })
+})
+
+describe('editor danh sách giữ lifecycle khi thêm, xoá, sắp xếp và đổi ngôn ngữ', () => {
+  it('SpecificationsEditor thêm/xoá/sắp xếp dòng mà không mất editor đang sống', async () => {
+    vi.mocked(showConfirm).mockResolvedValue(true)
+    const user = userEvent.setup()
+    render(<SpecificationsHarness />)
+
+    expect(screen.getAllByLabelText('Spec name')).toHaveLength(1)
+    expect(screen.getAllByTestId('rich-text')).toHaveLength(1)
+
+    await user.click(screen.getByRole('button', { name: /Add spec/ }))
+    expect(screen.getAllByLabelText('Spec name')).toHaveLength(2)
+    expect(screen.getAllByTestId('rich-text')).toHaveLength(2)
+
+    const names = screen.getAllByLabelText('Spec name')
+    fireEvent.change(names[0], { target: { value: 'Trọng lượng' } })
+    fireEvent.change(names[1], { target: { value: 'Chuẩn an toàn' } })
+    await user.click(screen.getByRole('button', { name: 'Reorder items' }))
+    expect(screen.getAllByLabelText('Spec name').map((input) => input.value)).toEqual(['Chuẩn an toàn', 'Trọng lượng'])
+
+    await user.click(screen.getAllByRole('button', { name: 'Remove spec' })[0])
+    expect(screen.getAllByLabelText('Spec name')).toHaveLength(1)
+    expect(screen.getAllByTestId('rich-text')).toHaveLength(1)
+  })
+
+  it('FaqEditor thêm/xoá/sắp xếp và khóa đúng thao tác khi chuyển sang EN', async () => {
+    vi.mocked(showConfirm).mockResolvedValue(true)
+    const user = userEvent.setup()
+    render(<DynamicFaqHarness />)
+
+    await user.click(screen.getByRole('button', { name: /Add FAQ/ }))
+    expect(screen.getAllByPlaceholderText('Question *')).toHaveLength(3)
+    expect(screen.getAllByTestId('rich-text')).toHaveLength(3)
+
+    const questions = screen.getAllByPlaceholderText('Question *')
+    fireEvent.change(questions[2], { target: { value: 'Câu hỏi thêm?' } })
+    await user.click(screen.getAllByRole('button', { name: 'Remove FAQ' })[2])
+    expect(screen.getAllByPlaceholderText('Question *')).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Reorder items' }))
+    expect(screen.getAllByPlaceholderText('Question *').map((input) => input.value)).toEqual(['Câu hỏi hai?', 'Câu hỏi một?'])
+
+    await user.click(screen.getByRole('button', { name: 'Switch EN' }))
+    expect(screen.getAllByPlaceholderText('Question *').map((input) => input.value)).toEqual(['Question two?', 'Question one?'])
+    expect(screen.queryByRole('button', { name: /Add FAQ/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Reorder item' })[0]).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Switch VI' }))
+    expect(screen.getByRole('button', { name: /Add FAQ/ })).toBeEnabled()
   })
 })
 

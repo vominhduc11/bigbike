@@ -261,7 +261,7 @@ class AiChatFunctionCallingTest {
 
         for (String response : responses) {
             AtomicInteger executions = new AtomicInteger();
-            Optional<AiChatClient.HybridAnswer> result = client(new ScriptedTransport(response)).answer(
+            Optional<AiChatClient.HybridAnswer> result = client(new ScriptedTransport(response, response)).answer(
                     "Tìm mũ", "vi", REGISTRY, true,
                     (call, session) -> {
                         executions.incrementAndGet();
@@ -270,6 +270,33 @@ class AiChatFunctionCallingTest {
             assertThat(result).as(response).isEmpty();
             assertThat(executions).as(response).hasValue(0);
         }
+    }
+
+    @Test
+    void invalidToolCallIsDroppedAndAValidRecoveryCallCompletesTheSameCustomerTurn() {
+        ScriptedTransport transport = new ScriptedTransport(
+                functionCall("get_my_orders", Map.of("scope", "latest", "customerId", "forged"), "bad-1"),
+                functionCall("search_products", Map.of("query", "LS2 FF800 Storm", "lang", "vi"), "search-1"),
+                functionCall("get_product", Map.of("slug", PRODUCT_SLUG), "detail-1"),
+                finalAnswer(safeAnswer(
+                        "Em đã tìm đúng mẫu LS2 FF800 Storm đang bán. Anh/chị xem thẻ sản phẩm bên dưới nhé.")));
+        AtomicInteger executions = new AtomicInteger();
+
+        Optional<AiChatClient.HybridAnswer> result = client(transport).answer(
+                "Mũ bảo hiểm fullface LS2 FF800 Storm có mấy màu?", "vi", REGISTRY, true,
+                (call, session) -> {
+                    executions.incrementAndGet();
+                    return execution(call.name(), "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}", List.of(card()));
+                });
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().executedTools())
+                .containsExactly(ChatToolRegistry.SEARCH_PRODUCTS, ChatToolRegistry.GET_PRODUCT);
+        assertThat(result.orElseThrow().products()).extracting(ChatProductCardResponse::slug)
+                .containsExactly(PRODUCT_SLUG);
+        assertThat(result.orElseThrow().answer().answer()).doesNotContain("chưa có đúng mẫu");
+        assertThat(executions).hasValue(2);
+        assertThat(transport.requests()).hasSize(4);
     }
 
     @Test
@@ -395,8 +422,9 @@ class AiChatFunctionCallingTest {
         AiChatClient.ToolExecutor failingTool = (call, session) -> {
             throw new IllegalStateException("database timeout");
         };
-        assertThat(client(new ScriptedTransport(functionCall(
-                "search_products", Map.of("query", "mũ", "lang", "vi"), null))).answer(
+        String failingCall = functionCall(
+                "search_products", Map.of("query", "mũ", "lang", "vi"), null);
+        assertThat(client(new ScriptedTransport(failingCall, failingCall)).answer(
                 "Tìm mũ", "vi", REGISTRY, true, failingTool)).isEmpty();
 
         assertThat(client(new ScriptedTransport(new IllegalStateException("provider timeout"))).answer(
@@ -477,6 +505,65 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
+    void selectedPrimaryFailureImmediatelyUsesTheFastFallback() {
+        HttpServerErrorException unavailable = HttpServerErrorException.create(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Unavailable",
+                HttpHeaders.EMPTY,
+                new byte[0],
+                StandardCharsets.UTF_8);
+        List<String> calledModels = new ArrayList<>();
+        AtomicInteger sleeps = new AtomicInteger();
+        AiChatClient client = new AiChatClient(
+                "test-key",
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-lite",
+                35,
+                (model, body, timeoutMillis) -> {
+                    calledModels.add(model);
+                    if ("gemini-3.5-flash".equals(model)) throw unavailable;
+                    return functionCall(
+                            "search_products",
+                            Map.of("query", "tanami", "lang", "vi"),
+                            "fallback-search");
+                },
+                milliseconds -> sleeps.incrementAndGet());
+
+        Optional<AiChatClient.ModelAnswer> result = client.answerWithFallback(
+                "gemini-3.5-flash",
+                "Tìm mũ tanami",
+                "vi",
+                REGISTRY,
+                true,
+                (call, session) -> new ChatToolService.ToolExecution(
+                        call.name(),
+                        "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
+                        List.of(card()),
+                        List.of(),
+                        Set.of(),
+                        new ChatToolService.DeterministicAnswer(
+                                "Em đã tìm thấy một mẫu đang bán để anh/chị xem.",
+                                false, false, false)),
+                ChatToolService.AssistantCatalogVocabulary.empty(),
+                List.of(),
+                List.of());
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().requestedModel()).isEqualTo("gemini-3.5-flash");
+        assertThat(result.orElseThrow().servedModel()).isEqualTo("gemini-2.5-flash-lite");
+        assertThat(result.orElseThrow().fallbackUsed()).isTrue();
+        assertThat(result.orElseThrow().fallbackReason()).isEqualTo("PROVIDER_5XX");
+        assertThat(result.orElseThrow().modelUsages())
+                .extracting(AiChatClient.ModelUsage::modelId)
+                .containsExactly("gemini-3.5-flash", "gemini-2.5-flash-lite");
+        assertThat(result.orElseThrow().modelUsages())
+                .extracting(AiChatClient.ModelUsage::providerRequestCount)
+                .containsExactly(1, 1);
+        assertThat(calledModels).containsExactly("gemini-3.5-flash", "gemini-2.5-flash-lite");
+        assertThat(sleeps).hasValue(0);
+    }
+
+    @Test
     void maxTokensFinalResponseKeepsOnlyCompleteGroundedSentences() {
         ScriptedTransport transport = new ScriptedTransport(
                 functionCall("search_products", Map.of("query", "tanami", "lang", "vi"), "search-1"),
@@ -506,8 +593,9 @@ class AiChatFunctionCallingTest {
         appender.start();
         logger.addAppender(appender);
         try {
-            AiChatClient client = client(new ScriptedTransport(functionCall(
-                    "search_products", Map.of("query", "mũ", "lang", "vi"), null)));
+            String failingCall = functionCall(
+                    "search_products", Map.of("query", "mũ", "lang", "vi"), null);
+            AiChatClient client = client(new ScriptedTransport(failingCall, failingCall));
             client.answer(
                     "Tìm mũ cho khach@example.com, 0900 123 456, access-token-secret",
                     "vi", REGISTRY, true,

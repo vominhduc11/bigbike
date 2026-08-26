@@ -150,33 +150,64 @@ class CatalogPostgresQueryTest {
         assertThat(catalogReadRepository.findProductsFiltered(
                 "lot", "PUBLISHED", null, null, null, null, "vi"))
                 .extracting(Product::id)
-                .contains(nameMatch.getId(), englishNameMatch.getId(), skuMatch.getId())
+                .contains(nameMatch.getId(), skuMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
         assertThat(productRepository.findAll(ProductFilterSpecifications.build(
                 "lot", Set.of(PublishStatus.PUBLISHED), false,
                 null, null, Set.of(), null)))
                 .extracting(ProductEntity::getId)
-                .contains(nameMatch.getId(), englishNameMatch.getId(), skuMatch.getId())
+                .contains(nameMatch.getId(), skuMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
         assertThat(catalogReadRepository.findPublishedProductsPaged(
                 null, null, "lot", List.of(), null, null, null,
                 null, new SortSpec("name", SortDirection.ASC), 1, 100, "vi").items())
                 .extracting(Product::id)
-                .contains(nameMatch.getId(), englishNameMatch.getId(), skuMatch.getId())
+                .contains(nameMatch.getId(), skuMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
         assertThat(catalogReadRepository.searchPublishedProducts(List.of("lot"), "vi", 100))
                 .extracting(Product::id)
-                .contains(nameMatch.getId(), englishNameMatch.getId(), skuMatch.getId())
+                .contains(nameMatch.getId(), skuMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
         assertThat(catalogReadRepository.searchPublishedProductsForAssistant(
                 List.of("lót"), null, null, null, null,
                 new SortSpec("name", SortDirection.ASC), "vi", 100))
                 .extracting(Product::id)
-                .contains(nameMatch.getId(), englishNameMatch.getId(), skuMatch.getId())
+                .contains(nameMatch.getId(), skuMatch.getId())
+                .doesNotContain(descriptionOnly.getId());
+
+        // English identifiers are searched lexically as documented. "Underwear" must find the
+        // English field even in the Vietnamese view; it is not a semantic translation of "lót".
+        assertThat(catalogReadRepository.findProductsFiltered(
+                "underwear", "PUBLISHED", null, null, null, null, "vi"))
+                .extracting(Product::id)
+                .contains(englishNameMatch.getId())
+                .doesNotContain(descriptionOnly.getId());
+        assertThat(productRepository.findAll(ProductFilterSpecifications.build(
+                "underwear", Set.of(PublishStatus.PUBLISHED), false,
+                null, null, Set.of(), null)))
+                .extracting(ProductEntity::getId)
+                .contains(englishNameMatch.getId())
+                .doesNotContain(descriptionOnly.getId());
+        assertThat(catalogReadRepository.findPublishedProductsPaged(
+                null, null, "underwear", List.of(), null, null, null,
+                null, new SortSpec("name", SortDirection.ASC), 1, 100, "vi").items())
+                .extracting(Product::id)
+                .contains(englishNameMatch.getId())
+                .doesNotContain(descriptionOnly.getId());
+        assertThat(catalogReadRepository.searchPublishedProducts(
+                List.of("underwear"), "vi", 100))
+                .extracting(Product::id)
+                .contains(englishNameMatch.getId())
+                .doesNotContain(descriptionOnly.getId());
+        assertThat(catalogReadRepository.searchPublishedProductsForAssistant(
+                List.of("underwear"), null, null, null, null,
+                new SortSpec("name", SortDirection.ASC), "vi", 100))
+                .extracting(Product::id)
+                .contains(englishNameMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
         assertThat(catalogReadRepository.findPublishedProductsPaged(

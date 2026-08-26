@@ -480,6 +480,43 @@ public class CatalogReadService {
                 .toList();
     }
 
+    /**
+     * Bounded internal catalog snapshot used by the assistant's deterministic clarification
+     * planner. It includes active out-of-stock rows for honest breadth counts; card eligibility
+     * is checked separately before anything is shown to a customer.
+     */
+    public List<Product> listAssistantDecisionProducts(String lang) {
+        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
+        return catalogReadRepository.findAllPublishedProductsForListing(locale).stream()
+                .filter(CatalogReadService::assistantActive)
+                .toList();
+    }
+
+    /** Completed-order evidence for the assistant-only best-seller decision. */
+    public AssistantSalesSnapshot assistantCompletedSales(List<String> productKeys) {
+        List<String> keys = productKeys == null ? List.of() : productKeys.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(key -> !key.isBlank())
+                .distinct()
+                .limit(500)
+                .toList();
+        if (orderLineItemRepo == null || keys.isEmpty()) {
+            return new AssistantSalesSnapshot(0, List.of());
+        }
+        Set<String> scope = Set.copyOf(keys);
+        List<AssistantProductSale> sales = orderLineItemRepo.assistantCompletedSalesByProduct().stream()
+                .filter(row -> row != null && row.length >= 3 && row[0] != null)
+                .map(row -> new AssistantProductSale(
+                        row[0].toString(),
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()))
+                .filter(sale -> scope.contains(sale.productKey()))
+                .toList();
+        long distinctOrders = orderLineItemRepo.countAssistantCompletedOrdersForProducts(keys);
+        return new AssistantSalesSnapshot(distinctOrders, sales);
+    }
+
     private static Set<String> categoryAndDescendantSlugs(
             String rootId,
             Map<String, List<String>> childrenByParentId,
@@ -506,13 +543,10 @@ public class CatalogReadService {
                 .anyMatch(category -> categorySlugs.contains(category.slug()));
     }
 
-    /** Mirrors BigBike Assistant card eligibility: published, in-stock, VND and a positive effective price. */
-    private static boolean assistantSellable(Product product) {
+    private static boolean assistantActive(Product product) {
         if (product == null
                 || product.publishStatus() != PublishStatus.PUBLISHED
-                || !Boolean.TRUE.equals(product.available())
-                || product.stockState()
-                != com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK
+                || product.discontinued()
                 || product.price() == null
                 || !"VND".equalsIgnoreCase(product.price().currency())) {
             return false;
@@ -522,7 +556,18 @@ public class CatalogReadService {
         BigDecimal effective = sale != null && sale.signum() > 0
                 && retail != null && retail.signum() > 0 && sale.compareTo(retail) < 0
                 ? sale : retail;
-        if (effective == null || effective.signum() <= 0) return false;
+        return effective != null && effective.signum() > 0;
+    }
+
+    /** Mirrors BigBike Assistant card eligibility: published, in-stock, VND and a positive effective price. */
+    private static boolean assistantSellable(Product product) {
+        if (!assistantActive(product)
+                || !Boolean.TRUE.equals(product.available())
+                || product.stockState()
+                != com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK
+        ) {
+            return false;
+        }
         if (product.variants() == null || product.variants().isEmpty()) return true;
         return product.variants().stream().anyMatch(variant -> variant != null
                 && variant.isAvailable()
@@ -531,6 +576,17 @@ public class CatalogReadService {
     }
 
     public record AssistantCategorySummary(String slug, String name, long sellableProductCount) {}
+
+    public record AssistantProductSale(String productKey, long unitsSold, long completedOrderCount) {}
+
+    public record AssistantSalesSnapshot(
+            long distinctCompletedOrders,
+            List<AssistantProductSale> products
+    ) {
+        public AssistantSalesSnapshot {
+            products = products == null ? List.of() : List.copyOf(products);
+        }
+    }
 
     public Category getCategoryBySlug(String slug, String lang) {
         return catalogReadRepository.findCategoryBySlug(slug, lang)

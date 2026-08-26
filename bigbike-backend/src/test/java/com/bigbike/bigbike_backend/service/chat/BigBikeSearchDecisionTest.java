@@ -103,6 +103,24 @@ class BigBikeSearchDecisionTest {
     }
 
     @Test
+    @DisplayName("five common product types keep identical filters with and without Vietnamese accents")
+    void fiveProductTypesAndThreePriceShapesMatchWithoutAccents() {
+        List<List<String>> pairs = List.of(
+                List.of("mũ bảo hiểm dưới 2 triệu", "mu bao hiem duoi 2 trieu"),
+                List.of("mũ fullface dưới 3 triệu", "mu fullface duoi 3 trieu"),
+                List.of("tai nghe gắn mũ từ 1 đến 3 triệu", "tai nghe gan mu tu 1 den 3 trieu"),
+                List.of("găng tay khoảng 500 nghìn", "gang tay khoang 500 nghin"),
+                List.of("áo giáp trên 5 triệu", "ao giap tren 5 trieu"));
+
+        for (List<String> pair : pairs) {
+            Search accented = firstSearch(pair.get(0));
+            Search plain = firstSearch(pair.get(1));
+            assertThat(plain).as(pair.toString()).isEqualTo(accented);
+            assertThat(plain.category()).as(pair.toString()).isNotBlank();
+        }
+    }
+
+    @Test
     @DisplayName("CHAT_RULE_017: the more specific wording wins over the generic one")
     void mostSpecificCategoryWins() {
         assertThat(firstSearch("áo mưa").category()).isEqualTo("ao-mua-do-di-mua-moto");
@@ -245,7 +263,7 @@ class BigBikeSearchDecisionTest {
     }
 
     @Test
-    @DisplayName("budget framing without an amount is a local clarification, not a search")
+    @DisplayName("CHAT_RULE_034: budget framing is a local clarification, not a product search")
     void budgetFramingAsksForTheMissingPriceRange() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
@@ -256,7 +274,9 @@ class BigBikeSearchDecisionTest {
             assertThat(outcome.aiRequired()).as(question).isFalse();
             assertThat(outcome.localAnswer()).as(question).contains("tầm giá nào");
         }
-        assertThat(mockingDetails(catalog).getInvocations()).isEmpty();
+        assertThat(mockingDetails(catalog).getInvocations())
+                .noneMatch(invocation -> "searchProductsForAssistant"
+                        .equals(invocation.getMethod().getName()));
     }
 
     @Test
@@ -321,7 +341,9 @@ class BigBikeSearchDecisionTest {
     }
 
     private static Search firstSearch(String question) {
-        return allSearches(question).get(0);
+        List<Search> searches = allSearches(question);
+        assertThat(searches).as(question).isNotEmpty();
+        return searches.get(0);
     }
 
     private static List<Search> allSearches(String question) {

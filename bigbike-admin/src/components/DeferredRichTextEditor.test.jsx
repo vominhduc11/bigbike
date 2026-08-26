@@ -14,7 +14,9 @@ describe('DeferredRichTextEditor', () => {
 
     const loading = screen.getByRole('status')
     expect(loading).toHaveAttribute('aria-busy', 'true')
-    expect(loading.querySelector('.min-h-32')).not.toBeNull()
+    // Canvas TipTap sau khi tải có chiều cao tối thiểu 200px; giữ placeholder
+    // trong cùng thang spacing được duyệt để lúc gắn editor không nhảy layout.
+    expect(loading.querySelector('.min-h-52')).not.toBeNull()
 
     const editor = await screen.findByTestId('rich-text-editor')
     expect(editor).toHaveAttribute('data-inline-only', 'true')

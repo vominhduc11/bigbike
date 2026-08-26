@@ -12,6 +12,28 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
+## Trợ lý BigBike — Sales And Staff Handoff Flow
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Guest/Customer | Trợ lý giữ cơ chế hỏi rõ giai đoạn 1 rồi đổi cách nói theo `BROWSING|CHOOSING|DECIDING|POST_PURCHASE`; mỗi lượt có một bước tiếp theo | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_034`–`038` |
+| 2 | System | Nỗi lo dùng catalog/policy thật; bán kèm chỉ từ accessory relation, tối đa hai món còn hàng; thiếu dữ liệu thì nói thiếu | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_038`–`039` |
+| 3 | Guest/Customer | Lời mời liên hệ chỉ hiện đúng thời điểm/lý do, tối đa hai; khách đăng nhập xác nhận số đã che thay vì nhập lại | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_012`, `CHAT_RULE_025` |
+| 4 | Guest/Customer | Bấm/nói Gặp nhân viên → `WAITING`; trong giờ trợ lý tiếp tục cho đến khi có người nhận, ngoài giờ báo lần mở cửa kế tiếp và mời để lại liên hệ | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_046` |
+| 5 | System/Admin | Realtime + email báo staff; hàng chờ lâu nhất ở trên. Người có `chat.reply` bấm Tiếp nhận nguyên tử → `ACTIVE`, nhắn trực tiếp; trợ lý lùi | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_045`, `PERMISSION_MATRIX.md` |
+| 6 | Admin/System | Nhân viên bàn giao → `RETURNED_TO_AI` và trợ lý tiếp tục, hoặc đóng lịch sự → `CLOSED`; mọi đổi trạng thái hiện ngay cho khách | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `STATE_MACHINES.md` §15C |
+| 7 | Guest/Customer | Click sản phẩm từ chat → chọn đúng biến thể còn hàng → add cart đã hậu kiểm → đi checkout; proof 168 giờ giữ attribution | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_041`, `CHAT_RULE_052` |
+| 8 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy/tắt/xóa được. Đăng nhập chỉ gộp lịch sử thiết bị hiện tại | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_049` |
+| 9 | Owner | Xem feedback/trend/unanswered/data gap và mở thẳng editor câu chuẩn; preview/cảnh báo trước khi bật | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_048`, `CHAT_RULE_050` |
+| 10 | Owner/System | Mở Cài đặt, tải danh sách model Gemini thật sự dùng được với tài khoản hiện tại, xem nhãn nhanh/chậm và rẻ/đắt, rồi đổi model trả lời; model kiểm duyệt đánh giá giữ độc lập | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_053` |
+| 11 | Owner/System | Chạy bộ đề offline đã phiên bản hoá ngoài luồng khách thật, với trần chi phí 2 USD/lần; hệ thống lưu kết quả đúng số liệu/hiểu ý/không bịa/chịu thua/tốc độ/chi phí để so cạnh nhau, không chia đôi khách thật | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_054` |
+| 12 | System | Mỗi lượt dùng model owner chọn trong giới hạn 35 giây cho model chính và 65 giây cho toàn lượt; lỗi/quá hạn thì lùi một lần sang model nhanh, vẫn trả lời và ghi telemetry/fallback để owner theo dõi | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_055`, `CHAT_RULE_056` |
+| 13 | Owner | Sau khi chọn model tốt hơn, bật cho toàn bộ khách và theo dõi 14 ngày; so tỷ lệ chịu thua với mốc thật `5/58 ≈ 9%`, độ trễ và chi phí, rồi đổi ngược bằng Cài đặt nếu tệ hơn | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_056` |
+| 14 | Guest/Customer | Khi owner đã bật đọc ảnh, khách thấy thông báo ảnh được gửi tới dịch vụ AI, chọn tối đa một JPG/PNG/WebP không quá 8 MB mỗi lượt, xem preview và gửi cùng câu hỏi | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_057`, `CHAT_RULE_059` |
+| 15 | System | Backend kiểm MIME/nội dung, re-encode bỏ metadata, lưu kho MinIO riêng tư, áp trần 3 ảnh/hội thoại và 20 ảnh/ngày; ảnh không phù hợp hoặc vượt trần bị từ chối nhưng chat chữ vẫn dùng được | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_057`, `CHAT_RULE_059` |
+| 16 | System/Guest | Hệ thống phân biệt tìm sản phẩm, hàng hỏng, hoá đơn/đơn hàng, hỏi size và ảnh ngoài phạm vi. Chỉ tìm trong hàng thật đang bán, chỉ nói “trông giống”, không đoán size/bảo hành/OCR/giá hay khẳng định cùng sản phẩm | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_058` |
+| 17 | Admin/System | Người có `chat.read` xem được ảnh trong đúng hội thoại; xoá lịch sử hoặc hết 90 ngày sẽ xoá object riêng tư trước khi xoá metadata hội thoại. Người thiếu quyền không lấy được URL công khai hay nội dung ảnh | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_059`, `STATE_MACHINES.md` §15D |
+
 ## Account Login Workflow
 
 | Step | Actor | Current flow | Status | Evidence |
@@ -103,10 +125,8 @@ Không còn script trên máy chủ: toàn bộ luồng nằm trong màn **Bảo
 
 | Bước | Người thực hiện | Luồng | Trạng thái | Căn cứ |
 |---|---|---|---|---|
-| 1 | Dev | Mở màn Bảo trì hệ thống, ghi lời nhắn cho nhân viên và giờ dự kiến xong | `CONFIRMED_FROM_OWNER_DECISION` | `API_CONTRACT.md` §Maintenance API |
-| 2 | Dev | Bấm "Báo trước cho nhân viên" → `UPCOMING`; mọi phiên admin đang mở nhận cảnh báo realtime qua STOMP | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_003` |
-| 3 | Nhân viên | Vẫn lưu được bình thường ở `UPCOMING`; tranh thủ hoàn tất việc đang làm dở | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_003` |
-| 4 | Dev | Bấm "Khoá ngay" → hộp xác nhận hiện số tệp đang tải lên dở dang; xác nhận thì chuyển `ACTIVE` | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_007` |
-| 5 | Hệ thống | Mọi thao tác ghi admin bị từ chối `423 MAINTENANCE_ACTIVE`; nhân viên (không phải dev) thấy hộp thông báo **che kín toàn màn** nên không thao tác được gì, kể cả tra cứu | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_004` |
-| 6 | Khách hàng | **Không bị ảnh hưởng gì** — duyệt web, thêm giỏ và đặt hàng bình thường suốt thời gian khoá | `CONFIRMED_FROM_OWNER_DECISION` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_002` |
-| 7 | Dev | Bấm "Mở lại" → `NORMAL`; phiên admin của nhân viên tự hồi phục trong tối đa một chu kỳ (STOMP tức thì, poll 60 giây dự phòng) | `CONFIRMED_FROM_OWNER_DECISION` | `DEPLOYMENT_GUIDE.md` §Maintenance runbook |
+| 1 | Dev | Mở màn Bảo trì hệ thống, ghi lời nhắn cho nhân viên. Nếu cần báo giờ, ghi giờ đó trong lời nhắn; không còn ô giờ dự kiến riêng | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `API_CONTRACT.md` §Maintenance API |
+| 2 | Dev | Bật công tắc khoá → hộp xác nhận hiện số tệp đang tải lên dở dang; xác nhận thì chuyển `ACTIVE` | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_007` |
+| 3 | Hệ thống | Mọi thao tác ghi admin bị từ chối `423 MAINTENANCE_ACTIVE`; nhân viên (không phải dev) thấy hộp thông báo **che kín toàn màn** nên không thao tác được gì, kể cả tra cứu. Lời nhắn được hiển thị rõ trên màn hình khoá | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_004`, `MAINTENANCE_RULE_007` |
+| 4 | Khách hàng | **Không bị ảnh hưởng gì** — duyệt web, thêm giỏ và đặt hàng bình thường suốt thời gian khoá | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_002` |
+| 5 | Dev | Tắt công tắc khoá → `NORMAL`; phiên admin của nhân viên tự hồi phục trong tối đa một chu kỳ (STOMP tức thì, poll 60 giây dự phòng) | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `DEPLOYMENT_GUIDE.md` §Maintenance runbook |

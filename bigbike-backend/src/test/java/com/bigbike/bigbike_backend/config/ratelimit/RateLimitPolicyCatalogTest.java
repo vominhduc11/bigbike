@@ -13,6 +13,7 @@ class RateLimitPolicyCatalogTest {
     void coversNewSideEffectingAndExpensiveSurfaces() {
         assertTier("POST", "/api/v1/chat/leads", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/chat/leads/decline", RateLimitTier.CHAT);
+        assertTier("POST", "/api/v1/chat/images", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/customer/me/avatar", RateLimitTier.CUSTOMER_MEDIA);
         assertTier("POST", "/api/v1/admin/media", RateLimitTier.ADMIN_MEDIA);
         assertTier("POST", "/api/v1/admin/products/import/validate", RateLimitTier.ADMIN_IMPORT_VALIDATE);

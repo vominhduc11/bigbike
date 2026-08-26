@@ -12,6 +12,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface ChatMapper {
 
+    @Mapping(target = "images", ignore = true)
     AdminChatMessageResponse toMessage(ChatMessageEntity entity);
 
     AdminChatLeadResponse toLead(ChatLeadEntity entity);

@@ -183,6 +183,7 @@ Bản export WordPress cục bộ trước đây đã được chủ dự án xo
 | **Brand identity, logo, colors, typography, copy** | `bigbike-web/STYLEGUIDE.md`, `bigbike-web/styles/brand-tokens.css`, `bigbike-admin/STYLEGUIDE.md`, `bigbike-admin/src/styles/admin-tokens.css` |
 | **Brand assets (logos, icons, fonts, favicons)** | `bigbike-web/public/brand/` + `bigbike-admin/public/brand/` |
 | **Backend OpenAPI raw schema** (machine-readable companion to `API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
+| **Backend OpenAPI drift check** (bản sinh tự động từ controller đang chạy + mốc nền các endpoint chưa có mô tả) | `bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/OpenApiContractDriftTest.java` + `bigbike-backend/src/test/resources/openapi/contract-drift-baseline.json` |
 | **Backend phase implementation reports** (historical) | `bigbike-backend/docs/` |
 | **SEO redirect map** | `bigbike-web/docs/` |
 | **Legacy WordPress compatibility / migration history** | Canonical docs, current code, applied migrations, runtime evidence and redirect registry/audits; raw export permanently unavailable |

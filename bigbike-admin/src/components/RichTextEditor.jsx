@@ -15,6 +15,7 @@ import {
   Underline, Undo,
 } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
+import { ScreenSkeleton } from './ScreenSkeleton'
 import { MediaRequirementHint } from './MediaRequirementHint'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
@@ -79,6 +80,47 @@ function toInlineFragment(html) {
   return blocks.map((block) => block.tagName === 'P' ? block.innerHTML : block.outerHTML).join('<br>')
 }
 
+// TipTap có thể vẫn trả về instance editor trong một lần render sau khi view đã
+// bị huỷ. Mọi thao tác bên dưới phải đi qua các lớp bảo vệ này để effect muộn,
+// callback toolbar hoặc callback media không chạm vào trạng thái ProseMirror đã chết.
+function isEditorUsable(editor) {
+  return Boolean(editor && !editor.isDestroyed)
+}
+
+function getEditorDom(editor) {
+  if (!isEditorUsable(editor)) return null
+  try {
+    // `editor.view` là proxy có thể throw khi view chưa được gắn vào DOM.
+    return editor.view?.dom ?? null
+  } catch {
+    return null
+  }
+}
+
+function runLiveEditorAction(editor, action) {
+  if (!isEditorUsable(editor)) return false
+  action(editor)
+  return true
+}
+
+function runEditorCommand(editor, action) {
+  if (!isEditorUsable(editor) || !getEditorDom(editor)) return false
+  action(editor)
+  return true
+}
+
+function readEditorHtml(editor, inlineOnly) {
+  if (!isEditorUsable(editor)) return null
+  if (editor.isEmpty) return ''
+  const html = editor.getHTML()
+  return inlineOnly ? toInlineFragment(html) : html
+}
+
+function readEditorText(editor) {
+  if (!isEditorUsable(editor)) return null
+  return editor.getText()
+}
+
 export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false, inlineOnly = false, maxLength }) {
   const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
@@ -137,6 +179,12 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       ],
     content: inlineOnly ? wrapInlineContent(value) : value || '',
     editable: !disabled,
+    // KHÔNG tạo editor ngay trong lúc render. @tiptap/react hẹn giờ 1ms để huỷ editor nếu
+    // component chưa kịp mount; màn hình nặng (kéo-thả, nhiều khối) làm React commit trễ hơn
+    // 1ms → editor bị huỷ trước khi effect chạy, effect đồng bộ `value` gọi getHTML() trên
+    // editor đã huỷ (schema = null) và làm sập cả trang qua ErrorBoundary.
+    // immediatelyRender: false dời việc tạo editor vào effect, sau khi đã đánh dấu mounted.
+    immediatelyRender: false,
     // Khi paste từ Word: gỡ background-color (highlight Word) và thuộc tính mso-* (Word-specific)
     // khỏi inline style trước khi TipTap parse — giữ lại color, font-weight và các style hợp lệ khác.
     editorProps: {
@@ -169,9 +217,11 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     },
     onFocus: () => { userEditedRef.current = true },
     onUpdate: ({ editor }) => {
-      if (!userEditedRef.current) return
-      if (maxLength && editor.getText().length > maxLength) return
-      const html = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
+      if (!userEditedRef.current || !isEditorUsable(editor)) return
+      const text = readEditorText(editor)
+      if (text === null || (maxLength && text.length > maxLength)) return
+      const html = readEditorHtml(editor, inlineOnly)
+      if (html === null) return
       onChange?.(html)
     },
   })
@@ -182,7 +232,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   const s = useEditorState({
     editor,
     selector: ({ editor }) => {
-      if (!editor) return null
+      if (!isEditorUsable(editor)) return null
       return {
         canUndo: editor.can().undo(),
         canRedo: editor.can().redo(),
@@ -203,49 +253,54 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         isTable: editor.isActive('table'),
         color: editor.getAttributes('textStyle').color || '',
         bgColor: editor.getAttributes('textStyle').backgroundColor || '',
-        charCount: editor.storage.characterCount?.characters?.() ?? editor.getText().length,
+        charCount: editor.storage?.characterCount?.characters?.() ?? editor.getText().length,
       }
     },
   })
 
   const handleLink = useCallback(() => {
-    if (!editor) return
+    if (!isEditorUsable(editor)) return
     const prev = editor.getAttributes('link').href || ''
     setLinkModal({ open: true, value: prev, error: '' })
   }, [editor])
 
   const applyLink = useCallback(() => {
-    if (!editor) return
+    if (!isEditorUsable(editor)) return
     const url = linkModal.value.trim()
     if (url === '') {
-      editor.chain().focus().unsetLink().run()
+      runEditorCommand(editor, (liveEditor) => liveEditor.chain().focus().unsetLink().run())
     } else if (!isValidLinkHref(url)) {
       setLinkModal((m) => ({ ...m, error: t('richEditor.linkInvalid', { defaultValue: 'Đường dẫn không hợp lệ. Dùng http(s)://, mailto:, tel: hoặc đường dẫn nội bộ bắt đầu bằng /.' }) }))
       return
     } else {
-      editor.chain().focus().setLink({ href: url }).run()
+      runEditorCommand(editor, (liveEditor) => liveEditor.chain().focus().setLink({ href: url }).run())
     }
     setLinkModal({ open: false, value: '', error: '' })
   }, [editor, linkModal.value, t])
 
   const cancelLink = useCallback(() => {
     setLinkModal({ open: false, value: '', error: '' })
-    editor?.chain().focus().run()
+    runEditorCommand(editor, (liveEditor) => liveEditor.chain().focus().run())
   }, [editor])
 
   useEffect(() => {
-    if (!editor) return
-    const current = editor.isEmpty ? '' : (inlineOnly ? toInlineFragment(editor.getHTML()) : editor.getHTML())
+    // editor.isDestroyed: instance có thể đã bị huỷ trước khi effect chạy (đổi instance /
+    // unmount). getHTML() trên editor đã huỷ throw vì schema = null → sập trang.
+    if (!isEditorUsable(editor)) return
+    const current = readEditorHtml(editor, inlineOnly)
+    if (current === null) return
     if (value !== current) {
       // TipTap v3: tham số thứ 2 là options object. Phải truyền { emitUpdate: false }
       // để đồng bộ value từ ngoài (mount / refetch) KHÔNG bị tính là user sửa —
       // nếu không, mở form rich-text sẽ báo "thay đổi chưa lưu" giả. (v2 nhận false trực tiếp)
-      editor.commands.setContent(inlineOnly ? wrapInlineContent(value) : value || '', { emitUpdate: false })
+      runLiveEditorAction(editor, (liveEditor) => {
+        liveEditor.commands.setContent(inlineOnly ? wrapInlineContent(value) : value || '', { emitUpdate: false })
+      })
     }
   }, [value, editor, inlineOnly])
 
   useEffect(() => {
-    editor?.setEditable(!disabled)
+    runLiveEditorAction(editor, (liveEditor) => liveEditor.setEditable(!disabled))
   }, [disabled, editor])
 
   // Phản ánh trạng thái lỗi lên vùng soạn thảo (aria-invalid) để không chỉ dựa vào viền màu.
@@ -253,19 +308,25 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     // editor.view là getter luôn trả về giá trị "truthy" (Proxy tạm) khi view ProseMirror
     // thật chưa mount hoặc đã destroy — check !editor.view không bắt được. editor.isDestroyed
     // mới phản ánh đúng trạng thái view thật, tránh throw "editor may not be mounted yet".
-    if (!editor || editor.isDestroyed) return
-    const dom = editor.view.dom
+    const dom = getEditorDom(editor)
+    if (!dom) return
     if (hasError) dom.setAttribute('aria-invalid', 'true')
     else dom.removeAttribute('aria-invalid')
   }, [hasError, editor])
 
-  if (!editor) return null
+  // editor chỉ có sau effect đầu tiên (immediatelyRender: false) — giữ đúng khung chỗ của
+  // editor để không giật layout trong một nhịp render.
+  if (!isEditorUsable(editor)) return <ScreenSkeleton variant="editor" inlineOnly={inlineOnly} />
+
+  const runChain = (configure) => runEditorCommand(editor, (liveEditor) => {
+    configure(liveEditor.chain().focus()).run()
+  })
 
   const btn = (action, isActive, title, icon, disabledOverride) => (
     <ToolbarButton
       onClick={action}
       active={isActive}
-      disabled={disabled || disabledOverride}
+      disabled={disabled || !isEditorUsable(editor) || disabledOverride}
       title={title}
     >
       {icon}
@@ -284,31 +345,31 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         aria-label={t('richEditor.toolbarLabel', { defaultValue: 'Thanh công cụ định dạng' })}
         className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted"
       >
-        {btn(() => editor.chain().focus().undo().run(), false, t('richEditor.undo'), <Undo size={14} />, !s?.canUndo)}
-        {btn(() => editor.chain().focus().redo().run(), false, t('richEditor.redo'), <Redo size={14} />, !s?.canRedo)}
+        {btn(() => runChain((chain) => chain.undo()), false, t('richEditor.undo'), <Undo size={14} />, !s?.canUndo)}
+        {btn(() => runChain((chain) => chain.redo()), false, t('richEditor.redo'), <Redo size={14} />, !s?.canRedo)}
         <Divider />
-        {btn(() => editor.chain().focus().toggleBold().run(), s?.isBold, t('richEditor.bold'), <Bold size={14} />)}
-        {btn(() => editor.chain().focus().toggleItalic().run(), s?.isItalic, t('richEditor.italic'), <Italic size={14} />)}
+        {btn(() => runChain((chain) => chain.toggleBold()), s?.isBold, t('richEditor.bold'), <Bold size={14} />)}
+        {btn(() => runChain((chain) => chain.toggleItalic()), s?.isItalic, t('richEditor.italic'), <Italic size={14} />)}
         {!inlineOnly && (
           <>
-            {btn(() => editor.chain().focus().toggleUnderline().run(), s?.isUnderline, t('richEditor.underline'), <Underline size={14} />)}
-            {btn(() => editor.chain().focus().toggleStrike().run(), s?.isStrike, t('richEditor.strike'), <Strikethrough size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleUnderline()), s?.isUnderline, t('richEditor.underline'), <Underline size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleStrike()), s?.isStrike, t('richEditor.strike'), <Strikethrough size={14} />)}
             <Divider />
-            {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), s?.isH2, t('richEditor.h2'), <Heading2 size={14} />)}
-            {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), s?.isH3, t('richEditor.h3'), <Heading3 size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleHeading({ level: 2 })), s?.isH2, t('richEditor.h2'), <Heading2 size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleHeading({ level: 3 })), s?.isH3, t('richEditor.h3'), <Heading3 size={14} />)}
             <Divider />
-            {btn(() => editor.chain().focus().toggleBulletList().run(), s?.isBulletList, t('richEditor.bulletList'), <List size={14} />)}
-            {btn(() => editor.chain().focus().toggleOrderedList().run(), s?.isOrderedList, t('richEditor.orderedList'), <ListOrdered size={14} />)}
-            {btn(() => editor.chain().focus().toggleBlockquote().run(), s?.isBlockquote, t('richEditor.quote'), <Quote size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleBulletList()), s?.isBulletList, t('richEditor.bulletList'), <List size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleOrderedList()), s?.isOrderedList, t('richEditor.orderedList'), <ListOrdered size={14} />)}
+            {btn(() => runChain((chain) => chain.toggleBlockquote()), s?.isBlockquote, t('richEditor.quote'), <Quote size={14} />)}
           </>
         )}
         <Divider />
         {btn(handleLink, s?.isLink, t('richEditor.link'), <Link size={14} />)}
-        {s?.isLink && btn(() => editor.chain().focus().unsetLink().run(), false, t('richEditor.unlink'), <Link2Off size={14} />)}
+        {s?.isLink && btn(() => runChain((chain) => chain.unsetLink()), false, t('richEditor.unlink'), <Link2Off size={14} />)}
         {!inlineOnly && enableImagePicker && (
           <>
             <Divider />
-            {btn(() => setImagePickerOpen(true), false, t('richEditor.image'), <Image size={14} />)}
+            {btn(() => { if (isEditorUsable(editor)) setImagePickerOpen(true) }, false, t('richEditor.image'), <Image size={14} />)}
           </>
         )}
 
@@ -316,9 +377,9 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
           <>
             {/* Căn lề */}
             <Divider />
-            {btn(() => editor.chain().focus().setTextAlign('left').run(), s?.alignLeft, t('richEditor.alignLeft', { defaultValue: 'Căn trái' }), <AlignLeft size={14} />)}
-            {btn(() => editor.chain().focus().setTextAlign('center').run(), s?.alignCenter, t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }), <AlignCenter size={14} />)}
-            {btn(() => editor.chain().focus().setTextAlign('right').run(), s?.alignRight, t('richEditor.alignRight', { defaultValue: 'Căn phải' }), <AlignRight size={14} />)}
+            {btn(() => runChain((chain) => chain.setTextAlign('left')), s?.alignLeft, t('richEditor.alignLeft', { defaultValue: 'Căn trái' }), <AlignLeft size={14} />)}
+            {btn(() => runChain((chain) => chain.setTextAlign('center')), s?.alignCenter, t('richEditor.alignCenter', { defaultValue: 'Căn giữa' }), <AlignCenter size={14} />)}
+            {btn(() => runChain((chain) => chain.setTextAlign('right')), s?.alignRight, t('richEditor.alignRight', { defaultValue: 'Căn phải' }), <AlignRight size={14} />)}
 
             {/* Thêm — gom công cụ ít dùng: mã, kẻ ngang, màu chữ/nền, bảng */}
             <Divider />
@@ -328,7 +389,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               type="button"
               variant="ghost"
               size="icon"
-              disabled={disabled}
+              disabled={disabled || !isEditorUsable(editor)}
               title={t('richEditor.more', { defaultValue: 'Thêm' })}
               aria-label={t('richEditor.more', { defaultValue: 'Thêm' })}
               className={cn(
@@ -342,10 +403,10 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-52" onCloseAutoFocus={(e) => e.preventDefault()}>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().toggleCode().run()}>
+            <DropdownMenuItem onSelect={() => runChain((chain) => chain.toggleCode())}>
               <Code size={14} /> {t('richEditor.code')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().setHorizontalRule().run()}>
+            <DropdownMenuItem onSelect={() => runChain((chain) => chain.setHorizontalRule())}>
               <Minus size={14} /> {t('richEditor.hr')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -358,8 +419,8 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
                   aria-label={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}
                   className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
                   value={s?.color || '#111827'}
-                  onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
-                  disabled={disabled}
+                  onChange={(e) => runChain((chain) => chain.setColor(e.target.value))}
+                  disabled={disabled || !isEditorUsable(editor)}
                 />
               </label>
               <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
@@ -369,33 +430,33 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
                   aria-label={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}
                   className="h-6 w-8 cursor-pointer rounded-xs border border-border bg-transparent p-0"
                   value={s?.bgColor || '#fff3cd'}
-                  onChange={(e) => editor.chain().focus().setBackgroundColor(e.target.value).run()}
-                  disabled={disabled}
+                  onChange={(e) => runChain((chain) => chain.setBackgroundColor(e.target.value))}
+                  disabled={disabled || !isEditorUsable(editor)}
                 />
               </label>
             </div>
-            <DropdownMenuItem onSelect={() => editor.chain().focus().unsetColor().unsetBackgroundColor().run()}>
+            <DropdownMenuItem onSelect={() => runChain((chain) => chain.unsetColor().unsetBackgroundColor())}>
               <span className="text-xs font-semibold line-through">A</span> {t('richEditor.clearColor', { defaultValue: 'Xoá màu' })}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            <DropdownMenuItem onSelect={() => runChain((chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }))}>
               <TableIcon size={14} /> {t('richEditor.insertTable', { defaultValue: 'Chèn bảng' })}
             </DropdownMenuItem>
             {s?.isTable && (
               <>
-                <DropdownMenuItem onSelect={() => editor.chain().focus().addColumnAfter().run()}>
+                <DropdownMenuItem onSelect={() => runChain((chain) => chain.addColumnAfter())}>
                   {t('richEditor.addColumn', { defaultValue: 'Thêm cột' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => editor.chain().focus().addRowAfter().run()}>
+                <DropdownMenuItem onSelect={() => runChain((chain) => chain.addRowAfter())}>
                   {t('richEditor.addRow', { defaultValue: 'Thêm dòng' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteColumn().run()}>
+                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => runChain((chain) => chain.deleteColumn())}>
                   {t('richEditor.deleteColumn', { defaultValue: 'Xoá cột' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteRow().run()}>
+                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => runChain((chain) => chain.deleteRow())}>
                   {t('richEditor.deleteRow', { defaultValue: 'Xoá dòng' })}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => editor.chain().focus().deleteTable().run()}>
+                <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => runChain((chain) => chain.deleteTable())}>
                   {t('richEditor.deleteTable', { defaultValue: 'Xoá bảng' })}
                 </DropdownMenuItem>
               </>
@@ -424,7 +485,9 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             // can do is carry the library's saved alt/title onto the <img> tag —
             // there's no context field here to sync a fresh upload's alt back from.
             const alt = media?.altText || media?.title || undefined
-            editor.chain().focus().setImage({ src: url, alt, title: media?.title || undefined }).run()
+            runEditorCommand(editor, (liveEditor) => {
+              liveEditor.chain().focus().setImage({ src: url, alt, title: media?.title || undefined }).run()
+            })
             setImagePickerOpen(false)
           }}
           onClose={() => setImagePickerOpen(false)}

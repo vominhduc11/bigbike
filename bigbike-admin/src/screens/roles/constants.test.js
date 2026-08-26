@@ -54,6 +54,13 @@ describe('permission dependency helpers', () => {
     expect(requiredBy('roles.read', active, catalog)).toEqual(['admin-users.write'])
   })
 
+  it('adds chat viewing when the owner grants live-chat reply access', () => {
+    const result = closePermissionDependencies(new Set(['chat.reply']), catalog)
+
+    expect(result.permissions).toEqual(new Set(['chat.reply', 'chat.read']))
+    expect(result.autoAdded.get('chat.read')).toEqual(new Set(['chat.reply']))
+  })
+
   it('normalizes old catalog entries into module metadata', () => {
     const grouped = groupCatalogByModule([
       { groupKey: 'legacy', permissions: [{ key: 'orders.read', sensitive: false }] },

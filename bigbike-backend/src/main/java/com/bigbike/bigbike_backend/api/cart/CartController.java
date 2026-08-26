@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.cart;
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
 import com.bigbike.bigbike_backend.api.cart.dto.CartResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.UpdateCartItemRequest;
+import com.bigbike.bigbike_backend.api.cart.dto.AttachAssistantAttributionRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.CustomerAuthCookies;
@@ -63,11 +64,21 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
-        int leadPromptSequence = chatInteractionService.offerSecondLeadAfterVerifiedCart(
-                req.assistantConversationId(), updated.getCustomerId());
         return apiResponseFactory.data(
-                cartMapper.toResponse(
-                        updated, items, cartService.findUnavailableItemIds(items), leadPromptSequence), request);
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+    }
+
+    @PostMapping("/assistant-attributions")
+    public ApiDataResponse<CartResponse> attachAssistantAttribution(
+            @Valid @RequestBody AttachAssistantAttributionRequest body,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        CartEntity cart = resolveCart(request, response);
+        CartEntity updated = cartService.attachAssistantAttribution(cart, body);
+        List<CartItemEntity> items = cartService.getItems(updated);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     @PatchMapping("/items/{itemId}")

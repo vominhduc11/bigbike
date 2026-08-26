@@ -19,7 +19,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** Runs V1045–V1048 against a minimal PostgreSQL schema without relying on legacy data migrations. */
+/** Runs the performance and variant-repair migrations against minimal PostgreSQL schemas. */
 @Testcontainers(disabledWithoutDocker = true)
 class PerformanceMigrationsPostgresTest {
 
@@ -125,6 +125,67 @@ class PerformanceMigrationsPostgresTest {
         }
     }
 
+    @Test
+    void v1053RepairsOnlyMissingLinksPreservesLegacyTextAndIsIdempotent() throws Exception {
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            createV1053VariantSchema(statement);
+            statement.execute("insert into attributes (id, code, name, name_en, kind, is_variation) values "
+                    + "('iphone', 'iphone', 'Iphone', null, 'select', true), "
+                    + "('color', 'color', 'Color', 'Color', 'select', true)");
+            statement.execute("insert into attribute_values (id, attribute_id, slug, label, label_en, sort_order) "
+                    + "values ('red', 'color', 'red', 'Đỏ', 'Red', 0)");
+            statement.execute("insert into product_variant_options "
+                    + "(id, option_name, option_value, attribute_id, attribute_value_id) "
+                    + "values (200, 'Color', 'Đỏ', 'color', 'red')");
+            statement.execute("insert into product_variant_options (id, option_name, option_value) values "
+                    + "(201, 'Đời máy', 'iPhone 15 Pro'), "
+                    + "(202, 'Size', 'L'), "
+                    + "(203, 'Màu', 'Đỏ'), "
+                    + "(204, 'Chất liệu', 'Da')");
+
+            executeMigration(statement, "V1053__repair_variant_attribute_links_and_preserve_display.sql");
+
+            assertThat(longValue(statement, "select count(*) from product_variant_options where attribute_id is not null and attribute_value_id is not null"))
+                    .isEqualTo(5);
+            assertThat(value(statement, "select name from attributes where id = 'iphone'"))
+                    .isEqualTo("Đời máy");
+            assertThat(value(statement, "select name_en from attributes where id = 'iphone'"))
+                    .isEqualTo("Model");
+            assertThat(value(statement, "select legacy_display_name from product_variant_options where id = 201"))
+                    .isEqualTo("Đời máy");
+            assertThat(value(statement, "select legacy_display_value from product_variant_options where id = 201"))
+                    .isEqualTo("iPhone 15 Pro");
+            assertThat(value(statement, "select attribute_value_id from product_variant_options where id = 203"))
+                    .isEqualTo("red");
+            assertThat(value(statement, "select attribute_value_id from product_variant_options where id = 200"))
+                    .isEqualTo("red");
+            assertThat(value(statement, "select legacy_display_value from product_variant_options where id = 200"))
+                    .isNull();
+
+            long attributeCount = longValue(statement, "select count(*) from attributes");
+            long valueCount = longValue(statement, "select count(*) from attribute_values");
+            executeMigration(statement, "V1053__repair_variant_attribute_links_and_preserve_display.sql");
+            assertThat(longValue(statement, "select count(*) from attributes")).isEqualTo(attributeCount);
+            assertThat(longValue(statement, "select count(*) from attribute_values")).isEqualTo(valueCount);
+            assertThat(longValue(statement, "select count(*) from product_variant_options where legacy_display_value is not null"))
+                    .isEqualTo(4);
+        }
+    }
+
+    @Test
+    void v1053StopsSafelyWhenAFreeTextRowHasNoAttributeName() throws Exception {
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            createV1053VariantSchema(statement);
+            statement.execute("insert into product_variant_options (id, option_name, option_value) values (301, '', 'Không rõ')");
+            connection.setAutoCommit(false);
+
+            assertThatThrownBy(() -> executeMigration(statement, "V1053__repair_variant_attribute_links_and_preserve_display.sql"))
+                    .isInstanceOf(SQLException.class)
+                    .hasMessageContaining("V1053 đã dừng an toàn");
+            connection.rollback();
+        }
+    }
+
     private Connection connection() throws SQLException {
         return DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
@@ -204,11 +265,45 @@ class PerformanceMigrationsPostgresTest {
                     attribute_id text references attributes(id),
                     attribute_value_id text references attribute_values(id)
                 )
+        """);
+    }
+
+    private void createV1053VariantSchema(Statement statement) throws SQLException {
+        statement.execute("create extension if not exists unaccent");
+        statement.execute("""
+                create table attributes (
+                    id varchar(64) primary key,
+                    code varchar(160) not null unique,
+                    name varchar(255) not null,
+                    name_en varchar(255),
+                    kind varchar(32) not null,
+                    is_variation boolean not null
+                );
+                create table attribute_values (
+                    id varchar(64) primary key,
+                    attribute_id varchar(64) not null references attributes(id),
+                    slug varchar(160) not null,
+                    label varchar(255) not null,
+                    label_en varchar(255),
+                    sort_order integer not null,
+                    unique (attribute_id, slug)
+                );
+                create table product_variant_options (
+                    id bigint generated by default as identity primary key,
+                    option_name varchar(255) not null,
+                    option_value varchar(255) not null,
+                    attribute_id varchar(64) references attributes(id),
+                    attribute_value_id varchar(64) references attribute_values(id)
+                );
                 """);
     }
 
     private void executeMigration(Statement statement, String filename) throws SQLException, IOException {
-        try (InputStream input = Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/" + filename))) {
+        InputStream resource = getClass().getResourceAsStream("/db/migration/" + filename);
+        if (resource == null) {
+            resource = getClass().getResourceAsStream("/db/migration-postponed/" + filename);
+        }
+        try (InputStream input = Objects.requireNonNull(resource, filename)) {
             statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
@@ -224,6 +319,13 @@ class PerformanceMigrationsPostgresTest {
         try (ResultSet results = statement.executeQuery(sql)) {
             results.next();
             return results.getBoolean(1);
+        }
+    }
+
+    private long longValue(Statement statement, String sql) throws SQLException {
+        try (ResultSet results = statement.executeQuery(sql)) {
+            results.next();
+            return results.getLong(1);
         }
     }
 }

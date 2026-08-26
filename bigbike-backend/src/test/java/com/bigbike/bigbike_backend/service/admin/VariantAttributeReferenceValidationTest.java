@@ -40,11 +40,17 @@ class VariantAttributeReferenceValidationTest {
         when(values.findById("attr-value-black")).thenReturn(java.util.Optional.of(black));
 
         assertThatThrownBy(() -> service.linkAttributeReferences(
-                new ProductVariantOptionEntity(), "Màu sắc", "Đen", null))
-                .isInstanceOf(ValidationException.class);
+                new ProductVariantOptionEntity(), "Màu sắc", "Đen", null,
+                "variants.2.options.1.attributeValueId"))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(error -> assertThat(((ValidationException) error).details().get(0).field())
+                        .isEqualTo("variants.2.options.1.attributeValueId"));
         assertThatThrownBy(() -> service.linkAttributeReferences(
-                new ProductVariantOptionEntity(), "Kích cỡ", "Đen", "attr-value-black"))
-                .isInstanceOf(ValidationException.class);
+                new ProductVariantOptionEntity(), "Kích cỡ", "Đen", "attr-value-black",
+                "variants.2.options.1.attributeValueId"))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(error -> assertThat(((ValidationException) error).details().get(0).field())
+                        .isEqualTo("variants.2.options.1.attributeValueId"));
     }
 
     @Test

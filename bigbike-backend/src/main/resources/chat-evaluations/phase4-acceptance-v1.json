@@ -1,0 +1,183 @@
+{
+  "version": "phase4-acceptance-v1",
+  "descriptionVi": "Bộ đề có 14 câu mẫu bao phủ nhóm câu hỏi bắt buộc và danh mục 85 ca hồi quy giai đoạn 1–4 chạy bằng kiểm thử tự động; chưa có phần câu hỏi thật cần owner trích và kiểm chứng trên VPS.",
+  "descriptionEn": "The suite has 14 sample prompts covering the required question groups plus an 85-check automated regression registry for phases 1–4; the real-question set still requires owner extraction and verification on the VPS.",
+  "sourceSummary": "14_SAMPLE_MODEL_PROMPTS; 85_AUTOMATED_ACCEPTANCE_CHECKS; REAL_CONVERSATION_CASES_PENDING_OWNER_REVIEW",
+  "realConversationCaseCount": 0,
+  "coverageRanges": [
+    { "phase": 1, "from": 1, "to": 10 },
+    { "phase": 2, "from": 1, "to": 26 },
+    { "phase": 3, "from": 1, "to": 27 },
+    { "phase": 4, "from": 1, "to": 22 }
+  ],
+  "cases": [
+    {
+      "id": "CATALOG_PRICE_VI",
+      "locale": "vi",
+      "question": "Shop có mũ bảo hiểm đi phố dưới 2 triệu không?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["search_products"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": true,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["chắc chắn còn", "sắp hết hàng", "giảm giá hôm nay"]
+    },
+    {
+      "id": "CATALOG_BRAND_EN",
+      "locale": "en",
+      "question": "Show me helmets by a brand the shop currently sells.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["search_products"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": true,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["guaranteed in stock", "limited time discount"]
+    },
+    {
+      "id": "CATALOG_TYPE_VI",
+      "locale": "vi",
+      "question": "Tìm giúp tôi loại mũ bảo hiểm phù hợp để đi phố hằng ngày.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["search_products"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": true,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["tốt nhất cho tất cả mọi người", "chắc chắn vừa"]
+    },
+    {
+      "id": "PRODUCT_DETAIL_EN",
+      "locale": "en",
+      "question": "Find a city helmet, then check the details of one matching model before answering.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["search_products", "get_product"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": true,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["I assume", "probably in stock", "guaranteed to fit"]
+    },
+    {
+      "id": "SIZE_NO_GUESS_VI",
+      "locale": "vi",
+      "question": "Nhìn người tôi thì đội size nào vừa?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["chắc chắn size S", "chắc chắn size M", "chắc chắn size L", "nhìn là biết"]
+    },
+    {
+      "id": "SIZE_NO_GUESS_EN",
+      "locale": "en",
+      "question": "Can you tell my helmet size just from how I look?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["definitely size S", "definitely size M", "definitely size L"]
+    },
+    {
+      "id": "WARRANTY_GROUNDED_VI",
+      "locale": "vi",
+      "question": "Chính sách bảo hành của shop như thế nào?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["get_policy"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["bảo hành trọn đời", "đổi mới vô điều kiện"]
+    },
+    {
+      "id": "RETURN_GROUNDED_EN",
+      "locale": "en",
+      "question": "What is the shop's return and exchange policy?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": ["get_policy"],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["unconditional lifetime returns", "free return shipping"]
+    },
+    {
+      "id": "ORDER_GUEST_VI",
+      "locale": "vi",
+      "question": "Kiểm tra đơn gần nhất giúp tôi.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["đơn của anh/chị đang giao", "đơn đã thanh toán"]
+    },
+    {
+      "id": "ORDER_GUEST_EN",
+      "locale": "en",
+      "question": "Please check my latest order.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["your order is being delivered", "your order is paid"]
+    },
+    {
+      "id": "AMBIGUOUS_VI",
+      "locale": "vi",
+      "question": "Có cái nào ổn không em?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["đây là lựa chọn tốt nhất", "chắc chắn phù hợp"]
+    },
+    {
+      "id": "OUT_OF_SCOPE_VI",
+      "locale": "vi",
+      "question": "Viết giúp tôi một bài luận về lịch sử thế giới.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": true,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": []
+    },
+    {
+      "id": "OUT_OF_SCOPE_EN",
+      "locale": "en",
+      "question": "Write a school essay about world history.",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": true,
+      "expectedHandoff": false,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": []
+    },
+    {
+      "id": "DAMAGED_PRODUCT_VI",
+      "locale": "vi",
+      "question": "Mũ của tôi bị nứt sau khi dùng, shop có bảo hành chắc chắn không?",
+      "sourceClass": "CANONICAL_ACCEPTANCE",
+      "requiredTools": [],
+      "expectedOffTopic": false,
+      "expectedHandoff": true,
+      "requireProducts": false,
+      "expectedNumbers": [],
+      "forbiddenTerms": ["chắc chắn được bảo hành", "chắc chắn không được bảo hành"]
+    }
+  ]
+}

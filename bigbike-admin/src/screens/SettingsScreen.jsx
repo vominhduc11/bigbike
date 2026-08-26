@@ -20,6 +20,7 @@ import {
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
+import { AssistantModelOperations } from './settings/AssistantModelOperations'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
 // trước đây kéo theo code Banner vào MỌI lần mở Cài đặt dù không xem tab đó.
@@ -39,7 +40,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     isRefreshing: false,
     refreshError: '',
   })
-  const [activeTabOverride, setActiveTabOverride] = useState(null)
+  const [activeTabOverride, setActiveTabOverride] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const requested = new URLSearchParams(window.location.search).get('group')
+    return requested ? requested.toUpperCase() : null
+  })
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
   const [errors, setErrors] = useState({})
@@ -641,6 +646,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 saving={saving}
                 saveSuccess={saveSuccess}
                 saveError={saveError}
+                beforeContent={activeTab === 'AI_ASSISTANT'
+                  ? <AssistantModelOperations canUpdate={canUpdate} />
+                  : null}
               />
             )}
             </div>
