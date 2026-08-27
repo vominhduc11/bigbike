@@ -568,7 +568,8 @@ class Phase1FCheckoutApiTest {
         String email = "wp-merge-" + UUID.randomUUID() + "@bigbike.vn";
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"pass1234\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
         MvcResult login = mockMvc.perform(post("/api/v1/customer/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -799,7 +800,8 @@ class Phase1FCheckoutApiTest {
     private AuthSession loginAndAddItem(String email, int retailPrice) throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"pass1234\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
         MvcResult loginResult = mockMvc.perform(post("/api/v1/customer/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -4,7 +4,7 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import type { Category } from "@/lib/contracts/public";
 
 const HOME_CATEGORY_IMAGE_SIZES =
-  "(min-width: 1200px) 300px, (min-width: 768px) calc((100vw - 64px) / 4), (min-width: 640px) calc((100vw - 48px) / 3), calc((100vw - 32px) / 2)";
+  "(min-width: 1200px) 160px, (min-width: 768px) 128px, 96px";
 
 /**
  * Lưới danh mục trang chủ — server render `vi` (initialCategories) cho SEO/ISR; khi khách
@@ -32,22 +32,24 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                 className="group relative flex h-72.5 items-center justify-center overflow-hidden bg-card before:absolute before:inset-0 before:content-[''] before:bg-[url('/brand/home/category-hover.jpg')] before:bg-cover before:bg-center before:opacity-0 before:transition-opacity before:duration-200 before:ease-standard hover:before:opacity-100 focus-visible:outline-2 focus-visible:outline-ring focus-visible:[outline-offset:-3px]"
               >
                 <span className="relative z-[1] block w-full px-4">
-                  <span className="block">
+                  <span className="relative mx-auto block size-24 md:size-32 min-[1200px]:size-40">
                     {responsiveImage ? (
                       <MediaImage
                         image={responsiveImage}
                         altFallback=""
                         width={600}
                         height={600}
+                        fill
                         sizes={HOME_CATEGORY_IMAGE_SIZES}
-                        className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
+                        className="object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
                       />
                     ) : (
                       <MediaImage
                         image={{ url: "/brand/home/category-fallback.png", width: 50, height: 60 }}
                         altFallback=""
-                        sizes="50px"
-                        className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
+                        fill
+                        sizes={HOME_CATEGORY_IMAGE_SIZES}
+                        className="object-contain transition duration-300 group-hover:brightness-0 group-hover:invert"
                       />
                     )}
                   </span>

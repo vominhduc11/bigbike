@@ -13,7 +13,11 @@ const resetPasswordSchema = createResetPasswordSchema(t);
 
 describe("loginSchema", () => {
   it("validates a correct payload", () => {
-    const result = loginSchema.safeParse({ login: "user@example.com", password: "secret", remember: false });
+    const result = loginSchema.safeParse({
+      login: "user@example.com",
+      password: "secret",
+      remember: false,
+    });
     expect(result.success).toBe(true);
   });
 
@@ -23,7 +27,11 @@ describe("loginSchema", () => {
   });
 
   it("rejects empty password", () => {
-    const result = loginSchema.safeParse({ login: "user@example.com", password: "", remember: false });
+    const result = loginSchema.safeParse({
+      login: "user@example.com",
+      password: "",
+      remember: false,
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -35,6 +43,7 @@ describe("registerSchema", () => {
     phone: "0912345678",
     password: "12345678",
     confirm: "12345678",
+    privacyConsent: true,
   };
 
   it("validates a correct payload", () => {
@@ -57,6 +66,18 @@ describe("registerSchema", () => {
     const result = registerSchema.safeParse({ ...valid, email: "not-an-email" });
     expect(result.success).toBe(false);
   });
+
+  it("uses the required message when email is blank", () => {
+    const result = registerSchema.safeParse({ ...valid, email: "" });
+    expect(result.success).toBe(false);
+    expect(result.error!.flatten().fieldErrors.email).toEqual(["emailRequired"]);
+  });
+
+  it("requires Privacy Policy agreement", () => {
+    const result = registerSchema.safeParse({ ...valid, privacyConsent: false });
+    expect(result.success).toBe(false);
+    expect(result.error!.flatten().fieldErrors.privacyConsent).toEqual(["privacyConsentRequired"]);
+  });
 });
 
 describe("resetPasswordSchema", () => {
@@ -68,5 +89,11 @@ describe("resetPasswordSchema", () => {
   it("validates matching passwords of sufficient length", () => {
     const result = resetPasswordSchema.safeParse({ password: "newpass1", confirm: "newpass1" });
     expect(result.success).toBe(true);
+  });
+
+  it("uses the required message when the new password is blank", () => {
+    const result = resetPasswordSchema.safeParse({ password: "", confirm: "" });
+    expect(result.success).toBe(false);
+    expect(result.error!.flatten().fieldErrors.password).toEqual(["passwordRequired"]);
   });
 });

@@ -139,14 +139,16 @@ function FacetList({
                   />
                 ) : null}
                 {brandLogos ? (
-                  <span className="flex h-12 w-24 shrink-0 items-center justify-center text-a5-meta font-bold leading-none tracking-wide text-muted-foreground" data-brand-logo="true">
+                  <span className="relative flex h-12 w-24 shrink-0 items-center justify-center text-a5-meta font-bold leading-none tracking-wide text-muted-foreground" data-brand-logo="true">
                     {logoImage ? (
                       <MediaImage
                         image={logoImage}
                         altFallback=""
                         width={96}
                         height={48}
-                        className="max-h-full max-w-full object-contain"
+                        fill
+                        sizes="96px"
+                        className="object-contain"
                       />
                     ) : (
                       <span aria-hidden>{brandInitials(row.label)}</span>

@@ -6,6 +6,7 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toBrandListPath, toBrandPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { BRAND_LIST_IMAGE_SIZES } from "./brandImageSizes";
 
 type BrandPagination = {
   page: number;
@@ -31,7 +32,7 @@ export async function BrandListDefault({
   return (
     <>
       <div className="relative">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div data-brand-list-grid className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {brands.map((brand) => {
             const name = safeText(brand.name, t("brandsTitle"));
             const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
@@ -43,15 +44,16 @@ export async function BrandListDefault({
                 title={name}
                 className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5 no-underline transition-colors hover:border-foreground"
               >
-                <span className="flex h-16 w-full items-center justify-center">
+                <span className="relative flex h-16 w-full items-center justify-center">
                   {logoUrl ? (
                     <MediaImage
                       image={{ ...brand.logo, url: logoUrl }}
                       altFallback={name}
                       width={256}
                       height={128}
-                      sizes="(min-width: 1024px) 160px, calc((100vw - 48px) / 2)"
-                      className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                      fill
+                      sizes={BRAND_LIST_IMAGE_SIZES}
+                      className="object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
                     <span className="text-a2-page font-bold tracking-wide text-muted-foreground">{initials}</span>

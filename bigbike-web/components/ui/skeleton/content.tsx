@@ -11,28 +11,25 @@ import { Container } from "@/components/layout/Container";
 import { skelStack } from "@/lib/ui-classes";
 import { SkeletonRoot, SkelBlock, SkelButton, SkelText, SkelTitle } from "./primitives";
 
-
-/** Auth (login/register/forgot-password) — small centered card */
+/** Auth (login/register/forgot-password) — centered form placeholder */
 export function AuthSkeleton() {
   return (
     <SkeletonRoot labelKey="auth">
-      <section className="bb-page bb-page--auth">
-        <Container>
-          <div className="bb-auth-wrap">
-            <Card className="p-6 border-t-[3px] border-t-primary">
-              <div className={skelStack}>
-                <SkelTitle w="60%" h="1.8em" />
-                <div style={{ height: 8 }} />
-                <SkelText w="40%" />
-                <SkelBlock w="100%" h={42} />
-                <SkelText w="40%" />
-                <SkelBlock w="100%" h={42} />
-                <SkelButton w="100%" />
-                <SkelText w="55%" />
-              </div>
-            </Card>
-          </div>
-        </Container>
+      <section className="px-4 py-15 sm:px-6">
+        <div className="mx-auto w-full max-w-92.5">
+          <Card className="border-t-4 border-t-primary p-6">
+            <div className={skelStack}>
+              <SkelTitle w="60%" h="1.8em" />
+              <div style={{ height: 8 }} />
+              <SkelText w="40%" />
+              <SkelBlock w="100%" h={42} />
+              <SkelText w="40%" />
+              <SkelBlock w="100%" h={42} />
+              <SkelButton w="100%" />
+              <SkelText w="55%" />
+            </div>
+          </Card>
+        </div>
       </section>
     </SkeletonRoot>
   );
@@ -81,7 +78,10 @@ export function ContactSkeleton() {
             <div className={skelStack}>
               <SkelTitle w="55%" h="1.6em" />
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16 }}>
+                <div
+                  key={i}
+                  style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16 }}
+                >
                   <SkelBlock w={28} h={28} />
                   <div style={{ flex: 1 }}>
                     <SkelText w="40%" />

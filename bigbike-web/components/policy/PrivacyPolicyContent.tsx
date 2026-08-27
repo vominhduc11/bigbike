@@ -29,6 +29,10 @@ const COPY = {
     vi: "BigBike.vn cam kết bảo vệ thông tin cá nhân của khách hàng. Trang này giải thích rõ chúng tôi thu thập, sử dụng và bảo vệ dữ liệu của bạn như thế nào.",
     en: "BigBike.vn is committed to protecting our customers' personal information. This page explains how we collect, use and protect your data.",
   },
+  effectiveDate: {
+    vi: "Có hiệu lực từ ngày 27/08/2026.",
+    en: "Effective from 27 August 2026.",
+  },
   s1Title: { vi: "1. Thông tin chúng tôi thu thập", en: "1. Information we collect" },
   s2Title: { vi: "2. Mục đích sử dụng", en: "2. How we use it" },
   s3Title: { vi: "3. Công cụ đo lường và theo dõi", en: "3. Measurement and tracking tools" },
@@ -87,7 +91,10 @@ const COLLECT: Bi[] = [
 
 const PURPOSE: Bi[] = [
   { vi: "Xử lý đơn hàng và giao hàng", en: "Process and deliver orders" },
-  { vi: "Liên hệ xác nhận đơn, tư vấn sau bán", en: "Confirm orders and provide after-sales support" },
+  {
+    vi: "Liên hệ xác nhận đơn, tư vấn sau bán",
+    en: "Confirm orders and provide after-sales support",
+  },
   { vi: "Gửi thông tin khuyến mãi (nếu khách đồng ý)", en: "Send promotions (with your consent)" },
   {
     vi: "Phân loại mục đích của ảnh và đối chiếu với hàng BigBike đang bán để hỗ trợ tư vấn",
@@ -95,10 +102,7 @@ const PURPOSE: Bi[] = [
   },
 ];
 
-const ANALYTICS: string[] = [
-  "Google Analytics 4 (GA4)",
-  "Facebook Pixel",
-];
+const ANALYTICS: string[] = ["Google Analytics 4 (GA4)", "Facebook Pixel"];
 const ANALYTICS_GENERIC: Bi = {
   vi: "Công cụ tracking theo dõi hành vi người dùng",
   en: "User-behaviour tracking tools",
@@ -158,9 +162,7 @@ const CHAT_IMAGES: Bi[] = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">
-      {children}
-    </h2>
+    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">{children}</h2>
   );
 }
 
@@ -181,6 +183,9 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
     <div className="max-w-none text-a4-content leading-body text-foreground">
       {/* Intro */}
       <p className="mb-6 text-a4-content leading-body">{t(lang, COPY.intro)}</p>
+      <p className="mb-6 text-a5-meta font-semibold leading-body text-muted-foreground">
+        {t(lang, COPY.effectiveDate)}
+      </p>
 
       {/* 1. Thông tin thu thập */}
       <SectionTitle>{t(lang, COPY.s1Title)}</SectionTitle>

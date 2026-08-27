@@ -15,6 +15,8 @@ public enum OAuthError {
     UNCONFIGURED,
     /** The account behind the social identity is not ACTIVE (blocked / pending deletion). */
     BLOCKED,
+    /** The provider identity would create an account, but no registration consent was supplied. */
+    REGISTRATION_CONSENT_REQUIRED,
     /** Anything else: state mismatch, token exchange failure, provider outage. */
     FAILED;
 

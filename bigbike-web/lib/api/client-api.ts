@@ -57,7 +57,8 @@ function toApiClientError(status: number, payload: unknown): ApiClientError {
   return new ApiClientError(
     status,
     apiError?.code === "VALIDATION_ERROR" && detailCode ? detailCode : apiError?.code,
-    apiError?.fieldErrors ?? (detailFields && Object.keys(detailFields).length > 0 ? detailFields : undefined),
+    apiError?.fieldErrors ??
+      (detailFields && Object.keys(detailFields).length > 0 ? detailFields : undefined),
   );
 }
 
@@ -245,7 +246,8 @@ export type ChatHandoffStatus = {
   businessHoursText?: string | null;
 };
 
-export type ChatChannelState = "AI_ACTIVE" | "WAITING_FOR_STAFF" | "STAFF_ACTIVE" | "AI_RESUMED" | "CLOSED";
+export type ChatChannelState =
+  "AI_ACTIVE" | "WAITING_FOR_STAFF" | "STAFF_ACTIVE" | "AI_RESUMED" | "CLOSED";
 
 export type ChatContinuation = {
   available: boolean;
@@ -499,54 +501,94 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
   const normalizedCrossSell = normalizeChatProducts(source.crossSellProducts);
   const normalizedClarification = normalizeChatClarification(source.clarification, lang);
   const unsafe =
-    Boolean(answer && !safeAnswer) || normalizedProducts.unsafe || normalizedCrossSell.unsafe
-      || normalizedClarification.unsafe;
+    Boolean(answer && !safeAnswer) ||
+    normalizedProducts.unsafe ||
+    normalizedCrossSell.unsafe ||
+    normalizedClarification.unsafe;
   const stage: ChatSalesStage =
-    source.salesStage === "CHOOSING" || source.salesStage === "DECIDING"
-      || source.salesStage === "POST_PURCHASE" ? source.salesStage : "BROWSING";
-  const nextStepSource = source.nextStep && typeof source.nextStep === "object"
-    ? source.nextStep as Record<string, unknown> : null;
-  const nextStep = nextStepSource && typeof nextStepSource.type === "string"
-    ? {
-        type: nextStepSource.type,
-        productSlug: typeof nextStepSource.productSlug === "string" ? nextStepSource.productSlug : null,
-        clarificationId: typeof nextStepSource.clarificationId === "string" ? nextStepSource.clarificationId : null,
-      }
-    : null;
-  const handoffSource = source.handoff && typeof source.handoff === "object"
-    ? source.handoff as Record<string, unknown> : null;
+    source.salesStage === "CHOOSING" ||
+    source.salesStage === "DECIDING" ||
+    source.salesStage === "POST_PURCHASE"
+      ? source.salesStage
+      : "BROWSING";
+  const nextStepSource =
+    source.nextStep && typeof source.nextStep === "object"
+      ? (source.nextStep as Record<string, unknown>)
+      : null;
+  const nextStep =
+    nextStepSource && typeof nextStepSource.type === "string"
+      ? {
+          type: nextStepSource.type,
+          productSlug:
+            typeof nextStepSource.productSlug === "string" ? nextStepSource.productSlug : null,
+          clarificationId:
+            typeof nextStepSource.clarificationId === "string"
+              ? nextStepSource.clarificationId
+              : null,
+        }
+      : null;
+  const handoffSource =
+    source.handoff && typeof source.handoff === "object"
+      ? (source.handoff as Record<string, unknown>)
+      : null;
   const handoffStatuses = new Set(["WAITING", "ACTIVE", "RETURNED_TO_AI", "CLOSED"]);
-  const handoff = handoffSource && typeof handoffSource.id === "string"
-      && typeof handoffSource.status === "string" && handoffStatuses.has(handoffSource.status)
-      && typeof handoffSource.requestedAt === "string"
-    ? {
-        id: handoffSource.id,
-        status: handoffSource.status as ChatHandoffStatus["status"],
-        requestedAt: handoffSource.requestedAt,
-        channelState: typeof handoffSource.channelState === "string" ? handoffSource.channelState : null,
-        assignedDisplayName: typeof handoffSource.assignedDisplayName === "string" ? handoffSource.assignedDisplayName : null,
-        withinBusinessHours: handoffSource.withinBusinessHours === true,
-        nextOpenAt: typeof handoffSource.nextOpenAt === "string" ? handoffSource.nextOpenAt : null,
-        businessHoursText: typeof handoffSource.businessHoursText === "string"
-          ? handoffSource.businessHoursText.trim()
-          : null,
-      }
-    : null;
-  const leadSource = source.leadOffer && typeof source.leadOffer === "object"
-    ? source.leadOffer as Record<string, unknown> : null;
-  const leadReasons = new Set(["HOLD_STOCK", "RESTOCK_ALERT", "SIZE_ADVICE", "QUOTE", "STAFF_CONFIRMATION"]);
-  const leadOffer = leadSource && (leadSource.sequence === 1 || leadSource.sequence === 2)
-      && typeof leadSource.reason === "string" && leadReasons.has(leadSource.reason)
-      && isSafeChatDisplayText(leadSource.presentation, lang)
-    ? {
-        sequence: leadSource.sequence as 1 | 2,
-        reason: leadSource.reason as ChatLeadOffer["reason"],
-        presentation: leadSource.presentation.trim(),
-      }
-    : null;
+  const handoff =
+    handoffSource &&
+    typeof handoffSource.id === "string" &&
+    typeof handoffSource.status === "string" &&
+    handoffStatuses.has(handoffSource.status) &&
+    typeof handoffSource.requestedAt === "string"
+      ? {
+          id: handoffSource.id,
+          status: handoffSource.status as ChatHandoffStatus["status"],
+          requestedAt: handoffSource.requestedAt,
+          channelState:
+            typeof handoffSource.channelState === "string" ? handoffSource.channelState : null,
+          assignedDisplayName:
+            typeof handoffSource.assignedDisplayName === "string"
+              ? handoffSource.assignedDisplayName
+              : null,
+          withinBusinessHours: handoffSource.withinBusinessHours === true,
+          nextOpenAt:
+            typeof handoffSource.nextOpenAt === "string" ? handoffSource.nextOpenAt : null,
+          businessHoursText:
+            typeof handoffSource.businessHoursText === "string"
+              ? handoffSource.businessHoursText.trim()
+              : null,
+        }
+      : null;
+  const leadSource =
+    source.leadOffer && typeof source.leadOffer === "object"
+      ? (source.leadOffer as Record<string, unknown>)
+      : null;
+  const leadReasons = new Set([
+    "HOLD_STOCK",
+    "RESTOCK_ALERT",
+    "SIZE_ADVICE",
+    "QUOTE",
+    "STAFF_CONFIRMATION",
+  ]);
+  const leadOffer =
+    leadSource &&
+    (leadSource.sequence === 1 || leadSource.sequence === 2) &&
+    typeof leadSource.reason === "string" &&
+    leadReasons.has(leadSource.reason) &&
+    isSafeChatDisplayText(leadSource.presentation, lang)
+      ? {
+          sequence: leadSource.sequence as 1 | 2,
+          reason: leadSource.reason as ChatLeadOffer["reason"],
+          presentation: leadSource.presentation.trim(),
+        }
+      : null;
   const mode = source.mode === "AI" && safeAnswer && !unsafe ? "AI" : "CONTACT";
-  const channelState = ["AI_ACTIVE", "WAITING_FOR_STAFF", "STAFF_ACTIVE", "AI_RESUMED", "CLOSED"].includes(String(source.channelState))
-    ? source.channelState as ChatChannelState
+  const channelState = [
+    "AI_ACTIVE",
+    "WAITING_FOR_STAFF",
+    "STAFF_ACTIVE",
+    "AI_RESUMED",
+    "CLOSED",
+  ].includes(String(source.channelState))
+    ? (source.channelState as ChatChannelState)
     : "AI_ACTIVE";
   return {
     conversationId: typeof source.conversationId === "string" ? source.conversationId : null,
@@ -584,20 +626,44 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
         ? source.resultKind.trim()
         : mode,
     channelState,
-    countedTurns: typeof source.countedTurns === "number" ? source.countedTurns : (typeof source.turnCount === "number" ? source.turnCount : 0),
-    turnLimit: typeof source.turnLimit === "number" ? source.turnLimit : (typeof source.maxTurns === "number" ? source.maxTurns : 40),
-    turnsRemaining: typeof source.turnsRemaining === "number" ? source.turnsRemaining : (typeof source.remainingTurns === "number" ? source.remainingTurns : 0),
-    continuation: source.continuation && typeof source.continuation === "object"
-      ? {
-          available: (source.continuation as Record<string, unknown>).available === true,
-          threadId: typeof (source.continuation as Record<string, unknown>).threadId === "string"
-            ? (source.continuation as Record<string, unknown>).threadId as string : null,
-          successorConversationId: typeof (source.continuation as Record<string, unknown>).successorConversationId === "string"
-            ? (source.continuation as Record<string, unknown>).successorConversationId as string : null,
-          message: typeof (source.continuation as Record<string, unknown>).message === "string"
-            ? (source.continuation as Record<string, unknown>).message as string : null,
-        }
-      : null,
+    countedTurns:
+      typeof source.countedTurns === "number"
+        ? source.countedTurns
+        : typeof source.turnCount === "number"
+          ? source.turnCount
+          : 0,
+    turnLimit:
+      typeof source.turnLimit === "number"
+        ? source.turnLimit
+        : typeof source.maxTurns === "number"
+          ? source.maxTurns
+          : 40,
+    turnsRemaining:
+      typeof source.turnsRemaining === "number"
+        ? source.turnsRemaining
+        : typeof source.remainingTurns === "number"
+          ? source.remainingTurns
+          : 0,
+    continuation:
+      source.continuation && typeof source.continuation === "object"
+        ? {
+            available: (source.continuation as Record<string, unknown>).available === true,
+            threadId:
+              typeof (source.continuation as Record<string, unknown>).threadId === "string"
+                ? ((source.continuation as Record<string, unknown>).threadId as string)
+                : null,
+            successorConversationId:
+              typeof (source.continuation as Record<string, unknown>).successorConversationId ===
+              "string"
+                ? ((source.continuation as Record<string, unknown>)
+                    .successorConversationId as string)
+                : null,
+            message:
+              typeof (source.continuation as Record<string, unknown>).message === "string"
+                ? ((source.continuation as Record<string, unknown>).message as string)
+                : null,
+          }
+        : null,
   };
 }
 
@@ -617,15 +683,23 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
         quickPrompts,
         maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 16,
         contacts: normalizeChatContacts(source.contacts),
-        memoryDays: Number.isFinite(source.memoryDays) ? Math.max(1, Math.min(30, source.memoryDays)) : 30,
+        memoryDays: Number.isFinite(source.memoryDays)
+          ? Math.max(1, Math.min(30, source.memoryDays))
+          : 30,
         proactive: {
           enabled: source.proactive?.enabled === true,
-          productSeconds: Number.isFinite(source.proactive?.productSeconds) ? source.proactive.productSeconds : 45,
-          cartSeconds: Number.isFinite(source.proactive?.cartSeconds) ? source.proactive.cartSeconds : 120,
+          productSeconds: Number.isFinite(source.proactive?.productSeconds)
+            ? source.proactive.productSeconds
+            : 45,
+          cartSeconds: Number.isFinite(source.proactive?.cartSeconds)
+            ? source.proactive.cartSeconds
+            : 120,
         },
         images: {
           enabled: source.images?.enabled === true,
-          maxBytes: Number.isFinite(source.images?.maxBytes) ? source.images.maxBytes : 8 * 1024 * 1024,
+          maxBytes: Number.isFinite(source.images?.maxBytes)
+            ? source.images.maxBytes
+            : 8 * 1024 * 1024,
           maxPerTurn: Number.isFinite(source.images?.maxPerTurn) ? source.images.maxPerTurn : 1,
           maxPerConversation: Number.isFinite(source.images?.maxPerConversation)
             ? source.images.maxPerConversation
@@ -896,7 +970,12 @@ export async function uploadChatImage(input: {
     throw toApiClientError(response.status, payload);
   }
   const data = payloadData(payload) as { conversationId?: unknown; image?: unknown } | null;
-  if (!data || typeof data.conversationId !== "string" || !data.image || typeof data.image !== "object") {
+  if (
+    !data ||
+    typeof data.conversationId !== "string" ||
+    !data.image ||
+    typeof data.image !== "object"
+  ) {
     throw new Error(invalidPayloadMessage());
   }
   const image = data.image as Record<string, unknown>;
@@ -1373,9 +1452,20 @@ export function loginCustomer(
  * Builds the social-login start URL. Returns an absolute backend URL — the browser
  * must leave the SPA so the OAuth provider can complete the redirect round-trip.
  */
-export function oauthAuthorizeUrl(provider: "google" | "facebook", returnTo?: string): string {
+export function oauthAuthorizeUrl(
+  provider: "google" | "facebook",
+  returnTo?: string,
+  registrationConsent?: { privacyConsent: true; privacyPolicyLocale: "vi" | "en" },
+): string {
   const base = `${API_BASE_URL}/api/v1/customer/auth/oauth/${provider}/authorize`;
-  return returnTo ? `${base}?tiep=${encodeURIComponent(returnTo)}` : base;
+  const params = new URLSearchParams();
+  if (returnTo) params.set("tiep", returnTo);
+  if (registrationConsent) {
+    params.set("privacyConsent", "true");
+    params.set("privacyPolicyLocale", registrationConsent.privacyPolicyLocale);
+  }
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function registerCustomer(
@@ -1384,6 +1474,7 @@ export function registerCustomer(
   firstName: string,
   lastName?: string,
   phone?: string,
+  privacyPolicyLocale: "vi" | "en" = "vi",
 ): Promise<CustomerAuthData> {
   return clientRequest("POST", "/api/v1/customer/auth/register", {
     email,
@@ -1391,6 +1482,8 @@ export function registerCustomer(
     phone,
     firstName,
     lastName,
+    privacyConsent: true,
+    privacyPolicyLocale,
   });
 }
 

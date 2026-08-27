@@ -211,7 +211,8 @@ class CustomerAddressApiTest {
     private AuthSession loginCustomer(String email) throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"pass1234\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
         MvcResult loginResult = mockMvc.perform(post("/api/v1/customer/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

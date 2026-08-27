@@ -92,7 +92,15 @@ function SocialSvgIcon({ name }: { name: SocialChannel }) {
  * (xem `[data-footer-content][data-state="closed"]` trong globals.css). Desktop ≥992px ép
  * `!h-auto` để luôn hiện đủ, không phụ thuộc animation.
  */
-function AccordionPanel({ value, title, children }: { value: string; title: ReactNode; children: ReactNode }) {
+function AccordionPanel({
+  value,
+  title,
+  children,
+}: {
+  value: string;
+  title: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <AccordionItem
       value={value}
@@ -135,19 +143,32 @@ export async function Footer({ locale }: { locale: Locale }) {
   const settingDescription = pickSetting(settingsResult.data ?? [], ["footer_description"]);
 
   return (
-    <footer data-bb-full-bleed data-bb-focus="general_brand" className="relative z-0 w-full font-body text-white">
-      <div className="bg-footer-top pt-15 md:pb-[85px]">
+    <footer
+      data-bb-full-bleed
+      data-bb-focus="general_brand"
+      className="relative z-0 w-full font-body text-white"
+    >
+      <div data-footer-top className="bg-footer-top pt-15 md:pb-[85px]">
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">
             <div className="md:col-span-7">
-              <h2 className="mb-10! font-cta text-a1-title font-semibold uppercase leading-title">
+              <h2
+                data-footer-intro
+                className="mb-10! font-cta text-a1-title font-semibold uppercase leading-title"
+              >
                 <Tr ns="Footer" k="taglineLong" />
               </h2>
               <div data-footer-contacts className="mb-7.5 flex min-w-0 flex-col gap-3">
                 {FOOTER_HOTLINES.map((phone) => (
-                  <p key={phone} className="m-0! flex min-w-0 items-center gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
+                  <p
+                    key={phone}
+                    className="m-0! flex min-w-0 items-center gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]"
+                  >
                     <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <a href={telHref(phone)} className="min-w-0 text-white! no-underline! [overflow-wrap:anywhere]">
+                    <a
+                      href={telHref(phone)}
+                      className="min-w-0 text-white! no-underline! [overflow-wrap:anywhere]"
+                    >
                       {phone}
                     </a>
                   </p>
@@ -158,17 +179,21 @@ export async function Footer({ locale }: { locale: Locale }) {
                     className="flex min-w-0 items-start gap-3 text-white! no-underline! sm:gap-[29px]"
                   >
                     <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">{FOOTER_EMAIL}</span>
+                    <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">
+                      {FOOTER_EMAIL}
+                    </span>
                   </a>
                 </p>
                 <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                   <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                  <span className="min-w-0 [overflow-wrap:anywhere]"><Tr ns="Footer" k="address" /></span>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">
+                    <Tr ns="Footer" k="address" />
+                  </span>
                 </p>
               </div>
             </div>
             <div className="md:col-span-5">
-              <p className="mb-[27px]! text-a4-content leading-body">
+              <p data-footer-description className="mb-[27px]! text-a4-content leading-body">
                 <LocalizedSetting
                   vi={settingDescription}
                   en={settingDescription}
@@ -180,12 +205,12 @@ export async function Footer({ locale }: { locale: Locale }) {
                 defaultValue={["menu", "social"]}
                 className="grid grid-cols-1 gap-x-7.5 min-[992px]:grid-cols-12"
               >
-                <div className="min-[992px]:col-span-7">
+                <div data-footer-menu className="min-[992px]:col-span-7">
                   <AccordionPanel value="menu" title={<Tr ns="Footer" k="infoHeading" />}>
                     <FooterMenuLinks />
                   </AccordionPanel>
                 </div>
-                <div className="min-[992px]:col-span-5">
+                <div data-footer-social className="min-[992px]:col-span-5">
                   <AccordionPanel value="social" title={<Tr ns="Footer" k="socialHeading" />}>
                     <ul className="m-0 flex list-none flex-col gap-[25px] p-0">
                       {SOCIAL_CHANNELS.map((key) => {
@@ -214,8 +239,11 @@ export async function Footer({ locale }: { locale: Locale }) {
         </Container>
       </div>
       <div className="bg-footer-top md:hidden">
-        <Container variant="blog" className="px-[15px]! pb-2.5">
-          <a href={FOOTER_BCT_URL} className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!">
+        <Container data-footer-certification variant="blog" className="px-[15px]! pb-2.5">
+          <a
+            href={FOOTER_BCT_URL}
+            className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!"
+          >
             <MediaImage
               image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
               altFallback={t("commerceCertificationAlt")}
@@ -228,7 +256,10 @@ export async function Footer({ locale }: { locale: Locale }) {
           </a>
         </Container>
         <div className="bg-black">
-          <Container variant="blog" className="grid min-h-[85px] grid-cols-3 items-center px-[15px]! py-[15px]">
+          <Container
+            variant="blog"
+            className="grid min-h-[85px] grid-cols-3 items-center px-[15px]! py-[15px]"
+          >
             <p className="col-span-2 m-0 text-a5-meta leading-5">
               {t("copyright", { year: new Date().getFullYear() })}
             </p>
@@ -259,8 +290,11 @@ export async function Footer({ locale }: { locale: Locale }) {
             <div className="col-span-4">
               <p className="m-0">{t("copyright", { year: new Date().getFullYear() })}</p>
             </div>
-            <div className="col-span-6 pl-34.5 pr-32.5">
-              <a href={FOOTER_BCT_URL} className="flex flex-col items-start text-white! no-underline!">
+            <div data-footer-certification className="col-span-6 pl-34.5 pr-32.5">
+              <a
+                href={FOOTER_BCT_URL}
+                className="flex flex-col items-start text-white! no-underline!"
+              >
                 <MediaImage
                   image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
                   altFallback={t("commerceCertificationAlt")}

@@ -16,6 +16,7 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toBrandListPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { BRAND_LIST_IMAGE_SIZES } from "./brandImageSizes";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_SORT = "name:asc";
@@ -107,6 +108,7 @@ export function BrandListClient({
             "grid grid-cols-2 gap-3 transition-opacity duration-200 sm:grid-cols-3 lg:grid-cols-5",
             isRefetching && "opacity-50",
           )}
+          data-brand-list-grid
           aria-busy={isRefetching || undefined}
         >
           {brands.map((brand) => {
@@ -122,15 +124,16 @@ export function BrandListClient({
                 title={name}
                 className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5 no-underline transition-colors hover:border-foreground"
               >
-                <span className="flex h-16 w-full items-center justify-center">
+                <span className="relative flex h-16 w-full items-center justify-center">
                   {logoUrl ? (
                     <MediaImage
                       image={{ ...brand.logo, url: logoUrl }}
                       altFallback={name}
                       width={256}
                       height={128}
-                      sizes="(min-width: 1024px) 160px, calc((100vw - 48px) / 2)"
-                      className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                      fill
+                      sizes={BRAND_LIST_IMAGE_SIZES}
+                      className="object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
                     <span className="text-a2-page font-bold tracking-wide text-muted-foreground">{initials}</span>

@@ -75,7 +75,10 @@ class QaEmailLinkCaptureTest {
     void verificationEmailLink() throws Exception {
         String email = "qa-verify-" + System.nanoTime() + "@bigbike.test";
         String phone = "039" + String.format("%07d", Math.abs(System.nanoTime() % 10_000_000L));
-        authService.register(new CustomerRegisterRequest(email, phone, "QaPass!2345", "QA Verify", "Q", "A"), "127.0.0.1", "qa");
+        authService.register(
+                new CustomerRegisterRequest(
+                        email, phone, "QaPass!2345", "QA Verify", "Q", "A", true, "vi"),
+                "127.0.0.1", "qa");
         String raw = dump();
         assertThat(CAPTURED).as("a verification email should be dispatched on register").isNotEmpty();
         assertThat(raw).contains("localhost:3000/xac-nhan-email");
@@ -86,7 +89,10 @@ class QaEmailLinkCaptureTest {
     void resetEmailLink() throws Exception {
         String email = "qa-reset-" + System.nanoTime() + "@bigbike.test";
         String phone = "039" + String.format("%07d", Math.abs(System.nanoTime() % 10_000_000L));
-        authService.register(new CustomerRegisterRequest(email, phone, "QaPass!2345", "QA Reset", "Q", "A"), "127.0.0.1", "qa");
+        authService.register(
+                new CustomerRegisterRequest(
+                        email, phone, "QaPass!2345", "QA Reset", "Q", "A", true, "vi"),
+                "127.0.0.1", "qa");
         CAPTURED.clear(); // drop the verification email; keep only the reset email
         resetService.requestPasswordReset(email, "127.0.0.1", "qa");
         String raw = dump();

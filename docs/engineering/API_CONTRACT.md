@@ -113,12 +113,12 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. Product matching uses the shared identifier-only search semantics below. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
 | `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
 | `GET` | `/api/v1/sliders?location=home` | Trả các homepage slider đang active theo `sortOrder`. Mỗi item có `desktopImage` và `mobileImage`; `mobileImage` là tùy chọn (`ImageAsset` hoặc `null`). Storefront dùng `mobileImage.url` dưới 768px khi có, nếu không dùng `desktopImage.url`. | `ApiDataResponse<List<PublicSliderResponse>>` | `OWNER_CONFIRMED_2026-07-30` | `PublicSliderController.java`, `PublicSliderResponse.java`, `HeroSlider.tsx` |
-| `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
+| `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`, required `privacyConsent=true`, and required `privacyPolicyLocale` (`vi` or `en`); at least email or phone must be present. The server records policy version `2026-08-27` and acceptance time. | `ApiDataResponse<CustomerAuthResponse>` | `OWNER_CONFIRMED_2026-08-27` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register`, `CUSTOMER_RULE_011` |
 | `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
 | `POST` | `/api/v1/customer/auth/verify-email` | Verify email token from request param | `ApiDataResponse<{verified:true}>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `POST` | `/api/v1/customer/auth/resend-verification` | Resend the email-verification message for the authenticated customer | `ApiDataResponse<Map<String,Object>>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
-| `GET` | `/api/v1/customer/auth/oauth/{provider}/authorize` | Start social login. `provider` ∈ `google` `facebook`. Sets a short-lived `bb_oauth_state` cookie and `302`-redirects to the provider consent screen. Optional `tiep` query param is the post-login returnTo path | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
-| `GET` | `/api/v1/customer/auth/oauth/{provider}/callback` | Provider redirect target. Validates `state` (provider-bound), exchanges `code`, links-or-creates the customer, sets the `bb_session`/`bb_refresh`/`bb_csrf` cookies and `302`-redirects back to the storefront (`returnTo` on success, the locale-matched login page with `?error=<code>` on failure) | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
+| `GET` | `/api/v1/customer/auth/oauth/{provider}/authorize` | Start social login. `provider` ∈ `google` `facebook`. Sets a short-lived `bb_oauth_state` cookie and `302`-redirects to the provider consent screen. Optional `tiep` is the post-login returnTo path. Registration starts additionally send `privacyConsent=true` and `privacyPolicyLocale=vi|en`; login starts omit them. | `302` redirect | `OWNER_CONFIRMED_2026-08-27` | `CustomerOAuthController.java`, `CUSTOMER_RULE_011` |
+| `GET` | `/api/v1/customer/auth/oauth/{provider}/callback` | Provider redirect target. Validates provider-bound state, exchanges `code`, then reuses/links an existing customer or creates a new one only with stored registration consent. On success sets `bb_session`/`bb_refresh`/`bb_csrf` and redirects to `returnTo`; ordinary failure redirects to localized login, while `oauth_registration_consent_required` redirects to localized registration. | `302` redirect | `OWNER_CONFIRMED_2026-08-27` | `CustomerOAuthController.java`, `CustomerOAuthService.java` |
 | `GET` | `/api/v1/customer/auth/oauth/links` | Social identities linked to the signed-in customer. Requires `ROLE_CUSTOMER`. **Not called by any `bigbike-web` UI since 2026-08-07** (the "Tài khoản liên kết" panel was removed, CUSTOMER_RULE_010 — new logins can no longer attach a link to a password account, so there is nothing left for a self-service link/unlink screen to manage) — kept live for API completeness and for grandfathered pre-2026-08-07 accounts | `ApiDataResponse<CustomerOAuthLinkResponse[]>` | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java`, `CustomerOAuthLinkResponse.java` |
 | `DELETE` | `/api/v1/customer/auth/oauth/links/{provider}` | Unlink one social identity; returns the remaining links. `404` when that provider is not linked, `409` when it is the last sign-in method of an account with no password. CSRF-protected. Same "not called by any UI" note as the `GET` above | `ApiDataResponse<CustomerOAuthLinkResponse[]>` | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java`, `CustomerOAuthService.unlink` |
 
@@ -135,12 +135,29 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 - `remember = true` → the `bb_refresh` cookie keeps the **30-day** lifetime.
 - The chosen lifetime is persisted on `customer_sessions.remember` so the `refresh` endpoint preserves it on rotation.
 
+### Customer registration — Privacy Policy agreement
+
+`POST /api/v1/customer/auth/register` adds the following required request properties:
+
+```json
+{ "privacyConsent": true, "privacyPolicyLocale": "vi" }
+```
+
+- `privacyConsent` must be exactly `true`; `privacyPolicyLocale` must be `vi` or `en`.
+- The browser does not submit a policy version or acceptance timestamp. The backend writes one
+  `customer_privacy_consents` row with published version `2026-08-27` and server time in the same
+  transaction as the new customer.
+- Existing customers are not required to submit this data when logging in. `CUSTOMER_RULE_011`
+  governs new-account creation only.
+
 ### Social login (OAuth2) flow
 
-1. Browser navigates to `…/oauth/{provider}/authorize?tiep=<returnTo>`.
-2. Backend stores `provider|nonce|base64url(returnTo)` in the `bb_oauth_state` cookie
+1. Login starts at `…/oauth/{provider}/authorize?tiep=<returnTo>`. Registration starts at the
+   same route with `privacyConsent=true&privacyPolicyLocale=vi|en` after its checkbox validates.
+2. Backend stores `provider|nonce|base64url(returnTo)|privacyConsent|privacyPolicyLocale` in the `bb_oauth_state` cookie
    (`SameSite=Lax`, HttpOnly, ~10 min) and redirects to Google/Facebook. The provider is part of
    the payload so a state issued for `/google/authorize` cannot be replayed at `/facebook/callback`.
+   Legacy three-part state parses as no registration consent.
 3. Provider redirects back to `…/oauth/{provider}/callback?code=&state=` — or `?error=` when the
    customer declines on the consent screen.
 4. Backend validates `state`, exchanges `code` for the provider profile (`subject`, `email`,
@@ -149,7 +166,11 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
    - else a verified provider `email` matching an existing account **that has no password**
      (`password_hash IS NULL`) → add a link to it — this is how Google and Facebook can still
      merge into one account with each other;
-   - else create a new active customer (`password_hash = null`, `email_verified_at = now()`).
+   - else, when the stored registration state has `privacyConsent=true` and a valid locale, create
+     a new active customer (`password_hash = null`, `email_verified_at = now()`) and one
+     `customer_privacy_consents` row in the same transaction;
+   - else return `oauth_registration_consent_required` to localized registration without creating
+     a customer or session.
      **A password account is never adopted here, even with a matching verified email** — updated
      2026-08-07, CUSTOMER_RULE_010 (previously: a *verified* password account was adopted; only an
      *unverified* one was protected). When the matched account has a password, `email` is set to
@@ -181,10 +202,11 @@ its fields read-only. The storefront no longer offers a "Tài khoản liên kế
 Both endpoints are rate-limited per IP (20 requests/minute), since both are unauthenticated and the
 callback makes two outbound provider calls per request.
 
-#### Failure codes on the login page
+#### Failure codes on the localized auth page
 
-On any failure the browser lands on the login page for the locale it started in
-(`/dang-nhap/` or `/en/login/`) with `?error=<code>`:
+On failure the browser normally lands on the login page for the locale it started in
+(`/dang-nhap/` or `/en/login/`) with `?error=<code>`. The consent-required case instead lands on
+localized registration (`/dang-ky/` or `/en/register/`) so the customer can agree and retry:
 
 | Code | Meaning | Storefront message key |
 |---|---|---|
@@ -192,6 +214,7 @@ On any failure the browser lands on the login page for the locale it started in
 | `oauth_unconfigured` | That provider has no client id/secret on this deployment | `Auth.social.errorUnconfigured` |
 | `oauth_blocked` | The account behind the identity is not `ACTIVE` | `Auth.social.errorBlocked` |
 | `oauth_failed` | State mismatch, token exchange failure, provider outage | `Auth.social.errorFailed` |
+| `oauth_registration_consent_required` | The provider identity would create a customer but no registration consent was present | `Auth.social.errorRegistrationConsentRequired` |
 
 `CONFIRMED_FROM_CODE` (`OAuthError.java`, `bigbike-web/lib/auth/oauth-error.ts`). Any unrecognised
 value — including the pre-2026-08-07 `error=oauth` — falls back to the generic message, so an old
@@ -1749,7 +1772,7 @@ Switching a category off does not hide it from the moderator's output: the categ
 - `public_product`: **no shared settings.** All product-detail content is per-product: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233.
 - `seo`:
   - `home_content_bottom_html` — homepage bottom SEO HTML block (still admin-editable).
-  - `seo_home_title`, `seo_home_description`, `seo_home_h1`: restored 2026-08-16 (V1036), editable and returned publicly in the selected language. Blank title/H1 fall back to `site_name`; blank description falls back to the localized homepage description. `og_image_url` remains absent, so there is no default `og:image`. (Per-entity SEO for category/product/article is unrelated and unchanged.)
+  - `seo_home_title`, `seo_home_description`: restored 2026-08-16 (V1036), editable and returned publicly in the selected language. Blank title falls back to `site_name`; blank description falls back to the localized homepage description. `seo_home_h1` data from the earlier contract is retained in storage for compatibility but is no longer editable or returned as a public homepage field; the visible H1 is the localized title of the homepage introduction block. `og_image_url` remains absent, so there is no default `og:image`. (Per-entity SEO for category/product/article is unrelated and unchanged.)
 
 Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSettingsController.java`,
 `V18__add_public_homepage_contract_fields.sql`, `V19__backfill_homepage_data.sql`,

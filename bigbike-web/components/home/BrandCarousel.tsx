@@ -45,7 +45,7 @@ export function BrandCarousel({ brands }: Props) {
   const hasMultipleBrands = brands.length > 1;
 
   return (
-    <section className="py-30">
+    <section data-home-brand-carousel className="py-30">
       <Container>
         <Swiper
           // KHÔNG đặt `swiper-container`: home.min.js `partnerSlide()` gọi
@@ -76,14 +76,17 @@ export function BrandCarousel({ brands }: Props) {
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
                 <Link href={toBrandPath(b.slug, locale)} className="flex h-32 items-center justify-center">
-                  <MediaImage
-                    image={image}
-                    altFallback={b.name}
-                    width={120}
-                    height={44}
-                    sizes="(min-width: 767px) 120px, 50vw"
-                    className="max-h-full max-w-full object-contain"
-                  />
+                  <span className="relative size-30">
+                    <MediaImage
+                      image={image}
+                      altFallback={b.name}
+                      width={120}
+                      height={120}
+                      fill
+                      sizes="120px"
+                      className="object-contain"
+                    />
+                  </span>
                 </Link>
               </SwiperSlide>
             );

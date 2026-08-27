@@ -47,4 +47,14 @@ describe("BrandCarousel brand links", () => {
 
     expect(screen.getByRole("link")).toHaveAttribute("href", "/en/brands/agv/");
   });
+
+  it("keeps every logo inside the same centered square frame", () => {
+    locale.current = "vi";
+    render(<BrandCarousel brands={[brand()]} />);
+
+    const frame = document.querySelector(".size-30");
+    expect(frame).toHaveClass("relative", "size-30");
+    expect(frame?.querySelector("img")).toHaveClass("object-contain");
+    expect(frame?.querySelector("img")).toHaveAttribute("sizes", "120px");
+  });
 });

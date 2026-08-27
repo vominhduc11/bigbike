@@ -120,5 +120,6 @@ describe("ProductCard - ảnh responsive", () => {
     const image = screen.getByRole("img", { name: "Găng tay test" });
     expect(image).toHaveAttribute("sizes", "(min-width: 768px) 25vw, 50vw");
     expect(image.getAttribute("srcset")).toMatch(/\s\d+w(?:,|$)/);
+    expect(image).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-contain");
   });
 });

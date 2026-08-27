@@ -213,6 +213,10 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // Keep fixed storefront slots close to the smallest useful source at DPR 1/2.
+    // The wider device sizes remain for full-bleed heroes and PDP media.
+    imageSizes: [48, 64, 72, 80, 96, 120, 128, 149, 150, 160, 180, 192, 200, 240, 256, 278, 298, 300, 320],
+    deviceSizes: [360, 375, 390, 400, 430, 451, 512, 640, 750, 768, 828, 902, 1024, 1080, 1200, 1280, 1440, 1536, 1920, 2048, 2560, 3840],
     remotePatterns: [
       // cdn.bigbike.vn is legacy (old WordPress host, not a real CDN — see
       // LEGACY_UPLOADS_BASE comment above). Kept as an allowlist entry so next/image

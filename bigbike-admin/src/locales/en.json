@@ -3164,7 +3164,6 @@
     "keyLabel": {
       "seo_home_title": "Homepage SEO title",
       "seo_home_description": "Homepage SEO description",
-      "seo_home_h1": "Homepage main heading",
       "policy_warranty_title": "Warranty policy title",
       "policy_warranty_body_html": "Warranty policy content",
       "policy_return_exchange_title": "Returns and refunds policy title",
@@ -3193,7 +3192,6 @@
     "keyHint": {
       "seo_home_title": "Enter the title shown on Google and in the browser tab.",
       "seo_home_description": "Enter the Google description; leave blank to use the localized homepage description.",
-      "seo_home_h1": "Enter the single main heading shown on the homepage.",
       "policy_warranty_title": "Shared by the policy page and BigBike Assistant answers.",
       "policy_warranty_body_html": "Update here so the website and BigBike Assistant use the same current version.",
       "policy_return_exchange_title": "Shared by the policy page and BigBike Assistant answers.",

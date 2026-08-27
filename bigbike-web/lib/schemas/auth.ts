@@ -14,10 +14,23 @@ export function createRegisterSchema(t: AuthValidationT) {
   return z
     .object({
       fullName: z.string().min(1, t("firstNameRequired")),
-      email: z.string().email(t("emailInvalid")),
-      phone: z.string().min(1, t("phoneRequired")).regex(/^\+?[0-9]{8,15}$/, t("phoneInvalid")),
-      password: z.string().min(8, t("passwordMin8")),
+      email: z
+        .string()
+        .min(1, t("emailRequired"))
+        .refine(
+          (value) => value.length === 0 || z.email().safeParse(value).success,
+          t("emailInvalid"),
+        ),
+      phone: z
+        .string()
+        .min(1, t("phoneRequired"))
+        .refine((value) => value.length === 0 || /^\+?[0-9]{8,15}$/.test(value), t("phoneInvalid")),
+      password: z
+        .string()
+        .min(1, t("passwordRequired"))
+        .refine((value) => value.length === 0 || value.length >= 8, t("passwordMin8")),
       confirm: z.string().min(1, t("confirmRequired")),
+      privacyConsent: z.boolean().refine((value) => value, t("privacyConsentRequired")),
     })
     .refine((d) => d.password === d.confirm, {
       message: t("passwordMismatch"),
@@ -34,7 +47,10 @@ export function createForgotPasswordSchema(t: AuthValidationT) {
 export function createResetPasswordSchema(t: AuthValidationT) {
   return z
     .object({
-      password: z.string().min(8, t("passwordMin8")),
+      password: z
+        .string()
+        .min(1, t("passwordRequired"))
+        .refine((value) => value.length === 0 || value.length >= 8, t("passwordMin8")),
       confirm: z.string().min(1, t("confirmRequired")),
     })
     .refine((d) => d.password === d.confirm, {

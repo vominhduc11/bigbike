@@ -45,14 +45,17 @@ public class CustomerOAuthService {
     private final CustomerJpaRepository customerRepo;
     private final CustomerOAuthLinkJpaRepository linkRepo;
     private final GuestOrderLinkingService guestOrderLinkingService;
+    private final CustomerPrivacyConsentService privacyConsentService;
     private final RestClient http;
 
     public CustomerOAuthService(OAuthProperties props, CustomerJpaRepository customerRepo,
-            CustomerOAuthLinkJpaRepository linkRepo, GuestOrderLinkingService guestOrderLinkingService) {
+            CustomerOAuthLinkJpaRepository linkRepo, GuestOrderLinkingService guestOrderLinkingService,
+            CustomerPrivacyConsentService privacyConsentService) {
         this.props = props;
         this.customerRepo = customerRepo;
         this.linkRepo = linkRepo;
         this.guestOrderLinkingService = guestOrderLinkingService;
+        this.privacyConsentService = privacyConsentService;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(4_000);
         factory.setReadTimeout(8_000);
@@ -178,14 +181,18 @@ public class CustomerOAuthService {
     /**
      * Resolves the customer behind a social profile:
      * reuse the linked account; else link onto another OAuth-only account with the same verified
-     * email (Google ↔ Facebook can still merge this way); else create a new active customer.
+     * email (Google ↔ Facebook can still merge this way); else create a new active customer only
+     * after the registration path supplied the Privacy Policy agreement.
      * A password account is <b>never</b> adopted, even with a matching verified email — password
      * accounts and social accounts are deliberately separate identities (owner decision
      * 2026-08-07, BUSINESS_RULES.md CUSTOMER_RULE_010): a customer's profile is either
      * self-managed (password account) or provider-managed (social account), never both.
      */
     @Transactional
-    public CustomerEntity linkOrCreate(String provider, OAuthUserInfo info) {
+    public CustomerEntity linkOrCreate(
+            String provider, OAuthUserInfo info, OAuthRegistrationConsent registrationConsent) {
+        OAuthRegistrationConsent effectiveConsent =
+                registrationConsent == null ? OAuthRegistrationConsent.none() : registrationConsent;
         Instant now = Instant.now();
 
         Optional<CustomerOAuthLinkEntity> link = linkRepo.findByProviderAndSubject(provider, info.subject());
@@ -224,6 +231,12 @@ public class CustomerOAuthService {
             }
         }
 
+        if (!effectiveConsent.permitsNewCustomer()) {
+            throw new OAuthException(
+                    OAuthError.REGISTRATION_CONSENT_REQUIRED,
+                    "Privacy Policy agreement is required before creating a customer account.");
+        }
+
         CustomerEntity created = new CustomerEntity();
         created.setEmail(email);
         created.setStatus(STATUS_ACTIVE);
@@ -233,7 +246,8 @@ public class CustomerOAuthService {
         created.setCreatedAt(now);
         created.setUpdatedAt(now);
         syncProfileFromProvider(created, info);
-        CustomerEntity saved = customerRepo.save(created);
+        CustomerEntity saved = customerRepo.saveAndFlush(created);
+        privacyConsentService.record(saved.getId(), effectiveConsent.privacyPolicyLocale());
         addLink(saved, provider, info.subject(), now);
         if (saved.getEmailVerifiedAt() != null) {
             guestOrderLinkingService.linkVerifiedEmailOrders(saved.getId());

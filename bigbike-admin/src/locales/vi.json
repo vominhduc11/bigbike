@@ -3164,7 +3164,6 @@
     "keyLabel": {
       "seo_home_title": "Tiêu đề SEO trang chủ",
       "seo_home_description": "Mô tả SEO trang chủ",
-      "seo_home_h1": "Tiêu đề chính trang chủ",
       "policy_warranty_title": "Tiêu đề chính sách bảo hành",
       "policy_warranty_body_html": "Nội dung chính sách bảo hành",
       "policy_return_exchange_title": "Tiêu đề chính sách đổi trả và hoàn tiền",
@@ -3193,7 +3192,6 @@
     "keyHint": {
       "seo_home_title": "Nhập tiêu đề hiện trên Google và trong thẻ trình duyệt.",
       "seo_home_description": "Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.",
-      "seo_home_h1": "Nhập đúng một tiêu đề chính hiển thị trên trang chủ.",
       "policy_warranty_title": "Dùng chung cho trang chính sách và câu trả lời của Trợ lý BigBike.",
       "policy_warranty_body_html": "Sửa tại đây để website và Trợ lý BigBike cùng dùng bản mới.",
       "policy_return_exchange_title": "Dùng chung cho trang chính sách và câu trả lời của Trợ lý BigBike.",

@@ -14,12 +14,16 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.config.CustomerAuthCookies;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerOAuthLinkEntity;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerPrivacyConsentJpaRepository;
 import com.bigbike.bigbike_backend.api.customer.dto.UpdateCustomerProfileRequest;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerOAuthLinkJpaRepository;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import com.bigbike.bigbike_backend.service.customer.CustomerOAuthService;
+import com.bigbike.bigbike_backend.service.customer.CustomerPrivacyConsentService;
+import com.bigbike.bigbike_backend.service.customer.OAuthError;
+import com.bigbike.bigbike_backend.service.customer.OAuthRegistrationConsent;
 import com.bigbike.bigbike_backend.service.customer.OAuthUserInfo;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -55,6 +59,7 @@ class CustomerOAuthApiTest {
     @Autowired CustomerAuthService authService;
     @Autowired CustomerJpaRepository customerRepo;
     @Autowired CustomerOAuthLinkJpaRepository linkRepo;
+    @Autowired CustomerPrivacyConsentJpaRepository consentRepo;
 
     private MockMvc mockMvc;
 
@@ -169,7 +174,8 @@ class CustomerOAuthApiTest {
     @Test
     void firstSocialLoginCreatesAnActiveCustomerWithTheProviderEmail() {
         String email = uniqueEmail("oauth-new");
-        CustomerEntity created = oauthService.linkOrCreate("google", info("sub-" + email, email, true, "Nguyễn Văn A"));
+        CustomerEntity created = registerSocialIdentity(
+                "google", info("sub-" + email, email, true, "Nguyễn Văn A"));
 
         assertThat(created.getStatus()).isEqualTo("ACTIVE");
         assertThat(created.getEmail()).isEqualTo(email);
@@ -177,15 +183,39 @@ class CustomerOAuthApiTest {
         assertThat(created.getPasswordHash()).isNull();
         assertThat(created.getDisplayName()).isEqualTo("Nguyễn Văn A");
         assertThat(linkRepo.findByProviderAndSubject("google", "sub-" + email)).isPresent();
+        assertThat(consentRepo.findByCustomerId(created.getId()))
+                .singleElement()
+                .satisfies(consent -> {
+                    assertThat(consent.getPolicyVersion()).isEqualTo(CustomerPrivacyConsentService.POLICY_VERSION);
+                    assertThat(consent.getLocale()).isEqualTo("vi");
+                    assertThat(consent.getAcceptedAt()).isNotNull();
+                });
+    }
+
+    @Test
+    void firstSocialLoginWithoutPrivacyAgreementDoesNotCreateCustomerOrLink() {
+        String email = uniqueEmail("oauth-no-privacy");
+        long customersBefore = customerRepo.count();
+        long linksBefore = linkRepo.count();
+
+        assertThatThrownBy(() -> oauthService.linkOrCreate(
+                        "google", info("sub-" + email, email, true, "A"), OAuthRegistrationConsent.none()))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.REGISTRATION_CONSENT_REQUIRED));
+
+        assertThat(customerRepo.count()).isEqualTo(customersBefore);
+        assertThat(linkRepo.count()).isEqualTo(linksBefore);
+        assertThat(customerRepo.findByEmail(email)).isEmpty();
     }
 
     @Test
     void signingInAgainReusesTheSameAccountAndRefreshesLastLogin() {
         String email = uniqueEmail("oauth-repeat");
-        CustomerEntity first = oauthService.linkOrCreate("google", info("sub-" + email, email, true, "A"));
+        CustomerEntity first = registerSocialIdentity("google", info("sub-" + email, email, true, "A"));
         Instant firstLogin = first.getLastLoginAt();
 
-        CustomerEntity second = oauthService.linkOrCreate("google", info("sub-" + email, email, true, "A"));
+        CustomerEntity second = oauthService.linkOrCreate(
+                "google", info("sub-" + email, email, true, "A"), OAuthRegistrationConsent.none());
 
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(second.getLastLoginAt()).isNotNull();
@@ -196,7 +226,7 @@ class CustomerOAuthApiTest {
     @Test
     void facebookWithoutAnEmailStillGetsAnAccount() {
         String subject = "fb-" + UUID.randomUUID();
-        CustomerEntity created = oauthService.linkOrCreate("facebook", info(subject, null, false, null));
+        CustomerEntity created = registerSocialIdentity("facebook", info(subject, null, false, null));
 
         assertThat(created.getEmail()).isNull();
         assertThat(created.getDisplayName()).isEqualTo("Khách BigBike");
@@ -206,8 +236,8 @@ class CustomerOAuthApiTest {
     @Test
     void bothProvidersCanBeLinkedToOneAccountWithoutErasingEachOther() {
         String email = uniqueEmail("oauth-two");
-        CustomerEntity viaGoogle = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
-        CustomerEntity viaFacebook = oauthService.linkOrCreate("facebook", info("f-" + email, email, true, "A"));
+        CustomerEntity viaGoogle = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
+        CustomerEntity viaFacebook = registerSocialIdentity("facebook", info("f-" + email, email, true, "A"));
 
         assertThat(viaFacebook.getId()).isEqualTo(viaGoogle.getId());
         assertThat(linkRepo.findByCustomerIdOrderByLinkedAtAsc(viaGoogle.getId()))
@@ -220,7 +250,8 @@ class CustomerOAuthApiTest {
         String email = uniqueEmail("oauth-takeover");
         CustomerEntity victim = saveCustomer(email, "$argon2id$fake-hash", null, "ACTIVE");
 
-        CustomerEntity result = oauthService.linkOrCreate("facebook", info("fb-sub-" + email, email, true, "Attacker"));
+        CustomerEntity result = registerSocialIdentity(
+                "facebook", info("fb-sub-" + email, email, true, "Attacker"));
 
         assertThat(result.getId()).isNotEqualTo(victim.getId());
         assertThat(result.getEmail()).isNull(); // the address stays with its original owner
@@ -235,7 +266,7 @@ class CustomerOAuthApiTest {
         String email = uniqueEmail("oauth-noadopt");
         CustomerEntity existing = saveCustomer(email, "$argon2id$fake-hash", Instant.now(), "ACTIVE");
 
-        CustomerEntity result = oauthService.linkOrCreate("google", info("g-sub-" + email, email, true, "A"));
+        CustomerEntity result = registerSocialIdentity("google", info("g-sub-" + email, email, true, "A"));
 
         assertThat(result.getId()).isNotEqualTo(existing.getId());
         assertThat(result.getEmail()).isNull(); // avoids colliding with the password account's email
@@ -246,12 +277,12 @@ class CustomerOAuthApiTest {
     @Test
     void repeatSocialLoginSyncsTheLatestNameAndAvatarFromTheProvider() {
         String email = uniqueEmail("oauth-sync");
-        CustomerEntity first = oauthService.linkOrCreate(
+        CustomerEntity first = registerSocialIdentity(
                 "google", new OAuthUserInfo("sub-" + email, email, true, "Old Name", "https://old.example/a.png"));
         assertThat(first.getDisplayName()).isEqualTo("Old Name");
         assertThat(first.getAvatarUrl()).isEqualTo("https://old.example/a.png");
 
-        CustomerEntity second = oauthService.linkOrCreate(
+        CustomerEntity second = registerSocialIdentity(
                 "google", new OAuthUserInfo("sub-" + email, email, true, "New Name", "https://new.example/b.png"));
 
         assertThat(second.getId()).isEqualTo(first.getId());
@@ -262,10 +293,10 @@ class CustomerOAuthApiTest {
     @Test
     void repeatSocialLoginClearsTheAvatarWhenTheProviderNoLongerReturnsOne() {
         String email = uniqueEmail("oauth-sync-clear");
-        oauthService.linkOrCreate(
+        registerSocialIdentity(
                 "google", new OAuthUserInfo("sub-" + email, email, true, "A", "https://old.example/a.png"));
 
-        CustomerEntity second = oauthService.linkOrCreate(
+        CustomerEntity second = registerSocialIdentity(
                 "google", new OAuthUserInfo("sub-" + email, email, true, "A", null));
 
         assertThat(second.getAvatarUrl()).isNull();
@@ -274,11 +305,12 @@ class CustomerOAuthApiTest {
     @Test
     void aBlockedAccountCannotSignInWithSocialLogin() {
         String email = uniqueEmail("oauth-blocked");
-        CustomerEntity created = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity created = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
         created.setStatus("BLOCKED");
         customerRepo.save(created);
 
-        assertThatThrownBy(() -> oauthService.linkOrCreate("google", info("g-" + email, email, true, "A")))
+        assertThatThrownBy(() -> oauthService.linkOrCreate(
+                        "google", info("g-" + email, email, true, "A"), OAuthRegistrationConsent.none()))
                 .isInstanceOf(CustomerOAuthService.OAuthException.class)
                 .hasMessageContaining("not active");
     }
@@ -288,7 +320,7 @@ class CustomerOAuthApiTest {
     @Test
     void aSocialAccountIsFlaggedOauthManagedAndAPasswordAccountIsNot() {
         String email = uniqueEmail("oauth-flag");
-        CustomerEntity social = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity social = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
         assertThat(authService.getProfile(social.getId()).oauthManaged()).isTrue();
 
         CustomerEntity password = saveCustomer(uniqueEmail("pwd-flag"), "$argon2id$fake-hash", Instant.now(), "ACTIVE");
@@ -298,7 +330,7 @@ class CustomerOAuthApiTest {
     @Test
     void aSocialAccountCannotSelfEditItsProfile() {
         String email = uniqueEmail("oauth-lock-profile");
-        CustomerEntity social = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity social = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
         UpdateCustomerProfileRequest req =
                 new UpdateCustomerProfileRequest("New Name", null, null, null, null, null, null);
 
@@ -309,7 +341,7 @@ class CustomerOAuthApiTest {
     @Test
     void aSocialAccountCannotSelfManageItsAvatar() {
         String email = uniqueEmail("oauth-lock-avatar");
-        CustomerEntity social = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity social = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
 
         assertThatThrownBy(() -> authService.updateAvatar(social.getId(), null))
                 .isInstanceOf(ForbiddenException.class);
@@ -336,7 +368,7 @@ class CustomerOAuthApiTest {
     @Test
     void aSocialOnlyAccountCannotUnlinkItsOnlySignInMethod() {
         String email = uniqueEmail("oauth-last");
-        CustomerEntity created = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity created = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
 
         List<CustomerOAuthLinkResponse> links = oauthService.listLinks(created.getId());
         assertThat(links).hasSize(1);
@@ -350,8 +382,8 @@ class CustomerOAuthApiTest {
     @Test
     void aSocialOnlyAccountWithTwoProvidersCanDropOne() {
         String email = uniqueEmail("oauth-drop");
-        CustomerEntity created = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
-        oauthService.linkOrCreate("facebook", info("f-" + email, email, true, "A"));
+        CustomerEntity created = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
+        registerSocialIdentity("facebook", info("f-" + email, email, true, "A"));
 
         assertThat(oauthService.listLinks(created.getId())).allMatch(CustomerOAuthLinkResponse::canUnlink);
 
@@ -368,7 +400,7 @@ class CustomerOAuthApiTest {
     @Test
     void unlinkingAProviderThatWasNeverLinkedIs404() {
         String email = uniqueEmail("oauth-missing");
-        CustomerEntity created = oauthService.linkOrCreate("google", info("g-" + email, email, true, "A"));
+        CustomerEntity created = registerSocialIdentity("google", info("g-" + email, email, true, "A"));
 
         assertThatThrownBy(() -> oauthService.unlink(created.getId(), "facebook"))
                 .isInstanceOf(NotFoundException.class);
@@ -427,6 +459,10 @@ class CustomerOAuthApiTest {
         return new OAuthUserInfo(subject, email, verified, displayName, null);
     }
 
+    private CustomerEntity registerSocialIdentity(String provider, OAuthUserInfo info) {
+        return oauthService.linkOrCreate(provider, info, OAuthRegistrationConsent.of(true, "vi"));
+    }
+
     private static String uniqueEmail(String prefix) {
         return prefix + "-" + UUID.randomUUID() + "@bigbike.vn";
     }
@@ -466,7 +502,8 @@ class CustomerOAuthApiTest {
     private AuthSession registerAndLogin(String email) throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"pass1234\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
         MvcResult login = mockMvc.perform(post("/api/v1/customer/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

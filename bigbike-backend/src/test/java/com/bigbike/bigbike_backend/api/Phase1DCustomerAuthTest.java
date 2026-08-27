@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerPrivacyConsentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerSessionJpaRepository;
+import com.bigbike.bigbike_backend.service.customer.CustomerPrivacyConsentService;
 import jakarta.servlet.http.Cookie;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,7 @@ class Phase1DCustomerAuthTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired CustomerPrivacyConsentJpaRepository consentRepo;
     @Autowired CustomerSessionJpaRepository sessionRepo;
 
     private MockMvc mockMvc;
@@ -46,7 +49,8 @@ class Phase1DCustomerAuthTest {
         String email = "test-" + UUID.randomUUID() + "@bigbike.vn";
         MvcResult result = mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"secret123\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.customer.email").value(email))
                 .andExpect(jsonPath("$.data.csrfToken").isNotEmpty())
@@ -55,15 +59,23 @@ class Phase1DCustomerAuthTest {
         assertCookieSet(result.getResponse(), "bb_session", true);
         assertCookieSet(result.getResponse(), "bb_refresh", true);
         assertCookieSet(result.getResponse(), "bb_csrf", false);
-        assertThat(customerRepo.findByEmail(email)).isPresent();
+        var customer = customerRepo.findByEmail(email).orElseThrow();
+        assertThat(consentRepo.findByCustomerId(customer.getId()))
+                .singleElement()
+                .satisfies(consent -> {
+                    assertThat(consent.getPolicyVersion()).isEqualTo(CustomerPrivacyConsentService.POLICY_VERSION);
+                    assertThat(consent.getLocale()).isEqualTo("vi");
+                    assertThat(consent.getAcceptedAt()).isNotNull();
+                });
     }
 
     @Test
     void register_withPhone_creates_customer() throws Exception {
-        String phone = "09" + (int)(Math.random() * 100000000);
+        String phone = "09" + String.format("%08d", (int) (Math.random() * 100000000));
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phone\":\"" + phone + "\",\"password\":\"secret123\"}"))
+                        .content("{\"phone\":\"" + phone
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.customer.phone").value(phone));
         assertThat(customerRepo.findByPhone(phone)).isPresent();
@@ -73,7 +85,7 @@ class Phase1DCustomerAuthTest {
     void register_withoutEmailOrPhone_returns_400() throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"password\":\"secret123\"}"))
+                        .content("{\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -81,14 +93,53 @@ class Phase1DCustomerAuthTest {
     void register_passwordTooShort_returns_400() throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"short@bigbike.vn\",\"password\":\"abc\"}"))
+                        .content("{\"email\":\"short@bigbike.vn\",\"password\":\"abc\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_withoutPrivacyAgreement_returns_400_and_doesNotCreateCustomer() throws Exception {
+        String email = "privacy-missing-" + UUID.randomUUID() + "@bigbike.vn";
+
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"secret123\",\"privacyPolicyLocale\":\"vi\"}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(customerRepo.findByEmail(email)).isEmpty();
+    }
+
+    @Test
+    void register_withUncheckedPrivacyAgreement_returns_400_and_doesNotCreateCustomer() throws Exception {
+        String email = "privacy-false-" + UUID.randomUUID() + "@bigbike.vn";
+
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":false,\"privacyPolicyLocale\":\"vi\"}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(customerRepo.findByEmail(email)).isEmpty();
+    }
+
+    @Test
+    void register_withUnsupportedPrivacyLocale_returns_400_and_doesNotCreateCustomer() throws Exception {
+        String email = "privacy-locale-" + UUID.randomUUID() + "@bigbike.vn";
+
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"fr\"}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(customerRepo.findByEmail(email)).isEmpty();
     }
 
     @Test
     void register_duplicateEmail_returns_409() throws Exception {
         String email = "dup-" + UUID.randomUUID() + "@bigbike.vn";
-        String body = "{\"email\":\"" + email + "\",\"password\":\"secret123\"}";
+        String body = "{\"email\":\"" + email
+                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}";
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk());
@@ -147,7 +198,8 @@ class Phase1DCustomerAuthTest {
 
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phone\":\"" + canonical + "\",\"password\":\"secret123\"}"))
+                        .content("{\"phone\":\"" + canonical
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"))
                 .andExpect(jsonPath("$.error.message").value("Thông tin đăng ký không hợp lệ."));
@@ -220,7 +272,8 @@ class Phase1DCustomerAuthTest {
         String email = "nocsrf-" + UUID.randomUUID() + "@bigbike.vn";
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"secret123\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
     }
 
@@ -308,7 +361,8 @@ class Phase1DCustomerAuthTest {
         StringBuilder body = new StringBuilder("{");
         if (email != null) body.append("\"email\":\"").append(email).append("\",");
         if (phone != null) body.append("\"phone\":\"").append(phone).append("\",");
-        body.append("\"password\":\"").append(password).append("\"}");
+        body.append("\"password\":\"").append(password)
+                .append("\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}");
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body.toString()))

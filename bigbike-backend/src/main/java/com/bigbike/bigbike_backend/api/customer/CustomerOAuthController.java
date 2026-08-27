@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import com.bigbike.bigbike_backend.service.customer.CustomerOAuthService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionResult;
 import com.bigbike.bigbike_backend.service.customer.OAuthError;
+import com.bigbike.bigbike_backend.service.customer.OAuthRegistrationConsent;
 import com.bigbike.bigbike_backend.service.customer.OAuthUserInfo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Social login (OAuth2) endpoints. Both endpoints are GET browser redirects, not JSON APIs.
@@ -57,9 +59,13 @@ public class CustomerOAuthController {
     public void authorize(
             @PathVariable String provider,
             @RequestParam(value = "tiep", required = false) String tiep,
+            @RequestParam(value = "privacyConsent", required = false) String privacyConsent,
+            @RequestParam(value = "privacyPolicyLocale", required = false) String privacyPolicyLocale,
             HttpServletResponse response
     ) throws IOException {
         String returnTo = sanitizeReturnTo(tiep);
+        OAuthRegistrationConsent registrationConsent =
+                OAuthRegistrationConsent.of("true".equals(privacyConsent), privacyPolicyLocale);
         if (!oauthService.isSupported(provider)) {
             response.sendRedirect(errorUrl(OAuthError.FAILED, returnTo));
             return;
@@ -70,7 +76,9 @@ public class CustomerOAuthController {
         // /facebook/callback.
         String encodedReturn = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(returnTo.getBytes(StandardCharsets.UTF_8));
-        cookies.setOAuthState(response, provider + "|" + nonce + "|" + encodedReturn);
+        cookies.setOAuthState(response, provider + "|" + nonce + "|" + encodedReturn + "|"
+                + registrationConsent.privacyConsent() + "|"
+                + (registrationConsent.privacyPolicyLocale() == null ? "" : registrationConsent.privacyPolicyLocale()));
 
         try {
             response.sendRedirect(oauthService.buildAuthorizeUrl(provider, nonce));
@@ -114,7 +122,7 @@ public class CustomerOAuthController {
             }
 
             OAuthUserInfo info = oauthService.exchangeCode(provider, code);
-            CustomerEntity customer = oauthService.linkOrCreate(provider, info);
+            CustomerEntity customer = oauthService.linkOrCreate(provider, info, parsedState.registrationConsent());
             CustomerSessionResult tokens = authService.createSessionForCustomer(
                     customer, clientIpResolver.resolve(request), request.getHeader(HEADER_USER_AGENT));
 
@@ -181,15 +189,22 @@ public class CustomerOAuthController {
     }
 
     /**
-     * Login page for the locale the customer started in. {@code returnTo} carries the locale
-     * prefix ({@code /en/account/} vs {@code /tai-khoan/}), so an English customer is not dropped
-     * onto the Vietnamese page after a failure.
+     * Login page for ordinary failure, or registration for an otherwise-new social identity that
+     * needs explicit consent. {@code returnTo} carries the locale prefix ({@code /en/account/}
+     * vs {@code /tai-khoan/}), so an English customer is not dropped onto Vietnamese auth.
      */
     private String errorUrl(OAuthError error, String returnTo) {
-        String loginPath = returnTo != null && returnTo.startsWith(EN_PREFIX)
-                ? "/en/login/"
-                : "/dang-nhap/";
-        return oauthService.webSuccessUrl() + loginPath + "?error=" + error.code();
+        boolean english = returnTo != null && returnTo.startsWith(EN_PREFIX);
+        boolean needsRegistration = error == OAuthError.REGISTRATION_CONSENT_REQUIRED;
+        String authPath = english
+                ? (needsRegistration ? "/en/register/" : "/en/login/")
+                : (needsRegistration ? "/dang-ky/" : "/dang-nhap/");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(oauthService.webSuccessUrl() + authPath)
+                .queryParam("error", error.code());
+        if (needsRegistration) {
+            builder.queryParam("tiep", returnTo);
+        }
+        return builder.build().encode().toUriString();
     }
 
     private static boolean constantTimeEquals(String a, String b) {
@@ -197,14 +212,29 @@ public class CustomerOAuthController {
                 a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** The {@code bb_oauth_state} cookie payload: {@code provider|nonce|base64url(returnTo)}. */
-    private record OAuthState(String provider, String nonce, String returnTo) {
+    /**
+     * The {@code bb_oauth_state} cookie payload:
+     * {@code provider|nonce|base64url(returnTo)|privacyConsent|privacyPolicyLocale}.
+     * The original three-part format remains readable as a no-consent login state.
+     */
+    private record OAuthState(
+            String provider,
+            String nonce,
+            String returnTo,
+            OAuthRegistrationConsent registrationConsent) {
 
         static OAuthState parse(String cookieValue) {
             if (cookieValue == null) return null;
-            String[] parts = cookieValue.split("\\|", 3);
-            if (parts.length != 3) return null;
-            return new OAuthState(parts[0], parts[1], decodeReturnTo(parts[2]));
+            String[] parts = cookieValue.split("\\|", -1);
+            if (parts.length == 3) {
+                return new OAuthState(parts[0], parts[1], decodeReturnTo(parts[2]), OAuthRegistrationConsent.none());
+            }
+            if (parts.length != 5) return null;
+            return new OAuthState(
+                    parts[0],
+                    parts[1],
+                    decodeReturnTo(parts[2]),
+                    OAuthRegistrationConsent.of("true".equals(parts[3]), parts[4]));
         }
     }
 }

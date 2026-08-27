@@ -47,6 +47,30 @@ const settings = [
     superAdminOnly: false,
   },
   {
+    key: 'seo_home_h1',
+    value: 'Dữ liệu H1 cũ',
+    valueEn: 'Legacy H1 data',
+    valueType: 'STRING',
+    settingGroup: 'seo',
+    superAdminOnly: false,
+  },
+  {
+    key: 'seo_home_title',
+    value: 'Tiêu đề SEO',
+    valueEn: 'SEO title',
+    valueType: 'STRING',
+    settingGroup: 'seo',
+    superAdminOnly: false,
+  },
+  {
+    key: 'seo_home_description',
+    value: 'Mô tả SEO',
+    valueEn: 'SEO description',
+    valueType: 'LONG_TEXT',
+    settingGroup: 'seo',
+    superAdminOnly: false,
+  },
+  {
     key: 'bank_account_holder',
     value: 'BIGBIKE',
     valueEn: '',
@@ -160,6 +184,18 @@ describe('SettingsScreen', () => {
     await user.click(await screen.findByRole('button', { name: 'PAYMENT' }))
 
     expect(screen.getByLabelText('Chủ tài khoản nhận chuyển khoản')).toHaveValue('BIGBIKE')
+  })
+
+  it('hides the legacy homepage H1 setting while keeping other SEO settings visible', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'SEO' }))
+
+    expect(screen.getByLabelText('Tiêu đề SEO trang chủ')).toBeInTheDocument()
+    expect(screen.getByLabelText('Mô tả SEO trang chủ')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Tiêu đề chính trang chủ')).not.toBeInTheDocument()
+    expect(screen.queryByText('Dữ liệu H1 cũ')).not.toBeInTheDocument()
   })
 
   // V374: chế độ bảo trì đã rời khỏi màn Cài đặt hẳn — nay là màn riêng gate theo vai

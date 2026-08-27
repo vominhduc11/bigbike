@@ -211,17 +211,15 @@ public class SettingDefinitionRegistry {
                         .description("Ảnh minh hoạ cut-out mặc định góc phải hero (thay ảnh gear cố định). PNG nền trong, tỷ lệ ~700×600px.").build(),
 
                 // ── SEO ──
-                // SETTINGS_RULE_003: owner reopened the homepage title/description/H1 fields
-                // on 2026-08-16. og_image_url remains intentionally absent (V337).
+                // SETTINGS_RULE_003: homepage title/description remain editable; the visible H1
+                // is the localized introduction-block title. The legacy seo_home_h1 row stays
+                // in storage but is intentionally not registered or exposed.
                 SettingDefinition.builder("seo_home_title", "seo", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề SEO trang chủ; để trống sẽ dùng tên shop.").build(),
                 SettingDefinition.builder("seo_home_description", "seo", SettingValueType.LONG_TEXT)
                         .publicAllowed()
                         .description("Mô tả SEO trang chủ; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.").build(),
-                SettingDefinition.builder("seo_home_h1", "seo", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề chính duy nhất hiển thị trên trang chủ; để trống sẽ dùng tên shop.").build(),
                 SettingDefinition.builder("home_content_bottom_html", "seo", SettingValueType.HTML)
                         .publicAllowed()
                         .description("Block HTML SEO ở cuối trang chủ.").build(),

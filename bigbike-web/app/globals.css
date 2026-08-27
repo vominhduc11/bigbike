@@ -183,6 +183,46 @@
   }
 }
 
+/* Login and registration keep the shared footer, but use its compact variant.
+   These selectors cross the route/footer sibling boundary, which Tailwind cannot
+   express from either component alone. */
+body:has([data-auth-primary-page]) .bb-floating-chat-anchor {
+  display: none !important;
+}
+
+/* The brand panel is intentionally treated like a hero: it may sit behind the
+   hanging logo instead of inheriting the 92px clearance for ordinary hero-less
+   pages. This removes the unused band above the desktop auth experience. */
+@media (min-width: 768px) {
+  body:has(.bb-heroless [data-auth-primary-page]) .bb-main {
+    padding-top: 0;
+  }
+}
+
+body:has([data-auth-primary-page]) footer [data-footer-intro],
+body:has([data-auth-primary-page]) footer [data-footer-description],
+body:has([data-auth-primary-page]) footer [data-footer-social],
+body:has([data-auth-primary-page]) footer [data-footer-certification] {
+  display: none !important;
+}
+
+body:has([data-auth-primary-page]) footer [data-footer-top] {
+  padding-block: var(--bb-space-8) !important;
+}
+
+body:has([data-auth-primary-page]) footer [data-footer-contacts] {
+  margin-bottom: 0 !important;
+}
+
+body:has([data-auth-primary-page]) footer [data-footer-section="menu"] {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body:has([data-auth-primary-page]) footer [data-footer-menu-link]:not([data-footer-menu-link="returns"]):not([data-footer-menu-link="warranty"]) {
+  display: none;
+}
+
 /* shadcn Sheet motion. Kept explicit because the imported animate utilities
    are not emitted reliably by the current Tailwind build. */
 [data-bb-sheet-overlay] {
@@ -655,15 +695,6 @@ body:has([data-page-hero]) .bb-main {
   }
 }
 
-/* -- Auth pages ------------------------------------------------------ */
-
-.bb-auth-wrap {
-  max-width: 320px;
-  margin: 60px auto;
-}
-
-/* border-top 3px brand cue is now applied via Tailwind class on the Card element in JSX */
-
 @media (max-width: 768px) {
   .bb-page {
     padding-block: var(--bb-space-6) var(--bb-space-12);
@@ -673,26 +704,6 @@ body:has([data-page-hero]) .bb-main {
     padding: var(--bb-space-6);
   }
 }
-
-/* Auth page modifier — compact layout, elevated bg so white card stands out */
-.bb-page--auth {
-  background: var(--bb-bg-page);
-  min-height: 0;
-  padding-block: 0;
-}
-
-.bb-page--auth .bb-auth-wrap h1 {
-  margin: 0 0 8px;
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-a2-page);
-  font-weight: 600;
-  line-height: var(--bb-line-snug);
-  letter-spacing: var(--bb-tracking-normal);
-  text-transform: none;
-}
-
-/* Override .bb-page h1 specificity for auth card — responsive, title-case */
 
 /* ...............................................................
  * Homepage Layout
@@ -1951,13 +1962,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* Long-form SEO copy section at the very bottom of the PDP — full-bleed
    grey band (legacy WP product page parity). */
 
-/* -- bb-* auth & content page supplements ---------------- */
-.bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-a5-meta); }
-
-.bb-page--auth .bb-auth-wrap .form-control:focus,
-.bb-page--auth .bb-auth-wrap .form-control:focus-visible,
-.bb-auth-wrap .form-control:focus,
-.bb-auth-wrap .form-control:focus-visible,
+/* -- bb-* content page supplements ---------------- */
 .user-activity .user-activity-content .form-control:focus,
 .user-activity .user-activity-content .form-control:focus-visible {
   border-color: var(--bb-link-text) !important;
@@ -1966,8 +1971,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   box-shadow: var(--bb-focus-ring) !important;
 }
 
-.bb-page--auth .bb-auth-wrap :where(a, button, [role="checkbox"]):focus-visible,
-.bb-auth-wrap :where(a, button, [role="checkbox"]):focus-visible,
 .user-activity .user-activity-content :where(a, button, [role="checkbox"]):focus-visible {
   outline: var(--bb-focus-outline) !important;
   outline-offset: 3px !important;
@@ -3882,33 +3885,6 @@ body .banner-ads > .container > .row {
     margin-top: 0;
   }
 
-  .bb-page--auth .bb-auth-wrap,
-  .bb-auth-wrap {
-    max-width: none;
-    margin: 18px auto 34px;
-    border: 1px solid var(--bb-border-subtle);
-    background: var(--bb-bg-surface);
-    padding: 18px 14px;
-  }
-
-  .bb-page--auth .bb-auth-wrap h1,
-  .bb-auth-wrap h1 {
-    line-height: var(--bb-line-tight);
-    text-transform: none;
-  }
-
-  .bb-auth-wrap form {
-    gap: 18px;
-  }
-
-  .bb-auth-wrap input,
-  .bb-auth-wrap button:not([role="checkbox"]) {
-    /* Exclude the Radix checkbox (rendered as <button role="checkbox"> at a fixed
-       16px width): a blanket min-height:52px stretched it into a tall rectangle.
-       The submit button + inputs already set their own 52px height in the form. */
-    min-height: 52px;
-  }
-
   .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
   }
@@ -4045,8 +4021,6 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
     visibility: hidden;
   }
 
-  body:has(.bb-page--auth) .bb-floating-chat-anchor,
-  body:has(.bb-page--auth) .bb-scroll-top-anchor,
   body:has(.bb-account-layout) .bb-floating-chat-anchor,
   body:has(.bb-account-layout) .bb-scroll-top-anchor {
     display: none !important;
@@ -4104,39 +4078,15 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
     color: var(--bb-text-secondary);
   }
 
-  .bb-page--auth {
-    padding-block: 18px 24px;
-  }
-
-  .bb-page--auth .bb-auth-wrap,
-  .bb-auth-wrap {
-    width: 100%;
-    margin: 16px auto 24px;
-    padding: 24px 18px;
-  }
-
-  .bb-auth-wrap form {
-    gap: 18px;
-  }
-
-  .bb-auth-wrap label,
-  .bb-auth-wrap a,
-  .bb-auth-wrap p {
-    line-height: var(--bb-line-body);
-  }
-
-  body:has(.bb-page--auth) > footer .bg-footer-top,
   body:has(.bb-account-layout) > footer .bg-footer-top {
     padding-top: 32px;
   }
 
-  body:has(.bb-page--auth) > footer .bg-footer-top h2,
   body:has(.bb-account-layout) > footer .bg-footer-top h2 {
     margin-bottom: 24px;
     line-height: var(--bb-line-tight);
   }
 
-  body:has(.bb-page--auth) > footer .bg-black,
   body:has(.bb-account-layout) > footer .bg-black {
     padding-bottom: calc(18px + var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
   }

@@ -8,6 +8,9 @@ describe("oauthErrorKey — social login failure messages", () => {
     expect(oauthErrorKey("oauth_cancelled")).toBe("errorCancelled");
     expect(oauthErrorKey("oauth_unconfigured")).toBe("errorUnconfigured");
     expect(oauthErrorKey("oauth_blocked")).toBe("errorBlocked");
+    expect(oauthErrorKey("oauth_registration_consent_required")).toBe(
+      "errorRegistrationConsentRequired",
+    );
     expect(oauthErrorKey("oauth_failed")).toBe("errorFailed");
   });
 
@@ -24,7 +27,14 @@ describe("oauthErrorKey — social login failure messages", () => {
   });
 
   it("has a Vietnamese and English string for every key it can return", () => {
-    const keys = ["oauth_cancelled", "oauth_unconfigured", "oauth_blocked", "oauth_failed", "oauth"];
+    const keys = [
+      "oauth_cancelled",
+      "oauth_unconfigured",
+      "oauth_blocked",
+      "oauth_registration_consent_required",
+      "oauth_failed",
+      "oauth",
+    ];
     for (const code of keys) {
       const key = oauthErrorKey(code) as string;
       expect(viMessages.Auth.social).toHaveProperty(key);
@@ -37,15 +47,20 @@ describe("oauthErrorKey — social login failure messages", () => {
 
 describe("Auth.social + Account.edit message parity", () => {
   it("keeps vi and en in sync for the social block", () => {
-    expect(Object.keys(viMessages.Auth.social).sort()).toEqual(Object.keys(enMessages.Auth.social).sort());
+    expect(Object.keys(viMessages.Auth.social).sort()).toEqual(
+      Object.keys(enMessages.Auth.social).sort(),
+    );
   });
 
   it("keeps vi and en in sync for the account edit block (incl. oauthManagedNotice)", () => {
-    expect(Object.keys(viMessages.Account.edit).sort())
-      .toEqual(Object.keys(enMessages.Account.edit).sort());
+    expect(Object.keys(viMessages.Account.edit).sort()).toEqual(
+      Object.keys(enMessages.Account.edit).sort(),
+    );
   });
 
   it("translates the oauth-managed notice separately in vi and en", () => {
-    expect(viMessages.Account.edit.oauthManagedNotice).not.toBe(enMessages.Account.edit.oauthManagedNotice);
+    expect(viMessages.Account.edit.oauthManagedNotice).not.toBe(
+      enMessages.Account.edit.oauthManagedNotice,
+    );
   });
 });

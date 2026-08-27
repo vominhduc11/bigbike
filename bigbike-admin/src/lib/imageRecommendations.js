@@ -20,9 +20,9 @@ export const IMAGE_RECO = {
   // Ảnh sản phẩm (PDP + gallery): khung vuông tối đa 903×903 (desktop ≥1920px, ProductGallery.tsx) —
   // kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong ngưỡng 2×903 nên không cần cộng thêm.
   productImage: { idealW: 1800, idealH: 1800, minW: 1800, minH: 1800, ratio: [1, 1], ratioTolerance: 0.12 },
-  // Ảnh danh mục (lưới danh mục trang chủ, HomeCategoryGrid.tsx): cột ~255×255 (desktop 1200-1919px),
-  // không ép aspect-ratio bằng CSS nhưng giữ vuông để lưới thẳng hàng.
-  categoryImage: { idealW: 520, idealH: 520, minW: 520, minH: 520, ratio: [1, 1], ratioTolerance: 0.15 },
+  // Ảnh danh mục (lưới danh mục trang chủ, HomeCategoryGrid.tsx): khung vuông 160×160 desktop,
+  // 128×128 tablet, 96×96 mobile; khuyến nghị 2× khung desktop.
+  categoryImage: { idealW: 320, idealH: 320, minW: 320, minH: 320, ratio: [1, 1], ratioTolerance: 0.15 },
   // Banner ngang full-bleed (category/brand hero bg, banner trang listing san-pham/brands/tin-tuc,
   // hero mặc định): WpCategoryHero .page-title — full viewport × 450px (desktop 1920×450, background-cover).
   bannerWide: { idealW: 3840, idealH: 900, minW: 3840, minH: 900, ratio: [64, 15], ratioTolerance: 0.2 },
@@ -31,9 +31,8 @@ export const IMAGE_RECO = {
   // Slide trang chủ mobile: container max-md aspect-[411/548] ≈ 3:4; viewport tham chiếu 390px.
   // Ảnh này tùy chọn, website fallback về sliderDesktop khi không có.
   sliderMobile: { idealW: 780, idealH: 1040, minW: 780, minH: 1040, ratio: [3, 4], ratioTolerance: 0.12 },
-  // Logo hãng: vừa hiển thị cao tối đa 64px trong lưới hãng (object-contain, không ép tỉ lệ),
-  // vừa dùng làm minh hoạ hero trang chi tiết hãng (native-render, giống illustration) — ngữ cảnh
-  // sau đòi hỏi cao hơn: giữ khung 400×200 hiện có × 2.
+  // Logo hãng: hiển thị trong các khung object-contain (lưới cao 64px; PageHero tối đa 451×400px),
+  // vì vậy vẫn khuyến nghị canvas trong suốt 800×400 để tái sử dụng cho hero mà không bị méo/cắt.
   logo: { idealW: 800, idealH: 400, minW: 800, minH: 400, ratio: null },
   // Ảnh OG/chia sẻ mạng xã hội (seoOgImageUrl per-sản phẩm/danh mục/bài viết): KHÔNG có khung hiển thị trên
   // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
@@ -42,8 +41,8 @@ export const IMAGE_RECO = {
   // Ảnh PNG nền trong chồng carousel "Góc trải nghiệm" trang chủ (ExperienceCarousel.tsx overlay):
   // rộng tối đa ~266px (desktop), không ép chiều cao (giữ nguyên tỉ lệ file PNG cắt sẵn).
   squareMedium: { idealW: 600, idealH: 600, minW: 600, minH: 600, ratio: null },
-  // Ảnh minh hoạ hero (WpCategoryHero .img — category heroImageUrl, brand-detail logo-as-hero,
-  // hero_default/hero_*_illustration_url): render ở KÍCH THƯỚC GỐC (không CSS resize), ảnh mặc định
+  // Ảnh minh hoạ hero (PageHero — category heroImageUrl, brand-detail logo-as-hero,
+  // hero_default/hero_*_illustration_url): khung tối đa 451×400, object-contain; ảnh mặc định
   // hệ thống mu-bao-hiem.png là 451×400 — đây chính là khung 1× tham chiếu.
   illustration: { idealW: 900, idealH: 800, minW: 900, minH: 800, ratio: null },
   // Ảnh thu nhỏ carousel Video (trang chủ + "Video sản phẩm" PDP, VideoCard.tsx): thẻ DỌC

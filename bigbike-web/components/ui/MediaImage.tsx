@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ImageAsset } from "@/lib/contracts/public";
 import { safeText, resolveMediaUrl } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 
 // Alt do WP import sinh ra phần lớn là tên file / mã tem, KHÔNG mô tả nội dung
 // ảnh (checklist SEO #12 — "không đánh số 'Tem 01'"). Ví dụ thật trong DB:
@@ -84,7 +85,11 @@ export function MediaImage({
   if (!src) {
     return (
       <div
-        className={`flex w-full min-h-50 items-center justify-center border-b border-border bg-secondary p-4 text-center text-a5-meta text-muted-foreground ${className ?? ""}`}
+        className={cn(
+          fill && "absolute inset-0 h-full w-full",
+          "flex min-h-50 w-full items-center justify-center border-b border-border bg-secondary p-4 text-center text-a5-meta text-muted-foreground",
+          className,
+        )}
         aria-label={alt}
       >
         <span>{alt}</span>
@@ -102,7 +107,7 @@ export function MediaImage({
         alt={alt}
         width={resolvedWidth}
         height={resolvedHeight}
-        className={className}
+        className={cn(fill && "absolute inset-0 h-full w-full", className)}
         loading={preload ? "eager" : loading ?? "lazy"}
       />
     );
@@ -113,7 +118,7 @@ export function MediaImage({
       src={src}
       alt={alt}
       {...(fill ? { fill: true } : { width: resolvedWidth, height: resolvedHeight })}
-      className={className}
+      className={cn(fill && "absolute inset-0 h-full w-full", className)}
       preload={preload}
       loading={preload ? "eager" : loading ?? "lazy"}
       sizes={sizes}

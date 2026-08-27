@@ -112,7 +112,7 @@ export function AboutPageContent({
         </div>
 
         {brands.length > 0 ? (
-          <div className="grid grid-cols-2 gap-5 md:col-span-3">
+          <div data-about-brand-grid className="grid grid-cols-2 gap-5 md:col-span-3">
             {brands.map((brand) => (
               <LocalizedLink
                 key={brand.id}
@@ -121,7 +121,17 @@ export function AboutPageContent({
                 title={brand.name}
                 className="flex items-center justify-center"
               >
-                <MediaImage image={brand.logo} altFallback={brand.name} className="block h-auto max-w-full" sizes="120px" />
+                <span className="relative size-32">
+                  <MediaImage
+                    image={brand.logo}
+                    altFallback={brand.name}
+                    width={128}
+                    height={128}
+                    fill
+                    sizes="128px"
+                    className="object-contain"
+                  />
+                </span>
               </LocalizedLink>
             ))}
           </div>

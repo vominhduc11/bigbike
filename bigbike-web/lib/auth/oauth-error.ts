@@ -8,6 +8,7 @@ const OAUTH_ERROR_KEYS = {
   oauth_cancelled: "errorCancelled",
   oauth_unconfigured: "errorUnconfigured",
   oauth_blocked: "errorBlocked",
+  oauth_registration_consent_required: "errorRegistrationConsentRequired",
   oauth_failed: "errorFailed",
 } as const;
 

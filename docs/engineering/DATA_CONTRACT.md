@@ -59,15 +59,15 @@ audit, sửa code thì sửa cả bảng này.
 | Spec key (`IMAGE_RECO`) | Vị trí dùng | Khung hiển thị thật (1×, evidence) | Kích thước khuyến nghị (2×, không chặn) | Tỉ lệ ép (vẫn chặn) |
 |---|---|---|---|---|
 | `productImage` | Ảnh đại diện + gallery sản phẩm (PDP) | Khung vuông tối đa 903×903px (desktop ≥1920px) — kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong 2×903 | 1800×1800 | 1:1 |
-| `categoryImage` | Ảnh danh mục (lưới danh mục trang chủ) | Cột lưới ~255-290px (`HomeCategoryGrid.tsx`, không ép aspect-ratio bằng CSS) | 520×520 | 1:1 (quy ước để lưới thẳng hàng, không phải CSS ép) |
+| `categoryImage` | Ảnh danh mục (lưới danh mục trang chủ) | Khung vuông cố định 160×160px desktop, 128×128px tablet, 96×96px mobile (`HomeCategoryGrid.tsx`) | 320×320 | 1:1 (khung CSS ép) |
 | `bannerWide` | Nền banner hero danh mục/hãng, banner đầu trang Tất cả sản phẩm/Thương hiệu/Tin tức, banner mặc định | Full-bleed edge-to-edge × 450px cao cố định (`WpCategoryHero.tsx`, desktop 1920×450) | 3840×900 | 64:15 (≈4.27:1) |
 | `sliderDesktop` | Ảnh desktop của Hero slider trang chủ; cũng là ảnh fallback khi banner không có ảnh mobile | Hero desktop: `w-full h-[max(40vw,300px)]` → 1920×768 ở viewport 1920px | 3840×1536 | 5:2 |
 | `sliderMobile` | Ảnh mobile **tùy chọn** của Hero slider trang chủ (`location = home`). Web dùng ảnh này dưới 768px; thiếu ảnh thì fallback về `sliderDesktop`. Khung mobile hiện tại là `aspect-[411/548]`, tương đương 3:4. *(Owner decision 2026-07-30 khôi phục riêng ảnh mobile homepage, thay thế phần tương ứng của AUD-063; các location cũ `category`/`category_sidebar`/`promotion` vẫn bị gỡ.)* | 390×520 ở viewport tham chiếu 390px | 780×1040 | 3:4 |
-| `logo` | Logo hãng (lưới hãng + minh hoạ hero trang chi tiết hãng) | Lưới: cao tối đa 64px, object-contain; trang chi tiết hãng: native-render trong khung hero (giống `illustration`) — ngữ cảnh sau đòi hỏi cao hơn | 800×400 | tự do |
+| `logo` | Logo hãng (Giới thiệu, dải thương hiệu trang chủ, lưới hãng, bộ lọc và minh hoạ hero trang chi tiết hãng) | Khung theo ngữ cảnh: `128×128px`, `120×120px`, cao `64px`, `96×48px`; tất cả `object-contain`, căn giữa; hero dùng khung tối đa `451×400px` | 800×400 | tự do |
 | `cover` | Ảnh OG/chia sẻ mạng xã hội (sản phẩm/danh mục/hãng/bài viết) | **Không có khung hiển thị trên bigbike-web** — chỉ nằm trong `<meta og:image>`, Facebook/Zalo tự crop → dùng thẳng chuẩn Open Graph, không áp công thức 2× nội bộ | 1200×630 | 40:21 |
 | `promo` | Banner khuyến mãi trang chủ | Container rộng tối đa 1600px (≥1920px viewport), cao tự do theo ảnh (không crop) | 3200×1050 (chiều cao chỉ là gợi ý theo tỉ lệ 3:1, không ép) | tự do |
 | `squareMedium` | Ảnh PNG nền trong chồng carousel "Góc trải nghiệm" trang chủ | Rộng tối đa ~266px (desktop, `ExperienceCarousel.tsx`), không ép cao | 600×600 | tự do |
-| `illustration` | Ảnh minh hoạ hero (category `heroImageUrl`, brand-detail logo-as-hero, `hero_default/hero_*_illustration_url`) | Render ở **kích thước gốc** (không CSS resize) — ảnh mặc định hệ thống `mu-bao-hiem.png` = 451×400, đây là khung 1× tham chiếu | 900×800 | tự do |
+| `illustration` | Ảnh minh hoạ hero (category `heroImageUrl`, brand-detail logo-as-hero, `hero_default/hero_*_illustration_url`) | Khung PageHero tối đa `451×400px`, `object-contain`, không cắt hoặc kéo méo; ảnh mặc định hệ thống `mu-bao-hiem.png` = 451×400 | 900×800 | tự do |
 | `videoThumb` | Ảnh thumbnail carousel Video (trang chủ + "Video sản phẩm" PDP) | Thẻ **DỌC** `aspect-ratio 9/16`, rộng tối đa ~242px (desktop 1920px) — KHÔNG phải 16:9 ngang như giả định cũ | 500×900 | 9:16 |
 | `video` | File video tải lên carousel Video ở trên | Khung player modal tối đa 420×747 (desktop) — cùng carousel dọc nên video gốc phải quay DỌC | 850×1500 | 9:16 |
 | `contentVideo` | Video nhúng khối "video" trong bài viết/content | Khung **NGANG** 16:9 rộng bằng cột nội dung (~1170px desktop) — khác hẳn `video` ở trên dù cùng là "video tải lên" | 2340×1320 | 16:9 |
@@ -84,7 +84,8 @@ Status: `CONFIRMED_FROM_CODE` (đo trực tiếp component bigbike-web + code hi
 
 Evidence:
 
-- `bigbike-web/components/catalog/ProductGallery.tsx`, `components/wp/WpCategoryHero.tsx`, `components/home/HeroSlider.tsx`, `components/home/video-carousel/VideoCard.tsx`, `components/home/video-carousel/VideoModal.tsx`, `components/home/ExperienceCarousel.tsx`, `components/catalog/description-blocks/blocks.tsx`, `app/page.tsx`, `app/globals.css` (container width tiers)
+- `bigbike-web/components/ui/MediaImage.tsx`, `components/home/HomeCategoryGrid.tsx`, `components/home/BrandCarousel.tsx`, `components/about/AboutPageContent.tsx`, `app/[locale]/brands/BrandListClient.tsx`, `app/[locale]/brands/BrandListDefault.tsx`, `components/catalog/CatalogSidebar.tsx`, `components/layout/PageHero.tsx`, `components/catalog/ProductCard.tsx`, `components/layout/Footer.tsx`, `next.config.ts`
+- `bigbike-web/components/catalog/ProductGallery.tsx`, `components/wp/WpCategoryHero.tsx`, `components/home/HeroSlider.tsx`, `components/home/video-carousel/VideoCard.tsx`, `components/home/video-carousel/VideoModal.tsx`, `components/home/ExperienceCarousel.tsx`, `components/catalog/description-blocks/blocks.tsx`, `app/page.tsx`, `app/globals.css` (container width tiers and protected image contexts)
 - `bigbike-admin/src/lib/imageRecommendations.js`, `lib/useMediaDimensions.js`, `components/MediaPickerModal.jsx`, `components/VideoPickerModal.jsx`, `components/MediaRequirementHint.jsx`
 - `bigbike-backend/.../service/admin/AdminMediaService.java` (MIME validation, dimension metadata, compression)
 
@@ -1893,6 +1894,27 @@ one merged social) the rule would otherwise produce. Accepted trade-off, not a b
 in practice (requires all three identities to share one exact address) that a dedicated matching
 column was judged not worth the added schema complexity.
 
+### customer_privacy_consents — versioned evidence for new-account agreement (V1063)
+
+`customer_privacy_consents` is append-only evidence that a **newly created** customer explicitly
+agreed to the Privacy Policy. It is not an account-profile setting and does not retroactively
+populate historical customers.
+
+| Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|
+| `id` | `UUID` | NO | `gen_random_uuid()` | PK |
+| `customer_id` | `UUID` | NO | — | FK → `customers(id)` `ON DELETE CASCADE` |
+| `policy_version` | `VARCHAR(32)` | NO | — | Server-owned published-policy version; first value is `2026-08-27` |
+| `locale` | `VARCHAR(2)` | NO | — | Storefront language at acceptance: `vi` or `en` |
+| `accepted_at` | `TIMESTAMPTZ` | NO | `now()` | Server time when the account was created |
+
+- Unique `(customer_id, policy_version)` prevents duplicate evidence for the same version.
+- `idx_customer_privacy_consents_customer` supports a future customer-data request without adding
+  an admin screen in this scope.
+- Registration and first-time OAuth creation insert this row in the same transaction as the
+  customer. Existing account sign-in and first linking to an existing passwordless customer do not
+  insert a row. See `CUSTOMER_RULE_011`.
+
 ### Dashboard KPI & Lists
 
 `AdminDashboardSummaryResponse` contains the following sections:
@@ -2106,7 +2128,7 @@ admin concurrency metadata.
 | `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
-| `seo` | Homepage SEO title, description and visible H1 (`seo_home_title`/`seo_home_description`/`seo_home_h1`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The three text fields were restored by owner decision on 2026-08-16 (V1036); the default OG image setting remains absent. | SEO website |
+| `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
 | `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, ngưỡng cảnh báo chi phí tháng (không tự khoá), số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`), công tắc diễn giải cách nói tự nhiên, email handoff, câu chào và bốn gợi ý nhanh song ngữ. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
@@ -2130,19 +2152,18 @@ admin concurrency metadata.
 > | Khối giới thiệu | `about_title`, `about_subtitle`, `about_content_html` |
 > | Sản phẩm nổi bật / Tin tức / Video | `home_featured_kicker`, `home_featured_title`, `home_news_kicker`, `home_news_title`, `home_videos_title` |
 >
-> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key. The `HomeContentBottom`/`home_content_bottom_html` block remains admin-editable, and the homepage title/description/H1 fields are again admin-editable in the same `seo` group after V1036. The old `promo_image_url` hotlink is no longer used; the current homepage banner is the bundled `bigbike-web/public/brand/home/promo-banner.jpg`. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
+> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key. The `HomeContentBottom`/`home_content_bottom_html` block remains admin-editable, and the homepage title/description fields are admin-editable in the same `seo` group after V1036. The visible H1 is the localized title of the introduction block; the former `seo_home_h1` row is retained but no longer edited or consumed. The old `promo_image_url` hotlink is no longer used; the current homepage banner is the bundled `bigbike-web/public/brand/home/promo-banner.jpg`. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
 
-### `seo` — homepage SEO fields restored (2026-08-16, V1036)
+### `seo` — homepage SEO fields (updated 2026-08-27)
 
-> **Historical note:** V337 removed `seo_home_title`, `seo_home_description` and `og_image_url` on 2026-07-12. Owner decision on 2026-08-16 reversed that decision for the two text SEO fields plus a new `seo_home_h1` field. The migration below restores the three editable fields; `og_image_url` remains intentionally absent, so the website still has no default social-share image.
+> **Historical note:** V337 removed `seo_home_title`, `seo_home_description` and `og_image_url` on 2026-07-12. Owner decision on 2026-08-16 reversed that decision for the two text SEO fields and added `seo_home_h1`. On 2026-08-27 the visible H1 moved to the localized homepage introduction block; the old `seo_home_h1` row remains stored but is no longer editable or publicly consumed. `og_image_url` remains intentionally absent, so the website still has no default social-share image.
 >
 > | Key | Type | What it controlled |
 > |---|---|---|
 > | `seo_home_title` | STRING | Homepage `<title>` (Google/browser tab) |
 > | `seo_home_description` | LONG_TEXT | Homepage meta description (Google snippet) |
-> | `seo_home_h1` | STRING | Homepage visible `<h1>` |
 >
-> **Current keys:** `seo_home_title` (`STRING`), `seo_home_description` (`LONG_TEXT`), `seo_home_h1` (`STRING`) and `home_content_bottom_html` (`HTML`) are admin-editable and public. All text keys are translatable; blank title/H1 fall back to `site_name`, blank description falls back to the localized homepage description. Per-entity SEO (category/product/article — `SeoMeta`/`seoOgImageUrl`) is separate and untouched.
+> **Current keys:** `seo_home_title` (`STRING`), `seo_home_description` (`LONG_TEXT`) and `home_content_bottom_html` (`HTML`) are admin-editable and public. The two SEO text keys are translatable; blank title falls back to `site_name`, and blank description falls back to the localized homepage description. The former `seo_home_h1` row is retained in `site_settings` but is ignored by the admin editor and public homepage. The H1 is the localized title of the homepage introduction block. Per-entity SEO (category/product/article — `SeoMeta`/`seoOgImageUrl`) is separate and untouched.
 
 ### `public_about` keys — removed (2026-06-24, V274)
 

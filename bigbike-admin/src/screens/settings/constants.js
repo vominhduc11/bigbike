@@ -257,7 +257,8 @@ export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'
 
 // Model trả lời được quản lý bằng bộ chọn động riêng: danh sách phải được xác minh trực tiếp
 // với tài khoản Gemini hiện tại, nên không được rơi về ô text chung dễ nhập sai model.
-export const HIDDEN_KEYS = new Set(['ai_assistant_model'])
+// Dữ liệu cũ của seo_home_h1 vẫn được giữ trong site_settings nhưng không còn là ô chỉnh sửa.
+export const HIDDEN_KEYS = new Set(['ai_assistant_model', 'seo_home_h1'])
 
 export const TAB_META = {
   GENERAL: {
@@ -372,10 +373,9 @@ export const KEY_LABELS_VI = {
   zalo_display: 'Chữ hiển thị Zalo (popup liên hệ)',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
-  // SEO trang chủ mở lại theo SETTINGS_RULE_003 (2026-08-16).
+  // SEO trang chủ theo SETTINGS_RULE_003; H1 lấy từ khối giới thiệu trên web.
   seo_home_title: 'Tiêu đề SEO trang chủ',
   seo_home_description: 'Mô tả SEO trang chủ',
-  seo_home_h1: 'Tiêu đề chính trang chủ',
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
@@ -458,7 +458,6 @@ export const KEY_HINTS_VI = {
   hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
   seo_home_title:                  'Nhập tiêu đề hiện trên Google và trong thẻ trình duyệt.',
   seo_home_description:            'Nhập đoạn mô tả Google; để trống sẽ dùng mô tả trang chủ theo ngôn ngữ.',
-  seo_home_h1:                     'Nhập đúng một tiêu đề chính hiển thị trên trang chủ.',
 }
 
 // Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
@@ -618,7 +617,6 @@ export const KEY_GUIDE = {
 
   seo_home_title: ['seo_home', 'tiêu đề SEO trang chủ'],
   seo_home_description: ['seo_home', 'mô tả SEO trang chủ'],
-  seo_home_h1: ['seo_home', 'tiêu đề chính duy nhất trên trang chủ'],
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
   // product_assign: KHÔNG còn ở đây — xem ghi chú ở KEY_LABELS_VI/HIDDEN_GROUPS phía trên.

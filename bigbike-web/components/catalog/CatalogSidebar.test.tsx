@@ -71,7 +71,8 @@ describe("CatalogSidebar brand logos", () => {
       expect(slot).not.toHaveClass("bg-muted");
     }
     expect(slots[0]?.querySelector("img")).toHaveAttribute("src", "/media/brand-logos/agv.png");
-    expect(slots[0]?.querySelector("img")).toHaveClass("object-contain");
+    expect(slots[0]?.querySelector("img")).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-contain");
+    expect(slots[0]?.querySelector("img")).toHaveAttribute("sizes", "96px");
     expect(slots[1]).toHaveTextContent("AL");
     expect(slots[2]).toHaveTextContent("EX");
     expect(screen.getByRole("checkbox", { name: "AGV (24)" })).toBeVisible();

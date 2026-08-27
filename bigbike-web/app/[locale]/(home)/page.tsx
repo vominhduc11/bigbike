@@ -136,7 +136,6 @@ export default async function HomePage({ params }: HomePageProps) {
 
   const settings = settingsResult.data ?? [];
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
-  const homeH1 = pickSetting(settings, ["seo_home_h1"]) || siteName;
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const address = pickSetting(settings, ["contact_address", "address"]);
   const homeContentBottomHtml = pickSetting(settings, ["home_content_bottom_html"]);
@@ -219,37 +218,33 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 1. Main banner ===== */}
       <HeroSlider slides={slides} />
-      <section className="border-b border-border py-6">
-        <Container>
-          <h1 className="m-0 text-center font-body text-a2-page font-semibold leading-title text-foreground">
-            {homeH1}
-          </h1>
-        </Container>
-      </section>
 
       {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
       {homeHighlights.length > 0 && (
         <section className="py-15">
           <Container>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div data-home-highlight-grid className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {homeHighlights.map((h) => {
                 const img = toLegacyWpMediaUrl(resolveMediaUrl(h.productImageUrl));
                 const href = toProductPath(h.productSlug, locale);
                 return (
                   <article className="relative h-75 overflow-hidden border border-border bg-card p-8 uppercase" key={h.slot}>
                       <div className="absolute bottom-0 right-8">
-                        <Link href={href}>
-                          {img ? (
-                            <MediaImage
-                              image={{ url: img }}
-                              altFallback={h.productName}
-                              width={360}
-                              height={180}
-                              sizes="(min-width: 768px) 33vw, 100vw"
-                              className="max-h-45 w-auto max-w-full object-contain"
-                            />
-                          ) : null}
-                        </Link>
+                        <div data-home-highlight-image className="relative size-45">
+                          <Link href={href} className="block size-full">
+                            {img ? (
+                              <MediaImage
+                                image={{ url: img }}
+                                altFallback={h.productName}
+                                width={360}
+                                height={360}
+                                fill
+                                sizes="180px"
+                                className="object-contain"
+                              />
+                            ) : null}
+                          </Link>
+                        </div>
                       </div>
                       <h3 className="relative z-[1] mb-10 line-clamp-2 w-full font-body text-a4-content font-semibold leading-5 text-foreground">
                         <Link href={href} className="text-foreground hover:text-brand">{h.productName}</Link>

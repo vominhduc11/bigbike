@@ -47,7 +47,9 @@ export function PageHero({
   const tBreadcrumb = useTranslations("Breadcrumb");
   const background = bgUrl?.trim() || DEFAULT_BG;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
-  const hasIllustrationMetadata = Boolean(illustrationImage?.url?.trim());
+  const illustrationAsset: ImageAsset = illustrationImage?.url?.trim()
+    ? { ...illustrationImage, url: illustration }
+    : { url: illustration, width: 451, height: 400 };
   const TitleTag = titleAs;
 
   return (
@@ -86,24 +88,18 @@ export function PageHero({
           </nav>
         </div>
 
-        <div className="absolute bottom-0 right-[15px] hidden max-w-[50%] md:block!">
-          {hasIllustrationMetadata ? (
+        <div className="absolute bottom-0 right-[15px] hidden w-1/2 max-w-[451px] md:block!">
+          <div data-page-hero-illustration className="relative flex h-100 w-full items-end justify-center">
             <MediaImage
-              image={{ ...illustrationImage, url: illustration }}
+              image={illustrationAsset}
               altFallback={illustrationAlt ?? title}
               width={451}
               height={400}
-              sizes="(min-width: 1200px) 451px, 40vw"
-              className="max-h-100 w-auto object-contain"
+              fill
+              sizes="(min-width: 950px) 451px, (min-width: 768px) calc((100vw - 48px) / 2), 0px"
+              className="object-contain"
             />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- settings-only and legacy URLs have no trustworthy dimensions.
-            <img
-              src={illustration}
-              alt={illustrationAlt ?? title}
-              className="max-h-100 w-auto object-contain"
-            />
-          )}
+          </div>
         </div>
       </Container>
     </section>

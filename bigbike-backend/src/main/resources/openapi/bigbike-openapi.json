@@ -841,7 +841,7 @@
         ],
         "summary": "Get public site settings",
         "operationId": "getPublicSettings",
-        "description": "Returns all SiteSettings where isPublic=true. Includes the restored homepage SEO keys seo_home_title, seo_home_description and seo_home_h1. No authentication required.",
+        "description": "Returns all SiteSettings where isPublic=true. Includes the homepage SEO title and description; the legacy seo_home_h1 row is retained in storage but is not exposed. No authentication required.",
         "responses": {
           "200": {
             "description": "Public settings list",
@@ -9690,7 +9690,9 @@
         "type": "object",
         "required": [
           "email",
-          "password"
+          "password",
+          "privacyConsent",
+          "privacyPolicyLocale"
         ],
         "properties": {
           "email": {
@@ -9765,6 +9767,21 @@
           "password": {
             "type": "string",
             "minLength": 8
+          },
+          "privacyConsent": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Must be true before a new customer account can be created."
+          },
+          "privacyPolicyLocale": {
+            "type": "string",
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "description": "Locale of the Privacy Policy agreement shown to the customer."
           },
           "phone": {
             "type": "string",

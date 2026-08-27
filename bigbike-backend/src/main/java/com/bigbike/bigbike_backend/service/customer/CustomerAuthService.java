@@ -44,6 +44,7 @@ public class CustomerAuthService {
     private final CustomerAvatarStorageService customerAvatarStorageService;
     private final AdminCustomerWsService adminCustomerWsService;
     private final CustomerOAuthLinkJpaRepository oauthLinkRepo;
+    private final CustomerPrivacyConsentService privacyConsentService;
     private final RateLimitService rateLimitService;
 
     @Transactional
@@ -58,6 +59,14 @@ public class CustomerAuthService {
         }
         if (req.password() == null || req.password().length() < 8) {
             throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
+        }
+        if (!Boolean.TRUE.equals(req.privacyConsent())) {
+            throw ValidationException.fromField(
+                    "privacyConsent", "REQUIRED", "Vui lòng đồng ý với Chính sách bảo mật.");
+        }
+        if (!CustomerPrivacyConsentService.isSupportedLocale(req.privacyPolicyLocale())) {
+            throw ValidationException.fromField(
+                    "privacyPolicyLocale", "INVALID", "Ngôn ngữ Chính sách bảo mật không hợp lệ.");
         }
         if (normalizedEmail != null) {
             rateLimitService.checkOrThrow(RateLimitTier.REGISTER, RateLimitScope.IDENTITY, normalizedEmail);
@@ -91,6 +100,8 @@ public class CustomerAuthService {
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
+        // The account and its agreement evidence live or roll back together.
+        privacyConsentService.record(saved.getId(), req.privacyPolicyLocale());
 
         adminCustomerWsService.pushEvent(new CustomerWsEvent(
                 "CUSTOMER_REGISTERED",

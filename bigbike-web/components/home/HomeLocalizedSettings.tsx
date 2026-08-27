@@ -48,7 +48,7 @@ export function HomeAboutSection({
               <span className="inline-block">{subtitle}</span>
             </p>
           ) : null}
-          {title ? <h2 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h2> : null}
+          {title ? <h1 className="font-body text-a1-title font-semibold leading-title text-foreground">{title}</h1> : null}
         </div>
         {html ? (
           <RichContent html={html} className="mx-auto max-w-4xl text-center text-muted-foreground" />

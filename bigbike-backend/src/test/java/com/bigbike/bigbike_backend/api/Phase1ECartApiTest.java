@@ -528,7 +528,8 @@ class Phase1ECartApiTest {
     private MvcResult performLogin(String email, String password) throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
+                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password
+                                + "\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
         return mockMvc.perform(post("/api/v1/customer/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

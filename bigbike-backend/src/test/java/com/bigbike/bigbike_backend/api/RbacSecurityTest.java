@@ -125,7 +125,8 @@ class RbacSecurityTest {
     private Session login(String email) throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"password\":\"secret123\"}"))
+                        .content("{\"email\":\"" + email
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
                 .andExpect(status().isOk());
 
         MvcResult result = mockMvc.perform(post("/api/v1/customer/auth/login")

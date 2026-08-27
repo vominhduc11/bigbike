@@ -59,8 +59,9 @@ export function ProductCard({ product, className, layout = "grid", imageSizes }:
               altFallback={name}
               width={600}
               height={600}
+              fill
               sizes={resolvedImageSizes}
-              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105"
+              className="object-contain transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105"
             />
           ) : (
             <MediaImage
