@@ -38,7 +38,7 @@ export function ActorCell({ log }) {
         {displayName || fallback}
       </span>
       {secondary ? (
-        <span className="mt-0.5 block max-w-48 truncate text-xs text-muted-foreground">
+        <span className="mt-1 block max-w-48 truncate text-xs text-muted-foreground">
           {secondary}
         </span>
       ) : null}
@@ -69,7 +69,7 @@ export function ResourceCell({ log }) {
         {primary}
       </span>
       {secondary ? (
-        <span className="mt-0.5 block max-w-56 truncate text-xs text-muted-foreground">
+        <span className="mt-1 block max-w-56 truncate text-xs text-muted-foreground">
           {secondary}
         </span>
       ) : null}
@@ -84,10 +84,10 @@ export function ActionLabel({ action }) {
 
   return (
     <span className={cn(
-      'inline-flex items-start gap-1.5 text-sm font-medium text-foreground',
+      'inline-flex items-start gap-2 text-sm font-medium text-foreground',
       isDangerous && 'text-danger',
     )}>
-      {isDangerous ? <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" /> : null}
+      {isDangerous ? <AlertTriangle size={14} className="mt-1 shrink-0" aria-hidden="true" /> : null}
       <span>{label}</span>
     </span>
   )

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { normalizeSeoText, stripHtml } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
+import { DetailSection } from './DetailSection'
 
 // Thẻ SEO dùng chung (Danh mục, Thương hiệu, …). Gộp bản trùng ~95 dòng trước đây ở
 // BrandDetailScreen với category-detail/SeoCard (audit P1-13). Tham số hoá theo:
@@ -48,7 +49,7 @@ export function SeoCard({
   const previewUrl = `${previewBase}/${previewSlug}`
 
   const enHint = isEnLang && (
-    <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>
+    <span className="hint ml-2 inline">
       {p('enFieldHint', '(tiếng Anh — tùy chọn)')}
     </span>
   )
@@ -58,36 +59,31 @@ export function SeoCard({
   const bodyVisible = !collapsible || open
 
   return (
-    <div className="bb-card mb-4">
-      {collapsible ? (
+    <DetailSection
+      className="mb-4"
+      title={title}
+      description={desc}
+      action={collapsible ? (
         <Button
-          variant="unstyled"
-          className="bb-card-header w-full text-left cursor-pointer"
+          variant="ghost"
+          size="icon"
           onClick={onToggle}
           aria-expanded={open}
+          aria-controls={`${uid}-content`}
+          aria-label={open
+            ? p('collapseSection', 'Thu gọn phần tối ưu tìm kiếm')
+            : p('expandSection', 'Mở phần tối ưu tìm kiếm')}
         >
-          <div className="flex items-start gap-2">
-            <ChevronDown
-              size={18}
-              aria-hidden="true"
-              className={cn('mt-0.5 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
-            />
-            <div>
-              <h2>{title}</h2>
-              <p className="sub">{desc}</p>
-            </div>
-          </div>
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={cn('text-muted-foreground transition-transform', !open && '-rotate-90')}
+          />
         </Button>
-      ) : (
-        <div className="bb-card-header">
-          <div>
-            <h2>{title}</h2>
-            <p className="sub">{desc}</p>
-          </div>
-        </div>
-      )}
+      ) : null}
+    >
       {bodyVisible && (
-      <div className="bb-card-body">
+      <div id={`${uid}-content`}>
         <div className="mb-4 rte-canvas-frame">
           {/* Nền trắng cố ý: đây là bản mô phỏng thẻ kết quả Google (luôn nền trắng),
               các màu chữ google-* chỉ hợp trên nền sáng — không đổi theo theme admin. */}
@@ -174,6 +170,6 @@ export function SeoCard({
         </div>
       </div>
       )}
-    </div>
+    </DetailSection>
   )
 }

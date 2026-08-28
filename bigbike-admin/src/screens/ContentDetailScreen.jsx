@@ -904,8 +904,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       </SelectContent>
                     </Select>
                   </Field>
-                    <div className="@xl:col-span-2 flex flex-col gap-1.5">
-                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                    <div className="@xl:col-span-2 flex flex-col gap-2">
+                      <label className="flex items-center gap-3 p-3 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
                           checked={form.featured}
                           onCheckedChange={(checked) => updateField('featured', checked === true)}
@@ -914,7 +914,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         <span>{t('content.detail.featured')}</span>
                       </label>
                       <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
-                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                      <label className="flex items-center gap-3 p-3 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
                           checked={form.homeExperience}
                           onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
@@ -1032,7 +1032,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span className="flex items-center gap-2 text-sm font-semibold">
                       <Check size={14} aria-hidden="true" />
                       {t('content.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
                     </span>
@@ -1093,7 +1093,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               onClick={() => setPreviewOpen(true)}
               title={t('content.detail.preview.title', { defaultValue: 'Xem trước bài viết' })}
             >
-              <Eye size={14} className="mr-1.5" aria-hidden="true" />
+              <Eye size={14} className="mr-2" aria-hidden="true" />
               {t('content.detail.preview.open', { defaultValue: 'Xem trước' })}
             </Button>
           )}
@@ -1105,7 +1105,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               disabled={isSubmitting}
               onClick={handleArchive}
             >
-              <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+              <Trash2 size={14} className="mr-2" aria-hidden="true" />
               {t('content.detail.archiveBtn')}
             </Button>
           )}
@@ -1117,7 +1117,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               disabled={isSubmitting}
               onClick={handlePermanentDelete}
             >
-              <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+              <Trash2 size={14} className="mr-2" aria-hidden="true" />
               {t('common.permanentDelete')}
             </Button>
           ) : null}
@@ -1127,7 +1127,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             disabled={!canUpdate || isSubmitting || isRestoreConfirming || (!isCreate && !isDirty && !persistedTrash)}
             onClick={handlePrimarySave}
           >
-            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" aria-hidden="true" />}
+            {isSubmitting && <Loader2 size={14} className="animate-spin mr-2" aria-hidden="true" />}
             {primaryLabel}
           </Button>
         </StickyActionBar>

@@ -70,7 +70,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate,
 
       {/* Counter */}
       {hasNav && (
-        <div className="absolute top-4 left-4 text-white/80 text-sm bg-black/40 px-3 py-1.5 rounded-xs">
+        <div className="absolute top-4 left-4 text-white/80 text-sm bg-black/40 px-3 py-2 rounded-xs">
           {index + 1} / {total}
         </div>
       )}

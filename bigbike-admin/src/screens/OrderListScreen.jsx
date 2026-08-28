@@ -12,7 +12,8 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { FilterChips } from '../components/FilterChips'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
-import { ScreenHeader } from '../components/layout'
+import { DetailSection } from '../components/DetailSection'
+import { Screen, ScreenHeader } from '../components/layout'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { exportOrdersCsv, fetchOrders, updateOrderStatus } from '../lib/adminApi'
@@ -399,7 +400,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
   }
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader
         eyebrow={t('orders.eyebrow')}
         title={t('orders.title')}
@@ -566,12 +567,12 @@ export function OrderListScreen({ navigate, canUpdate }) {
       )}
 
       {(listStatus === 'loading' || (listStatus === 'success' && items.length > 0)) && (
-        <div className="bb-card">
+        <DetailSection noPadding>
           {listStatus === 'loading' ? (
             <span role="status" className="sr-only">{t('orders.loading')}</span>
           ) : null}
           <div
-            className={`bb-card-body bb-card-body--flush transition-opacity ${state.isFetching ? 'opacity-60' : 'opacity-100'}`}
+            className={`transition-opacity ${state.isFetching ? 'opacity-60' : 'opacity-100'}`}
             aria-busy={state.isFetching}
           >
             <AdminTable
@@ -598,8 +599,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
               onPageChange={(p) => updateQuery({ page: p })}
             />
           )}
-        </div>
+        </DetailSection>
       )}
-    </div>
+    </Screen>
   )
 }

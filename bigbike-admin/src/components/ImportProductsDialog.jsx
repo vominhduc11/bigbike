@@ -5,6 +5,7 @@ import { AlertTriangle, Check, Loader2, X } from 'lucide-react'
 import { Modal } from '@/components/layout/Modal'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AdminTable } from '@/components/AdminTable'
 import { toast } from '@/lib/toast'
 import {
   ApiClientError,
@@ -106,6 +107,38 @@ export function ImportProductsDialog({ file, open, onClose }) {
     actions = <Button variant="ghost" size="sm" onClick={handleClose}>{t('import.close')}</Button>
   }
 
+  const reportRows = (report?.rows ?? []).map((row) => ({ ...row, id: row.rowKey }))
+  const renderDetails = (row) => (
+    <>
+      {row.errors?.map((item, index) => (
+        <div key={`e-${index}`} className="text-danger">{item.message}</div>
+      ))}
+      {row.warnings?.map((item, index) => (
+        <div key={`w-${index}`} className="text-warning">{item.message}</div>
+      ))}
+    </>
+  )
+  const reportColumns = [
+    ...(step === 'review' ? [{
+      key: 'selection',
+      label: <span className="sr-only">{t('common.selectRow', { defaultValue: 'Chọn hàng' })}</span>,
+      render: (row) => (
+        <Checkbox
+          disabled={row.status === 'ERROR'}
+          checked={!excludedRowKeys.has(row.rowKey)}
+          onCheckedChange={() => toggleRow(row.rowKey)}
+          aria-label={t('import.rowCheckboxLabel', { name: row.productName || row.rowKey })}
+        />
+      ),
+      headerClassName: 'w-10',
+    }] : []),
+    { key: 'rowNumber', label: t('import.colRow') },
+    { key: 'productName', label: t('import.colProduct'), render: (row) => row.productName || '—' },
+    { key: 'action', label: t('import.colAction'), render: (row) => actionLabel(t, row.action) },
+    { key: 'status', label: t('import.colStatus'), render: (row) => <StatusBadge t={t} status={row.status} /> },
+    { key: 'detail', label: t('import.colDetail'), render: renderDetails },
+  ]
+
   return (
     <Modal
       open={open}
@@ -136,51 +169,25 @@ export function ImportProductsDialog({ file, open, onClose }) {
               <span className="text-muted-foreground">{t('import.skippedCount', { count: report.skippedCount })}</span>
             )}
           </div>
-          <div className="overflow-x-auto border border-border rounded-md">
-            <table className="w-full text-sm">
-              <caption className="sr-only">
-                {t('import.tableCaption', { defaultValue: 'Kết quả kiểm tra từng dòng sản phẩm trong tệp nhập' })}
-              </caption>
-              <thead>
-                <tr className="border-b border-border bg-muted/40 text-left">
-                  {step === 'review' && <th className="p-2 w-8" />}
-                  <th className="p-2">{t('import.colRow')}</th>
-                  <th className="p-2">{t('import.colProduct')}</th>
-                  <th className="p-2">{t('import.colAction')}</th>
-                  <th className="p-2">{t('import.colStatus')}</th>
-                  <th className="p-2">{t('import.colDetail')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.rows.map((row) => (
-                  <tr key={row.rowKey} className="border-b border-border last:border-0 align-top">
-                    {step === 'review' && (
-                      <td className="p-2">
-                        <Checkbox
-                          disabled={row.status === 'ERROR'}
-                          checked={!excludedRowKeys.has(row.rowKey)}
-                          onCheckedChange={() => toggleRow(row.rowKey)}
-                          aria-label={t('import.rowCheckboxLabel', { name: row.productName || row.rowKey })}
-                        />
-                      </td>
-                    )}
-                    <td className="p-2">{row.rowNumber}</td>
-                    <td className="p-2">{row.productName || '—'}</td>
-                    <td className="p-2">{actionLabel(t, row.action)}</td>
-                    <td className="p-2"><StatusBadge t={t} status={row.status} /></td>
-                    <td className="p-2">
-                      {row.errors?.map((e, i) => (
-                        <div key={`e-${i}`} className="text-danger">{e.message}</div>
-                      ))}
-                      {row.warnings?.map((w, i) => (
-                        <div key={`w-${i}`} className="text-warning">{w.message}</div>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AdminTable
+            columns={reportColumns}
+            rows={reportRows}
+            caption={t('import.tableCaption', { defaultValue: 'Kết quả kiểm tra từng dòng sản phẩm trong tệp nhập' })}
+            containerClassName="max-h-[50vh] rounded-[var(--admin-radius-card)] border border-border"
+            mobileCard={(row) => ({
+              title: row.productName || '—',
+              subtitle: `${t('import.colRow')}: ${row.rowNumber}`,
+              status: <StatusBadge t={t} status={row.status} />,
+              meta: [
+                { label: t('import.colAction'), value: actionLabel(t, row.action) },
+                { label: t('import.colDetail'), value: renderDetails(row) },
+              ],
+              selectable: step === 'review' && row.status !== 'ERROR',
+              selected: !excludedRowKeys.has(row.rowKey),
+              onSelectChange: () => toggleRow(row.rowKey),
+              selectionLabel: t('import.rowCheckboxLabel', { name: row.productName || row.rowKey }),
+            })}
+          />
         </div>
       )}
     </Modal>

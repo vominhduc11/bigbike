@@ -46,7 +46,7 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
 
   const mobileCard = (p) => ({
     title: (
-      <span className="flex items-center gap-1.5">
+      <span className="flex items-center gap-2">
         {productThumb(p, 'shrink-0')}
         {p.name}
       </span>

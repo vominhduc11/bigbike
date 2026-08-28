@@ -484,8 +484,8 @@ export function RedirectListScreen({ canUpdate }) {
       key: 'targetUrl',
       label: t('redirects.colTarget', { defaultValue: 'Đích' }),
       render: (redirect) => (
-        <span className="inline-flex items-start gap-1.5 break-all">
-          <ArrowRight size={14} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span className="inline-flex items-start gap-2 break-all">
+          <ArrowRight size={14} className="mt-1 shrink-0 text-muted-foreground" aria-hidden="true" />
           {redirect.targetUrl || t('common.notFound')}
         </span>
       ),
@@ -610,7 +610,7 @@ export function RedirectListScreen({ canUpdate }) {
               </FormField>
               {/* V2: bỏ marginTop:22 canh thủ công — dùng items-end trên chính field này để tự canh đáy với ô cạnh bên. */}
               <label
-                className="flex min-h-11 w-fit cursor-pointer items-center gap-2.5 self-end rounded-sm border border-border px-3 py-2 text-sm hover:bg-muted"
+                className="flex min-h-11 w-fit cursor-pointer items-center gap-3 self-end rounded-sm border border-border px-3 py-2 text-sm hover:bg-muted"
               >
                 <Checkbox checked={form.enabled} onCheckedChange={(checked) => updateFormField('enabled', checked === true)} />
                 <span>{t('redirects.formEnabled', { defaultValue: 'Bật' })}</span>

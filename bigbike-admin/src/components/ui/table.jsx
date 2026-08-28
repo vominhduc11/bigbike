@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { forwardRef } from 'react'
 
 export function Table({ className, containerClassName, ...props }) {
   return (
@@ -25,9 +26,10 @@ export function TableFooter({ className, ...props }) {
   )
 }
 
-export function TableRow({ className, ...props }) {
+export const TableRow = forwardRef(function TableRow({ className, ...props }, ref) {
   return (
     <tr
+      ref={ref}
       className={cn(
         'border-b border-border transition-colors hover:bg-surface-hover data-[state=selected]:bg-surface-selected',
         className
@@ -35,7 +37,7 @@ export function TableRow({ className, ...props }) {
       {...props}
     />
   )
-}
+})
 
 export function TableHead({ className, scope = 'col', ...props }) {
   return (

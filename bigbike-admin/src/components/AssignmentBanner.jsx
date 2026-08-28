@@ -18,14 +18,14 @@ export function AssignmentBanner({ title, roles, emptyMessage }) {
   }
   return (
     <div className="px-4 py-3 bg-surface-muted border-b border-border">
-      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Users size={12} />
         <span>{title}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {roles.map((role) => (
-          <div key={role.id} className="border-l-4 border-l-primary pl-2 py-0.5">
-            <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div key={role.id} className="border-l-4 border-l-primary pl-2 py-1">
+            <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-1">
               {role.name}
             </div>
             <div className="text-xs leading-relaxed text-muted-foreground">

@@ -16,7 +16,7 @@ export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle, class
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={cn('gap-1.5', className)}>
+        <Button type="button" variant="outline" size="sm" className={cn('gap-2', className)}>
           <Columns3 size={14} aria-hidden="true" />
           {t('common.columns', { defaultValue: 'Cột hiển thị' })}
         </Button>

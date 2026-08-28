@@ -35,12 +35,12 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initia
 
   return (
     <Modal open title={title} onClose={busy ? () => {} : onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{description}</p>
         <p className="text-xs text-muted-foreground">
           <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
         </p>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label htmlFor="reason-confirm-input" className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
           <Textarea
             id="reason-confirm-input"
@@ -60,7 +60,7 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initia
             aria-describedby={error ? 'reason-confirm-error' : undefined}
           />
           {error && (
-            <p id="reason-confirm-error" role="alert" className="flex items-center gap-1.5 text-xs text-danger">
+            <p id="reason-confirm-error" role="alert" className="flex items-center gap-2 text-xs text-danger">
               <AlertCircle size={13} aria-hidden="true" />
               {error}
             </p>

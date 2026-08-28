@@ -9,7 +9,9 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
-import { FormField, StickyActionBar } from '../components/layout'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { StatePanel } from '../components/StatePanel'
+import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { showConfirm } from '../lib/confirm'
 import { fetchMaintenance, updateMaintenance } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
@@ -89,18 +91,18 @@ export function MaintenanceScreen() {
     mutation.mutate(next)
   }
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+  if (isLoading) return <Screen><ScreenSkeleton variant="form" count={2} /></Screen>
   if (isError) {
     return (
-      <Alert tone="danger">
-        {t('common.loadFailed')}{' '}
-        <Button variant="link" onClick={() => refetch()}>{t('common.retry')}</Button>
-      </Alert>
+      <Screen>
+        <StatePanel tone="danger" title={t('common.loadFailed')} actionLabel={t('common.retry')} onAction={() => refetch()} />
+      </Screen>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <Screen>
+      <ScreenHeader title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })} />
       {!canToggle && (
         <ReadOnlyBanner
           warning={t('maintenance.developerOnly', {
@@ -110,7 +112,7 @@ export function MaintenanceScreen() {
       )}
 
       <DetailSection
-        title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })}
+        title={t('maintenance.statusTitle', { defaultValue: 'Trạng thái hiện tại' })}
         badge={(
           <span className={`bb-badge ${tone.badge}`}>
             <tone.Icon size={14} aria-hidden="true" /> {tone.label}
@@ -198,6 +200,6 @@ export function MaintenanceScreen() {
           </label>
         </StickyActionBar>
       )}
-    </div>
+    </Screen>
   )
 }

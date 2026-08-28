@@ -39,7 +39,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/layout/Modal'
-import { ScreenHeader } from '@/components/layout'
+import { Screen, ScreenHeader } from '@/components/layout'
 import {
   ALLOWED_MIME,
   MAX_FILE_SIZE,
@@ -411,7 +411,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const panelOpen = !!editingMedia
 
   return (
-    <div
+    <Screen
       className={`medialib-dropzone ${isDragging && canUpdate ? 'medialib-dropzone-active' : ''} ${panelOpen ? 'medialib-panel-open' : ''}`}
       ref={screenRef}
     >
@@ -438,9 +438,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
             {t('common.refresh')}
           </Button>
-          <Button variant="unstyled"
+          <Button
             type="button"
-            className={isTrash ? 'bb-btn bb-btn-primary' : 'bb-btn bb-btn-secondary'}
+            variant={isTrash ? 'default' : 'secondary'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
             disabled={isRefreshing}
             title={t('media.trashShortcut')}
@@ -614,7 +614,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
       {canUpdate && state.status === 'success' && state.items.length > 0 && (
         <div className="mb-2 text-xs">
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
             <Checkbox checked={allOnPageSelected}
               onCheckedChange={(checked) => checked ? selectAllOnPage() : clearSelection()}  />
             <span>{t('media.selectAllOnPage')}</span>
@@ -683,6 +683,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           onDownload={isDownloadableMedia(state.items[previewIndex]) ? handleDownload : null}
           onClose={() => setPreviewIndex(null)} />
       )}
-    </div>
+    </Screen>
   )
 }

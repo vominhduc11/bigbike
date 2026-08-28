@@ -10,7 +10,7 @@ export function SelectTrigger({ className, children, ...props }) {
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-9 w-full items-center justify-between gap-1 border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground aria-invalid:border-danger aria-invalid:ring-1 aria-invalid:ring-danger/40 rounded-[var(--admin-radius-control)]',
+        'flex h-9 max-sm:h-11 w-full items-center justify-between gap-1 border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground aria-invalid:border-danger aria-invalid:ring-1 aria-invalid:ring-danger/40 rounded-[var(--admin-radius-control)]',
         className
       )}
       {...props}
@@ -77,7 +77,7 @@ export function SelectContent({ className, children, position = 'popper', ...pro
 export function SelectLabel({ className, ...props }) {
   return (
     <SelectPrimitive.Label
-      className={cn('px-2 py-1.5 text-xs font-semibold text-muted-foreground', className)}
+      className={cn('px-2 py-2 text-xs font-semibold text-muted-foreground', className)}
       {...props}
     />
   )
@@ -87,7 +87,7 @@ export function SelectItem({ className, children, ...props }) {
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex w-full cursor-default select-none items-center rounded-[var(--admin-radius-xs)] py-1.5 pl-2 pr-8 text-sm text-foreground outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex w-full cursor-default select-none items-center rounded-[var(--admin-radius-xs)] py-2 pl-2 pr-8 text-sm text-foreground outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
       {...props}

@@ -4,10 +4,9 @@ import { cn } from '@/lib/utils'
 
 /**
  * Ô tìm kiếm filter bar dùng chung — icon kính lúp + shadcn Input, thay cho
- * `<input type="search" className="bb-input">` native.
+ * ô tìm kiếm native tự dựng riêng ở từng màn.
  *
- * Đo khít theo {@link FilterSelect} (cao 30px, chữ 12.5px, bo 6px, token `--bb-*`)
- * để cả filter bar đồng bộ một hệ — search và select cùng chiều cao, cùng style.
+ * Đo khít theo {@link FilterSelect} để search và select cùng chiều cao, cùng style.
  *
  * @param {string} value
  * @param {(v:string)=>void} onChange - nhận giá trị thô (đã rút từ e.target.value).
@@ -29,8 +28,8 @@ export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, aut
         autoFocus={autoFocus}
         disabled={disabled}
         className={cn(
-          'h-9 w-full pl-9 pr-3 text-sm shadow-none',
-          'rounded-sm border-border bg-background text-foreground',
+          'h-9 max-sm:h-11 w-full pl-9 pr-3 text-sm shadow-none',
+          'rounded-[var(--admin-radius-control)] border-border bg-background text-foreground',
           'focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
           className
         )}

@@ -3,7 +3,7 @@
 
    Layout primitives consumed by /components/layout/*.jsx React components.
    Reuses tokens from admin-tokens.css. Builds on classes already defined in
-   index.css (.screen, .screen-header, .filter-bar, .modal-*, .btn-*, etc.).
+   index.css (.screen, .screen-header, .filter-bar, .modal-*, etc.).
 
    Adds:
      - .summary-card* (KPI cards, optionally clickable)
@@ -36,8 +36,8 @@
 .seg-tabs {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  gap: var(--admin-space-1);
+  padding: var(--admin-space-1);
   background: var(--admin-color-surface-muted);
   border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-md);
@@ -50,7 +50,7 @@
   color: var(--admin-color-text-secondary);
   font-size: var(--admin-text-sm);
   font-weight: 600;
-  padding: 6px var(--admin-space-3);
+  padding: var(--admin-space-2) var(--admin-space-3);
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: background-color var(--admin-transition-fast),
@@ -58,7 +58,7 @@
   min-height: 32px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-2);
 }
 
 .seg-tabs-tab:hover:not(.is-active) {
@@ -83,7 +83,7 @@
   font-size: var(--admin-text-xs);
   background: var(--admin-color-surface-base);
   border-radius: var(--admin-radius-full);
-  padding: 1px 7px;
+  padding: var(--admin-space-1) var(--admin-space-2);
   min-width: 18px;
   text-align: center;
 }
@@ -146,7 +146,7 @@
 .mobile-card-subtitle {
   font-size: var(--admin-text-sm);
   color: var(--admin-color-text-muted);
-  margin: 2px 0 0;
+  margin: var(--admin-space-1) 0 0;
 }
 
 .mobile-card-meta {
@@ -159,7 +159,7 @@
 .mobile-card-meta-row {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--admin-space-1);
 }
 
 .mobile-card-meta-label {
@@ -192,12 +192,6 @@
   margin-top: var(--admin-space-2);
   padding-top: var(--admin-space-2);
   border-top: 1px solid var(--admin-color-border-subtle);
-}
-
-.mobile-card-actions .btn,
-.mobile-card-actions .bb-btn {
-  flex: 1;
-  min-width: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -251,8 +245,7 @@
     margin: var(--admin-space-3) 0 calc(-1 * var(--admin-space-4));
     padding: var(--admin-space-3);
   }
-  .sticky-action-bar > button,
-  .sticky-action-bar > .btn { flex: 1 1 auto; }
+  .sticky-action-bar > button { flex: 1 1 auto; }
   .sticky-action-bar-info { flex-basis: 100%; }
 }
 

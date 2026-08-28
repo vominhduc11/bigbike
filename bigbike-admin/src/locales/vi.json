@@ -2207,6 +2207,7 @@
       "activeFilterAria": "Tài khoản đang hoạt động — lọc danh sách theo trạng thái Hoạt động"
     },
     "searchPlaceholder": "Tên, email, số điện thoại",
+    "filtersAria": "Bộ lọc khách hàng",
     "filterStatus": "Trạng thái",
     "filterEmailVerified": "Xác thực email",
     "emailVerified": "Đã xác thực",
@@ -3504,6 +3505,7 @@
     "title": "Tài khoản quản trị",
     "description": "Quản lý các tài khoản nội bộ của hệ thống.",
     "searchPlaceholder": "Email hoặc tên",
+    "filtersAria": "Bộ lọc tài khoản quản trị",
     "loading": "Đang tải danh sách",
     "error": "Lỗi tải danh sách",
     "empty": "Chưa có tài khoản quản trị",

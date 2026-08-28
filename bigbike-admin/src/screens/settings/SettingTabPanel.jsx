@@ -69,27 +69,27 @@ export function SettingTabPanel({
   let actionInfo = null
   if (saveError) {
     actionInfo = (
-      <span className="inline-flex items-center gap-1.5 font-semibold text-danger" role="alert">
+      <span className="inline-flex items-center gap-2 font-semibold text-danger" role="alert">
         <AlertCircle size={14} aria-hidden="true" /> {saveError}
       </span>
     )
   } else if (saving) {
     actionInfo = (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+      <span className="inline-flex items-center gap-2 text-muted-foreground">
         <Loader2 size={14} className="animate-spin" aria-hidden="true" />
         {t('settings.saving', { defaultValue: 'Đang lưu thay đổi…' })}
       </span>
     )
   } else if (saveSuccess) {
     actionInfo = (
-      <span className="inline-flex items-center gap-1.5 font-semibold text-success">
+      <span className="inline-flex items-center gap-2 font-semibold text-success">
         <CheckCircle2 size={15} aria-hidden="true" />
         {t('settings.saveSuccess')}
       </span>
     )
   } else {
     actionInfo = (
-      <span className="inline-flex items-center gap-1.5 font-semibold text-warning">
+      <span className="inline-flex items-center gap-2 font-semibold text-warning">
         <AlertCircle size={14} aria-hidden="true" />
         {t('settings.unsavedCount', { count: dirtyCount })}
       </span>

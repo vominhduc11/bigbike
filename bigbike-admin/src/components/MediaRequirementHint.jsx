@@ -41,12 +41,12 @@ export function MediaValidationError({ reasons, kind, width, height, recommend, 
   return (
     <div
       className={cn(
-        'mt-2 flex items-start gap-2 px-2.5 py-2 text-xs rounded-[var(--admin-radius-sm)] bg-[var(--admin-color-status-danger-bg)] border border-[var(--admin-color-status-danger-border)] text-[var(--admin-color-status-danger-text)]',
+        'mt-2 flex items-start gap-2 px-3 py-2 text-xs rounded-[var(--admin-radius-sm)] bg-[var(--admin-color-status-danger-bg)] border border-[var(--admin-color-status-danger-border)] text-[var(--admin-color-status-danger-text)]',
         className,
       )}
       role="alert"
     >
-      <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <AlertTriangle size={14} className="mt-1 shrink-0" aria-hidden="true" />
       <span>{messages.join(' ')}</span>
     </div>
   )

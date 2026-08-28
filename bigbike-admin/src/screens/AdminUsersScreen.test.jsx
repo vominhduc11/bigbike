@@ -101,6 +101,7 @@ vi.mock('../components/StatePanel', () => ({
   ),
 }))
 vi.mock('../components/layout', () => ({
+  Screen: ({ children, ...props }) => <main {...props}>{children}</main>,
   ScreenHeader: ({ eyebrow, title, description, actions }) => (
     <header><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p>{actions}</header>
   ),

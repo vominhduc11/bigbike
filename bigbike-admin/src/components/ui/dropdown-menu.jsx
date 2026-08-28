@@ -107,7 +107,7 @@ export function DropdownMenuRadioItem({ className, children, ...props }) {
 export function DropdownMenuLabel({ className, inset, ...props }) {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn('px-2 py-1.5 text-xs font-semibold text-muted-foreground', inset && 'pl-8', className)}
+      className={cn('px-2 py-2 text-xs font-semibold text-muted-foreground', inset && 'pl-8', className)}
       {...props}
     />
   )

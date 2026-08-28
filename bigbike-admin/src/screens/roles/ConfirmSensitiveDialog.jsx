@@ -16,7 +16,7 @@ export function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel 
       open={!!pending}
       onClose={onCancel}
       title={
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-3">
           <AlertTriangle size={20} className="text-warning shrink-0" aria-hidden />
           {t('roles.sensitivePermTitle')}
         </span>

@@ -6,10 +6,12 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { AlertCircle, CheckCircle2, Lock, Mail, Pencil, UserCheck, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { FormField } from '../components/layout/FormField'
-import { Modal, ScreenHeader } from '../components/layout'
+import { Modal, Screen, ScreenHeader } from '../components/layout'
+import { FilterBar } from '../components/layout/FilterBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
@@ -699,7 +701,7 @@ export function AdminUsersScreen({
     const activating = u.status !== 'ACTIVE'
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
     return (
-      <Button variant="unstyled" type="button" className="bb-icon-btn" title={label} aria-label={label}
+      <Button variant="ghost" size="icon" type="button" title={label} aria-label={label}
         disabled={Boolean(togglingId)} onClick={() => handleToggleStatus(u)}>
         {activating ? <UserCheck size={14} /> : <Lock size={14} />}
       </Button>
@@ -763,12 +765,12 @@ export function AdminUsersScreen({
           render: (u) => (
             <div className="inline-flex items-center justify-end gap-1">
               {u.status === 'INVITED' && (
-                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
+                <Button variant="ghost" size="icon" type="button" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
                   <Mail size={14} />
                 </Button>
               )}
               {statusToggleButton(u)}
-              <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+              <Button variant="ghost" size="icon" type="button" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
                 <Pencil size={14} />
               </Button>
             </div>
@@ -800,12 +802,12 @@ export function AdminUsersScreen({
       actions: canUpdate ? (
         <>
           {u.status === 'INVITED' && (
-            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
+            <Button variant="ghost" size="icon" type="button" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
               <Mail size={14} />
             </Button>
           )}
           {statusToggleButton(u)}
-          <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+          <Button variant="ghost" size="icon" type="button" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
             <Pencil size={14} />
           </Button>
         </>
@@ -814,7 +816,7 @@ export function AdminUsersScreen({
   }
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader
         eyebrow={t('adminUsers.eyebrow')}
         title={t('adminUsers.title')}
@@ -864,7 +866,7 @@ export function AdminUsersScreen({
         </Alert>
       )}
 
-      <div className="bb-filter-bar">
+      <FilterBar ariaLabel={t('adminUsers.filtersAria')}>
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -894,7 +896,7 @@ export function AdminUsersScreen({
           onChange={(n) => setQuery((p) => ({ ...p, pageSize: n, page: 1 }))}
         />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-      </div>
+      </FilterBar>
 
       {/* T10: chip lọc đang áp dụng + nút xoá tất cả — hiện cả khi vẫn còn kết quả. */}
       <FilterChips
@@ -930,8 +932,7 @@ export function AdminUsersScreen({
       )}
 
       {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
+        <DetailSection noPadding>
             <AdminTable
               columns={visibleColumns}
               rows={items}
@@ -943,7 +944,6 @@ export function AdminUsersScreen({
               onSortChange={(key, dir) => setSort({ key, dir })}
               rowClassName={(user) => `bb-row-accent--${STATUS_META[user.status]?.tone ?? 'muted'}`}
             />
-          </div>
           {listState.status === 'success' && listState.pagination && (
             <div className="px-4">
               <PaginationControls
@@ -952,7 +952,7 @@ export function AdminUsersScreen({
               />
             </div>
           )}
-        </div>
+        </DetailSection>
       )}
 
       {/* ── Edit Drawer ──────────────────────────────────────────────────── */}
@@ -1113,6 +1113,6 @@ export function AdminUsersScreen({
           <p className="text-xs text-muted-foreground">{t('adminUsers.inviteHint')}</p>
         </form>
       </Modal>
-    </div>
+    </Screen>
   )
 }

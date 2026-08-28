@@ -310,7 +310,7 @@ export function AdminShell({
               type="button"
               variant="ghost"
               size="icon"
-              className="bb-icon-btn bb-hamburger"
+              className="bb-hamburger"
               onClick={() => setSidebarOpen((v) => !v)}
               aria-label={sidebarOpen ? t('common.close') : t('nav.openMenu')}
               aria-expanded={sidebarOpen}

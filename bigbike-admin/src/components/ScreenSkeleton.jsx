@@ -76,7 +76,7 @@ export function ScreenSkeleton({ variant = 'table', count, showHeader = true, la
       <div role="status" aria-live="polite" aria-busy="true">
         <span className="sr-only">{label || t('common.loading')}</span>
         <div className="animate-pulse overflow-hidden rounded-md border-[1.5px] border-border" aria-hidden="true">
-          <div className="flex h-11 items-center gap-2 border-b border-border bg-surface-muted px-2.5">
+          <div className="flex h-11 items-center gap-2 border-b border-border bg-surface-muted px-3">
             <div className="h-8 w-8 rounded-xs bg-surface" />
             <div className="h-8 w-8 rounded-xs bg-surface" />
             <div className="h-8 w-8 rounded-xs bg-surface" />

@@ -107,6 +107,16 @@
   --admin-space-10: 40px;
   --admin-space-12: 48px;
 
+  /* Nhịp và chiều cao tương tác dùng chung toàn admin */
+  --admin-screen-gap:        var(--admin-space-4);
+  --admin-control-height-sm:  28px;
+  --admin-control-height-md:  36px;
+  --admin-control-height-lg:  44px;
+  --admin-table-row-compact:  40px;
+  --admin-table-row-regular:  48px;
+  --admin-table-row-spacious: 56px;
+  --admin-detail-rail-width: 27rem;
+
   /* ─── Radius (aligned to prototype --r-*) ───────────────────────────────── */
   --admin-radius-xs:   5px;
   --admin-radius-sm:   8px;
@@ -233,24 +243,6 @@
   --bb-font:      var(--admin-font-body);
   --bb-font-mono: var(--admin-font-mono);
 
-  --bb-text-xs:   11.5px;
-  --bb-text-sm:   12.5px;
-  --bb-text-base: 13.5px;
-  --bb-text-md:   14.5px;
-  --bb-text-lg:   16px;
-  --bb-text-xl:   19px;
-  --bb-text-2xl:  23px;
-  --bb-text-3xl:  28px;
-
-  --bb-s-1:  var(--admin-space-1);
-  --bb-s-2:  var(--admin-space-2);
-  --bb-s-3:  var(--admin-space-3);
-  --bb-s-4:  var(--admin-space-4);
-  --bb-s-5:  var(--admin-space-5);
-  --bb-s-6:  var(--admin-space-6);
-  --bb-s-8:  var(--admin-space-8);
-  --bb-s-10: var(--admin-space-10);
-
   --bb-r-xs:   var(--admin-radius-xs);
   --bb-r-sm:   var(--admin-radius-sm);
   --bb-r-md:   var(--admin-radius-md);
@@ -267,7 +259,7 @@
 
   --bb-sidebar-w:  248px;
   --bb-topbar-h:   56px;
-  --bb-row-h:      48px;
+  --bb-row-h:      var(--admin-table-row-regular);
 
   /* Max width of the centred content column. Below ~1750px viewport the content
      fills the available space; on large / ultra-wide monitors (4xl) it caps here

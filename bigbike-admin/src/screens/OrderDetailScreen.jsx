@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { ArrowRight, ChevronRight, Package } from 'lucide-react'
+import { ArrowRight, Package } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { ScreenHeader, StickyActionBar } from '../components/layout'
+import { AdminTable } from '../components/AdminTable'
+import { CollapsibleSection } from '../components/CollapsibleSection'
+import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { ORDER_STATUS_TONE } from '../lib/statusTone'
@@ -120,6 +121,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [reasonModal, setReasonModal] = useState(null)
   const [reasonDraft, setReasonDraft] = useState('')
   const [unsavedActionWarning, setUnsavedActionWarning] = useState('')
+  const [paymentsOpen, setPaymentsOpen] = useState(false)
+  const [auditOpen, setAuditOpen] = useState(false)
 
   const orderReasonDraftKey = `draft:order-detail:${orderId}:status-reason`
   const { clear: clearOrderReasonDraft } = useDraftAutosave(
@@ -226,25 +229,25 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   if (status === 'loading') {
-    return <OrderDetailSkeleton label={t('orders.detail.loading')} />
+    return <Screen><OrderDetailSkeleton label={t('orders.detail.loading')} /></Screen>
   }
   if (status === 'error') {
     if (Number(orderQuery.error?.status) === 404) {
-      return <StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
-        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+      return <Screen><StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
+        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} /></Screen>
     }
     if (Number(orderQuery.error?.status) === 403) {
-      return <StatePanel tone="danger" title={t('orders.detail.loadForbidden')}
+      return <Screen><StatePanel tone="danger" title={t('orders.detail.loadForbidden')}
         description={t('orders.detail.loadForbiddenDesc')}
-        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} /></Screen>
     }
-    return <StatePanel tone="danger" title={t('orders.detail.loadError')}
+    return <Screen><StatePanel tone="danger" title={t('orders.detail.loadError')}
       description={t('orders.detail.loadErrorDesc')}
-      actionLabel={t('common.retry')} onAction={() => orderQuery.refetch()} />
+      actionLabel={t('common.retry')} onAction={() => orderQuery.refetch()} /></Screen>
   }
   if (!order) {
-    return <StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
-      actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+    return <Screen><StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
+      actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} /></Screen>
   }
 
   const allowedTransitions = transitionsQuery.data?.transitions ?? []
@@ -262,6 +265,79 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const paymentMethodLabel = order.paymentMethod
     ? t(`status.paymentMethod.${order.paymentMethod}`, { defaultValue: t('common.unknown') })
     : formatText()
+  const orderItems = (order.items ?? []).map((item, index) => ({
+    ...item,
+    id: item.id ?? `order-item-${index}`,
+  }))
+  const paymentRows = (order.payments ?? []).map((payment, index) => ({
+    ...payment,
+    id: payment.id ?? `payment-${index}`,
+  }))
+  const itemColumns = [
+    {
+      key: 'product',
+      label: t('orders.detail.colProduct'),
+      render: (item) => (
+        <div className="bb-product-cell">
+          <OrderItemThumbnail item={item} />
+          <div>
+            <div className="font-semibold">{formatText(item.productName)}</div>
+            {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'unitPrice',
+      label: t('orders.detail.colUnitPrice'),
+      align: 'right',
+      render: (item) => formatCurrencyVnd(item.unitPrice),
+    },
+    {
+      key: 'quantity',
+      label: t('orders.detail.colQty'),
+      align: 'right',
+      render: (item) => `×${item.quantity}`,
+    },
+    {
+      key: 'lineTotal',
+      label: t('orders.detail.colLineTotal'),
+      align: 'right',
+      render: (item) => <span className="font-bold">{formatCurrencyVnd(item.lineTotal)}</span>,
+    },
+  ]
+  const paymentColumns = [
+    {
+      key: 'paymentMethod',
+      label: t('orders.detail.colPaymentMethod'),
+      render: (payment) => (
+        <span className="font-mono">
+          {payment.paymentMethod
+            ? t(`status.paymentMethod.${payment.paymentMethod}`, { defaultValue: t('common.unknown') })
+            : formatText()}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('orders.detail.colPaymentRecordStatus'),
+      render: (payment) => payment.status
+        ? t(`status.paymentRecord.${payment.status}`, { defaultValue: t('common.unknown') })
+        : t('common.unknown'),
+    },
+    {
+      key: 'amount',
+      label: t('orders.detail.colAmount'),
+      align: 'right',
+      render: (payment) => formatCurrencyVnd(payment.amount),
+    },
+    {
+      key: 'paidAt',
+      label: t('orders.detail.colPaidAt'),
+      align: 'right',
+      render: (payment) => <span className="text-muted-foreground">{payment.paidAt ? formatDateTime(payment.paidAt) : '—'}</span>,
+    },
+  ]
 
   function renderProgressAction(targetStatus, keyPrefix = '') {
     const cfg = ORDER_STATUS_ACTION[targetStatus] ?? { variant: 'secondary' }
@@ -302,7 +378,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   return (
-    <div className={useMobileStickyActions ? 'pb-32 md:pb-0' : undefined}>
+    <Screen className={useMobileStickyActions ? 'pb-32 md:pb-0' : undefined}>
       <ScreenHeader
         title={(
           <span className="bb-heading-inline">
@@ -433,63 +509,28 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             headingLevel={3}
             noPadding
           >
-              {(order.items ?? []).length === 0 ? (
+              {orderItems.length === 0 ? (
                 <div className="p-4"><p className="bb-muted">{t('orders.detail.noItems')}</p></div>
               ) : (
-                <>
-                <div className="hide-on-mobile">
-                <div className="bb-table-wrap">
-                  <table className="bb-table">
-                    <caption className="sr-only">{t('orders.detail.items')}</caption>
-                    <thead>
-                      <tr>
-                        <th>{t('orders.detail.colProduct')}</th>
-                        <th className="num">{t('orders.detail.colUnitPrice')}</th>
-                        <th className="num">{t('orders.detail.colQty')}</th>
-                        <th className="num">{t('orders.detail.colLineTotal')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(order.items ?? []).map((item) => (
-                        <tr key={item.id}>
-                          <td>
-                            <div className="bb-product-cell">
-                              <OrderItemThumbnail item={item} />
-                              <div>
-                                <div className="font-semibold">{formatText(item.productName)}</div>
-                                {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="num">{formatCurrencyVnd(item.unitPrice)}</td>
-                          <td className="num">×{item.quantity}</td>
-                          <td className="num font-bold">{formatCurrencyVnd(item.lineTotal)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                </div>
-                <MobileCardList>
-                  {(order.items ?? []).map((item) => (
-                    <MobileCard
-                      key={item.id}
-                      title={(
-                        <span className="flex items-center gap-2">
-                          <OrderItemThumbnail item={item} />
-                          <span>{formatText(item.productName)}</span>
-                        </span>
-                      )}
-                      subtitle={item.variantName || undefined}
-                      meta={[
-                        { label: t('orders.detail.colUnitPrice'), value: formatCurrencyVnd(item.unitPrice) },
-                        { label: t('orders.detail.colQty'), value: `×${item.quantity}` },
-                        { label: t('orders.detail.colLineTotal'), value: formatCurrencyVnd(item.lineTotal), tone: 'strong' },
-                      ]}
-                    />
-                  ))}
-                </MobileCardList>
-                </>
+                <AdminTable
+                  columns={itemColumns}
+                  rows={orderItems}
+                  caption={t('orders.detail.items')}
+                  mobileCard={(item) => ({
+                    title: (
+                      <span className="flex items-center gap-2">
+                        <OrderItemThumbnail item={item} />
+                        <span>{formatText(item.productName)}</span>
+                      </span>
+                    ),
+                    subtitle: item.variantName || undefined,
+                    meta: [
+                      { label: t('orders.detail.colUnitPrice'), value: formatCurrencyVnd(item.unitPrice) },
+                      { label: t('orders.detail.colQty'), value: `×${item.quantity}` },
+                      { label: t('orders.detail.colLineTotal'), value: formatCurrencyVnd(item.lineTotal), tone: 'strong' },
+                    ],
+                  })}
+                />
               )}
               <div className="bb-total-panel">
                 <dl className="bb-info-grid bb-total-grid">
@@ -529,77 +570,44 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
           {/* Payments — thu gọn mặc định, admin bấm mở khi cần đối chiếu tiền
               (có thể nhiều dòng với đơn thanh toán từng phần / hoàn tiền nhiều đợt). */}
-          {(order.payments ?? []).length > 0 && (
-            <div className="bb-card">
-              <details className="bb-foldable">
-                <summary>
-                  {t('orders.detail.payments')} ({(order.payments ?? []).length})
-                  <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
-                </summary>
-                <div className="bb-foldable-body">
-                <div className="hide-on-mobile">
-                <div className="bb-table-wrap">
-                  <table className="bb-table">
-                    <caption className="sr-only">{t('orders.detail.payments')}</caption>
-                    <thead>
-                      <tr>
-                        <th>{t('orders.detail.colPaymentMethod')}</th>
-                        <th>{t('orders.detail.colPaymentRecordStatus')}</th>
-                        <th className="num">{t('orders.detail.colAmount')}</th>
-                        <th className="num">{t('orders.detail.colPaidAt')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(order.payments ?? []).map((p, i) => (
-                        <tr key={p.id ?? i}>
-                    <td className="font-mono">
-                            {p.paymentMethod
-                              ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
-                              : formatText()}
-                          </td>
-                          <td>{p.status ? t(`status.paymentRecord.${p.status}`, { defaultValue: t('common.unknown') }) : t('common.unknown')}</td>
-                          <td className="num">{formatCurrencyVnd(p.amount)}</td>
-                          <td className="num bb-muted">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                </div>
-                <MobileCardList>
-                  {(order.payments ?? []).map((p, i) => (
-                    <MobileCard
-                      key={p.id ?? i}
-                      title={p.paymentMethod
-                        ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
-                        : formatText()}
-                      subtitle={p.paidAt ? formatDateTime(p.paidAt) : undefined}
-                      meta={[
-                        { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(p.amount), tone: 'strong' },
-                        {
-                          label: t('orders.detail.colPaymentRecordStatus'),
-                          value: p.status
-                            ? t(`status.paymentRecord.${p.status}`, { defaultValue: t('common.unknown') })
-                            : t('common.unknown'),
-                        },
-                      ]}
-                    />
-                  ))}
-                </MobileCardList>
-                </div>
-              </details>
-            </div>
+          {paymentRows.length > 0 && (
+            <CollapsibleSection
+              title={`${t('orders.detail.payments')} (${paymentRows.length})`}
+              open={paymentsOpen}
+              onToggle={() => setPaymentsOpen((value) => !value)}
+              keepMounted
+              bodyClassName="!p-0"
+            >
+              <AdminTable
+                columns={paymentColumns}
+                rows={paymentRows}
+                caption={t('orders.detail.payments')}
+                mobileCard={(payment) => ({
+                  title: payment.paymentMethod
+                    ? t(`status.paymentMethod.${payment.paymentMethod}`, { defaultValue: t('common.unknown') })
+                    : formatText(),
+                  subtitle: payment.paidAt ? formatDateTime(payment.paidAt) : undefined,
+                  meta: [
+                    { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(payment.amount), tone: 'strong' },
+                    {
+                      label: t('orders.detail.colPaymentRecordStatus'),
+                      value: payment.status
+                        ? t(`status.paymentRecord.${payment.status}`, { defaultValue: t('common.unknown') })
+                        : t('common.unknown'),
+                    },
+                  ],
+                })}
+              />
+            </CollapsibleSection>
           )}
 
           {/* Audit trail */}
-          <div className="bb-card">
-            <div className="bb-card-body">
-              <details className="bb-foldable">
-                <summary>
-                  {t('orders.audit.title')}
-                  <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
-                </summary>
-                <div className="bb-foldable-body">
+          <CollapsibleSection
+            title={t('orders.audit.title')}
+            open={auditOpen}
+            onToggle={() => setAuditOpen((value) => !value)}
+            keepMounted
+          >
                   {auditQuery.isLoading ? (
                     <p className="bb-muted">{t('orders.audit.loading')}</p>
                   ) : auditQuery.isError ? (
@@ -642,10 +650,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       })}
                     </ul>
                   )}
-                </div>
-              </details>
-            </div>
-          </div>
+          </CollapsibleSection>
         </div>
 
         {/* Right column */}
@@ -719,6 +724,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           onClose={closeReasonModal}
         />
       )}
-    </div>
+    </Screen>
   )
 }

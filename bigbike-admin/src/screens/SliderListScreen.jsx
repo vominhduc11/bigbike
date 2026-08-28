@@ -13,7 +13,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
-import { ScreenHeader, StickyActionBar } from '../components/layout'
+import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -21,6 +21,7 @@ import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { HOME_LOCATION, buildSliderPayload, validateSliderProduct } from './slider-list/sliderPayload'
 // Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2). Mã lạ → trả nguyên mã.
 function locationLabel(t, code) {
@@ -53,17 +54,22 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
     ? (slider.productNameEn || slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
     : (slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
   return (
-    <div
+    <DetailSection
       ref={sortable?.setNodeRef}
       style={sortable?.style}
-      className={`bb-card bb-slider-card ${slider.isActive === false ? 'is-inactive' : ''} ${sortable?.isDragging ? 'is-dragging' : ''}`}
+      className={cn(
+        'bb-slider-card',
+        slider.isActive === false && 'is-inactive',
+        sortable?.isDragging && 'is-dragging',
+      )}
+      contentClassName="bb-slider-card-body"
     >
-      <div className="bb-card-body bb-slider-card-body">
         {canUpdate && sortable && (
           <Button
-            variant="unstyled"
+            variant="ghost"
+            size="icon"
             {...sortable.handleProps}
-            className="bb-icon-btn bb-slider-drag"
+            className="bb-slider-drag"
             title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
             aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
           >
@@ -143,8 +149,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
             </Button>
           </div>
         )}
-      </div>
-    </div>
+    </DetailSection>
   )
 }
 
@@ -429,7 +434,7 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
     || reorderMutation.isPending || toggleActiveMutation.isPending
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader
         eyebrow={t('sliders.eyebrow')}
         title={t('sliders.title')}
@@ -469,13 +474,13 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
               <label className="form-field">
                 <span>
                   {t('sliders.formSortOrder')}
-                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                  <span className="text-danger ml-1" aria-hidden="true">*</span>
                 </span>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
               </label>
               {/* V2: bỏ marginTop:22 canh thủ công — checkbox giờ đứng riêng 1 hàng full-width, không cần canh theo ô cạnh bên. */}
               <label
-                className="form-field-wide flex w-fit cursor-pointer items-center gap-2.5 border border-border p-2.5 text-sm hover:bg-muted"
+                className="form-field-wide flex w-fit cursor-pointer items-center gap-3 border border-border p-3 text-sm hover:bg-muted"
               >
                 <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
                 <span>{t('sliders.formIsActive')}</span>
@@ -534,7 +539,7 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
               <div className="form-field form-field-wide">
                 <span>
                   {t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}
-                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                  <span className="text-danger ml-1" aria-hidden="true">*</span>
                 </span>
                 {form.productId ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -619,6 +624,6 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
           )}
         />
       )}
-    </div>
+    </Screen>
   )
 }

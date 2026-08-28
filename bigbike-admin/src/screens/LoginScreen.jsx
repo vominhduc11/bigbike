@@ -132,7 +132,7 @@ export function LoginScreen() {
                     variant="ghost"
                     size="sm"
                     onClick={() => onSubmit()}
-                    className="h-auto shrink-0 px-2 py-0.5 text-danger hover:text-danger"
+                    className="h-auto shrink-0 px-2 py-1 text-danger hover:text-danger"
                   >
                     {t('common.retry')}
                   </Button>
@@ -162,7 +162,6 @@ export function LoginScreen() {
                 disabled={submitting}
                 aria-invalid={Boolean(fieldErrors.email) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(emailErrId, Boolean(fieldErrors.email))}
-                className="bb-input"
               />
               {fieldErrors.email ? (
                 <span id={emailErrId} role="alert" className="bb-field-error">{fieldErrors.email}</span>
@@ -199,7 +198,6 @@ export function LoginScreen() {
                 disabled={submitting}
                 aria-invalid={Boolean(fieldErrors.password) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(passwordErrId, Boolean(fieldErrors.password))}
-                className="bb-input"
               />
               {fieldErrors.password ? (
                 <span id={passwordErrId} role="alert" className="bb-field-error">{fieldErrors.password}</span>

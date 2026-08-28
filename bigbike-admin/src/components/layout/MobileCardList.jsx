@@ -93,7 +93,7 @@ export function MobileCard({
               checked={selected}
               onCheckedChange={onSelectChange}
               aria-label={selectionLabel}
-              className="mt-0.5 shrink-0"
+              className="mt-1 shrink-0"
             />
             <div className="min-w-0 flex-1">{main}</div>
           </div>

@@ -52,7 +52,7 @@ function RevenueTooltip({
   return (
     <div className="bb-dash-tooltip">
       <div className="bb-dash-tooltip-date">{formatTooltipDate(label, locale)}</div>
-      <div className="mt-2 grid gap-1.5">
+      <div className="mt-2 grid gap-2">
         <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
           <span className="bb-dash-tooltip-row">{revenueLabel}</span>
           <strong className="text-right text-foreground tabular-nums">
@@ -88,7 +88,7 @@ function PieTooltip({
   return (
     <div className="bb-dash-tooltip">
       <div className="bb-dash-tooltip-name">{d.name}</div>
-      <div className="mt-2 grid gap-1.5">
+      <div className="mt-2 grid gap-2">
         <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
           <span className="bb-dash-tooltip-meta">{countLabel}</span>
           <strong className="text-right text-foreground tabular-nums">

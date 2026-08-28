@@ -297,7 +297,7 @@ export function LivePreview({
         <span className="text-sm font-medium">{previewTitle}</span>
         {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
 
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
           <div className="flex overflow-hidden rounded-md border border-border">
             {['vi', 'en'].map((code) => (
@@ -356,7 +356,7 @@ export function LivePreview({
             color: 'var(--admin-color-status-warning-text)',
           }}
         >
-          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <AlertCircle size={14} className="mt-1 shrink-0" />
           <span>
             {t(`${i18nPrefix}.invalid`, {
               defaultValue: 'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',

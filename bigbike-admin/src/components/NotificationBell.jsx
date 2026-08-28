@@ -278,7 +278,7 @@ export function NotificationBell({ navigate }) {
         sideOffset={8}
         className="w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
       >
-        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <strong className="text-sm font-semibold text-foreground">{t('notifications.panelTitle')}</strong>
           {items.length > 0 && (
             <DropdownMenuItem
@@ -325,7 +325,7 @@ export function NotificationBell({ navigate }) {
                       : <ShoppingCart size={15} aria-hidden="true" />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-2">
                       <span className="block text-sm font-semibold text-foreground">
                         {item.type === 'CHAT_HANDOFF_WAITING'
                           ? t('notifications.chatHandoff')
@@ -350,7 +350,7 @@ export function NotificationBell({ navigate }) {
                         : item.orderNumber || t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
                       {!item.conversationId && item.customerName ? ` — ${item.customerName}` : ''}
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                    <span className="mt-1 block text-xs text-muted-foreground">
                       {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
                     </span>
                   </span>

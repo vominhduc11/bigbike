@@ -5,7 +5,7 @@
 | App | Commands from repo config | Status | Evidence |
 |---|---|---|---|
 | `bigbike-web` | `npm run lint`, `npm run test`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json` |
-| `bigbike-admin` | `npm run lint`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
+| `bigbike-admin` | `npm run lint`, `npm run test`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | `bigbike-backend` | `./mvnw test`, `./mvnw package` | `CONFIRMED_FROM_CONFIG` | `bigbike-backend/pom.xml` |
 
 ## E2E test-data safety
@@ -141,6 +141,6 @@ handoff run it was blocked by V1047's existing 109-row data-integrity guard befo
 
 | Gap | Status | Evidence |
 |---|---|---|
-| Admin repo has no dedicated `test` script in `package.json`. | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
+| Admin unit/component tests run through the dedicated `npm run test` script. | `RESOLVED_2026-08-28` | `bigbike-admin/package.json` |
 | Web unit tests exist locally but are not run in CI. | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json`, `.github/workflows/ci.yml` |
 | Live redirect quality | Two sequential scans of the 241-row owner URL list, 0.5s/request/pass; the live scan is evidence, not a unit-test substitute. | `REQUIRED_FOR_AUDIT_2026-08-14` |

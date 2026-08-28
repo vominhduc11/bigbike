@@ -105,7 +105,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
               type="button"
               variant="ghost"
               size="icon"
-              className="shrink-0 -m-1.5 text-muted-foreground"
+              className="shrink-0 -m-2 text-muted-foreground"
               onClick={() => onProductChange(null)}
               aria-label={t('homeHighlights.clearSlot')}
             >
@@ -293,7 +293,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
       {canUpdate && !hasFilledSlot && (
         <p
           role="status"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground -mt-2 mb-1"
+          className="flex items-center gap-2 text-sm text-muted-foreground -mt-2 mb-1"
         >
           <AlertCircle size={14} aria-hidden="true" className="shrink-0" />
           {t('homeHighlights.noSlotsHint', { defaultValue: 'Chọn ít nhất 1 sản phẩm để lưu.' })}

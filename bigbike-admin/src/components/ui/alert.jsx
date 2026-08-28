@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 const alertVariants = cva(
-  'flex items-start gap-2.5 border font-medium rounded-[var(--admin-radius-sm)]',
+  'flex items-start gap-3 border font-medium rounded-[var(--admin-radius-sm)]',
   {
     variants: {
       tone: {

@@ -343,7 +343,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       <div
         role="group"
         aria-label={t('richEditor.toolbarLabel', { defaultValue: 'Thanh công cụ định dạng' })}
-        className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted"
+        className="flex items-center flex-wrap gap-1 py-2 px-3 border-b border-border bg-surface-muted"
       >
         {btn(() => runChain((chain) => chain.undo()), false, t('richEditor.undo'), <Undo size={14} />, !s?.canUndo)}
         {btn(() => runChain((chain) => chain.redo()), false, t('richEditor.redo'), <Redo size={14} />, !s?.canRedo)}
@@ -411,8 +411,8 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {/* Ô chọn màu để trong <div> (không phải MenuItem) để không kích hoạt select; chọn xong menu tự đóng. */}
-            <div className="flex items-center gap-3 px-2 py-1.5">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
+            <div className="flex items-center gap-3 px-2 py-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
                 <Baseline size={14} className="text-muted-foreground" />
                 <Input
                   type="color"
@@ -423,7 +423,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
                   disabled={disabled || !isEditorUsable(editor)}
                 />
               </label>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
                 <Highlighter size={14} className="text-muted-foreground" />
                 <Input
                   type="color"
@@ -496,7 +496,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
       {/* Link modal */}
       {linkModal.open && (
-        <div className="py-2.5 px-3 border-t border-border bg-surface-muted flex flex-col gap-1">
+        <div className="py-3 px-3 border-t border-border bg-surface-muted flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <label htmlFor="rte-link-url" className="text-xs text-muted-foreground whitespace-nowrap">
               {t('richEditor.linkUrlLabel', { defaultValue: 'Đường dẫn' })}

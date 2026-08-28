@@ -25,11 +25,11 @@
   overflow: hidden;
 }
 .bb-sidebar-brand {
-  padding: 16px 16px 14px;
+  padding: var(--admin-space-4) var(--admin-space-4) var(--admin-space-4);
   border-bottom: 1px solid var(--bb-sidebar-border);
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--admin-space-3);
   flex-shrink: 0;
 }
 /* Brand mark — monogram tile in brand red (logo placeholder) */
@@ -64,32 +64,40 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
   font-weight: 600;
-  margin-top: 5px;
+  margin-top: var(--admin-space-1);
 }
 
 .bb-sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 8px 8px 16px;
+  padding: var(--admin-space-2) var(--admin-space-2) var(--admin-space-4);
   scrollbar-width: thin;
-  scrollbar-color: var(--bb-sidebar-border) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--bb-text-onsidebar-dim) transparent;
 }
-.bb-nav-group { margin-top: 12px; }
-.bb-nav-group:first-child { margin-top: 4px; }
+.bb-sidebar-nav::-webkit-scrollbar { width: var(--admin-scrollbar-size); }
+.bb-sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.bb-sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--bb-text-onsidebar-dim);
+  border-radius: var(--admin-radius-full);
+}
+.bb-nav-group { margin-top: var(--admin-space-3); }
+.bb-nav-group:first-child { margin-top: var(--admin-space-1); }
 .bb-nav-group-label {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--bb-text-onsidebar-dim);
-  padding: 6px 10px 4px;
+  padding: var(--admin-space-2) var(--admin-space-3) var(--admin-space-1);
   display: block;
 }
 .bb-nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-2) var(--admin-space-3);
   border-radius: 6px;
   color: var(--bb-text-onsidebar);
   text-decoration: none;
@@ -126,7 +134,7 @@
 .bb-nav-badge {
   font-size: 10.5px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: var(--admin-space-1) var(--admin-space-2);
   border-radius: 9999px;
   background: var(--bb-brand);
   color: var(--bb-on-brand);
@@ -141,12 +149,12 @@
 
 .bb-sidebar-foot {
   border-top: 1px solid var(--bb-sidebar-border);
-  padding: 10px 14px;
+  padding: var(--admin-space-3) var(--admin-space-4);
   font-size: 11.5px;
   color: var(--bb-text-onsidebar-dim);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-2);
 }
 .bb-sidebar-foot strong { color: var(--bb-text-onsidebar-strong); font-weight: 600; }
 
@@ -157,8 +165,8 @@
   height: var(--bb-topbar-h);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 20px;
+  gap: var(--admin-space-3);
+  padding: 0 var(--admin-space-5);
   background: var(--bb-surface);
   border-bottom: 1px solid var(--bb-border);
   position: sticky;
@@ -172,28 +180,12 @@
 }
 .bb-topbar-spacer { flex: 1; }
 
-.bb-icon-btn {
-  width: 32px; height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--bb-r-control);
-  color: var(--bb-text-secondary);
-  cursor: pointer;
-  position: relative;
-  flex-shrink: 0;
-}
-.bb-icon-btn:hover { background: var(--bb-surface-hover); color: var(--bb-text); }
-
-
 .bb-user-chip {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: var(--admin-space-2);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 8px 4px 4px;
+  padding: var(--admin-space-1) var(--admin-space-2) var(--admin-space-1) var(--admin-space-1);
   cursor: pointer;
   color: var(--bb-text);
   font-family: inherit;
@@ -226,10 +218,10 @@
 .bb-breadcrumb-inner {
   max-width: var(--bb-content-max);
   margin: 0 auto;
-  padding: 8px 24px;
+  padding: var(--admin-space-2) var(--admin-space-6);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-2);
   list-style: none;
 }
 .bb-breadcrumb-inner li { display: inline-flex; align-items: center; }
@@ -243,7 +235,7 @@
 .bb-breadcrumb .sep { color: var(--bb-text-faint); }
 
 .bb-page-content {
-  padding: 20px 24px 64px;
+  padding: var(--admin-space-5) var(--admin-space-6) var(--admin-space-12);
   min-width: 0;
   /* Cap + centre the content column so screens don't stretch edge-to-edge on
      large / ultra-wide monitors (4xl). No effect below ~1750px viewport. */
@@ -257,8 +249,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--admin-space-4);
+  margin-bottom: var(--admin-space-5);
 }
 .bb-screen-eyebrow {
   font-family: var(--bb-font-mono);
@@ -267,7 +259,7 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--bb-primary);
-  margin: 0 0 6px;
+  margin: 0 0 var(--admin-space-2);
 }
 .bb-screen-title h1 {
   min-width: 0;
@@ -277,7 +269,7 @@
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
-  margin: 0 0 4px;
+  margin: 0 0 var(--admin-space-1);
   color: var(--bb-text);
 }
 .bb-screen-title p {
@@ -288,7 +280,7 @@
 }
 .bb-screen-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-2);
   align-items: center;
   flex-shrink: 0;
   /* Wrap so multiple header buttons reflow onto a second line on narrow screens
@@ -297,57 +289,11 @@
   justify-content: flex-end;
 }
 
-/* ─── Buttons ───────────────────────────────────────────────────────────────── */
-.bb-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--bb-r-control);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--bb-text);
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  font-family: inherit;
-  transition: background 100ms ease, border-color 100ms ease, color 100ms ease;
-}
-.bb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.bb-btn-primary {
-  background: var(--bb-primary);
-  border-color: var(--bb-primary);
-  color: var(--bb-on-primary);
-  font-weight: 600;
-}
-.bb-btn-primary:hover:not(:disabled) { background: var(--bb-primary-hover); border-color: var(--bb-primary-hover); }
-.bb-btn-primary:active { background: var(--bb-primary-active); }
-.bb-btn-secondary {
-  background: var(--bb-surface);
-  border-color: var(--bb-border-strong);
-  color: var(--bb-text);
-}
-.bb-btn-secondary:hover:not(:disabled) { background: var(--bb-surface-hover); border-color: var(--bb-border); }
-.bb-btn-ghost {
-  background: transparent;
-  color: var(--bb-text-secondary);
-}
-.bb-btn-ghost:hover:not(:disabled) { background: var(--bb-surface-hover); color: var(--bb-text); }
-.bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: var(--bb-r-xs); }
-
 /* ─── Focus visible (a11y — WCAG 2.4.7 Focus Visible, Level A) ──────────────────
-   Các control bb-* trước đây chỉ có :hover, thiếu chỉ báo focus cho bàn phím. */
-.bb-btn:focus-visible,
-.bb-icon-btn:focus-visible,
+   Các control chassis còn lại cần chỉ báo focus cho bàn phím. */
 .bb-seg:focus-visible,
 .bb-user-chip:focus-visible,
 .bb-nav-link:focus-visible,
-.bb-table th[role="button"]:focus-visible,
-.bb-table tr[role="button"]:focus-visible,
 .bb-kpi.clickable:focus-visible,
 .bb-attention-item:focus-visible {
   outline: 2px solid var(--bb-primary);
@@ -361,7 +307,7 @@
   left: 8px;
   top: -48px;
   z-index: var(--admin-z-toast);
-  padding: 8px 14px;
+  padding: var(--admin-space-2) var(--admin-space-4);
   background: var(--bb-primary);
   color: var(--bb-on-brand);
   border-radius: 6px;
@@ -379,10 +325,10 @@
 .bb-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-1);
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: var(--admin-space-1) var(--admin-space-2);
   border-radius: 9999px;
   border: 1px solid transparent;
   line-height: 1.5;
@@ -397,89 +343,21 @@
 
 .bb-badge-muted   { color: var(--bb-text-muted); background: var(--bb-surface-raised); border-color: var(--bb-border); }
 
-/* ─── Form controls ─────────────────────────────────────────────────────────── */
-.bb-input,
-.bb-select {
-  width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--bb-border-strong);
-  border-radius: var(--bb-r-control);
-  background: var(--bb-surface);
-  font-size: 13px;
-  color: var(--bb-text);
-  outline: none;
-  font-family: inherit;
-}
-.bb-input:focus,
-.bb-select:focus {
-  border-color: var(--bb-primary);
-  box-shadow: 0 0 0 3px var(--bb-primary-muted);
-}
-.bb-input.error, .bb-select.error {
-  border-color: var(--bb-danger);
-}
-.bb-input.error:focus, .bb-select.error:focus {
-  box-shadow: 0 0 0 3px rgba(185,28,28,0.16);
-}
-
-.bb-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px;
-}
-
-/* ─── Cards ─────────────────────────────────────────────────────────────────── */
-.bb-card {
-  background: var(--bb-surface);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  box-shadow: var(--bb-sh-xs);
-  min-width: 0;
-}
-.bb-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--bb-border-faint);
-}
-.bb-card-header :is(h2, h3, h4) {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--bb-text);
-}
-.bb-card-header p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--bb-text-muted);
-  line-height: 1.45;
-}
-.bb-card-body {
-  padding: 16px;
-  line-height: 1.5;
-}
-
 /* ─── KPI summary card ──────────────────────────────────────────────────────── */
 .bb-kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--admin-space-3);
+  margin-bottom: var(--admin-space-5);
 }
 .bb-kpi {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-card);
-  padding: 12px 16px;
+  padding: var(--admin-space-3) var(--admin-space-4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--admin-space-2);
   text-align: left;
   cursor: default;
   transition: border-color 100ms ease, box-shadow 100ms ease;
@@ -491,7 +369,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--admin-space-2);
   font-size: 12px;
   font-weight: 500;
   color: var(--bb-text-muted);
@@ -530,7 +408,7 @@
 .bb-kpi-trend {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-1);
   font-size: 11.5px;
   font-weight: 500;
   color: var(--bb-text-muted);
@@ -540,9 +418,9 @@
 .bb-kpi-foot {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-2);
   flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: var(--admin-space-1);
 }
 .bb-kpi-foot-label { font-size: 11.5px; color: var(--bb-text-muted); }
 
@@ -550,8 +428,8 @@
 .bb-grid-2-1 {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--admin-space-4);
+  margin-bottom: var(--admin-space-4);
 }
 
 /* Recharts custom tooltip */
@@ -559,44 +437,14 @@
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-control);
-  padding: 8px 12px;
+  padding: var(--admin-space-2) var(--admin-space-3);
   font-size: 12.5px;
   box-shadow: var(--bb-sh-sm);
 }
 .bb-dash-tooltip-date,
-.bb-dash-tooltip-name { font-weight: 600; color: var(--bb-text); margin-bottom: 2px; }
+.bb-dash-tooltip-name { font-weight: 600; color: var(--bb-text); margin-bottom: var(--admin-space-1); }
 .bb-dash-tooltip-row,
 .bb-dash-tooltip-meta { color: var(--bb-text-muted); }
-
-/* card body flush (no padding — for tables embedded in cards) */
-.bb-card-body--flush { padding: 0; }
-
-/* ─── Filter bar ────────────────────────────────────────────────────────────── */
-.bb-filter-bar {
-  background: var(--bb-surface);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  padding: 12px;
-  margin-bottom: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.bb-filter-bar .grow { flex: 1; min-width: 180px; }
-.bb-filter-bar .bb-input,
-.bb-filter-bar .bb-select { height: 30px; font-size: 12.5px; }
-.bb-filter-bar label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 144px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--bb-text-muted);
-}
-.bb-filter-bar label.grow { min-width: 220px; }
-.bb-filter-bar label > span { color: inherit; }
 
 /* Segmented tabs */
 .bb-seg {
@@ -604,8 +452,8 @@
   background: var(--bb-surface-raised);
   border: 1px solid var(--bb-border);
   border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
+  padding: var(--admin-space-1);
+  gap: var(--admin-space-1);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -615,7 +463,7 @@
   display: none;
 }
 .bb-seg button {
-  padding: 5px 10px;
+  padding: var(--admin-space-1) var(--admin-space-3);
   background: transparent;
   border: 0;
   border-radius: 6px;
@@ -627,7 +475,7 @@
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-2);
 }
 .bb-seg button:hover { color: var(--bb-text); }
 .bb-seg button.active {
@@ -639,68 +487,13 @@
 .bb-seg button .count {
   font-size: 10.5px;
   font-weight: 700;
-  padding: 0 5px;
+  padding: 0 var(--admin-space-1);
   border-radius: 9999px;
   background: var(--bb-surface-raised);
   color: var(--bb-text-muted);
 }
 .bb-seg button.active .count { background: var(--bb-primary-subtle); color: var(--bb-primary-subtle-text); }
 
-/* ─── Data table ────────────────────────────────────────────────────────────── */
-.bb-table-wrap {
-  background: var(--bb-surface);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  /* responsive: was overflow:hidden which clipped wide tables on small screens;
-     overflow:auto lets them scroll sideways; max-height biến vùng bảng thành khung
-     cuộn dọc riêng để dòng tiêu đề sticky (T6). Bảng ngắn (< max-height) không hiện
-     thanh cuộn nên giao diện không đổi. */
-  overflow: auto;
-  max-height: calc(100vh - 13rem);
-}
-.bb-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  line-height: 1.45;
-}
-.bb-table th {
-  text-align: left;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--bb-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 10px 12px;
-  background: var(--bb-surface-muted);
-  border-bottom: 1px solid var(--bb-border);
-  white-space: nowrap;
-  line-height: 1.35;
-}
-/* T6: giữ dòng tiêu đề khi cuộn dọc bảng dài (nền muted đục nên không bị lộ hàng). */
-.bb-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-.bb-table th.sortable { cursor: pointer; user-select: none; }
-.bb-table th.sortable:hover { color: var(--bb-text); }
-.bb-table td {
-  padding: 0 12px;
-  height: var(--bb-row-h);
-  border-bottom: 1px solid var(--bb-border-faint);
-  color: var(--bb-text);
-  vertical-align: middle;
-}
-.bb-table tbody tr {
-  transition: background-color 100ms ease;
-}
-.bb-table tbody tr:hover td { background: var(--bb-surface-muted); }
-.bb-table tbody tr.selected td { background: var(--bb-primary-subtle); }
-.bb-table tbody tr:last-child td { border-bottom: 0; }
-.bb-table .num { font-variant-numeric: tabular-nums; text-align: right; }
-.bb-table .col-actions { width: 1%; white-space: nowrap; text-align: right; }
-.bb-table .col-check { width: 32px; padding-right: 0; }
 /* ─── Empty / loading / error states ───────────────────────────────────────── */
 .bb-state {
   display: flex;
@@ -708,25 +501,25 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 56px 24px;
+  padding: var(--admin-space-12) var(--admin-space-6);
   background: var(--bb-surface);
   border: 1px dashed var(--bb-border-strong);
   border-radius: var(--bb-r-card);
 }
 
-.bb-state h4 { font-size: 14px; font-weight: 600; margin: 0 0 4px; color: var(--bb-text); }
-.bb-state p { font-size: 12.5px; color: var(--bb-text-muted); margin: 0 0 12px; max-width: 360px; }
+.bb-state h4 { font-size: 14px; font-weight: 600; margin: 0 0 var(--admin-space-1); color: var(--bb-text); }
+.bb-state p { font-size: 12.5px; color: var(--bb-text-muted); margin: 0 0 var(--admin-space-3); max-width: 360px; }
 
 /* ─── Inline alert ──────────────────────────────────────────────────────────── */
 .bb-alert {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3) var(--admin-space-3);
   border-radius: var(--bb-r-control);
   border: 1px solid;
   font-size: 12.5px;
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-3);
 }
 .bb-alert.info    { background: var(--bb-info-bg);    border-color: var(--bb-info-border);    color: var(--bb-info); }
 .bb-alert.success { background: var(--bb-success-bg); border-color: var(--bb-success-border); color: var(--bb-success); }
@@ -742,22 +535,22 @@
 
 
 /* ─── Misc helpers ──────────────────────────────────────────────────────────── */
-.bb-row { display: flex; align-items: center; gap: 8px; }
-.bb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.bb-row { display: flex; align-items: center; gap: var(--admin-space-2); }
+.bb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--admin-space-4); }
 .bb-muted { color: var(--bb-text-muted); }
 .bb-cell-sub { font-size: 11.5px; color: var(--bb-text-muted); }
 
 .bb-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-4);
 }
-.bb-stack-xs { gap: 8px; }
+.bb-stack-xs { gap: var(--admin-space-2); }
 
 .bb-heading-inline {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-3);
   flex-wrap: wrap;
 }
 .bb-heading-key {
@@ -772,14 +565,14 @@
 .bb-status-summary {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--admin-space-3);
+  margin-bottom: var(--admin-space-4);
   align-items: start;
 }
 .bb-status-tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--admin-space-3);
   align-items: start;
 }
 .bb-status-tiles--1 { grid-template-columns: 1fr; }
@@ -789,7 +582,7 @@
   border-left: 3px solid var(--bb-neutral);
   border-radius: var(--bb-r-card);
   box-shadow: var(--bb-sh-xs);
-  padding: 12px 14px;
+  padding: var(--admin-space-3) var(--admin-space-4);
 }
 .bb-status-tile--success { border-left-color: var(--bb-success); }
 .bb-status-tile--warning { border-left-color: var(--bb-warning); }
@@ -803,7 +596,7 @@
   letter-spacing: 0.05em;
   font-weight: 600;
   color: var(--bb-text-muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-2);
 }
 
 .bb-actionzone {
@@ -811,11 +604,11 @@
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-card);
   box-shadow: var(--bb-sh-xs);
-  padding: 13px 15px;
+  padding: var(--admin-space-3) var(--admin-space-4);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 10px;
+  gap: var(--admin-space-3);
 }
 .bb-actionzone-title {
   font-size: 11px;
@@ -827,7 +620,7 @@
 .bb-actionzone-quiet {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--admin-space-2);
   font-size: 13px;
   color: var(--bb-text-muted);
 }
@@ -840,17 +633,17 @@
 }
 .bb-actionzone-group + .bb-actionzone-group {
   border-top: 1px solid var(--bb-border-faint);
-  padding-top: 10px;
+  padding-top: var(--admin-space-3);
 }
 .bb-actionzone-group-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--bb-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-2);
 }
 .bb-actionzone-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-2);
   flex-wrap: wrap;
 }
 
@@ -860,7 +653,7 @@
 }
 
 .bb-total-panel {
-  padding: 12px 16px;
+  padding: var(--admin-space-3) var(--admin-space-4);
   border-top: 1px solid var(--bb-border-faint);
   background: var(--bb-surface-muted);
 }
@@ -868,7 +661,7 @@
   grid-template-columns: 1fr auto;
   max-width: 360px;
   margin-left: auto;
-  gap: 4px 24px;
+  gap: var(--admin-space-1) var(--admin-space-6);
   font-size: 13px;
 }
 .bb-total-grid dt {
@@ -881,13 +674,13 @@
 .bb-total-grid .bb-total-label {
   font-weight: 700;
   font-size: 15px;
-  padding-top: 8px;
+  padding-top: var(--admin-space-2);
 }
 .bb-total-grid .bb-total-value {
   font-size: 18px;
   font-weight: 800;
   color: var(--bb-primary);
-  padding-top: 8px;
+  padding-top: var(--admin-space-2);
 }
 
 .bb-list-clean {
@@ -897,7 +690,7 @@
 }
 .bb-list-item {
   border-bottom: 1px solid var(--bb-border-faint);
-  padding: 8px 0;
+  padding: var(--admin-space-2) 0;
   font-size: 13px;
 }
 .bb-list-item:last-child { border-bottom: 0; }
@@ -906,42 +699,13 @@
   color: var(--bb-text);
 }
 .bb-list-meta {
-  margin-top: 4px;
+  margin-top: var(--admin-space-1);
   color: var(--bb-text-muted);
 }
-
-/* ─── Foldable section (details/summary) — dùng cho khối phụ trợ nên thu gọn
-   mặc định trong card (vd lịch sử thao tác, lịch sử thanh toán nhiều dòng). ─── */
-.bb-foldable {
-  border-top: 1px solid var(--bb-border-faint);
-}
-/* Foldable là con duy nhất/đầu tiên của card (vd card Thanh toán) → tự làm
-   header, không cần viền chia thêm ở trên. */
-.bb-card > .bb-foldable:first-child { border-top: 0; }
-.bb-foldable > summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 14px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bb-text);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.bb-foldable > summary::-webkit-details-marker { display: none; }
-.bb-foldable > summary .bb-foldable-chev {
-  color: var(--bb-text-muted);
-  transition: transform 120ms ease;
-  flex-shrink: 0;
-}
-.bb-foldable[open] > summary .bb-foldable-chev { transform: rotate(90deg); }
-.bb-foldable-body { padding: 0 16px 16px; }
 
 .bb-form-grid {
   display: grid;
-  gap: 16px;
+  gap: var(--admin-space-4);
 }
 .bb-form-grid-2 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
@@ -956,8 +720,8 @@
 }
 .bb-form-section-label.with-divider {
   border-top: 1px solid var(--bb-border);
-  padding-top: 12px;
-  margin-top: 4px;
+  padding-top: var(--admin-space-3);
+  margin-top: var(--admin-space-1);
 }
 
 .bb-banner-preview {
@@ -986,8 +750,8 @@
 .bb-slider-card-body {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3) var(--admin-space-4);
   flex-wrap: wrap;
 }
 .bb-slider-drag {
@@ -998,7 +762,7 @@
 .bb-slider-media-stack {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--admin-space-1);
   flex-shrink: 0;
 }
 .bb-slider-thumb {
@@ -1023,8 +787,8 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--admin-space-2);
+  margin-bottom: var(--admin-space-2);
 }
 .bb-slider-title {
   font-size: 14px;
@@ -1042,20 +806,20 @@
 .bb-slider-actions {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--admin-space-2);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 .bb-link-card-list {
   display: grid;
-  gap: 12px;
+  gap: var(--admin-space-3);
 }
 .bb-link-card-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3);
   border: 1px solid var(--bb-border-faint);
   border-radius: var(--bb-r-control);
   background: var(--bb-surface);
@@ -1063,11 +827,11 @@
 .bb-link-card-copy {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--admin-space-3);
   min-width: 0;
 }
 .bb-link-card-icon {
-  margin-top: 3px;
+  margin-top: var(--admin-space-1);
   color: var(--bb-text-muted);
   flex-shrink: 0;
 }
@@ -1077,7 +841,7 @@
   color: var(--bb-text);
 }
 .bb-link-card-desc {
-  margin-top: 2px;
+  margin-top: var(--admin-space-1);
   font-size: 12px;
   color: var(--bb-text-muted);
 }
@@ -1092,7 +856,7 @@
   align-items: center;
   border: 1px solid currentColor;
   border-radius: var(--bb-r-xs);
-  padding: 2px 6px;
+  padding: var(--admin-space-1) var(--admin-space-2);
   font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
@@ -1108,7 +872,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 22px;
-  padding: 2px 8px;
+  padding: var(--admin-space-1) var(--admin-space-2);
   border-radius: var(--bb-r-xs);
   background: var(--bb-surface-muted);
   color: var(--bb-text-muted);
@@ -1131,14 +895,14 @@
 .bb-section-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-4);
 }
 .bb-section-group-toggle {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3) var(--admin-space-4);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-card);
   background: var(--bb-surface);
@@ -1179,15 +943,15 @@
 .bb-section-group-body {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--admin-space-5);
 }
 
 .bb-related-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--admin-space-3);
   min-width: 0;
-  padding: 10px;
+  padding: var(--admin-space-3);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-control);
   background: var(--bb-surface);
@@ -1250,7 +1014,7 @@
 }
 
 .bb-product-cell {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: var(--admin-space-3);
 }
 .bb-product-thumb {
   width: 36px; height: 36px;
@@ -1286,8 +1050,8 @@
 .bb-attention-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 0;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-2) 0;
   border-bottom: 1px solid var(--bb-border-faint);
   font-size: 12.5px;
 }
@@ -1311,7 +1075,7 @@
 }
 .bb-attention-body { flex: 1; min-width: 0; }
 .bb-attention-title { font-size: 13px; font-weight: 600; color: var(--bb-text); }
-.bb-attention-desc { font-size: 12px; color: var(--bb-text-muted); margin-top: 1px; }
+.bb-attention-desc { font-size: 12px; color: var(--bb-text-muted); margin-top: var(--admin-space-1); }
 .bb-attention-count {
   font-size: 18px;
   font-weight: 700;
@@ -1350,20 +1114,20 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 48px;
+  padding: var(--admin-space-12);
   color: var(--bb-text-onsidebar);
 }
 .bb-login-left .brand-dot {
   width: 10px; height: 10px; border-radius: 3px;
   background: var(--bb-brand);
   display: inline-block;
-  margin-right: 8px;
+  margin-right: var(--admin-space-2);
 }
 .bb-login-left h1 {
   font-size: 28px;
   font-weight: 700;
   color: var(--bb-text-onsidebar-strong);
-  margin: 0 0 8px;
+  margin: 0 0 var(--admin-space-2);
   letter-spacing: -0.02em;
 }
 .bb-login-left p {
@@ -1377,7 +1141,7 @@
   align-items: center;
   justify-content: center;
   background: var(--bb-surface);
-  padding: 48px;
+  padding: var(--admin-space-12);
 }
 .bb-login-form {
   width: 100%;
@@ -1386,14 +1150,14 @@
 .bb-login-form h2 {
   font-size: 22px;
   font-weight: 700;
-  margin: 0 0 6px;
+  margin: 0 0 var(--admin-space-2);
   color: var(--bb-text);
   letter-spacing: -0.01em;
 }
 .bb-login-form .subtitle {
   font-size: 13px;
   color: var(--bb-text-muted);
-  margin: 0 0 28px;
+  margin: 0 0 var(--admin-space-8);
 }
 .bb-login-brand-kicker {
   font-size: 11px;
@@ -1401,15 +1165,15 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--bb-text-onsidebar-dim);
-  margin-bottom: 20px;
+  margin-bottom: var(--admin-space-5);
 }
 .bb-login-tagline {
-  margin-top: 16px;
+  margin-top: var(--admin-space-4);
   max-width: 280px;
 }
 .bb-login-foot {
   margin-top: auto;
-  padding-top: 48px;
+  padding-top: var(--admin-space-12);
 }
 .bb-login-foot p {
   font-size: 12px;
@@ -1422,10 +1186,10 @@
 }
 .bb-login-stack,
 .bb-auth-form {
-  gap: 16px;
+  gap: var(--admin-space-4);
 }
 .bb-auth-field {
-  gap: 8px;
+  gap: var(--admin-space-2);
 }
 .bb-required-legend {
   margin: 0;
@@ -1444,15 +1208,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--admin-space-3);
 }
 .bb-alert-readable {
   font-size: 13px;
   line-height: 1.6;
 }
 .bb-login-support {
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: var(--admin-space-6);
+  padding-top: var(--admin-space-5);
   border-top: 1px solid var(--bb-border);
   text-align: center;
   font-size: 12px;
@@ -1480,7 +1244,7 @@
 /* dl/dt/dd pattern support for bb-info-grid */
 dl.bb-info-grid dt,
 dl.bb-info-grid dd {
-  padding: 8px 12px;
+  padding: var(--admin-space-2) var(--admin-space-3);
   font-size: 12.5px;
   border-bottom: 1px solid var(--bb-border-faint);
   margin: 0;
@@ -1499,18 +1263,16 @@ dl.bb-info-grid dd { color: var(--bb-text); }
    column does not crush long values (RC-5). */
 @media (max-width: 640px) {
   .bb-info-grid { grid-template-columns: 1fr; }
-  dl.bb-info-grid dt { border-bottom: 0; padding-bottom: 2px; }
-  dl.bb-info-grid dd { padding-top: 2px; }
+  dl.bb-info-grid dt { border-bottom: 0; padding-bottom: var(--admin-space-1); }
+  dl.bb-info-grid dd { padding-top: var(--admin-space-1); }
 }
 
 /* Publish checklist */
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .bb-page-content { padding: 16px; }
+  .bb-page-content { padding: var(--admin-space-4); }
   .bb-screen-header { flex-direction: column; align-items: stretch; }
-  .bb-table { font-size: 12px; }
-  .bb-table td { padding: 8px 10px; }
   .bb-login-shell { grid-template-columns: 1fr; }
   .bb-login-left { display: none; }
   .bb-kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -1539,7 +1301,6 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 @media (max-width: 640px) {
   .bb-kpi-grid { grid-template-columns: 1fr; }
   .bb-grid-2 { grid-template-columns: 1fr; }
-  .bb-filter-bar { flex-direction: column; align-items: stretch; }
 }
 
 @media (min-width: 1280px) {
@@ -1559,11 +1320,6 @@ dl.bb-info-grid dd { color: var(--bb-text); }
    but no width cap, so the row widened the whole page instead of scrolling. */
 .bb-seg { max-width: 100%; }
 
-/* Cards inside 2-up / 2fr·1fr grids must shrink below their content width
-   (charts/tables) instead of forcing the grid track — and therefore the page —
-   wider than the content area. */
-.bb-card { min-width: 0; }
-
 /* Dashboard / order-detail two-column grids stack on tablet so their cards get
    full width (only DashboardScreen + OrderDetailScreen use these classes). */
 @media (max-width: 1024px) {
@@ -1575,8 +1331,8 @@ dl.bb-info-grid dd { color: var(--bb-text); }
    row fits narrow screens. Full name/role stay in the user dropdown and the
    sidebar foot. */
 @media (max-width: 900px) {
-  .bb-topbar { padding: 0 12px; gap: 8px; }
-  .bb-user-chip { padding: 4px; }
+  .bb-topbar { padding: 0 var(--admin-space-3); gap: var(--admin-space-2); }
+  .bb-user-chip { padding: var(--admin-space-1); }
   .bb-user-chip .name,
   .bb-user-chip .role { display: none; }
 }
@@ -1613,10 +1369,10 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   overflow: hidden;
 }
 .bb-user-dropdown-header {
-  padding: 12px 14px;
+  padding: var(--admin-space-3) var(--admin-space-4);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--admin-space-1);
 }
 .bb-user-dropdown-header strong {
   font-size: 13px;
@@ -1635,9 +1391,9 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 .bb-user-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-2);
   width: 100%;
-  padding: 9px 14px;
+  padding: var(--admin-space-2) var(--admin-space-4);
   background: transparent;
   border: none;
   font-size: 13px;
@@ -1655,8 +1411,8 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 .bb-user-dropdown-lang {
   display: none;
   flex-direction: column;
-  gap: 7px;
-  padding: 10px 14px;
+  gap: var(--admin-space-2);
+  padding: var(--admin-space-3) var(--admin-space-4);
   border-bottom: 1px solid var(--bb-border-faint);
 }
 /* Cùng điểm ngắt 1024px với chỗ ẩn nút đổi ngôn ngữ trên topbar (index.css) — nếu không,

@@ -533,21 +533,21 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 - Grep ra **kết quả** → class đang dùng → giữ nguyên.
 - Grep ra **0 kết quả** → dead → **xóa ngay trong cùng task**, không ghi TODO.
 
-#### Kiến trúc CSS bigbike-admin — hai hệ song song
+#### Kiến trúc CSS bigbike-admin — một hệ nội dung, một lớp khung ứng dụng
 
-`bigbike-admin` chạy **hai hệ CSS song song**. Không được nhầm lẫn về trạng thái của từng file:
+`bigbike-admin` chỉ có **một hệ nội dung chuẩn**. `admin-prototype.css` vẫn active cho shell/chrome và một số pattern đặc thù đã được grep xác nhận, nhưng không còn là một bộ card/filter/table/control song song:
 
 | File | Hệ | Prefix class | Trạng thái |
 |---|---|---|---|
 | `src/index.css` | Mới — production | không prefix (`sidebar`, `admin-table`, `screen`, …) | Active |
 | `src/styles/admin-layout.css` | Mới — production | không prefix (`summary-card`, `seg-tabs`, `dash-*`, …) | Active |
-| `src/styles/admin-prototype.css` | **Hệ `bb-*` canonical đang sống** (đã re-skin theo Direction B cam) | `bb-*` | **Active — chassis chính của admin**: shell (`bb-sidebar`/`bb-topbar`/`bb-breadcrumb`), header, button, card, table, badge, KPI, form. Dùng bởi `AdminShell` + hầu hết screen. **KHÔNG giả định dead mà không grep.** |
+| `src/styles/admin-prototype.css` | Shell/chrome và pattern `bb-*` đặc thù còn sống | `bb-*` | Active có giới hạn: sidebar, topbar, breadcrumb, screen header, badge/KPI và pattern đặc thù đã được grep. Không dùng `bb-card`, `bb-filter-bar`, `bb-table`, `bb-btn`, `bb-input` hoặc `bb-select` cho nội dung mới. **KHÔNG giả định dead mà không grep.** |
 | `src/styles/admin-tokens.css` | Design tokens | `--bb-*`, `--admin-*` CSS variables | Active |
 
-**Đặc biệt với `bb-*` class**: Phần lớn `bb-*` đang được dùng nặng (`bb-sidebar`, `bb-nav-link`, `bb-kpi`, `bb-card`, `bb-table`, `bb-btn`, `bb-screen-header`, …). Một số đã được xác nhận dead và xóa (tháng 5/2026): `bb-search`, `bb-checkbox`, `bb-radio`, `bb-switch`, `bb-tabs`, `bb-detail-grid`, `bb-detail-grid-wide`, `bb-timeline`. Không xóa thêm mà không grep.
+**Đặc biệt với `bb-*` class**: shell/chrome như `bb-sidebar`, `bb-nav-link`, `bb-kpi`, `bb-screen-header` vẫn đang sống. Các primitive nội dung cũ `bb-card`, `bb-filter-bar`, `bb-table`, `bb-btn`, `bb-input`, `bb-select` phải được chuyển sang component chuẩn rồi xóa định nghĩa khi grep về 0. Không xóa class khác mà không grep.
 
-**Đợt đồng bộ giao diện (redesign roomier/softer, 7/2026):**
-- **Bo góc token-hoá**: `.bb-card` (+ KPI/filter-bar/table-wrap/state) dùng `--bb-r-card` (12px); `.bb-btn`/`.bb-icon-btn`/`.bb-input`/`.bb-select`/menu/dropdown dùng `--bb-r-control` (8px); `.bb-product-thumb` + `.thumbnail-wrap` dùng `--admin-radius-thumb` (5px). shadcn `ui/button|input|select` (trigger) cũng trỏ `--admin-radius-control` để đồng bộ với `bb-btn`. Không còn hardcode px bo góc trong các class này.
+**Đợt đồng bộ giao diện (redesign roomier/softer, 7–8/2026):**
+- **Bo góc token-hoá**: `DetailSection`/KPI/`FilterBar`/`AdminTable` dùng `--admin-radius-card`; shadcn `Button`/`Input`/`Select`/menu/dropdown dùng `--admin-radius-control`; thumbnail dùng `--admin-radius-thumb`. Không hardcode px bo góc trong component.
 - **Vạch màu trái theo trạng thái**: `.bb-row-accent--{success|warning|danger|info|neutral}` (đặt `border-left` trên `td:first-child`) — opt-in qua `rowClassName` của `AdminTable`, tái dùng tone-map trong `components/StatusBadge.jsx` để đồng màu với chấm badge cùng dòng. Thay cho `.audit-row-danger` cũ.
 - **Sticky action bar glass**: `.sticky-action-bar` (trong `admin-layout.css`) dùng `--admin-color-surface-glass` + `backdrop-filter: blur` (trong `@supports`, có fallback nền đục).
 - **Bố cục cấp màn duy nhất**: `ScreenHeader` cho header, `DetailSection` cho khối nội dung, `ScreenSkeleton` cho loading và `StickyActionBar` cho form cấp trang. `SectionCard`, `.mono`, skeleton tự chế và bề rộng riêng từng màn đã bị loại bỏ, không được khôi phục.
@@ -557,7 +557,7 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 1. Tailwind không làm được? → mới viết CSS (xem Section 6.3).
 2. Viết class → **ngay lập tức viết JSX reference trong cùng commit**.
 3. Class chỉ dùng một chỗ duy nhất → không cần CSS, dùng Tailwind inline.
-4. `admin-prototype.css` là hệ `bb-*` canonical: được phép **restyle / maintain** các `bb-*` hiện có và thêm **sub-class thuộc cùng một component `bb-*`** (vd `bb-brand-mark` trong shell). Cấu trúc/feature **mới không thuộc `bb-*`** → viết Tailwind inline hoặc `admin-layout.css`, không nhét vào đây.
+4. `admin-prototype.css` chỉ được **maintain** shell/chrome `bb-*` còn sống và sub-class của đúng component đó (vd `bb-brand-mark` trong shell). Primitive nội dung mới phải dùng component chuẩn + Tailwind inline; không tạo thêm bộ `bb-*` song song.
 
 **Cấm:**
 - ❌ Viết CSS class vào `.css` mà không có JSX nào dùng ngay.

@@ -5,6 +5,7 @@ import { SortableRow } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
+import { TableCell, TableRow } from '@/components/ui/table'
 
 export function SortableMenuItem({
   item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting,
@@ -17,21 +18,21 @@ export function SortableMenuItem({
   return (
     <SortableRow id={item.id}>
       {(sortable) => (
-    <tr
+    <TableRow
       ref={sortable.setNodeRef}
       style={sortable.style}
       className={cn(isInactive && 'is-inactive', sortable.isDragging && 'opacity-40')}
     >
       {canUpdate && onToggleSelect && (
-        <td className="menu-grip-cell">
+        <TableCell className="menu-grip-cell">
           <Checkbox
             checked={Boolean(selected)}
             onCheckedChange={onToggleSelect}
             aria-label={t('menus.selectItemAria', { name: itemName, defaultValue: 'Chọn mục {{name}}' })}
           />
-        </td>
+        </TableCell>
       )}
-      <td className="menu-grip-cell">
+      <TableCell className="menu-grip-cell">
         {canUpdate && (
           <Button
             type="button"
@@ -45,8 +46,8 @@ export function SortableMenuItem({
             <GripVertical size={15} />
           </Button>
         )}
-      </td>
-      <td style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
+      </TableCell>
+      <TableCell style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
         <div className="menu-item-label-cell">
           {item.depth > 0 && (
             <span className="menu-item-depth">L{item.depth + 1}</span>
@@ -69,21 +70,21 @@ export function SortableMenuItem({
             isInactive && <span className="menu-item-badge-inactive">{t('menus.itemHiddenBadge', { defaultValue: 'Ẩn' })}</span>
           )}
         </div>
-      </td>
+      </TableCell>
       {!hiddenKeys.includes('parent') && (
-        <td>
+        <TableCell>
           <span className="menu-item-parent-cell" title={parentLabel || rootLabel}>
             {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
           </span>
-        </td>
+        </TableCell>
       )}
       {!hiddenKeys.includes('url') && (
-        <td>
+        <TableCell>
           <span className="menu-item-url-cell" title={item.url}>{item.url}</span>
-        </td>
+        </TableCell>
       )}
       {canUpdate && (
-        <td className="menu-item-actions-cell">
+        <TableCell className="menu-item-actions-cell">
           <div className="menu-row-actions">
             <Button
               variant="outline"
@@ -106,9 +107,9 @@ export function SortableMenuItem({
               <Trash2 size={13} />
             </Button>
           </div>
-        </td>
+        </TableCell>
       )}
-    </tr>
+    </TableRow>
       )}
     </SortableRow>
   )

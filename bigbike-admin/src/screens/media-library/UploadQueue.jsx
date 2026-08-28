@@ -20,13 +20,13 @@ export function UploadQueue({ queue, onDismiss }) {
         const inFlight = u.status === 'pending' || u.status === 'uploading'
         return (
           <div key={u.id} className="px-3 py-2 border-b border-border text-xs">
-            <div className="flex justify-between items-center gap-1.5">
+            <div className="flex justify-between items-center gap-2">
               <span className="truncate flex-1" title={u.name}>{u.name}</span>
               <Button type="button" variant="ghost" size="icon" onClick={() => onDismiss(u.id)}
                 disabled={inFlight}
                 aria-label={t('notifications.close')}
                 title={inFlight ? t('media.dismissWhileUploading', { defaultValue: 'Đang tải lên, chưa thể đóng' }) : undefined}
-                className="!h-5 !w-5 !p-0.5 bg-transparent border-none text-muted-foreground">
+                className="!h-5 !w-5 !p-1 bg-transparent border-none text-muted-foreground">
                 <XIcon size={12} />
               </Button>
             </div>

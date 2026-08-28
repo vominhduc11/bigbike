@@ -823,8 +823,8 @@ function HighlightsCardsPreview({ positiveNotes, negativeNotes, isEn, prosLabel,
         {list.map((html, i) => (
           <li key={i} className={cn('flex gap-2 text-base', !isPositive && 'text-muted-foreground')}>
             {isPositive
-              ? <Check size={16} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
-              : <X size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />}
+              ? <Check size={16} className="mt-1 shrink-0 text-success" aria-hidden="true" />
+              : <X size={16} className="mt-1 shrink-0 text-danger" aria-hidden="true" />}
             <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
           </li>
         ))}

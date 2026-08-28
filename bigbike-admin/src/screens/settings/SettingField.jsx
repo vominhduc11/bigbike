@@ -109,7 +109,7 @@ export function SettingField({
       )
     }
     return (
-      <div className="min-h-11 whitespace-pre-wrap break-words rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm text-foreground">
+      <div className="min-h-11 whitespace-pre-wrap break-words rounded-md border border-border bg-surface-muted px-3 py-3 text-sm text-foreground">
         {activeRawValue || <em className="text-muted-foreground">{t('settings.valueEmpty')}</em>}
       </div>
     )
@@ -146,8 +146,8 @@ export function SettingField({
         <p id={hintId} className="mb-2 mt-0 text-xs leading-relaxed text-muted-foreground">{hint}</p>
       ) : null}
       {where ? (
-        <p id={whereId} className="mb-3 mt-0 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
-          <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <p id={whereId} className="mb-3 mt-0 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+          <MapPin size={13} className="mt-1 shrink-0" aria-hidden="true" />
           <span>{where}</span>
         </p>
       ) : null}
@@ -229,8 +229,8 @@ export function SettingField({
       ) : readOnlyValue()}
 
       {error && !isImage ? (
-        <p id={errorId} role="alert" className="mb-0 mt-2 flex items-start gap-1.5 text-xs font-semibold text-danger">
-          <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <p id={errorId} role="alert" className="mb-0 mt-2 flex items-start gap-2 text-xs font-semibold text-danger">
+          <AlertCircle size={13} className="mt-1 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </p>
       ) : null}

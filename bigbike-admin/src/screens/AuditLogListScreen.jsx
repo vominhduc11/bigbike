@@ -7,6 +7,7 @@ import {
   Search,
 } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -398,7 +399,7 @@ export function AuditLogListScreen() {
         />
 
         <div className="flex basis-full flex-wrap items-end gap-3 border-t border-border pt-3">
-          <fieldset className="grid gap-1.5">
+          <fieldset className="grid gap-2">
             <legend className="text-sm font-semibold text-foreground">
               {t('auditLog.filterQuickTime')}
             </legend>
@@ -417,7 +418,7 @@ export function AuditLogListScreen() {
             </div>
           </fieldset>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-foreground">
+          <label className="grid gap-2 text-sm font-semibold text-foreground">
             <span>{t('auditLog.filterFrom')}</span>
             <Input
               type="date"
@@ -431,7 +432,7 @@ export function AuditLogListScreen() {
             />
           </label>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-foreground">
+          <label className="grid gap-2 text-sm font-semibold text-foreground">
             <span>{t('auditLog.filterTo')}</span>
             <Input
               type="date"
@@ -474,7 +475,7 @@ export function AuditLogListScreen() {
           <ListFilter size={16} aria-hidden="true" />
           {t('auditLog.mobileFilterLabel')}
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+            <span className="rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
               {activeFilterCount}
             </span>
           ) : null}
@@ -564,8 +565,7 @@ export function AuditLogListScreen() {
       ) : null}
 
       {showData ? (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
+        <DetailSection noPadding>
             <div className="hide-on-mobile">
               <AdminTable
                 caption={t('auditLog.tableCaption')}
@@ -598,8 +598,6 @@ export function AuditLogListScreen() {
                 ))}
               </MobileCardList>
             )}
-          </div>
-
           {state.status === 'success' ? (
             <PaginationControls
               pagination={state.pagination}
@@ -607,7 +605,7 @@ export function AuditLogListScreen() {
               onPageChange={(page) => updateQuery({ page })}
             />
           ) : null}
-        </div>
+        </DetailSection>
       ) : null}
 
       {selectedLog ? (

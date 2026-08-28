@@ -3,10 +3,9 @@ import { cn } from '@/lib/utils'
 
 /**
  * Select lọc dùng chung cho filter bar — bọc shadcn/Radix Select, thay cho
- * `<select className="bb-select">` native.
+ * danh sách chọn native tự dựng riêng ở từng màn.
  *
- * Đo khít theo `.bb-filter-bar .bb-select` (cao 30px, chữ 12.5px, bo 6px, token
- * `--bb-*`) để thẳng hàng với ô tìm kiếm `bb-input` cạnh nó — không lệch filter bar.
+ * Dùng chiều cao control chuẩn để thẳng hàng với ô tìm kiếm cạnh nó.
  *
  * Radix Select cấm `value=""` trên item, nên map chuỗi rỗng sang một sentinel
  * nội bộ; call site vẫn nhận/đưa chuỗi rỗng như native select.
@@ -26,8 +25,8 @@ export function FilterSelect({ value, onValueChange, options = [], placeholder, 
       <SelectTrigger
         aria-label={ariaLabel || placeholder}
         className={cn(
-          'h-9 w-auto gap-2 px-3 text-sm shadow-none',
-          'rounded-sm border-border bg-background text-foreground',
+          'h-9 max-sm:h-11 w-auto gap-2 px-3 text-sm shadow-none',
+          'rounded-[var(--admin-radius-control)] border-border bg-background text-foreground',
           'focus:border-primary focus:ring-2 focus:ring-ring focus:ring-offset-0',
           className
         )}

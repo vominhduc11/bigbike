@@ -131,7 +131,7 @@ export function MediaFolderSidebar({
               )}
               <Button variant="unstyled" aria-pressed={manageMode}
                 onClick={() => { setManageMode((s) => !s); setCreating(false); setEditingId(null) }}
-                className="mediafolder-action-btn w-auto px-1.5 text-xs">
+                className="mediafolder-action-btn w-auto px-2 text-xs">
                 {manageMode ? t('media.folderManageDone') : t('media.folderManage')}
               </Button>
             </div>
@@ -222,7 +222,7 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
         aria-label={accessibleLabel}
         className="text-xs py-1 px-2" />
-      <div className="flex items-center gap-1.5 mt-1.5">
+      <div className="flex items-center gap-2 mt-2">
         <Button type="submit" size="sm" disabled={!value.trim()}>{t('common.save')}</Button>
         <Button type="button" size="sm" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
       </div>

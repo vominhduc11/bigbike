@@ -170,7 +170,7 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang
       )}
     >
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}</span>
           <Input
             value={name}
@@ -179,7 +179,7 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang
             onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !busy) saveRename() }}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t('products.detail.variant.attrNameEnLabel', { defaultValue: 'Tên hiển thị (Tiếng Anh)' })}</span>
           <Input
             value={nameEn}
@@ -235,7 +235,7 @@ function CreateAttributeModal({ open, onClose, onCreated }) {
       )}
     >
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}</span>
           <Input
             value={name}
@@ -246,7 +246,7 @@ function CreateAttributeModal({ open, onClose, onCreated }) {
             onKeyDown={(e) => { if (e.key === 'Enter' && trimmed && !createMut.isPending) submit() }}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t('products.detail.variant.attrNameEnLabel', { defaultValue: 'Tên hiển thị (Tiếng Anh)' })}</span>
           <Input
             value={nameEn}
@@ -272,7 +272,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
   const dirty = label.trim() && (label.trim() !== value.label || labelEn.trim() !== (value.labelEn ?? ''))
   const busy = saving || deleting || used
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <Input
           value={label}
@@ -397,7 +397,7 @@ function AttributeValueManagerModal({
       actions={<Button variant="outline" onClick={onClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t('products.detail.variant.valueAddLabel', { defaultValue: 'Thêm giá trị mới' })}</span>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -603,7 +603,7 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
 
         <div className="flex min-w-0 flex-col gap-4">
           {groupsError ? <p className="text-sm text-destructive" role="alert">{t('products.detail.sizeScale.groupsError', { defaultValue: 'Không tải được nhóm lọc.' })}</p> : null}
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
+          <label className="flex flex-col gap-2 text-sm font-medium">
             {t('products.detail.sizeScale.name', { defaultValue: 'Tên scale' })}
             <Input
               value={draft.name}
@@ -612,7 +612,7 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
               placeholder={t('products.detail.sizeScale.namePlaceholder', { defaultValue: 'Ví dụ: Cỡ áo nam' })}
             />
           </label>
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
+          <label className="flex flex-col gap-2 text-sm font-medium">
             {t('products.detail.sizeScale.group', { defaultValue: 'Nhóm lọc' })}
             <Select
               value={draft.groupId || '__none__'}
@@ -626,7 +626,7 @@ function SizeScaleManagerModal({ open, onClose, scales, contentLang }) {
               </SelectContent>
             </Select>
           </label>
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
+          <label className="flex flex-col gap-2 text-sm font-medium">
             {t('products.detail.sizeScale.valuesLabel', { defaultValue: 'Danh sách cỡ theo thứ tự' })}
             <Textarea
               value={draft.valuesText}

@@ -24,7 +24,7 @@ export function SaveSummaryDialog({
       open={!!pending}
       onClose={onCancel}
       title={
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-3">
           <Shield size={20} className="text-primary shrink-0" aria-hidden />
           {t('roles.saveSummaryTitle')}
         </span>
@@ -32,7 +32,7 @@ export function SaveSummaryDialog({
       actions={
         <>
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>{t('roles.cancelBtn')}</Button>
-          <Button size="sm" onClick={onConfirm} loading={saving} className="flex items-center gap-1.5">
+          <Button size="sm" onClick={onConfirm} loading={saving} className="flex items-center gap-2">
             {t('roles.confirmSaveBtn')}
           </Button>
         </>
@@ -50,11 +50,11 @@ export function SaveSummaryDialog({
 
       {userAdded.length > 0 && (
         <div className="mb-3">
-          <div className="text-xs font-bold text-success mb-1.5 uppercase tracking-wider">
+          <div className="text-xs font-bold text-success mb-2 uppercase tracking-wider">
             + {t('roles.saveSummaryAdding')}
           </div>
           {userAdded.map(k => (
-            <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+            <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <Check size={12} className="text-success shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               {sensitiveKeys.has(k) && (
@@ -67,11 +67,11 @@ export function SaveSummaryDialog({
 
       {autoAdded.length > 0 && (
         <div className="mb-3">
-          <div className="text-xs font-bold text-info mb-1.5 uppercase tracking-wider">
+          <div className="text-xs font-bold text-info mb-2 uppercase tracking-wider">
             + Tự thêm do phụ thuộc
           </div>
           {autoAdded.map(k => (
-            <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+            <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <Check size={12} className="text-info shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               <span className="text-xs text-muted-foreground">Bắt buộc để tổ hợp quyền sử dụng được</span>
@@ -82,11 +82,11 @@ export function SaveSummaryDialog({
 
       {removed.length > 0 && (
         <div className="mb-3">
-          <div className="text-xs font-bold text-danger mb-1.5 uppercase tracking-wider">
+          <div className="text-xs font-bold text-danger mb-2 uppercase tracking-wider">
             − {t('roles.saveSummaryRemoving')}
           </div>
           {removed.map(k => (
-            <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+            <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <X size={12} className="text-danger shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               {sensitiveKeys.has(k) && (

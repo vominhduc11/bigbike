@@ -63,6 +63,7 @@ vi.mock('../lib/formatters', () => ({
 }))
 
 vi.mock('../components/layout', () => ({
+  Screen: ({ children, ...props }) => <main {...props}>{children}</main>,
   ScreenHeader: ({ title, description, actions }) => (
     <header><h1>{title}</h1><div>{description}</div>{actions}</header>
   ),
@@ -418,6 +419,7 @@ describe('OrderDetailScreen', () => {
     renderScreen()
 
     expect(await screen.findByText('orders.audit.error')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'orders.audit.title' }))
     await user.click(screen.getByRole('button', { name: 'common.retry' }))
 
     expect(await screen.findByText('orders.audit.action.ORDER_STATUS_UPDATED')).toBeInTheDocument()

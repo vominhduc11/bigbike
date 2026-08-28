@@ -1273,7 +1273,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionBasic')}
                 required
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <RoleBadge role="content" />
                     <RoleBadge role="seo" />
                   </div>
@@ -1596,7 +1596,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.gallerySectionTitle')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
                     </span>
@@ -1621,7 +1621,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 )}
                 {form.variants.length > 0 && (
                   <div className="bb-alert info tight">
-                    <Info size={14} className="mt-0.5 shrink-0" />
+                    <Info size={14} className="mt-1 shrink-0" />
                     <span>{t('products.detail.variantPricingHint')}</span>
                   </div>
                 )}
@@ -1705,7 +1705,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.variants.length === 0 && (
                     // Sản phẩm KHÔNG biến thể: công tắc Còn/Hết mức sản phẩm (admin tự quyết).
                     // Lưu qua available; backend dẫn xuất stockState theo công tắc này.
-                    <div className="@xl:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
+                    <div className="@xl:col-span-2 flex items-center gap-3 p-3 border border-border text-sm">
                       <Switch
                         checked={form.available}
                         onCheckedChange={(checked) => updateField('available', checked)}
@@ -1718,7 +1718,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       <span className="text-muted-foreground">— {t('products.detail.productStockHint')}</span>
                     </div>
                   )}
-                  <div className="@xl:col-span-2 flex items-center gap-2.5 border border-border p-2.5 text-sm">
+                  <div className="@xl:col-span-2 flex items-center gap-3 border border-border p-3 text-sm">
                     <Switch
                       checked={form.discontinued}
                       onCheckedChange={(checked) => updateField('discontinued', checked)}
@@ -1739,7 +1739,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.variantSectionTitle')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
                     </span>
@@ -1769,7 +1769,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
                     </span>
@@ -1801,7 +1801,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionCommitments')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
                     </span>
@@ -1839,7 +1839,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionSpecStats')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {parseSpecStatsFromHtml(langValue('specStats')).length} / 4
                     </span>
@@ -1994,7 +1994,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionRelated')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span
                       className={cn('bb-count-pill bb-count-pill--bordered', relatedAtMax && 'bb-count-pill--warning')}
                     >
@@ -2011,7 +2011,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     items={form.relatedProductChips}
                     disabled={isReadOnly}
                     onReorder={reorderRelatedProducts}
-                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
+                    className="mb-3 flex max-h-96 flex-col gap-2 overflow-y-auto pr-1"
                     renderItem={(chip, sortable) => (
                       <RelatedProductRow
                         chip={chip}
@@ -2104,7 +2104,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.specsSectionTitle')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specifications')).length })}
                     </span>
@@ -2125,7 +2125,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionFaqs')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
                     </span>
@@ -2166,7 +2166,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.videoSectionTitle')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
                       {t('products.detail.videoCount', { count: form.videos.length })}
                     </span>
@@ -2186,7 +2186,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DetailSection
                 title={t('products.detail.sectionAccessories')}
                 badge={
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span
                       className={cn('bb-count-pill bb-count-pill--bordered', accessoryAtMax && 'bb-count-pill--warning')}
                     >
@@ -2203,7 +2203,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     items={form.accessoryProductChips}
                     disabled={isReadOnly}
                     onReorder={reorderAccessoryProducts}
-                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
+                    className="mb-3 flex max-h-96 flex-col gap-2 overflow-y-auto pr-1"
                     renderItem={(chip, sortable) => (
                       <RelatedProductRow
                         chip={chip}
@@ -2349,7 +2349,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span className="flex items-center gap-2 text-sm font-semibold">
                       <Check size={14} />
                       {t('products.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
                     </span>
@@ -2417,7 +2417,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               onClick={() => setPreviewOpen(true)}
               title={t('products.detail.preview.title', { defaultValue: 'Xem trước trang sản phẩm' })}
             >
-              <Eye size={14} className="mr-1.5" />
+              <Eye size={14} className="mr-2" />
               {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
             </Button>
           )}
@@ -2435,7 +2435,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   })
                 : publishActionLabel}
             >
-              {isPublishToggling && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+              {isPublishToggling && <Loader2 size={14} className="mr-2 animate-spin" />}
               {publishActionLabel}
             </Button>
           )}
@@ -2446,7 +2446,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             disabled={isReadOnly || isSubmitting || isRestoreConfirming || !isDirty}
             onClick={handlePrimarySave}
           >
-            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+            {isSubmitting && <Loader2 size={14} className="animate-spin mr-2" />}
             {primaryLabel}
           </Button>
         </StickyActionBar>

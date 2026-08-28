@@ -210,7 +210,7 @@ export function AssistantModelOperations({ canUpdate }) {
       ) : null}
       {actionNotice ? (
         <div className="flex items-start gap-2 rounded-md bg-success-bg p-3 text-sm text-success" role="status">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <ShieldCheck className="mt-1 size-4 shrink-0" aria-hidden="true" />
           <span>{actionNotice}</span>
         </div>
       ) : null}
@@ -238,7 +238,7 @@ export function AssistantModelOperations({ canUpdate }) {
           <div className="space-y-4">
             {catalog.stale ? (
               <div className="flex items-start gap-2 rounded-md bg-warning-bg p-3 text-sm text-warning" role="status">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <AlertTriangle className="mt-1 size-4 shrink-0" aria-hidden="true" />
                 {t('settings.assistantModels.stale')}
               </div>
             ) : null}
@@ -329,7 +329,7 @@ export function AssistantModelOperations({ canUpdate }) {
             </div>
             {dataset.needsRealQuestionReview ? (
               <div className="flex items-start gap-2 rounded-md bg-warning-bg p-3 text-sm text-warning">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <AlertTriangle className="mt-1 size-4 shrink-0" aria-hidden="true" />
                 <span>{t('settings.assistantEvaluation.realQuestionsMissing')}</span>
               </div>
             ) : null}

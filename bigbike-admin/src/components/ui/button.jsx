@@ -20,8 +20,8 @@ const buttonVariants = cva(
       size: {
         sm:   'h-7 px-3 text-xs rounded-[var(--admin-radius-xs)]',
         md:   'h-9 px-4 text-sm rounded-[var(--admin-radius-control)]',
-        lg:   'h-10 px-6 text-base rounded-[var(--admin-radius-control)]',
-        icon: 'h-9 w-9 rounded-[var(--admin-radius-control)]',
+        lg:   'h-11 px-6 text-base rounded-[var(--admin-radius-control)]',
+        icon: 'h-9 w-9 max-sm:h-11 max-sm:w-11 rounded-[var(--admin-radius-control)]',
       },
     },
     defaultVariants: { variant: 'default', size: 'md' },
@@ -52,7 +52,7 @@ const Button = forwardRef(function Button({
   // đè lên CSS chassis). Vẫn hưởng type mặc định, loading, disabled, ref của primitive.
   const buttonClassName = variant === 'unstyled'
     ? cn(className)
-    : cn(buttonVariants({ variant, size, className }))
+    : cn(buttonVariants({ variant, size, className }), 'max-sm:min-h-11')
   return (
     <Comp
       ref={ref}

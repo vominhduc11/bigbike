@@ -29,7 +29,7 @@ function Toast({ toast, onDismiss, navigate }) {
   return (
     <div
       className={cn(
-        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] border-l-4',
+        'bg-surface border border-border rounded-md shadow-sm py-3 px-4 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] border-l-4',
         isNew ? 'border-l-primary' : 'border-l-info'
       )}
     >
@@ -45,12 +45,12 @@ function Toast({ toast, onDismiss, navigate }) {
           {isNew ? t('notifications.newOrder') : t('notifications.orderUpdate')}
         </span>
         {subtitle ? (
-          <span className="mt-0.5 block text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+          <span className="mt-1 block text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
             {subtitle}
           </span>
         ) : null}
         {meta.length > 0 ? (
-          <span className="mt-0.5 block text-xs text-muted-foreground">
+          <span className="mt-1 block text-xs text-muted-foreground">
             {meta.join(' · ')}
           </span>
         ) : null}

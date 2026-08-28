@@ -35,7 +35,7 @@ import { Alert } from '@/components/ui/alert'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { Button } from '@/components/ui/button'
-import { ScreenHeader } from '../components/layout'
+import { Screen, ScreenHeader } from '../components/layout'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import {
@@ -56,6 +56,7 @@ import {
 import { Modal } from './menu/Modal'
 import { ItemForm } from './menu/ItemForm'
 import { SortableMenuItem } from './menu/SortableMenuItem'
+import { AdminTable } from '../components/AdminTable'
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -196,6 +197,33 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   const visibleItemIds = useMemo(() => filteredFlatItems.map((i) => i.id), [filteredFlatItems])
   const allVisibleSelected = visibleItemIds.length > 0 && visibleItemIds.every((id) => selectedItemIds.has(id))
   const someVisibleSelected = !allVisibleSelected && visibleItemIds.some((id) => selectedItemIds.has(id))
+  const menuTableColumns = [
+    ...(canUpdate ? [{
+      key: 'selection',
+      label: (
+        <Checkbox
+          checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+          onCheckedChange={toggleSelectAllVisible}
+          disabled={bulkDeleting || visibleItemIds.length === 0}
+          aria-label={t('menus.selectAllAria', { defaultValue: 'Chọn tất cả mục đang hiển thị' })}
+        />
+      ),
+      headerClassName: 'w-12 text-center',
+    }] : []),
+    {
+      key: 'reorder',
+      label: <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>,
+      headerClassName: 'w-12',
+    },
+    { key: 'name', label: t('menus.itemLabel') },
+    ...(isMenuColumnVisible('parent') ? [{ key: 'parent', label: t('menus.itemParent') }] : []),
+    ...(isMenuColumnVisible('url') ? [{ key: 'url', label: t('menus.itemUrl') }] : []),
+    ...(canUpdate ? [{
+      key: 'actions',
+      label: <span className="sr-only">{t('menus.itemActions', { defaultValue: 'Thao tác' })}</span>,
+      align: 'right',
+    }] : []),
+  ]
 
   // Parent options for "edit item" form — exclude self and all descendants
   const editParentOptions = useMemo(() => {
@@ -549,22 +577,22 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   })
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  if (isLoading) return <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
+  if (isLoading) return <Screen><StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} /></Screen>
   if (isError) return (
-    <StatePanel
-      tone="danger"
-      title={t('menus.loadError')}
-      description={error?.message}
-      actionLabel={t('common.retry')}
-      onAction={() => queryClient.invalidateQueries({ queryKey: ['menus'] })}
-    />
+    <Screen><StatePanel
+        tone="danger"
+        title={t('menus.loadError')}
+        description={error?.message}
+        actionLabel={t('common.retry')}
+        onAction={() => queryClient.invalidateQueries({ queryKey: ['menus'] })}
+      /></Screen>
   )
 
   const selectedSlot = SYSTEM_SLOTS[0]
   const slotMissing = !selectedMenuSummary
 
   return (
-    <div>
+    <Screen>
       {/* ── Header (no create-menu CTA — slots are fixed) ── */}
       <ScreenHeader eyebrow={t('menus.eyebrow')} title={t('menus.title')} description={t('menus.description')} />
 
@@ -585,7 +613,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
           <div className="p-6">
             <Alert tone="warning">
               <strong>{t('menus.slotMissingTitle', { location: selectedSlot.location })}</strong>
-              <p className="mt-0.5">{t('menus.slotMissingDesc')}</p>
+              <p className="mt-1">{t('menus.slotMissingDesc')}</p>
             </Alert>
           </div>
         ) : detailLoading ? (
@@ -675,64 +703,29 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                   items={filteredFlatItems.map((i) => i.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="menu-table-wrap">
-                    {/* min-width buộc cuộn ngang trên mobile thay vì ép cột chật (menu-table-wrap đã overflow:auto). */}
-                    <table className="menu-table min-w-[560px]">
-                      <colgroup>
-                        {canUpdate && <col className="menu-col-check" />}
-                        <col className="menu-col-grip" />
-                        <col className="menu-col-label" />
-                        {isMenuColumnVisible('parent') && <col className="menu-col-parent" />}
-                        {isMenuColumnVisible('url') && <col className="menu-col-url" />}
-                        {canUpdate && <col className="menu-col-actions" />}
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          {canUpdate && (
-                            <th className="menu-grip-cell" scope="col">
-                              <Checkbox
-                                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
-                                onCheckedChange={toggleSelectAllVisible}
-                                disabled={bulkDeleting || visibleItemIds.length === 0}
-                                aria-label={t('menus.selectAllAria', { defaultValue: 'Chọn tất cả mục đang hiển thị' })}
-                              />
-                            </th>
-                          )}
-                          <th className="menu-grip-cell" scope="col">
-                            <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>
-                          </th>
-                          <th scope="col">{t('menus.itemLabel')}</th>
-                          {isMenuColumnVisible('parent') && <th scope="col">{t('menus.itemParent')}</th>}
-                          {isMenuColumnVisible('url') && <th scope="col">{t('menus.itemUrl')}</th>}
-                          {canUpdate && (
-                            <th scope="col">
-                              <span className="sr-only">{t('menus.itemActions', { defaultValue: 'Thao tác' })}</span>
-                            </th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredFlatItems.map((item) => (
-                          <SortableMenuItem
-                            key={item.id}
-                            item={item}
-                            displayLabel={pickLabel(item)}
-                            parentLabel={item.parentId ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')) : ''}
-                            rootLabel={t('menus.parentRoot')}
-                            canUpdate={canUpdate}
-                            onEdit={openEditItem}
-                            onDelete={handleDeleteItem}
-                            isDeleting={deletingItemId === item.id}
-                            selected={selectedItemIds.has(item.id)}
-                            onToggleSelect={() => toggleItemSelected(item.id)}
-                            onToggleStatus={handleToggleItemStatus}
-                            isToggling={togglingItemId === item.id}
-                            hiddenKeys={hiddenMenuColumnKeys}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <AdminTable
+                    columns={menuTableColumns}
+                    rows={filteredFlatItems}
+                    caption={t('menus.title')}
+                    renderRow={(item) => (
+                      <SortableMenuItem
+                        key={item.id}
+                        item={item}
+                        displayLabel={pickLabel(item)}
+                        parentLabel={item.parentId ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')) : ''}
+                        rootLabel={t('menus.parentRoot')}
+                        canUpdate={canUpdate}
+                        onEdit={openEditItem}
+                        onDelete={handleDeleteItem}
+                        isDeleting={deletingItemId === item.id}
+                        selected={selectedItemIds.has(item.id)}
+                        onToggleSelect={() => toggleItemSelected(item.id)}
+                        onToggleStatus={handleToggleItemStatus}
+                        isToggling={togglingItemId === item.id}
+                        hiddenKeys={hiddenMenuColumnKeys}
+                      />
+                    )}
+                  />
                 </SortableContext>
               </DndContext>
             )}
@@ -814,6 +807,6 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
           </form>
         </Modal>
       )}
-    </div>
+    </Screen>
   )
 }

@@ -13,7 +13,7 @@ const NONE_VALUE = '__none__'
 
 // Dấu * đỏ cạnh nhãn trường bắt buộc (glyph + màu, không chỉ màu).
 function RequiredMark() {
-  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+  return <span className="text-danger ml-1" aria-hidden="true">*</span>
 }
 
 function MenuParentSelect({ value, onChange, options, label, rootLabel }) {

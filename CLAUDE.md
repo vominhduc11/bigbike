@@ -69,7 +69,7 @@ Chi tiết: [AGENTS.md](AGENTS.md) §6.1, §6.3, §6.4.
 
 - Class mới phải được dùng ngay cùng commit — không "placeholder".
 - Nghi dead → **grep xác nhận trước**, 0 kết quả → **xóa ngay**, không ghi TODO.
-- `bigbike-admin` có 3 file CSS song song — `index.css` + `admin-layout.css` (production), `admin-prototype.css` (**hệ `bb-*` canonical đang sống**, chassis chính). Không nhét class ngoài `bb-*` vào `admin-prototype.css`; không giả định dead mà không grep.
+- `bigbike-admin` có một hệ nội dung chuẩn trong component + Tailwind. `admin-prototype.css` vẫn active có giới hạn cho shell/chrome `bb-*`; không dùng lại `bb-card`, `bb-filter-bar`, `bb-table`, `bb-btn`, `bb-input`, `bb-select`. Không giả định class khác dead mà không grep.
 
 ```bash
 grep -rn "ten-class" bigbike-admin/src bigbike-web --include="*.jsx" --include="*.tsx" --include="*.js" --include="*.ts"

@@ -17,6 +17,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { publishRowAccent } from '../lib/statusTone'
@@ -1069,8 +1070,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
+        <DetailSection noPadding>
             <AdminTable
               columns={columns}
               rows={items}
@@ -1087,7 +1087,6 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
               mobileCard={mobileCard}
               rowClassName={(product) => publishRowAccent(product.publishStatus)}
             />
-          </div>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}
@@ -1095,7 +1094,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
               onPageChange={(p) => updateQuery({ page: p })}
             />
           )}
-        </div>
+        </DetailSection>
       )}
     </Screen>
   )

@@ -106,7 +106,7 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
           disabled ? 'bg-surface-muted' : 'bg-surface'
         )}>
           {tags.map((tg) => (
-            <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-xs font-semibold">
+            <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-1 pl-2 pr-1 text-xs font-semibold">
               <Hash size={10} aria-hidden="true" />
               {tg}
               {!disabled && (
@@ -128,7 +128,7 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
             onFocus={() => setShowSugg(true)}
             onBlur={() => setTimeout(() => setShowSugg(false), 150)}
             placeholder={tags.length === 0 ? placeholder : ''}
-            className="h-auto min-w-20 flex-1 border-0 bg-transparent px-1 py-0.5 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" />
+            className="h-auto min-w-20 flex-1 border-0 bg-transparent px-1 py-1 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" />
         </div>
       }
     >

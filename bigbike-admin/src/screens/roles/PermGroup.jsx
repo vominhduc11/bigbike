@@ -19,7 +19,7 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, isS
       open={open}
       onToggle={onToggleOpen}
       className="gap-2"
-      bodyClassName="pl-6 pr-3.5 sm:pl-10"
+      bodyClassName="pl-6 pr-4 sm:pl-10"
       badge={
         <span className="ml-auto shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
           {t('roles.groupGrantedCount', { granted: grantedCount, total, defaultValue: '{{granted}}/{{total}} quyền' })}
@@ -43,11 +43,11 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, isS
                   id={permId}
                   checked={granted}
                   onCheckedChange={() => onToggle(perm.key, label)}
-                  className="w-4 h-4 cursor-pointer shrink-0 mt-0.5"
+                  className="w-4 h-4 cursor-pointer shrink-0 mt-1"
                  />
               ) : (
                 <div
-                  className="w-4 h-4 shrink-0 flex items-center justify-center mt-0.5"
+                  className="w-4 h-4 shrink-0 flex items-center justify-center mt-1"
                   aria-hidden="true"
                 >
                   {granted
@@ -60,7 +60,7 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, isS
               <label
                 htmlFor={canEdit ? permId : undefined}
                 className={cn(
-                  'flex-1 text-sm flex items-center gap-1.5 flex-wrap min-w-0 py-0.5',
+                  'flex-1 text-sm flex items-center gap-2 flex-wrap min-w-0 py-1',
                   canEdit ? 'cursor-pointer' : 'cursor-default',
                   granted ? 'text-foreground' : 'text-muted-foreground'
                 )}

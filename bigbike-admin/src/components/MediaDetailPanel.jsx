@@ -300,9 +300,9 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDownloa
             {hasVariants && (
               <div className="mt-3">
                 <p className="mediadetail-section-title">{t('media.variants')}</p>
-                <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
+                <ul className="list-none m-0 p-0 flex flex-col gap-2">
                   {Object.entries(media.sizes).map(([name, url]) => (
-                    <li key={name} className="flex items-center gap-1.5 text-xs">
+                    <li key={name} className="flex items-center gap-2 text-xs">
                       <span className="bg-surface-muted border border-border rounded-xs px-2 py-px text-xs font-bold text-muted-foreground uppercase shrink-0">
                         {name}
                       </span>

@@ -711,7 +711,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         <div className="bb-alert info wrap justify-between">
           <div>
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
-            <p className="mb-1.5 mt-1">{t('categories.detail.menuNoticeDesc')}</p>
+            <p className="mb-2 mt-1">{t('categories.detail.menuNoticeDesc')}</p>
             <div className="flex gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
@@ -722,9 +722,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             </div>
           </div>
           <Button
-            variant="unstyled"
+            variant="ghost"
+            size="icon"
             type="button"
-            className="bb-icon-btn"
             aria-label={t('categories.detail.menuNoticeDismiss')}
             onClick={handleDismissMenuNotice}
           >
@@ -808,7 +808,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   </FormField>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-foreground" htmlFor="category-parent-select">
                     {t('categories.detail.parentId')}
                   </label>

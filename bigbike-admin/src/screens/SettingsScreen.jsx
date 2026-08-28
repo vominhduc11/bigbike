@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { formatDateTime } from '../lib/formatters'
 import { lazyScreen } from '../lib/lazyScreen'
 import { setContentLang } from '../lib/contentLang'
-import { ScreenHeader, Tabs } from '@/components/layout'
+import { Screen, ScreenHeader, Tabs } from '@/components/layout'
 import { cn } from '@/lib/utils'
 import {
   validateValue, isTranslatableSetting, REQUIRED_SETTING_KEYS, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
@@ -21,6 +21,7 @@ import {
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
 import { AssistantModelOperations } from './settings/AssistantModelOperations'
+import { DetailSection } from '../components/DetailSection'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
 // trước đây kéo theo code Banner vào MỌI lần mở Cài đặt dù không xem tab đó.
@@ -413,7 +414,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       key: tab.id,
       count: tab.dirtyCount > 0 ? tab.dirtyCount : undefined,
       label: (
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-2">
           <Icon size={14} aria-hidden="true" />
           <span>{tab.label}</span>
           {tab.restricted ? <Lock size={12} aria-hidden="true" /> : null}
@@ -450,16 +451,16 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   if (state.status === 'loading') {
     return (
-      <div>
+      <Screen>
         {header}
         <ScreenSkeleton />
-      </div>
+      </Screen>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <div>
+      <Screen>
         {header}
         <StatePanel
           tone="danger"
@@ -468,12 +469,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           actionLabel={t('common.retry')}
           onAction={() => loadSettings()}
         />
-      </div>
+      </Screen>
     )
   }
 
   return (
-    <div>
+    <Screen>
       {header}
 
       {state.refreshError ? (
@@ -544,7 +545,8 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
             <div className="hidden lg:block">
-              <nav className="bb-card sticky top-0 p-2" aria-label={t('settings.tabsAria')}>
+              <DetailSection className="sticky top-0" noPadding>
+                <nav className="p-2" aria-label={t('settings.tabsAria')}>
                 <div className="border-b border-border px-3 pb-3 pt-2">
                   <p className="m-0 text-sm font-semibold text-foreground">{t('settings.navigatorTitle')}</p>
                   <p className="mb-0 mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -561,7 +563,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                         key={tab.id}
                         type="button"
                         className={cn(
-                          'flex min-h-14 w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
+                          'flex min-h-14 w-full items-start gap-3 rounded-md border px-3 py-3 text-left transition-colors',
                           isActive
                             ? 'border-primary bg-surface-selected text-primary'
                             : 'border-transparent text-foreground hover:bg-surface-hover',
@@ -570,9 +572,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                         aria-label={tab.label}
                         aria-current={isActive ? 'page' : undefined}
                       >
-                        <Icon size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
+                        <Icon size={17} className="mt-1 shrink-0" aria-hidden="true" />
                         <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold">{tab.label}</span>
                             {tab.restricted ? (
                               <span className="bb-badge bb-badge-neutral">
@@ -586,7 +588,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                           <span className="mt-1 block text-xs font-normal leading-relaxed text-muted-foreground">
                             {tab.description}
                           </span>
-                          <span className="mt-1.5 flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                          <span className="mt-2 flex items-center gap-2 text-xs font-normal text-muted-foreground">
                             <span>{t('settings.itemCountShort', { count: tab.itemCount })}</span>
                             {tab.dirtyCount > 0 ? (
                               <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: tab.dirtyCount })}>
@@ -599,7 +601,8 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                     )
                   })}
                 </div>
-              </nav>
+                </nav>
+              </DetailSection>
             </div>
 
             <div className="min-w-0 lg:col-span-3">
@@ -655,6 +658,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           </div>
         </>
       )}
-    </div>
+    </Screen>
   )
 }

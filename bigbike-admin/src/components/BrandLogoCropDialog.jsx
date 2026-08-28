@@ -211,7 +211,7 @@ export function BrandLogoCropDialog({
     >
       <div className="space-y-4">
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+          <AlertTriangle size={16} className="mt-1 shrink-0 text-warning" aria-hidden="true" />
           <span>
             {t('brands.logo.cropInstruction')}
           </span>
@@ -279,7 +279,7 @@ export function BrandLogoCropDialog({
         </label>
         {(error || localError) ? (
           <p className="flex items-start gap-2 text-sm text-danger" role="alert">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <AlertTriangle size={16} className="mt-1 shrink-0" aria-hidden="true" />
             {error || localError}
           </p>
         ) : null}

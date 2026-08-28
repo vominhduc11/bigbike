@@ -11,6 +11,7 @@ import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { CustomerStatusReasonModal } from '../components/CustomerStatusReasonModal'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
@@ -18,7 +19,8 @@ import { KpiCard } from '../components/KpiCard'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
-import { ScreenHeader } from '../components/layout'
+import { Screen, ScreenHeader } from '../components/layout'
+import { FilterBar } from '../components/layout/FilterBar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
@@ -327,7 +329,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   )
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader
         eyebrow={t('customers.eyebrow')}
         title={t('customers.title')}
@@ -417,7 +419,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      <div className="bb-filter-bar">
+      <FilterBar ariaLabel={t('customers.filtersAria')}>
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -471,7 +473,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             {t('customers.refreshing')}
           </span>
         ) : null}
-      </div>
+      </FilterBar>
 
       {/* Filter chips — báo gọn đang lọc gì + gỡ từng filter / xoá tất cả. */}
       <FilterChips
@@ -495,8 +497,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
+        <DetailSection noPadding>
             <AdminTable
               columns={visibleColumns}
               rows={items}
@@ -507,7 +508,6 @@ export function CustomerListScreen({ navigate, canUpdate }) {
               rowClassName={(customer) => customerRowAccent(customer.status)}
               mobileCard={mobileCard}
             />
-          </div>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}
@@ -515,7 +515,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
               onPageChange={(p) => updateQuery({ page: p })}
             />
           )}
-        </div>
+        </DetailSection>
       )}
 
       {reasonModal && (
@@ -534,6 +534,6 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           onClose={() => setReasonModal(null)}
         />
       )}
-    </div>
+    </Screen>
   )
 }

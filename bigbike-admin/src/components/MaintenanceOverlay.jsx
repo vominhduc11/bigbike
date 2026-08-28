@@ -77,7 +77,7 @@ export function MaintenanceOverlay() {
       >
         <div className="w-full max-w-lg rounded-[var(--admin-radius-card)] border border-border bg-card p-6 shadow-lg">
           <div className="flex items-start gap-3">
-            <Lock className="mt-0.5 shrink-0 text-primary" size={22} aria-hidden="true" />
+            <Lock className="mt-1 shrink-0 text-primary" size={22} aria-hidden="true" />
             <div className="min-w-0 text-sm text-foreground">
               <p id="maintenance-overlay-title" className="m-0 text-base font-semibold">
                 {t('maintenance.overlayActiveTitle', { defaultValue: 'Trang quản trị đang bảo trì' })}
@@ -107,7 +107,7 @@ export function MaintenanceOverlay() {
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        <Lock className="mt-0.5 shrink-0 text-primary" size={20} aria-hidden="true" />
+        <Lock className="mt-1 shrink-0 text-primary" size={20} aria-hidden="true" />
         <div className="min-w-0 text-sm text-foreground">
           <p className="m-0 font-semibold">
             {t('maintenance.bannerActive', { defaultValue: 'Bạn đang khoá trang quản trị để bảo trì.' })}

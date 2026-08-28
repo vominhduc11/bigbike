@@ -35,9 +35,9 @@ export function CustomerStatusReasonModal({
 
   return (
     <Modal open title={title} onClose={busy ? () => {} : onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" aria-busy={busy}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" aria-busy={busy}>
         <p className="text-sm text-muted-foreground">{description}</p>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label htmlFor="customer-status-reason-input" className="text-sm font-medium">
             {t('customers.detail.statusReasonLabel', { defaultValue: 'Lý do (không bắt buộc)' })}
           </label>

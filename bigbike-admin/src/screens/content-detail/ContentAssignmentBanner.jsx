@@ -18,7 +18,7 @@ export function ContentAssignmentBanner() {
   if (isLoading) {
     return (
       <div
-        className="flex items-center gap-1.5 border-b border-border bg-surface-muted px-4 py-3 text-xs text-muted-foreground"
+        className="flex items-center gap-2 border-b border-border bg-surface-muted px-4 py-3 text-xs text-muted-foreground"
         role="status"
       >
         <Loader2 size={12} className="shrink-0 animate-spin" aria-hidden="true" />

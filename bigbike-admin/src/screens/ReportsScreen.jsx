@@ -19,7 +19,7 @@ import { AdminTable } from '../components/AdminTable'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
 import { KpiCard } from '../components/KpiCard'
-import { ScreenHeader } from '../components/layout'
+import { Screen, ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExportButton } from '../components/ExportButton'
@@ -296,7 +296,7 @@ export function ReportsScreen() {
   ] : []
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader
         eyebrow={t('reports.eyebrow')}
         title={t('reports.title')}
@@ -321,7 +321,6 @@ export function ReportsScreen() {
             <>
               <Input
                 type="date"
-                className="bb-input"
                 aria-label={t('reports.customFrom')}
                 aria-invalid={rangeHasError}
                 value={customFrom}
@@ -331,7 +330,6 @@ export function ReportsScreen() {
               <ArrowRight size={14} className="bb-muted self-center shrink-0" aria-hidden="true" />
               <Input
                 type="date"
-                className="bb-input"
                 aria-label={t('reports.customTo')}
                 aria-invalid={rangeHasError}
                 value={customTo}
@@ -535,6 +533,6 @@ export function ReportsScreen() {
           </div>
         </>
       )}
-    </div>
+    </Screen>
   )
 }

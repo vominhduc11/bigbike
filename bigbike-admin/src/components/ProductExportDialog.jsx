@@ -147,7 +147,7 @@ export function ProductExportDialog({
                   aria-label={`${label} (${column})`}
                 />
                 <label htmlFor={columnId} className="flex min-w-0 flex-1 cursor-pointer items-start justify-between gap-3 peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  <span className="grid min-w-0 gap-0.5">
+                  <span className="grid min-w-0 gap-1">
                     <span className="text-sm text-foreground">{label}</span>
                     <span className="break-all font-mono text-xs text-muted-foreground">{column}</span>
                   </span>
@@ -178,7 +178,7 @@ export function ProductExportDialog({
             <h3 className="text-sm font-semibold text-foreground">{t('products.exportDialog.scopeLabel')}</h3>
             <RadioGroup value={scope} onValueChange={setScope} className="gap-3">
               <label className="flex cursor-pointer items-start gap-3 rounded-[var(--admin-radius-control)] border border-border p-3">
-                <RadioGroupItem value="FILTERED" id="product-export-scope-filtered" className="mt-0.5" />
+                <RadioGroupItem value="FILTERED" id="product-export-scope-filtered" className="mt-1" />
                 <span className="grid gap-1 text-sm">
                   <span>{t('products.exportDialog.scopeFiltered', { count: totalItems })}</span>
                   <span className="text-xs text-muted-foreground">{t('products.exportDialog.scopeFilteredHint')}</span>
@@ -189,7 +189,7 @@ export function ProductExportDialog({
                   value="SELECTED"
                   id="product-export-scope-selected"
                   disabled={selectedIds.length === 0}
-                  className="mt-0.5"
+                  className="mt-1"
                 />
                 <span className="grid gap-1 text-sm">
                   <span>{selectedIds.length > 0
@@ -199,7 +199,7 @@ export function ProductExportDialog({
                 </span>
               </label>
               <label className="flex cursor-pointer items-start gap-3 rounded-[var(--admin-radius-control)] border border-border p-3">
-                <RadioGroupItem value="ALL" id="product-export-scope-all" className="mt-0.5" />
+                <RadioGroupItem value="ALL" id="product-export-scope-all" className="mt-1" />
                 <span className="grid gap-1 text-sm">
                   <span>{t('products.exportDialog.scopeAll')}</span>
                   <span className="text-xs text-muted-foreground">{t('products.exportDialog.scopeAllHint')}</span>
@@ -229,7 +229,7 @@ export function ProductExportDialog({
             <RadioGroup value={preset} onValueChange={handlePresetChange} className="grid gap-3 sm:grid-cols-2">
               {PRODUCT_EXPORT_PRESETS.map((item) => (
                 <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-[var(--admin-radius-control)] border border-border p-3">
-                  <RadioGroupItem value={item.key} id={`product-export-preset-${item.key.toLowerCase()}`} className="mt-0.5" />
+                  <RadioGroupItem value={item.key} id={`product-export-preset-${item.key.toLowerCase()}`} className="mt-1" />
                   <span className="grid gap-1 text-sm">
                     <span className="font-semibold">{t(item.labelKey)}</span>
                     <span className="text-xs text-muted-foreground">{t(item.descriptionKey)}</span>

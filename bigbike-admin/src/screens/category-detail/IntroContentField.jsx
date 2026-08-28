@@ -170,7 +170,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi', getA
               {model.brands.map((b, i) => (
                 <span
                   key={`${b}-${i}`}
-                  className="inline-flex items-center gap-1 rounded-[var(--admin-radius-xs)] border border-input px-2 py-0.5 text-xs"
+                  className="inline-flex items-center gap-1 rounded-[var(--admin-radius-xs)] border border-input px-2 py-1 text-xs"
                 >
                   {b}
                   <Button

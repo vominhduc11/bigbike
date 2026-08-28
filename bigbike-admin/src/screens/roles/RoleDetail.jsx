@@ -48,7 +48,7 @@ export function RoleDetail({
       {/* Header row */}
       <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
         <div className="min-w-0">
-          <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h2 className="m-0 text-base font-bold text-foreground">
               {displayName}
             </h2>
@@ -68,7 +68,7 @@ export function RoleDetail({
           id={`delete-role-help-${role.id}`}
           tone="warning"
           size="sm"
-          className="mb-3.5"
+          className="mb-4"
         >
           {t('roles.deleteRoleBlocked', {
             name: displayName,
@@ -82,7 +82,7 @@ export function RoleDetail({
 
       {/* Unsaved-changes banner */}
       {editMode && isDirty && (
-        <Alert tone="warning" size="sm" className="mb-3.5">
+        <Alert tone="warning" size="sm" className="mb-4">
           {t('common.dirty')}
         </Alert>
       )}
@@ -95,8 +95,8 @@ export function RoleDetail({
       )}
 
       {isDeveloper && (
-        <div className="flex items-start gap-2 px-3.5 py-2.5 mb-5 rounded-xs bg-primary/10 border border-primary/25">
-          <Shield size={14} className="text-primary shrink-0 mt-0.5" aria-hidden />
+        <div className="flex items-start gap-2 px-4 py-3 mb-5 rounded-xs bg-primary/10 border border-primary/25">
+          <Shield size={14} className="text-primary shrink-0 mt-1" aria-hidden />
           <p className="m-0 text-sm text-muted-foreground leading-relaxed">
             {t('roles.developerBanner', {
               defaultValue: 'Vai trò kỹ thuật. Quyền của vai trò này được khoá không cho sửa, vì đây là thứ cho phép mở lại trang quản trị sau khi bảo trì — bỏ nhầm một quyền là không ai mở khoá được nữa.',
@@ -107,8 +107,8 @@ export function RoleDetail({
 
       {/* Super admin — business-friendly explanation */}
       {isSuperAdmin && (
-        <div className="flex items-start gap-2 px-3.5 py-2.5 mb-5 rounded-xs bg-primary/10 border border-primary/25">
-          <Shield size={14} className="text-primary shrink-0 mt-0.5" aria-hidden />
+        <div className="flex items-start gap-2 px-4 py-3 mb-5 rounded-xs bg-primary/10 border border-primary/25">
+          <Shield size={14} className="text-primary shrink-0 mt-1" aria-hidden />
           <p className="m-0 text-sm text-muted-foreground leading-relaxed">
             {t('roles.superAdminBanner')}
           </p>
@@ -149,7 +149,7 @@ export function RoleDetail({
         if (unknown.length === 0) return null
         return (
           <div className="mb-6">
-            <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase text-warning py-1.5 border-b-2 border-border mb-2">
+            <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-warning py-2 border-b-2 border-border mb-2">
               <AlertTriangle size={11} aria-hidden />
               {t('roles.otherPermsLabel')}
             </div>
@@ -158,7 +158,7 @@ export function RoleDetail({
             </Alert>
             {unknown.map(perm => (
               <div key={perm} className="roles-perm-row">
-                <Check size={14} className="text-success shrink-0 mt-0.5" aria-hidden />
+                <Check size={14} className="text-success shrink-0 mt-1" aria-hidden />
                 <span className="flex-1 text-sm text-foreground font-mono">
                   {perm}
                 </span>
@@ -196,7 +196,7 @@ export function RoleDetail({
                 {t('roles.cancelBtn')}
               </Button>
               <Button
-                className="min-h-11 flex items-center gap-1.5"
+                className="min-h-11 flex items-center gap-2"
                 onClick={onRequestSave}
                 loading={saving}
                 disabled={!isDirty}
@@ -208,7 +208,7 @@ export function RoleDetail({
             <>
               <Button
                 variant="secondary"
-                className="min-h-11 flex items-center gap-1.5"
+                className="min-h-11 flex items-center gap-2"
                 onClick={onStartEdit}
               >
                 <Pencil size={14} aria-hidden />
@@ -220,7 +220,7 @@ export function RoleDetail({
                   onClick={onDeleteRole}
                   disabled={assignedUserCount > 0}
                   aria-describedby={assignedUserCount > 0 ? `delete-role-help-${role.id}` : undefined}
-                  className="min-h-11 flex items-center gap-1.5 text-danger"
+                  className="min-h-11 flex items-center gap-2 text-danger"
                 >
                   <Trash2 size={14} aria-hidden />
                   {t('roles.deleteRoleBtn')}

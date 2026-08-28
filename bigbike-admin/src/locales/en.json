@@ -2207,6 +2207,7 @@
       "activeFilterAria": "Active registered accounts — filter the list by Active status"
     },
     "searchPlaceholder": "Name, email, phone number",
+    "filtersAria": "Customer filters",
     "filterStatus": "Status",
     "filterEmailVerified": "Email verification",
     "emailVerified": "Verified",
@@ -3504,6 +3505,7 @@
     "title": "Admin Users",
     "description": "Manage internal admin user accounts.",
     "searchPlaceholder": "Email or name",
+    "filtersAria": "Admin user filters",
     "loading": "Loading users",
     "error": "Error loading users",
     "empty": "No admin users yet",

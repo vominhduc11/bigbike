@@ -110,7 +110,7 @@ export default function AiHtmlBrief({
 
   return (
     <div className="rounded-[var(--admin-radius-card)] border border-border bg-surface-raised">
-      <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="flex items-center gap-2 px-2 py-2">
         <Button
           type="button"
           variant="ghost"
@@ -118,14 +118,14 @@ export default function AiHtmlBrief({
           onClick={handleToggle}
           aria-expanded={open}
           aria-controls={panelId}
-          className="h-8 flex-1 justify-start gap-1.5 px-1 text-left text-xs font-medium text-foreground hover:bg-transparent"
+          className="h-8 flex-1 justify-start gap-2 px-1 text-left text-xs font-medium text-foreground hover:bg-transparent"
         >
           {open
             ? <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
             : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
           {title || t('products.detail.aiBrief.title')}
         </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={handleCopy} disabled={isCopying}>
+        <Button type="button" size="sm" variant="outline" className="h-8 gap-2 text-xs" onClick={handleCopy} disabled={isCopying}>
           <Copy className="size-3.5" aria-hidden="true" />
           {isCopying ? (copyingMessage || t('products.detail.aiBrief.copying')) : (copyLabel || t('products.detail.aiBrief.copy'))}
         </Button>

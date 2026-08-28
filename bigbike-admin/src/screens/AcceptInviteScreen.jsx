@@ -196,7 +196,6 @@ export function AcceptInviteScreen() {
                     disabled={submitting}
                     aria-invalid={touched.password && passwordError ? true : undefined}
                     aria-describedby={touched.password && passwordError ? `${pwId}-error` : undefined}
-                    className="bb-input"
                   />
                   {touched.password && passwordError ? (
                     <span id={`${pwId}-error`} role="alert" className="bb-field-error">
@@ -222,7 +221,6 @@ export function AcceptInviteScreen() {
                     disabled={submitting}
                     aria-invalid={touched.confirm && confirmError ? true : undefined}
                     aria-describedby={touched.confirm && confirmError ? `${confirmId}-error` : undefined}
-                    className="bb-input"
                   />
                   {touched.confirm && confirmError ? (
                     <span id={`${confirmId}-error`} role="alert" className="bb-field-error">

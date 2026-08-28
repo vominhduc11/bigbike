@@ -16,7 +16,7 @@ export function AuditCard({ log, onClick }) {
         'flex items-start gap-2 font-semibold leading-snug',
         card.isDangerous && 'text-danger',
       )}>
-        {card.isDangerous ? <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> : null}
+        {card.isDangerous ? <AlertTriangle size={16} className="mt-1 shrink-0" aria-hidden="true" /> : null}
         <span>{card.actionLabel}</span>
       </span>
       )}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { StatePanel } from '@/components/StatePanel'
 import { ScreenSkeleton } from '@/components/ScreenSkeleton'
-import { ScreenHeader } from '@/components/layout'
+import { Screen, ScreenHeader } from '@/components/layout'
 import {
   BUILTIN_CATALOG,
   PERM_LABEL_KEY_MAP,
@@ -318,7 +318,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   }
 
   return (
-    <div>
+    <Screen>
       <ScreenHeader eyebrow={t('roles.eyebrow')} title={t('roles.title')} description={t('roles.description')} />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -390,7 +390,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           {/* Mobile: back to list */}
           {mobileShowDetail && selected && (
             <Button variant="ghost" size="sm"
-              className="roles-back-btn flex items-center gap-1.5 mb-3"
+              className="roles-back-btn flex items-center gap-2 mb-3"
               onClick={handleMobileBack}
             >
               <ChevronLeft size={16} aria-hidden />
@@ -432,6 +432,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           </div>
         </>
       )}
-    </div>
+    </Screen>
   )
 }

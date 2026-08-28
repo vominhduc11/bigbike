@@ -5,6 +5,7 @@ import { Eye, FileText, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-re
 import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
 import { AdminTable } from '../components/AdminTable'
+import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
@@ -561,8 +562,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
+        <DetailSection noPadding>
             <AdminTable
               columns={visibleColumns}
               rows={items}
@@ -579,7 +579,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
               selectedIds={[...selected]}
               onSelectionChange={(ids) => setSelected(new Set(ids))}
             />
-          </div>
           {state.status === 'success' && pagination ? (
             <PaginationControls
               pagination={pagination}
@@ -587,7 +586,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
               onPageChange={(page) => updateQuery({ page })}
             />
           ) : null}
-        </div>
+        </DetailSection>
       ) : null}
     </Screen>
   )

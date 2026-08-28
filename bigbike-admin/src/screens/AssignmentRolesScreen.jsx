@@ -237,19 +237,19 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
   let statusInfo
   if (saveError) {
     statusInfo = (
-      <span role="alert" className="inline-flex items-center gap-1.5 text-sm text-danger">
+      <span role="alert" className="inline-flex items-center gap-2 text-sm text-danger">
         <AlertCircle size={14} aria-hidden /> {saveError}
       </span>
     )
   } else if (saveSuccess) {
     statusInfo = (
-      <span role="status" className="inline-flex items-center gap-1.5 text-sm text-success">
+      <span role="status" className="inline-flex items-center gap-2 text-sm text-success">
         <CheckCircle2 size={15} aria-hidden /> {t('settings.saveSuccess')}
       </span>
     )
   } else {
     statusInfo = (
-      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+      <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
         <AlertCircle size={14} aria-hidden /> {t('settings.assign.unsavedHint', { defaultValue: 'Có thay đổi chưa lưu' })}
       </span>
     )

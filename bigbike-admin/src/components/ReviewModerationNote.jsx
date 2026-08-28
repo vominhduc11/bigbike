@@ -72,7 +72,7 @@ export function ReviewModerationNote({ review, compact = false }) {
     const compactTone = state === 'clean' ? 'neutral' : tone
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-xs font-semibold ${TONE_CLASS[compactTone]}`}
+        className={`inline-flex items-center gap-2 rounded-sm border px-2 py-1 text-xs font-semibold ${TONE_CLASS[compactTone]}`}
         title={review.moderationReason || title}
       >
         <Icon size={14} aria-hidden="true" />
@@ -84,7 +84,7 @@ export function ReviewModerationNote({ review, compact = false }) {
   return (
     <div className={`grid gap-3 rounded-md border p-4 ${TONE_CLASS[tone]}`}>
       <div className="flex items-start gap-2">
-        <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+        <Icon size={18} aria-hidden="true" className="mt-1 shrink-0" />
         <div className="grid gap-1">
           <p className="m-0 font-semibold">{title}</p>
           {review.moderationReason && state !== 'skipped' ? (

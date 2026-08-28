@@ -24,6 +24,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
+import { DetailSection } from '../components/DetailSection'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory, previewCategoryPermanentDelete } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -39,6 +40,7 @@ import { queryKeys } from '../lib/queryKeys'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { TableCell, TableRow } from '@/components/ui/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   DUPLICATE_SESSION_KEY,
@@ -48,8 +50,8 @@ import {
   buildTree,
 } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
-import { CategoryFlatTableHead, CategoryTreeTableHead } from './category-list/CategoryTableHead'
-import { FilterBar, MobileCardList, MobileCard, Screen, ScreenHeader } from '../components/layout'
+import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { AdminTable } from '../components/AdminTable'
 
 function foldSearchText(value) {
   return String(value || '')
@@ -699,6 +701,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     />
   ) : null
 
+  const categoryTableColumns = [
+    ...(canUpdate ? [{ key: 'selection', label: selectAllCheckbox, headerClassName: 'w-12 text-center' }] : []),
+    { key: 'category', label: t('categories.colCategory') },
+    ...(isCategoryColumnVisible('visibility') ? [{ key: 'visibility', label: t('categories.colVisibility') }] : []),
+    ...(isCategoryColumnVisible('homepage') ? [{ key: 'homepage', label: t('categories.colHomepage') }] : []),
+    ...(isCategoryColumnVisible('updatedAt') ? [{ key: 'updatedAt', label: t('categories.colUpdated'), align: 'right' }] : []),
+    { key: 'actions', label: t('categories.colActions'), align: 'right' },
+  ]
+
   // Nút thao tác dòng danh mục — dùng chung cho bảng (.cat-actions) và thẻ mobile (P2-2).
   const renderCategoryRowActions = (category) => {
     const isSystemCategory = category.id === 'uncategorized'
@@ -710,10 +721,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     return (
       <div className="cat-actions" onClick={(event) => event.stopPropagation()}>
         <Button
-          variant="unstyled"
+          variant="ghost"
           size="icon"
           type="button"
-          className="bb-icon-btn min-h-11 min-w-11"
           title={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
           aria-label={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
           onClick={() => navigate(detailPath)}
@@ -723,10 +733,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
         {canUpdate && !isSystemCategory && !query.deleted && (
           <Button
-            variant="unstyled"
+            variant="ghost"
             size="icon"
             type="button"
-            className="bb-icon-btn min-h-11 min-w-11"
             loading={togglingId === category.id}
             disabled={rowBusy || toggleVisibilityMutation.isPending}
             onClick={() => handleToggleVisibility(category)}
@@ -745,10 +754,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="unstyled"
+                variant="ghost"
                 size="icon"
                 type="button"
-                className="bb-icon-btn min-h-11 min-w-11"
                 title={t('common.actions', { defaultValue: 'Thao tác' })}
                 aria-label={t('common.actions', { defaultValue: 'Thao tác' })}
                 disabled={rowBusy}
@@ -815,14 +823,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   // Thẻ mobile cho 1 danh mục — thay bảng cuộn ngang trên điện thoại (P2-2).
   // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
-  const mobileCategoryCard = (category) => {
-    return (
-      <MobileCard
-        key={category.id}
-        title={formatText(category.name)}
-        subtitle={category.slug ? `/${category.slug}` : undefined}
-        status={<StatusBadge type="visibility" status={category.isVisible} />}
-        meta={[
+  const mobileCategoryCard = (category) => ({
+        title: formatText(category.name),
+        subtitle: category.slug ? `/${category.slug}` : undefined,
+        status: <StatusBadge type="visibility" status={category.isVisible} />,
+        meta: [
           {
             label: t('categories.colHomepage'),
             value: category.showOnHomepage === true
@@ -832,15 +837,14 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 : t('common.unknown'),
           },
           { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
-        ]}
-        onClick={() => navigate(`/admin/categories/${category.id}`)}
-        selectable={canUpdate && category.id !== 'uncategorized'}
-        selected={selectedIds.has(category.id)}
-        onSelectChange={() => toggleSelected(category.id)}
-        actions={renderCategoryRowActions(category)}
-      />
-    )
-  }
+        ],
+        onClick: () => navigate(`/admin/categories/${category.id}`),
+        selectionLabel: t('categories.selectRowAria'),
+        selectable: canUpdate && category.id !== 'uncategorized',
+        selected: selectedIds.has(category.id),
+        onSelectChange: () => toggleSelected(category.id),
+        actions: renderCategoryRowActions(category),
+      })
 
   const renderCategoryRow = (category, depth = 0, sortableProps = null) => {
     const hasChildren = useTreeMode && treeRows.some((r) => r.parentId === category.id && r._depth > 0)
@@ -850,7 +854,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const isDimmed = searchTerm && !isMatch
 
     return (
-      <tr
+      <TableRow
         key={category.id}
         ref={sortableProps?.setNodeRef}
         style={sortableProps?.style}
@@ -865,17 +869,17 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           visibilityRowAccent(category.isVisible),
         ].filter(Boolean).join(' ')}>
         {canUpdate && (
-          <td className="cat-select-cell">
+          <TableCell className="cat-select-cell">
             <Checkbox
               aria-label={t('categories.selectRowAria')}
               checked={selectedIds.has(category.id)}
               onCheckedChange={() => toggleSelected(category.id)}
               disabled={category.id === 'uncategorized' || Boolean(bulkProgress)}
              />
-          </td>
+          </TableCell>
         )}
         {/* Name cell with tree indent */}
-        <td>
+        <TableCell>
           <div className="cat-name-cell" style={{ paddingLeft: depth * 20 }}>
             {/* Drag handle (tree mode only, no search active) */}
             {useTreeMode && canUpdate && sortableProps && !searchTerm && (
@@ -942,18 +946,18 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               </a>
             </div>
           </div>
-        </td>
+        </TableCell>
 
         {/* Display status */}
         {isCategoryColumnVisible('visibility') && (
-          <td>
+          <TableCell>
             <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
-          </td>
+          </TableCell>
         )}
 
         {/* Homepage */}
         {isCategoryColumnVisible('homepage') && (
-          <td>
+          <TableCell>
             <span className="text-sm text-foreground">
               {category.showOnHomepage === true
                 ? t('common.yes')
@@ -961,21 +965,21 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   ? t('common.no')
                   : t('common.unknown')}
             </span>
-          </td>
+          </TableCell>
         )}
 
         {/* Updated */}
         {isCategoryColumnVisible('updatedAt') && (
-          <td className="align-right">
+          <TableCell className="text-right">
             <span className="text-xs text-muted-foreground">{formatDateTime(category.updatedAt)}</span>
-          </td>
+          </TableCell>
         )}
 
         {/* Actions */}
-        <td className="align-right">
+        <TableCell className="text-right">
           {renderCategoryRowActions(category)}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     )
   }
 
@@ -1282,9 +1286,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               onCreate={() => navigate('/admin/categories/new')}
             />
           ) : (
-            <div className="bb-card">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap hide-on-mobile">
+            <DetailSection noPadding>
                   <DndContext
                     sensors={dndSensors}
                     collisionDetection={closestCenter}
@@ -1294,25 +1296,19 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                       items={visibleTreeRows.map((r) => r.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <table className="cat-tree-table cat-table-tree">
-                        <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenCategoryColumnKeys} />
-                        <tbody>
-                          {visibleTreeRows.map((row) =>
-                            canUpdate && !searchTerm
-                              ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
-                              : renderCategoryRow(row, row._depth)
-                          )}
-                        </tbody>
-                      </table>
+                      <AdminTable
+                        columns={categoryTableColumns}
+                        rows={visibleTreeRows}
+                        caption={t('categories.tableCaption')}
+                        renderRow={(row) => canUpdate && !searchTerm
+                          ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
+                          : renderCategoryRow(row, row._depth)}
+                        mobileCard={mobileCategoryCard}
+                        mobileListClassName="p-3"
+                      />
                     </SortableContext>
                   </DndContext>
-                </div>
-                <MobileCardList className="p-3">
-                  {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
-                </MobileCardList>
-              </div>
-            </div>
+            </DetailSection>
           )}
         </div>
       )}
@@ -1351,23 +1347,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ) : null}
 
           {flatModeStatus === 'success' && flatItems.length > 0 ? (
-            <div className="bb-card mt-4">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap hide-on-mobile">
-                  <table className="cat-tree-table cat-table-flat" aria-busy={flatModeStatus === 'loading'}>
-                    <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenCategoryColumnKeys} />
-                    <tbody>
-                      {flatItems.map((cat) => renderCategoryRow(cat, 0))}
-                    </tbody>
-                  </table>
-                </div>
-                {flatModeStatus === 'success' && flatItems.length > 0 ? (
-                  <MobileCardList className="p-3">
-                    {flatItems.map((cat) => mobileCategoryCard(cat))}
-                  </MobileCardList>
-                ) : null}
-              </div>
+            <DetailSection noPadding className="mt-4">
+                <AdminTable
+                  columns={categoryTableColumns}
+                  rows={flatItems}
+                  caption={t('categories.tableCaption')}
+                  renderRow={(category) => renderCategoryRow(category, 0)}
+                  mobileCard={mobileCategoryCard}
+                  mobileListClassName="p-3"
+                />
               {flatModeStatus === 'success' && (
                 <div className="px-4">
                   <PaginationControls
@@ -1377,7 +1365,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   />
                 </div>
               )}
-            </div>
+            </DetailSection>
           ) : null}
         </>
       )}

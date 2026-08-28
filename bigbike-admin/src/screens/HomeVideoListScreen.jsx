@@ -29,7 +29,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
-import { ScreenHeader, StickyActionBar } from '../components/layout'
+import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
@@ -55,6 +55,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useHasPermission } from '@/lib/auth'
 import { buildHomeVideoThumbnail } from './homeVideoPayload'
+import { cn } from '@/lib/utils'
 
 const EMPTY_FORM = {
   title: '',
@@ -122,7 +123,7 @@ function VideoPreviewModal({ video, onClose }) {
         </div>
 
         {displayTitle && (
-          <p className="m-0 px-4 py-2.5 text-xs font-semibold text-white bg-black">
+          <p className="m-0 px-4 py-3 text-xs font-semibold text-white bg-black">
             {displayTitle}
           </p>
         )}
@@ -141,10 +142,16 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
   return (
     <SortableRow id={video.id} disabled={!canUpdate || selectionMode}>
       {(sortable) => (
-    <div
+    <DetailSection
       ref={sortable.setNodeRef}
       style={sortable.style}
-      className={`bb-card bb-slider-card bb-slider-card-body ${video.isActive === false && !selected ? 'is-inactive' : ''} ${sortable.isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+      className={cn(
+        'bb-slider-card',
+        video.isActive === false && !selected && 'is-inactive',
+        sortable.isDragging && 'is-dragging',
+        selected && 'is-selected',
+      )}
+      contentClassName="bb-slider-card-body"
     >
       {canUpdate && (
         <div className="flex items-center gap-1 shrink-0">
@@ -180,7 +187,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         }
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <span className="flex items-center justify-center w-7 h-7 rounded-full bg-black/55">
-            <Play size={14} fill="white" className="text-white ml-0.5" aria-hidden="true" />
+            <Play size={14} fill="white" className="text-white ml-1" aria-hidden="true" />
           </span>
         </div>
       </Button>
@@ -208,7 +215,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           </Button>
         </div>
       )}
-    </div>
+    </DetailSection>
       )}
     </SortableRow>
   )
@@ -637,7 +644,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       onAction={canUpdate ? openCreateForm : undefined}
     />
   ) : (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
 
       {/* Filter bar */}
       <div className="flex gap-2 items-center">
@@ -675,7 +682,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       ) : (<>
 
       {canUpdate && (
-        <div className="flex items-center gap-2.5 px-1 py-1.5">
+        <div className="flex items-center gap-3 px-1 py-2">
           <Checkbox
             checked={allSelected ? true : someSelected ? 'indeterminate' : false}
             onCheckedChange={(checked) => handleSelectAll(checked)}
@@ -708,7 +715,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       )}
 
       {isFiltering && (
-        <p className="text-xs text-muted-foreground m-0 mb-1 ml-0.5">
+        <p className="text-xs text-muted-foreground m-0 mb-1 ml-1">
           {t('homeVideos.filterReorderHint', {
             shown: filteredItems.length,
             total: items.length,
@@ -736,7 +743,7 @@ export function HomeVideoListScreen({ canUpdate }) {
   )
 
   return (
-    <div>
+    <Screen>
       {!canUpdate && <ReadOnlyBanner />}
 
       <ScreenHeader
@@ -759,7 +766,7 @@ export function HomeVideoListScreen({ canUpdate }) {
           {fieldErrors.form ? (
             <div
               role="alert"
-              className="flex items-center gap-1.5 rounded-xs border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger m-0"
+              className="flex items-center gap-2 rounded-xs border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger m-0"
             >
               <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
               {fieldErrors.form}
@@ -790,26 +797,26 @@ export function HomeVideoListScreen({ canUpdate }) {
             <span className="text-xs font-normal text-muted-foreground">{t('homeVideos.formTitleEnHint')}</span>
           </label>
 
-          <div className="flex flex-col gap-1.5 text-sm font-semibold">
+          <div className="flex flex-col gap-2 text-sm font-semibold">
             {t('homeVideos.formSource')}
             <RadioGroup
               value={form.videoType}
               onValueChange={(value) => { void handleVideoTypeChange(value) }}
               className="flex flex-wrap gap-5 font-normal"
             >
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="youtube" />
                 {t('homeVideos.sourceYoutube')}
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="tiktok" />
                 {t('homeVideos.sourceTikTok')}
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="facebook" />
                 {t('homeVideos.sourceFacebook')}
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="upload" />
                 {t('homeVideos.sourceUpload')}
               </label>
@@ -845,7 +852,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 <img
                   src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
                   alt={t('homeVideos.youtubePreviewAlt')}
-                  className="mt-1.5 w-full max-w-xs h-auto rounded-xs border border-border"
+                  className="mt-2 w-full max-w-xs h-auto rounded-xs border border-border"
                 />
               )}
             </div>
@@ -983,6 +990,6 @@ export function HomeVideoListScreen({ canUpdate }) {
       {previewVideo && (
         <VideoPreviewModal video={previewVideo} onClose={() => setPreviewVideo(null)} />
       )}
-    </div>
+    </Screen>
   )
 }

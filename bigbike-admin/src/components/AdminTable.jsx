@@ -37,7 +37,8 @@ export function AdminTable({
   loading = false, pageSize = 8,
   onSortChange, sortKey, sortDir,
   selectable = false, selectedIds = [], onSelectionChange,
-  onRowClick, rowClassName, mobileCard, rowHref,
+  onRowClick, rowClassName, mobileCard, rowHref, containerClassName,
+  renderRow, mobileListClassName,
 }) {
   const { t } = useTranslation()
   const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
@@ -68,7 +69,7 @@ export function AdminTable({
   }
 
   const tableView = (
-    <Table containerClassName="max-h-[calc(100vh-13rem)]">
+    <Table containerClassName={containerClassName}>
       {caption ? <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption> : null}
       <TableHeader>
         <TableRow className="hover:bg-transparent">
@@ -87,17 +88,18 @@ export function AdminTable({
             return (
               <TableHead
                 key={column.key}
-                className={cn(ALIGN_CLASS[column.align], isSorted && 'text-foreground')}
+                className={cn(ALIGN_CLASS[column.align], column.headerClassName, isSorted && 'text-foreground')}
                 aria-sort={isSorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 {canSort ? (
                   // Nút bấm thật bên trong <th scope="col"> — giữ ngữ nghĩa columnheader
                   // (không đè role="button" lên <th>), vẫn focus/Enter/Space chuẩn của button.
                   <Button
-                    variant="unstyled"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort(column)}
                     aria-label={t('common.sortColumn', { defaultValue: 'Sắp xếp cột' })}
-                    className="inline-flex cursor-pointer select-none items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
+                    className="h-auto cursor-pointer select-none gap-1 p-0 hover:bg-transparent"
                   >
                     {column.label}
                     <span aria-hidden="true" className="opacity-60">
@@ -133,7 +135,8 @@ export function AdminTable({
                 ))}
               </TableRow>
             ))
-          : rows.map((row) => {
+          : rows.map((row, rowIndex) => {
+              if (typeof renderRow === 'function') return renderRow(row, rowIndex)
               const extraClass = typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
               const clickable = typeof onRowClick === 'function'
               const href = hrefOf(row)
@@ -211,7 +214,7 @@ export function AdminTable({
       {/* hide-on-mobile only — no extra table chrome, so screens that pass
           mobileCard keep the same desktop look as those that don't. */}
       <div className="hide-on-mobile">{tableView}</div>
-      <MobileCardList>
+      <MobileCardList className={mobileListClassName}>
         {loading
           ? Array.from({ length: Math.min(pageSize, 4) }, (_, i) => (
               <div key={i} className="mobile-card animate-pulse">
@@ -230,9 +233,9 @@ export function AdminTable({
                   meta={card.meta}
                   actions={card.actions}
                   onClick={card.onClick}
-                  selectable={selectable}
-                  selected={selectedIds.includes(row.id)}
-                  onSelectChange={() => toggleOne(row.id)}
+                  selectable={card.selectable ?? selectable}
+                  selected={card.selected ?? selectedIds.includes(row.id)}
+                  onSelectChange={card.onSelectChange ?? (() => toggleOne(row.id))}
                   selectionLabel={card.selectionLabel || t('common.selectNamedRow', {
                     name: typeof card.title === 'string' ? card.title : row.id,
                   })}

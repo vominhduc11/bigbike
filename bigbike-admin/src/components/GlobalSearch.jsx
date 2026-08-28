@@ -346,7 +346,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       >
         <Search size={15} className="shrink-0" />
         <span className="flex-1 truncate text-left text-sm">{t('search.placeholder')}</span>
-        <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">{shortcutLabel}</kbd>
+        <kbd className="rounded border border-border bg-surface px-2 py-1 text-xs font-semibold">{shortcutLabel}</kbd>
       </Button>
 
       <Button
@@ -379,7 +379,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
             className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface"
             style={{ boxShadow: 'var(--admin-shadow-lg)' }}
           >
-            <div className="flex items-center gap-2.5 border-b border-border px-4">
+            <div className="flex items-center gap-3 border-b border-border px-4">
               {loading
                 ? <Loader2 size={17} className="shrink-0 animate-spin text-muted-foreground" />
                 : <Search size={17} className="shrink-0 text-muted-foreground" />}
@@ -397,10 +397,10 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                 aria-autocomplete="list"
                 autoComplete="off"
               />
-              <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">Esc</kbd>
+              <kbd className="rounded border border-border bg-surface-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Esc</kbd>
             </div>
 
-            <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-1.5">
+            <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-2">
               {!hasQuery && (
                 <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
               )}
@@ -430,7 +430,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                   : null
                 return (
                   <div key={group.key} className="mb-2 last:mb-0">
-                    <div className="flex items-center justify-between px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    <div className="flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                       <span>{t(`search.group.${group.key}`)}</span>
                       {result.state === 'READY' && total !== null ? <span>{total}</span> : null}
                     </div>
@@ -456,7 +456,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                             onMouseEnter={() => setActiveIndex(flatIndex)}
                             onClick={() => go(row.to)}
                             className={cn(
-                              'flex min-h-11 w-full items-center gap-2.5 rounded-[var(--admin-radius-control)] px-2.5 py-2 text-left transition-colors',
+                              'flex min-h-11 w-full items-center gap-3 rounded-[var(--admin-radius-control)] px-3 py-2 text-left transition-colors',
                               isActive ? 'bg-surface-selected' : 'hover:bg-surface-muted',
                             )}
                           >
@@ -480,7 +480,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                         )
                       })
                     ) : (
-                      <p className="px-2.5 py-2 text-xs text-muted-foreground">{t('search.groupEmpty')}</p>
+                      <p className="px-3 py-2 text-xs text-muted-foreground">{t('search.groupEmpty')}</p>
                     )}
                   </div>
                 )

@@ -100,7 +100,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
       open
       onClose={attemptCancel}
       title={
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-3">
           <Plus size={18} className="text-primary shrink-0" aria-hidden />
           {t('roles.createRoleTitle')}
         </span>
@@ -110,13 +110,13 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
           <Button variant="ghost" size="sm" type="button" onClick={attemptCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
-          <Button size="sm" type="submit" form="create-role-form" loading={saving} className="flex items-center gap-1.5">
+          <Button size="sm" type="submit" form="create-role-form" loading={saving} className="flex items-center gap-2">
             {t('roles.createRoleBtn')}
           </Button>
         </>
       }
     >
-      <form id="create-role-form" onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+      <form id="create-role-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormField
           label={t('roles.createRoleNameLabel')}
           required
@@ -137,7 +137,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
 
         {/* Technical ID — hidden by default, auto-generated from name */}
         {!showId && id && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{t('roles.createRoleIdAutoLabel')}: </span>
             <code className="font-mono text-foreground">{id}</code>
             <Button

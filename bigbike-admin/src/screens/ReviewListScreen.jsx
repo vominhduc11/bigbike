@@ -415,7 +415,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
       // Kết quả kiểm duyệt tự động nằm ngay dưới trạng thái thay vì thành cột riêng:
       // "đang ở đâu" và "vì sao ở đó" đọc cùng một chỗ, và bảng không phình thêm cột.
       render: (review) => (
-        <div className="grid justify-items-start gap-1.5">
+        <div className="grid justify-items-start gap-2">
           <StatusBadge type="review" status={review.status} />
           <ReviewModerationNote review={review} compact />
         </div>
@@ -458,7 +458,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
       selectionLabel: t('common.selectNamedRow', { name: authorName }),
       subtitle: <ProductLink review={review} contentLang={contentLang} navigate={navigate} t={t} />,
       status: (
-        <div className="grid justify-items-start gap-1.5">
+        <div className="grid justify-items-start gap-2">
           <StatusBadge type="review" status={review.status} />
           <ReviewModerationNote review={review} compact />
         </div>

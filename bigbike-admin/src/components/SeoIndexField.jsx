@@ -43,7 +43,7 @@ export function SeoIndexField({
 
   return (
     <div className="form-field" data-field="seoIndex">
-      <label className="flex w-fit cursor-pointer items-center gap-2.5 border border-border p-2.5 text-sm hover:bg-muted">
+      <label className="flex w-fit cursor-pointer items-center gap-3 border border-border p-3 text-sm hover:bg-muted">
         <Checkbox
           checked={visible}
           onCheckedChange={(checked) => onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)}

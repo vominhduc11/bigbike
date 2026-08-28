@@ -454,7 +454,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
             ariaLabel={t('common.actionBarLabel')}
             info={(
               <span
-                className={saveError ? 'inline-flex items-center gap-1.5 font-semibold text-danger' : 'inline-flex items-center gap-1.5 text-muted-foreground'}
+                className={saveError ? 'inline-flex items-center gap-2 font-semibold text-danger' : 'inline-flex items-center gap-2 text-muted-foreground'}
                 role={saveError ? 'alert' : 'status'}
               >
                 {saveError ? (

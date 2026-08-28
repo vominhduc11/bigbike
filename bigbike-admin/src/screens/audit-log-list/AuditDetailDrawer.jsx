@@ -115,7 +115,7 @@ export function AuditDetailDrawer({ log, onClose }) {
             <DetailRow label={t('auditLog.drawerActorLabel')}>
               <span className="font-semibold">{actorName}</span>
               {log.actorDisplayName && log.actorEmail ? (
-                <span className="mt-0.5 block text-xs text-muted-foreground">
+                <span className="mt-1 block text-xs text-muted-foreground">
                   {log.actorEmail}
                 </span>
               ) : null}
@@ -140,7 +140,7 @@ export function AuditDetailDrawer({ log, onClose }) {
               <span className="font-semibold">{resourceLabel}</span>
               {log.resourceCode && log.resourceDisplayName
                 && log.resourceCode !== log.resourceDisplayName ? (
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                  <span className="mt-1 block text-xs text-muted-foreground">
                     {log.resourceDisplayName}
                   </span>
                 ) : null}
@@ -177,7 +177,7 @@ export function AuditDetailDrawer({ log, onClose }) {
                       <span className="text-xs font-semibold text-muted-foreground sm:hidden">
                         {t('auditLog.drawerFieldCol')}
                       </span>
-                      <p className="mt-0.5 break-words text-sm font-semibold text-foreground sm:mt-0">
+                      <p className="mt-1 break-words text-sm font-semibold text-foreground sm:mt-0">
                         {row.label}
                       </p>
                     </div>
@@ -185,7 +185,7 @@ export function AuditDetailDrawer({ log, onClose }) {
                       <span className="text-xs font-semibold text-muted-foreground sm:hidden">
                         {t('auditLog.drawerBefore')}
                       </span>
-                      <p className="mt-0.5 break-words text-sm text-danger line-through sm:mt-0">
+                      <p className="mt-1 break-words text-sm text-danger line-through sm:mt-0">
                         {row.before}
                       </p>
                     </div>
@@ -194,7 +194,7 @@ export function AuditDetailDrawer({ log, onClose }) {
                         {t('auditLog.drawerAfter')}
                       </span>
                       <p className={cn(
-                        'mt-0.5 break-words text-sm font-semibold text-success sm:mt-0',
+                        'mt-1 break-words text-sm font-semibold text-success sm:mt-0',
                         isDangerousAfter && 'text-danger',
                       )}>
                         {row.after}
@@ -206,7 +206,7 @@ export function AuditDetailDrawer({ log, onClose }) {
             </div>
           ) : (
             <div className="flex items-start gap-3 p-4 text-sm text-muted-foreground">
-              <CircleDot size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <CircleDot size={16} className="mt-1 shrink-0" aria-hidden="true" />
               <p>{t('auditLog.drawerNoChanges')}</p>
             </div>
           )}

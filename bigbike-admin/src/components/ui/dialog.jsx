@@ -47,7 +47,7 @@ export function DialogContent({ className, children, showClose = true, ...props 
 export function DialogHeader({ className, ...props }) {
   return (
     <div
-      className={cn('flex flex-col gap-1.5 p-6 pb-4', className)}
+      className={cn('flex flex-col gap-2 p-6 pb-4', className)}
       {...props}
     />
   )

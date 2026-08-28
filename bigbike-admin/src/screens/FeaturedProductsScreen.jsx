@@ -90,7 +90,7 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-tight truncate">{product.name}</p>
         {product.sku && (
-          <p className="text-xs text-muted-foreground mt-0.5">SKU: {product.sku}</p>
+          <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>
         )}
       </div>
       {/* Sản phẩm bị chuyển về Nháp/Thùng rác vẫn nằm trong danh sách nổi bật nhưng KHÔNG

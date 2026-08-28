@@ -5,6 +5,18 @@ import { describe, expect, test } from 'vitest'
 const ROOT = resolve('.')
 const screen = (name) => readFileSync(join(ROOT, 'src', 'screens', `${name}.jsx`), 'utf8')
 
+function walkFiles(directory, predicate) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) return walkFiles(path, predicate)
+    return predicate(path) ? [path] : []
+  })
+}
+
+const productionJsxFiles = () => walkFiles(join(ROOT, 'src'), (path) => (
+  path.endsWith('.jsx') && !path.includes('.test.') && !path.includes('.spec.')
+))
+
 const COLUMN_VISIBILITY_SCREENS = [
   'ProductListScreen',
   'CategoryListScreen',
@@ -80,6 +92,66 @@ describe('admin interface composition contract', () => {
     expect(source).not.toContain('bb-card-header')
     expect(source).not.toContain('maxWidth=')
     expect(source).not.toContain('bb-skel')
+  })
+
+  test('every routed content screen uses the shared Screen wrapper', () => {
+    const intentionallyUnwrapped = new Set([
+      // Auth screens use their own full-viewport shell; these are not AdminShell content routes.
+      'AcceptInviteScreen.jsx',
+      'LoginScreen.jsx',
+      // Embedded settings panels; the parent SettingsScreen owns the one page-level Screen.
+      'AssignmentRolesScreen.jsx',
+      'BannerScreen.jsx',
+    ])
+    const screenDir = join(ROOT, 'src', 'screens')
+    const missing = readdirSync(screenDir)
+      .filter((name) => name.endsWith('Screen.jsx') && !intentionallyUnwrapped.has(name))
+      .filter((name) => !/<Screen(?:\s|>)/.test(readFileSync(join(screenDir, name), 'utf8')))
+
+    expect(missing).toEqual([])
+  })
+
+  test('legacy content UI system is fully removed from nested production components', () => {
+    const forbidden = /\bbb-(?:card(?:-header|-body)?|filter-bar|table(?:-wrap)?|btn(?:-primary|-secondary|-ghost|-sm)?|input|select|icon-btn|foldable)\b/
+    const offenders = productionJsxFiles()
+      .filter((path) => forbidden.test(readFileSync(path, 'utf8')))
+      .map((path) => path.replace(`${ROOT}\\`, ''))
+
+    expect(offenders).toEqual([])
+
+    const legacyCss = readFileSync(join(ROOT, 'src', 'styles', 'admin-prototype.css'), 'utf8')
+    expect(legacyCss).not.toMatch(/\.bb-(?:card|filter-bar|table|btn|input|select|icon-btn|foldable)\b/)
+  })
+
+  test('all production data tables are composed through AdminTable', () => {
+    const rawTables = productionJsxFiles()
+      .filter((path) => !path.endsWith(join('components', 'ui', 'table.jsx')))
+      .filter((path) => /<table(?:\s|>)/.test(readFileSync(path, 'utf8')))
+      .map((path) => path.replace(`${ROOT}\\`, ''))
+
+    expect(rawTables).toEqual([])
+    for (const name of ['CategoryListScreen', 'DashboardScreen', 'MenuScreen', 'OrderDetailScreen']) {
+      expect(screen(name)).toContain('<AdminTable')
+    }
+  })
+
+  test('spacing uses the documented 4px token rhythm', () => {
+    const halfStep = /\b(?:gap|space-[xy]|p[trblxy]?|m[trblxy]?)-\d+\.5\b/
+    const halfStepOffenders = productionJsxFiles()
+      .filter((path) => halfStep.test(readFileSync(path, 'utf8')))
+      .map((path) => path.replace(`${ROOT}\\`, ''))
+    expect(halfStepOffenders).toEqual([])
+
+    const cssFiles = [
+      join(ROOT, 'src', 'index.css'),
+      ...walkFiles(join(ROOT, 'src', 'styles'), (path) => path.endsWith('.css')),
+    ]
+    const hardcodedSpacing = cssFiles.flatMap((path) => {
+      const css = readFileSync(path, 'utf8')
+      const declarations = css.match(/(?:padding|margin|gap|row-gap|column-gap|scroll-margin)(?:-[a-z]+)*\s*:\s*[^;]+;/g) ?? []
+      return declarations.filter((declaration) => /\b\d+px\b/.test(declaration)).map((declaration) => ({ path, declaration }))
+    })
+    expect(hardcodedSpacing).toEqual([])
   })
 
   test('Screen delegates width entirely to the 1700px outer shell', () => {

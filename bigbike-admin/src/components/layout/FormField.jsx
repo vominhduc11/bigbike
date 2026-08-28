@@ -34,13 +34,13 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
     : children
 
   return (
-    <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
+    <div className={cn('flex flex-col gap-2', full && 'md:col-span-2')}>
       {label || count != null ? (
         <div className="flex items-center justify-between">
           {label ? (
-            <Label htmlFor={fieldId} className="flex items-center gap-0.5">
+            <Label htmlFor={fieldId} className="flex items-center gap-1">
               {label}
-              {required ? <span className="text-danger ml-0.5" aria-hidden="true">*</span> : null}
+              {required ? <span className="text-danger ml-1" aria-hidden="true">*</span> : null}
             </Label>
           ) : null}
           {count != null ? (
