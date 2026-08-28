@@ -1,58 +1,52 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
+import { Alert } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CollapsibleSection } from '../../components/CollapsibleSection'
+import { FormField } from '../../components/layout'
 import { formatParentOption, formatCategoryOption, buildCategoryMenuUrl, isValidCustomUrl } from './constants'
 
-// Radix Select cấm value rỗng, nên dùng sentinel cho lựa chọn "cấp gốc".
+// Radix Select không nhận giá trị rỗng, nên hai giá trị đặc biệt này đại diện cho
+// cấp gốc của menu và liên kết tự nhập không gắn với danh mục.
 const ROOT_VALUE = '__root__'
-// Sentinel cho "không liên kết danh mục nào" trong MenuCategoryPicker.
 const NONE_VALUE = '__none__'
-
-// Dấu * đỏ cạnh nhãn trường bắt buộc (glyph + màu, không chỉ màu).
-function RequiredMark() {
-  return <span className="text-danger ml-1" aria-hidden="true">*</span>
-}
 
 function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   return (
-    <label className="form-field">
-      {label}
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <Select
         value={value || ROOT_VALUE}
-        onValueChange={(v) => onChange(v === ROOT_VALUE ? '' : v)}
-      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-        <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
-        {options.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {formatParentOption(item)}
-          </SelectItem>
-        ))}
-      </SelectContent></Select>
-    </label>
+        onValueChange={(nextValue) => onChange(nextValue === ROOT_VALUE ? '' : nextValue)}
+      >
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
+          {options.map((item) => (
+            <SelectItem key={item.id} value={item.id}>{formatParentOption(item)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
-// Chọn 1 danh mục có sẵn để tự điền Tên + URL, thay vì admin phải gõ tay/nhớ
-// slug. Chọn xong sẽ liên kết mục menu này với danh mục (targetType=CATEGORY)
-// — nhờ vậy tên & đường link luôn tự cập nhật theo danh mục (kể cả sau khi
-// đổi tên/slug danh mục), 2 ô Tên/URL bên dưới khoá lại không sửa tay được.
-// Chọn "— Không liên kết danh mục —" để huỷ liên kết và tự nhập tay.
 function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
   const selectedValue = value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
+
   return (
-    <label className="form-field form-field-wide">
-      {label}
+    <div className="col-span-full flex flex-col gap-2">
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <Select
         value={selectedValue}
-        onValueChange={(v) => {
-          if (v === NONE_VALUE) {
+        onValueChange={(nextValue) => {
+          if (nextValue === NONE_VALUE) {
             onChange({ targetType: 'CUSTOM', targetId: null })
             return
           }
-          const category = options.find((c) => c.id === v)
+          const category = options.find((item) => item.id === nextValue)
           if (!category) return
           onChange({
             url: buildCategoryMenuUrl(category),
@@ -61,67 +55,53 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
             targetId: category.id,
           })
         }}
-      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-        <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
-        {options.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {formatCategoryOption(item)}
-          </SelectItem>
-        ))}
-      </SelectContent></Select>
-    </label>
+      >
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
+          {options.map((item) => (
+            <SelectItem key={item.id} value={item.id}>{formatCategoryOption(item)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }
 
 export function ItemForm({ value, onChange, parentOptions, categoryOptions, categoryError, isNew }) {
   const { t } = useTranslation()
   const [labelTouched, setLabelTouched] = useState(false)
-  // F10 chống ngợp: giữ 2 trường cốt lõi (Tên + URL) luôn hiện, gom 4 trường tùy chọn vào
-  // nhóm thu gọn — nhưng tự mở sẵn khi đang sửa mục đã có giá trị tùy chọn để không giấu dữ liệu.
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     Boolean(value.labelEn || value.parentId || value.openInNewTab || value.status === 'INACTIVE'),
   )
   const categoryLinked = value.targetType === 'CATEGORY'
   const urlInvalid = !categoryLinked && value.url.trim() !== '' && !isValidCustomUrl(value.url)
-  const labelMissing = value.label.trim() === ''
-  const showLabelError = !categoryLinked && labelTouched && labelMissing
-  return (
-    <div className="form-grid">
-      {/* Chú thích trường bắt buộc */}
-      <p className="form-field-wide menu-form-hint">
-        <span className="text-danger" aria-hidden="true">*</span>{' '}
-        {t('menus.requiredLegend', { defaultValue: 'Bắt buộc' })}
-      </p>
+  const showLabelError = !categoryLinked && labelTouched && value.label.trim() === ''
 
-      {/* Label — required (Vietnamese); khoá lại khi đã liên kết danh mục (tự lấy theo tên danh mục) */}
-      <label className="form-field form-field-wide" htmlFor="menu-item-label">
-        <span>
-          {t('menus.itemLabel')}
-          {!categoryLinked && <RequiredMark />}
-        </span>
+  return (
+    <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+      <FormField
+        full
+        htmlFor="menu-item-label"
+        label={t('menus.itemLabel')}
+        required={!categoryLinked}
+        helper={categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : undefined}
+        error={showLabelError
+          ? t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+          : undefined}
+      >
         <Input
           id="menu-item-label"
           value={value.label}
-          onChange={(e) => onChange({ label: e.target.value })}
+          onChange={(event) => onChange({ label: event.target.value })}
           onBlur={() => setLabelTouched(true)}
           placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
           readOnly={categoryLinked}
           disabled={categoryLinked}
-          aria-required={!categoryLinked}
-          aria-invalid={showLabelError || undefined}
-          aria-describedby={showLabelError ? 'menu-item-label-error' : categoryLinked ? 'menu-item-label-hint' : undefined}
-         />
-        {categoryLinked ? (
-          <small id="menu-item-label-hint" className="menu-form-hint">{t('menus.itemLabelCategoryLinkedHint')}</small>
-        ) : showLabelError && (
-          <small id="menu-item-label-error" className="menu-form-hint menu-form-hint--danger" role="alert">
-            {t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })}
-          </small>
-        )}
-      </label>
+        />
+      </FormField>
 
-      {/* Chọn danh mục có sẵn — tự điền URL, khỏi phải nhớ slug */}
       {categoryOptions?.length > 0 ? (
         <MenuCategoryPicker
           label={t('menus.itemCategoryPicker')}
@@ -131,96 +111,85 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           onChange={onChange}
         />
       ) : categoryError ? (
-        <p className="form-field-wide menu-form-hint menu-form-hint--warn" role="status">
+        <Alert tone="warning" size="sm" className="col-span-full">
           {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.' })}
-        </p>
+        </Alert>
       ) : null}
 
-      {/* URL — khoá lại khi đã liên kết danh mục (tự lấy theo đường dẫn danh mục) */}
-      <label className="form-field form-field-wide" htmlFor="menu-item-url">
-        <span>
-          {t('menus.itemUrlCustom')}
-          {!categoryLinked && <RequiredMark />}
-        </span>
+      <FormField
+        full
+        htmlFor="menu-item-url"
+        label={t('menus.itemUrlCustom')}
+        required={!categoryLinked}
+        helper={categoryLinked
+          ? t('menus.itemCategoryLinkedHint')
+          : !value.url.trim()
+            ? t('menus.urlHint')
+            : undefined}
+        error={urlInvalid
+          ? t('menus.urlInvalid', { defaultValue: 'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.' })
+          : undefined}
+      >
         <Input
           id="menu-item-url"
           value={value.url}
-          onChange={(e) => onChange({ url: e.target.value, targetType: 'CUSTOM', targetId: null })}
-          placeholder="/danh-muc/... hoặc https://..."
+          onChange={(event) => onChange({ url: event.target.value, targetType: 'CUSTOM', targetId: null })}
+          placeholder={t('menus.itemUrlPlaceholder')}
           readOnly={categoryLinked}
           disabled={categoryLinked}
-          aria-required={!categoryLinked}
-          aria-invalid={urlInvalid || undefined}
-          aria-describedby="menu-item-url-hint"
-         />
-        {categoryLinked ? (
-          <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.itemCategoryLinkedHint')}</small>
-        ) : value.url.trim() ? (
-          urlInvalid && (
-            <small id="menu-item-url-hint" className="menu-form-hint menu-form-hint--danger">
-              {t('menus.urlInvalid', { defaultValue: 'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.' })}
-            </small>
-          )
-        ) : (
-          <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.urlHint')}</small>
-        )}
-      </label>
+        />
+      </FormField>
 
-      {/* Tùy chọn nâng cao — thu gọn sẵn: tên tiếng Anh, mục cha, trạng thái, mở tab mới */}
-      <div className="form-field-wide">
+      <div className="col-span-full">
         <CollapsibleSection
           title={t('menus.itemAdvancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
           hint={t('menus.itemAdvancedHint', { defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới' })}
           open={advancedOpen}
-          onToggle={() => setAdvancedOpen((v) => !v)}
+          onToggle={() => setAdvancedOpen((current) => !current)}
           keepMounted
         >
-          <div className="form-grid">
-            {/* Label — English (optional); khoá lại khi đã liên kết danh mục (tự lấy theo tên tiếng Anh của danh mục) */}
-            <label className="form-field form-field-wide">
-              {t('menus.itemLabelEn')}
+          <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+            <FormField
+              full
+              label={t('menus.itemLabelEn')}
+              helper={categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')}
+            >
               <Input
                 value={value.labelEn}
-                onChange={(e) => onChange({ labelEn: e.target.value })}
+                onChange={(event) => onChange({ labelEn: event.target.value })}
                 placeholder={t('menus.itemLabelEnPlaceholder')}
                 readOnly={categoryLinked}
                 disabled={categoryLinked}
-               />
-              <small className="menu-form-hint">
-                {categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')}
-              </small>
-            </label>
+              />
+            </FormField>
 
-            {/* Parent — bao gồm lựa chọn "cấp gốc" để có thể đưa mục con lên cấp đầu */}
             <MenuParentSelect
               label={t('menus.itemParent')}
               rootLabel={t('menus.parentRoot')}
               value={value.parentId}
               options={parentOptions}
-              onChange={(v) => onChange({ parentId: v })}
+              onChange={(parentId) => onChange({ parentId })}
             />
 
-            {/* Status */}
-            <label className="form-field">
-              {t('menus.itemStatus')}
-              <Select
-                value={value.status}
-                onValueChange={(val) => onChange({ status: val })}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
-                <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
-              </SelectContent></Select>
-              {value.status === 'INACTIVE' && (
-                <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
-              )}
-            </label>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-foreground">{t('menus.itemStatus')}</span>
+              <Select value={value.status} onValueChange={(status) => onChange({ status })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {value.status === 'INACTIVE' ? (
+                <small className="text-xs text-warning">{t('menus.statusInactiveHint')}</small>
+              ) : null}
+            </div>
 
-            {/* Open in new tab */}
-            <label className="form-checkbox">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm text-foreground">
               <Checkbox
                 checked={value.openInNewTab}
                 onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
-               />
+              />
               {t('menus.itemOpenInNewTab')}
             </label>
           </div>

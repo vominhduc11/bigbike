@@ -32,6 +32,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Alert } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { Button } from '@/components/ui/button'
@@ -594,18 +595,18 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   return (
     <Screen>
       {/* ── Header (no create-menu CTA — slots are fixed) ── */}
-      <ScreenHeader eyebrow={t('menus.eyebrow')} title={t('menus.title')} description={t('menus.description')} />
+      <ScreenHeader group="content" title={t('menus.title')} />
 
       {warning && <ReadOnlyBanner warning={warning} />}
       {!canReadCatalog ? (
         <Alert tone="warning">
-          Cần quyền catalog.read để tải và chọn liên kết danh mục. Các loại liên kết menu khác vẫn dùng được.
+          {t('menus.catalogPermissionWarning')}
         </Alert>
       ) : null}
 
       {/* ── Panel: items for the selected slot ── */}
       <main
-        className="menu-panel"
+        className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface shadow-sm"
         id="menu-panel"
         tabIndex={0}
       >
@@ -633,10 +634,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         ) : menuDetail ? (
           <>
             {/* Panel header */}
-            <div className="menu-panel-head">
-              <div className="menu-panel-head-info">
-                <h2>{formatText(menuDetail.name)}</h2>
-                <span className="menu-panel-head-loc">{menuDetail.location}</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted px-5 py-4">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <h2 className="m-0 text-base font-bold text-foreground">{formatText(menuDetail.name)}</h2>
+                <Badge variant="muted" className="font-mono">{menuDetail.location}</Badge>
               </div>
               {canUpdate && (
                 <Button className="shrink-0" onClick={openAddItem}>
@@ -648,12 +649,13 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
 
             {/* Search toolbar */}
             {menuItems.length > 0 && (
-              <div className="menu-panel-toolbar">
+              <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
                 <FilterSearchInput
                   value={search}
                   onChange={setSearch}
                   placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc đường dẫn...' })}
                   ariaLabel={t('menus.searchAria', { defaultValue: 'Tìm kiếm mục menu' })}
+                  wrapperClassName="min-w-48 flex-1"
                 />
                 <ColumnVisibilityToggle
                   allColumns={hideableMenuColumns}
@@ -752,7 +754,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         >
           <form id="add-item-form" onSubmit={handleAddItem}>
             {SLOT_CONTEXT_NOTE_KEYS[selectedLocation] && (
-              <div className="menu-form-context-note">
+              <div className="mb-4 rounded-[var(--admin-radius-card)] border border-border bg-surface-muted px-4 py-3 text-sm leading-6 text-muted-foreground">
                 {t(SLOT_CONTEXT_NOTE_KEYS[selectedLocation].key, { defaultValue: SLOT_CONTEXT_NOTE_KEYS[selectedLocation].defaultValue })}
               </div>
             )}

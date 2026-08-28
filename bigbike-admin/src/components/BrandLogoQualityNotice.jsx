@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
+import { HelpTooltip } from './HelpTooltip'
 
 const ISSUE_KEYS = {
   MISSING_LOGO: 'brands.logo.quality.issueMissing',
@@ -44,14 +46,24 @@ export function BrandLogoQualityNotice({ quality, compact = false }) {
 
   if (quality.status === 'VALID' && !issues.length) return null
 
+  if (compact) {
+    const label = t('brands.logo.quality.rowWarning')
+    return (
+      <span className="mt-1 flex items-center gap-1">
+        <Badge variant="warning" className="whitespace-nowrap px-1 py-1 font-medium">
+          {label}
+        </Badge>
+        <HelpTooltip content={message} label={`${label}: ${message}`} />
+      </span>
+    )
+  }
+
   return (
-    <Alert tone="warning" size="sm" className={compact ? 'mt-1 max-w-sm' : 'mt-3'}>
+    <Alert tone="warning" size="sm" className="mt-3">
       <p>{message}</p>
-      {!compact ? (
-        <p className="mt-1 font-normal text-warning">
-          {t('brands.logo.quality.replaceHint')}
-        </p>
-      ) : null}
+      <p className="mt-1 font-normal text-warning">
+        {t('brands.logo.quality.replaceHint')}
+      </p>
     </Alert>
   )
 }

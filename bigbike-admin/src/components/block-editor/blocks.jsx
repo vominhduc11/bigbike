@@ -18,6 +18,7 @@ import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
 import { MediaRequirementHint } from '../MediaRequirementHint'
+import { HelpTooltip } from '../HelpTooltip'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { nextProductFeatureSide } from './constants'
 
@@ -646,9 +647,9 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                   inlineOnly
                   maxLength={500}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t('products.detail.blocks.suitabilityAudienceFormatHint')}
-                </p>
+                <div className="flex justify-end">
+                  <HelpTooltip content={t('products.detail.blocks.suitabilityAudienceFormatHint')} />
+                </div>
               </div>
               <Input
                 aria-label={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
@@ -676,7 +677,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
           rows={8}
           maxLength={20000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.suitability.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}
@@ -979,7 +980,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
           rows={8}
           maxLength={20000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.sizeGuide.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}

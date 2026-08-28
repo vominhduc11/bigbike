@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { HelpTooltip } from '@/components/HelpTooltip'
 import {
   AssistantConfigEditor,
   ASSISTANT_ABBREVIATIONS_KEY,
@@ -49,15 +50,16 @@ export function SettingField({
     : (placeholderFor(setting.key) || (rawValue ? '' : t('settings.empty')))
   const label = settingLabel(setting, t)
   const hint = settingHint(setting, t)
+  const supportText = hint || where
+  const supportIsLocation = !hint && Boolean(where)
+  const longSupport = typeof supportText === 'string' && Array.from(supportText.trim()).length > 80
 
   const controlId = `setting-${setting.key}`
   const labelId = `label-${setting.key}`
-  const hintId = `hint-${setting.key}`
-  const whereId = `where-${setting.key}`
+  const supportId = `support-${setting.key}`
   const errorId = `err-${setting.key}`
   const describedBy = [
-    hint ? hintId : null,
-    where ? whereId : null,
+    supportText ? supportId : null,
     error && !isImage ? errorId : null,
   ].filter(Boolean).join(' ') || undefined
 
@@ -123,13 +125,16 @@ export function SettingField({
       aria-describedby={isHtml || isImage || isAssistantConfig ? describedBy : undefined}
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <LabelElement
-          id={labelId}
-          htmlFor={isHtml || isImage || isAssistantConfig ? undefined : controlId}
-          className="text-sm font-semibold leading-5 text-foreground"
-        >
-          {label}
-        </LabelElement>
+        <div className="flex items-center gap-1">
+          <LabelElement
+            id={labelId}
+            htmlFor={isHtml || isImage || isAssistantConfig ? undefined : controlId}
+            className="text-sm font-semibold leading-5 text-foreground"
+          >
+            {label}
+          </LabelElement>
+          {longSupport ? <HelpTooltip content={supportText} /> : null}
+        </div>
         {setting.superAdminOnly && !isSuperAdmin ? (
           <span className="bb-badge bb-badge-neutral">
             <Lock size={12} aria-hidden="true" /> {t('settings.superAdminOnly')}
@@ -142,15 +147,13 @@ export function SettingField({
         ) : null}
       </div>
 
-      {hint ? (
-        <p id={hintId} className="mb-2 mt-0 text-xs leading-relaxed text-muted-foreground">{hint}</p>
-      ) : null}
-      {where ? (
-        <p id={whereId} className="mb-3 mt-0 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-          <MapPin size={13} className="mt-1 shrink-0" aria-hidden="true" />
-          <span>{where}</span>
+      {supportText && !longSupport ? (
+        <p id={supportId} className="mb-3 mt-0 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+          {supportIsLocation ? <MapPin size={13} className="mt-1 shrink-0" aria-hidden="true" /> : null}
+          <span>{supportText}</span>
         </p>
       ) : null}
+      {supportText && longSupport ? <span id={supportId} className="sr-only">{supportText}</span> : null}
 
       {isAssistantConfig ? (
         <AssistantConfigEditor

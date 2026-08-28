@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ContentListScreen } from './ContentListScreen'
@@ -47,7 +47,7 @@ vi.mock('../components/AdminTable', () => ({
         test.sortTitleAsc
       </button>
       {rows.map((row) => (
-        <div key={row.id}>
+        <div key={row.id} data-testid={`content-row-${row.id}`}>
           {columns.map((column) => (
             <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
           ))}
@@ -115,14 +115,20 @@ beforeEach(() => {
 
 describe('ContentListScreen', () => {
   it('hiển thị hành động theo trạng thái từng bài, không phụ thuộc bộ lọc hiện tại', async () => {
+    const user = userEvent.setup()
     renderScreen()
 
     expect(await screen.findByText('Bài nháp')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.edit' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'content.moveToTrash' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.view' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'content.restore' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'common.permanentDelete' })).toBeInTheDocument()
+
+    await user.click(within(screen.getByTestId('content-row-article-draft')).getByRole('button', { name: 'common.actions' }))
+    expect(await screen.findByRole('menuitem', { name: 'content.moveToTrash' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await user.click(within(screen.getByTestId('content-row-article-trash')).getByRole('button', { name: 'common.actions' }))
+    expect(await screen.findByRole('menuitem', { name: 'content.restore' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'common.permanentDelete' })).toBeInTheDocument()
   })
 
   it('chế độ chỉ đọc chỉ cho xem và không có hành động ghi', async () => {
@@ -140,7 +146,9 @@ describe('ContentListScreen', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'content.moveToTrash' }))
+    const row = await screen.findByTestId('content-row-article-draft')
+    await user.click(within(row).getByRole('button', { name: 'common.actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'content.moveToTrash' }))
     expect(mocks.showConfirm).toHaveBeenCalledTimes(1)
     expect(mocks.deleteContent).not.toHaveBeenCalled()
   })

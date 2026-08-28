@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, useId } from 'react'
 import { AlertCircle, AlertTriangle } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { HelpTooltip } from '@/components/HelpTooltip'
 
 /**
  * FormField — shared labelled form control dùng chung toàn admin.
@@ -23,6 +24,8 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
   const warningId = `${fieldId}-warning`
   const helperId = `${fieldId}-helper`
   const describedBy = error ? errorId : warning ? warningId : helper ? helperId : undefined
+  const longHelper = typeof helper === 'string' && Array.from(helper.trim()).length > 80
+  const showLongHelper = longHelper && !error && !warning
 
   const control = isValidElement(children)
     ? cloneElement(children, {
@@ -38,10 +41,13 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
       {label || count != null ? (
         <div className="flex items-center justify-between">
           {label ? (
-            <Label htmlFor={fieldId} className="flex items-center gap-1">
-              {label}
-              {required ? <span className="text-danger ml-1" aria-hidden="true">*</span> : null}
-            </Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor={fieldId} className="flex items-center gap-1">
+                {label}
+                {required ? <span className="text-danger ml-1" aria-hidden="true">*</span> : null}
+              </Label>
+              {showLongHelper ? <HelpTooltip content={helper} /> : null}
+            </div>
           ) : null}
           {count != null ? (
             <span className={cn('text-xs tabular-nums text-muted-foreground', countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold')}>
@@ -51,9 +57,10 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
         </div>
       ) : null}
       {control}
-      {helper && !error && !warning ? (
+      {helper && !longHelper && !error && !warning ? (
         <span id={helperId} className="text-xs text-muted-foreground">{helper}</span>
       ) : null}
+      {showLongHelper ? <span id={helperId} className="sr-only">{helper}</span> : null}
       {warning && !error ? (
         <span
           id={warningId}

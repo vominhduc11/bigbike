@@ -12,8 +12,9 @@ import { resolveDisplayUrl } from '@/lib/contracts'
 import { useContentLang } from '@/lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { DetailSection } from '@/components/DetailSection'
-import { ScreenHeader, StickyActionBar } from '@/components/layout'
+import { FormField, ScreenHeader, StickyActionBar } from '@/components/layout'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
@@ -81,11 +82,9 @@ function SourceBadge({ source, t }) {
   if (source === 'own') return null
   const isDefault = source === 'default'
   return (
-    <span
-      className={`bb-badge ${isDefault ? 'bb-badge-warning' : 'bb-badge-muted'}`}
-    >
+    <Badge variant={isDefault ? 'warning' : 'muted'}>
       {isDefault ? t('banners.usingDefault') : t('banners.usingFallback')}
-    </span>
+    </Badge>
   )
 }
 
@@ -94,11 +93,13 @@ function ImageField({
   label, hint, value, onChange, alt, onAltChange, recommend, disabled, badge, error,
 }) {
   return (
-    <div className="form-field">
-      <span className="bb-row">
+    <FormField
+      label={<span className="flex items-center gap-2">
         {label}
         {badge}
-      </span>
+      </span>}
+      helper={hint}
+    >
       <ImageUrlInput
         value={value}
         onChange={onChange}
@@ -109,32 +110,23 @@ function ImageField({
         disabled={disabled}
         error={error}
       />
-      {hint && <span className="hint">{hint}</span>}
-    </div>
+    </FormField>
   )
 }
 
 // ── Một ô chữ theo ngôn ngữ nội dung đang chọn ở header ─────────────────────
-function TextField({ fieldKey, label, value, onChange, disabled, contentLang, t, error }) {
+function TextField({ fieldKey, label, value, onChange, disabled, contentLang, error }) {
   const controlId = `banner-${fieldKey}-${contentLang}`
-  const errorId = `${controlId}-error`
   return (
-    <div className="form-field">
-      <label htmlFor={controlId}>{label}</label>
-      <span className="hint">
-        {contentLang === 'en' ? t('banners.editingEnglish') : t('banners.editingVietnamese')}
-      </span>
+    <FormField label={label} htmlFor={controlId} error={error}>
       <Input
         id={controlId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         maxLength={1000}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
       />
-      {error && <small id={errorId} className="field-error" role="alert">{error}</small>}
-    </div>
+    </FormField>
   )
 }
 
@@ -417,11 +409,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
 
   return (
     <div>
-      {embedded ? (
-        <p className="bb-muted mb-4 mt-0">{t('banners.description')}</p>
-      ) : (
-        <ScreenHeader eyebrow={t('banners.eyebrow')} title={t('banners.title')} description={t('banners.description')} />
-      )}
+      {!embedded ? (
+        <ScreenHeader group="content" title={t('banners.title')} />
+      ) : null}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
       {!embedded && !canUpdate && !state.warning && (

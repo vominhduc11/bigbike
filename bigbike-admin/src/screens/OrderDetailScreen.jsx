@@ -380,6 +380,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   return (
     <Screen className={useMobileStickyActions ? 'pb-32 md:pb-0' : undefined}>
       <ScreenHeader
+        group="sales"
         title={(
           <span className="bb-heading-inline">
             {t('orders.detail.eyebrow')}{' '}

@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
 import { ORDER_STATUS_TONE, CUSTOMER_STATUS_TONE, REVIEW_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
+import { Badge as UiBadge } from '@/components/ui/badge'
 
 function Badge({ tone = 'muted', className, children }) {
+  const variant = tone === 'neutral' ? 'secondary' : tone
   return (
-    <span className={`bb-badge bb-badge-${tone}${className ? ` ${className}` : ''}`}>
-      <span className="dot" aria-hidden="true" />
+    <UiBadge variant={variant} className={className}>
       {children}
-    </span>
+    </UiBadge>
   )
 }
 
@@ -64,6 +65,15 @@ export function StatusBadge({ status, type = 'order', className }) {
   } else if (type === 'review') {
     tone = REVIEW_STATUS_TONE[status] ?? 'muted'
     label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, { defaultValue: t('common.unknown') })
+  } else if (type === 'adminUser') {
+    const adminUserMeta = {
+      INVITED: { tone: 'info', labelKey: 'adminUsers.statusInvited' },
+      ACTIVE: { tone: 'success', labelKey: 'adminUsers.statusActive' },
+      DISABLED: { tone: 'danger', labelKey: 'adminUsers.statusDisabled' },
+      SUSPENDED: { tone: 'warning', labelKey: 'adminUsers.statusSuspended' },
+    }[status]
+    tone = adminUserMeta?.tone ?? 'muted'
+    label = adminUserMeta ? t(adminUserMeta.labelKey) : status
   }
 
   return <Badge tone={tone} className={className}>{label}</Badge>

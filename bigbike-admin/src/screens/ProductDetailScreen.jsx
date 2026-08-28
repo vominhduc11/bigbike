@@ -1116,7 +1116,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     <div className="@container min-w-0 flex-1 basis-0">
     <Screen>
         <ScreenHeader
-          eyebrow={t('products.detail.eyebrow')}
+          group="products"
           title={isCreate
             ? t('products.detail.createTitle')
             : (langValue('name') || form.name || t('products.detail.editTitle'))}
@@ -1124,23 +1124,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             !isCreate && state.item?.updatedAt ? (
               <span className="text-xs">
                 {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-                {isEnLang && (
-                  <>
-                    {' · '}
-                    {t('products.detail.langEnHint', {
-                      defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
-                    })}
-                  </>
-                )}
-              </span>
-            ) : isEnLang ? (
-              <span className="text-xs">
-                {t('products.detail.langEnHint', {
-                  defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
-                })}
               </span>
             ) : null
           }
+          help={isEnLang
+            ? t('products.detail.langEnHint', {
+                defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
+              })
+            : undefined}
           badge={
             <span className="inline-flex items-center gap-2">
               <span className={publishBadgeClass(form.publishStatus)}>
@@ -1768,6 +1759,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) — không bắt buộc ── */}
               <DetailSection
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
+                description={t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
                 badge={
                   <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
@@ -1777,9 +1769,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
-                </p>
                 {validationErrors.trustBadges && (
                   <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
@@ -1800,6 +1789,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   đặt cùng Nhóm 1 để khớp vị trí ưu tiên cao trên web, không nằm chung nhóm Video/Phụ kiện. ── */}
               <DetailSection
                 title={t('products.detail.sectionCommitments')}
+                description={t('products.detail.commitments.hint')}
                 badge={
                   <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
@@ -1809,7 +1799,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
                 {validationErrors.commitments && (
                   <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
@@ -1838,6 +1827,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
               <DetailSection
                 title={t('products.detail.sectionSpecStats')}
+                description={t('products.detail.specStats.hint')}
                 badge={
                   <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
@@ -1847,7 +1837,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
                 {validationErrors.specStats && (
                   <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
@@ -1866,11 +1855,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
               <DetailSection
                 title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
+                description={t('products.detail.quickAnswer.hint', { defaultValue: 'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.' })}
                 badge={<RoleBadge role="content" />}
               >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.quickAnswer.hint', { defaultValue: 'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.' })}
-                </p>
                 <Textarea
                   value={langValue('quickAnswerSummary')}
                   onChange={(e) => langChange('quickAnswerSummary', e.target.value)}
@@ -1890,11 +1877,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
               <DetailSection
                 title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })}
+                description={t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 badge={<RoleBadge role="content" />}
               >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
-                </p>
                 <Field full label={t('products.detail.description')} error={validationErrors.description}>
                   <BlockEditor
                     value={form.descriptionBlocks}
@@ -1911,11 +1896,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
               <DetailSection
                 title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
+                description={t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
                 badge={<RoleBadge role="content" />}
               >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
-                </p>
                 <UiTabs value={highlightsMode} onValueChange={setHighlightsMode} className="mb-3">
                   <TabsList>
                     <TabsTrigger value="structured" disabled={isReadOnly}>{t('products.detail.highlights.modeStructured')}</TabsTrigger>
@@ -1993,6 +1976,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
               <DetailSection
                 title={t('products.detail.sectionRelated')}
+                description={t('products.detail.relatedHint')}
                 badge={
                   <div className="flex items-center gap-2">
                     <span
@@ -2004,8 +1988,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-3">{t('products.detail.relatedHint')}</p>
-
                 {form.relatedProductChips.length > 0 && (
                   <SortableList
                     items={form.relatedProductChips}
@@ -2055,11 +2037,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Phù hợp với ai (#7) — field riêng form.suitabilitySection (V327/V328) ── */}
               <DetailSection
                 title={t('products.detail.blocks.blockTypeSuitability')}
+                description={t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
                 badge={<RoleBadge role="content" />}
               >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
-                </p>
                 {suitabilityCreateLockedInEn ? (
                   <p className="list-editor-empty">
                     {t('products.detail.suitabilityCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
@@ -2079,11 +2059,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Bảng size (#8) — field riêng form.sizeGuideSection (V327/V328) ── */}
               <DetailSection
                 title={t('products.detail.blocks.blockTypeSizeGuide')}
+                description={t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn kích cỡ (nhập theo cột/dòng hoặc dán nội dung có sẵn). Bảng sẽ hiển thị riêng trên trang sản phẩm, ngay sau mục Phù hợp với ai. Để trống, website sẽ ẩn bảng này.' })}
                 badge={<RoleBadge role="content" />}
               >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn kích cỡ (nhập theo cột/dòng hoặc dán nội dung có sẵn). Bảng sẽ hiển thị riêng trên trang sản phẩm, ngay sau mục Phù hợp với ai. Để trống, website sẽ ẩn bảng này.' })}
-                </p>
                 {sizeGuideCreateLockedInEn ? (
                   <p className="list-editor-empty">
                     {t('products.detail.sizeGuideCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
@@ -2124,6 +2102,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: FAQ ── */}
               <DetailSection
                 title={t('products.detail.sectionFaqs')}
+                description={t('products.detail.faqs.hint')}
                 badge={
                   <div className="flex items-center gap-2">
                     <span className="bb-count-pill">
@@ -2133,7 +2112,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
                 {validationErrors.faqs && (
                   <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
@@ -2185,6 +2163,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
               <DetailSection
                 title={t('products.detail.sectionAccessories')}
+                description={t('products.detail.accessoryHint')}
                 badge={
                   <div className="flex items-center gap-2">
                     <span
@@ -2196,8 +2175,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-3">{t('products.detail.accessoryHint')}</p>
-
                 {form.accessoryProductChips.length > 0 && (
                   <SortableList
                     items={form.accessoryProductChips}

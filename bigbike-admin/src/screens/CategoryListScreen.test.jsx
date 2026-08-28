@@ -146,7 +146,7 @@ describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
     expect(within(table).getByRole('columnheader', { name: 'categories.colVisibility' })).toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: 'categories.colHomepage' })).toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: 'categories.colUpdated' })).toBeInTheDocument()
-    expect(within(table).getByRole('columnheader', { name: 'categories.colActions' })).toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: 'common.actions' })).toBeInTheDocument()
     expect(within(table).queryByRole('columnheader', { name: 'categories.colDescription' })).not.toBeInTheDocument()
     expect(within(table).queryByRole('columnheader', { name: 'categories.colSortOrder' })).not.toBeInTheDocument()
     expect(within(row).getByText('/mu-bao-hiem')).toBeInTheDocument()

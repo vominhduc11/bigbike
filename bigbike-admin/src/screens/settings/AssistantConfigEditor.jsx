@@ -84,8 +84,8 @@ function AbbreviationEditor({ value, onChange, readOnly }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="vi">Tiếng Việt</SelectItem>
-                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="vi">{t('settings.assistantConfig.languageVi')}</SelectItem>
+                <SelectItem value="en">{t('settings.assistantConfig.languageEn')}</SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -313,8 +313,8 @@ function TemplateEditor({ value, onChange, readOnly }) {
                 >
                   <SelectTrigger aria-label={t('settings.assistantConfig.previewLanguage')}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="vi">Tiếng Việt</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="vi">{t('settings.assistantConfig.languageVi')}</SelectItem>
+                    <SelectItem value="en">{t('settings.assistantConfig.languageEn')}</SelectItem>
                   </SelectContent>
                 </Select>
               </label>

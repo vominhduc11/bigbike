@@ -298,9 +298,8 @@ export function ReportsScreen() {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('reports.eyebrow')}
+        group="reports"
         title={t('reports.title')}
-        description={t('reports.description')}
         actions={(
           <>
           <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>

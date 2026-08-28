@@ -4,6 +4,7 @@ import { AlertTriangle, Download, Gauge, Loader2, RefreshCw, ShieldCheck } from 
 import { useTranslation } from 'react-i18next'
 import { AdminTable } from '@/components/AdminTable'
 import { DetailSection } from '@/components/DetailSection'
+import { HelpTooltip } from '@/components/HelpTooltip'
 import { StatePanel } from '@/components/StatePanel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -281,12 +282,10 @@ export function AssistantModelOperations({ canUpdate }) {
                 </article>
               ))}
             </div>
-            <p className="m-0 text-xs text-muted-foreground">
-              {t('settings.assistantModels.verifiedAt', { time: formatDateTime(catalog.refreshedAt) })}
-            </p>
-            <p className="m-0 text-xs text-muted-foreground">
-              {t('settings.assistantModels.descriptionsAreEstimates')}
-            </p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>{t('settings.assistantModels.verifiedAt', { time: formatDateTime(catalog.refreshedAt) })}</span>
+              <HelpTooltip content={t('settings.assistantModels.descriptionsAreEstimates')} />
+            </div>
           </div>
         )}
       </DetailSection>
@@ -362,8 +361,8 @@ export function AssistantModelOperations({ canUpdate }) {
               </Button>
             </div>
             {canReadChat && canUpdate ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface-muted p-4">
-                <p className="m-0 max-w-2xl text-sm text-muted-foreground">{t('settings.assistantEvaluation.draftDescription')}</p>
+              <div className="flex flex-wrap items-center justify-end gap-1 rounded-md border border-border bg-surface-muted p-4">
+                <HelpTooltip content={t('settings.assistantEvaluation.draftDescription')} />
                 <Button type="button" variant="secondary" onClick={downloadDraft} loading={downloadingDraft}>
                   <Download size={16} aria-hidden="true" /> {t('settings.assistantEvaluation.downloadDraft')}
                 </Button>

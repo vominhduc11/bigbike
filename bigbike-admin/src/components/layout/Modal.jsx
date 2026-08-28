@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { X } from 'lucide-react'
+import { HelpTooltip } from '@/components/HelpTooltip'
 
 export function Modal({
   open,
@@ -17,6 +18,7 @@ export function Modal({
 }) {
   const { t } = useTranslation()
   const label = closeLabel || t('common.close')
+  const longDescription = typeof description === 'string' && Array.from(description.trim()).length > 80
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.() }}>
       <DialogContent
@@ -29,11 +31,14 @@ export function Modal({
       >
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0">
           <div className="min-w-0">
-            <DialogTitle className="text-base font-semibold font-body text-foreground leading-snug">
-              {title}
-            </DialogTitle>
+            <div className="flex items-center gap-1">
+              <DialogTitle className="text-base font-semibold font-body text-foreground leading-snug">
+                {title}
+              </DialogTitle>
+              {longDescription ? <HelpTooltip content={description} /> : null}
+            </div>
             {description ? (
-              <DialogDescription className="text-sm text-muted-foreground mt-1">
+              <DialogDescription className={longDescription ? 'sr-only' : 'mt-1 text-sm text-muted-foreground'}>
                 {description}
               </DialogDescription>
             ) : null}

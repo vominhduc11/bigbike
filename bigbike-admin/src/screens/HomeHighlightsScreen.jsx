@@ -274,9 +274,8 @@ export function HomeHighlightsScreen({ canUpdate }) {
       {!canUpdate && <ReadOnlyBanner />}
 
       <ScreenHeader
-        eyebrow={t('homeHighlights.eyebrow')}
+        group="content"
         title={t('homeHighlights.title')}
-        description={t('homeHighlights.description')}
       />
 
       {hasConflict && (

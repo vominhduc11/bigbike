@@ -199,11 +199,13 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     mocks.deleteRedirect.mockResolvedValue(undefined)
     renderScreen()
 
-    const deleteButton = await screen.findByRole('button', { name: 'Xoá chuyển hướng /old-delete' })
-    await user.click(deleteButton)
+    const actionsButton = await screen.findByRole('button', { name: 'Thao tác' })
+    await user.click(actionsButton)
+    await user.click(await screen.findByRole('menuitem', { name: 'Xoá chuyển hướng /old-delete' }))
     expect(mocks.deleteRedirect).not.toHaveBeenCalled()
 
-    await user.click(deleteButton)
+    await user.click(actionsButton)
+    await user.click(await screen.findByRole('menuitem', { name: 'Xoá chuyển hướng /old-delete' }))
     await waitFor(() => expect(mocks.deleteRedirect).toHaveBeenCalledWith('rd_delete'))
     expect(mocks.showConfirm).toHaveBeenLastCalledWith(
       'Xoá vĩnh viễn chuyển hướng "/old-delete". Thao tác này không thể hoàn tác.',

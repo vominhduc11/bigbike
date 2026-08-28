@@ -8,6 +8,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -378,6 +379,65 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
     }
   }, [bulkBusy, confirmDelete, confirmStatusChange, isSuperAdmin, queryClient, selectedReviews, t, visibleSelected])
 
+  const renderReviewActions = useCallback((review) => {
+    const targets = getReviewStatusTargets(review.status)
+    const busy = pendingId === review.id || bulkBusy || staleVersions[review.id] !== undefined
+    return (
+      <TableRowActions
+        primaryActions={[
+          {
+            key: 'view',
+            label: t('reviews.view'),
+            icon: Eye,
+            onSelect: () => navigate(`/admin/reviews/${review.id}`),
+          },
+          canUpdate && targets.includes('APPROVED') && {
+            key: 'approve',
+            label: t('reviews.approve'),
+            icon: Check,
+            disabled: busy,
+            loading: pendingId === review.id,
+            onSelect: () => handleStatusChange(review, 'APPROVED'),
+          },
+        ]}
+        menuActions={[
+          canUpdate && targets.includes('SPAM') && {
+            key: 'spam',
+            label: t('reviews.spam'),
+            icon: EyeOff,
+            tone: 'danger',
+            disabled: busy,
+            onSelect: () => handleStatusChange(review, 'SPAM'),
+          },
+          canUpdate && targets.includes('TRASH') && {
+            key: 'trash',
+            label: t('reviews.moveToTrash'),
+            icon: Trash2,
+            tone: 'danger',
+            disabled: busy,
+            onSelect: () => handleStatusChange(review, 'TRASH'),
+          },
+          canUpdate && targets.includes('PENDING') && {
+            key: 'pending',
+            label: review.status === 'TRASH' ? t('reviews.restore') : t('reviews.returnPending'),
+            icon: Undo2,
+            disabled: busy,
+            onSelect: () => handleStatusChange(review, 'PENDING'),
+          },
+          canUpdate && canPermanentlyDeleteReview(review, isSuperAdmin) && {
+            key: 'permanent-delete',
+            label: t('reviews.deletePermanent'),
+            icon: Trash2,
+            tone: 'danger',
+            separatorBefore: true,
+            disabled: busy,
+            onSelect: () => handleDelete(review),
+          },
+        ]}
+      />
+    )
+  }, [bulkBusy, canUpdate, handleDelete, handleStatusChange, isSuperAdmin, navigate, pendingId, staleVersions, t])
+
   const columns = useMemo(() => [
     {
       key: 'author',
@@ -428,30 +488,14 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
     },
     {
       key: 'actions',
-      label: t('common.actions'),
-      render: (review) => {
-        const targets = getReviewStatusTargets(review.status)
-        const busy = pendingId === review.id || bulkBusy || staleVersions[review.id] !== undefined
-        return (
-          <div className="flex flex-wrap items-center gap-1">
-            <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => navigate(`/admin/reviews/${review.id}`)} aria-label={t('reviews.view')}>
-              <Eye size={16} aria-hidden="true" />
-            </Button>
-            {canUpdate && targets.includes('APPROVED') ? <Button type="button" size="sm" className="min-h-11" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'APPROVED')}><Check size={16} aria-hidden="true" />{t('reviews.approve')}</Button> : null}
-            {canUpdate && targets.includes('SPAM') ? <Button type="button" variant="ghost" size="sm" className="min-h-11 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'SPAM')}><EyeOff size={16} aria-hidden="true" />{t('reviews.spam')}</Button> : null}
-            {canUpdate && targets.includes('TRASH') ? <Button type="button" variant="ghost" size="sm" className="min-h-11 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'TRASH')}><Trash2 size={16} aria-hidden="true" />{t('reviews.moveToTrash')}</Button> : null}
-            {canUpdate && targets.includes('PENDING') ? <Button type="button" variant="ghost" size="sm" className="min-h-11" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'PENDING')}><Undo2 size={16} aria-hidden="true" />{review.status === 'TRASH' ? t('reviews.restore') : t('reviews.returnPending')}</Button> : null}
-            {canUpdate && canPermanentlyDeleteReview(review, isSuperAdmin) ? <Button type="button" variant="ghost" size="sm" className="min-h-11 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleDelete(review)} aria-label={t('reviews.deletePermanent')}><Trash2 size={16} aria-hidden="true" /></Button> : null}
-          </div>
-        )
-      },
+      label: <span className="sr-only">{t('common.actions')}</span>,
+      align: 'right',
+      render: renderReviewActions,
     },
-  ], [bulkBusy, canUpdate, contentLang, handleDelete, handleStatusChange, isSuperAdmin, navigate, pendingId, staleVersions, t])
+  ], [contentLang, navigate, renderReviewActions, t])
   const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:reviews')
 
   const mobileCard = useCallback((review) => {
-    const targets = getReviewStatusTargets(review.status)
-    const busy = pendingId === review.id || bulkBusy || staleVersions[review.id] !== undefined
     const authorName = formatText(review.authorName, t('reviews.unknownAuthor'))
     return {
       title: <AuthorIdentity review={review} t={t} />,
@@ -474,18 +518,9 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
         { label: t('reviews.colPhotos'), value: review.photos?.length ? `${review.photos.length}` : '—' },
         { label: t('reviews.colContent'), value: formatText(review.body, t('reviews.contentMissing')) },
       ],
-      actions: (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" className="min-h-11 flex-1" onClick={() => navigate(`/admin/reviews/${review.id}`)}><Eye size={16} />{t('reviews.view')}</Button>
-          {canUpdate && targets.includes('APPROVED') ? <Button type="button" className="min-h-11 flex-1" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'APPROVED')}><Check size={16} />{t('reviews.approve')}</Button> : null}
-          {canUpdate && targets.includes('SPAM') ? <Button type="button" variant="ghost" className="min-h-11 flex-1 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'SPAM')}><EyeOff size={16} />{t('reviews.spam')}</Button> : null}
-          {canUpdate && targets.includes('TRASH') ? <Button type="button" variant="ghost" className="min-h-11 flex-1 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'TRASH')}><Trash2 size={16} />{t('reviews.moveToTrash')}</Button> : null}
-          {canUpdate && targets.includes('PENDING') ? <Button type="button" variant="ghost" className="min-h-11 flex-1" disabled={busy} loading={pendingId === review.id} onClick={() => handleStatusChange(review, 'PENDING')}><Undo2 size={16} />{review.status === 'TRASH' ? t('reviews.restore') : t('reviews.returnPending')}</Button> : null}
-          {canUpdate && canPermanentlyDeleteReview(review, isSuperAdmin) ? <Button type="button" variant="ghost" className="min-h-11 flex-1 text-danger" disabled={busy} loading={pendingId === review.id} onClick={() => handleDelete(review)}><Trash2 size={16} />{t('reviews.deletePermanent')}</Button> : null}
-        </div>
-      ),
+      actions: renderReviewActions(review),
     }
-  }, [bulkBusy, canUpdate, contentLang, handleDelete, handleStatusChange, isSuperAdmin, navigate, pendingId, staleVersions, t])
+  }, [contentLang, navigate, renderReviewActions, t])
 
   const summaryLoading = summaryQuery.isLoading && !summary
   const listLoading = state.status === 'loading' && items.length === 0
@@ -494,9 +529,8 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('reviews.eyebrow')}
+        group="sales"
         title={t('reviews.title')}
-        description={t('reviews.description')}
       />
 
       {refreshing ? <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite"><Loader2 size={16} className="animate-spin" />{t('reviews.refreshing')}</div> : null}

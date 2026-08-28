@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { EyeOff, Info } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useHasPermission } from '../lib/auth'
+import { HelpTooltip } from './HelpTooltip'
 
 /**
  * Ô "Cho Google hiển thị trang này" — dùng chung cho Sản phẩm, Danh mục, Thương hiệu
@@ -42,29 +43,28 @@ export function SeoIndexField({
   const blockedByContent = isEnLang && !englishReady
 
   return (
-    <div className="form-field" data-field="seoIndex">
-      <label className="flex w-fit cursor-pointer items-center gap-3 border border-border p-3 text-sm hover:bg-muted">
-        <Checkbox
-          checked={visible}
-          onCheckedChange={(checked) => onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)}
-          disabled={disabled}
-        />
-        <span>
-          {isEnLang
-            ? t('seoIndex.labelEn', { defaultValue: 'Cho Google hiển thị trang tiếng Anh' })
-            : t('seoIndex.labelVi', { defaultValue: 'Cho Google hiển thị trang tiếng Việt' })}
-        </span>
-      </label>
-
-      <span className="hint">
-        {t('seoIndex.hint', {
+    <div className="flex flex-col gap-2" data-field="seoIndex">
+      <div className="flex items-center gap-1">
+        <label className="flex w-fit cursor-pointer items-center gap-3 rounded-[var(--admin-radius-control)] border border-border p-3 text-sm hover:bg-muted">
+          <Checkbox
+            checked={visible}
+            onCheckedChange={(checked) => onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)}
+            disabled={disabled}
+          />
+          <span>
+            {isEnLang
+              ? t('seoIndex.labelEn', { defaultValue: 'Cho Google hiển thị trang tiếng Anh' })
+              : t('seoIndex.labelVi', { defaultValue: 'Cho Google hiển thị trang tiếng Việt' })}
+          </span>
+        </label>
+        <HelpTooltip content={t('seoIndex.hint', {
           defaultValue:
             'Tắt thì khách vẫn xem được nếu có sẵn đường dẫn, chỉ không xuất hiện trên kết quả tìm kiếm. Khác với chuyển về Nháp — chuyển Nháp là khách cũng không xem được.',
-        })}
-      </span>
+        })} />
+      </div>
 
       {!canEditIndex && (
-        <span className="hint flex items-center gap-1">
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Info size={13} aria-hidden="true" />
           {t('seoIndex.noPermission', {
             defaultValue: 'Tài khoản của bạn không có quyền đổi mục này.',
@@ -73,7 +73,7 @@ export function SeoIndexField({
       )}
 
       {blockedByContent && (
-        <span className="hint text-warning flex items-center gap-1">
+        <span className="flex items-center gap-1 text-xs text-warning">
           <EyeOff size={13} aria-hidden="true" />
           {englishReadyHint
             || t('seoIndex.englishNotReady', {

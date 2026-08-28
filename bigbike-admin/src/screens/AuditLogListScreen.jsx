@@ -319,9 +319,8 @@ export function AuditLogListScreen() {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('auditLog.eyebrow')}
+        group="system"
         title={t('auditLog.title')}
-        description={t('auditLog.description')}
         actions={(
           <Button
             type="button"

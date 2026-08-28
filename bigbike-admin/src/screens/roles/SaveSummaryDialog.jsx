@@ -68,13 +68,13 @@ export function SaveSummaryDialog({
       {autoAdded.length > 0 && (
         <div className="mb-3">
           <div className="text-xs font-bold text-info mb-2 uppercase tracking-wider">
-            + Tự thêm do phụ thuộc
+            + {t('roles.saveSummaryAutoAdded')}
           </div>
           {autoAdded.map(k => (
             <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <Check size={12} className="text-info shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
-              <span className="text-xs text-muted-foreground">Bắt buộc để tổ hợp quyền sử dụng được</span>
+              <span className="text-xs text-muted-foreground">{t('roles.saveSummaryDependencyReason')}</span>
             </div>
           ))}
         </div>

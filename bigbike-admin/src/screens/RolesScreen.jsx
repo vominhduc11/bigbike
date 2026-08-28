@@ -319,7 +319,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={t('roles.eyebrow')} title={t('roles.title')} description={t('roles.description')} />
+      <ScreenHeader group="system" title={t('roles.title')} />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
 

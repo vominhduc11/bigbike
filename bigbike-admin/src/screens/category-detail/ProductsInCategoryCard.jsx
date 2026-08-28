@@ -78,8 +78,8 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
           <div className="p-4">
             <StatePanel
               tone="neutral"
-              title="Chưa được cấp quyền xem sản phẩm"
-              description="Cần quyền products.read để tải danh sách và mở sản phẩm thuộc danh mục này."
+              title={t('categories.detail.productsPermissionTitle')}
+              description={t('categories.detail.productsPermissionDesc')}
             />
           </div>
         ) : isLoading ? (

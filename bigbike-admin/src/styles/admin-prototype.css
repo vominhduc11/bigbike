@@ -892,60 +892,6 @@
   color: var(--bb-warning);
 }
 
-.bb-section-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-4);
-}
-.bb-section-group-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-3);
-  padding: var(--admin-space-3) var(--admin-space-4);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  background: var(--bb-surface);
-  color: var(--bb-text);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: var(--bb-sh-xs);
-  transition:
-    background-color var(--admin-transition-fast),
-    border-color var(--admin-transition-fast),
-    box-shadow var(--admin-transition-fast);
-}
-.bb-section-group-toggle:hover {
-  background: var(--bb-surface-muted);
-  border-color: var(--bb-border-strong);
-}
-.bb-section-group-toggle:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--bb-primary-muted);
-}
-.bb-section-group-toggle.has-error {
-  border-color: var(--bb-danger-border);
-  box-shadow: 0 0 0 1px var(--bb-danger-border);
-}
-.bb-section-group-title {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--bb-text);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.bb-section-group-hint {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--bb-text-muted);
-  line-height: 1.35;
-}
-.bb-section-group-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-5);
-}
-
 .bb-related-row {
   display: flex;
   align-items: center;

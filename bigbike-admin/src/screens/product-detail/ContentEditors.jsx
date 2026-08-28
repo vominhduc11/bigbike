@@ -4,6 +4,7 @@ import { Check, ChevronDown, Film, GripVertical, ImageIcon, Play, Plus, X } from
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
+import { HelpTooltip } from '../../components/HelpTooltip'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { DeferredRichTextEditor } from '../../components/DeferredRichTextEditor'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
@@ -770,7 +771,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange, aiProm
           rows={10}
           maxLength={50000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.specs.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}
@@ -988,7 +989,7 @@ export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePos
         disabled={disabled || isEmptyEn || pending}
         rows={14}
       />
-      <p className="text-xs text-muted-foreground">{t('products.detail.highlights.htmlHint')}</p>
+      <div className="flex justify-end"><HelpTooltip content={t('products.detail.highlights.htmlHint')} /></div>
       <HtmlImportNotice
         result={result}
         dirty={dirty}
@@ -1162,7 +1163,7 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
           disabled={disabled || (isEn && items.length === 0) || pending}
           rows={10}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.faqs.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.faqs.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}

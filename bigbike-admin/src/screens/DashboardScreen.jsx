@@ -329,7 +329,7 @@ export function DashboardScreen({ navigate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('dashboard.eyebrow')}
+        group="sales"
         title={firstName
           ? t(`dashboard.${greetingKey}`, { name: firstName })
           : t(`dashboard.${greetingKey}Fallback`)}

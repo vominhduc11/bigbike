@@ -17,6 +17,7 @@ import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
+import { TableRowActions } from '../components/TableRowActions'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import {
   deleteContent,
@@ -301,67 +302,44 @@ export function ContentListScreen({ navigate, canUpdate }) {
     const isBusy = rowBusy?.endsWith(`:${item.id}`)
     const detailLabel = canUpdate && !isTrashed ? t('common.edit') : t('common.view')
     return (
-      <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          className="min-h-11 min-w-11"
-          disabled={isBusy}
-          title={detailLabel}
-          aria-label={detailLabel}
-          onClick={() => navigate(contentDetailPath(item))}
-        >
-          {canUpdate && !isTrashed
-            ? <Pencil size={16} aria-hidden="true" />
-            : <Eye size={16} aria-hidden="true" />}
-        </Button>
-        {canUpdate && !isTrashed ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            type="button"
-            className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-            loading={rowBusy === `trash:${item.id}`}
-            disabled={isBusy}
-            title={t('content.moveToTrash')}
-            aria-label={t('content.moveToTrash')}
-            onClick={() => handleSoftDelete(item)}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-          </Button>
-        ) : null}
-        {canUpdate && isTrashed ? (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              className="min-h-11 min-w-11"
-              loading={rowBusy === `restore:${item.id}`}
-              disabled={isBusy}
-              title={t('content.restore')}
-              aria-label={t('content.restore')}
-              onClick={() => handleRestore(item)}
-            >
-              <Undo2 size={16} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-              loading={rowBusy === `permanent:${item.id}`}
-              disabled={isBusy}
-              title={t('common.permanentDelete')}
-              aria-label={t('common.permanentDelete')}
-              onClick={() => handlePermanentDelete(item)}
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </Button>
-          </>
-        ) : null}
-      </div>
+      <TableRowActions
+        primaryActions={[{
+          key: 'detail',
+          label: detailLabel,
+          icon: canUpdate && !isTrashed ? Pencil : Eye,
+          disabled: isBusy,
+          onSelect: () => navigate(contentDetailPath(item)),
+        }]}
+        menuActions={!canUpdate
+          ? []
+          : isTrashed
+            ? [
+                {
+                  key: 'restore',
+                  label: t('content.restore'),
+                  icon: Undo2,
+                  disabled: isBusy,
+                  onSelect: () => handleRestore(item),
+                },
+                {
+                  key: 'permanent-delete',
+                  label: t('common.permanentDelete'),
+                  icon: Trash2,
+                  tone: 'danger',
+                  separatorBefore: true,
+                  disabled: isBusy,
+                  onSelect: () => handlePermanentDelete(item),
+                },
+              ]
+            : [{
+                key: 'trash',
+                label: t('content.moveToTrash'),
+                icon: Trash2,
+                tone: 'danger',
+                disabled: isBusy,
+                onSelect: () => handleSoftDelete(item),
+              }]}
+      />
     )
   }
 
@@ -371,6 +349,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
       label: t('content.colContent'),
       sortable: true,
       skeletonWidth: '80%',
+      headerClassName: 'min-w-60',
+      cellClassName: 'min-w-60',
       render: (item) => (
         <div className="flex min-w-0 items-center gap-3">
           <span className="bb-product-thumb h-10 w-10 shrink-0">
@@ -407,8 +387,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
     },
     {
       key: 'actions',
-      label: '',
+      label: <span className="sr-only">{t('common.actions')}</span>,
       align: 'right',
+      headerClassName: 'w-24',
+      cellClassName: 'w-24 whitespace-nowrap',
       render: renderRowActions,
     },
   ]
@@ -444,9 +426,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('content.eyebrow')}
+        group="content"
         title={t('content.title')}
-        description={t('content.description')}
         actions={(
           <Button
             type="button"

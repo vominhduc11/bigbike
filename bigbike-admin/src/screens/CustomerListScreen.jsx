@@ -331,9 +331,8 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('customers.eyebrow')}
+        group="sales"
         title={t('customers.title')}
-        description={t('customers.description')}
         actions={canExport ? (
             <ExportButton
               onExport={async () => {

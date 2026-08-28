@@ -215,9 +215,8 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('chatAdmin.eyebrow')}
+        group="sales"
         title={t('chatAdmin.detail.title')}
-        description={t('chatAdmin.detail.description')}
         actions={<Button variant="secondary" onClick={() => navigate('/admin/chat')}><ArrowLeft size={16} aria-hidden="true" />{t('common.back')}</Button>}
       />
 

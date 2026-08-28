@@ -5,6 +5,7 @@ import {
   TAB_ORDER,
   groupBySection,
   isTranslatableSetting,
+  settingWhere,
 } from './constants'
 
 describe('shared store policy settings', () => {
@@ -35,5 +36,12 @@ describe('shared store policy settings', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].sec).toBe('store_policy_content')
     expect(keys.every((key) => KEY_GUIDE[key]?.[0] === 'store_policy_content')).toBe(true)
+  })
+
+  it('does not repeat a setting label as a second support line', () => {
+    const t = (_key, values) => values?.defaultValue ?? _key
+    expect(KEY_GUIDE.site_name[1]).toBe('')
+    expect(KEY_GUIDE.footer_description[1]).toBe('')
+    expect(settingWhere({ key: 'contact_email', description: 'Email liên hệ' }, t)).toBe('')
   })
 })

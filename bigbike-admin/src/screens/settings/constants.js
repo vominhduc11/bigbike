@@ -93,7 +93,17 @@ export function settingHint(setting, t) {
 export function settingWhere(setting, t) {
   const fallback = KEY_GUIDE[setting.key]?.[1]
   if (!fallback) return ''
-  return t(`settings.keyWhere.${setting.key}`, { defaultValue: fallback })
+  const where = t(`settings.keyWhere.${setting.key}`, { defaultValue: fallback })
+  const comparable = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+  const labelText = comparable(settingLabel(setting, t))
+  const whereText = comparable(where)
+  if (labelText && whereText && (labelText.includes(whereText) || whereText.includes(labelText))) return ''
+  return where
 }
 
 export function sectionTitle(sec, t) {
@@ -575,9 +585,9 @@ export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
 // Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
 export const KEY_GUIDE = {
-  site_name:             ['general_brand', 'tên hiển thị — SEO trang chủ/bài viết + khối liên hệ trang sản phẩm'],
+  site_name:             ['general_brand', ''],
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode.
-  footer_description:    ['general_brand', 'đoạn mô tả — panel thông tin shop trên header mobile'],
+  footer_description:    ['general_brand', ''],
 
   contact_email:         ['contact_main', 'email liên hệ'],
   contact_address:       ['contact_main', 'địa chỉ + bản đồ trang Liên hệ'],

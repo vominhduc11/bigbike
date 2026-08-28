@@ -292,19 +292,22 @@ describe('ReviewListScreen', () => {
     })
     renderScreen(true, true)
 
-    await user.click(await screen.findByRole('button', { name: 'reviews.deletePermanent' }))
+    await user.click(await screen.findByRole('button', { name: 'common.actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'reviews.deletePermanent' }))
 
     await waitFor(() => expect(deleteReview).toHaveBeenCalledWith(12, 3))
   })
 
   it('shows only owner-approved transitions and gates hard delete to a super admin in Trash', async () => {
+    const user = userEvent.setup()
     const { unmount } = renderScreen(true, false)
 
     expect(await screen.findByRole('button', { name: 'reviews.approve' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'reviews.spam' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'reviews.moveToTrash' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.returnPending' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'common.actions' }))
+    expect(await screen.findByRole('menuitem', { name: 'reviews.spam' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'reviews.moveToTrash' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'reviews.returnPending' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
     unmount()
 
     fetchReviews.mockResolvedValue({
@@ -313,10 +316,11 @@ describe('ReviewListScreen', () => {
     })
     renderScreen(true, true)
 
-    expect(await screen.findByRole('button', { name: 'reviews.restore' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'reviews.deletePermanent' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'common.actions' }))
+    expect(await screen.findByRole('menuitem', { name: 'reviews.restore' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'reviews.deletePermanent' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.approve' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.spam' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'reviews.spam' })).not.toBeInTheDocument()
   })
 
   it('requires confirmation before approving a pending review', async () => {

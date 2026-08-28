@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Award, EyeOff, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
+import { Award, Eye, EyeOff, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { showConfirm } from '../lib/confirm'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { FilterSelect } from '../components/FilterSelect'
@@ -13,6 +14,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 import { BrandLogoQualityNotice } from '../components/BrandLogoQualityNotice'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
@@ -27,6 +29,7 @@ import { useContentLang } from '../lib/contentLang'
 import { useRecentItems } from '../lib/useRecentItems'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { hasBrandLogoQualityIssue } from '../lib/brandLogoQuality'
 
 const SYSTEM_BRAND_SLUG = 'uncategorized-brand'
 const INITIAL_QUERY = {
@@ -105,6 +108,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   }
 
   const items = (state.items || []).filter((brand) => brand.slug !== SYSTEM_BRAND_SLUG)
+  const logoIssueCount = items.filter((brand) => hasBrandLogoQualityIssue(brand.logoQuality)).length
   const isTrash = query.visibility === 'HIDDEN'
   const isFiltered = Boolean(query.search) || isTrash
   const isActionBusy = Boolean(activeAction)
@@ -192,67 +196,53 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
   function renderRowActions(brand) {
     const actionForBrand = activeAction?.endsWith(`:${brand.id}`)
-    const disabled = isActionBusy || brand.isVisible !== true
+    if (brand.slug === SYSTEM_BRAND_SLUG) return null
 
-    if (!canUpdate || brand.isVisible === null || brand.slug === SYSTEM_BRAND_SLUG) return null
-
-    if (brand.isVisible === false) {
-      return (
-        <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="min-h-11 min-w-11"
-            title={t('products.restore', { defaultValue: 'Khôi phục' })}
-            aria-label={t('products.restore', { defaultValue: 'Khôi phục' })}
-            aria-busy={actionForBrand || undefined}
-            disabled={isActionBusy}
-            onClick={() => restoreBrandFromTrash(brand)}
-          >
-            <Undo2 size={16} aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-            title={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
-            aria-label={t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
-            aria-busy={actionForBrand || undefined}
-            disabled={isActionBusy}
-            onClick={() => permanentlyDeleteBrand(brand)}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-          </Button>
-        </div>
-      )
-    }
+    const isTrashed = brand.isVisible === false
+    const canMutate = canUpdate && brand.isVisible !== null
+    const detailLabel = canMutate && !isTrashed
+      ? t('common.edit', { defaultValue: 'Chỉnh sửa' })
+      : t('common.view', { defaultValue: 'Xem' })
 
     return (
-      <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="min-h-11 min-w-11"
-          title={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
-          aria-label={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
-          disabled={disabled}
-          onClick={() => navigate(`/admin/brands/${brand.id}`)}
-        >
-          <Pencil size={16} aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="min-h-11 min-w-11 text-destructive hover:text-destructive"
-          title={t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' })}
-          aria-label={t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' })}
-          aria-busy={actionForBrand || undefined}
-          disabled={disabled}
-          onClick={() => hideBrand(brand)}
-        >
-          <EyeOff size={16} aria-hidden="true" />
-        </Button>
-      </div>
+      <TableRowActions
+        primaryActions={[{
+          key: 'detail',
+          label: detailLabel,
+          icon: canMutate && !isTrashed ? Pencil : Eye,
+          disabled: actionForBrand,
+          onSelect: () => navigate(`/admin/brands/${brand.id}`),
+        }]}
+        menuActions={!canMutate
+          ? []
+          : isTrashed
+            ? [
+                {
+                  key: 'restore',
+                  label: t('products.restore', { defaultValue: 'Khôi phục' }),
+                  icon: Undo2,
+                  disabled: isActionBusy,
+                  onSelect: () => restoreBrandFromTrash(brand),
+                },
+                {
+                  key: 'permanent-delete',
+                  label: t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' }),
+                  icon: Trash2,
+                  tone: 'danger',
+                  separatorBefore: true,
+                  disabled: isActionBusy,
+                  onSelect: () => permanentlyDeleteBrand(brand),
+                },
+              ]
+            : [{
+                key: 'trash',
+                label: t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' }),
+                icon: EyeOff,
+                tone: 'danger',
+                disabled: isActionBusy,
+                onSelect: () => hideBrand(brand),
+              }]}
+      />
     )
   }
 
@@ -260,6 +250,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
     {
       key: 'brand',
       label: t('brands.colBrand', { defaultValue: 'Thương hiệu' }),
+      headerClassName: 'min-w-60',
+      cellClassName: 'min-w-60',
       render: (brand) => (
         <div className="flex min-w-0 items-center gap-3">
           <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-border bg-surface-muted text-muted-foreground">
@@ -309,8 +301,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
     },
     {
       key: 'actions',
-      label: t('common.actions', { defaultValue: 'Thao tác' }),
+      label: <span className="sr-only">{t('common.actions', { defaultValue: 'Thao tác' })}</span>,
       align: 'right',
+      headerClassName: 'w-24',
+      cellClassName: 'w-24 whitespace-nowrap',
       render: renderRowActions,
     },
   ]
@@ -357,9 +351,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('brands.eyebrow')}
+        group="products"
         title={t('brands.title')}
-        description={t('brands.description')}
         actions={canUpdate ? (
           <Button type="button" className="min-h-11" onClick={() => navigate('/admin/brands/new')}>
             <Plus size={16} aria-hidden="true" />
@@ -449,6 +442,12 @@ export function BrandListScreen({ navigate, canUpdate }) {
           onAction={isFiltered ? resetFilters : canUpdate ? () => navigate('/admin/brands/new') : undefined}
           className="mt-4"
         />
+      ) : null}
+
+      {state.status === 'success' && logoIssueCount > 0 ? (
+        <Alert tone="warning" className="mt-4">
+          <p>{t('brands.logo.quality.summary', { count: logoIssueCount })}</p>
+        </Alert>
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (

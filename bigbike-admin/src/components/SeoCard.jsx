@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { ImageUrlInput } from './ImageUrlInput'
 import { SeoIndexField } from './SeoIndexField'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { normalizeSeoText, stripHtml } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
 import { DetailSection } from './DetailSection'
+import { FormField } from '@/components/layout'
 
 // Thẻ SEO dùng chung (Danh mục, Thương hiệu, …). Gộp bản trùng ~95 dòng trước đây ở
 // BrandDetailScreen với category-detail/SeoCard (audit P1-13). Tham số hoá theo:
@@ -32,7 +33,6 @@ export function SeoCard({
   const { t } = useTranslation()
   const p = (key, defaultValue) => t(`${i18nPrefix}.${key}`, { defaultValue })
   const uid = useId()
-  const errId = (name) => `${uid}-${name}`
 
   // Guard undefined: partial/nháp form có thể chưa có các field này → tránh crash khi
   // gọi .trim()/.length và tránh cảnh báo controlled input.
@@ -49,7 +49,7 @@ export function SeoCard({
   const previewUrl = `${previewBase}/${previewSlug}`
 
   const enHint = isEnLang && (
-    <span className="hint ml-2 inline">
+    <span className="ml-2 text-xs font-normal text-muted-foreground">
       {p('enFieldHint', '(tiếng Anh — tùy chọn)')}
     </span>
   )
@@ -99,11 +99,12 @@ export function SeoCard({
           </div>
         </div>
 
-        <label className="form-field">
-          <span className="flex items-center justify-between">
-            <span>{p('seoTitle', 'Tiêu đề khi xuất hiện trên Google')}{enHint}</span>
-            <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
-          </span>
+        <FormField
+          label={<>{p('seoTitle', 'Tiêu đề khi xuất hiện trên Google')}{enHint}</>}
+          count={`${seoTitleVal.length} / 60`}
+          countWarn={seoTitleVal.length > 60}
+          error={validationErrors.seoTitle}
+        >
           <Input
             value={seoTitleVal}
             onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
@@ -111,20 +112,14 @@ export function SeoCard({
             disabled={isReadOnly}
             maxLength={255}
             placeholder={p('seoTitlePlaceholder', 'Để trống sẽ tự dùng tên')}
-            aria-invalid={validationErrors.seoTitle ? true : undefined}
-            aria-describedby={validationErrors.seoTitle ? errId('seoTitle') : undefined}
           />
-          {validationErrors.seoTitle && (
-            <span id={errId('seoTitle')} role="alert" className="hint text-danger flex items-center gap-1">
-              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoTitle}
-            </span>
-          )}
-        </label>
-        <label className="form-field">
-          <span className="flex items-center justify-between">
-            <span>{p('seoDescription', 'Mô tả khi xuất hiện trên Google')}{enHint}</span>
-            <span className={`hint ${seoDescriptionPlain.length > 165 ? 'text-danger' : ''}`}>{seoDescriptionPlain.length} / 165</span>
-          </span>
+        </FormField>
+        <FormField
+          label={<>{p('seoDescription', 'Mô tả khi xuất hiện trên Google')}{enHint}</>}
+          count={`${seoDescriptionPlain.length} / 165`}
+          countWarn={seoDescriptionPlain.length > 165}
+          error={validationErrors.seoDescription}
+        >
           <Textarea
             rows={3}
             value={seoDescVal}
@@ -132,15 +127,8 @@ export function SeoCard({
             onBlur={!isEnLang ? () => onFieldBlur?.('seoDescription') : undefined}
             disabled={isReadOnly}
             placeholder={p('seoDescriptionPlaceholder', 'Mô tả ngắn hiển thị dưới tiêu đề trên Google')}
-            aria-invalid={validationErrors.seoDescription ? true : undefined}
-            aria-describedby={validationErrors.seoDescription ? errId('seoDescription') : undefined}
           />
-          {validationErrors.seoDescription && (
-            <span id={errId('seoDescription')} role="alert" className="hint text-danger flex items-center gap-1">
-              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoDescription}
-            </span>
-          )}
-        </label>
+        </FormField>
         <SeoIndexField
           noIndexVi={form.seoNoIndex}
           noIndexEn={form.seoNoIndexEn}
@@ -150,8 +138,11 @@ export function SeoCard({
           onChange={updateField}
         />
         {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
-        <div className="form-field" data-field="seoOgImageUrl">
-          <span>{p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}</span>
+        <FormField
+          label={p('seoOgImageUrl', 'Ảnh hiển thị khi chia sẻ trên mạng xã hội')}
+          helper={p('seoOgImageUrlHint', 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.')}
+        >
+          <div data-field="seoOgImageUrl">
           <ImageUrlInput
             value={form.seoOgImageUrl}
             onChange={(url, media) => {
@@ -166,8 +157,8 @@ export function SeoCard({
             error={validationErrors.seoOgImageUrl}
             recommend={IMAGE_RECO.cover}
           />
-          <span className="hint">{p('seoOgImageUrlHint', 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.')}</span>
-        </div>
+          </div>
+        </FormField>
       </div>
       )}
     </DetailSection>

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import { forwardRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { HelpTooltip } from '@/components/HelpTooltip'
 
 // `headingLevel` (2|3|4, mặc định 2) cho phép cấp tiêu đề khớp ngữ cảnh phân cấp.
 // CSS `.detail-section-header :is(h2,h3,h4)` giữ nguyên style ở mọi cấp.
@@ -21,6 +22,7 @@ export const DetailSection = forwardRef(function DetailSection({
   const { t } = useTranslation()
   const Heading = `h${headingLevel}`
   const hasHeader = Boolean(title || description || badge || action || required)
+  const longDescription = typeof description === 'string' && Array.from(description.trim()).length > 80
   return (
     <section ref={ref} className={cn('detail-section', className)} {...props}>
       {hasHeader ? <header className={cn('detail-section-header', headerClassName)}>
@@ -32,9 +34,10 @@ export const DetailSection = forwardRef(function DetailSection({
                 <span className="ml-1 text-danger" aria-label={t('common.required')} title={t('common.required')}>*</span>
               ) : null}
             </Heading> : null}
+            {longDescription ? <HelpTooltip content={description} /> : null}
             {badge}
           </div>
-          {description ? <p>{description}</p> : null}
+          {description ? <p className={longDescription ? 'sr-only' : undefined}>{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </header> : null}

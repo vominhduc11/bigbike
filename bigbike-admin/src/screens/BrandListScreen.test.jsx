@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrandListScreen } from './BrandListScreen'
@@ -34,7 +34,7 @@ vi.mock('../components/AdminTable', () => ({
   AdminTable: ({ rows, columns }) => (
     <div data-testid="brand-table">
       {rows.map((row) => (
-        <div key={row.id}>
+        <div key={row.id} data-testid={`brand-row-${row.id}`}>
           {columns.map((column) => <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>)}
         </div>
       ))}
@@ -49,6 +49,7 @@ const visibleBrand = {
   isVisible: true,
   showOnHomepage: false,
   updatedAt: '2026-07-22T00:00:00Z',
+  logoQuality: { status: 'LEGACY', issues: ['NOT_SQUARE'], ratio: 1.5 },
 }
 const systemBrand = {
   id: 'uncategorized-brand',
@@ -91,6 +92,14 @@ describe('BrandListScreen', () => {
     expect(mocks.fetchBrands).toHaveBeenLastCalledWith(expect.objectContaining({ visibility: 'VISIBLE' }))
   })
 
+  it('shows one quality summary and keeps each affected row compact', async () => {
+    renderScreen()
+
+    expect(await screen.findByText('brands.logo.quality.summary')).toBeInTheDocument()
+    expect(screen.getByText('brands.logo.quality.rowWarning')).toBeInTheDocument()
+    expect(screen.queryByText('brands.logo.quality.legacy')).not.toBeInTheDocument()
+  })
+
   it('uses the read-only banner and hides write actions', async () => {
     renderScreen(false)
 
@@ -103,7 +112,9 @@ describe('BrandListScreen', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'brands.hideAction' }))
+    const row = await screen.findByTestId('brand-row-brand_ls2')
+    await user.click(within(row).getByRole('button', { name: 'common.actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'brands.hideAction' }))
     expect(mocks.showConfirm).toHaveBeenCalledTimes(1)
     expect(mocks.deleteBrand).not.toHaveBeenCalled()
   })
@@ -113,7 +124,9 @@ describe('BrandListScreen', () => {
     mocks.showConfirm.mockResolvedValue(true)
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'brands.hideAction' }))
+    const row = await screen.findByTestId('brand-row-brand_ls2')
+    await user.click(within(row).getByRole('button', { name: 'common.actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'brands.hideAction' }))
     await waitFor(() => expect(mocks.deleteBrand).toHaveBeenCalledWith('brand_ls2'))
     expect(mocks.fetchBrands).toHaveBeenLastCalledWith(expect.objectContaining({ visibility: 'VISIBLE' }))
   })

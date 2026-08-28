@@ -43,6 +43,7 @@
     "yes": "Có",
     "no": "Không",
     "unknown": "Không xác định",
+    "moreInformation": "Xem giải thích",
     "pleaseWait": "Vui lòng chờ...",
     "error": "Lỗi",
     "unknownError": "Đã xảy ra lỗi không xác định.",
@@ -292,7 +293,6 @@
     "missingRole": "Trang này chỉ dành cho Quản trị viên hoặc Quản lý cửa hàng."
   },
   "dashboard": {
-    "eyebrow": "Tổng quan",
     "title": "Bảng điều khiển",
     "subtitle": "Theo dõi hoạt động kinh doanh theo thời gian thực.",
     "greetingMorning": "Chào buổi sáng, {{name}} 👋",
@@ -475,9 +475,7 @@
     "daysAgo": "{{count}} ngày trước"
   },
   "products": {
-    "eyebrow": "Danh mục",
     "title": "Sản phẩm",
-    "description": "Quản lý danh mục sản phẩm.",
     "readOnly": "Bạn chỉ có quyền xem sản phẩm. Tài khoản chưa được cấp quyền thay đổi dữ liệu.",
     "filterAria": "Bộ lọc sản phẩm",
     "refreshing": "Đang cập nhật",
@@ -688,7 +686,6 @@
     "resultsAnnounce": "Đã lọc: {{count}} sản phẩm",
     "permanentDeleteConfirm": "Xoá vĩnh viễn sản phẩm \"{{name}}\". Thao tác này không thể hoàn tác.",
     "detail": {
-      "eyebrow": "Danh mục",
       "createTitle": "Tạo sản phẩm",
       "editTitle": "Sửa sản phẩm",
       "createDesc": "Thêm sản phẩm mới vào danh sách bán hàng.",
@@ -1480,9 +1477,7 @@
         "ORDER_REFUND_CREATED": "Tạo hoàn tiền"
       }
     },
-    "eyebrow": "Thương mại",
     "title": "Đơn hàng",
-    "description": "Quản lý và xử lý đơn hàng từ khách hàng.",
     "searchPlaceholder": "Số đơn, email khách hàng",
     "filterStatus": "Trạng thái",
     "filterDate": "Khoảng ngày",
@@ -1597,9 +1592,7 @@
     "emptyAllDesc": "Khi có đơn đặt trên website, đơn sẽ hiện ở đây."
   },
   "categories": {
-    "eyebrow": "Sản phẩm",
     "title": "Danh mục sản phẩm",
-    "description": "Sắp xếp sản phẩm theo nhóm để khách dễ tìm kiếm trên website.",
     "create": "Thêm danh mục",
     "searchPlaceholder": "Tìm theo tên danh mục",
     "filterVisibility": "Trạng thái hiển thị",
@@ -1759,6 +1752,8 @@
       "productsSectionTitle": "Sản phẩm thuộc danh mục này ({{count}})",
       "productsSectionDesc": "Danh sách sản phẩm đã được xếp vào danh mục này, sắp theo thứ tự cập nhật mới nhất trước.",
       "productsViewAll": "Xem tất cả {{count}} sản phẩm →",
+      "productsPermissionTitle": "Chưa được cấp quyền xem sản phẩm",
+      "productsPermissionDesc": "Tài khoản chưa thể tải hoặc mở các sản phẩm thuộc danh mục này.",
       "productsEmpty": "Chưa có sản phẩm nào thuộc danh mục này.",
       "productsEmptyAddLink": "Thêm sản phẩm vào danh mục này →",
       "seoPreviewLabel": "Xem thử trên Google",
@@ -1824,9 +1819,7 @@
     "filterTrashTab": "Thùng rác"
   },
   "brands": {
-    "eyebrow": "Danh mục",
     "title": "Thương hiệu",
-    "description": "Quản lý thương hiệu sản phẩm.",
     "create": "Tạo thương hiệu",
     "searchPlaceholder": "Tên hoặc đường dẫn thương hiệu",
     "filterVisibility": "Hiển thị",
@@ -1883,6 +1876,8 @@
         "legacy": "Logo cũ cần được kiểm tra: {{issues}} — nên thay khi thuận tiện.",
         "invalid": "Logo cần kiểm tra: {{issues}}.",
         "warning": "Logo có lưu ý chất lượng: {{issues}}.",
+        "rowWarning": "Cần kiểm tra logo",
+        "summary": "{{count}} thương hiệu có logo cần kiểm tra. Chi tiết được thu gọn trong từng dòng để danh sách dễ đọc.",
         "issueMissing": "chưa có logo",
         "issueLegacy": "logo cũ chưa được kiểm tra",
         "issueNotSquare": "chưa vuông (tỉ lệ {{ratio}})",
@@ -1897,11 +1892,8 @@
       }
     },
     "detail": {
-      "eyebrow": "Danh mục",
       "createTitle": "Tạo thương hiệu",
       "editTitle": "Sửa thương hiệu",
-      "createDesc": "Tạo thương hiệu mới.",
-      "editDesc": "Cập nhật thông tin thương hiệu.",
       "slugHintEn": "Đường dẫn thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.",
       "slugHelperEn": "Đường dẫn thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.",
       "slugPlaceholderEn": "duong-dan-dung-chung",
@@ -2035,9 +2027,7 @@
       "statusAsc": "Trạng thái tăng dần",
       "statusDesc": "Trạng thái giảm dần"
     },
-    "eyebrow": "Tin tức",
     "title": "Tin tức",
-    "description": "Quản lý bài viết, tin tức.",
     "newArticle": "Bài viết mới",
     "searchPlaceholder": "Tên hoặc đường dẫn",
     "filterPublish": "Trạng thái xuất bản",
@@ -2080,7 +2070,6 @@
       "errImageAltTooLong": "Mô tả ảnh không được vượt quá 255 ký tự.",
       "errRestoreFailed": "Không thể khôi phục bài viết.",
       "errPermanentDeleteFailed": "Không thể xoá vĩnh viễn bài viết.",
-      "eyebrow": "Tin tức",
       "createArticleTitle": "Tạo bài viết",
       "editArticleTitle": "Sửa bài viết",
       "createArticleDesc": "Tạo bài viết mới.",
@@ -2192,9 +2181,7 @@
     "emptyNoDataDesc": "Bắt đầu bằng cách tạo bài viết đầu tiên."
   },
   "customers": {
-    "eyebrow": "Thương mại",
     "title": "Khách hàng",
-    "description": "Quản lý tài khoản và thông tin khách hàng.",
     "kpi": {
       "total": "Tổng khách hàng",
       "totalHint": "Tất cả hồ sơ khách hàng, gồm cả hồ sơ từ đơn hàng",
@@ -2244,7 +2231,6 @@
       "error": "Lỗi",
       "notFound": "Không tìm thấy khách hàng",
       "notFoundDesc": "Khách hàng không tồn tại hoặc đã bị xoá.",
-      "eyebrow": "Thương mại / Khách hàng",
       "backToList": "← Danh sách",
       "sectionAccount": "Thông tin tài khoản",
       "sectionStats": "Thống kê mua hàng",
@@ -2314,9 +2300,7 @@
     "advancedSection": "Nâng cao",
     "folderManage": "Quản lý",
     "folderManageDone": "Xong",
-    "eyebrow": "Thư viện ảnh/video",
     "title": "Thư viện ảnh",
-    "description": "Quản lý ảnh và video đã tải lên thư viện.",
     "readOnly": "Bạn chỉ có quyền xem thư viện ảnh/video. Các thao tác tải lên, sửa, phân loại và xoá đã được khóa.",
     "refreshing": "Đang cập nhật thư viện…",
     "refreshError": "Không thể cập nhật dữ liệu mới. Danh sách cũ vẫn được giữ lại.",
@@ -2431,6 +2415,7 @@
       "dialogLabel": "Chọn ảnh từ thư viện",
       "dropToUpload": "Thả ảnh để tải lên",
       "title": "Thư viện ảnh",
+      "requirementsLabel": "Yêu cầu ảnh",
       "sizeHint": "Chưa rõ vị trí dùng — hãy mở ô tải ảnh ở đúng màn để xem tỉ lệ/kích thước khuyến nghị.",
       "uploadTitle": "Kéo thả ảnh vào cửa sổ này hoặc bấm để chọn tệp",
       "uploading": "Đang tải lên...",
@@ -2476,9 +2461,7 @@
     "hardDeleteError": "Không xoá được. Tệp có thể đang được dùng ở nơi khác — hãy gỡ tệp khỏi các nơi đang dùng rồi thử lại."
   },
   "menus": {
-    "eyebrow": "Cài đặt",
     "title": "Menu đầu trang",
-    "description": "Quản lý danh sách các liên kết hiển thị trên thanh điều hướng đầu trang website.",
     "loading": "Đang tải menu",
     "loadError": "Lỗi tải menu",
     "selectMenu": "Chọn menu hệ thống",
@@ -2503,6 +2486,7 @@
     "parentMissing": "Mục cha không tồn tại",
     "itemUrl": "Đường dẫn",
     "itemUrlCustom": "Đường dẫn tuỳ chỉnh",
+    "itemUrlPlaceholder": "/danh-muc/... hoặc https://...",
     "itemCategoryPicker": "Chọn danh mục có sẵn (tự động điền tên và đường dẫn)",
     "itemCategoryPickerNone": "— Không liên kết danh mục —",
     "itemCategoryLinkedHint": "Đã liên kết danh mục — tên và đường dẫn sẽ tự cập nhật theo danh mục này. Muốn nhập tay, chọn \"— Không liên kết danh mục —\" ở trên.",
@@ -2515,7 +2499,6 @@
     "statusInactiveHint": "Mục này sẽ không hiển thị trên website dù mục cha đang bật.",
     "itemLabelPlaceholder": "Tên hiển thị trên menu",
     "itemLabelRequired": "Vui lòng nhập tên hiển thị.",
-    "requiredLegend": "Bắt buộc",
     "urlHint": "Ví dụ: /danh-muc/xe-may, /tin-tuc/meo-chon-xe hoặc địa chỉ website đầy đủ",
     "saveMenu": "Lưu menu",
     "deleteItemSuccess": "Đã xoá mục menu.",
@@ -2530,6 +2513,7 @@
     "bulkDeleteConfirmTitle": "Xoá vĩnh viễn",
     "bulkDeleteSuccess": "Đã xoá {{count}} mục menu.",
     "categoryLoadError": "Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn bên dưới.",
+    "catalogPermissionWarning": "Tài khoản chưa có quyền xem danh mục nên không thể chọn liên kết danh mục. Các loại liên kết khác vẫn dùng được.",
     "urlInvalid": "Đường dẫn chưa hợp lệ. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ",
     "itemAdvancedTitle": "Tùy chọn nâng cao",
     "itemAdvancedHint": "Tên tiếng Anh, mục cha, trạng thái, mở tab mới",
@@ -2555,10 +2539,9 @@
     "editItemDialogDesc": "Chỉnh sửa mục điều hướng."
   },
   "sliders": {
-    "eyebrow": "Nội dung",
     "title": "Banner",
-    "description": "Quản lý banner theo vị trí.",
     "addBtn": "Thêm banner",
+    "limitedEditWarning": "Bạn có thể ẩn, hiện, sắp xếp và xoá banner. Cần thêm quyền xem sản phẩm và thư viện ảnh để tạo hoặc sửa đầy đủ.",
     "loading": "Đang tải banner",
     "error": "Lỗi",
     "empty": "Chưa có banner",
@@ -2587,9 +2570,9 @@
     "deleteError": "Lỗi xoá banner",
     "saveError": "Lỗi lưu banner",
     "dragToReorder": "Kéo để sắp xếp",
-    "productRequiredHint": "Bắt buộc: chọn sản phẩm mà banner sẽ mở tới.",
+    "deviceDesktop": "Máy tính",
+    "deviceMobile": "Điện thoại",
     "formProductRequired": "Vui lòng chọn sản phẩm liên kết.",
-    "requiredLegend": "Bắt buộc",
     "unsavedTitle": "Có thay đổi chưa lưu",
     "unsavedConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
     "toggleSuccess": "Đã cập nhật trạng thái",
@@ -2610,9 +2593,7 @@
     "emptyFilteredLangDesc": "Các banner ở vị trí này được gắn sản phẩm chưa có tên tiếng Anh nên bị ẩn ở chế độ tiếng Anh. Chuyển về tiếng Việt để xem, hoặc bổ sung tên tiếng Anh cho sản phẩm."
   },
   "reviews": {
-    "eyebrow": "Danh mục",
     "title": "Đánh giá sản phẩm",
-    "description": "Duyệt và quản lý đánh giá của khách hàng.",
     "searchPlaceholder": "Tên tác giả, nội dung",
     "filterStatus": "Trạng thái",
     "loading": "Đang tải đánh giá",
@@ -2765,9 +2746,7 @@
     }
   },
   "banners": {
-    "eyebrow": "Giao diện",
     "title": "Banner trang",
-    "description": "Quản lý ảnh banner đầu các trang — xem trước ngay tại đây, không cần mở web.",
     "loading": "Đang tải banner...",
     "loadError": "Không tải được banner",
     "saveError": "Lưu banner không thành công",
@@ -2775,8 +2754,6 @@
     "unsavedCount": "{{count}} thay đổi chưa lưu",
     "usingDefault": "Đang dùng ảnh mặc định",
     "usingFallback": "Đang dùng ảnh mặc định hệ thống",
-    "editingVietnamese": "Đang sửa nội dung tiếng Việt",
-    "editingEnglish": "Đang sửa nội dung tiếng Anh",
     "pageProducts": "Tất cả sản phẩm",
     "pageBrands": "Thương hiệu",
     "pageNews": "Tin tức",
@@ -2826,7 +2803,6 @@
     "bannerActive": "Bạn đang khoá trang quản trị để bảo trì."
   },
   "chatAdmin": {
-    "eyebrow": "Trợ lý bán hàng",
     "title": "Hội thoại với Trợ lý BigBike",
     "description": "Xem lại nội dung Trợ lý BigBike đã tư vấn, lượt dùng AI và khách đã đồng ý để lại liên hệ trong 90 ngày gần nhất.",
     "openSettings": "Mở cài đặt Trợ lý BigBike",
@@ -3074,7 +3050,6 @@
       "loadError": "Không tải được hội thoại",
       "notFound": "Hội thoại không tồn tại hoặc đã hết thời hạn lưu 90 ngày.",
       "title": "Chi tiết hội thoại",
-      "description": "Màn hình chỉ đọc, phản ánh đúng nội dung đã trao đổi với khách.",
       "messages": "Nội dung trao đổi",
       "messagesDescription": "Tin của khách và câu trả lời của Trợ lý BigBike theo đúng thứ tự thời gian.",
       "noMessages": "Chưa có nội dung hội thoại",
@@ -3147,9 +3122,7 @@
     }
   },
   "settings": {
-    "eyebrow": "Hệ thống",
     "title": "Cài đặt cửa hàng",
-    "description": "Quản lý thông tin website, tài khoản nhận chuyển khoản, nội dung hiển thị trên Google, banner và phân công nội bộ.",
     "refresh": "Làm mới",
     "refreshing": "Đang cập nhật",
     "refreshError": "Không thể làm mới cài đặt. Dữ liệu cũ và các thay đổi chưa lưu vẫn được giữ nguyên.",
@@ -3316,6 +3289,8 @@
       "ai_assistant_images": "Đọc ảnh khách gửi"
     },
     "assistantConfig": {
+      "languageVi": "Tiếng Việt",
+      "languageEn": "Tiếng Anh",
       "itemCount": "{{count}}/{{max}} mục",
       "addAbbreviation": "Thêm từ viết tắt",
       "addTemplate": "Thêm câu mẫu",
@@ -3501,9 +3476,7 @@
     "group_review_moderation": "Kiểm duyệt đánh giá"
   },
   "adminUsers": {
-    "eyebrow": "Hệ thống",
     "title": "Tài khoản quản trị",
-    "description": "Quản lý các tài khoản nội bộ của hệ thống.",
     "searchPlaceholder": "Email hoặc tên",
     "filtersAria": "Bộ lọc tài khoản quản trị",
     "loading": "Đang tải danh sách",
@@ -3571,13 +3544,13 @@
     "errEmailRequired": "Vui lòng nhập email.",
     "errEmailInvalid": "Email không hợp lệ.",
     "errDisplayNameRequired": "Vui lòng nhập tên hiển thị.",
+    "roleAccessRequiredShort": "Cần quyền xem danh sách vai trò để chọn vai trò cho tài khoản mới.",
+    "roleAccessRequired": "Cần quyền xem danh sách vai trò để lọc, mời tài khoản mới hoặc thay đổi vai trò. Các thao tác tên, mật khẩu và trạng thái vẫn khả dụng.",
     "rolesLoadError": "Không tải được danh sách vai trò. Không thể bảo đảm lựa chọn vai trò đầy đủ; thử tải lại trang.",
     "activeFiltersAria": "Bộ lọc đang áp dụng"
   },
   "auditLog": {
-    "eyebrow": "Hệ thống",
     "title": "Nhật ký hoạt động",
-    "description": "Xem lịch sử thao tác nội bộ để tra cứu ai đã làm gì, ở đâu và khi nào.",
     "loading": "Đang tải nhật ký",
     "error": "Lỗi tải nhật ký",
     "empty": "Chưa có nhật ký",
@@ -3827,9 +3800,7 @@
     "chipDateRange": "Thời gian: {{range}}"
   },
   "reports": {
-    "eyebrow": "Phân tích",
     "title": "Báo cáo doanh thu",
-    "description": "Doanh thu, sản phẩm và khách hàng theo khoảng thời gian.",
     "loading": "Đang tải dữ liệu…",
     "loadError": "Không tải được báo cáo",
     "loadErrorDesc": "Không thể tải báo cáo lúc này. Vui lòng thử lại.",
@@ -3875,9 +3846,7 @@
     "notEnoughDataForChart": "Chưa đủ dữ liệu để vẽ biểu đồ."
   },
   "roles": {
-    "eyebrow": "Hệ thống",
     "title": "Phân quyền",
-    "description": "Phân quyền nhân sự hệ thống. Mọi thay đổi được ghi vào nhật ký kiểm tra.",
     "loading": "Đang tải danh sách vai trò...",
     "loadError": "Không thể tải danh sách vai trò.",
     "empty": "Chưa có vai trò nào.",
@@ -3918,6 +3887,12 @@
     "assignedUserWarning": "Thay đổi này ảnh hưởng {{count}} nhân sự đang giữ vai trò này",
     "saveSummaryAdding": "Quyền được thêm",
     "saveSummaryRemoving": "Quyền bị gỡ",
+    "saveSummaryAutoAdded": "Tự thêm do phụ thuộc",
+    "saveSummaryDependencyReason": "Bắt buộc để tổ hợp quyền sử dụng được",
+    "permissionKindSupporting": "Hỗ trợ",
+    "permissionKindExport": "Xuất dữ liệu",
+    "permissionRequiredBy": "Bắt buộc bởi {{permissions}}",
+    "relatedPermission": "quyền liên quan",
     "saveSensitiveWarning": "Trong số thay đổi này có quyền nhạy cảm — ảnh hưởng đến bảo mật hệ thống. Kiểm tra kỹ trước khi xác nhận.",
     "saveOwnRoleWarning": "Bạn đang sửa vai trò của chính mình. Bỏ quyền ở đây sẽ ảnh hưởng trực tiếp tới quyền truy cập của bạn.",
     "selfLockoutBlocked": "Không thể bỏ quyền quản lý vai trò khỏi vai trò của chính bạn — thao tác này sẽ khiến bạn mất quyền truy cập.",
@@ -4148,9 +4123,7 @@
     "clearFilter": "Xoá bộ lọc",
     "noMatch": "Không tìm thấy video",
     "noMatchDescription": "Thử thay đổi từ khoá hoặc bộ lọc trạng thái.",
-    "selectAll": "Chọn tất cả",
-    "eyebrow": "Nội dung",
-    "description": "Quản lý video hiển thị trên trang chủ."
+    "selectAll": "Chọn tất cả"
   },
   "imageInput": {
     "pickFromLibrary": "Chọn từ thư viện",
@@ -4200,7 +4173,6 @@
     "pageSlugHint": "Đường dẫn của mục trong Nội dung → Trang chứa nội dung chi tiết."
   },
   "featuredProducts": {
-    "eyebrow": "Sản phẩm",
     "title": "Sản phẩm nổi bật",
     "description": "Kéo để sắp xếp thứ tự. Tối đa 12 sản phẩm hiển thị trong khối Sản phẩm nổi bật trên trang chủ.",
     "gridTitle": "Danh sách sản phẩm nổi bật",
@@ -4223,9 +4195,7 @@
     "errNotFound": "Chưa lưu được: {{names}} không còn tồn tại. Hãy bỏ khỏi danh sách nổi bật rồi lưu lại."
   },
   "homeHighlights": {
-    "eyebrow": "Nội dung",
     "title": "Điểm nổi bật trang chủ",
-    "description": "Chọn sản phẩm đại diện cho ba vị trí nổi bật trên trang chủ.",
     "searchPlaceholder": "Tìm sản phẩm theo tên...",
     "noResults": "Không tìm thấy sản phẩm",
     "clearSlot": "Bỏ chọn",
@@ -4308,6 +4278,54 @@
     "activeFiltersAria": "Bộ lọc đang áp dụng",
     "bulkEnable": "Bật",
     "bulkDisable": "Tắt"
+  },
+  "legacyDiscontinued": {
+    "title": "Hàng đã ngừng bán",
+    "help": "Giữ địa chỉ mặt hàng cũ để khách vẫn tìm thấy và nhận gợi ý sản phẩm thay thế; không tạo giá hoặc tồn kho giả.",
+    "create": "Thêm hàng cũ",
+    "readOnly": "Bạn chỉ có quyền xem; không thể thêm, sửa hoặc bật/tắt trang hàng đã ngừng bán.",
+    "statusVisible": "Đang hiển thị",
+    "statusOff": "Đã tắt",
+    "updateSuccess": "Đã cập nhật trang hàng ngừng bán.",
+    "createSuccess": "Đã thêm trang hàng ngừng bán.",
+    "saveError": "Không thể lưu. Vui lòng kiểm tra lại các thông tin.",
+    "toggleSuccess": "Đã cập nhật trạng thái hiển thị.",
+    "toggleError": "Không thể cập nhật trạng thái.",
+    "requiredError": "Cần nhập địa chỉ cũ, tên hàng và nhóm hàng để khách nhận được gợi ý phù hợp.",
+    "colItem": "Mặt hàng cũ",
+    "colCategory": "Nhóm hàng",
+    "colImage": "Ảnh",
+    "colStatus": "Trạng thái",
+    "colUpdated": "Cập nhật",
+    "unnamed": "Chưa có tên",
+    "hasImage": "Đã có ảnh",
+    "noImage": "Chưa có ảnh",
+    "enable": "Bật hiển thị",
+    "disable": "Tắt hiển thị",
+    "editNamed": "Sửa {{name}}",
+    "loadError": "Không tải được danh sách hàng ngừng bán",
+    "editTitle": "Sửa hàng cũ",
+    "createTitle": "Thêm hàng cũ",
+    "slugLabel": "Địa chỉ cũ (slug)",
+    "slugHelp": "Chỉ phần sau /sp/ và trước .html, ví dụ gang-tay-cu.",
+    "nameLabel": "Tên mặt hàng",
+    "namePlaceholder": "Tên tiếng Việt",
+    "nameEnLabel": "Tên tiếng Anh",
+    "nameEnHelp": "Bỏ trống nếu chưa có; website sẽ dùng tên tiếng Việt.",
+    "nameEnPlaceholder": "Tên tiếng Anh",
+    "brandLabel": "Thương hiệu cũ",
+    "optional": "Không bắt buộc",
+    "categorySlugLabel": "Slug nhóm hàng",
+    "categorySlugHelp": "Dùng nhóm đang hiển thị để gợi ý tối đa 3 hàng thay thế đúng chủ đề.",
+    "imageUrlLabel": "Đường dẫn ảnh đã kiểm chứng",
+    "imageUrlHelp": "Chỉ dùng đường dẫn từ thư viện ảnh BigBike. Bỏ trống nếu chưa tìm được ảnh chính xác.",
+    "enabledLabel": "Hiển thị trang “Đã ngừng bán”",
+    "filterAria": "Lọc hàng đã ngừng bán",
+    "searchPlaceholder": "Tìm tên hoặc địa chỉ cũ",
+    "allStatuses": "Tất cả trạng thái",
+    "emptyTitle": "Chưa có hàng cũ phù hợp",
+    "emptyDescription": "Thử đổi bộ lọc hoặc thêm một trang lịch sử mới.",
+    "tableCaption": "Danh sách trang mặt hàng đã ngừng bán"
   },
   "errorBoundary": {
     "title": "Đã xảy ra lỗi không mong đợi",

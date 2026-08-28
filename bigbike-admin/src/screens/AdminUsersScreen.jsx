@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -6,6 +6,7 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { AlertCircle, CheckCircle2, Lock, Mail, Pencil, UserCheck, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
@@ -28,6 +29,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '../components/PasswordInput'
 import { getRoleDisplayName } from './roles/constants'
+import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '../components/StatusBadge'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
@@ -54,12 +57,12 @@ function adminUserEditDraftKey(userId) {
 
 const ADMIN_USER_CREATE_DRAFT_KEY = 'draft:admin-user-create'
 
-// Role → bb-badge palette.
+// Màu nhãn vai trò chỉ dùng token trạng thái đã có của admin.
 const ROLE_BADGE = {
-  SUPER_ADMIN: 'bb-badge-danger',
-  ADMIN: 'bb-badge-info',
-  SHOP_MANAGER: 'bb-badge-info',
-  EDITOR: 'bb-badge-neutral',
+  SUPER_ADMIN: 'danger',
+  ADMIN: 'info',
+  SHOP_MANAGER: 'info',
+  EDITOR: 'secondary',
 }
 const AVATAR_COLORS = [
   'bg-primary text-primary-foreground',
@@ -119,45 +122,21 @@ function getAdminUserErrorMessage(error, t) {
 }
 
 function RoleBadge({ role, label }) {
-  return <span className={`bb-badge ${ROLE_BADGE[role] || 'bb-badge-neutral'}`}>{label || '—'}</span>
-}
-
-function UserStatusBadge({ status, t }) {
-  const meta = STATUS_META[status]
-  const label = meta ? t(meta.labelKey) : status
-  return (
-    <span className={`bb-badge bb-badge-${meta?.tone || 'neutral'}`}>
-      <span className="dot" />{label || '—'}
-    </span>
-  )
+  return <Badge variant={ROLE_BADGE[role] || 'secondary'}>{label || '—'}</Badge>
 }
 
 function PasswordField({ value, onChange, onBlur, placeholder, label, hint, error, disabled }) {
-  const inputId = useId()
-  const errorId = `${inputId}-error`
   return (
-    <label className="au-field">
-      <span className="au-field-label">{label}</span>
+    <FormField label={label} helper={hint} error={error}>
       <PasswordInput
-        id={inputId}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="new-password"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
       />
-      {error ? (
-        <span id={errorId} className="flex items-center gap-1 text-xs text-danger" role="alert">
-          <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
-          {error}
-        </span>
-      ) : hint ? (
-        <span className="au-field-hint">{hint}</span>
-      ) : null}
-    </label>
+    </FormField>
   )
 }
 
@@ -692,19 +671,43 @@ export function AdminUsersScreen({
 
   const isLoading = listState.status === 'loading' && (listState.items || []).length === 0
 
-  // Nút kích hoạt/khoá dùng chung cho cả bảng và thẻ mobile. Ẩn với tài khoản chờ
+  // Thao tác kích hoạt/khoá dùng chung cho cả bảng và thẻ mobile. Ẩn với tài khoản chờ
   // kích hoạt (INVITED — chưa nhận lời mời) và với chính tài khoản đang đăng nhập.
-  const statusToggleButton = (u) => {
+  const statusToggleAction = (u) => {
     if (u.status === 'INVITED') return null
     if (currentUserId != null && u.id === currentUserId) return null
     if (u.role === 'SUPER_ADMIN' && !isSuperAdmin) return null
     const activating = u.status !== 'ACTIVE'
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
+    return {
+      key: 'status',
+      label,
+      icon: activating ? UserCheck : Lock,
+      disabled: Boolean(togglingId),
+      onSelect: () => handleToggleStatus(u),
+    }
+  }
+
+  const rowActions = (u) => {
     return (
-      <Button variant="ghost" size="icon" type="button" title={label} aria-label={label}
-        disabled={Boolean(togglingId)} onClick={() => handleToggleStatus(u)}>
-        {activating ? <UserCheck size={14} /> : <Lock size={14} />}
-      </Button>
+      <TableRowActions
+        primaryActions={[
+          {
+            key: 'edit',
+            label: t('common.edit'),
+            icon: Pencil,
+            onSelect: () => openEdit(u),
+          },
+          statusToggleAction(u),
+          u.status === 'INVITED' && {
+            key: 'resend-invite',
+            label: t('adminUsers.resendInvite'),
+            icon: Mail,
+            disabled: Boolean(resendingId),
+            onSelect: () => handleResendInvite(u),
+          },
+        ]}
+      />
     )
   }
 
@@ -743,7 +746,7 @@ export function AdminUsersScreen({
       label: t('adminUsers.colStatus'),
       sortable: true,
       skeletonWidth: '50%',
-      render: (u) => <UserStatusBadge status={u.status} t={t} />,
+      render: (u) => <StatusBadge status={u.status} type="adminUser" />,
     },
     {
       key: 'lastLogin',
@@ -760,21 +763,9 @@ export function AdminUsersScreen({
     ...(canUpdate
       ? [{
           key: 'actions',
-          label: '',
+          label: <span className="sr-only">{t('common.actions')}</span>,
           align: 'right',
-          render: (u) => (
-            <div className="inline-flex items-center justify-end gap-1">
-              {u.status === 'INVITED' && (
-                <Button variant="ghost" size="icon" type="button" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
-                  <Mail size={14} />
-                </Button>
-              )}
-              {statusToggleButton(u)}
-              <Button variant="ghost" size="icon" type="button" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
-                <Pencil size={14} />
-              </Button>
-            </div>
-          ),
+          render: rowActions,
         }]
       : []),
   ]
@@ -794,39 +785,26 @@ export function AdminUsersScreen({
         </span>
       ),
       subtitle: u.displayName ? u.email : undefined,
-      status: <UserStatusBadge status={u.status} t={t} />,
+      status: <StatusBadge status={u.status} type="adminUser" />,
       meta: [
         { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} label={resolveRoleLabel(u.role)} /> },
         { label: t('adminUsers.colLastLogin'), value: u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin') },
       ],
-      actions: canUpdate ? (
-        <>
-          {u.status === 'INVITED' && (
-            <Button variant="ghost" size="icon" type="button" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
-              <Mail size={14} />
-            </Button>
-          )}
-          {statusToggleButton(u)}
-          <Button variant="ghost" size="icon" type="button" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
-            <Pencil size={14} />
-          </Button>
-        </>
-      ) : undefined,
+      actions: canUpdate ? rowActions(u) : undefined,
     }
   }
 
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('adminUsers.eyebrow')}
+        group="system"
         title={t('adminUsers.title')}
-        description={t('adminUsers.description')}
         actions={canUpdate ? (
             <Button
               type="button"
               onClick={openCreate}
               disabled={!canChangeRoles}
-              title={!canChangeRoles ? 'Cần quyền roles.read và danh sách vai trò để chọn vai trò cho tài khoản mới.' : undefined}
+              title={!canChangeRoles ? t('adminUsers.roleAccessRequiredShort') : undefined}
             >
               <UserPlus size={14} />{t('adminUsers.createBtn')}
             </Button>
@@ -839,7 +817,7 @@ export function AdminUsersScreen({
       ) : null}
       {canUpdate && !canReadRoles ? (
         <Alert tone="warning" icon={Lock}>
-          Cần quyền roles.read để lọc theo vai trò, mời tài khoản mới hoặc thay đổi vai trò. Các thao tác tên, mật khẩu và trạng thái vẫn khả dụng.
+          {t('adminUsers.roleAccessRequired')}
         </Alert>
       ) : null}
 
@@ -993,8 +971,8 @@ export function AdminUsersScreen({
               </p>
             )}
 
-            <div className="au-drawer-section">
-              <h3 className="au-drawer-section-title">{t('adminUsers.sectionAccount')}</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="border-b border-border pb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">{t('adminUsers.sectionAccount')}</h3>
               {isSelf && (
                 <Alert tone="warning" size="sm" className="mb-3">
                   {t('adminUsers.selfEditLocked')}
@@ -1005,7 +983,7 @@ export function AdminUsersScreen({
                   {t('adminUsers.superAdminEditLocked', { defaultValue: 'Chỉ Chủ hệ thống mới sửa được tài khoản Chủ hệ thống khác.' })}
                 </Alert>
               )}
-              <div className="au-form-grid">
+              <div className="flex flex-col gap-4">
                 <FormField label={t('adminUsers.formDisplayName')} error={editFieldErrors.displayName}>
                   <Input
                     value={editForm.displayName}
@@ -1052,8 +1030,8 @@ export function AdminUsersScreen({
               </div>
             </div>
 
-            <div className="au-drawer-section mt-6">
-              <h3 className="au-drawer-section-title">{t('adminUsers.sectionPassword')}</h3>
+            <div className="mt-6 flex flex-col gap-3">
+              <h3 className="border-b border-border pb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">{t('adminUsers.sectionPassword')}</h3>
               <PasswordField
                 value={editForm.newPassword}
                 onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
@@ -1100,7 +1078,7 @@ export function AdminUsersScreen({
               onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))}
               onBlur={() => validateCreateField('displayName')} required />
           </FormField>
-          <FormField label={t('adminUsers.formRole')}>
+          <FormField label={t('adminUsers.formRole')} helper={t('adminUsers.inviteHint')}>
             <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1110,7 +1088,6 @@ export function AdminUsersScreen({
               </SelectContent>
             </Select>
           </FormField>
-          <p className="text-xs text-muted-foreground">{t('adminUsers.inviteHint')}</p>
         </form>
       </Modal>
     </Screen>

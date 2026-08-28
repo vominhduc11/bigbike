@@ -19,7 +19,7 @@ import {
 } from '../../lib/adminApi'
 import { showConfirm } from '../../lib/confirm'
 import { normalizeVariantToken, isColorAttributeName, getVariantAttributeGroup } from '../../lib/schemas'
-import { Modal, MobileCardList, MobileCard } from '../../components/layout'
+import { FormField, Modal, MobileCardList, MobileCard } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -58,6 +58,7 @@ import {
 import { GalleryEditor } from './ContentEditors'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
+import { HelpTooltip } from '../../components/HelpTooltip'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { parseSizeScaleValues } from './sizeScaleUtils'
 import { buildVariantMatrixVariants, skuToken } from './variantMatrixUtils'
@@ -985,16 +986,14 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <span className="form-field-label">
+            <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
               {hasColor
                 ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
                 : t('products.detail.variant.colorGalleryLabel')}
-            </span>
-            <p className="detail-section-desc m-0">
-              {hasColor
+              <HelpTooltip content={hasColor
                 ? t('products.detail.variant.colorGalleryHintWithColor')
-                : t('products.detail.variant.colorGalleryHintNoColor')}
-            </p>
+                : t('products.detail.variant.colorGalleryHintNoColor')} />
+            </span>
             {fieldErrors.gallery && <small className="field-error" role="alert">{fieldErrors.gallery}</small>}
             {hasColor && (
               <GalleryEditor
@@ -1008,10 +1007,10 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
 
           {hasColor && (
             <div className="space-y-2">
-              <span className="form-field-label">{t('products.detail.variant.colorRepresentationImageLabel')}</span>
-              <p className="detail-section-desc m-0">
-                {t('products.detail.variant.colorRepresentationImageHint')}
-              </p>
+              <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                {t('products.detail.variant.colorRepresentationImageLabel')}
+                <HelpTooltip content={t('products.detail.variant.colorRepresentationImageHint')} />
+              </span>
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="secondary"
@@ -1954,6 +1953,7 @@ export function VariantsEditor({
         open={bulkPriceOpen}
         onClose={() => setBulkPriceOpen(false)}
         title={t('products.detail.variant.bulkPriceTitle', { count: activeSelectedKeys.length })}
+        description={t('products.detail.variant.bulkPriceHint')}
         actions={(
           <>
             <Button variant="ghost" onClick={() => setBulkPriceOpen(false)}>{t('common.cancel')}</Button>
@@ -1963,24 +1963,21 @@ export function VariantsEditor({
           </>
         )}
       >
-        <p className="mb-4 text-sm text-muted-foreground">{t('products.detail.variant.bulkPriceHint')}</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="form-field">
-            <span>{t('products.detail.variant.columnRetailPrice')}</span>
+          <FormField label={t('products.detail.variant.columnRetailPrice')}>
             <MoneyInput
               value={bulkRetailPrice}
               onValueChange={setBulkRetailPrice}
             />
-          </label>
-          <label className="form-field">
-            <span>{t('products.detail.variant.columnSalePrice')}</span>
+          </FormField>
+          <FormField label={t('products.detail.variant.columnSalePrice')}>
             <MoneyInput
               value={bulkSalePrice}
               onValueChange={setBulkSalePrice}
               zeroAsEmpty
               disabled={bulkClearSale}
             />
-          </label>
+          </FormField>
         </div>
         <label className="mt-4 flex items-center gap-2 text-sm">
           <Checkbox
@@ -2096,6 +2093,7 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
       open
       wide
       title={t('products.detail.matrix.title')}
+      description={t('products.detail.matrix.description')}
       onClose={onClose}
       actions={
         <>
@@ -2114,10 +2112,6 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
         </>
       }
     >
-      <p className="text-sm text-muted-foreground mb-4">
-        {t('products.detail.matrix.description')}
-      </p>
-
       {catalogError && (
         <p className="field-error mb-4" role="alert">
           {t('products.detail.matrix.catalogError', { defaultValue: 'Không tải được danh mục thuộc tính. Vui lòng thử tải lại trang.' })}
@@ -2236,10 +2230,8 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
               >
                 <X size={16} aria-hidden="true" />
               </Button>
+              <HelpTooltip content={t('products.detail.matrix.valuesHelp')} />
             </div>
-            <p className="text-xs text-muted-foreground ml-0">
-              {t('products.detail.matrix.valuesHelp')}
-            </p>
             {row.attribute?.id && !row.valueIds?.length && !valueQuery?.isLoading && (
               <p className="text-xs text-warning">
                 {t('products.detail.matrix.rowValuesEmpty')}
@@ -2306,9 +2298,10 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
               {t('products.detail.matrix.skuPrefixLabel', { defaultValue: 'Tiền tố mã hàng' })}
-            </label>
+              <HelpTooltip content={t('products.detail.matrix.skuPrefixHelp', { defaultValue: 'Tự tạo mã hàng theo mẫu: tiền tố + giá trị thuộc tính. Để trống nếu muốn tự nhập sau.' })} />
+            </div>
             <Input
               value={skuPrefix}
               onChange={(e) => setSkuPrefix(e.target.value)}
@@ -2323,24 +2316,18 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
                   sku: [skuPrefix.trim(), ...parsed.map((a) => skuToken(a.values[0])).filter(Boolean)].join('-'),
                 })}
               </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {t('products.detail.matrix.skuPrefixHelp', { defaultValue: 'Tự tạo mã hàng theo mẫu: tiền tố + giá trị thuộc tính. Để trống nếu muốn tự nhập sau.' })}
-              </p>
-            )}
+            ) : null}
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
               {t('products.detail.matrix.sharedPriceLabel', { defaultValue: 'Giá bán chung' })}
-            </label>
+              <HelpTooltip content={t('products.detail.matrix.sharedPriceHelp', { defaultValue: 'Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau.' })} />
+            </div>
             <MoneyInput
               value={sharedPrice}
               onValueChange={setSharedPrice}
               placeholder={t('products.detail.matrix.sharedPricePlaceholder', { defaultValue: 'vd: 5.900.000' })}
             />
-            <p className="text-xs text-muted-foreground">
-              {t('products.detail.matrix.sharedPriceHelp', { defaultValue: 'Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau.' })}
-            </p>
           </div>
         </div>
       </div>

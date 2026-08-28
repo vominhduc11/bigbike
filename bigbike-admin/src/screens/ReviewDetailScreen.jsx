@@ -211,7 +211,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate, isSuperAdmin
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('reviews.eyebrow')}
+        group="sales"
         title={t('reviews.detail.title')}
         description={productName}
         badge={<StatusBadge type="review" status={review.status} />}

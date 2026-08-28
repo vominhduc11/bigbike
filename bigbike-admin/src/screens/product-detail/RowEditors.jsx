@@ -16,6 +16,7 @@ import { SortableList, DragHandle } from '../../components/Sortable'
 import { parseSpecStatsResult, parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml, parseTrustBadgesResult, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
 import { HtmlImportNotice } from '../../components/HtmlImportNotice'
+import { HelpTooltip } from '../../components/HelpTooltip'
 import { useHtmlImportDraft } from '../../lib/useHtmlImportDraft'
 import { SPEC_STAT_MAX } from './constants'
 
@@ -300,7 +301,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange, aiPromptB
           rows={8}
           maxLength={50000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.trustBadges.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.trustBadges.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}
@@ -514,7 +515,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange, aiPromptBuil
           rows={10}
           maxLength={50000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.specStats.htmlHint')}</p>
+        <div className="flex justify-end"><HelpTooltip content={t('products.detail.specStats.htmlHint')} /></div>
         <HtmlImportNotice
           result={result}
           dirty={dirty}

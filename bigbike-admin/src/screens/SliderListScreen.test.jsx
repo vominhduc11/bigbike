@@ -21,6 +21,8 @@ vi.mock('react-i18next', () => ({
       'sliders.formMobileUrl': 'Ảnh mobile',
       'sliders.formMobileUrlHint': 'Ảnh mobile tùy chọn',
       'sliders.sectionMobileImage': 'Ảnh mobile',
+      'sliders.deviceDesktop': 'Máy tính',
+      'sliders.deviceMobile': 'Điện thoại',
     }[key] || values.defaultValue || key),
   }),
 }))

@@ -290,6 +290,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
     {
       key: 'orderNumber',
       label: t('orders.colOrder'),
+      headerClassName: 'w-44 whitespace-nowrap',
+      cellClassName: 'w-44 whitespace-nowrap',
       render: (order) => (
           <span className="flex items-center gap-2 font-mono">
           {formatText(order.orderNumber)}
@@ -299,6 +301,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
     {
       key: 'customer',
       label: t('orders.colCustomer'),
+      headerClassName: 'w-full min-w-56',
+      cellClassName: 'w-full min-w-56',
       render: (order) => (
         <div className="bb-product-cell">
           <div>
@@ -314,6 +318,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
       key: 'createdAt',
       label: t('orders.colDate'),
       sortable: true,
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
       render: (order) => <span className="bb-muted">{formatDateTime(order.createdAt)}</span>,
     },
     {
@@ -321,6 +327,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
       label: t('orders.colTotal'),
       align: 'right',
       sortable: true,
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
       render: (order) => <span className="font-bold">{formatCurrencyVnd(order.total)}</span>,
     },
     {
@@ -402,9 +410,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('orders.eyebrow')}
+        group="sales"
         title={t('orders.title')}
-        description={t('orders.description')}
         actions={canExport ? (
             <ExportButton
               onExport={async () => {

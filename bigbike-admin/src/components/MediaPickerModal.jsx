@@ -18,6 +18,7 @@ import { sendAdminWs } from '../lib/adminWebSocket'
 import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES, normalizeMediaMimeType } from '../lib/mediaConstants'
 import { evaluateImageDimensions } from '../lib/imageRecommendations'
 import { BrandLogoCropDialog } from './BrandLogoCropDialog'
+import { HelpTooltip } from './HelpTooltip'
 import {
   BRAND_LOGO_MIME_TYPES,
   BRAND_LOGO_MAX_BYTES,
@@ -579,7 +580,12 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         <div className="px-4 pt-1">
           {recommend
             ? <MediaRequirementHint recommend={recommend} />
-            : <p className="text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>}
+            : (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span>{t('media.picker.requirementsLabel')}</span>
+                <HelpTooltip content={t('media.picker.sizeHint')} />
+              </div>
+            )}
           {selectedUrl && (
             <MediaValidationError
               reasons={validation.reasons}

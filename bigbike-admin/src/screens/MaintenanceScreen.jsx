@@ -102,7 +102,7 @@ export function MaintenanceScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })} />
+      <ScreenHeader group="system" title={t('maintenance.title', { defaultValue: 'Chế độ bảo trì trang quản trị' })} />
       {!canToggle && (
         <ReadOnlyBanner
           warning={t('maintenance.developerOnly', {

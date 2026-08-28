@@ -53,6 +53,7 @@ import { ProductsInCategoryCard } from './category-detail/ProductsInCategoryCard
 import { DangerZoneCard } from './category-detail/DangerZoneCard'
 import { DetailSection } from '../components/DetailSection'
 import { KpiCard } from '../components/KpiCard'
+import { HelpTooltip } from '../components/HelpTooltip'
 import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 
 function CategoryMetricCard({ label, value, icon: Icon, tone = 'info', hint, compact = false }) {
@@ -613,16 +614,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={(
-          <a
-            href="/admin/categories"
-            onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }}
-            className="inline-flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
-          >
-            <ArrowLeft size={14} aria-hidden="true" />
-            {t('categories.detail.backToList')}
-          </a>
-        )}
+        group="products"
         title={isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}
         description={(
           <span className="flex flex-wrap items-center gap-2">
@@ -642,6 +634,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </span>
         )}
         badge={!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : null}
+        actions={(
+          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate('/admin/categories')}>
+            <ArrowLeft size={14} aria-hidden="true" />
+            {t('categories.detail.backToList')}
+          </Button>
+        )}
       />
 
       {draftRecovery && (
@@ -809,8 +807,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="category-parent-select">
+                  <label className="flex items-center gap-1 text-sm font-medium text-foreground" htmlFor="category-parent-select">
                     {t('categories.detail.parentId')}
+                    <HelpTooltip content={t('categories.detail.parentIdHint')} />
                   </label>
                   <Select
                     value={form.parentId || '__none__'}
@@ -829,9 +828,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     <span className="flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                       <AlertCircle size={13} aria-hidden="true" />{validationErrors.parentId}
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">{t('categories.detail.parentIdHint')}</span>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="md:col-span-2" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
@@ -904,8 +901,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               })}
             >
               <div className="grid gap-5 md:grid-cols-2">
-                <div className="form-field" data-field="imageUrl">
-                  <span>{t('categories.detail.imageUrl')}</span>
+                <div className="flex flex-col gap-2" data-field="imageUrl">
+                  <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                    {t('categories.detail.imageUrl')}
+                    <HelpTooltip content={t('categories.detail.imageUrlHint')} />
+                  </span>
                   <ImageUrlInput
                     value={form.imageUrl}
                     onChange={(url, media) => updateImageAsset('image', url, media)}
@@ -916,10 +916,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     error={validationErrors.imageUrl}
                     recommend={IMAGE_RECO.categoryImage}
                   />
-                  <span className="hint">{t('categories.detail.imageUrlHint')}</span>
                 </div>
-                <div className="form-field" data-field="bannerImageUrl">
-                  <span>{t('categories.detail.bannerImageUrl')}</span>
+                <div className="flex flex-col gap-2" data-field="bannerImageUrl">
+                  <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                    {t('categories.detail.bannerImageUrl')}
+                    <HelpTooltip content={t('categories.detail.bannerImageUrlHint')} />
+                  </span>
                   <ImageUrlInput
                     value={form.bannerImageUrl}
                     onChange={(url) => updateField('bannerImageUrl', url)}
@@ -930,10 +932,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     error={validationErrors.bannerImageUrl}
                     recommend={IMAGE_RECO.bannerWide}
                   />
-                  <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
                 </div>
-                <div className="form-field" data-field="heroImageUrl">
-                  <span>{t('categories.detail.heroImageUrl')}</span>
+                <div className="flex flex-col gap-2" data-field="heroImageUrl">
+                  <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                    {t('categories.detail.heroImageUrl')}
+                    <HelpTooltip content={t('categories.detail.heroImageUrlHint')} />
+                  </span>
                   <ImageUrlInput
                     value={form.heroImageUrl}
                     onChange={(url, media) => updateImageAsset('heroImage', url, media)}
@@ -944,11 +948,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     error={validationErrors.heroImageUrl}
                     recommend={IMAGE_RECO.illustration}
                   />
-                  <span className="hint">{t('categories.detail.heroImageUrlHint')}</span>
                 </div>
                 {!isChildCategory ? (
-                  <div className="form-field md:col-span-2" data-field="menuIconUrl">
-                    <span>{t('categories.detail.menuIconUrl')}</span>
+                  <div className="flex flex-col gap-2 md:col-span-2" data-field="menuIconUrl">
+                    <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                      {t('categories.detail.menuIconUrl')}
+                      <HelpTooltip content={t('categories.detail.menuIconUrlHint')} />
+                    </span>
                     <ImageUrlInput
                       value={form.menuIconUrl}
                       onChange={(url) => updateField('menuIconUrl', url)}
@@ -956,7 +962,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                       disabled={isReadOnly}
                       error={validationErrors.menuIconUrl}
                     />
-                    <span className="hint">{t('categories.detail.menuIconUrlHint')}</span>
                   </div>
                 ) : null}
               </div>

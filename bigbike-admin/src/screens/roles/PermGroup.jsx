@@ -2,6 +2,7 @@ import { Check, X, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { MODULE_LABELS, PERM_LABEL_KEY_MAP, requiredBy } from './constants'
 
@@ -76,17 +77,17 @@ export function PermGroup({ group, catalog, activePerms, editMode, onToggle, isS
                   </span>
                 )}
                 {perm.kind === 'SUPPORTING' ? (
-                  <span className="bb-badge bb-badge-neutral text-xs">Hỗ trợ</span>
+                  <Badge variant="muted">{t('roles.permissionKindSupporting')}</Badge>
                 ) : null}
                 {perm.kind === 'EXPORT' ? (
-                  <span className="bb-badge bb-badge-warning text-xs">Xuất dữ liệu</span>
+                  <Badge variant="warning">{t('roles.permissionKindExport')}</Badge>
                 ) : null}
                 {requiredByKeys.length > 0 ? (
                   <span className="text-xs text-muted-foreground">
-                    Bắt buộc bởi {requiredByKeys.map(key => {
+                    {t('roles.permissionRequiredBy', { permissions: requiredByKeys.map(key => {
                       const keyLabel = PERM_LABEL_KEY_MAP[key]
-                      return keyLabel ? t(keyLabel, { defaultValue: 'quyền liên quan' }) : 'quyền liên quan'
-                    }).join(', ')}
+                      return keyLabel ? t(keyLabel, { defaultValue: t('roles.relatedPermission') }) : t('roles.relatedPermission')
+                    }).join(', ') })}
                   </span>
                 ) : null}
                 {perm.requires?.length > 0 ? (

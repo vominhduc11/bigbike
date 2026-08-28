@@ -747,9 +747,8 @@ export function HomeVideoListScreen({ canUpdate }) {
       {!canUpdate && <ReadOnlyBanner />}
 
       <ScreenHeader
-        eyebrow={t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}
+        group="content"
         title={t('homeVideos.title')}
-        description={t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}
         actions={canUpdate && !showForm ? (
             <Button
               type="button"

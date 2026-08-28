@@ -262,7 +262,7 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onE
           {t('settings.assign.description', { defaultValue: 'Banner phân công hiển thị trên màn tạo/sửa sản phẩm và bài viết — dùng chung 1 nguồn dữ liệu.' })}
         </p>
       ) : (
-        <ScreenHeader title={t('settings.group_product_assign')} />
+        <ScreenHeader group="system" title={t('settings.group_product_assign')} />
       )}
 
       <div className="flex flex-col gap-1 mb-4">

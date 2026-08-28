@@ -43,6 +43,7 @@
     "yes": "Yes",
     "no": "No",
     "unknown": "Unknown",
+    "moreInformation": "View explanation",
     "pleaseWait": "Please wait...",
     "error": "Error",
     "unknownError": "An unknown error occurred.",
@@ -292,7 +293,6 @@
     "missingRole": "This page is available only to certain admin roles (Administrator, Shop Manager)."
   },
   "dashboard": {
-    "eyebrow": "Overview",
     "title": "Dashboard",
     "subtitle": "Monitor your business activity in real time.",
     "greetingMorning": "Good morning, {{name}} 👋",
@@ -475,9 +475,7 @@
     "daysAgo": "{{count}} days ago"
   },
   "products": {
-    "eyebrow": "Catalog",
     "title": "Products",
-    "description": "Manage product catalog records with real create/update mutation APIs.",
     "readOnly": "You can view products only. Catalog update permission is required to change data.",
     "filterAria": "Product filters",
     "refreshing": "Updating",
@@ -688,7 +686,6 @@
     "resultsAnnounce": "Filtered: {{count}} products",
     "permanentDeleteConfirm": "Permanently delete product \"{{name}}\"? This action cannot be undone.",
     "detail": {
-      "eyebrow": "Catalog",
       "createTitle": "Create product",
       "editTitle": "Edit product",
       "createDesc": "Create a new product record in catalog.",
@@ -1480,9 +1477,7 @@
         "ORDER_REFUND_CREATED": "Refund created"
       }
     },
-    "eyebrow": "Commerce",
     "title": "Orders",
-    "description": "Manage and process customer orders.",
     "searchPlaceholder": "Order number, customer email",
     "filterStatus": "Status",
     "filterDate": "Date range",
@@ -1597,9 +1592,7 @@
     "emptyAllDesc": "When customers place orders on the website, they will appear here."
   },
   "categories": {
-    "eyebrow": "Products",
     "title": "Product categories",
-    "description": "Group products into categories so customers can browse them easily on the website.",
     "create": "Add category",
     "searchPlaceholder": "Search by category name",
     "filterVisibility": "Display status",
@@ -1763,6 +1756,8 @@
       "productsSectionTitle": "Products in this category ({{count}})",
       "productsSectionDesc": "Products currently placed in this category, most recently updated first.",
       "productsViewAll": "View all {{count}} products →",
+      "productsPermissionTitle": "Product access is not available",
+      "productsPermissionDesc": "This account cannot load or open products in this category.",
       "productsEmpty": "No products are placed in this category yet.",
       "productsEmptyAddLink": "Add products to this category →",
       "seoPreviewLabel": "Google search preview",
@@ -1824,9 +1819,7 @@
     "filterTrashTab": "Trash"
   },
   "brands": {
-    "eyebrow": "Catalog",
     "title": "Brands",
-    "description": "Manage product brands.",
     "create": "Create brand",
     "searchPlaceholder": "Brand name or slug",
     "filterVisibility": "Visibility",
@@ -1883,6 +1876,8 @@
         "legacy": "Older logo needs attention: {{issues}} — consider replacing it.",
         "invalid": "Logo needs attention: {{issues}}.",
         "warning": "Logo quality note: {{issues}}.",
+        "rowWarning": "Logo needs review",
+        "summary": "{{count}} brands have logos that need review. Details are condensed in each row to keep the list easy to scan.",
         "issueMissing": "logo is missing",
         "issueLegacy": "older logo not yet checked",
         "issueNotSquare": "not square (ratio {{ratio}})",
@@ -1897,11 +1892,8 @@
       }
     },
     "detail": {
-      "eyebrow": "Catalog",
       "createTitle": "Create brand",
       "editTitle": "Edit brand",
-      "createDesc": "Create a new brand.",
-      "editDesc": "Update brand information.",
       "slugHintEn": "Brand slug is shared across Vietnamese and English.",
       "slugHelperEn": "Brand slug is shared across Vietnamese and English.",
       "slugPlaceholderEn": "shared-brand-slug",
@@ -2035,9 +2027,7 @@
       "statusAsc": "Status ascending",
       "statusDesc": "Status descending"
     },
-    "eyebrow": "News",
     "title": "News",
-    "description": "Manage articles and news.",
     "newArticle": "New article",
     "searchPlaceholder": "Name or slug",
     "filterPublish": "Publish status",
@@ -2080,7 +2070,6 @@
       "errImageAltTooLong": "Image description must not exceed 255 characters.",
       "errRestoreFailed": "Could not restore the article.",
       "errPermanentDeleteFailed": "Could not permanently delete the article.",
-      "eyebrow": "Content",
       "createArticleTitle": "Create article",
       "editArticleTitle": "Edit article",
       "createArticleDesc": "Create a new article.",
@@ -2192,9 +2181,7 @@
     "emptyNoDataDesc": "Start by creating your first article."
   },
   "customers": {
-    "eyebrow": "Commerce",
     "title": "Customers",
-    "description": "Manage customer accounts and information.",
     "kpi": {
       "total": "Total customers",
       "totalHint": "All customer profiles, including order-created profiles",
@@ -2244,7 +2231,6 @@
       "error": "Error",
       "notFound": "Customer not found",
       "notFoundDesc": "This customer does not exist or has been removed.",
-      "eyebrow": "Commerce / Customers",
       "backToList": "← Back",
       "sectionAccount": "Account information",
       "sectionStats": "Purchase statistics",
@@ -2314,9 +2300,7 @@
     "advancedSection": "Advanced",
     "folderManage": "Manage",
     "folderManageDone": "Done",
-    "eyebrow": "Media",
     "title": "Media Library",
-    "description": "Manage files uploaded to MinIO.",
     "readOnly": "You have view-only access to the media library. Upload, edit, organize, and delete actions are locked.",
     "refreshing": "Refreshing the media library…",
     "refreshError": "Couldn't refresh the latest data. The previous list is still shown.",
@@ -2431,6 +2415,7 @@
       "dialogLabel": "Select image from library",
       "dropToUpload": "Drop images to upload",
       "title": "Image library",
+      "requirementsLabel": "Image requirements",
       "sizeHint": "Destination unknown here — open the upload field on the actual screen to see the recommended ratio/size.",
       "uploadTitle": "Drag and drop images here or click to choose files",
       "uploading": "Uploading...",
@@ -2476,9 +2461,7 @@
     "hardDeleteError": "Delete failed. The file may still be in use — remove it from those places and try again."
   },
   "menus": {
-    "eyebrow": "Settings",
     "title": "Header Menu",
-    "description": "Manage the navigation links displayed in the website header.",
     "loading": "Loading menus",
     "loadError": "Error loading menus",
     "selectMenu": "Select system menu",
@@ -2503,6 +2486,7 @@
     "parentMissing": "Missing parent",
     "itemUrl": "URL",
     "itemUrlCustom": "Custom URL",
+    "itemUrlPlaceholder": "/category/... or https://...",
     "itemCategoryPicker": "Pick an existing category (auto-fills Label + URL)",
     "itemCategoryPickerNone": "— No category linked —",
     "itemCategoryLinkedHint": "Linked to a category — the URL is always derived from this category (stays in sync if it's renamed) and can't be edited by hand. Pick \"— No category linked —\" above to type your own.",
@@ -2515,7 +2499,6 @@
     "statusInactiveHint": "This item will not appear on the website even if its parent is visible.",
     "itemLabelPlaceholder": "Label shown in the menu",
     "itemLabelRequired": "Please enter a display name.",
-    "requiredLegend": "Required",
     "urlHint": "Examples: /danh-muc/xe-may, /tin-tuc/meo-chon-xe, or https://example.com",
     "saveMenu": "Save menu",
     "deleteItemSuccess": "Menu item deleted.",
@@ -2530,6 +2513,7 @@
     "bulkDeleteConfirmTitle": "Delete permanently",
     "bulkDeleteSuccess": "Deleted {{count}} menu item(s).",
     "categoryLoadError": "Couldn't load the category list for quick selection — you can still enter a URL manually below.",
+    "catalogPermissionWarning": "This account cannot view categories, so category links cannot be selected. Other link types remain available.",
     "urlInvalid": "Error: invalid URL. Example: /danh-muc/xe-may or https://example.com",
     "itemAdvancedTitle": "Advanced options",
     "itemAdvancedHint": "English name, parent, status, open in new tab",
@@ -2555,10 +2539,9 @@
     "editItemDialogDesc": "Edit the navigation item."
   },
   "sliders": {
-    "eyebrow": "Content",
     "title": "Banners",
-    "description": "Manage banners by position.",
     "addBtn": "Add banner",
+    "limitedEditWarning": "You can show, hide, reorder and delete banners. Product and media-library access is required to create or fully edit them.",
     "loading": "Loading banners",
     "error": "Error",
     "empty": "No banners",
@@ -2587,9 +2570,9 @@
     "deleteError": "Error deleting banner",
     "saveError": "Error saving banner",
     "dragToReorder": "Drag to reorder",
-    "productRequiredHint": "Required: choose the product that this banner will open.",
+    "deviceDesktop": "Desktop",
+    "deviceMobile": "Mobile",
     "formProductRequired": "Please select a linked product.",
-    "requiredLegend": "Required",
     "unsavedTitle": "Unsaved changes",
     "unsavedConfirm": "You have unsaved changes. Leaving this page will discard them. Continue?",
     "toggleSuccess": "Status updated",
@@ -2610,9 +2593,7 @@
     "emptyFilteredLangDesc": "Banners here are linked to products without an English name, so they are hidden in English mode. Switch to Vietnamese to view, or add English names for the products."
   },
   "reviews": {
-    "eyebrow": "Catalog",
     "title": "Product Reviews",
-    "description": "Moderate and manage customer reviews.",
     "searchPlaceholder": "Author name, content",
     "filterStatus": "Status",
     "loading": "Loading reviews",
@@ -2765,9 +2746,7 @@
     }
   },
   "banners": {
-    "eyebrow": "Appearance",
     "title": "Page banners",
-    "description": "Manage the hero banner image at the top of each page — preview right here, no need to open the website.",
     "loading": "Loading banners...",
     "loadError": "Failed to load banners",
     "saveError": "Failed to save banners",
@@ -2775,8 +2754,6 @@
     "unsavedCount": "{{count}} unsaved change(s)",
     "usingDefault": "Using default image",
     "usingFallback": "Using system default image",
-    "editingVietnamese": "Editing Vietnamese content",
-    "editingEnglish": "Editing English content",
     "pageProducts": "All products",
     "pageBrands": "Brands",
     "pageNews": "News",
@@ -2826,7 +2803,6 @@
     "bannerActive": "You have locked the admin panel for maintenance."
   },
   "chatAdmin": {
-    "eyebrow": "Sales assistant",
     "title": "BigBike Assistant conversations",
     "description": "Review BigBike Assistant's advice, AI usage and customers who consented to a follow-up within the 90-day retention window.",
     "openSettings": "Open BigBike Assistant settings",
@@ -3074,7 +3050,6 @@
       "loadError": "Conversation could not be loaded",
       "notFound": "This conversation does not exist or has passed the 90-day retention window.",
       "title": "Conversation details",
-      "description": "This read-only view reflects the exact conversation with the customer.",
       "messages": "Messages",
       "messagesDescription": "Customer messages and BigBike Assistant's replies in chronological order.",
       "noMessages": "No conversation content",
@@ -3147,9 +3122,7 @@
     }
   },
   "settings": {
-    "eyebrow": "System",
     "title": "Website Settings",
-    "description": "Manage website information, bank-transfer details, SEO, page banners, and internal assignments.",
     "refresh": "Refresh",
     "refreshing": "Updating",
     "refreshError": "Settings could not be refreshed. Existing data and unsaved changes are still available.",
@@ -3316,6 +3289,8 @@
       "ai_assistant_images": "Customer image reading"
     },
     "assistantConfig": {
+      "languageVi": "Vietnamese",
+      "languageEn": "English",
       "itemCount": "{{count}}/{{max}} items",
       "addAbbreviation": "Add abbreviation",
       "addTemplate": "Add saved answer",
@@ -3501,9 +3476,7 @@
     "group_review_moderation": "Review moderation"
   },
   "adminUsers": {
-    "eyebrow": "System",
     "title": "Admin Users",
-    "description": "Manage internal admin user accounts.",
     "searchPlaceholder": "Email or name",
     "filtersAria": "Admin user filters",
     "loading": "Loading users",
@@ -3571,13 +3544,13 @@
     "errEmailRequired": "Please enter an email.",
     "errEmailInvalid": "Invalid email.",
     "errDisplayNameRequired": "Please enter a display name.",
+    "roleAccessRequiredShort": "Role-list access is required to choose a role for a new account.",
+    "roleAccessRequired": "Role-list access is required to filter, invite new accounts or change roles. Name, password and status actions remain available.",
     "rolesLoadError": "Couldn't load the role list. Role choices may be incomplete; try reloading.",
     "activeFiltersAria": "Active filters"
   },
   "auditLog": {
-    "eyebrow": "System",
     "title": "Activity Log",
-    "description": "Review internal activity to see who did what, where, and when.",
     "loading": "Loading activity log",
     "error": "Error loading activity log",
     "empty": "No activity yet",
@@ -3827,9 +3800,7 @@
     "chipDateRange": "Time: {{range}}"
   },
   "reports": {
-    "eyebrow": "Analytics",
     "title": "Revenue Reports",
-    "description": "Revenue, products and customers by time period.",
     "loading": "Loading data…",
     "loadError": "Unable to load report",
     "loadErrorDesc": "Could not load the report right now. Please try again.",
@@ -3875,9 +3846,7 @@
     "notEnoughDataForChart": "Not enough data to draw the chart."
   },
   "roles": {
-    "eyebrow": "System",
     "title": "Permissions",
-    "description": "Manage staff roles and permissions. All changes are recorded in the audit log.",
     "loading": "Loading roles...",
     "loadError": "Failed to load roles.",
     "empty": "No roles found.",
@@ -3918,6 +3887,12 @@
     "assignedUserWarning": "These changes affect {{count}} staff assigned to this role.",
     "saveSummaryAdding": "Permissions being added",
     "saveSummaryRemoving": "Permissions being removed",
+    "saveSummaryAutoAdded": "Added automatically as dependencies",
+    "saveSummaryDependencyReason": "Required for this permission set to work",
+    "permissionKindSupporting": "Supporting",
+    "permissionKindExport": "Data export",
+    "permissionRequiredBy": "Required by {{permissions}}",
+    "relatedPermission": "related permission",
     "saveSensitiveWarning": "These changes include sensitive permissions — they affect system security. Review carefully before confirming.",
     "saveOwnRoleWarning": "You are editing your own role. Removing permissions here directly affects your own access.",
     "selfLockoutBlocked": "Cannot remove role-management permissions from your own role — it would lock you out.",
@@ -4148,9 +4123,7 @@
     "clearFilter": "Clear filter",
     "noMatch": "No videos found",
     "noMatchDescription": "Try changing the keyword or status filter.",
-    "selectAll": "Select all",
-    "eyebrow": "Content",
-    "description": "Manage videos shown on the homepage."
+    "selectAll": "Select all"
   },
   "imageInput": {
     "pickFromLibrary": "Choose from library",
@@ -4200,7 +4173,6 @@
     "pageSlugHint": "Slug of the Content → Pages entry holding the detail body."
   },
   "featuredProducts": {
-    "eyebrow": "Products",
     "title": "Featured Products",
     "description": "Drag to reorder. Up to 12 products are shown in the Featured Products block on the homepage.",
     "gridTitle": "Featured products list (FEATURED_GRID)",
@@ -4223,9 +4195,7 @@
     "errNotFound": "Not saved: {{names}} no longer exists. Remove it from the featured list and save again."
   },
   "homeHighlights": {
-    "eyebrow": "Content",
     "title": "Home Highlights",
-    "description": "Select a representative product for each of the 3 featured slots on the homepage.",
     "searchPlaceholder": "Search products by name or slug...",
     "noResults": "No products found",
     "clearSlot": "Clear",
@@ -4308,6 +4278,54 @@
     "activeFiltersAria": "Active filters",
     "bulkEnable": "Enable",
     "bulkDisable": "Disable"
+  },
+  "legacyDiscontinued": {
+    "title": "Discontinued products",
+    "help": "Preserve old product addresses so customers can still find them and see relevant replacements; no fake price or stock is created.",
+    "create": "Add discontinued product",
+    "readOnly": "You have view-only access and cannot add, edit, enable, or disable discontinued-product pages.",
+    "statusVisible": "Visible",
+    "statusOff": "Disabled",
+    "updateSuccess": "Discontinued-product page updated.",
+    "createSuccess": "Discontinued-product page added.",
+    "saveError": "Could not save. Check the information and try again.",
+    "toggleSuccess": "Visibility updated.",
+    "toggleError": "Could not update visibility.",
+    "requiredError": "Enter the old address, product name, and category so customers receive relevant suggestions.",
+    "colItem": "Old product",
+    "colCategory": "Category",
+    "colImage": "Image",
+    "colStatus": "Status",
+    "colUpdated": "Updated",
+    "unnamed": "Unnamed product",
+    "hasImage": "Image available",
+    "noImage": "No image",
+    "enable": "Enable page",
+    "disable": "Disable page",
+    "editNamed": "Edit {{name}}",
+    "loadError": "Could not load discontinued products",
+    "editTitle": "Edit discontinued product",
+    "createTitle": "Add discontinued product",
+    "slugLabel": "Old address (slug)",
+    "slugHelp": "Enter only the part after /sp/ and before .html, for example old-gloves.",
+    "nameLabel": "Product name",
+    "namePlaceholder": "Vietnamese name",
+    "nameEnLabel": "English name",
+    "nameEnHelp": "Leave blank to use the Vietnamese name on the website.",
+    "nameEnPlaceholder": "English name",
+    "brandLabel": "Previous brand",
+    "optional": "Optional",
+    "categorySlugLabel": "Category slug",
+    "categorySlugHelp": "Use a visible category to suggest up to 3 relevant replacement products.",
+    "imageUrlLabel": "Verified image address",
+    "imageUrlHelp": "Use an address from the BigBike media library. Leave blank until the correct image is verified.",
+    "enabledLabel": "Show the “Discontinued” page",
+    "filterAria": "Filter discontinued products",
+    "searchPlaceholder": "Search by name or old address",
+    "allStatuses": "All statuses",
+    "emptyTitle": "No matching discontinued products",
+    "emptyDescription": "Change the filters or add a historical product page.",
+    "tableCaption": "Discontinued-product pages"
   },
   "errorBoundary": {
     "title": "An unexpected error occurred",

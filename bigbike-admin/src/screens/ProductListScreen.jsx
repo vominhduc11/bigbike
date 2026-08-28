@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { useHasPermission } from '@/lib/auth'
-import { Download, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
+import { Download, Eye, EyeOff, ExternalLink, Package, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
 import { ProductExportDialog } from '@/components/ProductExportDialog'
@@ -18,8 +18,8 @@ import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { AdminTable } from '../components/AdminTable'
 import { DetailSection } from '../components/DetailSection'
+import { TableRowActions } from '../components/TableRowActions'
 import { PublishStatusBadge } from '../components/StatusBadge'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { publishRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportFullProductCatalogCsv, exportProductJson, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
@@ -456,6 +456,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       key: 'name',
       label: t('products.colProduct'),
       sortable: true,
+      headerClassName: 'min-w-60',
+      cellClassName: 'min-w-60',
       render: (product) => (
         <div className="flex min-w-0 items-center gap-3">
           <span className="bb-product-thumb h-10 w-10 shrink-0">
@@ -478,6 +480,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     {
       key: 'sku',
       label: 'SKU',
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
       render: (product) => <span className="font-mono">{formatText(product.sku, t('products.skuFallback'))}</span>,
     },
     {
@@ -485,6 +489,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       label: t('products.colPrice'),
       align: 'right',
       sortable: true,
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
       render: (product) => {
         const sale = product.price?.salePrice
         return (
@@ -549,8 +555,10 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     },
     {
       key: 'actions',
-      label: '',
+      label: <span className="sr-only">{t('common.actions')}</span>,
       align: 'right',
+      headerClassName: 'w-36',
+      cellClassName: 'w-36 whitespace-nowrap',
       render: (product) => {
         const isTrashed = product.publishStatus === 'TRASH'
         const isBusy = deletingId === product.id || restoringId === product.id
@@ -558,84 +566,77 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
         const detailPath = `/admin/products/${product.id}`
         const detailActionLabel = canUpdate ? t('common.edit') : t('common.view')
         return (
-          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              className="min-h-11 min-w-11"
-              title={detailActionLabel}
-              aria-label={detailActionLabel}
-              onClick={() => navigate(detailPath)}
-            >
-              {canUpdate ? <Pencil size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-            </Button>
-            {/* P1-1: bật/tắt xuất bản ngay trên dòng (1 chạm) — đồng bộ với Danh mục/Thương hiệu */}
-            {canUpdate && !isTrashed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                type="button"
-                className="min-h-11 min-w-11"
-                loading={togglingPublishId === product.id}
-                title={isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
-                aria-label={isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
-                onClick={() => handleTogglePublish(product)}
-              >
-                {isPublished ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-              </Button>
-            )}
-            {/* P1-2: menu chuẩn (Radix) — điều hướng bàn phím, Escape đóng, quản lý focus */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  className="min-h-11 min-w-11"
-                  title={t('common.actions')}
-                  aria-label={t('common.actions')}
-                >
-                  <MoreHorizontal size={16} aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => window.open(detailPath, '_blank', 'noopener')}>
-                  <ExternalLink size={13} className="mr-2" />{t('common.openInNewTab')}
-                </DropdownMenuItem>
-                {canUpdate && !isTrashed && (
-                  <DropdownMenuItem
-                    disabled={exportingJsonId === product.id}
-                    onSelect={() => handleExportJson(product)}
-                  >
-                    <Download size={13} className="mr-2" />
-                    {exportingJsonId === product.id
+          <TableRowActions
+            primaryActions={[
+              {
+                key: 'detail',
+                label: detailActionLabel,
+                icon: canUpdate ? Pencil : Eye,
+                onSelect: () => navigate(detailPath),
+              },
+              canUpdate && !isTrashed
+                ? {
+                    key: 'publish',
+                    label: isPublished
+                      ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' })
+                      : t('products.publishAction', { defaultValue: 'Xuất bản' }),
+                    icon: isPublished ? EyeOff : Eye,
+                    loading: togglingPublishId === product.id,
+                    onSelect: () => handleTogglePublish(product),
+                  }
+                : null,
+            ]}
+            menuActions={[
+              {
+                key: 'new-tab',
+                label: t('common.openInNewTab'),
+                icon: ExternalLink,
+                onSelect: () => window.open(detailPath, '_blank', 'noopener'),
+              },
+              canUpdate && !isTrashed
+                ? {
+                    key: 'export',
+                    label: exportingJsonId === product.id
                       ? t('export.exporting', { defaultValue: 'Đang xuất...' })
-                      : t('products.exportJson', { defaultValue: 'Xuất dữ liệu sản phẩm' })}
-                  </DropdownMenuItem>
-                )}
-                {canUpdate && isTrashed && (
-                  <>
-                    <DropdownMenuItem disabled={isBusy} onSelect={() => handleRestore(product)}>
-                      <Undo2 size={13} className="mr-2" />{restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled={isBusy} onSelect={() => handlePermanentDelete(product)} className="text-danger focus:text-danger">
-                      <Trash2 size={13} className="mr-2" />{t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {canUpdate && !isTrashed && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled={isBusy} onSelect={() => handleDelete(product)} className="text-danger focus:text-danger">
-                      <Trash2 size={13} className="mr-2" />{deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                      : t('products.exportJson', { defaultValue: 'Xuất dữ liệu sản phẩm' }),
+                    icon: Download,
+                    disabled: exportingJsonId === product.id,
+                    onSelect: () => handleExportJson(product),
+                  }
+                : null,
+              canUpdate && isTrashed
+                ? {
+                    key: 'restore',
+                    label: restoringId === product.id ? t('products.restoringLabel') : t('products.restore'),
+                    icon: Undo2,
+                    disabled: isBusy,
+                    onSelect: () => handleRestore(product),
+                  }
+                : null,
+              canUpdate && isTrashed
+                ? {
+                    key: 'permanent-delete',
+                    label: t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' }),
+                    icon: Trash2,
+                    tone: 'danger',
+                    separatorBefore: true,
+                    disabled: isBusy,
+                    onSelect: () => handlePermanentDelete(product),
+                  }
+                : null,
+              canUpdate && !isTrashed
+                ? {
+                    key: 'trash',
+                    label: deletingId === product.id ? t('products.deletingLabel') : t('common.delete'),
+                    icon: Trash2,
+                    tone: 'danger',
+                    separatorBefore: true,
+                    disabled: isBusy,
+                    onSelect: () => handleDelete(product),
+                  }
+                : null,
+            ]}
+          />
         )
       },
     },
@@ -807,9 +808,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('products.eyebrow')}
+        group="products"
         title={t('products.title')}
-        description={t('products.description')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
           <ExportButton

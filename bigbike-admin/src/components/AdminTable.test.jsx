@@ -59,4 +59,16 @@ describe('AdminTable', () => {
     await user.click(screen.getByRole('button', { name: 'Sắp xếp cột' }))
     expect(onSortChange).toHaveBeenCalledWith('name', 'asc')
   })
+
+  it('applies shared column sizing to both the header and data cells', () => {
+    render(
+      <AdminTable
+        columns={[{ key: 'name', label: 'Tên', headerClassName: 'min-w-60', cellClassName: 'min-w-60' }]}
+        rows={rows}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'Tên' })).toHaveClass('min-w-60')
+    expect(screen.getByRole('cell', { name: 'Bản ghi một' })).toHaveClass('min-w-60')
+  })
 })

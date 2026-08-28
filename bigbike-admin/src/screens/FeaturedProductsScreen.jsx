@@ -262,9 +262,9 @@ export function FeaturedProductsScreen({ canUpdate }) {
     // Owner chốt 2026-07-28: giữ nguyên cách phân quyền này.
     <Screen>
       <ScreenHeader
-        eyebrow={t('featuredProducts.eyebrow')}
+        group="products"
         title={t('featuredProducts.title')}
-        description={t('featuredProducts.description')}
+        help={t('featuredProducts.description')}
       />
 
       <form

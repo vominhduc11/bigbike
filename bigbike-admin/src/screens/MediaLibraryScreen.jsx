@@ -423,9 +423,8 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       )}
 
       <ScreenHeader
-        eyebrow={t('media.eyebrow')}
+        group="content"
         title={t('media.title')}
-        description={t('media.description')}
         actions={(
           <>
           <Button

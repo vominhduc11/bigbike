@@ -31,6 +31,7 @@ import { CollapsibleSection } from '../components/CollapsibleSection'
 import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { BrandLogoQualityNotice } from '../components/BrandLogoQualityNotice'
+import { HelpTooltip } from '../components/HelpTooltip'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { DeferredRichTextEditor } from '../components/DeferredRichTextEditor'
@@ -438,19 +439,14 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={(
-            <a
-              href="/admin/brands"
-              onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }}
-              className="inline-flex items-center gap-1"
-            >
-              <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
-            </a>
-        )}
+        group="products"
         title={isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' }) : t('brands.detail.editTitle')}
-        description={isCreate ? t('brands.detail.createDesc') : isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : t('brands.detail.editDesc')}
+        description={!isCreate && isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : undefined}
         actions={(
           <>
+          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate('/admin/brands')}>
+            <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
+          </Button>
           {!isCreate && canUpdate && !isSystemBrand && (
             state.item?.isVisible === false ? (
               <Button
@@ -662,8 +658,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 enableImagePicker
               />
             </FormField>
-            <div className="form-field">
-              <span>{t('brands.detail.logoUrl')}</span>
+            <div className="flex flex-col gap-2">
+              <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                {t('brands.detail.logoUrl')}
+                <HelpTooltip content={t('brands.detail.logoUrlHint')} />
+              </span>
               <BrandLogoQualityNotice quality={form.logoQuality} />
               <ImageUrlInput
                 value={form.logoUrl}
@@ -674,10 +673,12 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 error={validationErrors.logoUrl}
                 recommend={IMAGE_RECO.logo}
               />
-              <span className="hint">{t('brands.detail.logoUrlHint')}</span>
             </div>
-            <div className="form-field">
-              <span>{t('brands.detail.bannerUrl')}</span>
+            <div className="flex flex-col gap-2">
+              <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                {t('brands.detail.bannerUrl')}
+                <HelpTooltip content={t('brands.detail.bannerUrlHint')} />
+              </span>
               <ImageUrlInput
                 value={form.bannerUrl}
                 onChange={(url) => updateField('bannerUrl', url)}
@@ -687,7 +688,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 error={validationErrors.bannerUrl}
                 recommend={IMAGE_RECO.bannerWide}
               />
-              <span className="hint">{t('brands.detail.bannerUrlHint')}</span>
             </div>
           </CollapsibleSection>
           {!isCreate && state.item?.updatedAt && (

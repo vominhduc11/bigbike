@@ -429,7 +429,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('customers.detail.eyebrow')}
+        group="sales"
         title={(
           <span className="flex min-w-0 items-center gap-3">
             <CustomerAvatar avatarUrl={customer.avatarUrl} name={customer.fullName || customer.email} />

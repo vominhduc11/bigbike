@@ -57,6 +57,7 @@ import {
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { DetailSection } from '../components/DetailSection'
+import { HelpTooltip } from '../components/HelpTooltip'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { FormField as Field } from '../components/layout/FormField'
 
@@ -613,7 +614,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     <div className="@container min-w-0 flex-1 basis-0">
       <Screen>
         <ScreenHeader
-          eyebrow={t('content.detail.eyebrow')}
+          group="content"
           title={screenTitle}
           description={
             !isCreate && state.item?.updatedAt ? (
@@ -914,15 +915,17 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         <span>{t('content.detail.featured')}</span>
                       </label>
                       <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
-                      <label className="flex items-center gap-3 p-3 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                        <Checkbox
-                          checked={form.homeExperience}
-                          onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
-                          disabled={isReadOnly}
-                        />
-                        <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
-                      </label>
-                      <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
+                      <div className="flex w-fit items-center gap-1">
+                        <label className="flex items-center gap-3 border border-border p-3 text-sm cursor-pointer hover:bg-muted">
+                          <Checkbox
+                            checked={form.homeExperience}
+                            onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
+                            disabled={isReadOnly}
+                          />
+                          <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
+                        </label>
+                        <HelpTooltip content={t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })} />
+                      </div>
                     </div>
                 </div>
         </DetailSection>

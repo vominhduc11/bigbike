@@ -16,6 +16,7 @@ import {
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FormField } from '../components/layout/FormField'
@@ -436,43 +437,46 @@ export function RedirectListScreen({ canUpdate }) {
     </span>
   )
 
-  const rowActions = (redirect) => (
-    <>
-      {/* O4: toggle nhanh Bật/Tắt ngay trên bảng, không cần mở form sửa. */}
-      <Button variant="unstyled"
-        type="button"
-        className="min-h-11 min-w-11 rounded-sm"
-        title={redirect.enabled !== false ? t('redirects.statusOff', { defaultValue: 'Tắt' }) : t('redirects.statusOn', { defaultValue: 'Bật' })}
-        aria-label={redirect.enabled !== false
-          ? t('redirects.disableNamed', { source: redirect.sourcePattern, defaultValue: `Tắt chuyển hướng ${redirect.sourcePattern}` })
-          : t('redirects.enableNamed', { source: redirect.sourcePattern, defaultValue: `Bật chuyển hướng ${redirect.sourcePattern}` })}
-        disabled={isActionBusy}
-        onClick={() => handleToggleEnabled(redirect)}
-      >
-        {redirect.enabled !== false ? <EyeOff size={14} /> : <Eye size={14} />}
-      </Button>
-      <Button variant="unstyled"
-        type="button"
-        className="min-h-11 min-w-11 rounded-sm"
-        title={t('common.edit')}
-        aria-label={t('redirects.editNamed', { source: redirect.sourcePattern, defaultValue: `Sửa chuyển hướng ${redirect.sourcePattern}` })}
-        disabled={isActionBusy}
-        onClick={() => openEditForm(redirect)}
-      >
-        <Pencil size={14} />
-      </Button>
-      <Button variant="unstyled"
-        type="button"
-        className="min-h-11 min-w-11 rounded-sm"
-        title={t('common.delete')}
-        aria-label={t('redirects.deleteNamed', { source: redirect.sourcePattern, defaultValue: `Xoá chuyển hướng ${redirect.sourcePattern}` })}
-        disabled={isActionBusy}
-        onClick={() => handleDelete(redirect)}
-      >
-        <Trash2 size={14} />
-      </Button>
-    </>
-  )
+  const rowActions = (redirect) => {
+    const enabled = redirect.enabled !== false
+    const toggleLabel = enabled
+      ? t('redirects.statusOff', { defaultValue: 'Tắt' })
+      : t('redirects.statusOn', { defaultValue: 'Bật' })
+    const toggleAria = enabled
+      ? t('redirects.disableNamed', { source: redirect.sourcePattern, defaultValue: `Tắt chuyển hướng ${redirect.sourcePattern}` })
+      : t('redirects.enableNamed', { source: redirect.sourcePattern, defaultValue: `Bật chuyển hướng ${redirect.sourcePattern}` })
+    return (
+      <TableRowActions
+        primaryActions={[
+          {
+            key: 'edit',
+            label: t('common.edit'),
+            ariaLabel: t('redirects.editNamed', { source: redirect.sourcePattern, defaultValue: `Sửa chuyển hướng ${redirect.sourcePattern}` }),
+            icon: Pencil,
+            disabled: isActionBusy,
+            onSelect: () => openEditForm(redirect),
+          },
+          {
+            key: 'toggle',
+            label: toggleLabel,
+            ariaLabel: toggleAria,
+            icon: enabled ? EyeOff : Eye,
+            disabled: isActionBusy,
+            onSelect: () => handleToggleEnabled(redirect),
+          },
+        ]}
+        menuActions={[{
+          key: 'delete',
+          label: t('common.delete'),
+          ariaLabel: t('redirects.deleteNamed', { source: redirect.sourcePattern, defaultValue: `Xoá chuyển hướng ${redirect.sourcePattern}` }),
+          icon: Trash2,
+          tone: 'danger',
+          disabled: isActionBusy,
+          onSelect: () => handleDelete(redirect),
+        }]}
+      />
+    )
+  }
 
   const columns = [
     {
@@ -513,9 +517,9 @@ export function RedirectListScreen({ canUpdate }) {
     },
     ...(canUpdate ? [{
       key: 'actions',
-      label: '',
+      label: <span className="sr-only">{t('common.actions')}</span>,
       align: 'right',
-      render: (redirect) => <span className="inline-flex items-center justify-end gap-1">{rowActions(redirect)}</span>,
+      render: rowActions,
     }] : []),
   ]
 
@@ -538,9 +542,9 @@ export function RedirectListScreen({ canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('nav.redirects', { defaultValue: 'Chuyển hướng' })}
+        group="content"
         title={t('redirects.title', { defaultValue: 'Chuyển hướng' })}
-        description={t('redirects.description', { defaultValue: 'Quản lý địa chỉ cũ trên website: chuyển khách tới địa chỉ mới bằng 301 hoặc xác nhận địa chỉ đã gỡ bằng 410.' })}
+        help={t('redirects.description', { defaultValue: 'Quản lý địa chỉ cũ trên website: chuyển khách tới địa chỉ mới bằng 301 hoặc xác nhận địa chỉ đã gỡ bằng 410.' })}
         actions={canUpdate ? (
           <Button type="button" className="min-h-11" onClick={openCreateForm} disabled={isActionBusy}>
               <Plus size={14} />{t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' })}

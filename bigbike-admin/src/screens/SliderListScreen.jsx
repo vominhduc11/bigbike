@@ -13,14 +13,16 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
-import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
+import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
+import { HelpTooltip } from '../components/HelpTooltip'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { HOME_LOCATION, buildSliderPayload, validateSliderProduct } from './slider-list/sliderPayload'
 // Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2). Mã lạ → trả nguyên mã.
@@ -82,7 +84,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
             <img
               src={slider.desktopImage.url}
               alt={slider.desktopImage.alt || ''}
-              title="Máy tính"
+              title={t('sliders.deviceDesktop')}
               className="bb-slider-thumb bb-slider-thumb--desktop"
             />
           )}
@@ -90,7 +92,7 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
             <img
               src={slider.mobileImage.url}
               alt={slider.mobileImage.alt || ''}
-              title="Điện thoại"
+              title={t('sliders.deviceMobile')}
               className="bb-slider-thumb bb-slider-thumb--mobile"
             />
           )}
@@ -99,10 +101,9 @@ function SliderCard({ slider, canUpdate, canFullEdit, onEdit, onDelete, onToggle
         <div className="bb-slider-copy">
           <div className="bb-slider-title-row">
             <span className="bb-slider-title">#{slider.sortOrder} · {locationLabel(t, slider.location)}</span>
-            <span className={`bb-badge ${slider.isActive !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
-              <span className="dot" />
+            <Badge variant={slider.isActive !== false ? 'success' : 'secondary'}>
               {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
-            </span>
+            </Badge>
           </div>
           {slider.productId && (
             <p className="bb-slider-meta">
@@ -436,9 +437,8 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('sliders.eyebrow')}
+        group="content"
         title={t('sliders.title')}
-        description={t('sliders.description')}
         actions={canFullEdit ? (
             <Button
               type="button"
@@ -451,46 +451,37 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
       {canUpdate && !canFullEdit ? (
-        <ReadOnlyBanner warning="Bạn có thể ẩn/hiện, sắp xếp và xoá banner. Cần thêm products.read và media.read để tạo hoặc sửa đầy đủ." />
+        <ReadOnlyBanner warning={t('sliders.limitedEditWarning')} />
       ) : null}
 
       {showForm && (
         <DetailSection title={editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')} className="mb-4">
           <form onSubmit={handleSubmit}>
             {formError && <p className="mb-3 text-danger">{formError}</p>}
-            <p className="bb-muted mb-3 text-xs">
-              <span className="text-danger" aria-hidden="true">*</span> {t('sliders.requiredLegend', { defaultValue: 'Bắt buộc' })}
-            </p>
-            <div className="bb-grid-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {/* F10: nhóm 9 trường thành 4 khối có tiêu đề thay vì 1 lưới phẳng. */}
-              <div className="bb-form-section-label">
+              <h3 className="col-span-full text-sm font-semibold text-foreground">
                 {t('sliders.sectionPosition', { defaultValue: 'Vị trí & thứ tự' })}
-              </div>
+              </h3>
               {/* Vị trí cố định Trang chủ (owner decision 2026-07-15) — không còn Select chọn vị trí. */}
-              <label className="form-field">
-                <span>{t('sliders.formLocation')}</span>
+              <FormField label={t('sliders.formLocation')}>
                 <Input value={locationLabel(t, HOME_LOCATION)} disabled readOnly />
-              </label>
-              <label className="form-field">
-                <span>
-                  {t('sliders.formSortOrder')}
-                  <span className="text-danger ml-1" aria-hidden="true">*</span>
-                </span>
+              </FormField>
+              <FormField label={t('sliders.formSortOrder')} required>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
-              </label>
+              </FormField>
               {/* V2: bỏ marginTop:22 canh thủ công — checkbox giờ đứng riêng 1 hàng full-width, không cần canh theo ô cạnh bên. */}
               <label
-                className="form-field-wide flex w-fit cursor-pointer items-center gap-3 border border-border p-3 text-sm hover:bg-muted"
+                className="col-span-full flex min-h-11 w-fit cursor-pointer items-center gap-3 rounded-[var(--admin-radius-control)] border border-border p-3 text-sm hover:bg-muted"
               >
                 <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
                 <span>{t('sliders.formIsActive')}</span>
               </label>
 
-              <div className="bb-form-section-label with-divider">
+              <h3 className="col-span-full border-t border-border pt-4 text-sm font-semibold text-foreground">
                 {t('sliders.sectionDesktopImage', { defaultValue: 'Ảnh hiển thị trên máy tính' })}
-              </div>
-              <div className="form-field form-field-wide">
-                <span>{t('sliders.formDesktopUrl')}</span>
+              </h3>
+              <FormField label={t('sliders.formDesktopUrl')} helper={t('sliders.formDesktopUrlHint')} full>
                 <ImageUrlInput
                   value={form.desktopImageUrl}
                   onChange={(url, media) => setForm((p) => ({
@@ -505,14 +496,16 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                   previewAlt={form.desktopImageAlt || t('sliders.formDesktopUrl')}
                   recommend={IMAGE_RECO.sliderDesktop}
                 />
-                <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
-              </div>
+              </FormField>
 
-              <div className="bb-form-section-label with-divider">
+              <h3 className="col-span-full border-t border-border pt-4 text-sm font-semibold text-foreground">
                 {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}
-              </div>
-              <div className="form-field form-field-wide">
-                <span>{t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}</span>
+              </h3>
+              <div className="col-span-full flex flex-col gap-2">
+                <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                  {t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}
+                  <HelpTooltip content={t('sliders.formMobileUrlHint')} />
+                </span>
                 <ImageUrlInput
                   value={form.mobileImageUrl}
                   onChange={(url, media) => setForm((p) => ({
@@ -527,25 +520,23 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                   previewAlt={form.mobileImageAlt || t('sliders.formMobileUrl', { defaultValue: 'Ảnh hiển thị trên điện thoại' })}
                   recommend={IMAGE_RECO.sliderMobile}
                 />
-                <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
 
-              <div className="bb-form-section-label with-divider">
+              <h3 className="col-span-full border-t border-border pt-4 text-sm font-semibold text-foreground">
                 {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
-              </div>
-              <p className="form-field-wide -mt-1 text-xs text-muted-foreground">
-                {t('sliders.productRequiredHint', { defaultValue: 'Bắt buộc: chọn sản phẩm mà banner sẽ mở tới.' })}
-              </p>
-              <div className="form-field form-field-wide">
-                <span>
-                  {t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}
-                  <span className="text-danger ml-1" aria-hidden="true">*</span>
-                </span>
+              </h3>
+              <FormField
+                label={t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}
+                helper={t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner mở tới trang chi tiết sản phẩm.' })}
+                error={productTouched ? productFieldError : undefined}
+                required
+                full
+              >
                 {form.productId ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="bb-badge bb-badge-neutral">
+                    <Badge variant="secondary">
                       {form.productName || form.productId}
-                    </span>
+                    </Badge>
                     <Button type="button" variant="outline" size="sm" onClick={clearSelectedProduct}>
                       {t('common.remove', { defaultValue: 'Bỏ chọn' })}
                     </Button>
@@ -565,11 +556,7 @@ export function SliderListScreen({ canUpdate, canFullEdit = canUpdate }) {
                     emptyText={t('sliders.formProductNoResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
                   />
                 )}
-                <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner mở tới trang chi tiết sản phẩm.' })}</span>
-                {productTouched && productFieldError && (
-                  <small className="field-error" role="alert">{productFieldError}</small>
-                )}
-              </div>
+              </FormField>
             </div>
             <StickyActionBar ariaLabel={t('common.actions')}>
               <Button type="button" variant="outline" onClick={confirmCloseForm}>{t('common.cancel')}</Button>

@@ -425,9 +425,8 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   const header = (
     <ScreenHeader
-      eyebrow={t('settings.eyebrow')}
+      group="system"
       title={t('settings.title')}
-      description={t('settings.description')}
       badge={(
         <span className={canUpdate ? 'bb-badge bb-badge-success' : 'bb-badge bb-badge-warning'}>
           {canUpdate

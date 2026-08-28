@@ -160,4 +160,69 @@ describe('admin interface composition contract', () => {
     expect(screenComponent).not.toContain('maxWidth')
     expect(tokens).toMatch(/--bb-content-max:\s*1700px/)
   })
+
+  test('every page header uses one of the five sidebar groups without legacy eyebrow props', () => {
+    const allowedGroups = new Set(['sales', 'products', 'content', 'reports', 'system'])
+    const headers = productionJsxFiles().flatMap((path) => {
+      const source = readFileSync(path, 'utf8')
+      return [...source.matchAll(/<ScreenHeader\b([\s\S]*?)(?:\/>|>)/g)].map((match) => ({
+        path,
+        props: match[1],
+      }))
+    })
+
+    expect(headers).toHaveLength(33)
+    for (const header of headers) {
+      const group = /\bgroup="([^"]+)"/.exec(header.props)?.[1]
+      expect(allowedGroups.has(group), header.path).toBe(true)
+      expect(header.props, header.path).not.toMatch(/\beyebrow=/)
+    }
+
+    const visibleDescriptions = headers.filter(({ props }) => /\bdescription=/.test(props))
+    expect(visibleDescriptions.length).toBeLessThanOrEqual(8)
+  })
+
+  test('the longest audit helpers are rendered through shared progressive help', () => {
+    const sourceByFile = {
+      ProductDetailScreen: screen('ProductDetailScreen'),
+      CategoryDetailScreen: screen('CategoryDetailScreen'),
+      ContentDetailScreen: screen('ContentDetailScreen'),
+      ContentEditors: readFileSync(join(ROOT, 'src', 'screens', 'product-detail', 'ContentEditors.jsx'), 'utf8'),
+      blocks: readFileSync(join(ROOT, 'src', 'components', 'block-editor', 'blocks.jsx'), 'utf8'),
+    }
+    const progressiveHelp = [
+      ['ProductDetailScreen', 'products.detail.specStats.hint'],
+      ['ProductDetailScreen', 'products.detail.commitments.hint'],
+      ['ContentEditors', 'products.detail.highlights.htmlHint'],
+      ['ContentDetailScreen', 'content.detail.homeExperienceHint'],
+      ['ContentEditors', 'products.detail.faqs.htmlHint'],
+      ['CategoryDetailScreen', 'categories.introContentHint'],
+      ['blocks', 'products.detail.sizeGuide.htmlHint'],
+    ]
+
+    for (const [file, key] of progressiveHelp) {
+      const source = sourceByFile[file]
+      const keyIndex = source.indexOf(key)
+      expect(keyIndex, `${file}: ${key}`).toBeGreaterThan(-1)
+      const context = source.slice(Math.max(0, keyIndex - 180), keyIndex + key.length + 180)
+      expect(context, `${file}: ${key}`).toMatch(/(?:description=|HelpTooltip)/)
+    }
+  })
+
+  test('all data lists with row operations use the shared row-action pattern', () => {
+    for (const name of [
+      'ProductListScreen',
+      'BrandListScreen',
+      'ContentListScreen',
+      'CategoryListScreen',
+      'RedirectListScreen',
+      'ReviewListScreen',
+      'AdminUsersScreen',
+      'LegacyDiscontinuedProductsScreen',
+    ]) {
+      expect(screen(name)).toContain('<TableRowActions')
+    }
+    const menuRow = readFileSync(join(ROOT, 'src', 'screens', 'menu', 'SortableMenuItem.jsx'), 'utf8')
+    expect(menuRow).toContain('<TableRowActions')
+  })
 })

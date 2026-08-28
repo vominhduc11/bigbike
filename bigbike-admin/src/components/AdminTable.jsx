@@ -126,7 +126,7 @@ export function AdminTable({
                   </TableCell>
                 )}
                 {columns.map((column) => (
-                  <TableCell key={column.key} className={ALIGN_CLASS[column.align]}>
+                  <TableCell key={column.key} className={cn(ALIGN_CLASS[column.align], column.cellClassName)}>
                     <div
                       className="h-4 rounded-xs bg-surface-muted"
                       style={{ width: column.skeletonWidth ?? '70%' }}
@@ -191,7 +191,7 @@ export function AdminTable({
                     return (
                       <TableCell
                         key={`${row.id}:${column.key}`}
-                        className={ALIGN_CLASS[column.align]}
+                        className={cn(ALIGN_CLASS[column.align], column.cellClassName)}
                       >
                         {cell}
                       </TableCell>

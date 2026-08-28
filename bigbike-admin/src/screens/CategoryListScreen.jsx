@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
+import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -41,7 +41,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   DUPLICATE_SESSION_KEY,
   EMPTY_ITEMS,
@@ -52,6 +51,7 @@ import {
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 
 function foldSearchText(value) {
   return String(value || '')
@@ -707,10 +707,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     ...(isCategoryColumnVisible('visibility') ? [{ key: 'visibility', label: t('categories.colVisibility') }] : []),
     ...(isCategoryColumnVisible('homepage') ? [{ key: 'homepage', label: t('categories.colHomepage') }] : []),
     ...(isCategoryColumnVisible('updatedAt') ? [{ key: 'updatedAt', label: t('categories.colUpdated'), align: 'right' }] : []),
-    { key: 'actions', label: t('categories.colActions'), align: 'right' },
+    { key: 'actions', label: <span className="sr-only">{t('common.actions')}</span>, align: 'right' },
   ]
 
-  // Nút thao tác dòng danh mục — dùng chung cho bảng (.cat-actions) và thẻ mobile (P2-2).
+  // Thao tác dòng danh mục dùng chung cho bảng và thẻ mobile.
   const renderCategoryRowActions = (category) => {
     const isSystemCategory = category.id === 'uncategorized'
     const detailPath = `/admin/categories/${category.id}`
@@ -718,106 +718,72 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const rowBusy = actionForRow || togglingId === category.id || Boolean(bulkProgress)
     const storefrontAvailable = Boolean(category.slug && category.isVisible && !query.deleted)
 
+    const visibilityLabel = category.isVisible
+      ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
+      : t('categories.showAction', { defaultValue: 'Hiện trên website' })
     return (
-      <div className="cat-actions" onClick={(event) => event.stopPropagation()}>
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          title={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
-          aria-label={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
-          onClick={() => navigate(detailPath)}
-        >
-          <Pencil size={15} aria-hidden="true" />
-        </Button>
-
-        {canUpdate && !isSystemCategory && !query.deleted && (
-          <Button
-            variant="ghost"
-            size="icon"
-            type="button"
-            loading={togglingId === category.id}
-            disabled={rowBusy || toggleVisibilityMutation.isPending}
-            onClick={() => handleToggleVisibility(category)}
-            title={category.isVisible
-              ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
-              : t('categories.showAction', { defaultValue: 'Hiện trên website' })}
-            aria-label={category.isVisible
-              ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
-              : t('categories.showAction', { defaultValue: 'Hiện trên website' })}
-          >
-            {category.isVisible ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
-          </Button>
-        )}
-
-        {(storefrontAvailable || (canUpdate && !isSystemCategory)) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                type="button"
-                title={t('common.actions', { defaultValue: 'Thao tác' })}
-                aria-label={t('common.actions', { defaultValue: 'Thao tác' })}
-                disabled={rowBusy}
-              >
-                <MoreHorizontal size={16} aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {storefrontAvailable && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={`${STOREFRONT_BASE}/${category.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink size={14} className="mr-2" aria-hidden="true" />
-                      {t('categories.viewOnSite')}
-                    </a>
-                  </DropdownMenuItem>
-                  {canUpdate && !isSystemCategory ? <DropdownMenuSeparator /> : null}
-                </>
-              )}
-              {canUpdate && !isSystemCategory && !query.deleted && (
-                <>
-                  <DropdownMenuItem disabled={rowBusy} onSelect={() => handleDuplicate(category)}>
-                    <Copy size={14} className="mr-2" aria-hidden="true" />
-                    {t('categories.duplicate')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={rowBusy}
-                    onSelect={() => handleSoftDelete(category)}
-                    className="text-danger focus:text-danger"
-                  >
-                    <Trash2 size={14} className="mr-2" aria-hidden="true" />
-                    {t('common.delete')}
-                  </DropdownMenuItem>
-                </>
-              )}
-              {canUpdate && !isSystemCategory && query.deleted && (
-                <>
-                  <DropdownMenuItem disabled={rowBusy} onSelect={() => handleRestore(category)}>
-                    <Undo2 size={14} className="mr-2" aria-hidden="true" />
-                    {t('products.restore')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={rowBusy}
-                    onSelect={() => handlePermanentDelete(category)}
-                    className="text-danger focus:text-danger"
-                  >
-                    <Trash2 size={14} className="mr-2" aria-hidden="true" />
-                    {t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' })}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+      <TableRowActions
+        primaryActions={[
+          {
+            key: 'detail',
+            label: t('common.edit', { defaultValue: 'Chỉnh sửa' }),
+            icon: Pencil,
+            disabled: rowBusy,
+            onSelect: () => navigate(detailPath),
+          },
+          canUpdate && !isSystemCategory && !query.deleted && {
+            key: 'visibility',
+            label: visibilityLabel,
+            icon: category.isVisible ? EyeOff : Eye,
+            loading: togglingId === category.id,
+            disabled: rowBusy || toggleVisibilityMutation.isPending,
+            onSelect: () => handleToggleVisibility(category),
+          },
+        ]}
+        menuActions={[
+          storefrontAvailable && {
+            key: 'storefront',
+            label: t('categories.viewOnSite'),
+            icon: ExternalLink,
+            disabled: rowBusy,
+            href: `${STOREFRONT_BASE}/${category.slug}`,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+          },
+          canUpdate && !isSystemCategory && !query.deleted && {
+            key: 'duplicate',
+            label: t('categories.duplicate'),
+            icon: Copy,
+            disabled: rowBusy,
+            onSelect: () => handleDuplicate(category),
+          },
+          canUpdate && !isSystemCategory && !query.deleted && {
+            key: 'delete',
+            label: t('common.delete'),
+            icon: Trash2,
+            tone: 'danger',
+            separatorBefore: true,
+            disabled: rowBusy,
+            onSelect: () => handleSoftDelete(category),
+          },
+          canUpdate && !isSystemCategory && query.deleted && {
+            key: 'restore',
+            label: t('products.restore'),
+            icon: Undo2,
+            disabled: rowBusy,
+            onSelect: () => handleRestore(category),
+          },
+          canUpdate && !isSystemCategory && query.deleted && {
+            key: 'permanent-delete',
+            label: t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' }),
+            icon: Trash2,
+            tone: 'danger',
+            separatorBefore: true,
+            disabled: rowBusy,
+            onSelect: () => handlePermanentDelete(category),
+          },
+        ]}
+      />
     )
   }
 
@@ -1069,9 +1035,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={t('categories.eyebrow')}
+        group="products"
         title={t('categories.title')}
-        description={t('categories.description')}
         actions={canUpdate ? (
           <Button type="button" className="min-h-11" onClick={() => navigate('/admin/categories/new')}>
             <Plus size={16} aria-hidden="true" />
