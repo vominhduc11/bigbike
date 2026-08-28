@@ -118,7 +118,7 @@ export function RegisterForm({
         message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)}
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form id="register-form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">
           <div className="md:col-span-2">
             <AuthField
@@ -245,10 +245,19 @@ export function RegisterForm({
           </div>
         </div>
 
-        <Button type="submit" size="auth" disabled={isSubmitting}>
+        <Button type="submit" size="auth" disabled={isSubmitting} className="hidden md:inline-flex">
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
+
+      <div
+        data-auth-mobile-submit
+        className="fixed inset-x-0 z-[var(--bb-z-sticky-action)] border-t border-border bg-background px-4 pt-3 [bottom:calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] [padding-bottom:max(8px,env(safe-area-inset-bottom))] [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] md:hidden"
+      >
+        <Button type="submit" form="register-form" size="auth" disabled={isSubmitting}>
+          {isSubmitting ? t("submitting") : t("submit")}
+        </Button>
+      </div>
 
       <Button asChild variant="secondary" size="auth" className="mt-3 w-full">
         <Link href={toLoginPath(undefined, locale)}>{t("loginCta")}</Link>

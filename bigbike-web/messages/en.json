@@ -491,6 +491,7 @@
     },
     "login": {
       "intro": "If you already have an account, please sign in.",
+      "newMemberPrompt": "Register a new account",
       "emailLabel": "Username",
       "emailPlaceholder": "Phone or email",
       "passwordLabel": "Password",

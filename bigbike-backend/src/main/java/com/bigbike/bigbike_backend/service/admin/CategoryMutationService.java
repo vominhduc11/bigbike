@@ -335,7 +335,12 @@ public class CategoryMutationService {
             clearIcon(entity);
         }
 
-        if (request.getMenuIcon() != null) {
+        // CATEGORY_RULE_010: a child category can never retain a menu icon. Apply this after
+        // the parent presence-flag so both an explicit re-parent and a PATCH that omits parentId
+        // use the effective parent currently on the entity.
+        if (entity.getParent() != null) {
+            entity.setMenuIconUrl(null);
+        } else if (request.getMenuIcon() != null) {
             entity.setMenuIconUrl(AdminMutationValidators.trimToNull(request.getMenuIcon().getUrl()));
         } else if (create) {
             entity.setMenuIconUrl(null);

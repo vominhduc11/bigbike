@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaPickerModal } from './MediaPickerModal'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 
 const mocks = vi.hoisted(() => ({
   fetchMedia: vi.fn(),
@@ -10,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   uploadMedia: vi.fn(),
   hasPermission: vi.fn(),
   showConfirm: vi.fn(),
+  readImageFileDimensions: vi.fn(),
+  mediaValidation: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
@@ -41,13 +44,8 @@ vi.mock('../lib/useDebounce', () => ({
 }))
 
 vi.mock('../lib/useMediaDimensions', () => ({
-  useMediaValidation: () => ({
-    blocked: false,
-    status: 'idle',
-    reasons: [],
-    width: null,
-    height: null,
-  }),
+  readImageFileDimensions: mocks.readImageFileDimensions,
+  useMediaValidation: () => mocks.mediaValidation(),
 }))
 
 vi.mock('../lib/contracts', () => ({
@@ -121,6 +119,14 @@ beforeEach(() => {
   mocks.uploadMedia.mockImplementation(async (_file, _altText, onProgress) => {
     onProgress?.(100)
     return { item: uploadedMedia }
+  })
+  mocks.readImageFileDimensions.mockResolvedValue({ width: 200, height: 200 })
+  mocks.mediaValidation.mockReturnValue({
+    blocked: false,
+    status: 'idle',
+    reasons: [],
+    width: null,
+    height: null,
   })
   mocks.showConfirm.mockResolvedValue(true)
 })
@@ -252,6 +258,62 @@ describe('MediaPickerModal', () => {
       null,
       true,
     ))
+  })
+
+  it('chỉ tải lên ảnh danh mục vuông tuyệt đối và chấp nhận ảnh vuông nhỏ', async () => {
+    const user = userEvent.setup()
+    renderPicker({ recommend: IMAGE_RECO.categoryImage })
+
+    await screen.findByTitle('helmet-one.jpg')
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-vuong-nho.jpg', { type: 'image/jpeg' })
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      null,
+      false,
+    ))
+    expect(mocks.readImageFileDimensions).toHaveBeenCalledWith(file)
+  })
+
+  it('từ chối ảnh danh mục không vuông trước khi tải lên và báo kích thước', async () => {
+    const user = userEvent.setup()
+    mocks.readImageFileDimensions.mockResolvedValue({ width: 300, height: 200 })
+    renderPicker({ recommend: IMAGE_RECO.categoryImage })
+
+    await screen.findByTitle('helmet-one.jpg')
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File(['jpeg-content'], 'anh-ngang.jpg', { type: 'image/jpeg' })
+
+    await user.upload(fileInput, file)
+
+    expect(await screen.findByText('mediaReco.categoryImageWrongRatio')).toBeInTheDocument()
+    expect(mocks.uploadMedia).not.toHaveBeenCalled()
+  })
+
+  it('truyền kích thước thật của ảnh danh mục đã chọn vào form quản trị', async () => {
+    const user = userEvent.setup()
+    mocks.mediaValidation.mockReturnValue({
+      blocked: false,
+      status: 'loaded',
+      reasons: [],
+      width: 200,
+      height: 200,
+    })
+    const onSelect = vi.fn()
+    renderPicker({ recommend: IMAGE_RECO.categoryImage, onSelect })
+
+    await user.click(await screen.findByTitle('helmet-one.jpg'))
+    await user.click(screen.getByRole('button', { name: 'media.picker.confirmSingle' }))
+
+    expect(onSelect).toHaveBeenCalledWith(
+      firstMedia.publicUrl,
+      expect.objectContaining({ width: 200, height: 200 }),
+    )
   })
 
   it('giữ nguyên chữ ký callback chọn ảnh', async () => {

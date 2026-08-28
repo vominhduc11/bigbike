@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,4 +30,7 @@ public class ImageAssetRequest {
 
     @Size(max = 100, message = "Image mimeType is too long.")
     private String mimeType;
+
+    /** Internal Media Library id. Used only by the dedicated brand-logo write contract. */
+    private UUID mediaId;
 }

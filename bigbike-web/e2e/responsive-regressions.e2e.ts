@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { SAMPLE } from "./helpers/routes";
 import { disableAnimations, gotoAndSettle } from "./helpers/ui-quality";
+import { VIEWPORTS } from "./helpers/viewports";
 
 async function expectResponsiveImage(
   page: Page,
@@ -12,7 +13,10 @@ async function expectResponsiveImage(
   const image = page.locator(selector).first();
   await expect(image, `${label}: ảnh phải hiển thị`).toBeVisible();
   await expect(image, `${label}: phải khai báo sizes`).toHaveAttribute("sizes", /\S/);
-  await expect(image, `${label}: srcset phải dùng width descriptors`).toHaveAttribute("srcset", /\s\d+w(?:,|$)/);
+  await expect(image, `${label}: srcset phải dùng width descriptors`).toHaveAttribute(
+    "srcset",
+    /\s\d+w(?:,|$)/,
+  );
 
   const measurement = await image.evaluate(async (node) => {
     const img = node as HTMLImageElement;
@@ -77,9 +81,15 @@ function expectLinesInside(
   expect(measurement.lines.length, `${label}: phải có dòng chữ được render`).toBeGreaterThan(0);
   for (const line of measurement.lines) {
     expect(line.left, `${label}: chữ vượt mép trái màn hình`).toBeGreaterThanOrEqual(-2);
-    expect(line.right, `${label}: chữ vượt mép phải màn hình`).toBeLessThanOrEqual(measurement.viewportWidth + 2);
-    expect(line.left, `${label}: chữ vượt mép trái khung chứa`).toBeGreaterThanOrEqual(measurement.containerLeft - 2);
-    expect(line.right, `${label}: chữ vượt mép phải khung chứa`).toBeLessThanOrEqual(measurement.containerRight + 2);
+    expect(line.right, `${label}: chữ vượt mép phải màn hình`).toBeLessThanOrEqual(
+      measurement.viewportWidth + 2,
+    );
+    expect(line.left, `${label}: chữ vượt mép trái khung chứa`).toBeGreaterThanOrEqual(
+      measurement.containerLeft - 2,
+    );
+    expect(line.right, `${label}: chữ vượt mép phải khung chứa`).toBeLessThanOrEqual(
+      measurement.containerRight + 2,
+    );
   }
 }
 
@@ -113,6 +123,44 @@ test("Lưới sản phẩm, bài viết và danh mục đều khai báo kích th
   await expectResponsiveImage(page, "[data-home-news-grid] img[sizes]", "Tin tức trang chủ");
 });
 
+test("Icon danh mục trang chủ cùng khung, giữ tỉ lệ và đổi cỡ theo thiết bị", async ({ page }) => {
+  const viewportCases = [
+    VIEWPORTS.find((viewport) => viewport.name === "mobile-390x844")!,
+    VIEWPORTS.find((viewport) => viewport.name === "tablet-768x1024")!,
+    VIEWPORTS.find((viewport) => viewport.name === "desktop-1440x900")!,
+  ];
+  const expectedFrameSizes = new Map([
+    ["mobile", 64],
+    ["tablet", 80],
+    ["desktop", 96],
+  ]);
+
+  for (const viewport of viewportCases) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await gotoAndSettle(page, "/");
+    const frames = page.locator("[data-home-category-grid] [data-home-category-icon-frame]");
+    await expect(frames.first(), `${viewport.name}: phải có lưới danh mục`).toBeVisible();
+    const measurements = await frames.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        const image = node.querySelector("img");
+        return {
+          frameWidth: rect.width,
+          frameHeight: rect.height,
+          objectFit: image ? getComputedStyle(image).objectFit : "",
+        };
+      }),
+    );
+    const expected = expectedFrameSizes.get(viewport.kind)!;
+    expect(measurements.length, `${viewport.name}: phải có icon danh mục`).toBeGreaterThan(0);
+    for (const measurement of measurements) {
+      expect(measurement.frameWidth, `${viewport.name}: khung icon sai cỡ`).toBe(expected);
+      expect(measurement.frameHeight, `${viewport.name}: khung icon phải vuông`).toBe(expected);
+      expect(measurement.objectFit, `${viewport.name}: ảnh phải giữ nguyên tỉ lệ`).toBe("contain");
+    }
+  }
+});
+
 test("Bảng lọc điện thoại tự áp dụng và đóng khi chuyển sang desktop", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, "/sp/");
@@ -132,8 +180,12 @@ test("Bảng lọc điện thoại tự áp dụng và đóng khi chuyển sang 
   await page.setViewportSize({ width: 844, height: 390 });
   await expect(sheet).toBeHidden();
   await expect(page.locator("[data-catalog-sidebar]")).toBeVisible();
-  await expect.poll(() => new URL(page.url()).searchParams.getAll("pwb-brand").length).toBeGreaterThan(0);
-  await expect.poll(() => page.evaluate(() => document.body.hasAttribute("data-scroll-locked"))).toBe(false);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.getAll("pwb-brand").length)
+    .toBeGreaterThan(0);
+  await expect
+    .poll(() => page.evaluate(() => document.body.hasAttribute("data-scroll-locked")))
+    .toBe(false);
 
   const beforeScroll = await page.evaluate(() => window.scrollY);
   await page.mouse.wheel(0, 300);
@@ -184,10 +236,12 @@ test("Ô ghi nhớ và nút VI/EN có vùng chạm tối thiểu 44px", async ({
     await gotoAndSettle(page, path);
     const languageButtons = page.locator("[data-language-switch] button");
     await expect(languageButtons).toHaveCount(2);
-    const boxes = await languageButtons.evaluateAll((nodes) => nodes.map((node) => {
-      const rect = node.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    }));
+    const boxes = await languageButtons.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
+    );
     for (const box of boxes) {
       expect(box.width, `${path}: nút ngôn ngữ quá hẹp`).toBeGreaterThanOrEqual(44);
       expect(box.height, `${path}: nút ngôn ngữ quá thấp`).toBeGreaterThanOrEqual(44);
@@ -237,10 +291,7 @@ test("Phân trang tin tức và sản phẩm nằm gọn ở 320/360px", async (
       const nextBox = await next.boundingBox();
       expect(nextBox?.width).toBeGreaterThanOrEqual(44);
       expect(nextBox?.height).toBeGreaterThanOrEqual(44);
-      await Promise.all([
-        page.waitForURL(/(?:\?|&)paged=2(?:&|$)/),
-        next.click(),
-      ]);
+      await Promise.all([page.waitForURL(/(?:\?|&)paged=2(?:&|$)/), next.click()]);
     }
   }
 });

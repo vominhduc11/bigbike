@@ -3,10 +3,12 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductPublishRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CategoryPermanentDeleteImpactRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CategoryPermanentDeleteImpactResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.ImportBrandLogoUrlRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaDetailResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -18,9 +20,11 @@ import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
 import com.bigbike.bigbike_backend.service.admin.CategoryMutationService;
 import com.bigbike.bigbike_backend.service.admin.CategoryDeletionImpactService;
 import com.bigbike.bigbike_backend.service.admin.BrandMutationService;
+import com.bigbike.bigbike_backend.service.admin.BrandLogoUrlImportService;
 import com.bigbike.bigbike_backend.service.admin.HomepageBlockMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -28,6 +32,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,8 +69,10 @@ public class AdminCatalogController extends AdminControllerSupport {
     private final CategoryDeletionImpactService categoryDeletionImpactService;
     private final BrandMutationService brandMutationService;
     private final HomepageBlockMutationService homepageBlockMutationService;
+    private final BrandLogoUrlImportService brandLogoUrlImportService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final RateLimitConcurrencyGuard rateLimitConcurrencyGuard;
 
     @GetMapping("/products")
     public ApiListResponse<Product> listProducts(
@@ -370,6 +379,20 @@ public class AdminCatalogController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
         return apiResponseFactory.data(brandMutationService.createBrand(payload, resolveAdminId()), request);
+    }
+
+    @PostMapping("/brands/logo/import-url")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiDataResponse<AdminMediaDetailResponse> importBrandLogoUrl(
+            @Valid @RequestBody ImportBrandLogoUrlRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        UUID actorId = resolveAdminId();
+        try (RateLimitConcurrencyGuard.Lease ignored = rateLimitConcurrencyGuard.acquireAdminMedia(actorId)) {
+            return apiResponseFactory.data(
+                    brandLogoUrlImportService.importUrl(payload, actorId), request);
+        }
     }
 
     @PatchMapping("/brands/{id}")

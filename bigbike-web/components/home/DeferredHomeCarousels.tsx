@@ -16,10 +16,9 @@ const HomeVideoCarousel = dynamic(
   () => import("./HomeVideoCarousel").then((mod) => mod.HomeVideoCarousel),
   { ssr: false },
 );
-const BrandCarousel = dynamic(
-  () => import("./BrandCarousel").then((mod) => mod.BrandCarousel),
-  { ssr: false },
-);
+const BrandCarousel = dynamic(() => import("./BrandCarousel").then((mod) => mod.BrandCarousel), {
+  ssr: false,
+});
 
 function DeferredHomeCarousel({
   name,
@@ -87,7 +86,7 @@ export function DeferredHomeVideoCarousel({ videos }: { videos: HomeVideo[] }) {
 
 export function DeferredBrandCarousel({ brands }: { brands: Brand[] }) {
   return (
-    <DeferredHomeCarousel name="brands" reserveClassName="min-h-90 md:min-h-92.5">
+    <DeferredHomeCarousel name="brands" reserveClassName="min-h-52">
       <BrandCarousel brands={brands} />
     </DeferredHomeCarousel>
   );

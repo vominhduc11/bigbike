@@ -49,11 +49,11 @@ public class UpsertCategoryRequest {
     private ImageAssetRequest icon;
 
     /**
-     * Icon line đơn sắc cho menu header + bộ lọc "Danh mục sản phẩm" (render qua mask-image).
-     * Chỉ {@code url} được lưu vào {@code CategoryEntity.menuIconUrl}. Khác với {@code icon}
-     * (ảnh hero trang danh mục). Xem DATA_CONTRACT §"Category menu/sidebar line-icon" (V213).
+     * Icon line đơn sắc cạnh tên danh mục gốc trong menu đầu trang (render qua mask-image).
+     * Chỉ {@code url} được lưu vào {@code CategoryEntity.menuIconUrl}; danh mục con bị bỏ qua
+     * im lặng và luôn lưu trống. Validation có điều kiện được thực hiện trong service vì PATCH
+     * có thể không gửi {@code parentId} và khi đó cần biết parent hiện tại của entity.
      */
-    @Valid
     private ImageAssetRequest menuIcon;
 
     @Valid

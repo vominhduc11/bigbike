@@ -347,12 +347,19 @@ final class ProductFieldApplier {
     }
 
     public static void applyImage(CategoryEntity entity, ImageAssetRequest request) {
+        String existingUrl = AdminMutationValidators.trimToNull(entity.getImageUrl());
+        String requestedUrl = AdminMutationValidators.trimToNull(request.getUrl());
+        boolean keepingSameImage = requestedUrl != null && requestedUrl.equals(existingUrl);
+
         entity.setImageId(null);
-        entity.setImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setImageUrl(requestedUrl);
         entity.setImageAlt(AdminMutationValidators.trimToNull(request.getAlt()));
-        entity.setImageWidth(request.getWidth());
-        entity.setImageHeight(request.getHeight());
-        entity.setImageMimeType(AdminMutationValidators.trimToNull(request.getMimeType()));
+        entity.setImageWidth(keepingSameImage && request.getWidth() == null
+                ? entity.getImageWidth() : request.getWidth());
+        entity.setImageHeight(keepingSameImage && request.getHeight() == null
+                ? entity.getImageHeight() : request.getHeight());
+        entity.setImageMimeType(keepingSameImage && request.getMimeType() == null
+                ? entity.getImageMimeType() : AdminMutationValidators.trimToNull(request.getMimeType()));
     }
 
     public static void clearImage(CategoryEntity entity) {
@@ -404,7 +411,11 @@ final class ProductFieldApplier {
 
     public static void applyLogo(BrandEntity entity, ImageAssetRequest request) {
         String url = AdminMutationValidators.trimToNull(request.getUrl());
-        entity.setLogoId(null);
+        // Keep the existing media link when only alt/metadata is edited on an unchanged URL.
+        // BrandMutationService replaces it with the validated Media Library id for new URLs.
+        if (!java.util.Objects.equals(url, AdminMutationValidators.trimToNull(entity.getLogoUrl()))) {
+            entity.setLogoId(null);
+        }
         entity.setLogoUrl(url);
         entity.setLogoAlt(AdminMutationValidators.trimToNull(request.getAlt()));
         if (url == null) {

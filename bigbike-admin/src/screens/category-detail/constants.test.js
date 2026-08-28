@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { buildEmptyForm, buildFormFromItem, toPayload } from './constants'
+import { buildEmptyForm, buildFormFromItem, getCategoryImageValidationError, toPayload } from './constants'
 
 describe('Category payload contract', () => {
+  it('chặn ảnh mới không vuông nhưng cho phép ảnh vuông không có sàn kích thước', () => {
+    expect(getCategoryImageValidationError({ imageUrl: '/media/200.jpg', imageWidth: 200, imageHeight: 200 }, null, { isCreate: true })).toBeNull()
+    expect(getCategoryImageValidationError({ imageUrl: '/media/300.jpg', imageWidth: 300, imageHeight: 200 }, null, { isCreate: true })).toEqual({
+      key: 'categories.detail.imageNotSquare',
+      values: { w: 300, h: 200 },
+    })
+  })
+
+  it('bỏ qua kiểm tra tỉ lệ khi danh mục cũ giữ nguyên URL ảnh không vuông', () => {
+    const currentItem = { image: { rawUrl: '/media/old.jpg', width: 39, height: 60 } }
+    expect(getCategoryImageValidationError({ imageUrl: '/media/old.jpg', imageWidth: null, imageHeight: null }, currentItem)).toBeNull()
+  })
+
   it('omits the default homepage placement on create and never sends visibility', () => {
     const payload = toPayload(buildEmptyForm(), { isCreate: true })
 
@@ -71,6 +84,23 @@ describe('Category payload contract', () => {
     expect(payload.seo.ogImage).toEqual({
       url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg',
     })
+  })
+
+  it('luôn xoá biểu tượng menu khỏi form và payload của danh mục con', () => {
+    const form = buildFormFromItem({
+      parentId: 'cat_parent',
+      menuIconUrl: '/media/legacy-child-menu.svg',
+    })
+
+    expect(form.menuIconUrl).toBe('')
+    expect(toPayload({ ...form, menuIconUrl: '/media/stale-draft.svg' }).menuIcon).toEqual({ url: null })
+  })
+
+  it('giữ biểu tượng menu của danh mục gốc trong vòng đọc rồi lưu', () => {
+    const form = buildFormFromItem({ menuIconUrl: '/media/root-menu.svg' })
+
+    expect(form.menuIconUrl).toBe('/media/root-menu.svg')
+    expect(toPayload(form).menuIcon).toEqual({ url: '/media/root-menu.svg' })
   })
 
   it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xoá được nội dung cũ', () => {

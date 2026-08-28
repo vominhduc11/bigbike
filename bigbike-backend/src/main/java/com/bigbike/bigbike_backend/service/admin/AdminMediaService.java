@@ -103,27 +103,45 @@ public class AdminMediaService {
     @Transactional
     public AdminMediaDetailResponse uploadMedia(
             MultipartFile file, String altText, UUID folderId, boolean clearFolder, UUID adminId) {
-        validateMimeContent(file);
-        if (folderId != null) requireMediaFolder(folderId);
-        // Đích upload rõ ràng khi admin đang đứng trong 1 thư mục cụ thể HOẶC đang xem
-        // "Chưa phân loại" (clearFolder) — chỉ "Tất cả" (cả hai đều rỗng) là không có đích.
-        boolean hasExplicitDestination = clearFolder || folderId != null;
-
-        String mimeType = file.getContentType() != null
-                ? file.getContentType().toLowerCase(Locale.ROOT) : "";
-        String originalFilename = preserveOriginalFilename(file.getOriginalFilename());
-        if (file.getSize() > MAX_UPLOAD_BYTES) {
-            throw ValidationException.fromField("file", "FILE_TOO_LARGE",
-                    "File exceeds 200 MB limit.");
-        }
-
-        // Read bytes once — reused for: MinIO upload, dimension extraction, variant generation
         byte[] bytes;
         try {
             bytes = file.getBytes();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read upload bytes: " + e.getMessage(), e);
         }
+        return storeMediaBytes(bytes, file.getOriginalFilename(), file.getContentType(),
+                altText, folderId, clearFolder, adminId);
+    }
+
+    /**
+     * Stores already-read bytes through the same validation, compression, deduplication and
+     * MinIO pipeline as a multipart upload. Brand-logo URL import uses this method so it can
+     * never persist an external URL or create a second storage implementation.
+     */
+    @Transactional
+    public AdminMediaDetailResponse storeMediaBytes(
+            byte[] sourceBytes,
+            String originalFilename,
+            String declaredMimeType,
+            String altText,
+            UUID folderId,
+            boolean clearFolder,
+            UUID adminId
+    ) {
+        validateMimeContent(sourceBytes, declaredMimeType, originalFilename);
+        if (sourceBytes.length > MAX_UPLOAD_BYTES) {
+            throw ValidationException.fromField("file", "FILE_TOO_LARGE",
+                    "File exceeds 200 MB limit / tệp vượt quá giới hạn 200 MB.");
+        }
+        if (folderId != null) requireMediaFolder(folderId);
+        // Đích upload rõ ràng khi admin đang đứng trong 1 thư mục cụ thể HOẶC đang xem
+        // "Chưa phân loại" (clearFolder) — chỉ "Tất cả" (cả hai đều rỗng) là không có đích.
+        boolean hasExplicitDestination = clearFolder || folderId != null;
+
+        String mimeType = declaredMimeType != null
+                ? declaredMimeType.toLowerCase(Locale.ROOT) : "";
+        String safeOriginalFilename = preserveOriginalFilename(originalFilename);
+        byte[] bytes = sourceBytes;
         // SVG: strip scripts/handlers/external refs before storing (also validates it IS an SVG).
         if (SVG_MIME.equals(mimeType)) {
             bytes = SvgSanitizer.sanitize(bytes);
@@ -142,7 +160,7 @@ public class AdminMediaService {
                     height = img.getHeight();
                 }
             } catch (IOException e) {
-                log.warn("Could not extract image dimensions for {}: {}", file.getOriginalFilename(), e.getMessage());
+                log.warn("Could not extract image dimensions for {}: {}", originalFilename, e.getMessage());
             }
         }
 
@@ -158,7 +176,7 @@ public class AdminMediaService {
                         height = compressedImg.getHeight();
                     }
                 } catch (IOException e) {
-                    log.warn("Could not re-measure compressed image for {}: {}", file.getOriginalFilename(), e.getMessage());
+                    log.warn("Could not re-measure compressed image for {}: {}", originalFilename, e.getMessage());
                 }
             }
         }
@@ -194,7 +212,7 @@ public class AdminMediaService {
             return toDetail(existing);
         }
 
-        String safeFilename = sanitizeFilename(file.getOriginalFilename());
+        String safeFilename = sanitizeFilename(originalFilename);
         String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
 
@@ -220,7 +238,7 @@ public class AdminMediaService {
         Instant now = Instant.now();
         MediaEntity media = new MediaEntity();
         media.setFilePath(objectKey);
-        media.setOriginalFilename(originalFilename);
+        media.setOriginalFilename(safeOriginalFilename);
         media.setPublicUrl(publicUrl);
         media.setStorageProvider(MINIO_PROVIDER);
         media.setBucket(bucket);
@@ -722,35 +740,33 @@ public class AdminMediaService {
      * Rejects empty files, unsupported declared types, and content that doesn't match
      * any allowed MIME — preventing MIME spoofing attacks (P0-2).
      */
-    private void validateMimeContent(MultipartFile file) {
-        if (file.isEmpty() || file.getSize() == 0) {
-            throw ValidationException.fromField("file", "EMPTY_FILE", "File must not be empty.");
+    private void validateMimeContent(byte[] bytes, String declaredMimeType, String filename) {
+        if (bytes == null || bytes.length == 0) {
+            throw ValidationException.fromField("file", "EMPTY_FILE",
+                    "File must not be empty / tệp không được để trống.");
         }
-        String declared = file.getContentType() != null
-                ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+        String declared = declaredMimeType != null
+                ? declaredMimeType.toLowerCase(Locale.ROOT) : "";
         if (!ALLOWED_MIME_TYPES.contains(declared)) {
             throw ValidationException.fromField("file", "INVALID_MIME",
-                    "Unsupported file type: " + declared);
+                    "Unsupported file type / loại tệp không được hỗ trợ: " + declared);
         }
         byte[] header = new byte[TIKA_HEADER_BYTES];
-        int read;
-        try (InputStream is = file.getInputStream()) {
-            read = is.read(header, 0, header.length);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read file for MIME validation.", e);
-        }
+        int read = Math.min(bytes.length, header.length);
+        System.arraycopy(bytes, 0, header, 0, read);
         if (read <= 0) {
-            throw ValidationException.fromField("file", "EMPTY_FILE", "File must not be empty.");
+            throw ValidationException.fromField("file", "EMPTY_FILE",
+                    "File must not be empty / tệp không được để trống.");
         }
         // SVG is XML — Tika magic-byte detection is unreliable for it. Structural validation
         // (must parse to an <svg> root) + sanitization happen in SvgSanitizer before storage.
         if (SVG_MIME.equals(declared)) {
             return;
         }
-        String detected = TIKA.detect(Arrays.copyOf(header, read), file.getOriginalFilename());
+        String detected = TIKA.detect(Arrays.copyOf(header, read), filename);
         if (!ALLOWED_MIME_TYPES.contains(detected)) {
             throw ValidationException.fromField("file", "MIME_MISMATCH",
-                    "File content does not match an allowed type (detected: " + detected + ").");
+                    "File content does not match an allowed type / nội dung tệp không khớp loại cho phép (detected/phát hiện: " + detected + ").");
         }
     }
 }

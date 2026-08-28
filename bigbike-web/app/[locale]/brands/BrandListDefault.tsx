@@ -5,8 +5,7 @@ import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toBrandListPath, toBrandPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
-import { MediaImage } from "@/components/ui/MediaImage";
-import { BRAND_LIST_IMAGE_SIZES } from "./brandImageSizes";
+import { BrandLogo } from "@/components/catalog/BrandLogo";
 
 type BrandPagination = {
   page: number;
@@ -26,7 +25,11 @@ export async function BrandListDefault({
   const t = await getTranslations("Catalog");
 
   if (brands.length === 0) {
-    return <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{t("brandListEmpty")}</p>;
+    return (
+      <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">
+        {t("brandListEmpty")}
+      </p>
+    );
   }
 
   return (
@@ -36,7 +39,6 @@ export async function BrandListDefault({
           {brands.map((brand) => {
             const name = safeText(brand.name, t("brandsTitle"));
             const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
-            const initials = name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
             return (
               <Link
                 key={brand.id}
@@ -44,21 +46,12 @@ export async function BrandListDefault({
                 title={name}
                 className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5 no-underline transition-colors hover:border-foreground"
               >
-                <span className="relative flex h-16 w-full items-center justify-center">
-                  {logoUrl ? (
-                    <MediaImage
-                      image={{ ...brand.logo, url: logoUrl }}
-                      altFallback={name}
-                      width={256}
-                      height={128}
-                      fill
-                      sizes={BRAND_LIST_IMAGE_SIZES}
-                      className="object-contain transition-transform duration-200 group-hover:scale-105"
-                    />
-                  ) : (
-                    <span className="text-a2-page font-bold tracking-wide text-muted-foreground">{initials}</span>
-                  )}
-                </span>
+                <BrandLogo
+                  name={name}
+                  image={logoUrl && brand.logo ? { ...brand.logo, url: logoUrl } : null}
+                  variant="list"
+                  className="transition-transform duration-200 group-hover:scale-105"
+                />
                 <span className="text-center font-body text-a5-meta font-semibold text-foreground">
                   {name}
                 </span>
@@ -68,7 +61,11 @@ export async function BrandListDefault({
         </div>
       </div>
       {pagination ? (
-        <CatalogPagination page={pagination.page} totalPages={pagination.totalPages} baseHref={toBrandListPath(locale)} />
+        <CatalogPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          baseHref={toBrandListPath(locale)}
+        />
       ) : null}
     </>
   );

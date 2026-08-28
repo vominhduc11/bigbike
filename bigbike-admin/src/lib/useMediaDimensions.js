@@ -26,6 +26,37 @@ export function useImageDimensions(url) {
   return dims
 }
 
+// Đo kích thước ảnh ngay trên file người dùng vừa chọn, trước khi gọi API tải lên.
+// Không chỉnh sửa file; object URL chỉ tồn tại trong lúc đọc và luôn được thu hồi.
+export function readImageFileDimensions(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('missing-image-file'))
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    const cleanup = () => {
+      img.onload = null
+      img.onerror = null
+      URL.revokeObjectURL(objectUrl)
+    }
+    img.onload = () => {
+      const width = img.naturalWidth
+      const height = img.naturalHeight
+      cleanup()
+      if (width > 0 && height > 0) resolve({ width, height })
+      else reject(new Error('missing-image-dimensions'))
+    }
+    img.onerror = () => {
+      cleanup()
+      reject(new Error('unreadable-image'))
+    }
+    img.src = objectUrl
+  })
+}
+
 // Đo kích thước thật của một file video (mp4 trong thư viện) qua metadata.
 // Link ngoài như YouTube không đọc được kích thước → trả về 'error', không cảnh báo.
 export function useVideoDimensions(url) {
@@ -58,8 +89,8 @@ export function useVideoDimensions(url) {
 
 // Đo kích thước thật của một ảnh/video rồi so TỈ LỆ với spec khuyến nghị (imageRecommendations.js)
 // — kích thước không còn là điều kiện chặn, chỉ còn hiển thị dạng gợi ý (MediaRequirementHint).
-// `status` là trạng thái đo kích thước ('idle'|'loading'|'loaded'|'error'); `blocked` chỉ có ý
-// nghĩa khi status === 'loaded' và giờ chỉ true khi sai tỉ lệ (wrongRatio).
+// `status` là trạng thái đo kích thước ('idle'|'loading'|'loaded'|'error'); với ảnh danh mục,
+// không đọc được kích thước cũng bị chặn vì backend cần kiểm tra exact 1:1.
 export function useMediaValidation(kind, url, recommend) {
   const shouldCheck = Boolean(recommend && url)
   const imageDims = useImageDimensions(kind !== 'video' && shouldCheck ? url : '')
@@ -67,6 +98,9 @@ export function useMediaValidation(kind, url, recommend) {
   const dims = kind === 'video' ? videoDims : imageDims
 
   if (!shouldCheck) return { status: 'idle', blocked: false, reasons: null, width: 0, height: 0 }
+  if (dims.status === 'error' && recommend?.exactRatio) {
+    return { ...dims, blocked: true, reasons: ['unreadableDimensions'] }
+  }
   if (dims.status !== 'loaded') return { ...dims, blocked: false, reasons: null }
 
   const reasons = evaluateImageDimensions(dims.width, dims.height, recommend)

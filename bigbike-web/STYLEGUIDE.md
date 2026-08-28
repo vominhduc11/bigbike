@@ -169,7 +169,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Cột theo breakpoint: 2 (mobile) · 3 (≥ 600) · 4 (≥ 768 desktop). Màn hình rộng hơn không tăng số cột vì toàn site giữ nguyên baseline 1440px.
 - Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
 - Tile: nền trắng, cao 290px (mobile co còn 170px), radius `0`, không shadow ở trạng thái nghỉ.
-- Icon: khung vuông cố định 160px ở desktop, 128px ở tablet và 96px ở mobile; dùng `MediaImage fill` trong parent `relative`, `object-contain`, căn giữa, không cắt hoặc kéo méo. Kích thước khung không phụ thuộc kích thước file nguồn hay DPR.
+- Icon: khung vuông cố định 64px (điện thoại), 80px (máy tính bảng), 96px (máy tính); ảnh `object-contain`, căn giữa, giữ nguyên tỉ lệ và không cắt. Không tăng kích thước theo viewport siêu rộng.
 - Label: Arial/Helvetica, sentence case, weight 600, nhóm A4 (`text-a4-content`); clamp tối đa 2 dòng. Màn siêu rộng chỉ nới tile, không đổi cỡ chữ.
 - Hover: ảnh đỏ `cat-hover.jpg` phủ kín tile (200ms), icon invert trắng + scale `1.06`, label trắng.
 - Active: icon scale `0.97`. Focus-visible: outline `2px solid var(--bb-link-text)` (`#005FCC`), offset `-3px`.

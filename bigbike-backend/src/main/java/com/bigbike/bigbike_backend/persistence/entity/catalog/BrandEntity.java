@@ -36,6 +36,10 @@ public class BrandEntity {
     private Integer logoHeight;
     private String logoMimeType;
 
+    /** NULL means the stored logo predates the standardized brand-logo contract. */
+    @Column(name = "logo_standardized_at")
+    private Instant logoStandardizedAt;
+
     @Column(columnDefinition = "text")
     private String bannerUrl;
 

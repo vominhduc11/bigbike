@@ -38,7 +38,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 |---|---|---|---|---|
 | Dashboard | `orders.read` | — | — | inventory widget/topic: `inventory.read`; Product/Reports links: corresponding `.read` |
 | Products | `products.read` | `products.read` + `products.update` + `catalog.read` | `products.update` | includes the legacy discontinued-history list; media picker: `media.read`; upload: `media.write` |
-| Categories / Brands | `catalog.read` | `catalog.read` + `catalog.update` | `catalog.update` | product references: `products.read`; media picker rules apply |
+| Categories / Brands | `catalog.read` | `catalog.read` + `catalog.update` | `catalog.update` | product references: `products.read`; brand logo URL import additionally requires `media.write`; media picker rules apply |
 | Featured Products | `products.read` + `products.update` | same workspace requirement | save: `products.update` | owner-confirmed composite route |
 | Content | `content.read` | `content.read` + `content.update` | `content.update` | media picker rules apply |
 | Orders / Customers / Reviews | corresponding `.read` | — | corresponding `.write` | Review hard delete additionally exact built-in role `SUPER_ADMIN` |
@@ -70,7 +70,7 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
 | `media.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `GET /api/v1/admin/media/**` (list, stats, tags, references, detail, download object gốc) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
-| `media.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `POST/PUT/DELETE /api/v1/admin/media/**` (upload, bulk-move, bulk soft-delete, bulk-restore, update, soft-delete, restore) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
+| `media.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `POST/PUT/DELETE /api/v1/admin/media/**` (upload, bulk-move, bulk soft-delete, bulk-restore, update, soft-delete, restore) and `POST /api/v1/admin/brands/logo/import-url` | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java`, `AdminCatalogController.java` |
 | `*` (wildcard — `SUPER_ADMIN` only) | `SUPER_ADMIN` | `POST /api/v1/admin/media/bulk-hard-delete`, `DELETE /api/v1/admin/media/{mediaId}?permanent=true` | `AdminMediaController.java` (`requirePermission("*")`, separate from and stricter than `media.write` — permanent/irreversible delete is gated to the top tier only) |
 
 `SHOP_MANAGER` does **not** hold `media.read`/`media.write` (not seeded in `V49`) — it cannot access the Media Library at all.

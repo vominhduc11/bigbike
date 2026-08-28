@@ -197,7 +197,8 @@ public class RateLimitPolicyCatalog {
 
     private static boolean isAdminMediaWrite(String method, String path) {
         return HttpMethod.POST.name().equals(method)
-                && "/api/v1/admin/media".equals(path);
+                && ("/api/v1/admin/media".equals(path)
+                || "/api/v1/admin/brands/logo/import-url".equals(path));
     }
 
     private static boolean isAdminExportPath(String path) {

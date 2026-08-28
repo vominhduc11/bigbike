@@ -10,7 +10,7 @@ public record PublicMenuItemResponse(
         int sortOrder,
         boolean openInNewTab,
         String cssClass,
-        /** Resolved icon URL for this menu item. Null for non-category items.
-         *  Resolved from the category in the URL → CategoryEntity.menuIconUrl (DB-driven, V213). */
+        /** Resolved root-category header-menu icon URL. Null for non-category items and child categories.
+         *  Resolved from the category in the URL → CategoryEntity.menuIconUrl (DB-driven, V213/CATEGORY_RULE_010). */
         String iconUrl
 ) {}

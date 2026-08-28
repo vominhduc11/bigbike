@@ -58,9 +58,11 @@ export const metaLabel = "font-body text-a5-meta text-muted-foreground";
 /** Table column header (was `.bb-table-header`). */
 export const tableHeader = "font-cta text-b5-label font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
-export const detailTableCell = "mt-[3px] block font-body text-a5-meta font-bold normal-case tracking-normal text-foreground";
+export const detailTableCell =
+  "mt-[3px] block font-body text-a5-meta font-bold normal-case tracking-normal text-foreground";
 /** Category badge text (was `.bb-category-badge`), group B5. */
-export const categoryBadge = "m-0 font-cta text-b5-label font-bold uppercase tracking-display text-brand";
+export const categoryBadge =
+  "m-0 font-cta text-b5-label font-bold uppercase tracking-display text-brand";
 
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
  * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
@@ -81,10 +83,10 @@ export const iconBtn =
   // out-specified the old touch-target min-height, so that stays at the header height.
   "pointer-coarse:min-w-[var(--bb-touch-target)] max-[769px]:min-w-[var(--bb-touch-target)]";
 
-/** Submenu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
+/** Header-menu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
  * paints with currentColor, so it follows the parent link's text color (white →
  * brand-red on hover). The mask-image URL is set inline per item. Used by the
- * catalog sidebar filter (CatalogSidebar). */
+ * website's desktop and mobile header menu. */
 export const submenuIcon =
   "inline-block shrink-0 w-5 h-4 bg-current " +
   "[mask-repeat:no-repeat] [mask-position:center] [mask-size:contain] " +
@@ -97,8 +99,7 @@ export const bbLink =
   "font-bold no-underline text-[var(--bb-link-text)] transition-colors duration-fast ease-[var(--bb-ease-standard)] hover:text-brand focus-visible:text-brand";
 
 /** Section vertical rhythm (was `.bb-section` padding-block: 32/52/section-y). */
-const sectionPad =
-  "py-8 min-[640px]:py-13 min-[1024px]:py-[var(--bb-section-y)]";
+const sectionPad = "py-8 min-[640px]:py-13 min-[1024px]:py-[var(--bb-section-y)]";
 /** Full centered content section rail (was `.bb-section`): rhythm + max-width
  * (--bb-container-xl incl. large-desktop expansion) + responsive inline padding. */
 export const bbSection =
@@ -107,8 +108,7 @@ export const bbSection =
 /** Product card grid — 1 col / 2 cols ≥576 / 3 cols ≥992, 24px gap. Was the
  * `.bb-product-grid` rule (removed when catalog/archive moved inline); shared by
  * the favorites page and its loading skeleton so the two stay in lockstep. */
-export const productGrid =
-  "grid grid-cols-1 gap-6 min-[576px]:grid-cols-2 min-[992px]:grid-cols-3";
+export const productGrid = "grid grid-cols-1 gap-6 min-[576px]:grid-cols-2 min-[992px]:grid-cols-3";
 
 /* ── Skeleton shimmer system (was `.bb-skel*` in globals.css) ──────────────────
  * Loading-placeholder primitives shared by Skeletons.tsx + the per-page loading

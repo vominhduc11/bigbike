@@ -11,25 +11,30 @@ import { Container } from "@/components/layout/Container";
 import { skelStack } from "@/lib/ui-classes";
 import { SkeletonRoot, SkelBlock, SkelButton, SkelText, SkelTitle } from "./primitives";
 
-/** Auth (login/register/forgot-password) — centered form placeholder */
-export function AuthSkeleton() {
+/** Auth (login/register/forgot-password) — small centered card */
+export function AuthSkeleton({ credential = false }: { credential?: boolean } = {}) {
   return (
     <SkeletonRoot labelKey="auth">
-      <section className="px-4 py-15 sm:px-6">
-        <div className="mx-auto w-full max-w-92.5">
-          <Card className="border-t-4 border-t-primary p-6">
-            <div className={skelStack}>
-              <SkelTitle w="60%" h="1.8em" />
-              <div style={{ height: 8 }} />
-              <SkelText w="40%" />
-              <SkelBlock w="100%" h={42} />
-              <SkelText w="40%" />
-              <SkelBlock w="100%" h={42} />
-              <SkelButton w="100%" />
-              <SkelText w="55%" />
-            </div>
-          </Card>
-        </div>
+      <section
+        data-auth-page={credential ? "credential" : undefined}
+        className={credential ? "bb-page bb-page--auth bb-heroless" : "bb-page bb-page--auth"}
+      >
+        <Container>
+          <div className="bb-auth-wrap">
+            <Card className="p-6 border-t-[3px] border-t-primary">
+              <div className={skelStack}>
+                <SkelTitle w="60%" h="1.8em" />
+                <div style={{ height: 8 }} />
+                <SkelText w="40%" />
+                <SkelBlock w="100%" h={42} />
+                <SkelText w="40%" />
+                <SkelBlock w="100%" h={42} />
+                <SkelButton w="100%" />
+                <SkelText w="55%" />
+              </div>
+            </Card>
+          </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );

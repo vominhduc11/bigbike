@@ -40,6 +40,7 @@ public class BrandMutationService {
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
     private final CatalogRequestValidator catalogRequestValidator;
+    private final BrandLogoValidationService brandLogoValidationService;
     private final SlugRedirectHelper slugRedirectHelper;
     private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
@@ -51,6 +52,7 @@ public class BrandMutationService {
             AuditLogWriter auditLogWriter,
             AuditLogFactory auditLogFactory,
             CatalogRequestValidator catalogRequestValidator,
+            BrandLogoValidationService brandLogoValidationService,
             SlugRedirectHelper slugRedirectHelper,
             CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
     ) {
@@ -61,6 +63,7 @@ public class BrandMutationService {
         this.auditLogWriter = auditLogWriter;
         this.auditLogFactory = auditLogFactory;
         this.catalogRequestValidator = catalogRequestValidator;
+        this.brandLogoValidationService = brandLogoValidationService;
         this.slugRedirectHelper = slugRedirectHelper;
         this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
     }
@@ -70,6 +73,8 @@ public class BrandMutationService {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
+        BrandLogoValidationService.LogoMutation logoMutation =
+                brandLogoValidationService.validateForWrite(null, request.getLogo());
         String slug = catalogRequestValidator.validateBrandRequest(request, null, true, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
@@ -79,7 +84,7 @@ public class BrandMutationService {
         entity.setVisible(true);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        applyBrandPatch(entity, request, slug, true);
+        applyBrandPatch(entity, request, slug, true, logoMutation);
         brandJpaRepository.save(entity);
         auditLog("BRAND_CREATED", "BRAND", adminId, null, brandJson(entity));
         webRevalidationService.revalidateBrand(entity.getSlug(), null);
@@ -104,11 +109,13 @@ public class BrandMutationService {
         String before = brandJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
+        BrandLogoValidationService.LogoMutation logoMutation =
+                brandLogoValidationService.validateForWrite(entity, request.getLogo());
         String slug = catalogRequestValidator.validateBrandRequest(request, entity, false, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyBrandPatch(entity, request, slug, false);
+        applyBrandPatch(entity, request, slug, false, logoMutation);
         brandJpaRepository.save(entity);
         auditLog("BRAND_UPDATED", "BRAND", adminId, before, brandJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
@@ -219,6 +226,7 @@ public class BrandMutationService {
         fields.put("showOnHomepage", e.isShowOnHomepage());
         fields.put("description", e.getDescription());
         fields.put("logoUrl", e.getLogoUrl());
+        fields.put("logoStandardizedAt", e.getLogoStandardizedAt());
         fields.put("bannerUrl", e.getBannerUrl());
         return writeAuditJson(fields);
     }
@@ -239,7 +247,8 @@ public class BrandMutationService {
             BrandEntity entity,
             UpsertBrandRequest request,
             String normalizedSlug,
-            boolean create
+            boolean create,
+            BrandLogoValidationService.LogoMutation logoMutation
     ) {
         if (create || normalizedSlug != null) {
             entity.setSlug(normalizedSlug);
@@ -256,8 +265,19 @@ public class BrandMutationService {
 
         if (request.getLogo() != null) {
             applyLogo(entity, request.getLogo());
+            if (logoMutation.cleared()) {
+                entity.setLogoStandardizedAt(null);
+            } else if (logoMutation.media() != null) {
+                entity.setLogoId(logoMutation.media().getId() == null
+                        ? null : logoMutation.media().getId().toString());
+                entity.setLogoWidth(logoMutation.media().getWidth());
+                entity.setLogoHeight(logoMutation.media().getHeight());
+                entity.setLogoMimeType(AdminMutationValidators.trimToNull(logoMutation.media().getMimeType()));
+                entity.setLogoStandardizedAt(Instant.now());
+            }
         } else if (create) {
             clearLogo(entity);
+            entity.setLogoStandardizedAt(null);
         }
 
         if (request.getBanner() != null) {

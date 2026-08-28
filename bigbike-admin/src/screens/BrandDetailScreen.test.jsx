@@ -114,6 +114,15 @@ describe('BrandDetailScreen toPayload', () => {
     })
   })
 
+  it('không gửi mã media cũ khi đang sửa thương hiệu legacy', () => {
+    const payload = toBrandPayload(formWithSeo({
+      logoUrl: '/legacy/brand-logo.png',
+      logoMediaId: 'legacy-logo-id',
+      logoQuality: { status: 'LEGACY' },
+    }))
+    expect(payload.logo).not.toHaveProperty('mediaId')
+  })
+
   it('luôn gửi mô tả kể cả khi rỗng để admin xoá được mô tả cũ', () => {
     const payload = toBrandPayload(formWithSeo({ description: '' }))
     expect(payload).toHaveProperty('description')

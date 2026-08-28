@@ -53,11 +53,6 @@ type RegistrationConsent = {
   onRequired: () => void;
 };
 
-/**
- * Social sign-in buttons retain the existing OAuth redirect. When the customer
- * is creating a new account, the same visible Privacy Policy agreement travels
- * with the authorize request; no agreement means the form shows its own error.
- */
 export function SocialLoginButtons({
   returnTo,
   flow = "login",

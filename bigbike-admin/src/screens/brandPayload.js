@@ -1,3 +1,5 @@
+const MEDIA_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export function toBrandPayload(form) {
   const payload = {
     slug: form.slug.trim(),
@@ -17,6 +19,13 @@ export function toBrandPayload(form) {
     width: Number.isFinite(form.logoWidth) ? form.logoWidth : null,
     height: Number.isFinite(form.logoHeight) ? form.logoHeight : null,
     mimeType: form.logoMimeType?.trim() || null,
+  }
+  // Existing brand rows may carry a legacy/non-UUID logo id. Only send a media id
+  // for a freshly selected library item (the quality marker is cleared by the
+  // picker); unchanged legacy URLs must remain grandfathered by the backend.
+  const logoMediaId = form.logoMediaId?.trim()
+  if (!form.logoQuality?.status && logoMediaId && MEDIA_ID_PATTERN.test(logoMediaId)) {
+    payload.logo.mediaId = logoMediaId
   }
 
   payload.banner = {

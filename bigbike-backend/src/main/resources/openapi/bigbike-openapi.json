@@ -4715,6 +4715,44 @@
         }
       }
     },
+    "/api/v1/admin/brands/logo/import-url": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Import a brand logo source URL into internal media storage",
+        "operationId": "adminImportBrandLogoUrl",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBrandLogoUrlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Downloaded into internal MinIO media storage; the response contains only the internal media identity."
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/api/v1/admin/brands/{id}": {
       "get": {
         "tags": [
@@ -11021,6 +11059,47 @@
           }
         }
       },
+      "BrandLogoWriteAsset": {
+        "type": "object",
+        "description": "Brand logo write shape. The mediaId is an internal Media Library UUID; the server validates the stored object bytes.",
+        "properties": {
+          "url": { "type": "string", "nullable": true },
+          "alt": { "type": "string", "nullable": true, "maxLength": 255 },
+          "width": { "type": "integer", "nullable": true },
+          "height": { "type": "integer", "nullable": true },
+          "mimeType": { "type": "string", "nullable": true },
+          "mediaId": { "type": "string", "format": "uuid", "nullable": true }
+        }
+      },
+      "BrandLogoQuality": {
+        "type": "object",
+        "description": "Admin-only, non-blocking quality diagnostics for a brand logo.",
+        "properties": {
+          "status": { "type": "string", "enum": ["MISSING", "LEGACY", "VALID", "INVALID"] },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["MISSING_LOGO", "LEGACY_LOGO", "NOT_SQUARE", "TOO_SMALL", "TOO_LARGE", "NOT_PNG", "NOT_TRANSPARENT", "TRANSPARENCY_UNVERIFIED", "MEDIA_UNAVAILABLE"]
+            }
+          },
+          "width": { "type": "integer", "nullable": true },
+          "height": { "type": "integer", "nullable": true },
+          "fileSize": { "type": "integer", "format": "int64", "nullable": true },
+          "mimeType": { "type": "string", "nullable": true },
+          "transparent": { "type": "boolean", "nullable": true },
+          "ratio": { "type": "number", "format": "double", "nullable": true }
+        }
+      },
+      "ImportBrandLogoUrlRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "maxLength": 2048, "format": "uri", "description": "Only http/https; downloaded into internal MinIO storage after SSRF and PNG checks." },
+          "altText": { "type": "string", "maxLength": 255 },
+          "folderId": { "type": "string", "format": "uuid", "nullable": true }
+        }
+      },
       "CategorySummary": {
         "type": "object",
         "properties": {
@@ -12712,7 +12791,8 @@
           },
           "menuIconUrl": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Root-category header-menu icon only; child categories always return null."
           },
           "bannerImage": {
             "$ref": "#/components/schemas/ImageAsset",
@@ -12867,14 +12947,15 @@
             "nullable": true
           },
           "image": {
-            "$ref": "#/components/schemas/ImageAsset"
+            "$ref": "#/components/schemas/ImageAsset",
+            "description": "Homepage category thumbnail. On create or URL replacement, width and height must be positive and exactly equal (1:1); no minimum pixel size. An unchanged legacy URL remains grandfathered."
           },
           "icon": {
             "$ref": "#/components/schemas/ImageAsset"
           },
           "menuIcon": {
             "$ref": "#/components/schemas/ImageAsset",
-            "description": "Only url is persisted."
+            "description": "Root-category header-menu icon only; child categories silently ignore this block and persist null. Demoting clears the icon; promoting does not restore it. Only url is persisted."
           },
           "banner": {
             "$ref": "#/components/schemas/ImageAsset"
@@ -12958,8 +13039,8 @@
             "description": "Independent homepage brand-carousel placement; defaults to true on create."
           },
           "logo": {
-            "$ref": "#/components/schemas/ImageAsset",
-            "description": "MinIO whitelist applies to a new url (MEDIA_RULE_002); alt is overwritten on every save, so always send it."
+            "$ref": "#/components/schemas/BrandLogoWriteAsset",
+            "description": "New/replaced logo must reference an internal media object that passes MEDIA_RULE_011; unchanged legacy URLs are grandfathered."
           },
           "banner": {
             "$ref": "#/components/schemas/ImageAsset",

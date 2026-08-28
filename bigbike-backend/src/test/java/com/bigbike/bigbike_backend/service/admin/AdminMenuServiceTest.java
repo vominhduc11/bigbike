@@ -202,6 +202,59 @@ class AdminMenuServiceTest {
     }
 
     @Test
+    void getPublicMenuByLocation_categoryPresentWithoutIcon_doesNotUseLegacyFallback() {
+        UUID menuId = UUID.randomUUID();
+        MenuEntity menuEntity = menu(menuId, "primary");
+        MenuItemEntity item = new MenuItemEntity();
+        item.setId(UUID.randomUUID());
+        item.setMenu(menuEntity);
+        item.setLabel("Khuyến mãi hot");
+        item.setUrl("/danh-muc/san-pham-khuyen-mai");
+        item.setSortOrder(0);
+        item.setStatus("ACTIVE");
+        item.setCreatedAt(Instant.now());
+        item.setUpdatedAt(Instant.now());
+
+        CategoryEntity rootWithoutIcon = category(
+                "wp-cat-root-without-icon", "san-pham-khuyen-mai", null, "Khuyến mãi", null);
+        when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
+        when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId)).thenReturn(List.of(item));
+        when(categoryRepo.findBySlug("san-pham-khuyen-mai")).thenReturn(Optional.of(rootWithoutIcon));
+
+        PublicMenuResponse response = service.getPublicMenuByLocation("primary", "vi");
+
+        assertThat(response.items().get(0).iconUrl()).isNull();
+    }
+
+    @Test
+    void getPublicMenuByLocation_childCategoryIconIsAlwaysSuppressed() {
+        UUID menuId = UUID.randomUUID();
+        MenuEntity menuEntity = menu(menuId, "primary");
+        MenuItemEntity item = new MenuItemEntity();
+        item.setId(UUID.randomUUID());
+        item.setMenu(menuEntity);
+        item.setLabel("Danh mục con");
+        item.setUrl("/danh-muc/san-pham-khuyen-mai");
+        item.setSortOrder(0);
+        item.setStatus("ACTIVE");
+        item.setCreatedAt(Instant.now());
+        item.setUpdatedAt(Instant.now());
+
+        CategoryEntity parent = category("wp-cat-parent", "parent", null, "Parent", null);
+        CategoryEntity child = category(
+                "wp-cat-child", "san-pham-khuyen-mai", null, "Danh mục con", null);
+        child.setParent(parent);
+        child.setMenuIconUrl("/media/uploads/wp-icons/icon-1.png");
+        when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
+        when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId)).thenReturn(List.of(item));
+        when(categoryRepo.findBySlug("san-pham-khuyen-mai")).thenReturn(Optional.of(child));
+
+        PublicMenuResponse response = service.getPublicMenuByLocation("primary", "vi");
+
+        assertThat(response.items().get(0).iconUrl()).isNull();
+    }
+
+    @Test
     void updateMenuItem_categoryLinked_reSyncsLabelUrlFromCategory_ignoringRequestLabel() {
         UUID menuId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");

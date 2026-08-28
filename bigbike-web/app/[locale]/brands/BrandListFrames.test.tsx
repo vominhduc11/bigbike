@@ -41,10 +41,10 @@ import type { Brand } from "@/lib/contracts/public";
 const brands = [{ id: "agv", name: "AGV", slug: "agv", logo: { url: "/media/brands/agv.png" } }] as Brand[];
 
 function frame(container: HTMLElement) {
-  const value = container.querySelector("[data-brand-list-grid] > a > span");
+  const value = container.querySelector('[data-brand-list-grid] [data-brand-logo="true"]');
   expect(value).not.toBeNull();
-  expect(value).toHaveClass("relative", "h-16", "w-full");
-  expect(value?.querySelector("img")).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-contain");
+  expect(value).toHaveClass("size-24", "aspect-square");
+  expect(value?.querySelector("img")).toHaveClass("h-full", "w-full", "object-contain");
 }
 
 describe("BrandList logo frames", () => {

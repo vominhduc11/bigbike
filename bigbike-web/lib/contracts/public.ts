@@ -1,9 +1,9 @@
- type ApiMeta = {
+type ApiMeta = {
   requestId: string;
   timestamp: string;
 };
 
- type PaginationMeta = {
+type PaginationMeta = {
   page: number;
   pageSize: number;
   totalItems: number;
@@ -18,7 +18,7 @@ export type ApiErrorDetail = {
   message: string;
 };
 
- type ApiErrorPayload = {
+type ApiErrorPayload = {
   code: string;
   message: string;
   details?: ApiErrorDetail[];
@@ -80,7 +80,7 @@ export type GalleryMedia = {
   uploadedOn?: string | null;
 };
 
- type SliderImage = {
+type SliderImage = {
   url?: string | null;
   alt?: string | null;
   width?: number | null;
@@ -130,7 +130,7 @@ export type VideoAsset = {
   uploadedOn?: string | null;
 };
 
- type SeoMeta = {
+type SeoMeta = {
   title?: string;
   description?: string;
   canonicalUrl?: string;
@@ -144,9 +144,7 @@ export type VideoAsset = {
  *  it as meaning anything beyond "not PUBLISHED". */
 export type PublishStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "TRASH";
 
-export type ProductStockState =
-  | "IN_STOCK"
-  | "OUT_OF_STOCK";
+export type ProductStockState = "IN_STOCK" | "OUT_OF_STOCK";
 
 export type ProductPrice = {
   retailPrice: number;
@@ -154,7 +152,7 @@ export type ProductPrice = {
   currency: "VND";
 };
 
- type ProductVariantOption = {
+type ProductVariantOption = {
   name: string;
   value: string;
 };
@@ -189,7 +187,12 @@ export type DescriptionBlock =
   | { type: "image"; url?: string; alt?: string; caption?: string }
   // Read contract intentionally keeps legacy providers. Admin/backend write contracts
   // accept only youtube|upload, while old content must remain renderable.
-  | { type: "video"; provider?: "youtube" | "tiktok" | "facebook" | "upload"; url?: string; caption?: string }
+  | {
+      type: "video";
+      provider?: "youtube" | "tiktok" | "facebook" | "upload";
+      url?: string;
+      caption?: string;
+    }
   | { type: "callout"; variant?: "info" | "warning" | "note"; html?: string }
   | { type: "divider" }
   | {
@@ -218,7 +221,7 @@ export type SizeGuideSection = {
   html?: string;
 };
 
- type ProductFaq = {
+type ProductFaq = {
   question: string;
   answer: string;
 };
@@ -243,7 +246,10 @@ export type ProductHighlight = {
  */
 export function withFlatHighlights<T extends Record<string, unknown>>(raw: T): T {
   const source = raw as T & {
-    highlights?: { positiveNotes?: ProductHighlight[] | null; negativeNotes?: ProductHighlight[] | null } | null;
+    highlights?: {
+      positiveNotes?: ProductHighlight[] | null;
+      negativeNotes?: ProductHighlight[] | null;
+    } | null;
   };
   if (!source || typeof source !== "object" || !("highlights" in source)) {
     return raw;
@@ -374,9 +380,10 @@ export type Category = {
   image?: ImageAsset;
   icon?: ImageAsset;
   /**
-   * Monochrome line-icon for the header menu + "Danh mục sản phẩm" filter sidebar,
-   * rendered via CSS mask-image (e.g. /wp/icon-N.svg). Distinct from `icon` (the
-   * category hero illustration, WP ACF "image_left"). Null when not set. DB-driven (V213).
+   * Monochrome line-icon shown beside a root category name in the website header menu,
+   * rendered via CSS mask-image (e.g. /wp/icon-N.svg). Child categories always return
+   * null. Distinct from `icon` (the category hero illustration, WP ACF "image_left").
+   * DB-driven (V213/CATEGORY_RULE_010).
    */
   menuIconUrl?: string | null;
   bannerImage?: ImageAsset;

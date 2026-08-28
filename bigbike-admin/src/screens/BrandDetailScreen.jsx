@@ -30,6 +30,7 @@ import { FormField } from '../components/layout/FormField'
 import { CollapsibleSection } from '../components/CollapsibleSection'
 import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { BrandLogoQualityNotice } from '../components/BrandLogoQualityNotice'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { DeferredRichTextEditor } from '../components/DeferredRichTextEditor'
@@ -48,6 +49,8 @@ function buildEmptyForm() {
     description: '',
     showOnHomepage: true,
     logoUrl: '',
+    logoMediaId: '',
+    logoQuality: null,
     logoAlt: '',
     logoWidth: null,
     logoHeight: null,
@@ -75,6 +78,8 @@ function buildFormFromItem(item) {
     description: item.description || '',
     showOnHomepage: item.showOnHomepage !== false,
     logoUrl: item.logo?.rawUrl || item.logo?.url || '',
+    logoMediaId: item.logo?.mediaId || item.logo?.id || '',
+    logoQuality: item.logoQuality || null,
     logoAlt: item.logo?.alt || '',
     logoWidth: item.logo?.width ?? null,
     logoHeight: item.logo?.height ?? null,
@@ -296,6 +301,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setForm((previous) => ({
       ...previous,
       [`${prefix}Url`]: url,
+      ...(prefix === 'logo' ? { logoMediaId: media?.id || media?.mediaId || '' } : {}),
+      ...(prefix === 'logo' ? { logoQuality: null } : {}),
       [`${prefix}Width`]: media?.width ?? null,
       [`${prefix}Height`]: media?.height ?? null,
       [`${prefix}MimeType`]: media?.mimeType ?? '',
@@ -657,6 +664,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             </FormField>
             <div className="form-field">
               <span>{t('brands.detail.logoUrl')}</span>
+              <BrandLogoQualityNotice quality={form.logoQuality} />
               <ImageUrlInput
                 value={form.logoUrl}
                 onChange={(url, media) => updateImageAsset('logo', url, media)}

@@ -491,6 +491,7 @@
     },
     "login": {
       "intro": "Nếu bạn có tài khoản, vui lòng đăng nhập.",
+      "newMemberPrompt": "Đăng ký thành viên mới tại",
       "emailLabel": "Tên đăng nhập",
       "emailPlaceholder": "SĐT hoặc Email",
       "passwordLabel": "Mật khẩu",

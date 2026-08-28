@@ -4,9 +4,18 @@ import { X } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { MediaRequirementHint } from './MediaRequirementHint'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { useHasPermission } from '@/lib/auth'
+import { fetchMediaBlob, importBrandLogoUrl, uploadMedia } from '@/lib/adminApi'
+import { BrandLogoCropDialog } from './BrandLogoCropDialog'
+import {
+  brandLogoIssueTranslationKey,
+  brandLogoCheckerboardStyle,
+  getBrandLogoSourceDecision,
+  inspectBrandLogoFile,
+} from '@/lib/brandLogoPolicy'
 
 function IconLibrary() {
   return (
@@ -18,7 +27,7 @@ function IconLibrary() {
   )
 }
 
-function ImagePreview({ url, alt }) {
+function ImagePreview({ url, alt, checkerboard = false }) {
   const { t } = useTranslation()
   const [ok, setOk] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -39,17 +48,105 @@ function ImagePreview({ url, alt }) {
   if (!trimmed) return null
   if (loading) return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
   if (!ok) return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
-  return <img src={trimmed} alt={alt || t('imageInput.previewAlt')} className="img-preview" loading="eager" />
+  return (
+    <img
+      src={trimmed}
+      alt={alt || t('imageInput.previewAlt')}
+      className="img-preview"
+      loading="eager"
+      style={checkerboard ? brandLogoCheckerboardStyle() : undefined}
+    />
+  )
 }
 
 export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, disabled, error, recommend }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [externalUrl, setExternalUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [cropSource, setCropSource] = useState(null)
   const hasPermission = useHasPermission()
   const canReadMedia = hasPermission('media.read')
+  const canWriteMedia = hasPermission('media.write')
+  const isBrandLogo = Boolean(recommend?.brandLogo)
   const hasImage = Boolean(value?.trim())
   const { pickAlt } = useMediaAltSync()
   const errorId = useId()
+
+  function issueMessage(issue, details) {
+    return t(brandLogoIssueTranslationKey(issue), {
+      w: details?.width,
+      h: details?.height,
+      defaultValue: issue,
+    })
+  }
+
+  function failureMessage(failure, fallback) {
+    const detailMessage = failure?.details?.find((detail) => detail?.message)?.message
+    if (detailMessage) return detailMessage
+    if (failure?.message === 'BRAND_LOGO_MEDIA_UNAVAILABLE') {
+      return issueMessage('MEDIA_UNAVAILABLE')
+    }
+    return failure?.message || fallback
+  }
+
+  function revokeCropSource() {
+    if (cropSource?.url?.startsWith('blob:')) URL.revokeObjectURL(cropSource.url)
+    setCropSource(null)
+  }
+
+  async function acceptImportedMedia(media) {
+    const { blob, filename } = await fetchMediaBlob(media.id, media.filename || 'brand-logo.png')
+    const file = new File([blob], filename || 'brand-logo.png', { type: media.mimeType || blob.type || 'image/png' })
+    const details = await inspectBrandLogoFile(file)
+    const decision = getBrandLogoSourceDecision(details)
+    if (decision.issues.length) {
+      setImportError(decision.issues.map((issue) => issueMessage(issue, details)).join(' '))
+      return
+    }
+    if (decision.needsCrop) {
+      setCropSource({ url: URL.createObjectURL(file), filename: file.name })
+      return
+    }
+    onChange(media.publicUrl, media)
+    setExternalUrl('')
+  }
+
+  async function handleExternalImport() {
+    if (!isBrandLogo || !canWriteMedia || importing) return
+    const url = externalUrl.trim()
+    if (!url) return
+    setImporting(true)
+    setImportError('')
+    try {
+      const result = await importBrandLogoUrl({ url, altText: alt?.trim() || null })
+      if (!result?.item?.id || !result.item.publicUrl) throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
+      await acceptImportedMedia(result.item)
+    } catch (importFailure) {
+      setImportError(failureMessage(importFailure, t('brands.logo.errors.importFailed')))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function handleCropComplete(file) {
+    if (!cropSource) return
+    revokeCropSource()
+    setImporting(true)
+    setImportError('')
+    try {
+      const result = await uploadMedia(file, alt?.trim() || '')
+      const media = result?.item
+      if (!media?.publicUrl) throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
+      onChange(media.publicUrl, media)
+      setExternalUrl('')
+    } catch (uploadFailure) {
+      setImportError(failureMessage(uploadFailure, t('brands.logo.errors.uploadFailed')))
+    } finally {
+      setImporting(false)
+    }
+  }
 
   return (
     <div className="image-url-input">
@@ -81,9 +178,33 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           {t('media.permissionDeniedDesc')}
         </small>
       ) : null}
+      {isBrandLogo && canReadMedia && canWriteMedia ? (
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            type="url"
+            value={externalUrl}
+            onChange={(event) => { setExternalUrl(event.target.value); setImportError('') }}
+            placeholder={t('brands.logo.importUrlPlaceholder')}
+            disabled={disabled || importing}
+            aria-label={t('brands.logo.importUrlLabel')}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleExternalImport}
+            disabled={disabled || importing || !externalUrl.trim()}
+            className="shrink-0"
+          >
+            {importing ? t('brands.logo.importing') : t('brands.logo.importUrl')}
+          </Button>
+        </div>
+      ) : null}
+      {isBrandLogo && importError ? (
+        <small className="field-error" role="alert">{importError}</small>
+      ) : null}
       {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
-      <ImagePreview url={value} alt={previewAlt || alt} />
+      <ImagePreview url={value} alt={previewAlt || alt} checkerboard={isBrandLogo} />
 
       {pickerOpen && canReadMedia && (
         <MediaPickerModal
@@ -99,6 +220,15 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           onClose={() => setPickerOpen(false)}
         />
       )}
+      {isBrandLogo && cropSource ? (
+        <BrandLogoCropDialog
+          open
+          sourceUrl={cropSource.url}
+          filename={cropSource.filename}
+          onCancel={revokeCropSource}
+          onComplete={handleCropComplete}
+        />
+      ) : null}
     </div>
   )
 }

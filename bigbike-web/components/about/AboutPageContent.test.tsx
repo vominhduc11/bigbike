@@ -32,9 +32,9 @@ describe("AboutPageContent brand frames", () => {
       />,
     );
 
-    const frame = container.querySelector("[data-about-brand-grid] > a > span");
-    expect(frame).toHaveClass("relative", "size-32");
-    expect(frame?.querySelector("img")).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-contain");
+    const frame = container.querySelector('[data-brand-logo="true"]');
+    expect(frame).toHaveClass("size-32", "aspect-square");
+    expect(frame?.querySelector("img")).toHaveClass("h-full", "w-full", "object-contain");
     expect(frame?.querySelector("img")).toHaveAttribute("sizes", "128px");
   });
 });

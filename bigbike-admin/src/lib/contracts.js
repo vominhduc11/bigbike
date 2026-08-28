@@ -160,6 +160,7 @@ export function normalizeImageAsset(input) {
 
   return {
     id: toTrimmedString(input.id) || undefined,
+    mediaId: toTrimmedString(input.mediaId) || undefined,
     url,
     // rawUrl is the original MinIO URL before proxy-rewriting. Use it for
     // backend round-trips so edits don't send /media-proxy/... to the API.
@@ -304,6 +305,22 @@ function normalizeBrandSummary(input) {
   }
 
   return { id, name, slug }
+}
+
+function normalizeBrandLogoQuality(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const status = toTrimmedString(input.status).toUpperCase()
+  if (!status) return undefined
+  return {
+    status,
+    issues: Array.isArray(input.issues) ? input.issues.map((issue) => String(issue)) : [],
+    width: Number.isFinite(input.width) ? Number(input.width) : undefined,
+    height: Number.isFinite(input.height) ? Number(input.height) : undefined,
+    fileSize: Number.isFinite(input.fileSize) ? Number(input.fileSize) : undefined,
+    mimeType: toTrimmedString(input.mimeType) || undefined,
+    transparent: typeof input.transparent === 'boolean' ? input.transparent : undefined,
+    ratio: Number.isFinite(input.ratio) ? Number(input.ratio) : undefined,
+  }
 }
 
 function normalizeVariantOption(input) {
@@ -541,6 +558,7 @@ export function normalizeCategory(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-category'
   const slug = toTrimmedString(source.slug) || id
+  const parentId = toTrimmedString(source.parentId)
 
   return {
     id,
@@ -550,11 +568,11 @@ export function normalizeCategory(input) {
     description: toTrimmedString(source.description) || undefined,
     // Khối giới thiệu hiển thị ở đầu trang danh mục (cột intro_content, đổi từ content_bottom — V290).
     introContent: toTrimmedString(source.introContent) || undefined,
-    parentId: toTrimmedString(source.parentId) || undefined,
+    parentId: parentId || undefined,
     image: normalizeImageAsset(source.image),
     icon: normalizeImageAsset(source.icon),
-    // Icon line đơn sắc cho menu + bộ lọc (mask-image); KHÁC `icon` (ảnh hero). V213.
-    menuIconUrl: toTrimmedString(source.menuIconUrl) || undefined,
+    // CATEGORY_RULE_010: only root categories can carry the header-menu icon.
+    menuIconUrl: parentId ? undefined : toTrimmedString(source.menuIconUrl) || undefined,
     bannerImage: normalizeImageAsset(source.bannerImage),
     mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
@@ -587,6 +605,7 @@ export function normalizeBrand(input) {
     name: toTrimmedString(source.name) || 'Untitled brand',
     description: toTrimmedString(source.description) || undefined,
     logo: normalizeImageAsset(source.logo),
+    logoQuality: normalizeBrandLogoQuality(source.logoQuality),
     bannerImage: normalizeImageAsset(source.bannerImage),
     mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),

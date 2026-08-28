@@ -60,17 +60,22 @@ export function AuthPageFrame({
   wide = false,
   primary = false,
   brandPanel,
+  authPage,
 }: {
   children: ReactNode;
   wide?: boolean;
   primary?: boolean;
   brandPanel?: AuthBrandPanel;
+  authPage?: "login" | "register";
 }) {
+  const isCredentialPage = authPage != null;
+
   if (primary && brandPanel) {
     return (
       <StaticPageShell title="" breadcrumb={[]} showHero={false} mainClassName="">
         <section
           data-auth-primary-page="true"
+          data-auth-page={authPage}
           className="px-4 py-8 sm:px-6 min-[1024px]:px-0 min-[1024px]:py-0"
         >
           <div className="mx-auto grid w-full max-w-[1200px] bg-background min-[1024px]:grid-cols-2">
@@ -89,7 +94,19 @@ export function AuthPageFrame({
 
   return (
     <StaticPageShell title="" breadcrumb={[]} showHero={false} mainClassName="">
-      <section className="px-4 py-15 sm:px-6">
+      <section
+        data-auth-page={authPage}
+        className={cn(
+          "px-4 sm:px-6",
+          isCredentialPage
+            ? cn(
+                "pt-5",
+                authPage === "register" &&
+                  "[padding-bottom:calc(var(--bb-mobile-nav-height)+var(--bb-space-16)+env(safe-area-inset-bottom))] md:pb-0",
+              )
+            : "py-15",
+        )}
+      >
         <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
           {children}
         </div>
@@ -102,13 +119,15 @@ export function AuthTitleBlock({
   title,
   children,
   centered = false,
+  compact = false,
 }: {
   title: ReactNode;
   children?: ReactNode;
   centered?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <header className={cn("mb-6", centered && "text-center")}>
+    <header className={cn(compact ? "mb-3" : "mb-6", centered && "text-center")}>
       <h1 className="mb-2 font-body text-a2-page font-bold leading-title text-foreground">
         {title}
       </h1>

@@ -351,4 +351,24 @@ describe('createCategorySchema — CATEGORY_RULE_001 and TRANSLATION_RULE_002', 
 
     expect(valid.success).toBe(true)
   })
+
+  it('ignores a stale invalid menu icon value when the category is a child', () => {
+    const schema = createCategorySchema(t)
+    const child = schema.safeParse(categoryForm({
+      parentId: 'cat_parent',
+      menuIconUrl: 'javascript:legacy-child-icon',
+    }))
+
+    expect(child.success).toBe(true)
+  })
+
+  it('still validates the menu icon URL for a root category', () => {
+    const schema = createCategorySchema(t)
+    const root = schema.safeParse(categoryForm({
+      menuIconUrl: 'javascript:invalid-root-icon',
+    }))
+
+    expect(root.success).toBe(false)
+    expect(pathsOf(root)).toContain('menuIconUrl')
+  })
 })

@@ -15,8 +15,7 @@ import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toBrandListPath } from "@/lib/utils/routes";
-import { MediaImage } from "@/components/ui/MediaImage";
-import { BRAND_LIST_IMAGE_SIZES } from "./brandImageSizes";
+import { BrandLogo } from "@/components/catalog/BrandLogo";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_SORT = "name:asc";
@@ -82,7 +81,10 @@ export function BrandListClient({
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5">
+          <div
+            key={i}
+            className="flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5"
+          >
             <Skeleton className="h-16 w-4/5" />
             <Skeleton className="h-4 w-3/5" />
           </div>
@@ -92,15 +94,17 @@ export function BrandListClient({
   }
 
   if (brands.length === 0) {
-    const notice = isError
-      ? t("brandListLoadFailed")
-      : t("brandListEmpty");
-    return <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{notice}</p>;
+    const notice = isError ? t("brandListLoadFailed") : t("brandListEmpty");
+    return (
+      <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">
+        {notice}
+      </p>
+    );
   }
 
   return (
     <>
-      {/* Lưới card đồng đều: ô bằng nhau, logo căn giữa trong khung cố định 64px
+      {/* Lưới card đồng đều: ô bằng nhau, logo căn giữa trong khung vuông 96px
           (object-contain), tên hãng dưới đáy. */}
       <div className="relative">
         <div
@@ -115,7 +119,6 @@ export function BrandListClient({
             const name = safeText(brand.name, t("brandsTitle"));
             // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
             const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
-            const initials = name.replace(/[^A-Za-zÀ-ỹ]/g, "").slice(0, 2).toUpperCase();
             return (
               <LocalizedLink
                 key={brand.id}
@@ -124,21 +127,12 @@ export function BrandListClient({
                 title={name}
                 className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5 no-underline transition-colors hover:border-foreground"
               >
-                <span className="relative flex h-16 w-full items-center justify-center">
-                  {logoUrl ? (
-                    <MediaImage
-                      image={{ ...brand.logo, url: logoUrl }}
-                      altFallback={name}
-                      width={256}
-                      height={128}
-                      fill
-                      sizes={BRAND_LIST_IMAGE_SIZES}
-                      className="object-contain transition-transform duration-200 group-hover:scale-105"
-                    />
-                  ) : (
-                    <span className="text-a2-page font-bold tracking-wide text-muted-foreground">{initials}</span>
-                  )}
-                </span>
+                <BrandLogo
+                  name={name}
+                  image={logoUrl && brand.logo ? { ...brand.logo, url: logoUrl } : null}
+                  variant="list"
+                  className="transition-transform duration-200 group-hover:scale-105"
+                />
                 <span className="text-center font-body text-a5-meta font-semibold text-foreground">
                   {name}
                 </span>
@@ -147,7 +141,10 @@ export function BrandListClient({
           })}
         </div>
         {isRefetching ? (
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-16" role="status">
+          <div
+            className="pointer-events-none absolute inset-0 flex items-start justify-center pt-16"
+            role="status"
+          >
             <Loader2 className="h-8 w-8 animate-spin text-brand" aria-hidden="true" />
             <span className="sr-only">{t("updating")}</span>
           </div>

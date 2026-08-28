@@ -13,6 +13,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
+import { BrandLogoQualityNotice } from '../components/BrandLogoQualityNotice'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { RecentItemsChips } from '../components/RecentItemsChips'
@@ -277,6 +278,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{formatText(brand.name)}</p>
             <p className="truncate font-mono text-xs text-muted-foreground">/{formatText(brand.slug)}</p>
+            <BrandLogoQualityNotice quality={brand.logoQuality} compact />
           </div>
         </div>
       ),
@@ -346,6 +348,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
             : t('common.unknown', { defaultValue: 'Không xác định' }),
       },
       { label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(brand.updatedAt) },
+      { label: t('brands.logo.quality.label', { defaultValue: 'Logo' }), value: <BrandLogoQualityNotice quality={brand.logoQuality} compact /> },
     ],
     actions: renderRowActions(brand),
     onClick: () => navigate(`/admin/brands/${brand.id}`),

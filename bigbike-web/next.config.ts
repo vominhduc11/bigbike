@@ -74,10 +74,11 @@ function buildRedirectRules(rows: SeoRedirectRow[]) {
   // normalized to one 301 hop; 302/307 rows must be owned by the backend table
   // or removed from the legacy CSV instead of becoming a hidden second policy.
   return rows
-    .filter((row) =>
-      row.status === "active" &&
-      ["301", "308"].includes(row.redirectType) &&
-      row.sourcePattern !== row.targetPattern,
+    .filter(
+      (row) =>
+        row.status === "active" &&
+        ["301", "308"].includes(row.redirectType) &&
+        row.sourcePattern !== row.targetPattern,
     )
     .map((row) => {
       const source = toNextPath(row.sourcePattern);
@@ -92,7 +93,9 @@ function buildRedirectRules(rows: SeoRedirectRow[]) {
         statusCode: 301,
       };
     })
-    .filter((item): item is { source: string; destination: string; statusCode: 301 } => Boolean(item));
+    .filter((item): item is { source: string; destination: string; statusCode: 301 } =>
+      Boolean(item),
+    );
 }
 
 function buildNoIndexHeaders(rows: SeoRedirectRow[]) {
@@ -114,7 +117,9 @@ function buildNoIndexHeaders(rows: SeoRedirectRow[]) {
         ],
       };
     })
-    .filter((item): item is { source: string; headers: Array<{ key: string; value: string }> } => Boolean(item));
+    .filter((item): item is { source: string; headers: Array<{ key: string; value: string }> } =>
+      Boolean(item),
+    );
 }
 
 const redirectRows = parseCsvRows();
@@ -160,13 +165,21 @@ const MEDIA_BUCKET_INTERNAL_BASE = normalizeBaseUrl(
 // (http://localhost:8080 in dev, https://api.bigbike.vn in prod)
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 const API_ORIGIN = (() => {
-  try { return new URL(API_BASE).origin; } catch { return "http://localhost:8080"; }
+  try {
+    return new URL(API_BASE).origin;
+  } catch {
+    return "http://localhost:8080";
+  }
 })();
 
 // Extract media origin for CSP img-src.
 // In dev this resolves to http://localhost:9000 (MinIO); in prod CDN is https: so already covered.
 const MEDIA_ORIGIN = (() => {
-  try { return new URL(LEGACY_UPLOADS_BASE).origin; } catch { return ""; }
+  try {
+    return new URL(LEGACY_UPLOADS_BASE).origin;
+  } catch {
+    return "";
+  }
 })();
 
 // Dynamic next/image remotePattern from BIGBIKE_LEGACY_UPLOADS_BASE.
@@ -186,7 +199,6 @@ const dynamicMediaPattern = (() => {
     return null;
   }
 })();
-
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -213,10 +225,16 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Keep fixed storefront slots close to the smallest useful source at DPR 1/2.
-    // The wider device sizes remain for full-bleed heroes and PDP media.
-    imageSizes: [48, 64, 72, 80, 96, 120, 128, 149, 150, 160, 180, 192, 200, 240, 256, 278, 298, 300, 320],
-    deviceSizes: [360, 375, 390, 400, 430, 451, 512, 640, 750, 768, 828, 902, 1024, 1080, 1200, 1280, 1440, 1536, 1920, 2048, 2560, 3840],
+    // Keep fixed storefront slots close to the smallest useful source at DPR 1/2;
+    // category thumbnails also retain exact 1×–4× candidates for their smaller frames.
+    imageSizes: [
+      16, 32, 48, 64, 72, 80, 96, 120, 128, 149, 150, 160, 180, 192, 200, 240, 256, 278, 288, 298,
+      300, 320, 384,
+    ],
+    deviceSizes: [
+      360, 375, 390, 400, 430, 451, 512, 640, 750, 768, 828, 902, 1024, 1080, 1200, 1280, 1440,
+      1536, 1920, 2048, 2560, 3840,
+    ],
     remotePatterns: [
       // cdn.bigbike.vn is legacy (old WordPress host, not a real CDN — see
       // LEGACY_UPLOADS_BASE comment above). Kept as an allowlist entry so next/image

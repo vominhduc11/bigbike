@@ -45,12 +45,13 @@ export function buildEmptyForm() {
 
 export function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
+  const parentId = String(item.parentId ?? '').trim()
   return {
     slug: item.slug || '',
     name: item.name || '',
     description: item.description || '',
     introContent: item.introContent || '',
-    parentId: item.parentId || '',
+    parentId,
     showOnHomepage: Boolean(item.showOnHomepage),
     imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
@@ -67,7 +68,9 @@ export function buildFormFromItem(item) {
     heroImageWidth: item.icon?.width ?? null,
     heroImageHeight: item.icon?.height ?? null,
     heroImageMimeType: item.icon?.mimeType || '',
-    menuIconUrl: item.menuIconUrl || '',
+    // CATEGORY_RULE_010: a child never hydrates a menu icon, including legacy
+    // data that has not yet been cleaned by the server migration.
+    menuIconUrl: parentId ? '' : item.menuIconUrl || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
@@ -89,6 +92,27 @@ export function buildFormFromItem(item) {
       },
     },
   }
+}
+
+// Ảnh thumbnail danh mục có luật exact 1:1 khi tạo mới hoặc thay URL. Một URL
+// đang có sẵn trên danh mục cũ được miễn kiểm tra để nhân viên vẫn sửa được các
+// thông tin khác trong giai đoạn chuyển tiếp.
+export function getCategoryImageValidationError(form, currentItem, { isCreate = false } = {}) {
+  const requestedUrl = String(form?.imageUrl ?? '').trim()
+  if (!requestedUrl) return null
+
+  const currentUrl = String(currentItem?.image?.rawUrl || currentItem?.image?.url || '').trim()
+  if (!isCreate && currentUrl && requestedUrl === currentUrl) return null
+
+  const width = Number(form?.imageWidth)
+  const height = Number(form?.imageHeight)
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return { key: 'categories.detail.imageDimensionsRequired', values: {} }
+  }
+  if (width !== height) {
+    return { key: 'categories.detail.imageNotSquare', values: { w: width, h: height } }
+  }
+  return null
 }
 
 // ── Autosave utilities (F9) ──────────────────────────────────────────────────
@@ -129,6 +153,7 @@ export function toPayload(form, { isCreate = false } = {}) {
   // drag-reorder on CategoryListScreen. The backend update preserves the existing
   // sortOrder when the field is absent (presence-flag: AdminCatalogMutationService
   // only sets it when non-null), so the detail form never clobbers the list order.
+  const parentId = String(form.parentId ?? '').trim()
   const payload = {
     slug: form.slug.trim(),
     name: form.name.trim(),
@@ -138,7 +163,7 @@ export function toPayload(form, { isCreate = false } = {}) {
     // phải nhất quán. Cùng lỗi đã vá cho Thương hiệu ngày 2026-07-28.
     description: form.description.trim(),
     introContent: form.introContent.trim(),
-    parentId: form.parentId.trim(),
+    parentId,
   }
 
   // Visibility is intentionally owned by the list actions. Homepage placement
@@ -178,8 +203,9 @@ export function toPayload(form, { isCreate = false } = {}) {
       }
     : { url: null }
 
-  // Icon line đơn sắc cho menu header + bộ lọc danh mục (lưu vào menu_icon_url).
-  const menuIconUrl = form.menuIconUrl.trim()
+  // CATEGORY_RULE_010: menu icons belong to root categories only. Keep sending
+  // an explicit empty block for children so a demotion clears the stored URL.
+  const menuIconUrl = parentId ? '' : String(form.menuIconUrl ?? '').trim()
   payload.menuIcon = menuIconUrl ? { url: menuIconUrl } : { url: null }
 
   const seoTitle = form.seoTitle.trim()

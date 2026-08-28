@@ -26,6 +26,7 @@ export function PageHero({
   bgUrl,
   illustrationUrl,
   illustrationImage,
+  illustrationNode,
   illustrationAlt,
   focusId,
   className,
@@ -38,6 +39,8 @@ export function PageHero({
   illustrationUrl?: string | null;
   /** Metadata-backed illustrations avoid guessing dimensions in next/image. */
   illustrationImage?: ImageAsset | null;
+  /** Optional already-framed visual for entity-specific illustrations. */
+  illustrationNode?: ReactNode;
   illustrationAlt?: string | null;
   focusId?: string;
   className?: string;
@@ -50,11 +53,15 @@ export function PageHero({
   const illustrationAsset: ImageAsset = illustrationImage?.url?.trim()
     ? { ...illustrationImage, url: illustration }
     : { url: illustration, width: 451, height: 400 };
+  const hasCustomIllustration = illustrationNode != null;
   const TitleTag = titleAs;
 
   return (
     <section
-      className={cn("relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5", className)}
+      className={cn(
+        "relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5",
+        className,
+      )}
       style={{ backgroundImage: `url('${background}')` }}
       data-page-hero
       data-bb-full-bleed
@@ -75,7 +82,10 @@ export function PageHero({
                     className="hidden items-center text-a5-meta text-white! before:mx-1 before:content-['/'] first:inline-flex! first:before:hidden last:inline-flex! md:inline-flex!"
                   >
                     {href ? (
-                      <Link href={href} className="font-semibold text-white! no-underline! hover:text-brand!">
+                      <Link
+                        href={href}
+                        className="font-semibold text-white! no-underline! hover:text-brand!"
+                      >
                         {crumb.labelNode ?? crumb.label}
                       </Link>
                     ) : (
@@ -88,17 +98,29 @@ export function PageHero({
           </nav>
         </div>
 
-        <div className="absolute bottom-0 right-[15px] hidden w-1/2 max-w-[451px] md:block!">
-          <div data-page-hero-illustration className="relative flex h-100 w-full items-end justify-center">
-            <MediaImage
-              image={illustrationAsset}
-              altFallback={illustrationAlt ?? title}
-              width={451}
-              height={400}
-              fill
-              sizes="(min-width: 950px) 451px, (min-width: 768px) calc((100vw - 48px) / 2), 0px"
-              className="object-contain"
-            />
+        <div
+          className={cn(
+            "absolute bottom-0 right-[15px] w-1/2 max-w-[451px]",
+            hasCustomIllustration
+              ? "block max-md:bottom-2 max-md:right-4 max-md:max-w-[50%]"
+              : "hidden md:block!",
+          )}
+        >
+          <div
+            data-page-hero-illustration
+            className="relative flex h-100 w-full items-end justify-center"
+          >
+            {illustrationNode ?? (
+              <MediaImage
+                image={illustrationAsset}
+                altFallback={illustrationAlt ?? title}
+                width={451}
+                height={400}
+                fill
+                sizes="(min-width: 950px) 451px, (min-width: 768px) calc((100vw - 48px) / 2), 0px"
+                className="object-contain"
+              />
+            )}
           </div>
         </div>
       </Container>

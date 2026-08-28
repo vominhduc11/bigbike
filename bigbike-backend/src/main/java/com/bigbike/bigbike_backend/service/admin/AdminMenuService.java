@@ -54,7 +54,7 @@ public class AdminMenuService {
     private static final Set<String> ALLOWED_MENU_STATUSES = Set.of("ACTIVE", "INACTIVE");
     private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
-    // Icon line đơn sắc của mục menu danh mục: resolve từ DB theo slug trong URL mục menu
+    // Icon line đơn sắc của mục menu danh mục gốc: resolve từ DB theo slug trong URL mục menu
     // (/danh-muc/{slug} hoặc /categories/{slugEn}) → CategoryEntity.menuIconUrl.
     // (WP-parity) — giờ icon gắn theo danh mục trong DB, không còn phụ thuộc tên slug. Xem V213.
     private static final String CATEGORY_VI_URL_PREFIX = "/danh-muc/";
@@ -86,9 +86,16 @@ public class AdminMenuService {
         Optional<CategoryEntity> category = englishPath
                 ? categoryRepo.findBySlugEn(slug.toLowerCase(Locale.ROOT))
                 : categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT));
-        String iconUrl = category.map(CategoryEntity::getMenuIconUrl).orElse(null);
-        if (iconUrl != null && !iconUrl.isBlank()) {
-            return iconUrl;
+        if (category.isPresent()) {
+            CategoryEntity resolved = category.get();
+            // CATEGORY_RULE_010: a real child category suppresses menu icons even if a legacy
+            // row has not been normalized yet. A present category also intentionally prevents
+            // the legacy slug fallback from reintroducing an icon after a root is demoted.
+            if (resolved.getParent() != null) {
+                return null;
+            }
+            String iconUrl = resolved.getMenuIconUrl();
+            return iconUrl != null && !iconUrl.isBlank() ? iconUrl : null;
         }
         return LEGACY_MENU_ICON_FALLBACKS.get(path);
     }

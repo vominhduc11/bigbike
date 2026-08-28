@@ -20,9 +20,9 @@ export const IMAGE_RECO = {
   // Ảnh sản phẩm (PDP + gallery): khung vuông tối đa 903×903 (desktop ≥1920px, ProductGallery.tsx) —
   // kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong ngưỡng 2×903 nên không cần cộng thêm.
   productImage: { idealW: 1800, idealH: 1800, minW: 1800, minH: 1800, ratio: [1, 1], ratioTolerance: 0.12 },
-  // Ảnh danh mục (lưới danh mục trang chủ, HomeCategoryGrid.tsx): khung vuông 160×160 desktop,
-  // 128×128 tablet, 96×96 mobile; khuyến nghị 2× khung desktop.
-  categoryImage: { idealW: 320, idealH: 320, minW: 320, minH: 320, ratio: [1, 1], ratioTolerance: 0.15 },
+  // Ảnh danh mục (lưới danh mục trang chủ, HomeCategoryGrid.tsx): khung 64/80/96px theo
+  // thiết bị. Không có sàn pixel; ảnh mới phải vuông tuyệt đối để mọi file hiển thị cùng cỡ.
+  categoryImage: { idealW: null, idealH: null, minW: null, minH: null, ratio: [1, 1], exactRatio: true },
   // Banner ngang full-bleed (category/brand hero bg, banner trang listing san-pham/brands/tin-tuc,
   // hero mặc định): WpCategoryHero .page-title — full viewport × 450px (desktop 1920×450, background-cover).
   bannerWide: { idealW: 3840, idealH: 900, minW: 3840, minH: 900, ratio: [64, 15], ratioTolerance: 0.2 },
@@ -31,9 +31,21 @@ export const IMAGE_RECO = {
   // Slide trang chủ mobile: container max-md aspect-[411/548] ≈ 3:4; viewport tham chiếu 390px.
   // Ảnh này tùy chọn, website fallback về sliderDesktop khi không có.
   sliderMobile: { idealW: 780, idealH: 1040, minW: 780, minH: 1040, ratio: [3, 4], ratioTolerance: 0.12 },
-  // Logo hãng: hiển thị trong các khung object-contain (lưới cao 64px; PageHero tối đa 451×400px),
-  // vì vậy vẫn khuyến nghị canvas trong suốt 800×400 để tái sử dụng cho hero mà không bị méo/cắt.
-  logo: { idealW: 800, idealH: 400, minW: 800, minH: 400, ratio: null },
+  // Logo thương hiệu: file mới luôn là PNG nền trong suốt, vuông 1:1 (sai lệch tối đa 1%).
+  // Admin sẽ mở khung cắt vuông để người dùng tự chọn vùng logo; ảnh cũ vẫn được đọc và cảnh báo.
+  logo: {
+    idealW: 800,
+    idealH: 800,
+    minW: 400,
+    minH: 400,
+    ratio: [1, 1],
+    ratioTolerance: 0.01,
+    brandLogo: true,
+    allowCrop: true,
+    maxBytes: 300 * 1024,
+    mimeType: 'image/png',
+    requiresTransparency: true,
+  },
   // Ảnh OG/chia sẻ mạng xã hội (seoOgImageUrl per-sản phẩm/danh mục/bài viết): KHÔNG có khung hiển thị trên
   // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
   // 2× nội bộ, dùng thẳng chuẩn 1200×630 khuyến nghị của Open Graph (đã đủ nét ở mọi nơi hiển thị).
@@ -62,15 +74,23 @@ export const IMAGE_RECO = {
   featureImage: { idealW: 1130, idealH: 850, minW: 1130, minH: 850, ratio: [4, 3], ratioTolerance: 0.1 },
 }
 
-// menuIconUrl (icon danh mục trong mega-menu + bộ lọc): icon 1 màu, khuyến nghị SVG, hiển thị
+// menuIconUrl (icon danh mục trong menu đầu trang): icon 1 màu, khuyến nghị SVG, hiển thị
 // cố định 20×16px qua CSS mask — KHÔNG kiểm tra kích thước (SVG là vector, không có khái niệm
 // "mờ vì thiếu pixel"; PNG thay thế cũng chỉ hiển thị 20×16px nên mọi file hợp lệ đều đủ nét).
 // Không thêm field vào IMAGE_RECO cho vị trí này — ImageUrlInput không nhận `recommend` sẽ tự bỏ qua.
 
 // So tỉ lệ thực tế của ảnh/video với spec khuyến nghị (kích thước không còn bị chặn, chỉ tỉ lệ).
-// Trả về null nếu đạt; hoặc mảng lý do: 'wrongRatio'.
+// Spec exactRatio dành riêng cho ảnh thumbnail danh mục: mọi lệch dù chỉ một pixel đều bị chặn.
+// Trả về null nếu đạt; hoặc mảng lý do: 'wrongRatio'/'unreadableDimensions'.
 export function evaluateImageDimensions(width, height, spec) {
-  if (!width || !height || !spec) return null
+  if (!spec) return null
+  if (spec.exactRatio) {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      return ['unreadableDimensions']
+    }
+    return width === height ? null : ['wrongRatio']
+  }
+  if (!width || !height) return null
   const reasons = []
   if (spec.ratio) {
     const target = spec.ratio[0] / spec.ratio[1]

@@ -16,7 +16,7 @@ import org.jsoup.parser.Parser;
  * external/non-fragment references, {@code <foreignObject>} and CSS-based vectors — keeping only
  * the static drawing primitives an icon needs.
  *
- * <p>The category menu/filter icon renders via CSS {@code mask-image}, which never executes SVG
+ * <p>The category header-menu icon renders via CSS {@code mask-image}, which never executes SVG
  * script; this sanitizer additionally protects the case where the stored file is opened directly
  * at its {@code /media/...} URL.
  *

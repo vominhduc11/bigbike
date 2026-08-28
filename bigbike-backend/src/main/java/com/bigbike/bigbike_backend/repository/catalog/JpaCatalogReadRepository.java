@@ -32,6 +32,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
+import com.bigbike.bigbike_backend.service.admin.BrandLogoValidationService;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -88,6 +89,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
+    private final BrandLogoValidationService brandLogoValidationService;
 
     @Override
     public List<Product> findAllProducts() {
@@ -734,7 +736,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     @Cacheable(cacheNames = "catalog-reference-brands", key = "'locale:' + #locale + ':strict:' + #strictEnglish")
     public List<Brand> findAllBrands(String locale, boolean strictEnglish) {
         return brandJpaRepository.findAll().stream()
-                .map(entity -> toDomain(entity, locale))
+                .map(entity -> toDomain(entity, locale, false, true))
                 .toList();
     }
 
@@ -938,15 +940,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     /** Admin detail read: Vietnamese content + raw English translations. */
     private Brand toDomain(BrandEntity entity) {
-        return toDomain(entity, LOCALE_VI, true);
+        return toDomain(entity, LOCALE_VI, true, true);
     }
 
     /** Public read: localized content, no translations object. */
     private Brand toDomain(BrandEntity entity, String locale) {
-        return toDomain(entity, locale, false);
+        return toDomain(entity, locale, false, false);
     }
 
     private Brand toDomain(BrandEntity entity, String locale, boolean includeTranslations) {
+        return toDomain(entity, locale, includeTranslations, includeTranslations);
+    }
+
+    private Brand toDomain(
+            BrandEntity entity,
+            String locale,
+            boolean includeTranslations,
+            boolean includeLogoQuality
+    ) {
         return new Brand(
                 entity.getId(),
                 entity.getSlug(),
@@ -983,7 +994,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.isShowOnHomepage(),
                 includeTranslations ? toBrandTranslations(entity) : null,
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                includeLogoQuality ? brandLogoValidationService.qualityFor(entity) : null
         );
     }
 

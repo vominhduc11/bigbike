@@ -60,8 +60,9 @@ public class CategoryEntity {
     private String iconMimeType;
 
     /**
-     * Icon line đơn sắc cho menu header + bộ lọc "Danh mục sản phẩm" (render qua mask-image).
-     * Khác với iconUrl (ảnh hero trang danh mục, WP ACF "image_left"). Xem V213.
+     * Icon line đơn sắc cho menu đầu trang của danh mục gốc (render qua mask-image).
+     * Danh mục con luôn phải có giá trị null. Khác với iconUrl (ảnh hero trang danh mục,
+     * WP ACF "image_left"). Xem V213/CATEGORY_RULE_010.
      */
     @Column(columnDefinition = "text")
     private String menuIconUrl;

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.nullValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -958,6 +959,221 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
     }
 
+    @Test
+    void categoryImageMustBeExactSquarePersistDimensionsAndGrandfatherLegacyUrl() throws Exception {
+        // CATEGORY_RULE_009: new/replaced category thumbnails require exact 1:1,
+        // while an existing non-square URL remains editable during the transition.
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String squareSlug = "category-square-image-" + suffix;
+        String squareUrl = MEDIA_PUBLIC_BASE_URL + "/wp-uploads/categories/" + squareSlug + ".jpg";
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Category square image %s",
+                                  "translations":{"en":{"name":"Category square image EN %s"}},
+                                  "image":{"url":"%s","width":200,"height":200,"mimeType":"image/jpeg"}
+                                }
+                                """.formatted(squareSlug, suffix, suffix, squareUrl)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.image.url").value(squareUrl))
+                .andExpect(jsonPath("$.data.image.width").value(200))
+                .andExpect(jsonPath("$.data.image.height").value(200));
+
+        CategoryEntity square = categoryJpaRepository.findBySlug(squareSlug).orElseThrow();
+        assertThat(square.getImageWidth()).isEqualTo(200);
+        assertThat(square.getImageHeight()).isEqualTo(200);
+
+        String rejectedSlug = "category-non-square-image-" + suffix;
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Category non-square image %s",
+                                  "translations":{"en":{"name":"Category non-square image EN %s"}},
+                                  "image":{"url":"%s","width":300,"height":200,"mimeType":"image/jpeg"}
+                                }
+                                """.formatted(rejectedSlug, suffix, suffix, MEDIA_PUBLIC_BASE_URL + "/wp-uploads/categories/" + rejectedSlug + ".jpg")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("image.url"))
+                .andExpect(jsonPath("$.error.details[0].code").value("CATEGORY_IMAGE_NOT_SQUARE"))
+                .andExpect(jsonPath("$.error.details[0].message").value(
+                        "Ảnh danh mục phải vuông, tỉ lệ 1:1. Ảnh đã chọn có kích thước 300×200 điểm ảnh."));
+
+        String legacySlug = "category-legacy-image-" + suffix;
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Category legacy image %s",
+                                  "translations":{"en":{"name":"Category legacy image EN %s"}}
+                                }
+                                """.formatted(legacySlug, suffix, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity legacy = categoryJpaRepository.findBySlug(legacySlug).orElseThrow();
+        String legacyUrl = MEDIA_PUBLIC_BASE_URL + "/wp-uploads/categories/legacy-39x60.jpg";
+        legacy.setImageUrl(legacyUrl);
+        legacy.setImageWidth(39);
+        legacy.setImageHeight(60);
+        legacy.setImageMimeType("image/jpeg");
+        categoryJpaRepository.save(legacy);
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", legacy.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "name":"Category legacy image updated %s",
+                                  "image":{"url":"%s"},
+                                  "translations":{"en":{"name":"Category legacy image updated EN %s"}}
+                                }
+                                """.formatted(suffix, legacyUrl, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Category legacy image updated " + suffix));
+
+        CategoryEntity legacyUpdated = categoryJpaRepository.findById(legacy.getId()).orElseThrow();
+        assertThat(legacyUpdated.getImageUrl()).isEqualTo(legacyUrl);
+        assertThat(legacyUpdated.getImageWidth()).isEqualTo(39);
+        assertThat(legacyUpdated.getImageHeight()).isEqualTo(60);
+        assertThat(legacyUpdated.getImageMimeType()).isEqualTo("image/jpeg");
+    }
+
+    @Test
+    void categoryChildMenuIconIsSilentlyClearedAcrossCreateDemoteAndPromote() throws Exception {
+        // CATEGORY_RULE_010: menuIcon is root-only and a child payload must never block a save.
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "category-menu-parent-" + suffix;
+        String childSlug = "category-menu-child-" + suffix;
+        String rootSlug = "category-menu-root-" + suffix;
+        String rootIconUrl = MEDIA_PUBLIC_BASE_URL + "/wp-icons/" + rootSlug + ".svg";
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Menu parent %s",
+                                  "translations":{"en":{"name":"Menu parent EN %s"}}
+                                }
+                                """.formatted(parentSlug, suffix, suffix)))
+                .andExpect(status().isOk());
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug).orElseThrow();
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Menu child %s",
+                                  "parentId":"%s",
+                                  "menuIcon":{"url":"javascript:ignored"},
+                                  "translations":{"en":{"name":"Menu child EN %s"}}
+                                }
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuIconUrl").value(nullValue()));
+        CategoryEntity child = categoryJpaRepository.findBySlug(childSlug).orElseThrow();
+        assertThat(child.getMenuIconUrl()).isNull();
+        assertThat(child.getParentId()).isEqualTo(parent.getId());
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Menu root %s",
+                                  "menuIcon":{"url":"%s"},
+                                  "translations":{"en":{"name":"Menu root EN %s"}}
+                                }
+                                """.formatted(rootSlug, suffix, rootIconUrl, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuIconUrl").value(rootIconUrl));
+        CategoryEntity root = categoryJpaRepository.findBySlug(rootSlug).orElseThrow();
+        assertThat(root.getMenuIconUrl()).isEqualTo(rootIconUrl);
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", root.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "parentId":"%s",
+                                  "menuIcon":{"url":"javascript:should-be-ignored"},
+                                  "name":"Menu root demoted %s",
+                                  "translations":{"en":{"name":"Menu root demoted EN %s"}}
+                                }
+                                """.formatted(parent.getId(), suffix, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuIconUrl").value(nullValue()));
+        CategoryEntity demoted = categoryJpaRepository.findById(root.getId()).orElseThrow();
+        assertThat(demoted.getParentId()).isEqualTo(parent.getId());
+        assertThat(demoted.getMenuIconUrl()).isNull();
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", child.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "name":"Menu child edited %s",
+                                  "description":"Child description",
+                                  "menuIcon":{"url":"ftp://ignored.example/icon.svg"},
+                                  "translations":{"en":{"name":"Menu child edited EN %s"}}
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Menu child edited " + suffix));
+        assertThat(categoryJpaRepository.findById(child.getId()).orElseThrow().getMenuIconUrl()).isNull();
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", child.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "parentId":"",
+                                  "name":"Menu child promoted %s",
+                                  "translations":{"en":{"name":"Menu child promoted EN %s"}}
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuIconUrl").value(nullValue()));
+        CategoryEntity promoted = categoryJpaRepository.findById(child.getId()).orElseThrow();
+        assertThat(promoted.getParentId()).isNull();
+        assertThat(promoted.getMenuIconUrl()).isNull();
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", child.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "menuIcon":{"url":"%s"}
+                                }
+                                """.formatted(rootIconUrl)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuIconUrl").value(rootIconUrl));
+    }
+
     // ── Category hide-guard tests ─────────────────────────────────────────────
 
     @Test
@@ -1603,13 +1819,20 @@ class AdminMutationApiTest {
                                   "slug":"%s",
                                   "name":"Thương hiệu ảnh %s",
                                   "description":"<p>Mô tả ban đầu</p>",
-                                  "logo":{"url":"/media/brands/logo.png","alt":"Logo thương hiệu"},
                                   "banner":{"url":"/media/brands/banner.jpg","alt":"Ảnh bìa thương hiệu"}
                                 }
                                 """.formatted(slug, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity created = brandJpaRepository.findBySlug(slug).orElseThrow();
+        // MEDIA_RULE_011: a new logo must come from the Media Library. Seed this old-style
+        // reference directly so this test continues to cover the grandfathered edit path.
+        created.setLogoUrl("/media/brands/logo.png");
+        created.setLogoAlt("Logo thương hiệu");
+        created.setLogoWidth(250);
+        created.setLogoHeight(108);
+        created.setLogoMimeType("image/png");
+        brandJpaRepository.save(created);
         assertThat(created.getLogoAlt()).isEqualTo("Logo thương hiệu");
         assertThat(created.getBannerAlt()).isEqualTo("Ảnh bìa thương hiệu");
         assertThat(created.getDescription()).isEqualTo("<p>Mô tả ban đầu</p>");
@@ -1633,6 +1856,27 @@ class AdminMutationApiTest {
         assertThat(updated.getDescription()).isNull();
         assertThat(updated.getLogoAlt()).isEqualTo("Logo thương hiệu");
         assertThat(updated.getBannerAlt()).isEqualTo("Ảnh bìa thương hiệu");
+    }
+
+    @Test
+    void newBrandLogoMustReferenceMediaLibraryAsset() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"brand-logo-library-%s",
+                                  "name":"Thương hiệu logo thư viện %s",
+                                  "logo":{"url":"/media/brands/not-uploaded.png"}
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("logo.url"))
+                .andExpect(jsonPath("$.error.details[0].code").value("BRAND_LOGO_MEDIA_REQUIRED"));
     }
 
     @Test

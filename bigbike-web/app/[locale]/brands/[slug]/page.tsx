@@ -15,6 +15,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
+import { BrandLogo } from "@/components/catalog/BrandLogo";
 import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
 import type { Locale } from "@/i18n/locale";
@@ -36,8 +37,11 @@ type BrandDetailPageProps = {
   searchParams: Promise<RouteSearchParams>;
 };
 
-export async function generateMetadata({ params, searchParams }: BrandDetailPageProps): Promise<Metadata> {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+export async function generateMetadata({
+  params,
+  searchParams,
+}: BrandDetailPageProps): Promise<Metadata> {
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   const priceFiltered = hasPriceRangeFilter(await searchParams);
   setRequestLocale(locale);
   const t = await getTranslations("Catalog");
@@ -77,12 +81,17 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
     // Trang noindex thì không khai hreflang — xem ghi chú ở trang sản phẩm.
     ...(noIndex
       ? {}
-      : { languageAlternates: { vi: toBrandPath(brand.slug, "vi"), en: toBrandPath(brand.slug, "en") } }),
+      : {
+          languageAlternates: {
+            vi: toBrandPath(brand.slug, "vi"),
+            en: toBrandPath(brand.slug, "en"),
+          },
+        }),
   });
 }
 
 export default async function BrandDetailPage({ params, searchParams }: BrandDetailPageProps) {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   const catalog = parseCatalogListParams(await searchParams);
   setRequestLocale(locale);
   if (!isValidSlug(slug)) {
@@ -95,11 +104,16 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   const [brandResult, facetsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     getCatalogFacets({
-      brand: [slug], q: catalog.filters.q,
-      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
-      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
-      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
-      inStock: catalog.filters.inStock, lang: locale,
+      brand: [slug],
+      q: catalog.filters.q,
+      filterColor: catalog.filters.color,
+      filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender,
+      sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice,
+      maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock,
+      lang: locale,
     }),
   ]);
 
@@ -163,9 +177,17 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
             titleNode={<LText field="name">{brandName}</LText>}
             breadcrumb={heroBreadcrumb}
             bgUrl={heroBgUrl}
-            illustrationUrl={heroIllustrationUrl}
-            illustrationImage={brand.logo ? { ...brand.logo, url: heroIllustrationUrl ?? undefined } : null}
-            illustrationAlt={brand.logo?.alt ?? brandName}
+            illustrationNode={
+              <BrandLogo
+                name={brandName}
+                image={
+                  brand.logo && heroIllustrationUrl
+                    ? { ...brand.logo, url: heroIllustrationUrl }
+                    : null
+                }
+                variant="detail"
+              />
+            }
           />
 
           <div id="main-content">

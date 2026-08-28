@@ -5,7 +5,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
@@ -109,6 +112,151 @@ class CatalogRequestValidatorTest {
 
         assertThat(errors.stream().map(ApiErrorDetail::field))
                 .contains("slug", "name");
+    }
+
+    @Test
+    void validateCategoryRequest_acceptsExactSquareWithoutMinimumSize() {
+        UpsertCategoryRequest request = categoryRequest(image("/media/category-1x1.png", 1, 1));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, null, true, errors);
+
+        assertThat(errors).noneMatch(error -> "image.url".equals(error.field()));
+    }
+
+    @Test
+    void validateCategoryRequest_rejectsNonSquareWithDimensions() {
+        UpsertCategoryRequest request = categoryRequest(image("/media/category-300x200.png", 300, 200));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, null, true, errors);
+
+        assertThat(errors).anySatisfy(error -> {
+            assertThat(error.field()).isEqualTo("image.url");
+            assertThat(error.code()).isEqualTo("CATEGORY_IMAGE_NOT_SQUARE");
+            assertThat(error.message()).contains("300×200", "1:1");
+        });
+    }
+
+    @Test
+    void validateCategoryRequest_rejectsNearSquareWithoutTolerance() {
+        for (int[] dimensions : List.of(new int[]{287, 289}, new int[]{220, 219})) {
+            UpsertCategoryRequest request = categoryRequest(
+                    image("/media/category-" + dimensions[0] + "x" + dimensions[1] + ".png",
+                            dimensions[0], dimensions[1]));
+
+            List<ApiErrorDetail> errors = new ArrayList<>();
+            validator.validateCategoryRequest(request, null, true, errors);
+
+            assertThat(errors).anyMatch(error ->
+                    "image.url".equals(error.field())
+                            && "CATEGORY_IMAGE_NOT_SQUARE".equals(error.code()));
+        }
+    }
+
+    @Test
+    void validateCategoryRequest_requiresDimensionsForNewImage() {
+        UpsertCategoryRequest request = categoryRequest(image("/media/category-no-dimensions.png", null, null));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, null, true, errors);
+
+        assertThat(errors).anySatisfy(error -> {
+            assertThat(error.field()).isEqualTo("image.url");
+            assertThat(error.code()).isEqualTo("CATEGORY_IMAGE_DIMENSIONS_REQUIRED");
+        });
+    }
+
+    @Test
+    void validateCategoryRequest_grandfathersExistingNonSquareImageWhenUrlIsUnchanged() {
+        CategoryEntity current = new CategoryEntity();
+        current.setImageUrl("https://legacy.example/category.png");
+        current.setImageWidth(39);
+        current.setImageHeight(60);
+
+        UpsertCategoryRequest request = categoryRequest(image(current.getImageUrl(), null, null));
+        request.setName(null); // Simulate a PATCH that only changes another category field.
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, current, false, errors);
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void validateCategoryRequest_rejectsDifferentNonSquareImageOnLegacyCategory() {
+        CategoryEntity current = new CategoryEntity();
+        current.setImageUrl("https://legacy.example/category-old.png");
+
+        UpsertCategoryRequest request = categoryRequest(image("/media/category-new-74x60.png", 74, 60));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, current, false, errors);
+
+        assertThat(errors).anyMatch(error ->
+                "image.url".equals(error.field())
+                        && "CATEGORY_IMAGE_NOT_SQUARE".equals(error.code()));
+    }
+
+    @Test
+    void validateCategoryRequest_childIgnoresMenuIconEvenWhenPayloadFailsShapeAndMediaRules() {
+        CategoryEntity parent = new CategoryEntity();
+        parent.setId("parent-category");
+        CategoryEntity current = new CategoryEntity();
+        current.setParent(parent);
+
+        UpsertCategoryRequest request = categoryRequest(null);
+        request.setMenuIcon(image("javascript:ignored", -1, -1));
+        request.getMenuIcon().setAlt("x".repeat(256));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, current, false, errors);
+
+        assertThat(errors).noneMatch(error -> error.field().startsWith("menuIcon"));
+    }
+
+    @Test
+    void validateCategoryRequest_newChildIgnoresMenuIconPayload() {
+        UpsertCategoryRequest request = categoryRequest(null);
+        request.setParentId("parent-category");
+        request.setMenuIcon(image("https://external.example/ignored.svg", -1, -1));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, null, true, errors);
+
+        assertThat(errors).noneMatch(error -> error.field().startsWith("menuIcon"));
+    }
+
+    @Test
+    void validateCategoryRequest_rootStillValidatesMenuIcon() {
+        UpsertCategoryRequest request = categoryRequest(null);
+        request.setMenuIcon(image("https://external.example/icon.svg", 20, 16));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateCategoryRequest(request, null, true, errors);
+
+        assertThat(errors).anyMatch(error ->
+                "menuIcon.url".equals(error.field()) && "INVALID_VALUE".equals(error.code()));
+    }
+
+    private static UpsertCategoryRequest categoryRequest(ImageAssetRequest image) {
+        CategoryTranslationRequest translations = new CategoryTranslationRequest();
+        translations.setEn(new CategoryTranslationRequest.CategoryContentRequest(null, "English Category", null, null, null, null));
+
+        UpsertCategoryRequest request = new UpsertCategoryRequest();
+        request.setSlug("test-category");
+        request.setName("Danh mục kiểm tra");
+        request.setTranslations(translations);
+        request.setImage(image);
+        return request;
+    }
+
+    private static ImageAssetRequest image(String url, Integer width, Integer height) {
+        ImageAssetRequest image = new ImageAssetRequest();
+        image.setUrl(url);
+        image.setWidth(width);
+        image.setHeight(height);
+        return image;
     }
 
     @Test

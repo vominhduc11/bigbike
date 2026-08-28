@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
@@ -692,6 +693,7 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getImageUrl(),
                 errors
         );
+        validateCategoryImageDimensions(request.getImage(), current, create, errors);
         AdminMutationValidators.validateImageAsset(
                 request.getIcon(),
                 "icon",
@@ -699,13 +701,22 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getIconUrl(),
                 errors
         );
-        AdminMutationValidators.validateImageAsset(
-                request.getMenuIcon(),
-                "menuIcon",
-                mediaUrlProperties.getPublicBaseUrl(),
-                current == null ? null : current.getMenuIconUrl(),
-                errors
-        );
+        // CATEGORY_RULE_010: menuIcon is meaningful only for a root category. The request DTO
+        // deliberately does not cascade Bean Validation for this field because an update may omit
+        // parentId and only the merged entity tells us whether the result is a child. This keeps a
+        // stale/invalid menuIcon from blocking an otherwise valid child save.
+        if (!categoryWillBeChild(request, current, create)) {
+            boolean menuIconShapeValid = validateCategoryMenuIconShape(request.getMenuIcon(), errors);
+            if (menuIconShapeValid) {
+                AdminMutationValidators.validateImageAsset(
+                        request.getMenuIcon(),
+                        "menuIcon",
+                        mediaUrlProperties.getPublicBaseUrl(),
+                        current == null ? null : current.getMenuIconUrl(),
+                        errors
+                );
+            }
+        }
         // Banner (desktop + mobile) is admin-managed media and must satisfy the same MinIO
         // whitelist as image/icon/menuIcon. Previously unvalidated, which let a category hero
         // point at an external host; existing URLs stay grandfathered so legacy rows still save.
@@ -723,6 +734,18 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getMobileBannerUrl(),
                 errors
         );
+        if (request.getBanner() != null && request.getBanner().getMediaId() != null) {
+            errors.add(new ApiErrorDetail(
+                    "banner.mediaId",
+                    "BRAND_IMAGE_MEDIA_ID_UNSUPPORTED",
+                    "mediaId chỉ dùng cho logo thương hiệu / mediaId is supported only for the brand logo."));
+        }
+        if (request.getMobileBanner() != null && request.getMobileBanner().getMediaId() != null) {
+            errors.add(new ApiErrorDetail(
+                    "mobileBanner.mediaId",
+                    "BRAND_IMAGE_MEDIA_ID_UNSUPPORTED",
+                    "mediaId chỉ dùng cho logo thương hiệu / mediaId is supported only for the brand logo."));
+        }
         AdminMutationValidators.validateSeoMeta(
                 request.getSeo(),
                 "seo",
@@ -769,6 +792,106 @@ public class CatalogRequestValidator {
         }
 
         return slug;
+    }
+
+    /**
+     * CATEGORY_RULE_009: only a new/replaced homepage category thumbnail must be an exact
+     * square. Existing category URLs are grandfathered so editing legacy records does not
+     * require an image migration.
+     */
+    private static void validateCategoryImageDimensions(
+            ImageAssetRequest image,
+            CategoryEntity current,
+            boolean create,
+            List<ApiErrorDetail> errors
+    ) {
+        if (image == null) {
+            return;
+        }
+
+        String requestedUrl = AdminMutationValidators.trimToNull(image.getUrl());
+        if (requestedUrl == null) {
+            return;
+        }
+
+        String currentUrl = current == null ? null : AdminMutationValidators.trimToNull(current.getImageUrl());
+        if (!create && requestedUrl.equals(currentUrl)) {
+            return;
+        }
+
+        Integer width = image.getWidth();
+        Integer height = image.getHeight();
+        if (width == null || height == null || width == 0 || height == 0) {
+            errors.add(new ApiErrorDetail(
+                    "image.url",
+                    "CATEGORY_IMAGE_DIMENSIONS_REQUIRED",
+                    "Không xác định được kích thước ảnh danh mục để kiểm tra tỉ lệ 1:1."
+            ));
+            return;
+        }
+
+        // Negative values are already reported by the generic image validator. Do not add a
+        // second category-specific error for the same malformed metadata.
+        if (width < 0 || height < 0) {
+            return;
+        }
+
+        if (!width.equals(height)) {
+            errors.add(new ApiErrorDetail(
+                    "image.url",
+                    "CATEGORY_IMAGE_NOT_SQUARE",
+                    "Ảnh danh mục phải vuông, tỉ lệ 1:1. Ảnh đã chọn có kích thước "
+                            + width + "×" + height + " điểm ảnh."
+            ));
+        }
+    }
+
+    /**
+     * Preserves the former ImageAssetRequest boundary constraints for root-category menu icons.
+     * Child-category menu icons are intentionally ignored before this method is reached.
+     */
+    private static boolean validateCategoryMenuIconShape(
+            ImageAssetRequest image,
+            List<ApiErrorDetail> errors
+    ) {
+        if (image == null) {
+            return true;
+        }
+
+        boolean valid = true;
+        String url = image.getUrl();
+        if (url != null && url.length() > 2048) {
+            errors.add(new ApiErrorDetail("menuIcon.url", "INVALID_VALUE", "Image URL is too long."));
+            valid = false;
+        }
+        if (url != null && !url.matches("(?i)^$|^(?:https?://|/).*")) {
+            errors.add(new ApiErrorDetail(
+                    "menuIcon.url",
+                    "INVALID_VALUE",
+                    "Image URL must use http/https or be a relative path."
+            ));
+            valid = false;
+        }
+        if (image.getAlt() != null && image.getAlt().length() > 255) {
+            errors.add(new ApiErrorDetail("menuIcon.alt", "INVALID_VALUE", "Image alt is too long."));
+            valid = false;
+        }
+        if (image.getMimeType() != null && image.getMimeType().length() > 100) {
+            errors.add(new ApiErrorDetail("menuIcon.mimeType", "INVALID_VALUE", "Image mimeType is too long."));
+            valid = false;
+        }
+        return valid;
+    }
+
+    private static boolean categoryWillBeChild(
+            UpsertCategoryRequest request,
+            CategoryEntity current,
+            boolean create
+    ) {
+        if (create || request.getParentId() != null) {
+            return AdminMutationValidators.trimToNull(request.getParentId()) != null;
+        }
+        return current != null && current.getParentId() != null;
     }
 
     public CategoryEntity validateAndResolveParentCategory(

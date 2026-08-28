@@ -45,6 +45,7 @@ import {
   saveFormToStorage,
   loadFormFromStorage,
   clearFormFromStorage,
+  getCategoryImageValidationError,
 } from './category-detail/constants'
 import { SeoCard } from '../components/SeoCard'
 import { Button } from '@/components/ui/button'
@@ -392,6 +393,20 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
   }
 
+  function handleParentChange(value) {
+    const parentId = value === '__none__' ? '' : value
+    // CATEGORY_RULE_010: hierarchy changes clear the icon immediately. A
+    // promoted category therefore starts blank and must be selected again.
+    setForm((previous) => ({ ...previous, parentId, menuIconUrl: '' }))
+    setValidationErrors((previous) => {
+      if (!previous.parentId && !previous.menuIconUrl) return previous
+      const next = { ...previous }
+      delete next.parentId
+      delete next.menuIconUrl
+      return next
+    })
+  }
+
   function updateImageAsset(prefix, url, media) {
     setForm((previous) => ({
       ...previous,
@@ -462,6 +477,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const schema = createCategorySchema(t)
     const result = schema.safeParse(form)
     const clientErrors = zodErrors(result)
+    const imageValidation = getCategoryImageValidationError(form, currentItem, { isCreate })
+    if (imageValidation) {
+      clientErrors.imageUrl = t(imageValidation.key, imageValidation.values)
+    }
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
       // Scroll the first error into view + focus its control. Without this,
@@ -580,13 +599,15 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const parentSummary = form.parentId
     ? (selectedParent?.label || t('categories.detail.parentSelected', { defaultValue: 'Danh mục con' }))
     : t('categories.detail.rootCategory', { defaultValue: 'Danh mục gốc' })
-  const imageCount = [
+  const isChildCategory = Boolean(form.parentId?.trim())
+  const imageValues = [
     form.imageUrl,
     form.bannerImageUrl,
     form.mobileBannerImageUrl,
     form.heroImageUrl,
-    form.menuIconUrl,
-  ].filter((v) => Boolean(v?.trim())).length
+  ]
+  if (!isChildCategory) imageValues.push(form.menuIconUrl)
+  const imageCount = imageValues.filter((v) => Boolean(v?.trim())).length
   const currentSlug = isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug
   const displayName = isEnLang ? (form.translations?.en?.name || form.name) : form.name
 
@@ -636,10 +657,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             type="button"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
-              setForm(draftRecovery.form)
+              const recoveredForm = draftRecovery.form
+              setForm({
+                ...recoveredForm,
+                menuIconUrl: String(recoveredForm?.parentId ?? '').trim() ? '' : recoveredForm?.menuIconUrl || '',
+              })
               setDraftRecovery(null)
               setSlugManuallyEdited(true)
-              setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
+              setEnSlugManuallyEdited(Boolean(recoveredForm?.translations?.en?.slug))
             }}
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
@@ -739,8 +764,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           icon={ImageIcon}
           tone={imageCount > 0 ? 'success' : 'info'}
           label={t('categories.detail.imagesMetric', { defaultValue: 'Hình ảnh' })}
-          value={`${imageCount}/5`}
-          hint={t('categories.detail.imagesMetricHint', { defaultValue: 'Ảnh danh mục, banner và icon' })}
+          value={`${imageCount}/${isChildCategory ? 4 : 5}`}
+          hint={t(isChildCategory ? 'categories.detail.imagesMetricHintChild' : 'categories.detail.imagesMetricHint', {
+            defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục, banner, ảnh minh hoạ và biểu tượng menu',
+          })}
         />
       </div>
 
@@ -788,7 +815,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   </label>
                   <Select
                     value={form.parentId || '__none__'}
-                    onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
+                    onValueChange={handleParentChange}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger id="category-parent-select" aria-invalid={validationErrors.parentId ? true : undefined}>
@@ -871,7 +898,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
             <DetailSection
               title={t('categories.detail.imagesSection', { defaultValue: 'Hình ảnh trên website' })}
-              description={t('categories.detail.imagesSectionDesc', { defaultValue: 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại, ảnh minh hoạ và biểu tượng menu.' })}
+              description={t(isChildCategory ? 'categories.detail.imagesSectionDescChild' : 'categories.detail.imagesSectionDesc', {
+                defaultValue: isChildCategory
+                  ? 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại và ảnh minh hoạ.'
+                  : 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại, ảnh minh hoạ và biểu tượng menu cho danh mục gốc.',
+              })}
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="form-field" data-field="imageUrl">
@@ -929,17 +960,19 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   />
                   <span className="hint">{t('categories.detail.heroImageUrlHint')}</span>
                 </div>
-                <div className="form-field md:col-span-2" data-field="menuIconUrl">
-                  <span>{t('categories.detail.menuIconUrl')}</span>
-                  <ImageUrlInput
-                    value={form.menuIconUrl}
-                    onChange={(url) => updateField('menuIconUrl', url)}
-                    previewAlt={t('categories.detail.menuIconAlt', { defaultValue: 'Icon menu danh mục' })}
-                    disabled={isReadOnly}
-                    error={validationErrors.menuIconUrl}
-                  />
-                  <span className="hint">{t('categories.detail.menuIconUrlHint')}</span>
-                </div>
+                {!isChildCategory ? (
+                  <div className="form-field md:col-span-2" data-field="menuIconUrl">
+                    <span>{t('categories.detail.menuIconUrl')}</span>
+                    <ImageUrlInput
+                      value={form.menuIconUrl}
+                      onChange={(url) => updateField('menuIconUrl', url)}
+                      previewAlt={t('categories.detail.menuIconAlt', { defaultValue: 'Icon menu danh mục' })}
+                      disabled={isReadOnly}
+                      error={validationErrors.menuIconUrl}
+                    />
+                    <span className="hint">{t('categories.detail.menuIconUrlHint')}</span>
+                  </div>
+                ) : null}
               </div>
             </DetailSection>
 

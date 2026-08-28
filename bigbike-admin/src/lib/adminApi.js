@@ -412,6 +412,7 @@ export function mapValidationErrors(error, translate) {
     'seo.canonicalUrl': 'seoCanonicalUrl',
     'seo.ogImage.url': 'seoOgImageUrl',
     'seo.ogImage.alt': 'seoOgImageAlt',
+    'image.url': 'imageUrl',
   }
 
   return error.details.reduce((acc, detail) => {
@@ -750,6 +751,18 @@ export async function fetchBrands(query) {
   try {
     const payload = await requestJson('/admin/brands', { query: buildBrandQuery(query) })
     return withLiveData(parseListPayload(payload, normalizeBrand, Number(query?.pageSize) || 10))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function importBrandLogoUrl(input) {
+  try {
+    const payload = await requestJson('/admin/brands/logo/import-url', {
+      method: 'POST',
+      body: input,
+    })
+    return { item: normalizeMediaItem(payload?.data || {}) }
   } catch (error) {
     throw normalizeError(error)
   }
@@ -1186,6 +1199,14 @@ export async function downloadMedia(mediaId, fallbackFilename) {
   anchor.click()
   anchor.remove()
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+}
+
+export async function fetchMediaBlob(mediaId, fallbackFilename = 'media-download') {
+  try {
+    return await requestBlob(`/admin/media/${mediaId}/download`, fallbackFilename)
+  } catch (error) {
+    throw normalizeError(error)
+  }
 }
 
 export async function fetchMediaTags(prefix) {

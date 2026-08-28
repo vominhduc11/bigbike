@@ -10,21 +10,33 @@ export function MediaRequirementHint({ recommend, className }) {
   if (!recommend) return null
   return (
     <p className={cn('text-xs text-muted-foreground', className)}>
-      {t('mediaReco.requirementSize', { w: recommend.minW, h: recommend.minH })}
-      {recommend.ratio && t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
+      {recommend.brandLogo
+        ? t('brands.logo.requirement')
+        : recommend.exactRatio
+        ? t('mediaReco.categoryImageRequirement')
+        : (
+          <>
+            {t('mediaReco.requirementSize', { w: recommend.minW, h: recommend.minH })}
+            {recommend.ratio && t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
+          </>
+        )}
     </p>
   )
 }
 
 // Dòng lỗi CHẶN LƯU khi ảnh/video đã chọn sai tỉ lệ — hiển thị đè lên hint tĩnh ở trên.
-// Kích thước không còn là lý do chặn nên `reasons` giờ chỉ có thể chứa 'wrongRatio'.
 export function MediaValidationError({ reasons, kind, width, height, recommend, className }) {
   const { t } = useTranslation()
   if (!reasons?.length) return null
   const isVideo = kind === 'video'
   const messages = reasons.map((_reason) => {
-    const key = isVideo ? 'mediaReco.videoWrongRatio' : 'mediaReco.wrongRatio'
-    return t(key, { w: width, h: height, rw: recommend.minW, rh: recommend.minH })
+    if (_reason === 'unreadableDimensions') {
+      return t(recommend?.exactRatio ? 'mediaReco.categoryImageUnreadable' : 'mediaReco.unreadableDimensions', { w: width, h: height })
+    }
+    const key = isVideo
+      ? 'mediaReco.videoWrongRatio'
+      : recommend?.exactRatio ? 'mediaReco.categoryImageWrongRatio' : 'mediaReco.wrongRatio'
+    return t(key, { w: width, h: height, rw: recommend?.minW, rh: recommend?.minH })
   })
   return (
     <div

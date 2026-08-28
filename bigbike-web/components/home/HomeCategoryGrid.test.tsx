@@ -37,10 +37,10 @@ describe("HomeCategoryGrid image frames", () => {
     const { container } = render(<HomeCategoryGrid initialCategories={[category]} />);
 
     const frame = container.querySelector("[data-home-category-grid] a > span > span");
-    expect(frame).toHaveClass("relative", "size-24", "md:size-32", "min-[1200px]:size-40");
+    expect(frame).toHaveClass("relative", "mx-auto", "block", "size-16", "md:size-20", "lg:size-24");
 
     const image = frame?.querySelector("img");
     expect(image).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-contain");
-    expect(image).toHaveAttribute("sizes", "(min-width: 1200px) 160px, (min-width: 768px) 128px, 96px");
+    expect(image).toHaveAttribute("sizes", "(min-width: 1024px) 96px, (min-width: 768px) 80px, 64px");
   });
 });

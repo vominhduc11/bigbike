@@ -10,7 +10,7 @@ import { resolveMediaUrl } from "@/lib/utils/format";
 import { toBrandPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { Container } from "@/components/layout/Container";
-import { MediaImage } from "@/components/ui/MediaImage";
+import { BrandLogo } from "@/components/catalog/BrandLogo";
 
 type Props = { brands: Brand[] };
 
@@ -45,7 +45,7 @@ export function BrandCarousel({ brands }: Props) {
   const hasMultipleBrands = brands.length > 1;
 
   return (
-    <section data-home-brand-carousel className="py-30">
+    <section data-home-brand-carousel className="py-15">
       <Container>
         <Swiper
           // KHÔNG đặt `swiper-container`: home.min.js `partnerSlide()` gọi
@@ -63,7 +63,11 @@ export function BrandCarousel({ brands }: Props) {
           slidesPerView={2}
           spaceBetween={13}
           rewind={hasMultipleBrands}
-          autoplay={hasMultipleBrands ? { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true } : undefined}
+          autoplay={
+            hasMultipleBrands
+              ? { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true }
+              : undefined
+          }
           watchOverflow
           breakpoints={{
             767: { slidesPerView: 5, spaceBetween: 40 },
@@ -72,21 +76,14 @@ export function BrandCarousel({ brands }: Props) {
           {brands.map((b) => {
             // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
             const logo = resolveMediaUrl(b.logo?.url?.trim());
-            const image = logo && b.logo ? { ...b.logo, url: logo } : { url: "/wp/logo-1.png", width: 120, height: 44 };
+            const image = logo && b.logo ? { ...b.logo, url: logo } : null;
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
-                <Link href={toBrandPath(b.slug, locale)} className="flex h-32 items-center justify-center">
-                  <span className="relative size-30">
-                    <MediaImage
-                      image={image}
-                      altFallback={b.name}
-                      width={120}
-                      height={120}
-                      fill
-                      sizes="120px"
-                      className="object-contain"
-                    />
-                  </span>
+                <Link
+                  href={toBrandPath(b.slug, locale)}
+                  className="flex h-22 items-center justify-center"
+                >
+                  <BrandLogo name={b.name} image={image} variant="home" />
                 </Link>
               </SwiperSlide>
             );

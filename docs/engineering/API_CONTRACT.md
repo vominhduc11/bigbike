@@ -587,7 +587,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 **Ghi:**
 - `POST /api/v1/admin/categories` và `PATCH /api/v1/admin/categories/{id}` nhận `UpsertCategoryRequest`: name/slug VI, `translations.en.name` bắt buộc khi field name được tạo/sửa, `slugEn` tùy chọn, parent, mô tả/intro/SEO song ngữ, asset theo vai trò, `sortOrder` và `showOnHomepage`.
-- **Ảnh theo vai trò** (`image` thumbnail lưới, `icon` hero, `menuIcon` icon menu, `banner` hero desktop, `mobileBanner` hero mobile): tất cả đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `<vai trò>.url`. Gửi `url: ""`/`null` để xóa ảnh. `alt` bị ghi đè mỗi lần lưu nên form luôn gửi kèm (audit 2026-07-28 — trước đó `banner`/`mobileBanner` **không** được máy chủ kiểm whitelist dù form đã kiểm định dạng, để lọt ảnh hero trỏ host ngoài).
+- **Ảnh theo vai trò** (`image` thumbnail lưới, `icon` hero, `menuIcon` biểu tượng menu, `banner` hero desktop, `mobileBanner` hero mobile): `menuIcon` chỉ có hiệu lực với danh mục gốc. Với danh mục con, máy chủ bỏ qua im lặng mọi `menuIcon` được gửi và luôn lưu `menu_icon_url = NULL`, không trả lỗi riêng cho field này; hạ root thành con cũng xoá icon. Với root, `menuIcon` và các ảnh khác đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `<vai trò>.url`. Riêng `category.image`, khi tạo mới hoặc đổi URL, bắt buộc `width` và `height` là số dương bằng nhau tuyệt đối; không có ngưỡng pixel tối thiểu. Vi phạm trả `400 VALIDATION_ERROR` với `field = image.url`, `code = CATEGORY_IMAGE_NOT_SQUARE` và message nêu kích thước thực tế; thiếu kích thước trả `code = CATEGORY_IMAGE_DIMENSIONS_REQUIRED`. URL ảnh cũ không đổi được miễn kiểm tra tỉ lệ để vẫn sửa được thông tin danh mục. Gửi `url: ""`/`null` để xóa ảnh. `alt` bị ghi đè mỗi lần lưu nên form luôn gửi kèm (audit 2026-07-28 — trước đó `banner`/`mobileBanner` **không** được máy chủ kiểm whitelist dù form đã kiểm định dạng, để lọt ảnh hero trỏ host ngoài).
 - **Xóa mô tả / khối giới thiệu**: `description` và `introContent` theo presence-flag — **không gửi** field thì giữ nguyên, gửi chuỗi rỗng `""` thì xóa. Form quản trị luôn gửi cả hai (kể cả rỗng) để admin xóa được nội dung cũ, cùng cách form luôn gửi khối `seo`.
 - `isVisible` là patch trạng thái riêng (`PATCH /{id}`); ẩn Category có con trực tiếp đang hiển thị trả `409` với hướng dẫn ẩn hoặc chuyển cha cho con trước. Không áp dụng kiểm tra đệ quy.
 - `showOnHomepage` độc lập với `isVisible` và `deleted`, mặc định `false`. Create client không gửi field ở giá trị mặc định; PATCH bỏ field giữ nguyên. `seo` bị bỏ qua thì giữ nguyên, SEO được gửi với text trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ gồm ảnh chia sẻ.
@@ -614,7 +614,9 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Admin phải gọi phép xem trước này trước hộp xác nhận xóa đơn lẻ/hàng loạt và hiển thị **đồng thời** hai số đếm theo `BUSINESS_RULES.md` `CATEGORY_RULE_004`.
 
 ### 3. Brands (Thương hiệu)
-- **Ảnh thương hiệu** (`POST/PATCH /api/v1/admin/brands`): 3 field ảnh đơn `logo`, `banner`, `mobileBanner` (shape `ImageAssetRequest`: `url`, `alt`, `width`, `height`, `mimeType`). Cả 3 đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `logo.url`/`banner.url`/`mobileBanner.url`. Gửi `url: ""` để xóa ảnh. **`alt` phải được gửi kèm mỗi lần lưu**: field không gửi bị ghi `null`, nên form quản trị luôn gửi cả `url` và `alt` (audit 2026-07-28 — trước đó form bỏ `alt`, làm mất chữ thay-thế-ảnh admin vừa nhập ngay ở lần lưu đó).
+- **Ảnh thương hiệu** (`POST/PATCH /api/v1/admin/brands`): 3 field ảnh đơn `logo`, `banner`, `mobileBanner`. `banner` và `mobileBanner` dùng shape `ImageAssetRequest`: `url`, `alt`, `width`, `height`, `mimeType`. `logo` nhận thêm `mediaId` tùy chọn để liên kết bản ghi media nội bộ. Cả 3 đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `logo.url`/`banner.url`/`mobileBanner.url`. Riêng logo mới hoặc đổi URL còn phải đạt chuẩn PNG nền trong suốt, tối thiểu 400×400, tối đa 307200 bytes và tỉ lệ 1:1 sai lệch tối đa 1% theo `BUSINESS_RULES.md` `MEDIA_RULE_011`; máy chủ kiểm bytes/metadata thực tế của media, không tin metadata request. URL cũ không đổi được grandfathered để sửa field khác. Gửi `url: ""` để xóa ảnh. **`alt` phải được gửi kèm mỗi lần lưu**: field không gửi bị ghi `null`, nên form quản trị luôn gửi cả `url` và `alt` (audit 2026-07-28 — trước đó form bỏ `alt`, làm mất chữ thay-thế-ảnh admin vừa nhập ngay ở lần lưu đó).
+- **Nhập logo từ URL** (`POST /api/v1/admin/brands/logo/import-url`): cần `media.write`, body `{ "url": "https://...", "altText"?, "folderId"? }`, trả `201` với `ApiDataResponse<AdminMediaDetailResponse>`. Máy chủ chỉ nhận `http`/`https`, chặn địa chỉ nội bộ/metadata và SSRF, kiểm tra lại redirect, giới hạn bytes tải về ở 307200 và xác minh PNG bằng content thực tế. Ảnh nhập có thể chưa vuông hoặc chưa đủ 400×400 để admin đưa qua khung cắt; máy chủ tải object vào MinIO và chỉ trả `mediaId`/URL nội bộ, không bao giờ lưu URL website ngoài vào Brand. Endpoint dùng cùng hạn mức và giới hạn request đang áp dụng cho media admin.
+- **Chất lượng logo trong admin**: response Brand của `GET /api/v1/admin/brands` và `GET /api/v1/admin/brands/{id}` có thêm `logoQuality` tùy chọn theo `DATA_CONTRACT.md` mục “Brand logo quality and storage marker”; public Brand response không trả field này. `logoQuality` chỉ để cảnh báo, không khóa lưu hoặc thao tác khác. Logo không có cũng trả trạng thái `MISSING`.
 - **Xóa mô tả**: `description` theo presence-flag — **không gửi** field thì giữ nguyên mô tả cũ, gửi chuỗi rỗng `""` thì xóa. Form quản trị luôn gửi `description` (kể cả rỗng) để admin xóa được mô tả cũ, cùng cách form luôn gửi khối `seo`.
 - **Sửa SEO**: `PATCH /api/v1/admin/brands/{id}` giữ nguyên SEO hiện có khi request **không gửi** field `seo`; nếu gửi `seo`, từng giá trị trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ (gồm ảnh chia sẻ). Form quản trị luôn gửi khối `seo` khi lưu để thao tác xóa hết các ô được ghi nhận rõ ràng, thay vì bị hiểu nhầm là không chỉnh sửa.
 - **Đặt trên trang chủ**: `POST/PATCH /api/v1/admin/brands` nhận field `showOnHomepage` (boolean, mặc định `true`). Field này chỉ điều khiển dải logo thương hiệu ở trang chủ; không ẩn thương hiệu khỏi `/brands`, `/brands/{slug}`, facet thương hiệu hoặc brand nhúng trong sản phẩm.
@@ -1606,18 +1608,22 @@ chỉ đổi **nguồn**:
 - Nếu mục menu là item legacy không còn category record tương ứng, backend dùng fallback slug→icon cho các
   menu/header item lịch sử của WP, với asset phục vụ từ MinIO (`/media/uploads/wp-icons/*`).
 
-`GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category
-(dùng bởi bộ lọc "Danh mục sản phẩm" ở `bigbike-web`). Xem `DATA_CONTRACT` §"Category menu/sidebar line-icon".
+`GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category.
+Field này chỉ phục vụ biểu tượng cạnh tên danh mục gốc trong menu đầu trang website; bộ lọc
+"Danh mục sản phẩm" không đọc field này. Xem `DATA_CONTRACT` §"Category header menu icon".
 
-**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận thêm `menuIcon` (`ImageAssetRequest`, chỉ `url`
-được lưu vào `menu_icon_url`; validate URL whitelist media như `image`/`icon`/`banner`). Presence-flag:
-bỏ khóa `menuIcon` thì PATCH giữ nguyên; gửi `menuIcon: { url: null }` để xoá icon. Admin sửa icon này ở
-form danh mục (`CategoryDetailScreen`, field "Icon menu / bộ lọc danh mục"). Khác với `icon` (ảnh hero
-trang danh mục → `icon_url`).
+**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận `menuIcon` (`ImageAssetRequest`, chỉ `url`
+được lưu vào `menu_icon_url`). Với danh mục gốc, field đi qua whitelist media như `image`/`icon`/`banner`;
+presence-flag vẫn giữ nguyên: bỏ khóa `menuIcon` thì PATCH giữ icon cũ, gửi `menuIcon: { url: null }`
+để xoá. Với danh mục con, máy chủ luôn ghi trống và âm thầm bỏ qua payload, kể cả khi client cũ còn
+gửi icon. Khi chuyển root thành con, icon bị xoá; chuyển ngược thành root không tự khôi phục icon.
+Admin sửa icon này ở form danh mục (`CategoryDetailScreen`, field "Biểu tượng menu"). Khác với `icon`
+(ảnh hero trang danh mục → `icon_url`).
 
-Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB lookup + legacy slug fallback),
-`Category` domain record (`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon`
-+ `AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migrations `V213`/`V360`.
+Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl`
+(DB lookup + legacy slug fallback), `Category` domain record (`menuIconUrl`), `CatalogController`
+`/categories`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`,
+`CatalogRequestValidator`, migration `V1051__clear_category_child_menu_icons.sql`, migrations `V213`/`V360`.
 
 ### Category `introContent` — khối giới thiệu ĐẦU trang danh mục (admin-editable)
 

@@ -9,7 +9,9 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={String(href)} {...props}>{children}</a>
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("swiper/modules", () => ({ Autoplay: {} }));
@@ -52,9 +54,23 @@ describe("BrandCarousel brand links", () => {
     locale.current = "vi";
     render(<BrandCarousel brands={[brand()]} />);
 
-    const frame = document.querySelector(".size-30");
-    expect(frame).toHaveClass("relative", "size-30");
+    const frame = document.querySelector('[data-brand-logo="true"]');
+    expect(frame).toHaveClass("size-22", "aspect-square");
     expect(frame?.querySelector("img")).toHaveClass("object-contain");
-    expect(frame?.querySelector("img")).toHaveAttribute("sizes", "120px");
+    expect(frame?.querySelector("img")).toHaveAttribute("sizes", "88px");
+  });
+
+  it("shows initials instead of the shop logo when a brand has no logo", () => {
+    render(
+      <BrandCarousel
+        brands={[
+          { ...brand(), id: "brand-dainese", slug: "dainese", name: "DAINESE", logo: undefined },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("DA")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("DAINESE")).toHaveClass("aspect-square");
   });
 });
