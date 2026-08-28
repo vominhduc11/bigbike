@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, Bell, Check, MessageCircle, ShoppingCart } from 'lucide-react'
-import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { registerAdminWsReconnectListener, subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
 import { useAuth, useHasPermission } from '../lib/auth'
 import { formatCurrencyVnd } from '../lib/formatters'
@@ -30,6 +30,9 @@ function storageKeyFor(identity, scopes) {
 function keyOf(it) {
   if (it.orderId) return `${it.orderId}:${it.type}`
   if (it.handoffId) return `${it.handoffId}:${it.type}`
+  // Chat lead mang mỗi conversationId (không có handoffId) — thiếu nhánh này thì bản
+  // đến qua realtime và bản tải lại từ máy chủ bị tính là 2 dòng khác nhau.
+  if (it.conversationId) return `${it.conversationId}:${it.type}`
   return `id:${it.id}`
 }
 
@@ -40,6 +43,18 @@ function loadStored(storageKey) {
   } catch {
     return []
   }
+}
+
+// Mốc bấm "Xoá tất cả" của riêng tài khoản này trên trình duyệt này. Kho thông báo phía
+// máy chủ dùng chung cho mọi admin nên không thể xoá thật; thiếu mốc này thì lần nạp lại
+// kế tiếp lại kéo nguyên danh sách vừa dọn về, trông như nút không ăn.
+function clearedAtKey(storageKey) {
+  return `${storageKey}:cleared-at`
+}
+
+function loadClearedAt(storageKey) {
+  const raw = Number(localStorage.getItem(clearedAtKey(storageKey)))
+  return Number.isFinite(raw) ? raw : 0
 }
 
 function persist(storageKey, items) {
@@ -117,7 +132,12 @@ export function NotificationBell({ navigate }) {
     }
     if (canViewChat) {
       unsubscribers.push(subscribeAdminWs('/topic/admin/chat', (event) => {
-        if (event?.type === 'CHAT_HANDOFF_WAITING' && event?.conversationId) addItem(event)
+        if (!event?.conversationId) return
+        if (event.type === 'CHAT_HANDOFF_WAITING') addItem(event)
+        // Khách để lại số điện thoại: sự kiện này vốn bị bỏ qua nên chuông chỉ hiện sau
+        // khi tải lại trang. Chỉ giữ id cuộc trò chuyện — tên/điện thoại/ghi chú không
+        // được ghi vào trình duyệt, đúng như kho thông báo phía máy chủ vẫn làm.
+        else if (event.type === 'CHAT_LEAD') addItem({ type: 'CHAT_LEAD', conversationId: event.conversationId })
       }))
     }
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
@@ -129,7 +149,7 @@ export function NotificationBell({ navigate }) {
   useEffect(() => {
     if (!canViewNotifications) return undefined
     let active = true
-    fetchAdminNotifications()
+    const hydrate = () => fetchAdminNotifications()
       .then(({ items: serverItems, unreadCount: fetchedUnreadCount }) => {
         if (!active) return
         setLoadError(false)
@@ -143,7 +163,9 @@ export function NotificationBell({ navigate }) {
           const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
           const merged = new Map()
           // server items carry this admin's own read flag (authoritative)
+          const clearedAt = loadClearedAt(storageKey)
           for (const it of serverItems) {
+            if (it.at <= clearedAt) continue
             const local = prevByKey.get(keyOf(it))
             merged.set(keyOf(it), local?.read ? { ...it, read: true } : it)
           }
@@ -161,7 +183,16 @@ export function NotificationBell({ navigate }) {
         // Vẫn giữ được item trong localStorage, chỉ đánh dấu lỗi để panel báo rõ.
         if (active) setLoadError(true)
       })
-    return () => { active = false }
+
+    hydrate()
+    // Máy ngủ / rớt mạng: sự kiện phát ra trong lúc đứt kết nối KHÔNG được gửi bù qua
+    // realtime, nên chỉ nghe tiếp là mất luôn phần đó cho tới lần tải lại trang. Nối lại
+    // được thì nạp lại kho thông báo để bắt kịp (cùng cách useAdminPresence đang dùng).
+    const removeReconnectListener = registerAdminWsReconnectListener(hydrate)
+    return () => {
+      active = false
+      removeReconnectListener()
+    }
   }, [canViewNotifications, storageKey])
 
   const localUnread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
@@ -206,12 +237,15 @@ export function NotificationBell({ navigate }) {
     setOpen(next)
   }, [unread, items, markAllRead])
 
-  // Xoá danh sách cục bộ (lịch sử đã đọc trong trình duyệt này). Backend V102 chưa có
-  // endpoint xoá nên đây là thao tác dọn cục bộ; item đã được đánh dấu đã đọc khi mở
-  // panel nên badge không sáng lại. preventDefault để menu không đóng sau khi dọn.
+  // Xoá danh sách trong trình duyệt này. Kho V102 dùng chung mọi admin nên không có
+  // endpoint xoá; ghi lại mốc xoá để các lần nạp sau bỏ qua đúng phần đã dọn, chỉ hiện
+  // thông báo mới hơn. preventDefault để menu không đóng sau khi dọn.
   function clearAll() {
     setItems([])
     persist(storageKey, [])
+    try {
+      localStorage.setItem(clearedAtKey(storageKey), String(Date.now()))
+    } catch { /* quota / private mode — danh sách vẫn dọn trong phiên này */ }
   }
 
   function openNotification(item) {

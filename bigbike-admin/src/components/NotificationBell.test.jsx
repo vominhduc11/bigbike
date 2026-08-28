@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   fetchAdminNotifications: vi.fn(),
   markAllAdminNotificationsRead: vi.fn(),
   subscribeAdminWs: vi.fn(),
+  registerAdminWsReconnectListener: vi.fn(),
   navigate: vi.fn(),
 }))
 
@@ -29,6 +30,7 @@ vi.mock('../lib/adminApi', () => ({
 
 vi.mock('../lib/adminWebSocket', () => ({
   subscribeAdminWs: mocks.subscribeAdminWs,
+  registerAdminWsReconnectListener: mocks.registerAdminWsReconnectListener,
 }))
 
 vi.mock('../lib/toast', () => ({ toast: { error: vi.fn() } }))
@@ -41,6 +43,7 @@ describe('NotificationBell chat handoff', () => {
     vi.clearAllMocks()
     mocks.markAllAdminNotificationsRead.mockResolvedValue({ unreadCount: 0 })
     mocks.subscribeAdminWs.mockReturnValue(() => {})
+    mocks.registerAdminWsReconnectListener.mockReturnValue(() => {})
     mocks.fetchAdminNotifications.mockResolvedValue({
       unreadCount: 1,
       items: [{
@@ -93,5 +96,69 @@ describe('NotificationBell chat handoff', () => {
 
     await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument())
     expect(screen.queryByText('9+')).not.toBeInTheDocument()
+  })
+
+  it('shows a chat lead that arrives live, without storing the phone number', async () => {
+    // Sự kiện CHAT_LEAD từng bị bỏ qua ở kênh realtime: khách để lại liên hệ mà chuông
+    // im, chỉ hiện sau khi tải lại trang.
+    mocks.fetchAdminNotifications.mockResolvedValue({ unreadCount: 0, items: [] })
+    const user = userEvent.setup()
+    render(<NotificationBell navigate={mocks.navigate} />)
+
+    await waitFor(() => expect(mocks.subscribeAdminWs)
+      .toHaveBeenCalledWith('/topic/admin/chat', expect.any(Function)))
+    const handler = mocks.subscribeAdminWs.mock.calls
+      .find(([topic]) => topic === '/topic/admin/chat')[1]
+
+    act(() => handler({
+      type: 'CHAT_LEAD',
+      conversationId: 'conversation-9',
+      name: 'Nguyễn Văn A',
+      phone: '0900000000',
+      note: 'Gọi lại sau 18h',
+    }))
+
+    await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
+    expect(await screen.findByText('notifications.chatLead')).toBeInTheDocument()
+
+    // Số điện thoại/tên/ghi chú không được ghi xuống trình duyệt.
+    const stored = JSON.stringify(localStorage)
+    expect(stored).not.toContain('0900000000')
+    expect(stored).not.toContain('Gọi lại sau 18h')
+
+    await user.click(screen.getByText('notifications.chatLead'))
+    expect(mocks.navigate).toHaveBeenCalledWith('/admin/chat/conversation-9')
+  })
+
+  it('keeps cleared notifications gone after a later reload', async () => {
+    // "Xoá tất cả" chỉ dọn được phía trình duyệt (kho dùng chung mọi admin) — mốc xoá
+    // phải chặn đúng phần cũ khi nạp lại, nếu không nút trông như không ăn.
+    const user = userEvent.setup()
+    const { unmount } = render(<NotificationBell navigate={mocks.navigate} />)
+
+    await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
+    expect(await screen.findByText('notifications.chatHandoff')).toBeInTheDocument()
+    await user.click(screen.getByText('notifications.clearAll'))
+    expect(screen.queryByText('notifications.chatHandoff')).not.toBeInTheDocument()
+    unmount()
+
+    // Tải lại trang: máy chủ vẫn trả đúng thông báo cũ đó.
+    render(<NotificationBell navigate={mocks.navigate} />)
+    await waitFor(() => expect(mocks.fetchAdminNotifications).toHaveBeenCalledTimes(2))
+    await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
+    expect(await screen.findByText('notifications.empty')).toBeInTheDocument()
+    expect(screen.queryByText('notifications.chatHandoff')).not.toBeInTheDocument()
+  })
+
+  it('reloads the stored inbox after the realtime connection comes back', async () => {
+    // Sự kiện phát ra lúc mất kết nối không được gửi bù → phải nạp lại kho thông báo.
+    render(<NotificationBell navigate={mocks.navigate} />)
+    await waitFor(() => expect(mocks.registerAdminWsReconnectListener).toHaveBeenCalled())
+    expect(mocks.fetchAdminNotifications).toHaveBeenCalledTimes(1)
+
+    const onReconnect = mocks.registerAdminWsReconnectListener.mock.calls[0][0]
+    await act(async () => { await onReconnect() })
+
+    expect(mocks.fetchAdminNotifications).toHaveBeenCalledTimes(2)
   })
 })

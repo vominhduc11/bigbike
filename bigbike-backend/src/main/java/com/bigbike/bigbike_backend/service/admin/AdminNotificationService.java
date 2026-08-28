@@ -13,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
@@ -26,7 +27,14 @@ public class AdminNotificationService {
     private final AdminNotificationReadJpaRepository readRepo;
     private final ObjectMapper objectMapper;
 
-    @Transactional
+    // REQUIRES_NEW, not the default REQUIRED. Every persist* below is invoked from
+    // TransactionSynchronization.afterCommit() (AdminOrderWsService / AdminChatWsService).
+    // At that point the original transaction has already committed but its EntityManager is
+    // still bound to the thread, so REQUIRED silently *joins* that dead transaction: the row
+    // only ever reaches the persistence context, nothing flushes, and cleanup closes the
+    // EntityManager and drops it — with no exception raised. That left admin_notifications
+    // permanently empty while orders and handoffs kept arriving.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persistFromWsEvent(OrderWsEvent event) {
         AdminNotificationEntity n = new AdminNotificationEntity();
         n.setType(event.type());
@@ -37,7 +45,7 @@ public class AdminNotificationService {
         notificationRepo.save(n);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persistChatLead(ChatLeadWsEvent event) {
         AdminNotificationEntity notification = new AdminNotificationEntity();
         notification.setType(event.type());
@@ -50,7 +58,7 @@ public class AdminNotificationService {
         notificationRepo.save(notification);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persistChatHandoff(ChatHandoffWsEvent event) {
         AdminNotificationEntity notification = new AdminNotificationEntity();
         notification.setType(event.type());

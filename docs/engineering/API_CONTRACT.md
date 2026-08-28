@@ -639,7 +639,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - `GET /admin/brands` khi không truyền query param `visibility` (danh sách mặc định) chỉ trả về thương hiệu `isVisible = true` — thương hiệu đã Ẩn/Xóa mềm (`isVisible = false`) bị loại trừ, mirror hành vi mặc định của Category (`deleted = false`) và Product (`publishStatus != TRASH`). Truyền `visibility=VISIBLE` cho kết quả tương đương; `visibility=HIDDEN` trả đúng các thương hiệu `isVisible = false` (view "Thùng rác").
 
 ### 4. News Articles (Bài viết / Tin tức)
-- **Xóa mềm**: `DELETE /api/v1/admin/content/articles/{id}` (chuyển qua `DELETE /api/v1/admin/content/{type}/{id}`)
+- **Xóa mềm**: `DELETE /api/v1/admin/content/article/{id}` (đường dẫn `{type}` nhận `article`; khác với các đường dẫn số nhiều dùng cho create/update/restore/permanent)
   - Đặt `publishStatus = PublishStatus.TRASH`.
 - **Khôi phục**: `POST /api/v1/admin/content/articles/{id}/restore`
   - Đặt `publishStatus = PublishStatus.DRAFT`.
@@ -1944,14 +1944,16 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 ## Admin Notification Center Contract (V102 + V339 + retention)
 
-Persistent counterpart of the WebSocket order and staff-chat feeds — admins offline when an event fires still see it here. `GET` and `mark-all-read` require at least one of `orders.read` or `chat.read`; each response is filtered to the caller's current scopes (order notices for `orders.read`, chat notices for `chat.read`). There is no dedicated `notifications.*` permission.
+Persistent counterpart of the WebSocket order and chat feeds — admins offline when an event fires still see it here. Both endpoints are gated by **`orders.read` OR `chat.read`** (no dedicated `notifications.*` permission), so chat-only staff reach their own inbox. The listing is then **scoped to the caller's permissions**: `CHAT_*` rows are returned only with `chat.read`, all other rows only with `orders.read`, and `unreadCount` counts the same scoped set.
 
 **Per-admin read state (V339, AUD-017/018/019).** Read state is tracked **per admin** in `admin_notification_reads` (a per-admin `last_read_at` high-water mark) — a notification is "read" for an admin when it was created at/before that admin's marker. The legacy shared `admin_notifications.is_read` flag is removed by the retention cleanup migration and must not be reintroduced. `GET` returns the shared recent backlog (up to 50, newest first) with each item's `isRead` resolved for the calling admin, plus that admin's exact `unreadCount`; the server count is authoritative even when the UI displays only its newest 30 rows. `mark-all-read` only advances the **caller's** marker — it never mutates shared rows, so other admins keep their unread state and no backlog disappears until the six-month retention job removes an expired row. The notification `payload` shape and privacy boundary remain unchanged.
 
 | Method | Path | Permission | Purpose | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/notifications` | `orders.read` or `chat.read` | Recent in-scope notifications (≤50) with the caller's exact `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload`, `isRead` (per-admin), `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.inboxFor` |
-| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` or `chat.read` | Advance only the calling admin's read marker to now. Returns `{ unreadCount: 0 }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllReadFor` |
+| `GET` | `/api/v1/admin/notifications` | `orders.read` or `chat.read` | Recent notifications (≤50) with the caller's `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload` (incl. `customerName`, `total`), `isRead` (per-admin), `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.inboxFor` |
+| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` or `chat.read` | Advance the calling admin's read marker to now. Returns `{ unreadCount: 0 }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllReadFor` |
+
+> **Write path (fixed 2026-08-28).** Rows are stored from `TransactionSynchronization.afterCommit()` in `AdminOrderWsService` / `AdminChatWsService`, so every `persist*` method on `AdminNotificationService` must run with `Propagation.REQUIRES_NEW`. Under the default `REQUIRED` the save silently joins the already-committed transaction, never flushes, and is dropped without an exception — which left `admin_notifications` empty in production while orders and handoffs kept arriving. Regression: `AdminNotificationAfterCommitTest`.
 
 Notification rows older than six calendar months are removed by the daily retention job; the per-admin read-marker table is retained. `NOTIFICATION_RULE_001` applies.
 
