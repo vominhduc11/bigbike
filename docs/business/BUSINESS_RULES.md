@@ -373,7 +373,7 @@ Evidence:
 - `ProductEntity.java` (`categories` ordered many-to-many qua `product_category_map`; phần tử đầu là danh mục chính)
 - `JpaCatalogReadRepository.java` (resolve locale + fallback cho category, lọc bỏ `deleted = true`; `resolveCategoryIdWithDescendants`/`resolveCategorySlugWithDescendants` — BFS trong bộ nhớ trên toàn bộ cây danh mục để mở rộng 1 category thành chính nó + mọi danh mục con, dùng cho cả `buildProductSpec` (admin) và `buildPublicListingSpec` (web khách))
 - `CatalogController.java` (`lang` param trên category endpoints)
-- `UpsertCategoryRequest.java`, `CatalogRequestValidator.java`, `AdminMenuService.java` và migration `V1051__clear_category_child_menu_icons.sql` (`CATEGORY_RULE_010`)
+- `UpsertCategoryRequest.java`, `CatalogRequestValidator.java`, `AdminMenuService.java` và migration `V1065__clear_category_child_menu_icons.sql` (`CATEGORY_RULE_010`)
 
 ## Brand Catalog Rules
 

@@ -1623,7 +1623,7 @@ Admin sửa icon này ở form danh mục (`CategoryDetailScreen`, field "Biểu
 Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl`
 (DB lookup + legacy slug fallback), `Category` domain record (`menuIconUrl`), `CatalogController`
 `/categories`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`,
-`CatalogRequestValidator`, migration `V1051__clear_category_child_menu_icons.sql`, migrations `V213`/`V360`.
+`CatalogRequestValidator`, migration `V1065__clear_category_child_menu_icons.sql`, migrations `V213`/`V360`.
 
 ### Category `introContent` — khối giới thiệu ĐẦU trang danh mục (admin-editable)
 

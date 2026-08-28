@@ -1349,7 +1349,7 @@ seed cũ `/wp/*` (file tĩnh, KHÔNG qua được whitelist) đã được migra
 
 DANH MỤC CON (`parent_id IS NOT NULL`) không được giữ `menu_icon_url`: mọi request ghi có `menuIcon` đều
 bị bỏ qua im lặng và lưu `NULL`, kể cả khi URL không thuộc kho media; khi hạ root thành con, icon bị xoá.
-Khi nâng lại thành root, field bắt đầu trống và admin phải chọn lại. Migration `V1051__clear_category_child_menu_icons.sql`
+Khi nâng lại thành root, field bắt đầu trống và admin phải chọn lại. Migration `V1065__clear_category_child_menu_icons.sql`
 chuẩn hoá dữ liệu cũ bằng cách đặt `menu_icon_url = NULL` cho toàn bộ danh mục con, không đụng các danh mục gốc.
 
 **Banner hero + hero illustration (V219):** `banner_url` (ảnh nền hero) trước là hardcode `DEFAULT_BG`
@@ -1358,7 +1358,7 @@ admin quản được (web y nguyên, fallback `DEFAULT_BG` giữ trong code cho
 minh hoạ hero, ACF `image_left`) V219 đổi URL ngoài `bigbike.vn/wp-content/uploads/` → `/media-proxy/wp-uploads/`
 (ảnh sẵn trong MinIO từ WP import). Cả hai admin sửa qua `UpsertCategoryRequest.banner` / `.icon`.
 
-Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`, `CatalogRequestValidator`, `AdminMenuService`, migrations `V213`/`V217`/`V219`/`V223`/`V1051`.
+Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`, `CatalogRequestValidator`, `AdminMenuService`, migrations `V213`/`V217`/`V219`/`V223`/`V1065`.
 
 ### Brand bilingual content — English columns (V137); `name`/`slug` de-duplicated (V352)
 
@@ -1398,7 +1398,7 @@ Migration `V349__add_brand_show_on_homepage.sql` backfill mọi Brand hiện có
 
 Status: `CONFIRMED_FROM_CODE` — `BrandEntity.showOnHomepage`, `Brand.showOnHomepage`, `UpsertBrandRequest.showOnHomepage`, `BrandMutationService.applyBrandPatch`, `CatalogReadService.listBrands`, migration `V349`.
 
-### Brand logo quality and storage marker (V1050)
+### Brand logo quality and storage marker (V1064)
 
 `brand.logo` dùng `ImageAsset` như các ảnh khác ở đường đọc, nhưng đường ghi logo mới có
 hợp đồng chặt hơn `Media Library` chung. `ImageAssetRequest` nhận thêm `mediaId` tùy chọn;
@@ -1409,7 +1409,7 @@ chọn file hoặc nhập URL, media phải được lưu vào MinIO trước, s
 
 | Field domain/API | Cột DB | Kiểu | Ý nghĩa |
 |---|---|---|---|
-| `logoStandardizedAt` | `logo_standardized_at` | `TIMESTAMPTZ NULL` | Có giá trị khi logo mới/thay thế đã vượt qua toàn bộ chuẩn logo; `NULL` giữ nghĩa logo legacy/chưa chuẩn hóa. Migration `V1050` không sửa 18 logo cũ. |
+| `logoStandardizedAt` | `logo_standardized_at` | `TIMESTAMPTZ NULL` | Có giá trị khi logo mới/thay thế đã vượt qua toàn bộ chuẩn logo; `NULL` giữ nghĩa logo legacy/chưa chuẩn hóa. Migration `V1064` không sửa 18 logo cũ. |
 
 Logo mới/thay thế chỉ hợp lệ khi bytes cuối cùng là PNG, dung lượng không quá `307200`
 bytes, kích thước tối thiểu 400×400, tỉ lệ nằm trong ±1% của 1:1 và có ít nhất một điểm
@@ -1426,7 +1426,7 @@ này): `{ status, issues[], width, height, fileSize, mimeType, transparent, rati
 báo/hiển thị, không phải cờ khóa việc sửa Brand.
 
 Status: `OWNER_CONFIRMED_2026-08-28` — `BrandEntity.logoStandardizedAt`, `ImageAssetRequest.mediaId`,
-`BrandLogoValidationService`, migration `V1050__add_brand_logo_standardized_at.sql`.
+`BrandLogoValidationService`, migration `V1064__add_brand_logo_standardized_at.sql`.
 
 ### English URL slug — `slug_en` (V213 categories / V214 products / V216 articles)
 
