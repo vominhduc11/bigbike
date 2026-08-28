@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Locator } from '@playwright/test'
 import { test, expect, expectRuntimeClean, type Page } from '../fixtures/admin-test'
@@ -11,8 +12,9 @@ import { navigateSpa, gotoAdmin } from '../utils/quality'
  * from `createProductSchema(t, isCreate)` in src/lib/schemas.js, cross-checked against
  * `getPublishReadiness` in screens/product-detail/constants.js (same required set).
  *
- * Test data is prefixed E2E_TEST_<runId> and removed in the last test (soft delete +
- * permanent delete) so nothing lingers in the real DB.
+ * Test data carries the module-specific E2E_PRODUCT_CRUD_ marker. The final UI
+ * lifecycle assertion is retained, while the worker-scoped direct-ID guard is
+ * the reliable cleanup path when any test or browser action stops early.
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -29,26 +31,26 @@ const RETAIL_PRICE_EDITED = '699000'
 // Per-retry suffix so a Playwright retry (playwright.config.ts retries:1 locally)
 // never collides with the SKU/slug the first attempt may have already saved.
 function productName(retry: number) {
-  return `E2E_TEST_${RUN_ID}${retry ? `_r${retry}` : ''} Mũ bảo hiểm kiểm thử tự động`
+  return `E2E_PRODUCT_CRUD_${RUN_ID}${retry ? `_R${retry}` : ''} Mũ bảo hiểm kiểm thử tự động`
 }
 function productSku(retry: number) {
-  return `E2E-TEST-${RUN_ID}${retry ? `-R${retry}` : ''}`
+  return `E2E_PRODUCT_CRUD_${RUN_ID}${retry ? `_R${retry}` : ''}`
 }
 function productNameEn(retry: number) {
-  return `E2E_TEST_${RUN_ID}${retry ? `_r${retry}` : ''} Automated Test Helmet`
+  return `E2E_PRODUCT_CRUD_${RUN_ID}${retry ? `_R${retry}` : ''} Automated Test Helmet`
+}
+
+function productImageFilename(retry: number) {
+  return `E2E_MEDIA_PRODUCT_CRUD_${RUN_ID}${retry ? `_R${retry}` : ''}.jpg`
 }
 
 // Shared across tests in this file (each test gets a fresh page/context via the
 // `adminPage` fixture, but they run in file order — plain `test()`, not `.serial()` —
-// so an earlier failure never skips the cleanup test at the bottom).
+// so the lifecycle assertions can continue to use the ID from the create step).
 let createdProductId: string | null = null
 let createdProductSku: string | null = null
 let createdProductName: string | null = null
 let validationProductSku: string | null = null
-const recoveryProductSkus = (process.env.E2E_PRODUCT_CLEANUP_SKUS || '')
-  .split(',')
-  .map((sku) => sku.trim())
-  .filter(Boolean)
 
 function sectionCard(page: Page, title: string): Locator {
   return page.locator('.detail-section').filter({ has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }) })
@@ -105,7 +107,7 @@ async function fillRichText(card: Locator, text: string) {
 // enabling "Chọn ảnh này": productImage recommend requires a 1:1 ratio
 // (imageRecommendations.js) — size is advisory only since 2026-07-04, not a blocker;
 // e2e/fixtures/product-image-2000.jpg is square so it satisfies the ratio either way.
-async function uploadMainImage(page: Page) {
+async function uploadMainImage(page: Page, filename: string) {
   const card = sectionCard(page, 'Ảnh đại diện')
   await card.getByRole('button', { name: 'Chọn từ thư viện' }).click()
   const dialog = page.getByRole('dialog', { name: 'Chọn ảnh từ thư viện' })
@@ -120,7 +122,11 @@ async function uploadMainImage(page: Page) {
   await profileRefresh
   await expect(dialog, 'Làm mới quyền không được đóng Media picker hoặc tải lại màn Product').toBeVisible()
 
-  await dialog.locator('input[type="file"]').setInputFiles(TEST_IMAGE_PATH)
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: filename,
+    mimeType: 'image/jpeg',
+    buffer: await readFile(TEST_IMAGE_PATH),
+  })
   const confirmBtn = dialog.getByRole('button', { name: 'Chọn ảnh này' })
   await expect(confirmBtn, 'Upload chưa xong hoặc ảnh sai tỉ lệ 1:1').toBeEnabled({ timeout: 30_000 })
   await confirmBtn.click()
@@ -143,6 +149,7 @@ interface FillOptions {
   sku: string
   nameEn: string
   skipImage?: boolean
+  imageFilename?: string
 }
 
 async function fillRequiredProductFields(page: Page, opts: FillOptions) {
@@ -164,7 +171,7 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await fillRichText(basicCard, SHORT_DESCRIPTION_TEXT)
 
   if (!opts.skipImage) {
-    await uploadMainImage(page)
+    await uploadMainImage(page, opts.imageFilename || `E2E_MEDIA_PRODUCT_CRUD_${opts.sku}.jpg`)
   }
 
   const pricingCard = sectionCard(page, 'Giá & trạng thái')
@@ -235,7 +242,12 @@ test.describe('product-crud', () => {
     await navigateSpa(adminPage, '/admin/products/new')
 
     await test.step('điền đủ field bắt buộc (kể cả upload ảnh thật + tên tiếng Anh)', async () => {
-      await fillRequiredProductFields(adminPage, { name: createdProductName!, sku: createdProductSku!, nameEn })
+      await fillRequiredProductFields(adminPage, {
+        name: createdProductName!,
+        sku: createdProductSku!,
+        nameEn,
+        imageFilename: productImageFilename(testInfo.retry),
+      })
     })
 
     await test.step('lưu nháp, kỳ vọng API tạo trả 2xx', async () => {
@@ -442,7 +454,7 @@ test.describe('product-crud', () => {
 
   test('product-crud · cleanup test products', async ({ adminPage }) => {
     const testSkus = [...new Set(
-      [createdProductSku, validationProductSku, ...recoveryProductSkus].filter(
+      [createdProductSku, validationProductSku].filter(
         (sku): sku is string => Boolean(sku),
       ),
     )]

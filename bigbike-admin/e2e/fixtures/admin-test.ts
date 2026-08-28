@@ -1,5 +1,6 @@
 import { test as base, expect, request as apiRequest, type Page, type APIRequestContext } from '@playwright/test'
 import { ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL, API_BASE } from '../utils/env'
+import { createCleanupClient, formatInventory, purgeE2EData } from '../../../scripts/ops/e2e-data-cleanup.mjs'
 
 /**
  * Auth/session strategy (driven by hard backend constraints):
@@ -87,11 +88,16 @@ function attachCollectors(page: Page, c: Collectors) {
   })
 }
 
-/** Log in via API with 429 backoff (LOGIN is 5/min/IP); return the refresh cookie value. */
-export async function apiLoginCookie(
+export interface AdminAuthSession {
+  refreshCookie: string
+  accessToken: string
+}
+
+/** Log in via API with 429 backoff (LOGIN is 5/min/IP); retain both auth values. */
+export async function apiLoginSession(
   request: APIRequestContext,
   creds: { email?: string; password?: string } = {},
-): Promise<string> {
+): Promise<AdminAuthSession> {
   const email = creds.email ?? ADMIN_EMAIL
   const password = creds.password ?? ADMIN_PASSWORD
   for (let attempt = 0; ; attempt++) {
@@ -104,15 +110,27 @@ export async function apiLoginCookie(
       continue
     }
     if (!res.ok()) throw new Error(`[apiLogin] ${res.status()}: ${(await res.text()).slice(0, 200)}`)
+    const payload = await res.json()
+    const accessToken = payload?.data?.accessToken
+    if (!accessToken) throw new Error('[apiLogin] no access token in response')
     const state = await request.storageState()
     const cookie = state.cookies.find((c) => c.name === REFRESH_COOKIE)
     if (!cookie) throw new Error('[apiLogin] no refresh cookie in response')
-    return cookie.value
+    return { refreshCookie: cookie.value, accessToken }
   }
 }
 
-interface AuthHolder { value: string }
-type WorkerFixtures = { authHolder: AuthHolder }
+/** Backward-compatible helper for any focused E2E spec that only needs a cookie. */
+export async function apiLoginCookie(
+  request: APIRequestContext,
+  creds: { email?: string; password?: string } = {},
+): Promise<string> {
+  return (await apiLoginSession(request, creds)).refreshCookie
+}
+
+interface AuthHolder { cookie: string; accessToken: string }
+interface E2EDataGuard { purge: () => Promise<void> }
+type WorkerFixtures = { authHolder: AuthHolder; e2eDataGuard: E2EDataGuard }
 type TestFixtures = { collect: Collectors; seedAuth: void; adminPage: Page }
 
 export const testAnon = base.extend<TestFixtures>({
@@ -134,11 +152,67 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   authHolder: [
     async ({}, use) => {
       const api = await apiRequest.newContext({ baseURL: BASE_URL })
-      const value = await apiLoginCookie(api)
+      const session = await apiLoginSession(api)
       await api.dispose()
-      await use({ value })
+      await use({ cookie: session.refreshCookie, accessToken: session.accessToken })
     },
     { scope: 'worker' },
+  ],
+
+  // Worker-scoped guard: it runs before the first authenticated test and after
+  // the last one, outside any individual test timeout.  The backend is called
+  // directly by ID; no UI page or soft-delete menu is involved.
+  e2eDataGuard: [
+    async ({ authHolder }, use) => {
+      const reauthenticate = async () => {
+        const api = await apiRequest.newContext({ baseURL: BASE_URL })
+        try {
+          const session = await apiLoginSession(api)
+          authHolder.cookie = session.refreshCookie
+          authHolder.accessToken = session.accessToken
+        } finally {
+          await api.dispose()
+        }
+      }
+
+      const cleanupFailure = (phase: string, error: unknown) => {
+        const failure = error as { message?: unknown; details?: { residual?: unknown } }
+        const residual = failure.details?.residual
+        const residualText = residual ? `\n${formatInventory(residual)}` : ''
+        return new Error(`[E2E data cleanup ${phase}] ${String(failure.message || error)}${residualText}`)
+      }
+
+      const purge = async (phase: string) => {
+        const run = async () => {
+          const client = createCleanupClient({ baseUrl: BASE_URL, accessToken: authHolder.accessToken })
+          await purgeE2EData(client)
+        }
+
+        try {
+          await run()
+        } catch (error: unknown) {
+          const failure = error as { details?: { status?: number } }
+          if (failure.details?.status === 401) {
+            await reauthenticate()
+            try {
+              await run()
+              return
+            } catch (reauthenticatedError: unknown) {
+              throw cleanupFailure(phase, reauthenticatedError)
+            }
+          }
+          throw cleanupFailure(phase, error)
+        }
+      }
+
+      await purge('before')
+      try {
+        await use({ purge: () => purge('manual') })
+      } finally {
+        await purge('after')
+      }
+    },
+    { scope: 'worker', auto: true },
   ],
 
   // Inject the current refresh cookie before the test; capture the rotated one after.
@@ -146,7 +220,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     async ({ context, authHolder }, use) => {
       await context.addCookies([{
         name: REFRESH_COOKIE,
-        value: authHolder.value,
+        value: authHolder.cookie,
         domain: COOKIE_HOST,
         path: '/api/v1/auth',
         httpOnly: true,
@@ -156,7 +230,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await use()
       // Persist the rotated cookie for the next test (serial → no race).
       const after = (await context.cookies()).find((c) => c.name === REFRESH_COOKIE)
-      if (after?.value) authHolder.value = after.value
+      if (after?.value) authHolder.cookie = after.value
     },
     { auto: true },
   ],
@@ -176,9 +250,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
     if (await page.locator('.bb-login-shell').count()) {
       // Rotating cookie died — re-login via API and re-seed, then reload.
-      authHolder.value = await apiLoginCookie(context.request)
+      const session = await apiLoginSession(context.request)
+      authHolder.cookie = session.refreshCookie
+      authHolder.accessToken = session.accessToken
       await context.addCookies([{
-        name: REFRESH_COOKIE, value: authHolder.value, domain: COOKIE_HOST,
+        name: REFRESH_COOKIE, value: authHolder.cookie, domain: COOKIE_HOST,
         path: '/api/v1/auth', httpOnly: true, secure: false, sameSite: 'Lax',
       }])
       await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })

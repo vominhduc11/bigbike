@@ -65,6 +65,25 @@ npm run test:e2e:report             # mở HTML report (e2e/report)
 # Sau khi đổi src (CSS/JSX): PHẢI build lại (preview serve file mới ngay, không cần restart).
 ```
 
+## Kiểm tra và dọn dữ liệu E2E
+
+Các test mutate dùng marker theo module và worker guard tự quét/dọn trực tiếp bằng ID ở
+đầu/cuối worker. Nếu test bị timeout giữa lúc tạo bản ghi, không chờ thao tác UI cuối
+cùng để thu hồi dữ liệu.
+
+Từ thư mục gốc, lệnh mặc định chỉ liệt kê sản phẩm, thương hiệu, danh mục, bài viết,
+chuyển hướng, media và video trang chủ mang marker E2E:
+
+```bash
+E2E_BASE_URL=https://admin.bigbike.vn E2E_ADMIN_EMAIL='...' E2E_ADMIN_PASSWORD='...' \
+node scripts/ops/e2e-data-cleanup.mjs
+```
+
+Sau khi kiểm tra danh sách, thêm `--delete` để xoá vĩnh viễn theo ID. Không dùng tìm kiếm
+chung theo chữ `test`; registry chỉ cho phép marker chính xác và hai tên file legacy đã
+được xác minh. Lỗi quyền, liên kết tới dữ liệu thật, xoá thất bại hoặc residual sau lần
+quét cuối đều làm lệnh trả lỗi và nêu ID còn lại.
+
 ## 6. RÀNG BUỘC (bắt buộc giữ)
 - KHÔNG đổi backend / API contract / DB / business rule / permission.
 - KHÔNG phá dữ liệu thật: mọi thao tác mutate phải an toàn (chỉ Cancel), dùng prefix `E2E_` nếu buộc tạo data, có chặn DELETE khi test confirm.

@@ -8,6 +8,49 @@
 | `bigbike-admin` | `npm run lint`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | `bigbike-backend` | `./mvnw test`, `./mvnw package` | `CONFIRMED_FROM_CONFIG` | `bigbike-backend/pom.xml` |
 
+## E2E test-data safety
+
+Các kịch bản Playwright chạy trên admin thật phải coi dữ liệu E2E là dữ liệu có vòng đời,
+không phải dữ liệu tạm chỉ được dọn ở bước cuối. Registry trong
+`scripts/ops/e2e-data-cleanup.mjs` chỉ nhận marker module cụ thể (`E2E_PRODUCT_*`,
+`E2E_BRAND_*`, `E2E_CATEGORY_*`, `E2E_CONTENT_*`, `E2E_REDIRECT_*`, `E2E_MEDIA_*`,
+`E2E_VIDEO_*`, `E2E_HOME_VIDEO_*`) và các prefix/tên legacy được giữ rõ trong registry
+(gồm `e2e_content_cover_*`, `test-upload.png`, `product-image-2000.jpg`). Không dùng
+tìm kiếm theo chữ `test`.
+
+Mỗi worker Playwright chạy một lần quét/dọn trực tiếp bằng ID trước khi test bắt đầu và
+một lần sau khi test kết thúc. Xoá thực hiện qua API bản ghi, chuyển thẳng qua trạng thái
+đã xoá rồi xoá vĩnh viễn; lỗi không bị biến thành annotation. Trước khi xoá danh mục hoặc
+thương hiệu, guard kiểm tra cây danh mục và toàn bộ liên kết sản phẩm để không làm thay
+đổi sản phẩm thật. Media chỉ được xoá sau các bản ghi liên quan và chỉ khi không còn
+reference không xác định. Các quy tắc này khớp API/state hiện hành trong
+`docs/engineering/API_CONTRACT.md`, quyền trong `docs/engineering/PERMISSION_MATRIX.md`
+và quy tắc liên kết danh mục/thương hiệu/media trong `docs/business/BUSINESS_RULES.md`.
+
+Lệnh vận hành từ thư mục gốc (mặc định chỉ liệt kê, không có request xoá):
+
+```bash
+E2E_BASE_URL=https://admin.bigbike.vn \
+E2E_ADMIN_EMAIL='tai-khoan-quan-tri' \
+E2E_ADMIN_PASSWORD='mat-khau-quan-tri' \
+node scripts/ops/e2e-data-cleanup.mjs
+```
+
+Chỉ khi đã xem đúng danh sách mới thêm `--delete` để xoá trực tiếp theo ID:
+
+```bash
+E2E_BASE_URL=https://admin.bigbike.vn \
+E2E_ADMIN_EMAIL='tai-khoan-quan-tri' \
+E2E_ADMIN_PASSWORD='mat-khau-quan-tri' \
+node scripts/ops/e2e-data-cleanup.mjs --delete
+```
+
+Lệnh dừng trước mọi mutation nếu thiếu quyền, thấy liên kết tới dữ liệu thật, hoặc bất kỳ
+ID nào xoá thất bại; sau đó quét lại và trả mã lỗi nếu còn sót. Tài khoản xoá media vĩnh
+viễn cần quyền `*` theo API contract. Kịch bản editor có thể kiểm tra timeout có chủ đích
+bằng `E2E_FORCE_EDITOR_TIMEOUT=1`; worker guard vẫn dọn được sản phẩm đã tạo ngoài timeout
+của test.
+
 ## Internal email configuration regression
 
 The backend must resolve one shared internal recipient for new-order and staff-handoff

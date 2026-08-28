@@ -57,44 +57,6 @@ async function captureCategoryScreens(page: Page, testInfo: TestInfo, label: str
   await page.setViewportSize({ width: 1440, height: 1000 })
 }
 
-async function purgePriorE2ECategories(page: Page) {
-  // Failed runs can leave records behind. This guard deliberately searches for
-  // the E2E_CATEGORY_ prefix and never operates on any other shop category.
-  await navigateSpa(page, '/admin/categories')
-  await page.getByRole('tab', { name: 'Dạng danh sách', exact: true }).click()
-  const search = page.locator('input[type="search"]')
-  await search.fill('E2E_CATEGORY_')
-
-  let rows = page.locator('tbody tr').filter({ hasText: 'E2E_CATEGORY_' })
-  while (await rows.count()) {
-    const previousCount = await rows.count()
-    const row = rows.first()
-    await clickRowMenuItem(page, row, 'Xoá')
-    await Promise.all([
-      page.waitForResponse((r) => r.request().method() === 'DELETE'
-        && /\/admin\/categories\/[^/]+$/.test(new URL(r.url()).pathname)),
-      confirmDialog(page, 'Xoá'),
-    ])
-    await expect(rows).toHaveCount(previousCount - 1)
-    rows = page.locator('tbody tr').filter({ hasText: 'E2E_CATEGORY_' })
-  }
-
-  await selectTrashFilter(page, 'Thùng rác')
-  rows = page.locator('tbody tr').filter({ hasText: 'E2E_CATEGORY_' })
-  while (await rows.count()) {
-    const previousCount = await rows.count()
-    const row = rows.first()
-    await clickRowMenuItem(page, row, 'Xóa vĩnh viễn')
-    await Promise.all([
-      page.waitForResponse((r) => r.request().method() === 'DELETE'
-        && new URL(r.url()).pathname.endsWith('/permanent')),
-      confirmDialog(page, 'Xóa vĩnh viễn'),
-    ])
-    await expect(rows).toHaveCount(previousCount - 1)
-    rows = page.locator('tbody tr').filter({ hasText: 'E2E_CATEGORY_' })
-  }
-}
-
 test.describe('E2E_CATEGORY_lifecycle', () => {
   test('tạo song ngữ, ẩn, xóa mềm, khôi phục và xóa vĩnh viễn danh mục thử nghiệm', async ({ adminPage, collect }, testInfo) => {
     test.setTimeout(120_000)
@@ -102,8 +64,6 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
     const name = categoryName(testInfo.retry)
     const slug = categorySlug(testInfo.retry)
     let categoryId: string | null = null
-
-    await purgePriorE2ECategories(adminPage)
 
     await test.step('tạo song ngữ, mặc định không gửi vị trí Trang chủ khi chưa bật', async () => {
       await navigateSpa(adminPage, '/admin/categories/new')
@@ -190,8 +150,8 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       expect(permanentDeleteResponse.status(), 'Xóa vĩnh viễn phải trả 2xx').toBeLessThan(300)
     })
 
-    // The lifecycle permanently deletes the sole E2E_CATEGORY_* record. Any
-    // cleanup added later must retain the prefix guard and never touch shop data.
+    // The worker-scoped direct-ID guard covers this record if the lifecycle
+    // stops before reaching the final UI action.
     expectRuntimeClean(collect)
   })
 })

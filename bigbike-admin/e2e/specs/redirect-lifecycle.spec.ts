@@ -25,7 +25,7 @@ test.describe('redirect-lifecycle', () => {
     test.setTimeout(120_000)
 
     const suffix = `${RUN_ID}${testInfo.retry ? `-r${testInfo.retry}` : ''}`
-    const source = `/e2e-redirect-${suffix}`
+    const source = `/E2E_REDIRECT_${suffix}`
     const firstTarget = `/sp/?q=e2e-${suffix}`
     const updatedTarget = `/tim-kiem/?q=e2e-${suffix}`
     let redirectId: string | null = null

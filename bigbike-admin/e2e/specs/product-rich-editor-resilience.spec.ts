@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Locator } from '@playwright/test'
 import { test, expect, expectRuntimeClean, type Page } from '../fixtures/admin-test'
@@ -13,18 +14,25 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEST_IMAGE_PATH = path.join(__dirname, '../fixtures/product-image-2000.jpg')
 const RUN_ID = Date.now()
-const PRODUCT_SKU = `E2E_PRODUCT_EDITOR_${RUN_ID}`
-const TEST_LABEL = String(RUN_ID).slice(-6)
-const PRODUCT_NAME = `E2E Mũ ${TEST_LABEL}`
-const PRODUCT_NAME_EN = `E2E Helmet ${TEST_LABEL}`
+
+function productSku(retry: number) {
+  return `E2E_PRODUCT_EDITOR_${RUN_ID}${retry ? `_R${retry}` : ''}`
+}
+
+function productName(retry: number) {
+  return `E2E_PRODUCT_EDITOR_${RUN_ID}${retry ? `_R${retry}` : ''} Mũ thử nghiệm`
+}
+
+function productNameEn(retry: number) {
+  return `E2E_PRODUCT_EDITOR_${RUN_ID}${retry ? `_R${retry}` : ''} Automated Test Helmet`
+}
+
+function imageFilename(retry: number) {
+  return `E2E_MEDIA_PRODUCT_EDITOR_${RUN_ID}${retry ? `_R${retry}` : ''}.jpg`
+}
 
 function sectionCard(page: Page, title: string): Locator {
   return page.locator('.detail-section').filter({ has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }) })
-}
-
-function productRowBySku(page: Page, sku: string) {
-  const exactSkuCell = page.locator('td').filter({ hasText: new RegExp(`^\\s*${sku.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\s*$`) })
-  return page.locator('tbody tr').filter({ has: exactSkuCell })
 }
 
 async function fillRichText(card: Locator, value: string) {
@@ -55,22 +63,27 @@ async function dragFirstRowBelowSecond(page: Page, card: Locator) {
   await page.mouse.up()
 }
 
-async function uploadMainImage(page: Page) {
+async function uploadMainImage(page: Page, filename: string) {
   const card = sectionCard(page, 'Ảnh đại diện')
   await card.getByRole('button', { name: 'Chọn từ thư viện' }).click()
   const dialog = page.getByRole('dialog', { name: 'Chọn ảnh từ thư viện' })
-  await dialog.locator('input[type="file"]').setInputFiles(TEST_IMAGE_PATH)
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: filename,
+    mimeType: 'image/jpeg',
+    buffer: await readFile(TEST_IMAGE_PATH),
+  })
   const confirmButton = dialog.getByRole('button', { name: 'Chọn ảnh này' })
   await expect(confirmButton).toBeEnabled({ timeout: 30_000 })
   await confirmButton.click()
   await expect(card.getByRole('button', { name: 'Đổi ảnh' })).toBeVisible()
 }
 
-async function createProduct(page: Page) {
+async function createProduct(page: Page, retry: number) {
+  const sku = productSku(retry)
   await navigateSpa(page, '/admin/products/new')
   const basicCard = sectionCard(page, 'Thông tin cơ bản')
-  await basicCard.getByLabel('Tên', { exact: false }).fill(PRODUCT_NAME)
-  await basicCard.getByLabel(/SKU|Mã sản phẩm/, { exact: false }).fill(PRODUCT_SKU)
+  await basicCard.getByLabel('Tên', { exact: false }).fill(productName(retry))
+  await basicCard.getByLabel(/SKU|Mã sản phẩm/, { exact: false }).fill(sku)
 
   await basicCard.getByRole('button', { name: '— Chọn danh mục —' }).click()
   await page.getByRole('dialog').last().getByRole('checkbox').first().click()
@@ -78,7 +91,7 @@ async function createProduct(page: Page) {
   await pickFirstOption(page, basicCard.locator('[role="combobox"]').first())
 
   await fillRichText(basicCard, 'Mô tả ngắn cho sản phẩm kiểm thử khả năng chịu tải của trình soạn thảo.')
-  await uploadMainImage(page)
+  await uploadMainImage(page, imageFilename(retry))
 
   const pricingCard = sectionCard(page, 'Giá & trạng thái')
   await pricingCard.getByLabel('Giá niêm yết', { exact: false }).fill('590000')
@@ -91,7 +104,7 @@ async function createProduct(page: Page) {
 
   const languageSwitcher = page.locator('.lang-switcher')
   await languageSwitcher.getByRole('button', { name: 'EN', exact: true }).click()
-  await basicCard.getByLabel('Tên', { exact: false }).fill(PRODUCT_NAME_EN)
+  await basicCard.getByLabel('Tên', { exact: false }).fill(productNameEn(retry))
   await languageSwitcher.getByRole('button', { name: 'VI', exact: true }).click()
 
   const [response] = await Promise.all([
@@ -188,38 +201,22 @@ async function exerciseMutableLists(page: Page) {
   }
 }
 
-async function cleanupProduct(page: Page) {
-  await navigateSpa(page, '/admin/products')
-  const search = page.getByPlaceholder(/Tên sản phẩm.*đường dẫn/)
-  await search.fill(PRODUCT_SKU)
-  const row = productRowBySku(page, PRODUCT_SKU)
-  if (await row.count() === 0) return
-
-  await row.getByRole('button', { name: 'Thao tác', exact: true }).click()
-  await page.getByRole('menu').getByRole('menuitem', { name: 'Xoá', exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Chuyển vào thùng rác', exact: true }).click()
-  await expect(page.getByText('Đã xoá sản phẩm').last()).toBeVisible()
-
-  const statusFilter = page.getByRole('combobox', { name: 'Trạng thái xuất bản' })
-  await statusFilter.click()
-  await page.getByRole('option', { name: 'Thùng rác', exact: true }).click()
-  await search.fill(PRODUCT_SKU)
-  const deletedRow = productRowBySku(page, PRODUCT_SKU)
-  if (await deletedRow.count() === 0) return
-  await deletedRow.getByRole('button', { name: 'Thao tác', exact: true }).click()
-  await page.getByRole('menu').getByRole('menuitem', { name: 'Xóa vĩnh viễn', exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Xóa vĩnh viễn', exact: true }).click()
-  await expect(page.getByText(/Xóa vĩnh viễn sản phẩm thành công/).last()).toBeVisible()
-}
-
 test('product detail không sập khi có 50 thông số + 6 FAQ trên máy chậm', async ({ adminPage, collect }, testInfo) => {
   test.setTimeout(420_000)
   let productId: string | null = null
   const slowSession = await adminPage.context().newCDPSession(adminPage)
 
   try {
-    productId = await createProduct(adminPage)
+    productId = await createProduct(adminPage, testInfo.retry)
     expect(productId, 'Không lấy được id sản phẩm test').toBeTruthy()
+
+    // This scenario is intentionally allowed to time out on a slow emulator.
+    // The worker-scoped E2E data guard runs outside this test timeout and removes
+    // the just-created product by ID before the retry/next worker phase starts.
+    if (process.env.E2E_FORCE_EDITOR_TIMEOUT === '1' && testInfo.retry === 0) {
+      test.setTimeout(5_000)
+      await new Promise(() => {})
+    }
 
     await seedHeavyContent(adminPage)
     const [seedResponse] = await Promise.all([
@@ -287,9 +284,6 @@ test('product detail không sập khi có 50 thông số + 6 FAQ trên máy ch�
     }
     expectRuntimeClean(productRuntime)
   } finally {
-    await slowSession.send('Emulation.setCPUThrottlingRate', { rate: 1 }).catch(() => {})
-    await cleanupProduct(adminPage).catch((error) => {
-      testInfo.annotations.push({ type: 'cleanup-failed', description: String(error) })
-    })
+    await slowSession.send('Emulation.setCPUThrottlingRate', { rate: 1 })
   }
 })

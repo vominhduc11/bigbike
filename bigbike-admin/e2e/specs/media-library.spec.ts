@@ -10,6 +10,14 @@ const CAPTURE_VIEWPORTS = [
   { name: '768', width: 768, height: 1024 },
   { name: '375', width: 375, height: 812 },
 ]
+
+function mediaMarker(retry: number) {
+  return `E2E_MEDIA_${RUN_ID}${retry ? `_R${retry}` : ''}`
+}
+
+function videoMarker(retry: number) {
+  return `E2E_VIDEO_${RUN_ID}${retry ? `_R${retry}` : ''}`
+}
 // MP4 H.264 16x16, 0,12 giây. Fixture nhúng giúp CI kiểm tra đúng luồng video
 // mà không phụ thuộc ffmpeg hay một tệp nhị phân bên ngoài repository.
 const VIDEO_FIXTURE_BASE64 = [
@@ -58,21 +66,20 @@ test.describe('media-library', () => {
     expectRuntimeClean(collect)
   })
 
-  test('tải ảnh/video, tải bản gốc, sửa, xoá mềm, khôi phục và xoá vĩnh viễn tệp thử nghiệm', async ({ adminPage, collect }) => {
+  test('tải ảnh/video, tải bản gốc, sửa, xoá mềm, khôi phục và xoá vĩnh viễn tệp thử nghiệm', async ({ adminPage, collect }, testInfo) => {
     test.skip(Boolean(process.env.MEDIA_CAPTURE_ONLY), 'Chỉ chụp ảnh trước/sau, không thay đổi dữ liệu.')
     test.setTimeout(120_000)
 
-    const marker = `E2E_MEDIA_${RUN_ID}`
-    const videoMarker = `E2E_VIDEO_${RUN_ID}`
+    const marker = mediaMarker(testInfo.retry)
+    const videoMarkerValue = videoMarker(testInfo.retry)
     const filename = `${marker}.svg`
-    const updatedTitle = `E2E_MEDIA_${RUN_ID}_ĐÃ_SỬA`
+    const updatedTitle = `${marker}_ĐÃ_SỬA`
     let mediaId: string | null = null
     let videoId: string | null = null
     let imageFileSize = 0
     let apiOrigin = ''
     let authorization = ''
 
-    try {
       const listResponsePromise = adminPage.waitForResponse((response) =>
         response.request().method() === 'GET'
           && new URL(response.url()).pathname.endsWith('/api/v1/admin/media'))
@@ -82,14 +89,14 @@ test.describe('media-library', () => {
       authorization = listResponse.request().headers().authorization || ''
       await expect(adminPage.getByRole('heading', { name: 'Thư viện ảnh', exact: true })).toBeVisible()
 
-      await test.step('tải, hiển thị và xoá sạch MP4 hợp lệ', async () => {
+    await test.step('tải, hiển thị và xoá sạch MP4 hợp lệ', async () => {
         const fileInput = adminPage.locator('input[type="file"][multiple]')
         const videoBytes = Buffer.from(VIDEO_FIXTURE_BASE64, 'base64')
         const [response] = await Promise.all([
           adminPage.waitForResponse((item) => item.request().method() === 'POST'
             && new URL(item.url()).pathname.endsWith('/api/v1/admin/media')),
           fileInput.setInputFiles({
-            name: `${videoMarker}.mp4`,
+            name: `${videoMarkerValue}.mp4`,
             mimeType: 'video/mp4',
             buffer: videoBytes,
           }),
@@ -101,25 +108,25 @@ test.describe('media-library', () => {
         expect(payload?.data?.mimeType).toBe('video/mp4')
 
         const search = adminPage.getByRole('searchbox')
-        await search.fill(videoMarker)
-        const card = mediaCard(adminPage, videoMarker)
+        await search.fill(videoMarkerValue)
+        const card = mediaCard(adminPage, videoMarkerValue)
         await expect(card).toBeVisible({ timeout: 15_000 })
         await expect(card.locator('video')).toHaveCount(1)
         const cardDownload = card.getByRole('button', { name: 'Tải về máy', exact: true })
         await expect(cardDownload).toBeVisible()
-        const downloadedVideo = await downloadFromButton(adminPage, cardDownload, `${videoMarker}.mp4`)
+        const downloadedVideo = await downloadFromButton(adminPage, cardDownload, `${videoMarkerValue}.mp4`)
         expect(downloadedVideo.equals(videoBytes), 'Video tải về phải đúng bản gốc').toBeTruthy()
 
         const headers = { Authorization: authorization }
         const softDeleted = await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${videoId}`, { headers })
         expect(softDeleted.status(), 'API xoá mềm video phải trả 204').toBe(204)
         await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
-        const trashCard = mediaCard(adminPage, videoMarker)
+        const trashCard = mediaCard(adminPage, videoMarkerValue)
         await expect(trashCard).toBeVisible()
         const downloadedTrashVideo = await downloadFromButton(
           adminPage,
           trashCard.getByRole('button', { name: 'Tải về máy', exact: true }),
-          `${videoMarker}.mp4`,
+          `${videoMarkerValue}.mp4`,
         )
         expect(downloadedTrashVideo.equals(videoBytes), 'Video trong thùng rác vẫn phải tải đúng bản gốc').toBeTruthy()
         const hardDeleted = await adminPage.request.delete(
@@ -130,7 +137,7 @@ test.describe('media-library', () => {
         await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
       })
 
-      await test.step('tải SVG hợp lệ lên thư viện', async () => {
+    await test.step('tải SVG hợp lệ lên thư viện', async () => {
         const fileInput = adminPage.locator('input[type="file"][multiple]')
         const uniqueSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><title>${marker}</title><rect width="20" height="20" fill="#ff0c09"/></svg>`
         const [response] = await Promise.all([
@@ -160,7 +167,7 @@ test.describe('media-library', () => {
         expect(downloadedImage.length, 'Ảnh tải về phải là object gốc, không phải biến thể').toBe(imageFileSize)
       })
 
-      await test.step('mở chi tiết và cập nhật metadata', async () => {
+    await test.step('mở chi tiết và cập nhật metadata', async () => {
         const card = mediaCard(adminPage, marker)
         await card.getByRole('button', { name: 'Sửa', exact: true }).click()
         const panel = adminPage.getByRole('complementary', { name: 'Chỉnh sửa thông tin ảnh/video' })
@@ -196,7 +203,7 @@ test.describe('media-library', () => {
         await expect(detailPanel).toBeHidden()
       })
 
-      await test.step('xoá mềm rồi khôi phục từ Thùng rác', async () => {
+    await test.step('xoá mềm rồi khôi phục từ Thùng rác', async () => {
         let card = mediaCard(adminPage, marker)
         await card.getByRole('button', { name: 'Xoá', exact: true }).click()
         const [deleted] = await Promise.all([
@@ -225,7 +232,7 @@ test.describe('media-library', () => {
         expect(restored.status(), 'API khôi phục media phải trả 200').toBe(200)
       })
 
-      await test.step('xoá lại và xoá vĩnh viễn từ bảng chi tiết trong Thùng rác', async () => {
+    await test.step('xoá lại và xoá vĩnh viễn từ bảng chi tiết trong Thùng rác', async () => {
         await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
         let card = mediaCard(adminPage, marker)
         await expect(card).toBeVisible()
@@ -255,20 +262,6 @@ test.describe('media-library', () => {
         await expect(mediaCard(adminPage, marker)).toHaveCount(0)
       })
 
-      expectRuntimeClean(collect)
-    } finally {
-      // Chỉ dọn đúng bản ghi E2E vừa tạo. Nhánh này bảo đảm test lỗi giữa chừng
-      // không để lại rác trong thư viện dùng chung.
-      if (mediaId && apiOrigin && authorization) {
-        const headers = { Authorization: authorization }
-        await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${mediaId}`, { headers }).catch(() => {})
-        await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${mediaId}?permanent=true`, { headers }).catch(() => {})
-      }
-      if (videoId && apiOrigin && authorization) {
-        const headers = { Authorization: authorization }
-        await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${videoId}`, { headers }).catch(() => {})
-        await adminPage.request.delete(`${apiOrigin}/api/v1/admin/media/${videoId}?permanent=true`, { headers }).catch(() => {})
-      }
-    }
+    expectRuntimeClean(collect)
   })
 })
