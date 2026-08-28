@@ -364,7 +364,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
           </DetailSection>
         </div>
 
-        <aside className="grid content-start gap-4">
+        <aside className="grid h-fit content-start gap-4 lg:sticky lg:top-4">
           <DetailSection title={t('chatAdmin.detail.summary')} headingLevel={2}>
             <dl data-testid="chat-detail-summary" className="grid gap-4">
               <DetailValue label={t('chatAdmin.columns.language')}>{conversation.locale.toUpperCase()}</DetailValue>

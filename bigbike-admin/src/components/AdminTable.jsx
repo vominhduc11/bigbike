@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -6,9 +7,16 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/table'
 import { MobileCardList, MobileCard } from '@/components/layout/MobileCardList'
+import { TableDensityToggle } from '@/components/TableDensityToggle'
+import { readTableDensity, writeTableDensity } from '@/lib/tableDensity'
 import { cn } from '@/lib/utils'
 
 const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-left' }
+const DENSITY_CLASS = {
+  compact: '[&_thead_th]:h-10 [&_tbody_tr]:h-10 [&_tbody_td]:py-1 [&_.bb-product-thumb]:h-8 [&_.bb-product-thumb]:w-8',
+  regular: '[&_thead_th]:h-12 [&_tbody_tr]:h-12 [&_tbody_td]:py-2 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
+  spacious: '[&_thead_th]:h-14 [&_tbody_tr]:h-14 [&_tbody_td]:py-3 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
+}
 
 // Dòng có role="button" + onClick/onKeyDown để mở chi tiết. Khi thao tác phát ra từ một control
 // tương tác con (checkbox chọn dòng, link cột đầu, nút/select trong cột action), Enter/Space/click
@@ -39,8 +47,10 @@ export function AdminTable({
   selectable = false, selectedIds = [], onSelectionChange,
   onRowClick, rowClassName, mobileCard, rowHref, containerClassName,
   renderRow, mobileListClassName,
+  densityKey, defaultDensity = 'regular',
 }) {
   const { t } = useTranslation()
+  const [density, setDensity] = useState(() => readTableDensity(densityKey, defaultDensity))
   const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
   const openTab = (href) => { if (href) window.open(href, '_blank', 'noopener') }
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
@@ -68,9 +78,18 @@ export function AdminTable({
     }
   }
 
+  const changeDensity = (nextDensity) => setDensity(writeTableDensity(densityKey, nextDensity))
+
   const tableView = (
-    <Table containerClassName={containerClassName}>
-      {caption ? <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption> : null}
+    <>
+      {densityKey ? (
+        <div className="mb-2 flex min-h-9 items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-sm text-muted-foreground">{caption}</span>
+          <TableDensityToggle value={density} onChange={changeDensity} />
+        </div>
+      ) : null}
+      <Table containerClassName={cn(containerClassName, densityKey && DENSITY_CLASS[density])}>
+      {caption ? <caption className={densityKey ? 'sr-only' : 'mb-2 text-left text-sm text-muted-foreground'}>{caption}</caption> : null}
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {selectable && (
@@ -201,7 +220,8 @@ export function AdminTable({
               )
             })}
       </TableBody>
-    </Table>
+      </Table>
+    </>
   )
 
   // No mobile mapping supplied — render the table exactly as before.

@@ -45,9 +45,9 @@ export function SettingTabPanel({
   }))
 
   const renderFields = (fields) => (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {fields.map((setting) => (
-        <div key={setting.key} className={cn(isWideSetting(setting) && 'xl:col-span-2')}>
+        <div key={setting.key} className={cn(isWideSetting(setting) && 'lg:col-span-2')}>
           <SettingField
             setting={setting}
             where={settingWhere(setting, t)}
@@ -100,7 +100,7 @@ export function SettingTabPanel({
     <>
       {beforeContent}
       <DetailSection
-        className="overflow-hidden"
+        className="!overflow-visible !border-0 !bg-transparent !shadow-none"
         headingLevel={3}
         title={title}
         description={description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
@@ -114,7 +114,8 @@ export function SettingTabPanel({
             {t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
           </span>
         )}
-        contentClassName="space-y-5"
+        headerClassName="!border-0 !bg-transparent !px-0 !pt-0"
+        contentClassName="space-y-4 !p-0"
       >
           {sections.map(({ sec, fields }, idx) => {
             const meta = SECTION_GUIDE[sec]

@@ -111,6 +111,7 @@ vi.mock('../components/layout', () => ({
       <div>{actions}</div>
     </div>
   ) : null,
+  ResponsiveFilterBar: ({ children, ariaLabel }) => <section aria-label={ariaLabel}>{children}</section>,
 }))
 vi.mock('@/components/ui/select', () => ({
   Select: ({ value, onValueChange, disabled, children, ...props }) => (

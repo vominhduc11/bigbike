@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RotateCcw, SlidersHorizontal } from 'lucide-react'
-import { Modal, FormField } from '../../components/layout'
+import { FormField, MobileFilterDrawer as MobileFilterDrawerShell } from '../../components/layout'
 import { FilterSelect } from '../../components/FilterSelect'
 import { PageSizeSelect } from '../../components/PageSizeSelect'
 import { Input } from '@/components/ui/input'
@@ -51,7 +51,7 @@ export function MobileFilterDrawer({
   }
 
   return (
-    <Modal
+    <MobileFilterDrawerShell
       open
       onClose={onClose}
       title={t('auditLog.mobileFilterLabel')}
@@ -63,7 +63,6 @@ export function MobileFilterDrawer({
         : t('auditLog.mobileFilterDescription', {
           defaultValue: 'Thu hẹp danh sách theo người thực hiện, khu vực và thời gian.',
         })}
-      closeLabel={t('auditLog.drawerClose')}
       actions={(
         <>
           {isFiltered ? (
@@ -189,6 +188,6 @@ export function MobileFilterDrawer({
           </Alert>
         ) : null}
       </div>
-    </Modal>
+    </MobileFilterDrawerShell>
   )
 }

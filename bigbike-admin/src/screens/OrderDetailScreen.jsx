@@ -655,7 +655,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
 
         {/* Right column */}
-        <div className="bb-stack">
+        <div className="bb-stack h-fit lg:sticky lg:top-4">
           {/* Customer */}
           <DetailSection title={t('orders.detail.customerInfo')} headingLevel={3}>
               <dl className="bb-info-grid">

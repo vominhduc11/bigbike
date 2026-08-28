@@ -579,6 +579,7 @@ export function AuditLogListScreen() {
                 rowClassName={(log) => DANGEROUS_ACTIONS.has(log.action)
                   ? 'bb-row-accent--danger'
                   : ''}
+                densityKey="audit-log"
               />
             </div>
 

@@ -12,7 +12,7 @@ import { KpiCard } from '../components/KpiCard'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { claimChatHandoff, fetchChatConversations, fetchChatDataGaps, fetchChatFeedback, fetchChatFeedbackTemplatePrefill, fetchChatFunnel, fetchChatHandoffs, fetchChatStats, fetchChatUnanswered } from '../lib/adminApi'
 import { useHasPermission } from '../lib/auth'
 import { currentVietnamIsoDate, formatDateTime } from '../lib/formatters'
@@ -161,14 +161,17 @@ export function ChatConversationListScreen({ navigate }) {
         {handoffsQuery.isError ? <StatePanel tone="danger" title={t('chatAdmin.handoffs.loadError')} actionLabel={t('common.retry')} onAction={handoffsQuery.refetch} /> : handoffsQuery.isLoading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : handoffs.length === 0 ? <StatePanel tone="neutral" title={t('chatAdmin.handoffs.empty')} description={t('chatAdmin.handoffs.emptyDescription')} /> : <div className="grid gap-3">{handoffs.map((item) => <article key={item.id} className="grid gap-3 rounded-md border border-warning bg-warning-bg p-4 lg:grid-cols-[1fr_auto] lg:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-foreground">{item.customerKind === 'SIGNED_IN' ? t('chatAdmin.handoffs.signedIn') : t('chatAdmin.guest')}</strong><span className="text-sm font-semibold text-warning">{item.status === 'ACTIVE' ? t('chatAdmin.handoffs.activeWith', { name: item.assignedDisplayName || t('chatAdmin.handoffs.staffFallback') }) : t('chatAdmin.handoffs.waiting', { duration: formatWaiting(item.requestedAt, item.waitingSeconds, locale) })}</span><span className="text-sm text-muted-foreground">{item.contactPresent ? t('chatAdmin.handoffs.hasContact') : t('chatAdmin.handoffs.noContact')}</span></div><p className="mb-0 mt-2 text-sm text-foreground">{item.questionSummary || t('chatAdmin.handoffs.noQuestion')}</p>{item.products.length > 0 ? <p className="mb-0 mt-1 text-xs text-muted-foreground">{item.products.map((product) => product.name).join(', ')}</p> : null}</div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => navigate(`/admin/chat/${item.conversationId}`)}>{t('chatAdmin.handoffs.openConversation')}</Button>{canReplyChat && item.status === 'WAITING' ? <Button disabled={acknowledgingId === item.id} onClick={() => acknowledgeHandoff(item.id)}><UserRoundCheck size={16} aria-hidden="true" />{t('chatAdmin.handoffs.claim')}</Button> : null}</div></article>)}</div>}
       </DetailSection>
 
-      <FilterBar ariaLabel={t('chatAdmin.filters.label')}>
+      <ResponsiveFilterBar
+        ariaLabel={t('chatAdmin.filters.label')}
+        activeFilterCount={Number(query.from !== defaultRange.from) + Number(query.to !== defaultRange.to) + Number(query.hasLead !== 'ALL')}
+        onReset={resetFilters}
+      >
         <label className="grid gap-1 text-sm text-muted-foreground">{t('chatAdmin.filters.from')}<Input type="date" value={query.from} onChange={(event) => updateQuery({ from: event.target.value })} className="h-9 w-auto" /></label>
         <label className="grid gap-1 text-sm text-muted-foreground">{t('chatAdmin.filters.to')}<Input type="date" value={query.to} onChange={(event) => updateQuery({ to: event.target.value })} className="h-9 w-auto" /></label>
         <FilterSelect value={query.hasLead} onValueChange={(value) => updateQuery({ hasLead: value })} ariaLabel={t('chatAdmin.filters.lead')} options={[{ value: 'ALL', label: t('chatAdmin.filters.allLeads') }, { value: 'true', label: t('chatAdmin.filters.hasLead') }, { value: 'false', label: t('chatAdmin.filters.noLead') }]} />
         <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize })} />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-        {isFiltered ? <Button type="button" variant="ghost" onClick={resetFilters}>{t('common.resetFilters')}</Button> : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <DetailSection className="mb-6" title={t('chatAdmin.today.title')} description={t('chatAdmin.today.description')} contentClassName="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard icon={<MessageCircle size={16} />} label={t('chatAdmin.today.conversations')} value={formatNumber(stats?.conversations, locale)} />
@@ -179,7 +182,42 @@ export function ChatConversationListScreen({ navigate }) {
       </DetailSection>
 
       <DetailSection className="mb-6" title={t('chatAdmin.tableTitle')} description={t('chatAdmin.tableDescription', formattedRange)}>
-        {state.status === 'error' ? <StatePanel tone="danger" title={t('chatAdmin.loadError')} description={state.error} actionLabel={t('common.retry')} onAction={state.refetch} /> : <><div data-testid="chat-conversations-table" className="w-full overflow-hidden"><AdminTable caption={t('chatAdmin.tableCaption')} columns={visibleColumns} rows={items} loading={state.status === 'loading'} pageSize={query.pageSize} rowHref={(item) => `/admin/chat/${item.id}`} onRowClick={(item) => navigate(`/admin/chat/${item.id}`)} /></div>{state.status === 'success' && items.length === 0 ? <StatePanel tone="neutral" title={t('chatAdmin.empty')} description={isFiltered ? t('chatAdmin.emptyFiltered') : t('chatAdmin.emptyDescription')} /> : null}<PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => setQuery((current) => ({ ...current, page }))} /></>}
+        {state.status === 'error' ? (
+          <StatePanel tone="danger" title={t('chatAdmin.loadError')} description={state.error} actionLabel={t('common.retry')} onAction={state.refetch} />
+        ) : (
+          <>
+            <div data-testid="chat-conversations-table" className="w-full overflow-hidden">
+              <AdminTable
+                caption={t('chatAdmin.tableCaption')}
+                columns={visibleColumns}
+                rows={items}
+                loading={state.status === 'loading'}
+                pageSize={query.pageSize}
+                rowHref={(item) => `/admin/chat/${item.id}`}
+                onRowClick={(item) => navigate(`/admin/chat/${item.id}`)}
+                densityKey="chat-conversations"
+                mobileCard={(item) => ({
+                  title: item.customerDisplayName || t('chatAdmin.guest'),
+                  subtitle: formatDateTime(item.startedAt),
+                  status: item.hasLead
+                    ? <span className="bb-badge bb-badge-success">{t('chatAdmin.columns.lead')}</span>
+                    : null,
+                  meta: [
+                    { label: t('chatAdmin.columns.language'), value: String(item.locale || '—').toUpperCase() },
+                    { label: t('chatAdmin.columns.turns'), value: item.turnCount ?? '—' },
+                    { label: t('chatAdmin.columns.assistedRevenue'), value: formatVnd(item.assistedRevenue, locale) },
+                    { label: t('chatAdmin.columns.lastMessage'), value: formatDateTime(item.lastMessageAt) },
+                  ],
+                  onClick: () => navigate(`/admin/chat/${item.id}`),
+                })}
+              />
+            </div>
+            {state.status === 'success' && items.length === 0 ? (
+              <StatePanel tone="neutral" title={t('chatAdmin.empty')} description={isFiltered ? t('chatAdmin.emptyFiltered') : t('chatAdmin.emptyDescription')} />
+            ) : null}
+            <PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => setQuery((current) => ({ ...current, page }))} />
+          </>
+        )}
       </DetailSection>
 
       <DetailSection className="mb-6" title={t('chatAdmin.tasks.title')} description={t('chatAdmin.tasks.description', formattedRange)}>

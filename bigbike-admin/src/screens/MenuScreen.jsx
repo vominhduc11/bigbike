@@ -10,7 +10,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Plus } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useDragSensors } from '../components/Sortable'
 import { toast } from '@/lib/toast'
 import {
@@ -58,6 +58,7 @@ import { Modal } from './menu/Modal'
 import { ItemForm } from './menu/ItemForm'
 import { SortableMenuItem } from './menu/SortableMenuItem'
 import { AdminTable } from '../components/AdminTable'
+import { TableRowActions } from '../components/TableRowActions'
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -709,6 +710,63 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                     columns={menuTableColumns}
                     rows={filteredFlatItems}
                     caption={t('menus.title')}
+                    densityKey="menus"
+                    mobileCard={(item) => {
+                      const itemName = pickLabel(item) || t('menus.itemLabel')
+                      const inactive = item.status === 'INACTIVE'
+                      return {
+                        title: itemName,
+                        subtitle: item.url || '—',
+                        status: (
+                          <Badge variant={inactive ? 'muted' : 'success'}>
+                            {inactive ? t('menus.itemHiddenBadge') : t('common.visible')}
+                          </Badge>
+                        ),
+                        meta: [
+                          {
+                            label: t('menus.itemParent'),
+                            value: item.parentId
+                              ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing'))
+                              : t('menus.parentRoot'),
+                          },
+                        ],
+                        actions: canUpdate ? (
+                          <TableRowActions
+                            primaryActions={[
+                              {
+                                key: 'edit',
+                                label: t('menus.editItemTitle'),
+                                icon: Pencil,
+                                disabled: deletingItemId === item.id,
+                                onSelect: () => openEditItem(item),
+                              },
+                              {
+                                key: 'toggle',
+                                label: t(inactive ? 'menus.showItemTitle' : 'menus.hideItemTitle'),
+                                icon: inactive ? Eye : EyeOff,
+                                disabled: togglingItemId === item.id,
+                                onSelect: () => handleToggleItemStatus(item),
+                              },
+                            ]}
+                            menuActions={[
+                              {
+                                key: 'delete',
+                                label: t('menus.deleteItemActionTitle'),
+                                icon: Trash2,
+                                tone: 'danger',
+                                disabled: deletingItemId === item.id,
+                                onSelect: () => handleDeleteItem(item.id),
+                              },
+                            ]}
+                          />
+                        ) : null,
+                        onClick: canUpdate ? () => openEditItem(item) : undefined,
+                        selectable: canUpdate,
+                        selected: selectedItemIds.has(item.id),
+                        onSelectChange: () => toggleItemSelected(item.id),
+                        selectionLabel: t('menus.selectItemAria', { name: itemName }),
+                      }
+                    }}
                     renderRow={(item) => (
                       <SortableMenuItem
                         key={item.id}

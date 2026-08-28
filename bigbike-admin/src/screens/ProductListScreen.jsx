@@ -36,7 +36,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PaginationControls } from '../components/PaginationControls'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
 import { StockCell } from './product-list/cells'
 import { buildFormFromItem } from './product-detail/constants'
@@ -886,37 +886,38 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
         <ReadOnlyBanner warning={state.warning} />
       ) : null}
 
-      {/* O5: preset lọc nhanh 1-click cho các view thường dùng nhất, thay vì phải
-          mở dropdown FilterSelect rồi chọn giá trị. */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        <Button
-          type="button"
-          variant={query.stockState === 'OUT_OF_STOCK' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => updateQuery(
-            { stockState: query.stockState === 'OUT_OF_STOCK' ? 'ALL' : 'OUT_OF_STOCK' },
-            { resetPage: true },
-          )}
-        >
-          {t('products.presetOutOfStock', { defaultValue: 'Hết hàng' })}
-        </Button>
-        <Button
-          type="button"
-          variant={query.publishStatus === 'DRAFT' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => updateQuery(
-            { publishStatus: query.publishStatus === 'DRAFT' ? 'ALL' : 'DRAFT' },
-            { resetPage: true },
-          )}
-        >
-          {t('products.presetDraft', { defaultValue: 'Chưa xuất bản' })}
-        </Button>
-      </div>
-
-      <FilterBar
+      <ResponsiveFilterBar
         ariaLabel={t('products.filterAria', { defaultValue: 'Bộ lọc sản phẩm' })}
         className="mt-4"
+        activeFilterCount={filterChips.length}
+        onReset={resetFilters}
       >
+        {/* O5: preset lọc nhanh nằm trong cùng drawer trên mobile để không đẩy
+            dữ liệu khỏi màn hình đầu; desktop vẫn hiện ở đầu thanh lọc. */}
+        <div className="flex basis-full flex-wrap gap-2">
+          <Button
+            type="button"
+            variant={query.stockState === 'OUT_OF_STOCK' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateQuery(
+              { stockState: query.stockState === 'OUT_OF_STOCK' ? 'ALL' : 'OUT_OF_STOCK' },
+              { resetPage: true },
+            )}
+          >
+            {t('products.presetOutOfStock', { defaultValue: 'Hết hàng' })}
+          </Button>
+          <Button
+            type="button"
+            variant={query.publishStatus === 'DRAFT' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateQuery(
+              { publishStatus: query.publishStatus === 'DRAFT' ? 'ALL' : 'DRAFT' },
+              { resetPage: true },
+            )}
+          >
+            {t('products.presetDraft', { defaultValue: 'Chưa xuất bản' })}
+          </Button>
+        </div>
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -1011,7 +1012,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
             {t('products.refreshing', { defaultValue: 'Đang cập nhật' })}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <FilterChips
         chips={filterChips}
@@ -1072,6 +1073,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <DetailSection noPadding>
             <AdminTable
+              caption={t('products.tableCaption')}
               columns={columns}
               rows={items}
               loading={state.status === 'loading'}
@@ -1086,6 +1088,8 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
               rowHref={(product) => `/admin/products/${product.id}`}
               mobileCard={mobileCard}
               rowClassName={(product) => publishRowAccent(product.publishStatus)}
+              densityKey="products"
+              defaultDensity="spacious"
             />
           {state.status === 'success' && pagination && (
             <PaginationControls

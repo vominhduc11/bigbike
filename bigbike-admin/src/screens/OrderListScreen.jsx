@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, RefreshCw } from 'lucide-react'
 import { ExportButton } from '@/components/ExportButton'
 import { toast } from '@/lib/toast'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -13,7 +13,7 @@ import { FilterChips } from '../components/FilterChips'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
 import { DetailSection } from '../components/DetailSection'
-import { Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { exportOrdersCsv, fetchOrders, updateOrderStatus } from '../lib/adminApi'
@@ -24,7 +24,6 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
-import { FilterBar } from '@/components/layout/FilterBar'
 import { orderRowAccent } from '../lib/statusTone'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -442,9 +441,11 @@ export function OrderListScreen({ navigate, canUpdate }) {
         </Alert>
       ) : null}
 
-      <FilterBar
+      <ResponsiveFilterBar
         ariaLabel={t('orders.filterAria', { defaultValue: 'Bộ lọc đơn hàng' })}
         className="items-center"
+        activeFilterCount={filterChips.length}
+        onReset={resetFilters}
       >
         <FilterSearchInput
           value={searchInput}
@@ -522,15 +523,12 @@ export function OrderListScreen({ navigate, canUpdate }) {
             className="min-h-11"
           />
         </div>
-        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={resetFilters} disabled={!isFiltered}>
-          <SlidersHorizontal size={13} aria-hidden="true" />{t('orders.clearFilters')}
-        </Button>
         {state.isFetching && state.status === 'success' ? (
           <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
             {t('orders.refreshing', { defaultValue: 'Đang cập nhật' })}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <FilterChips
         chips={filterChips}
@@ -595,6 +593,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
               rowHref={(order) => `/admin/orders/${order.id}`}
               mobileCard={mobileCard}
               rowClassName={(order) => orderRowAccent(order.orderStatus)}
+              densityKey="orders"
+              defaultDensity="compact"
               sortKey={sortKey}
               sortDir={sortDir}
               onSortChange={handleSortChange}

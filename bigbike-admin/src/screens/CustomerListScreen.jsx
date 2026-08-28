@@ -19,8 +19,7 @@ import { KpiCard } from '../components/KpiCard'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
-import { Screen, ScreenHeader } from '../components/layout'
-import { FilterBar } from '../components/layout/FilterBar'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
@@ -418,7 +417,11 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      <FilterBar ariaLabel={t('customers.filtersAria')}>
+      <ResponsiveFilterBar
+        ariaLabel={t('customers.filtersAria')}
+        activeFilterCount={activeFilterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -472,7 +475,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             {t('customers.refreshing')}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       {/* Filter chips — báo gọn đang lọc gì + gỡ từng filter / xoá tất cả. */}
       <FilterChips
@@ -498,6 +501,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <DetailSection noPadding>
             <AdminTable
+              caption={t('customers.tableCaption')}
               columns={visibleColumns}
               rows={items}
               loading={state.status === 'loading'}
@@ -506,6 +510,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
               rowHref={(c) => `/admin/customers/${c.id}`}
               rowClassName={(customer) => customerRowAccent(customer.status)}
               mobileCard={mobileCard}
+              densityKey="customers"
             />
           {state.status === 'success' && pagination && (
             <PaginationControls

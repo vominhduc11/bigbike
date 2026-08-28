@@ -20,7 +20,7 @@ import { ReviewModerationNote } from '../components/ReviewModerationNote'
 import { ReviewStars } from '../components/ReviewStars'
 import { DetailSection } from '../components/DetailSection'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { reviewRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
@@ -601,14 +601,18 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
         </div>
       )}
 
-      <FilterBar ariaLabel={t('reviews.filterStatus')} className="mb-4">
+      <ResponsiveFilterBar
+        ariaLabel={t('reviews.filterStatus')}
+        className="mb-4"
+        activeFilterCount={Number(Boolean(query.search)) + Number(query.status !== 'ALL') + Number(Boolean(query.rating))}
+        onReset={resetFilters}
+      >
         <div className="min-w-56 flex-1"><label className="mb-1 block text-xs font-semibold text-muted-foreground" htmlFor="review-search">{t('reviews.searchLabel')}</label><FilterSearchInput value={searchInput} onChange={setSearchInput} placeholder={t('reviews.searchPlaceholder')} ariaLabel={t('reviews.searchLabel')} /></div>
         <label className="grid gap-1 text-xs font-semibold text-muted-foreground">{t('reviews.filterStatus')}<FilterSelect value={query.status} onValueChange={(status) => updateQuery({ status })} ariaLabel={t('reviews.filterStatus')} options={STATUS_OPTIONS.map((status) => ({ value: status, label: status === 'ALL' ? t('common.all') : statusLabel(status, t) }))} /></label>
         <label className="grid gap-1 text-xs font-semibold text-muted-foreground">{t('reviews.filterRating')}<FilterSelect value={query.rating} onValueChange={(rating) => updateQuery({ rating })} ariaLabel={t('reviews.filterRating')} options={RATING_OPTIONS.map((rating) => ({ value: rating, label: rating ? t('reviews.ratingOption', { rating }) : t('reviews.allRatings') }))} /></label>
         <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize })} disabled={state.isFetching} />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-        {isFiltered ? <Button type="button" variant="ghost" className="min-h-11" onClick={resetFilters}>{t('common.resetFilters')}</Button> : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       {canUpdate ? (
         <BulkActionBar
@@ -630,7 +634,7 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
 
       {state.status === 'error' && items.length === 0 ? <StatePanel tone="danger" title={t('reviews.error')} description={state.error} actionLabel={t('common.retry')} onAction={state.refetch} /> : null}
       {state.status !== 'error' && state.status === 'success' && items.length === 0 ? <StatePanel tone="neutral" title={isFiltered ? t('reviews.empty') : t('reviews.emptyAll')} description={isFiltered ? t('reviews.emptyDesc') : t('reviews.emptyAllDesc')} actionLabel={isFiltered ? t('common.resetFilters') : undefined} onAction={isFiltered ? resetFilters : undefined} /> : null}
-      {state.status !== 'error' && (items.length > 0 || listLoading) ? <AdminTable columns={visibleColumns} rows={items} loading={listLoading} pageSize={query.pageSize} selectable={canUpdate} selectedIds={visibleSelected} onSelectionChange={setSelected} onRowClick={(review) => navigate(`/admin/reviews/${review.id}`)} rowClassName={(review) => reviewRowAccent(review.status)} mobileCard={mobileCard} caption={t('reviews.tableCaption')} /> : null}
+      {state.status !== 'error' && (items.length > 0 || listLoading) ? <AdminTable columns={visibleColumns} rows={items} loading={listLoading} pageSize={query.pageSize} selectable={canUpdate} selectedIds={visibleSelected} onSelectionChange={setSelected} onRowClick={(review) => navigate(`/admin/reviews/${review.id}`)} rowClassName={(review) => reviewRowAccent(review.status)} mobileCard={mobileCard} caption={t('reviews.tableCaption')} densityKey="reviews" /> : null}
       <PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => { setSelected([]); setQuery((current) => ({ ...current, page })) }} />
     </Screen>
   )

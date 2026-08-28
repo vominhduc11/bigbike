@@ -19,7 +19,7 @@ import { BrandLogoQualityNotice } from '../components/BrandLogoQualityNotice'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { RecentItemsChips } from '../components/RecentItemsChips'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { trashRowAccent } from '../lib/statusTone'
 import { deleteBrand, fetchBrands, permanentDeleteBrand, restoreBrand } from '../lib/adminApi'
@@ -368,7 +368,12 @@ export function BrandListScreen({ navigate, canUpdate }) {
         <ReadOnlyBanner warning={t('brands.readOnly', { defaultValue: 'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.' })} />
       ) : null}
 
-      <FilterBar ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })} className="items-center">
+      <ResponsiveFilterBar
+        ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })}
+        className="items-center"
+        activeFilterCount={activeFilterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -408,7 +413,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
             {t('brands.refreshing', { defaultValue: 'Đang cập nhật' })}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <FilterChips
         chips={activeFilterChips}
@@ -462,6 +467,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
             rowHref={(brand) => `/admin/brands/${brand.id}`}
             rowClassName={(brand) => trashRowAccent(brandTrashStatus(brand.isVisible))}
             mobileCard={mobileCard}
+            densityKey="brands"
           />
           {state.status === 'success' && state.pagination ? (
             <div className="px-4">

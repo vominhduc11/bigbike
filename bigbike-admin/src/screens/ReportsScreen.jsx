@@ -102,9 +102,29 @@ function RankTable({ title, rows, cols, noDataLabel }) {
           <AdminTable
             columns={columns}
             rows={indexedRows}
+            caption={title}
             sortKey={sortKey}
             sortDir={sortDir}
             onSortChange={(key, dir) => { setSortKey(key); setSortDir(dir) }}
+            mobileCard={(row) => {
+              const first = cols[0]
+              const valueOf = (column) => column?.render
+                ? column.render(row)
+                : (row[column?.key] ?? '—')
+              return {
+                title: (
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono text-muted-foreground">#{row._idx}</span>
+                    <span>{valueOf(first)}</span>
+                  </span>
+                ),
+                meta: cols.slice(1).map((column) => ({
+                  label: column.label,
+                  value: valueOf(column),
+                  tone: column.right ? 'strong' : undefined,
+                })),
+              }
+            }}
           />
         )}
     </DetailSection>

@@ -58,6 +58,37 @@ const BULK_SCREENS = [
   'ReviewListScreen.jsx',
 ]
 
+const RESPONSIVE_FILTER_SCREENS = [
+  'AdminUsersScreen',
+  'BrandListScreen',
+  'CategoryListScreen',
+  'ChatConversationListScreen',
+  'ContentListScreen',
+  'CustomerListScreen',
+  'LegacyDiscontinuedProductsScreen',
+  'MediaLibraryScreen',
+  'OrderListScreen',
+  'ProductListScreen',
+  'RedirectListScreen',
+  'ReviewListScreen',
+]
+
+const DENSITY_SCREENS = [
+  'AdminUsersScreen',
+  'AuditLogListScreen',
+  'BrandListScreen',
+  'CategoryListScreen',
+  'ChatConversationListScreen',
+  'ContentListScreen',
+  'CustomerListScreen',
+  'LegacyDiscontinuedProductsScreen',
+  'MenuScreen',
+  'OrderListScreen',
+  'ProductListScreen',
+  'RedirectListScreen',
+  'ReviewListScreen',
+]
+
 describe('admin interface composition contract', () => {
   test.each(COLUMN_VISIBILITY_SCREENS)('%s supports persisted column visibility', (name) => {
     expect(screen(name)).toContain('ColumnVisibilityToggle')
@@ -224,5 +255,86 @@ describe('admin interface composition contract', () => {
     }
     const menuRow = readFileSync(join(ROOT, 'src', 'screens', 'menu', 'SortableMenuItem.jsx'), 'utf8')
     expect(menuRow).toContain('<TableRowActions')
+  })
+
+  test.each(RESPONSIVE_FILTER_SCREENS)('%s collapses its filters through the shared mobile drawer', (name) => {
+    expect(screen(name)).toContain('<ResponsiveFilterBar')
+  })
+
+  test('the audit log keeps its draft-and-apply drawer on mobile', () => {
+    expect(screen('AuditLogListScreen')).toContain('<MobileFilterDrawer')
+    const drawer = readFileSync(join(ROOT, 'src', 'screens', 'audit-log-list', 'MobileFilterDrawer.jsx'), 'utf8')
+    expect(drawer).toContain('MobileFilterDrawerShell')
+  })
+
+  test('every operational list is readable as cards on mobile', () => {
+    const listScreens = [
+      'AdminUsersScreen', 'AuditLogListScreen', 'BrandListScreen', 'CategoryListScreen',
+      'ChatConversationListScreen', 'ContentListScreen', 'CustomerListScreen',
+      'LegacyDiscontinuedProductsScreen', 'MenuScreen', 'OrderListScreen',
+      'ProductListScreen', 'RedirectListScreen', 'ReviewListScreen',
+    ]
+    for (const name of listScreens) {
+      expect(screen(name), name).toMatch(/mobileCard=|<MobileCardList/)
+    }
+  })
+
+  test('every shared data table, including nested tables, has a mobile card alternative', () => {
+    const tableFiles = [
+      ['src/screens/AdminUsersScreen.jsx', 1],
+      ['src/screens/AuditLogListScreen.jsx', 1, true],
+      ['src/screens/BrandListScreen.jsx', 1],
+      ['src/screens/CategoryListScreen.jsx', 2],
+      ['src/screens/ChatConversationListScreen.jsx', 4],
+      ['src/screens/ContentListScreen.jsx', 1],
+      ['src/screens/CustomerListScreen.jsx', 1],
+      ['src/screens/DashboardScreen.jsx', 2],
+      ['src/screens/LegacyDiscontinuedProductsScreen.jsx', 1],
+      ['src/screens/MenuScreen.jsx', 1],
+      ['src/screens/OrderDetailScreen.jsx', 2],
+      ['src/screens/OrderListScreen.jsx', 1],
+      ['src/screens/ProductListScreen.jsx', 1],
+      ['src/screens/RedirectListScreen.jsx', 1],
+      ['src/screens/ReportsScreen.jsx', 1],
+      ['src/screens/ReviewListScreen.jsx', 1],
+      ['src/screens/category-detail/ProductsInCategoryCard.jsx', 1],
+      ['src/screens/settings/AssistantModelOperations.jsx', 1],
+      ['src/components/ImportProductsDialog.jsx', 1],
+    ]
+
+    for (const [relativePath, expectedTables, usesSeparateMobileList = false] of tableFiles) {
+      const source = readFileSync(join(ROOT, relativePath), 'utf8')
+      expect(source.match(/<AdminTable/g)?.length, relativePath).toBe(expectedTables)
+      if (usesSeparateMobileList) {
+        expect(source, relativePath).toContain('<MobileCardList')
+      } else {
+        expect(source.match(/mobileCard=/g)?.length, relativePath).toBeGreaterThanOrEqual(expectedTables)
+      }
+    }
+  })
+
+  test.each(DENSITY_SCREENS)('%s persists the shared table-density preference', (name) => {
+    expect(screen(name)).toContain('densityKey=')
+  })
+
+  test('orders default to compact rows while products default to spacious rows', () => {
+    expect(screen('OrderListScreen')).toContain('defaultDensity="compact"')
+    expect(screen('ProductListScreen')).toContain('defaultDensity="spacious"')
+  })
+
+  test('all five long detail sidebars stay visible while the main column scrolls', () => {
+    for (const name of ['CategoryDetailScreen', 'CustomerDetailScreen', 'ReviewDetailScreen', 'ChatConversationDetailScreen', 'OrderDetailScreen']) {
+      expect(screen(name), name).toContain('lg:sticky lg:top-4')
+    }
+  })
+
+  test('settings and media use the documented space-filling layouts', () => {
+    expect(screen('SettingsScreen')).toContain('grid grid-cols-1 gap-4 lg:grid-cols-4')
+    expect(screen('MediaLibraryScreen')).toContain('2xl:grid-cols-6')
+    expect(screen('MediaLibraryScreen')).toContain('<DetailSection')
+    expect(screen('MediaLibraryScreen')).toContain('<ResponsiveFilterBar')
+
+    const css = readFileSync(join(ROOT, 'src', 'index.css'), 'utf8')
+    expect(css).not.toMatch(/\.mediafolder-|\.medialib-(?:layout|main-col|filter-bar|grid|pagination-row)/)
   })
 })

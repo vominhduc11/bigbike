@@ -15,7 +15,7 @@ import { FilterSelect } from '@/components/FilterSelect'
 import { PaginationControls } from '@/components/PaginationControls'
 import { ReadOnlyBanner } from '@/components/ReadOnlyBanner'
 import { StatePanel } from '@/components/StatePanel'
-import { FilterBar, FormField, Screen, ScreenHeader } from '@/components/layout'
+import { FormField, ResponsiveFilterBar, Screen, ScreenHeader } from '@/components/layout'
 import {
   createLegacyDiscontinuedProduct,
   fetchLegacyDiscontinuedProducts,
@@ -127,6 +127,11 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
     setFormError('')
   }
 
+  function resetFilters() {
+    setSearchInput('')
+    setQuery((previous) => ({ ...previous, search: '', enabled: 'ALL', page: 1 }))
+  }
+
   function changeForm(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
     setFormError('')
@@ -227,17 +232,42 @@ export function LegacyDiscontinuedProductsScreen({ canUpdate }) {
         </section>
       ) : null}
 
-      <FilterBar ariaLabel={t('legacyDiscontinued.filterAria')}>
+      <ResponsiveFilterBar
+        ariaLabel={t('legacyDiscontinued.filterAria')}
+        activeFilterCount={Number(Boolean(query.search)) + Number(query.enabled !== 'ALL')}
+        onReset={resetFilters}
+      >
         <FilterSearchInput value={searchInput} onChange={setSearchInput} placeholder={t('legacyDiscontinued.searchPlaceholder')} wrapperClassName="min-w-64 flex-1" />
         <FilterSelect value={query.enabled} onValueChange={(enabled) => setQuery((previous) => ({ ...previous, enabled, page: 1 }))} ariaLabel={t('legacyDiscontinued.colStatus')} options={[{ value: 'ALL', label: t('legacyDiscontinued.allStatuses') }, { value: 'true', label: t('legacyDiscontinued.statusVisible') }, { value: 'false', label: t('legacyDiscontinued.statusOff') }]} />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         <Button type="button" variant="secondary" className="min-h-11" onClick={() => state.refetch()} disabled={state.isFetching}><RefreshCw size={16} className={state.isFetching ? 'animate-spin' : ''} />{t('common.refresh')}</Button>
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('legacyDiscontinued.emptyTitle')} description={t('legacyDiscontinued.emptyDescription')} actionLabel={canUpdate ? t('legacyDiscontinued.create') : undefined} onAction={canUpdate ? openCreate : undefined} />
       ) : (
-        <AdminTable columns={visibleColumns} rows={state.items} loading={state.status === 'loading'} pageSize={query.pageSize} caption={t('legacyDiscontinued.tableCaption')} rowClassName={(item) => enabledRowAccent(item.enabled)} onRowClick={canUpdate ? openEdit : undefined} />
+        <AdminTable
+          columns={visibleColumns}
+          rows={state.items}
+          loading={state.status === 'loading'}
+          pageSize={query.pageSize}
+          caption={t('legacyDiscontinued.tableCaption')}
+          densityKey="legacy-discontinued"
+          rowClassName={(item) => enabledRowAccent(item.enabled)}
+          onRowClick={canUpdate ? openEdit : undefined}
+          mobileCard={(item) => ({
+            title: item.name || t('legacyDiscontinued.unnamed'),
+            subtitle: `/sp/${item.slug}.html`,
+            status: enabledBadge(item.enabled, t),
+            meta: [
+              { label: t('legacyDiscontinued.colCategory'), value: item.categorySlug || '—' },
+              { label: t('legacyDiscontinued.colImage'), value: t(item.imageUrl ? 'legacyDiscontinued.hasImage' : 'legacyDiscontinued.noImage') },
+              { label: t('legacyDiscontinued.colUpdated'), value: formatDateTime(item.updatedAt) },
+            ],
+            actions: columns.find((column) => column.key === 'actions')?.render?.(item),
+            onClick: canUpdate ? () => openEdit(item) : undefined,
+          })}
+        />
       )}
       <PaginationControls pagination={state.pagination} disabled={state.isFetching} onPageChange={(page) => setQuery((previous) => ({ ...previous, page }))} />
     </Screen>

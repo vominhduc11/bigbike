@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminTable } from './AdminTable'
@@ -7,6 +7,8 @@ import { TableCell, TableRow } from '@/components/ui/table'
 const rows = [{ id: 'row-1', name: 'Bản ghi một' }]
 
 describe('AdminTable', () => {
+  beforeEach(() => window.localStorage.clear())
+
   it('cho phép bảng kéo-thả dùng hàng tùy biến nhưng vẫn giữ khung bảng dùng chung', () => {
     render(
       <AdminTable
@@ -70,5 +72,24 @@ describe('AdminTable', () => {
 
     expect(screen.getByRole('columnheader', { name: 'Tên' })).toHaveClass('min-w-60')
     expect(screen.getByRole('cell', { name: 'Bản ghi một' })).toHaveClass('min-w-60')
+  })
+
+  it('nhớ mật độ riêng của màn hình sau khi người dùng đổi', async () => {
+    const user = userEvent.setup()
+    render(
+      <AdminTable
+        caption="Danh sách"
+        columns={[{ key: 'name', label: 'Tên' }]}
+        rows={rows}
+        densityKey="products"
+        defaultDensity="spacious"
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /common\.tableDensity\.spacious|Thoáng|Spacious/ }))
+    await user.click(screen.getByRole('menuitemradio', { name: /common\.tableDensity\.compact|Gọn|Compact/ }))
+
+    expect(window.localStorage.getItem('bigbike-admin:table-density:products')).toBe('compact')
+    expect(screen.getByRole('button', { name: /common\.tableDensity\.compact|Gọn|Compact/ })).toBeInTheDocument()
   })
 })

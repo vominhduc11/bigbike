@@ -542,9 +542,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
             <div className="hidden lg:block">
-              <DetailSection className="sticky top-0" noPadding>
+              <DetailSection className="sticky top-4" noPadding>
                 <nav className="p-2" aria-label={t('settings.tabsAria')}>
                 <div className="border-b border-border px-3 pb-3 pt-2">
                   <p className="m-0 text-sm font-semibold text-foreground">{t('settings.navigatorTitle')}</p>

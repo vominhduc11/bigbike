@@ -18,7 +18,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { TableRowActions } from '../components/TableRowActions'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import {
   deleteContent,
   fetchContent,
@@ -452,7 +452,12 @@ export function ContentListScreen({ navigate, canUpdate }) {
         <ReadOnlyBanner warning={state.warning} />
       ) : null}
 
-      <FilterBar ariaLabel={t('content.filterAria')} className="mt-4">
+      <ResponsiveFilterBar
+        ariaLabel={t('content.filterAria')}
+        className="mt-4"
+        activeFilterCount={filterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -500,7 +505,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             {t('content.refreshing')}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <FilterChips
         chips={filterChips}
@@ -545,6 +550,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
         <DetailSection noPadding>
             <AdminTable
+              caption={t('content.tableCaption')}
               columns={visibleColumns}
               rows={items}
               loading={state.status === 'loading'}
@@ -557,6 +563,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
               sortDir={sortDir}
               onSortChange={(key, direction) => updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })}
               selectable={canUpdate}
+              densityKey="content"
               selectedIds={[...selected]}
               onSelectionChange={(ids) => setSelected(new Set(ids))}
             />

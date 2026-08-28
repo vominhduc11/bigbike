@@ -49,7 +49,7 @@ import {
   buildTree,
 } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { AdminTable } from '../components/AdminTable'
 import { TableRowActions } from '../components/TableRowActions'
 
@@ -1072,7 +1072,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </Alert>
       )}
 
-      <FilterBar ariaLabel={t('categories.filterAria', { defaultValue: 'Bộ lọc danh mục' })} className="mt-4">
+      <ResponsiveFilterBar
+        ariaLabel={t('categories.filterAria', { defaultValue: 'Bộ lọc danh mục' })}
+        className="mt-4"
+        activeFilterCount={activeFilterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -1178,7 +1183,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             </Button>
           </div>
         </div>
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       {/* Active filter chips. Visible only when at least one filter
           differs from the default — gives users a quick way to see and
@@ -1270,6 +1275,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                           : renderCategoryRow(row, row._depth)}
                         mobileCard={mobileCategoryCard}
                         mobileListClassName="p-3"
+                        densityKey="categories"
                       />
                     </SortableContext>
                   </DndContext>
@@ -1320,6 +1326,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   renderRow={(category) => renderCategoryRow(category, 0)}
                   mobileCard={mobileCategoryCard}
                   mobileListClassName="p-3"
+                  densityKey="categories"
                 />
               {flatModeStatus === 'success' && (
                 <div className="px-4">

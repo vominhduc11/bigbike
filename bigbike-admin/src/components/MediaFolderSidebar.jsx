@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Folder, FolderOpen, Plus, Pencil, Trash2, Inbox, Hash } from 'lucide-react'
+import { ChevronDown, Folder, FolderOpen, Plus, Pencil, Trash2, Inbox, Hash } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { showConfirm } from '../lib/confirm'
 import {
@@ -11,6 +11,7 @@ import {
 } from '../lib/adminApi'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 /**
  * Left-rail sidebar with three sections:
@@ -37,6 +38,7 @@ export function MediaFolderSidebar({
   const [tagsStatus, setTagsStatus] = useState('loading') // 'loading' | 'error' | 'ready'
   const [editingId, setEditingId] = useState(null)
   const [creating, setCreating] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   // Tạo/đổi tên/xoá thư mục là việc thỉnh thoảng mới làm — ẩn sau công tắc "Quản lý"
   // để trạng thái nghỉ của sidebar chỉ còn danh sách để lọc, không có nút nào.
   const [manageMode, setManageMode] = useState(false)
@@ -95,22 +97,37 @@ export function MediaFolderSidebar({
   }
 
   return (
-    <aside className="mediafolder-sidebar">
-      <section className="mediafolder-section">
-        <p className="mediafolder-section-title">{t('media.folders')}</p>
-        <ul className="mediafolder-list">
+    <aside className="flex w-full shrink-0 flex-col gap-4 self-start rounded-[var(--admin-radius-card)] border border-border bg-surface p-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-var(--admin-space-8))] lg:w-56 lg:overflow-y-auto">
+      <Button
+        type="button"
+        variant="ghost"
+        className="min-h-11 w-full justify-between lg:hidden"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen((open) => !open)}
+      >
+        <span className="inline-flex items-center gap-2">
+          <FolderOpen size={16} aria-hidden="true" />
+          {t('media.folders')}
+        </span>
+        <ChevronDown className={cn('size-4 transition-transform', mobileOpen && 'rotate-180')} aria-hidden="true" />
+      </Button>
+
+      <div className={cn('flex flex-col gap-4', !mobileOpen && 'max-lg:hidden')}>
+      <section className="flex flex-col gap-2">
+        <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('media.folders')}</p>
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
           <li>
-            <Button variant="unstyled" onClick={() => onSelectFolder('')}
+            <Button variant="ghost" onClick={() => { onSelectFolder(''); setMobileOpen(false) }}
               aria-current={!folderFilter ? 'true' : undefined}
-              className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}>
+              className={cn('w-full justify-start px-3 text-sm', !folderFilter && 'bg-surface-selected text-primary')}>
               <FolderOpen size={14} />
               <span>{t('media.allFolders')}</span>
             </Button>
           </li>
           <li>
-            <Button variant="unstyled" onClick={() => onSelectFolder('NONE')}
+            <Button variant="ghost" onClick={() => { onSelectFolder('NONE'); setMobileOpen(false) }}
               aria-current={folderFilter === 'NONE' ? 'true' : undefined}
-              className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}>
+              className={cn('w-full justify-start px-3 text-sm', folderFilter === 'NONE' && 'bg-surface-selected text-primary')}>
               <Inbox size={14} />
               <span>{t('media.uncategorized')}</span>
             </Button>
@@ -118,29 +135,29 @@ export function MediaFolderSidebar({
         </ul>
       </section>
 
-      <section className="mediafolder-section">
-        <div className="mediafolder-section-header">
-          <p className="mediafolder-section-title">{t('media.myFolders')}</p>
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('media.myFolders')}</p>
           {canUpdate && (
             <div className="flex items-center gap-1">
               {manageMode && (
-                <Button variant="unstyled" onClick={() => setCreating(true)} className="mediafolder-add-btn"
+                <Button variant="outline" size="sm" onClick={() => setCreating(true)} className="w-7 px-0"
                   aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
                   <Plus size={14} />
                 </Button>
               )}
-              <Button variant="unstyled" aria-pressed={manageMode}
+              <Button variant="ghost" size="sm" aria-pressed={manageMode}
                 onClick={() => { setManageMode((s) => !s); setCreating(false); setEditingId(null) }}
-                className="mediafolder-action-btn w-auto px-2 text-xs">
+                className="w-auto px-2 text-xs">
                 {manageMode ? t('media.folderManageDone') : t('media.folderManage')}
               </Button>
             </div>
           )}
         </div>
         {folders.length === 0 && !creating && (
-          <p className="mediafolder-empty">{t('media.foldersEmpty')}</p>
+          <p className="my-1 text-xs text-muted-foreground">{t('media.foldersEmpty')}</p>
         )}
-        <ul className="mediafolder-list">
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
           {creating && (
             <li>
               <FolderInput onSubmit={handleCreate} onCancel={() => setCreating(false)}
@@ -154,22 +171,22 @@ export function MediaFolderSidebar({
                   onSubmit={(name) => handleRename(f.id, name)}
                   onCancel={() => setEditingId(null)} />
               ) : (
-                <div className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}>
-                  <Button variant="unstyled" onClick={() => onSelectFolder(f.id)}
+                <div className={cn('relative flex items-center rounded-[var(--admin-radius-control)]', folderFilter === f.id && 'bg-surface-selected text-primary')}>
+                  <Button variant="ghost" onClick={() => { onSelectFolder(f.id); setMobileOpen(false) }}
                     aria-current={folderFilter === f.id ? 'true' : undefined}
-                    className="mediafolder-item-btn">
+                    className="w-full justify-start px-3 text-sm">
                     <Folder size={14} />
-                    <span className="mediafolder-item-label">{f.name}</span>
-                    <span className="mediafolder-item-count">{f.mediaCount}</span>
+                    <span className="min-w-0 flex-1 truncate text-left">{f.name}</span>
+                    <span className={cn('rounded-full bg-surface-muted px-2 text-xs text-muted-foreground', folderFilter === f.id && 'bg-primary text-primary-foreground')}>{f.mediaCount}</span>
                   </Button>
                   {canUpdate && manageMode && (
-                    <div className="mediafolder-item-actions">
-                      <Button variant="unstyled" onClick={() => setEditingId(f.id)}
-                        className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>
+                    <div className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-1 bg-surface p-1">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(f.id)}
+                        className="w-7 px-0" aria-label={t('common.edit')} title={t('common.edit')}>
                         <Pencil size={11} />
                       </Button>
-                      <Button variant="unstyled" onClick={() => handleDelete(f)}
-                        className="mediafolder-action-btn" aria-label={t('common.delete')} title={t('common.delete')}>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(f)}
+                        className="w-7 px-0 text-danger" aria-label={t('common.delete')} title={t('common.delete')}>
                         <Trash2 size={11} />
                       </Button>
                     </div>
@@ -182,21 +199,21 @@ export function MediaFolderSidebar({
       </section>
 
       {(tagsStatus !== 'ready' || tags.length > 0) && (
-        <section className="mediafolder-section">
-          <p className="mediafolder-section-title">{t('media.popularTags')}</p>
+        <section className="flex flex-col gap-2">
+          <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('media.popularTags')}</p>
           {tagsStatus === 'loading' && (
-            <p className="mediafolder-empty" role="status">{t('common.loading')}</p>
+            <p className="my-1 text-xs text-muted-foreground" role="status">{t('common.loading')}</p>
           )}
           {tagsStatus === 'error' && (
-            <p className="mediafolder-empty">{t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}</p>
+            <p className="my-1 text-xs text-muted-foreground">{t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}</p>
           )}
           {tagsStatus === 'ready' && tags.length > 0 && (
-            <div className="mediafolder-tags-wrap">
+            <div className="flex flex-wrap gap-1">
               {tags.map((tg) => (
-                <Button variant="unstyled" key={tg}
-                  onClick={() => onSelectTag(tag === tg ? '' : tg)}
+                <Button variant={tag === tg ? 'default' : 'outline'} size="sm" key={tg}
+                  onClick={() => { onSelectTag(tag === tg ? '' : tg); setMobileOpen(false) }}
                   aria-pressed={tag === tg}
-                  className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
+                  className="h-7 px-2 text-xs">
                   <Hash size={11} /> {tg}
                 </Button>
               ))}
@@ -204,6 +221,7 @@ export function MediaFolderSidebar({
           )}
         </section>
       )}
+      </div>
     </aside>
   )
 }
@@ -216,8 +234,7 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
   // Explicit Lưu/Huỷ so a rename isn't lost by clicking away, and doesn't require
   // discovering that Enter saves. Escape still cancels for keyboard users.
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }}
-      className="mediafolder-edit-form">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }} className="py-1">
       <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
         aria-label={accessibleLabel}

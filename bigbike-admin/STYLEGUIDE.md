@@ -83,8 +83,11 @@ Không khôi phục `SectionCard`, `MediaCardSkeleton`, skeleton/vạch xám t�
 
 - Màn danh sách: `Screen` → `ScreenHeader` → cảnh báo/quyền → `FilterBar` → `FilterChips` nếu có → `BulkActionBar` khi có chọn thật → `AdminTable`/`MobileCardList` → phân trang.
 - Màn form/detail: `Screen` → `ScreenHeader` → trạng thái/cảnh báo → form gồm các `DetailSection` → `StickyActionBar`.
+- Màn detail hai cột dùng khoảng cách 16px; cột phụ đặt `sticky` dưới header khi chiều cao màn cho phép để không tạo cột trắng dài lúc cuộn. Trên mobile hai cột luôn nhập thành một luồng dọc.
 - Dashboard/report: `ScreenHeader` → `SummaryCard`/KPI → `DetailSection`; không dựng card header/body bằng tay.
 - Màn nhúng: giữ nội dung và trạng thái, bỏ H1/header cấp trang bị trùng.
+- `SettingsScreen` chia biểu mẫu theo hai cột ở desktop và không bọc một ô nhập trong quá hai lớp viền. `MediaLibraryScreen` giữ cột thư mục sticky, đặt filter/lưới/phân trang trong cùng khối chuẩn và dùng tối đa 6 cột ảnh ở desktop rộng.
+- `ScreenHeader` có một thao tác thì giữ nút trực tiếp. Khi có nhiều thao tác, mobile chỉ hiện nút “…” 44px mở bảng thao tác; desktop vẫn hiện các nút đầy đủ. Không xếp ba nút thành ba dòng trước dữ liệu.
 
 ## 6. Bảng dữ liệu
 

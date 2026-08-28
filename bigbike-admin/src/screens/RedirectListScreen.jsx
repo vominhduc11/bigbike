@@ -20,7 +20,7 @@ import { TableRowActions } from '../components/TableRowActions'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FormField } from '../components/layout/FormField'
-import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -632,7 +632,12 @@ export function RedirectListScreen({ canUpdate }) {
         </section>
       )}
 
-      <FilterBar ariaLabel={t('redirects.filterAria', { defaultValue: 'Bộ lọc chuyển hướng' })} className="items-center">
+      <ResponsiveFilterBar
+        ariaLabel={t('redirects.filterAria', { defaultValue: 'Bộ lọc chuyển hướng' })}
+        className="items-center"
+        activeFilterCount={activeFilterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={(value) => setSearchInput(value.slice(0, 200))}
@@ -676,7 +681,7 @@ export function RedirectListScreen({ canUpdate }) {
             {t('redirects.refreshing', { defaultValue: 'Đang cập nhật' })}
           </span>
         ) : null}
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       <FilterChips
         chips={activeFilterChips}
@@ -741,6 +746,7 @@ export function RedirectListScreen({ canUpdate }) {
             selectedIds={selected}
             onSelectionChange={setSelected}
             rowClassName={(redirect) => enabledRowAccent(redirect.enabled)}
+            densityKey="redirects"
           />
           {state.status === 'success' && pagination && (
             <div className="px-4">

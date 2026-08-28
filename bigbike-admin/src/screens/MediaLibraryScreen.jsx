@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { RefreshCw, Trash2, Upload, X as XIcon } from 'lucide-react'
+import { RefreshCw, Trash2, Upload } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -13,6 +13,9 @@ import { FilterChips } from '../components/FilterChips'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { MediaCard } from '../components/MediaCard'
+import { DetailSection } from '../components/DetailSection'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { FilterSelect } from '../components/FilterSelect'
 import { showConfirm } from '../lib/confirm'
 import {
   bulkDeleteMedia,
@@ -34,12 +37,9 @@ import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
 import { useKeyboardNav } from '../lib/useKeyboardNav'
 import { sendAdminWs } from '../lib/adminWebSocket'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/layout/Modal'
-import { Screen, ScreenHeader } from '@/components/layout'
+import { Modal, ResponsiveFilterBar, Screen, ScreenHeader } from '@/components/layout'
 import {
   ALLOWED_MIME,
   MAX_FILE_SIZE,
@@ -466,7 +466,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {/* Upload queue */}
       {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} />}
 
-      <div className="medialib-layout">
+      <div className="grid items-start gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
         <MediaFolderSidebar
           folderFilter={query.folderFilter}
           tag={query.tag}
@@ -477,71 +477,87 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           onSelectTag={(v) => updateQuery({ tag: v })}
         />
 
-        <div className="medialib-main-col" ref={dropZoneRef}>
+        <DetailSection className="min-w-0" contentClassName="space-y-4" ref={dropZoneRef}>
 
       {/* ── Filter bar ─────────────────────────────────────────── */}
-      <section className="medialib-filter-bar">
-        <label className="flex-[1_1_220px] min-w-[200px]">
-          {t('common.search')}
-          <div className="medialib-search-wrap">
-            <Input type="search" value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={t('media.searchPlaceholder')}
-              className={searchInput ? 'pr-8' : 'pr-3'}  />
-            {searchInput && (
-              <Button variant="unstyled" type="button" onClick={() => setSearchInput('')}
-                aria-label={t('common.clear')}
-                className="medialib-search-clear focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-color-primary)]">
-                <XIcon size={14} />
-              </Button>
-            )}
-          </div>
-        </label>
+      <ResponsiveFilterBar
+        ariaLabel={t('media.filtersAria')}
+        className="items-end"
+        activeFilterCount={activeChips.length}
+        onReset={resetFilters}
+      >
+        <div className="min-w-52 flex-1">
+          <span className="mb-2 block text-sm font-semibold text-foreground">{t('common.search')}</span>
+          <FilterSearchInput
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder={t('media.searchPlaceholder')}
+            ariaLabel={t('common.search')}
+          />
+        </div>
 
-        <label>
-          {t('media.filterType')}
-          <Select value={query.mimeType}
-            onValueChange={(val) => updateQuery({ mimeType: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('media.allFiles')}{stats ? ` (${formatNumber(stats.total)})` : ''}</SelectItem>
-            <SelectItem value="image/">{t('media.images')}{stats?.byMimeGroup?.image != null ? ` (${formatNumber(stats.byMimeGroup.image)})` : ''}</SelectItem>
-            <SelectItem value="video/">{t('media.videos')}{stats?.byMimeGroup?.video != null ? ` (${formatNumber(stats.byMimeGroup.video)})` : ''}</SelectItem>
-          </SelectContent></Select>
-        </label>
+        <div className="grid min-w-40 gap-2">
+          <span className="text-sm font-semibold text-foreground">{t('media.filterType')}</span>
+          <FilterSelect
+            value={query.mimeType}
+            onValueChange={(mimeType) => updateQuery({ mimeType })}
+            ariaLabel={t('media.filterType')}
+            className="w-full"
+            options={[
+              { value: 'ALL', label: `${t('media.allFiles')}${stats ? ` (${formatNumber(stats.total)})` : ''}` },
+              { value: 'image/', label: `${t('media.images')}${stats?.byMimeGroup?.image != null ? ` (${formatNumber(stats.byMimeGroup.image)})` : ''}` },
+              { value: 'video/', label: `${t('media.videos')}${stats?.byMimeGroup?.video != null ? ` (${formatNumber(stats.byMimeGroup.video)})` : ''}` },
+            ]}
+          />
+        </div>
 
-        <label>
-          {t('media.filterUsage')}
-          <Select value={query.usageFilter}
-            onValueChange={(val) => updateQuery({ usageFilter: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}{stats ? ` (${formatNumber(stats.total)})` : ''}</SelectItem>
-            <SelectItem value="USED">{t('media.usageUsed')}{stats ? ` (${formatNumber(stats.used)})` : ''}</SelectItem>
-            <SelectItem value="UNUSED">{t('media.usageUnusedOption')}{stats ? ` (${formatNumber(stats.unused)})` : ''}</SelectItem>
-          </SelectContent></Select>
-        </label>
+        <div className="grid min-w-40 gap-2">
+          <span className="text-sm font-semibold text-foreground">{t('media.filterUsage')}</span>
+          <FilterSelect
+            value={query.usageFilter}
+            onValueChange={(usageFilter) => updateQuery({ usageFilter })}
+            ariaLabel={t('media.filterUsage')}
+            className="w-full"
+            options={[
+              { value: 'ALL', label: `${t('common.all')}${stats ? ` (${formatNumber(stats.total)})` : ''}` },
+              { value: 'USED', label: `${t('media.usageUsed')}${stats ? ` (${formatNumber(stats.used)})` : ''}` },
+              { value: 'UNUSED', label: `${t('media.usageUnusedOption')}${stats ? ` (${formatNumber(stats.unused)})` : ''}` },
+            ]}
+          />
+        </div>
 
-        <label>
-          {t('common.sort')}
-          <Select value={`${query.sort}:${query.dir}`}
-            onValueChange={(val) => { const [sort, dir] = val.split(':'); updateQuery({ sort, dir }) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="createdAt:desc">{t('media.sortNewest')}</SelectItem>
-            <SelectItem value="createdAt:asc">{t('media.sortOldest')}</SelectItem>
-            <SelectItem value="title:asc">{t('media.sortNameAZ')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-      </section>
+        <div className="grid min-w-40 gap-2">
+          <span className="text-sm font-semibold text-foreground">{t('common.sort')}</span>
+          <FilterSelect
+            value={`${query.sort}:${query.dir}`}
+            onValueChange={(value) => {
+              const [sort, dir] = value.split(':')
+              updateQuery({ sort, dir })
+            }}
+            ariaLabel={t('common.sort')}
+            className="w-full"
+            options={[
+              { value: 'createdAt:desc', label: t('media.sortNewest') },
+              { value: 'createdAt:asc', label: t('media.sortOldest') },
+              { value: 'title:asc', label: t('media.sortNameAZ') },
+            ]}
+          />
+        </div>
+      </ResponsiveFilterBar>
 
       {/* Toolbar: chips + summary */}
-      <div className="medialib-toolbar-row">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <FilterChips
           chips={activeChips}
           onClearAll={resetFilters}
           clearAllLabel={t('common.resetFilters')}
           removeChipLabel={t('common.clear')}
         />
-        <div className="flex items-center gap-3 ml-auto">
-          <p className="medialib-result-summary">
+        <div className="ml-auto flex items-center gap-3">
+          <p className="m-0 flex items-center gap-1 text-xs text-muted-foreground">
             {state.pagination
               ? <>
-                  {t('media.found')}: <strong>{formatNumber(state.pagination.totalItems)}</strong>
+                  {t('media.found')}: <strong className="font-bold text-foreground">{formatNumber(state.pagination.totalItems)}</strong>
                   {stats?.totalSizeBytes && stats.sizeKnownCount >= (state.pagination?.totalItems ?? 0) * 0.5
                     ? <span> · {formatBytes(stats.totalSizeBytes)}</span>
                     : null}
@@ -641,18 +657,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
       {(state.status === 'success' || state.status === 'refreshing') && state.items.length > 0 && (
         <>
-          <div className="medialib-grid" ref={gridRef} aria-busy={isRefreshing || undefined}>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6" ref={gridRef} aria-busy={isRefreshing || undefined}>
             {state.items.map((m, i) => <MediaCard key={m.id} {...cardProps(m, i)} />)}
           </div>
 
           {/* Số mỗi trang chỉ còn 1 chỗ duy nhất — bộ chọn ở thanh công cụ phía trên
               (PageSizeSelect). Bỏ bản lặp cạnh phân trang để tránh 2 control cùng chức năng. */}
-          <div className="medialib-pagination-row">
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-3">
             <PaginationControls pagination={state.pagination} disabled={isRefreshing} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
           </div>
         </>
       )}
-        </div>
+        </DetailSection>
       </div>
 
       {editingMedia && (

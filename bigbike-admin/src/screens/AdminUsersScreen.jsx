@@ -11,8 +11,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { FormField } from '../components/layout/FormField'
-import { Modal, Screen, ScreenHeader } from '../components/layout'
-import { FilterBar } from '../components/layout/FilterBar'
+import { Modal, ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
@@ -844,7 +843,11 @@ export function AdminUsersScreen({
         </Alert>
       )}
 
-      <FilterBar ariaLabel={t('adminUsers.filtersAria')}>
+      <ResponsiveFilterBar
+        ariaLabel={t('adminUsers.filtersAria')}
+        activeFilterCount={activeFilterChips.length}
+        onReset={resetFilters}
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
@@ -874,7 +877,7 @@ export function AdminUsersScreen({
           onChange={(n) => setQuery((p) => ({ ...p, pageSize: n, page: 1 }))}
         />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-      </FilterBar>
+      </ResponsiveFilterBar>
 
       {/* T10: chip lọc đang áp dụng + nút xoá tất cả — hiện cả khi vẫn còn kết quả. */}
       <FilterChips
@@ -912,6 +915,7 @@ export function AdminUsersScreen({
       {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
         <DetailSection noPadding>
             <AdminTable
+              caption={t('adminUsers.tableCaption')}
               columns={visibleColumns}
               rows={items}
               loading={isLoading}
@@ -921,6 +925,7 @@ export function AdminUsersScreen({
               sortDir={sort.dir}
               onSortChange={(key, dir) => setSort({ key, dir })}
               rowClassName={(user) => `bb-row-accent--${STATUS_META[user.status]?.tone ?? 'muted'}`}
+              densityKey="admin-users"
             />
           {listState.status === 'success' && listState.pagination && (
             <div className="px-4">

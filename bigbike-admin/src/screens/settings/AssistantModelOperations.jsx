@@ -381,6 +381,14 @@ export function AssistantModelOperations({ canUpdate }) {
                   columns={comparisonColumns}
                   rows={comparisonRows}
                   pageSize={comparisonRows.length}
+                  mobileCard={(row) => ({
+                    title: row.metric,
+                    meta: comparisonColumns.slice(1).map((column) => ({
+                      label: column.label,
+                      value: row[column.key] ?? '—',
+                      tone: 'strong',
+                    })),
+                  })}
                 />
               </div>
             ) : (

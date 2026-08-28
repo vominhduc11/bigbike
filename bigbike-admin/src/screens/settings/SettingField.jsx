@@ -119,7 +119,7 @@ export function SettingField({
 
   return (
     <div
-      className="h-full rounded-md border border-border bg-surface p-4"
+      className="h-full py-1"
       role={isHtml || isImage || isAssistantConfig ? 'group' : undefined}
       aria-labelledby={isHtml || isImage || isAssistantConfig ? labelId : undefined}
       aria-describedby={isHtml || isImage || isAssistantConfig ? describedBy : undefined}
