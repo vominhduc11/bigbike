@@ -34,6 +34,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import okhttp3.Headers;
@@ -65,6 +66,8 @@ class AdminMediaP0Test {
         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
         0x08, 0x02, 0x00, 0x00, 0x00, (byte) 0x90, 0x77, 0x53, (byte) 0xDE
     };
+    private static final byte[] WEBP_BYTES = Base64.getDecoder().decode(
+            "UklGRiIAAABXRUJQVlA4TBUAAAAvz0cCAAcQ9Y/+BwAU6f9/ieh/KhwA");
 
     private static final String ADMIN_EMAIL       = "p0media-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ADMIN_PASS        = "Admin@P0Test1234";
@@ -112,6 +115,42 @@ class AdminMediaP0Test {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.mimeType").value("image/png"));
+    }
+
+    @Test
+    void upload_validJpeg_returns201() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "photo.JPG", "image/jpeg", jpegBytes(8, 6));
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mimeType").value("image/jpeg"));
+    }
+
+    @Test
+    void upload_validWebp_returns201() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "photo.webp", "image/webp", WEBP_BYTES);
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mimeType").value("image/webp"));
+    }
+
+    @Test
+    void upload_validMp4_returns201() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "video.mp4", "video/mp4", mp4Bytes());
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mimeType").value("video/mp4"));
     }
 
     @Test
@@ -220,26 +259,35 @@ class AdminMediaP0Test {
     }
 
     @Test
-    void upload_svgWithScript_isSanitizedAndReturns201() throws Exception {
-        // SVG upload is now accepted; the sanitizer strips the embedded <script> before storage.
-        // (Per-vector sanitization is asserted at the unit level in SvgSanitizerTest.)
-        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script><path d=\"M0 0h10v10H0z\"/></svg>".getBytes();
+    void upload_gif_returns400() throws Exception {
+        byte[] gif = "GIF89a".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "icon.gif", "image/gif", gif);
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void upload_svg_returns400() throws Exception {
+        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         MockMultipartFile file = new MockMultipartFile(
                 "file", "icon.svg", "image/svg+xml", svg);
 
         mockMvc.perform(multipart("/api/v1/admin/media")
                         .file(file)
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.mimeType").value("image/svg+xml"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
     @Test
-    void upload_svgDeclaredButNotSvgContent_returns400() throws Exception {
-        // image/svg+xml declared, but the body has no <svg> root — sanitizer rejects it.
-        byte[] notSvg = "just plain text, not an svg at all".getBytes();
+    void upload_gifRenamedToJpg_returns400() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
-                "file", "fake.svg", "image/svg+xml", notSvg);
+                "file", "renamed.jpg", "image/jpeg", "GIF89a".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 
         mockMvc.perform(multipart("/api/v1/admin/media")
                         .file(file)
@@ -293,6 +341,19 @@ class AdminMediaP0Test {
             ImageIO.write(image, "png", output);
             return output.toByteArray();
         }
+    }
+
+    private static byte[] jpegBytes(int width, int height) throws IOException {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "jpg", output);
+            return output.toByteArray();
+        }
+    }
+
+    private static byte[] mp4Bytes() {
+        return new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'm', 'p', '4', '2',
+                0, 0, 0, 0, 'm', 'p', '4', '2', 'i', 's', 'o', 'm'};
     }
 
     /** Kéo giá trị chuỗi của field top-level đầu tiên khớp {@code "<field>":"..."} trong JSON body. */

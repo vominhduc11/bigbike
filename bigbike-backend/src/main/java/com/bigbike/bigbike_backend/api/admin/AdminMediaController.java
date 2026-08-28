@@ -81,6 +81,7 @@ public class AdminMediaController extends AdminControllerSupport {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String mimeType,
+            @RequestParam(required = false) String mimeTypes,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String storageProvider,
             @RequestParam(required = false) String usageFilter,
@@ -98,7 +99,7 @@ public class AdminMediaController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "media.read");
         MediaListQuery query = new MediaListQuery(
-                page, size, q, mimeType, status, storageProvider, usageFilter,
+                page, size, q, mimeType, mimeTypes, status, storageProvider, usageFilter,
                 parseInstant(uploadedFrom), parseInstant(uploadedTo),
                 minSize, maxSize, minWidth, minHeight, sort, dir,
                 folderFilter, tag);
@@ -109,6 +110,7 @@ public class AdminMediaController extends AdminControllerSupport {
     public ApiDataResponse<AdminMediaStatsResponse> getStats(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String mimeType,
+            @RequestParam(required = false) String mimeTypes,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String storageProvider,
             @RequestParam(required = false) String uploadedFrom,
@@ -123,7 +125,7 @@ public class AdminMediaController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "media.read");
         MediaListQuery query = new MediaListQuery(
-                1, 1, q, mimeType, status, storageProvider, null,
+                1, 1, q, mimeType, mimeTypes, status, storageProvider, null,
                 parseInstant(uploadedFrom), parseInstant(uploadedTo),
                 minSize, maxSize, minWidth, minHeight, null, null,
                 folderFilter, tag);

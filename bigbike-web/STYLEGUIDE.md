@@ -9,21 +9,21 @@
 
 ## Nguyên Tắc Bắt Buộc
 
-| Mục | Quy tắc |
-|---|---|
-| Theme | Light-first (WP-parity): nền trang `#ffffff`, chữ đen; header và footer giữ dark |
-| CTA chính | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale |
-| Link / tương tác phụ | Xanh `#007BFF` |
-| Chat / hỗ trợ | Cyan riêng (`--bb-chat-title-bg`), nút tròn cố định góc phải dưới |
-| Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
-| Font body / link | Arial |
-| Font display / CTA / nhãn chức năng (nhóm B) | Arial / Helvetica (UPPERCASE) — **Oswald và font display riêng đã gỡ bỏ** |
-| Font menu chính | Arial / Helvetica, giữ nguyên kiểu chữ của nhãn dữ liệu — **Oswald và font display riêng đã gỡ bỏ** |
-| Font tiêu đề trang / tiêu đề nội dung / body / link (nhóm A) | Arial / Helvetica |
-| Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
-| Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
-| Copy | Tiếng Việt đầy đủ dấu; nhóm B luôn viết HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn; nhóm A dùng sentence case |
-| Emoji | Không dùng |
+| Mục                                                          | Quy tắc                                                                                                               |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Theme                                                        | Light-first (WP-parity): nền trang `#ffffff`, chữ đen; header và footer giữ dark                                      |
+| CTA chính                                                    | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale                                                                   |
+| Link / tương tác phụ                                         | Xanh `#007BFF`                                                                                                        |
+| Chat / hỗ trợ                                                | Cyan riêng (`--bb-chat-title-bg`), nút tròn cố định góc phải dưới                                                     |
+| Bo góc                                                       | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%`                                                   |
+| Font body / link                                             | Arial                                                                                                                 |
+| Font display / CTA / nhãn chức năng (nhóm B)                 | Arial / Helvetica (UPPERCASE) — **Oswald và font display riêng đã gỡ bỏ**                                             |
+| Font menu chính                                              | Arial / Helvetica, giữ nguyên kiểu chữ của nhãn dữ liệu — **Oswald và font display riêng đã gỡ bỏ**                   |
+| Font tiêu đề trang / tiêu đề nội dung / body / link (nhóm A) | Arial / Helvetica                                                                                                     |
+| Card                                                         | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ                                                  |
+| Product card                                                 | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ                                                                        |
+| Copy                                                         | Tiếng Việt đầy đủ dấu; nhóm B luôn viết HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn; nhóm A dùng sentence case |
+| Emoji                                                        | Không dùng                                                                                                            |
 
 ---
 
@@ -87,19 +87,19 @@ Accessibility mappings:
 
 Toàn bộ typography dùng **Arial / Helvetica** cho tiêu đề, nội dung và chữ chức năng/nhấn; nhóm B mặc định viết IN HOA, riêng menu chính giữ nguyên kiểu chữ của nhãn. **Oswald và font display riêng không được dùng.**
 
-| Nhóm | Vai trò | Phông cố định | Mobile `<768px` | Desktop `≥768px` | Ví dụ |
-|---|---|---|---:|---:|---|
-| B1 | Trang trí / Display | Arial / Helvetica, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
-| B2 | Liên hệ lớn | Arial / Helvetica, IN HOA | 24px | 30px | Hotline/email lớn, “Thông tin cửa hàng” |
-| B3 | Badge nhấn / % giảm | Arial / Helvetica, IN HOA | 16px | 18px | “-20%”, nhãn giảm giá nổi bật |
-| B4 | Nút · Menu · Tab | Arial / Helvetica | 16px | 18px | Nút/tab/nhãn Còn-Hết hàng viết HOA; menu chính giữ nguyên kiểu chữ của nhãn |
-| B5 | Nhãn nhỏ / Eyebrow / Badge | Arial / Helvetica, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
-| A1 | Tiêu đề lớn H1 | Arial / Helvetica | 26px | 32px | Tiêu đề khối lớn, tên và giá lớn trên trang sản phẩm |
-| A2 | Tiêu đề trang H2 | Arial / Helvetica | 20px | 24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
-| A3 | Tiêu đề khối H3 | Arial / Helvetica | 18px | 20px | Tiêu đề khối, hộp thoại, sidebar |
-| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 16px | 18px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
-| A5 | Chú thích / Meta | Arial / Helvetica | 13px | 14px | Breadcrumb, phụ đề, nhãn form, giá phụ, bộ đếm |
-| D | Trang trí nền | Phông tại thành phần | `clamp()` | `clamp()` | Chỉ số “404” mờ trong `app/not-found.tsx` |
+| Nhóm | Vai trò                    | Phông cố định             | Mobile `<768px` | Desktop `≥768px` | Ví dụ                                                                       |
+| ---- | -------------------------- | ------------------------- | --------------: | ---------------: | --------------------------------------------------------------------------- |
+| B1   | Trang trí / Display        | Arial / Helvetica, IN HOA |            30px |             40px | Slogan footer, chữ hero trang trí, số kết quả bảng size                     |
+| B2   | Liên hệ lớn                | Arial / Helvetica, IN HOA |            24px |             30px | Hotline/email lớn, “Thông tin cửa hàng”                                     |
+| B3   | Badge nhấn / % giảm        | Arial / Helvetica, IN HOA |            16px |             18px | “-20%”, nhãn giảm giá nổi bật                                               |
+| B4   | Nút · Menu · Tab           | Arial / Helvetica         |            16px |             18px | Nút/tab/nhãn Còn-Hết hàng viết HOA; menu chính giữ nguyên kiểu chữ của nhãn |
+| B5   | Nhãn nhỏ / Eyebrow / Badge | Arial / Helvetica, IN HOA |            11px |             12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU                          |
+| A1   | Tiêu đề lớn H1             | Arial / Helvetica         |            26px |             32px | Tiêu đề khối lớn, tên và giá lớn trên trang sản phẩm                        |
+| A2   | Tiêu đề trang H2           | Arial / Helvetica         |            20px |             24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công            |
+| A3   | Tiêu đề khối H3            | Arial / Helvetica         |            18px |             20px | Tiêu đề khối, hộp thoại, sidebar                                            |
+| A4   | Nội dung + tiêu đề nhỏ     | Arial / Helvetica         |            16px |             18px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập                              |
+| A5   | Chú thích / Meta           | Arial / Helvetica         |            13px |             14px | Breadcrumb, phụ đề, nhãn form, giá phụ, bộ đếm                              |
+| D    | Trang trí nền              | Phông tại thành phần      |       `clamp()` |        `clamp()` | Chỉ số “404” mờ trong `app/not-found.tsx`                                   |
 
 Quy tắc:
 
@@ -117,10 +117,10 @@ Quy tắc:
 
 Mười token cỡ chữ được định nghĩa trong `styles/brand-tokens.css` và expose qua Tailwind v4 `@theme inline` trong `app/globals.css`:
 
-| Utility | Nhóm |
-|---|---|
+| Utility                                                                                      | Nhóm  |
+| -------------------------------------------------------------------------------------------- | ----- |
 | `text-b1-display` · `text-b2-contact` · `text-b3-promo` · `text-b4-action` · `text-b5-label` | B1–B5 |
-| `text-a1-title` · `text-a2-page` · `text-a3-section` · `text-a4-content` · `text-a5-meta` | A1–A5 |
+| `text-a1-title` · `text-a2-page` · `text-a3-section` · `text-a4-content` · `text-a5-meta`    | A1–A5 |
 
 Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-2xl`, `text-3xl`, `text-4xl`, `text-5xl`), arbitrary cỡ chữ (`text-[Npx]`, `text-[…em]`) và `font-size` hardcode khi đã có token nhóm. Ngoại lệ duy nhất được co giãn là số “404” mờ thuộc nhóm D.
 
@@ -191,7 +191,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 ### Navigation
 
 - Header nền đen, cao 80px (5rem desktop / 60px mobile), chữ trắng.
-- Nav hover/active: đỏ `#FF0C09`, underline đỏ.
+- Nav hover/active: đỏ `#FF0C09`; trạng thái trang hiện tại chỉ đổi màu chữ, không thêm gạch chân, vạch hay nền.
 - Cart badge: đỏ, chữ trắng, tròn.
 
 ### Footer
@@ -234,16 +234,16 @@ Header có logo-emblem thò xuống body ~92px ở mọi desktop tier (≥768px)
 
 ### Breakpoint policy (canonical — áp dụng cho rule mới)
 
-| Token / prefix Tailwind | px | Dùng khi |
-|---|---|---|
-| _(default)_ | < 640px | mobile — 1 cột, padding 16px |
-| `sm:` | ≥ 640px | tablet nhỏ — 2 cột nhẹ, padding 24px |
-| `md:` | ≥ 768px | tablet — layout 2 cột ổn định |
-| `lg:` | ≥ 1024px | desktop — 3 cột / sidebar, padding 32px |
-| `xl:` | ≥ 1280px | large desktop — grid mở rộng |
-| `2xl:` | ≥ 1536px | extra-large — mốc kiểm tra canvas; không nới content rail |
-| `3xl:` | ≥ 1920px | full HD — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component |
-| `4xl:` | ≥ 2560px | QHD/ultra-wide — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component |
+| Token / prefix Tailwind | px       | Dùng khi                                                                       |
+| ----------------------- | -------- | ------------------------------------------------------------------------------ |
+| _(default)_             | < 640px  | mobile — 1 cột, padding 16px                                                   |
+| `sm:`                   | ≥ 640px  | tablet nhỏ — 2 cột nhẹ, padding 24px                                           |
+| `md:`                   | ≥ 768px  | tablet — layout 2 cột ổn định                                                  |
+| `lg:`                   | ≥ 1024px | desktop — 3 cột / sidebar, padding 32px                                        |
+| `xl:`                   | ≥ 1280px | large desktop — grid mở rộng                                                   |
+| `2xl:`                  | ≥ 1536px | extra-large — mốc kiểm tra canvas; không nới content rail                      |
+| `3xl:`                  | ≥ 1920px | full HD — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component        |
+| `4xl:`                  | ≥ 2560px | QHD/ultra-wide — mốc nghiệm thu canvas; không tăng spacing, cột hoặc component |
 
 Content canvas max-width: `--bb-desktop-canvas = 90rem` (1440px). Inner content max-width: `--bb-container-xl = 75rem` (1200px) ở mọi tier. Full-bleed surface không có `max-width`.
 
@@ -263,13 +263,13 @@ Content canvas max-width: `--bb-desktop-canvas = 90rem` (1440px). Inner content 
 
 ### Legacy breakpoints (giữ nguyên, không ép đổi hàng loạt)
 
-| Giá trị | Lý do tồn tại |
-|---|---|
-| `575px` / `576px` | Mốc lưới legacy từ WP — chỉ dùng cho bố cục, không đổi cỡ chữ |
-| `767px` / `768px` | Bootstrap 3 mobile boundary từ WP theme — trùng Tailwind `md:` nhưng off-by-one |
-| `900px` / `991px` / `992px` | WP two-column layout threshold — đổi sang `lg: 1024px` cần review layout |
-| `600px` | Homepage legacy selector — đổi sang 640px risk regression trên phone 360-600px |
-| `1439px` / `1440px` | Header nav fit threshold — below this width the primary menu uses the hamburger drawer |
+| Giá trị                     | Lý do tồn tại                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `575px` / `576px`           | Mốc lưới legacy từ WP — chỉ dùng cho bố cục, không đổi cỡ chữ                          |
+| `767px` / `768px`           | Bootstrap 3 mobile boundary từ WP theme — trùng Tailwind `md:` nhưng off-by-one        |
+| `900px` / `991px` / `992px` | WP two-column layout threshold — đổi sang `lg: 1024px` cần review layout               |
+| `600px`                     | Homepage legacy selector — đổi sang 640px risk regression trên phone 360-600px         |
+| `1279px` / `1280px`         | Header nav fit threshold — below this width the primary menu uses the hamburger drawer |
 
 Các breakpoint legacy được annotate trong globals.css với comment `/* BP note: ... */`.
 

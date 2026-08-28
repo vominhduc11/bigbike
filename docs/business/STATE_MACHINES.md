@@ -60,7 +60,7 @@ File này liên quan trực tiếp đến:
 | Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. An automatic moderator may additionally drive `PENDING → SPAM\|TRASH` (never `APPROVED`) — §15A "Automatic moderation actor". | Backend service + optimistic version | `OWNER_CONFIRMED_2026-08-08` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`/`012`, `AdminReviewService.java` |
-| Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
+| Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` and exact `unreadCount` are derived for the caller; legacy shared `admin_notifications.is_read` is removed. | `mark-all-read` advances only the caller's high-water mark; the daily retention job removes only rows older than six months and never changes read markers. | Backend service + scheduled retention | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationRetentionCleanupService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `V1067__admin_notification_retention_and_remove_legacy_read_state.sql`, `AdminNotificationServiceTest.java` |
 | Chat lead invitation | `lead_offer_status` + `lead_offer_count` | `NONE`, `OFFERED`, `ACCEPTED`, `DECLINED`; count `0..2` | Lời mời 1 phát theo câu trả lời đủ điều kiện; lời mời 2 chỉ sau viewed/ignored và trigger xác minh; accept/decline kết thúc. | Backend service + DB constraints + idempotent interaction | `OWNER_CONFIRMED_2026-08-20` | `CHAT_RULE_012`, `CHAT_RULE_029`, V1041 |
 | Chat staff handoff | `chat_handoff_requests.status` | `WAITING`, `ACTIVE`, `RETURNED_TO_AI`, `CLOSED` | Yêu cầu → một nhân viên nhận nguyên tử → bàn giao lại AI hoặc đóng; không có hai người cùng nhận. | Backend row lock/conditional update + DB constraints | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_045`–`047`, V1056 |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
@@ -668,11 +668,11 @@ From `AdminMediaService.ALLOWED_STATUSES`:
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
 | any | unknown status | Only `ACTIVE`, `INACTIVE`, `DELETED` allowed. | Backend validation error. | `AdminMediaService.java` |
-| upload | unsupported MIME | Only MIME whitelist accepted (incl. `image/svg+xml`). | Backend validation error. | `AdminMediaService.java` |
-| upload | SVG without `<svg>` root | SVG content gate (sanitizer parse). | Backend validation error. | `SvgSanitizer.java` |
+| upload | unsupported MIME | Only `image/jpeg`, `image/png`, `image/webp` and `video/mp4` are accepted for new Admin Media uploads. Declared MIME must match content detection. | Backend validation error. | `AdminMediaService.java` |
+| upload | GIF/SVG content or renamed GIF/SVG | Actual file content is detected; file extension is not trusted. | Backend validation error. | `AdminMediaService.java` |
 | upload | > 200 MB | Upload limit (Spring multipart request cap is 210 MB). | Backend validation error. | `AdminMediaService.java`, `application.properties` |
 
-> SVG uploads are accepted but rewritten by `SvgSanitizer` (scripts, `on*` handlers, `javascript:`/external refs, `<foreignObject>`/`<image>`/`<style>` stripped) before storage.
+> Owner decision 2026-08-28: the Admin Media Library and shared admin image picker reject GIF and SVG at both the UI and server layers. Existing legacy media is not bulk-converted or removed by this rule.
 
 ### Frontend Behavior
 
@@ -705,7 +705,7 @@ Order events are persisted in a shared admin notification backlog so staff who w
 
 ### State Field
 
-`admin_notification_reads.last_read_at` high-water mark keyed by `admin_id` (V339). `admin_notifications.is_read` is a legacy shared column kept for compatibility but no longer read or written.
+`admin_notification_reads.last_read_at` high-water mark keyed by `admin_id` (V339). The legacy shared `admin_notifications.is_read` column is removed by the follow-up retention migration; it is not part of the read model.
 
 ### States
 
@@ -716,7 +716,7 @@ Order events are persisted in a shared admin notification backlog so staff who w
 
 ### Transition
 
-`POST /api/v1/admin/notifications/mark-all-read` advances only the caller's `lastReadAt` to the current time. Shared `admin_notifications` rows are not mutated or deleted, so the recent backlog (up to 50 items) remains visible and every other admin keeps their own unread count. The old mark-by-IDs endpoint was removed because it had no caller.
+`POST /api/v1/admin/notifications/mark-all-read` advances only the caller's `lastReadAt` to the current time. Shared `admin_notifications` rows are not mutated by this action, so the recent backlog (up to 50 items) remains visible and every other admin keeps their own unread count. A separate daily retention job removes rows older than six months; it does not touch `admin_notification_reads`. The old mark-by-IDs endpoint was removed because it had no caller.
 
 ### Status
 
@@ -725,15 +725,16 @@ Order events are persisted in a shared admin notification backlog so staff who w
 ### Evidence
 
 - `V102__create_admin_notifications_table.sql` — persistent shared `admin_notifications` backlog.
-- `V339__admin_notification_per_admin_read_state.sql` — per-admin high-water mark; legacy shared flag is unused.
-- `AdminNotificationController.java` — `GET /api/v1/admin/notifications`, `POST /mark-all-read` (both require `orders.read`).
+- `V339__admin_notification_per_admin_read_state.sql` — per-admin high-water mark; legacy shared flag is retired by the follow-up migration.
+- `AdminNotificationRetentionCleanupService.java` and `V1067__admin_notification_retention_and_remove_legacy_read_state.sql` — six-month batch retention and removal of the legacy shared column/index.
+- `AdminNotificationController.java` — `GET /api/v1/admin/notifications`, `POST /mark-all-read` (both require `orders.read` or `chat.read`).
 - `AdminNotificationService.java` — `inboxFor(adminId)`, `markAllReadFor(adminId)`.
 - `AdminNotificationServiceTest.java` — per-admin isolation, backlog retention, and payload coverage.
 - WS push via `AdminOrderWsService` supplements persistent store; admin offline will not miss events.
 
 ### Notes
 
-- Archive/delete state is not part of the current notification contract.
+- Archive state is not part of the current notification contract; expiry is age-based retention only.
 - Email delivery status not tracked in repo.
 
 ## 15. Customer Account Status State Machine
@@ -934,7 +935,7 @@ Status: `OWNER_CONFIRMED_2026-08-26`; `CHAT_RULE_057`–`059`.
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
-| Notification | Per-admin read/unread high-water mark | `markAllRead_isPerAdmin_doesNotClearUnreadForOtherAdmins`, `inbox_keepsBacklogVisibleAfterMarkAllRead` | Cross-admin isolation assertions in the same suite | `CONFIRMED_TEST_COVERAGE` (`AdminNotificationServiceTest`) |
+| Notification | Per-admin read/unread high-water mark + six-month retention | `markAllRead_isPerAdmin_doesNotClearUnreadForOtherAdmins`, `inbox_keepsBacklogVisibleAfterMarkAllRead`, `retentionDeletesExpiredRowsWithoutChangingPerAdminReadMarker`, `retiresSharedReadStateAndKeepsPerAdminReadTable` | Cross-admin marker preservation, batch cleanup and legacy-column/index removal | `CONFIRMED_TEST_COVERAGE` (`AdminNotificationServiceTest`, `AdminNotificationPostgresQueryTest`, `AdminNotificationRetentionMigrationPostgresTest`) |
 | Customer | Real-customer changes among all four stored statuses; non-active session revocation | `Phase1IAdminManagementApiTest`, `Phase1I1CustomerStatusLoginTest` | Unknown status and synthetic status-change conflict covered by Customer Admin audit tests | `CONFIRMED_TEST_COVERAGE` |
 
 Notes:
@@ -987,7 +988,7 @@ Notes:
 7. Shipment tracking no longer exists in the order model (removed 2026-07-23); external carrier automation remains absent.
 8. Admin user `DISABLED`/`SUSPENDED` status updates are backend-enforced, but login/API blocking behavior for those statuses needs auth-service audit.
 9. Media `INACTIVE` status exists, but whether inactive media can be rendered by product/content public pages needs verification.
-10. Notification read/unread is confirmed per admin via the V339 high-water mark and target tests. Archive/delete is intentionally outside the current notification contract.
+10. Notification read/unread is confirmed per admin via the V339 high-water mark and target tests. Retention deletes rows older than six months; there is no separate archive state.
 11. Payment/shipping external provider state machines are not found.
 12. Frontend hide/disable action behavior by status was not deeply audited in this task.
 13. Targeted fulfillment and notification tests were run for the documented fixes; do not treat this file as full-suite green-build evidence (see AUD-046).

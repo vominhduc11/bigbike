@@ -74,6 +74,10 @@ export function NotificationBell({ navigate }) {
   // Lỗi khi nạp danh sách từ server (V102): dùng để phân biệt "chưa có thông báo"
   // với "không tải được" thay vì nuốt lỗi im lặng.
   const [loadError, setLoadError] = useState(false)
+  // The server count covers the full retained backlog, while `items` is intentionally
+  // capped at MAX_ITEMS for the dropdown. Keep this separate so the badge never
+  // undercounts notifications outside the 30 displayed rows.
+  const [serverUnreadCount, setServerUnreadCount] = useState(null)
   // Ids that were unread at the moment the panel was opened. We snapshot them
   // *before* markAllRead() clears the flags, so the open panel can still show a
   // per-row "new" marker for this viewing (the bell badge correctly clears).
@@ -87,6 +91,7 @@ export function NotificationBell({ navigate }) {
     setActiveKey(storageKey)
     setSeenUnread(new Set())
     setItems(canViewNotifications ? loadStored(storageKey) : [])
+    setServerUnreadCount(null)
   }
 
   useEffect(() => {
@@ -101,6 +106,9 @@ export function NotificationBell({ navigate }) {
         persist(storageKey, next)
         return next
       })
+      // A live event arrives after the last server snapshot. Keep the exact server
+      // baseline and add only this newly observed event until the next refresh.
+      setServerUnreadCount((current) => (current === null ? current : current + 1))
     }
     if (canViewOrders) {
       unsubscribers.push(subscribeAdminWs('/topic/admin/orders', (event) => {
@@ -122,9 +130,14 @@ export function NotificationBell({ navigate }) {
     if (!canViewNotifications) return undefined
     let active = true
     fetchAdminNotifications()
-      .then(({ items: serverItems }) => {
+      .then(({ items: serverItems, unreadCount: fetchedUnreadCount }) => {
         if (!active) return
         setLoadError(false)
+        setServerUnreadCount(
+          Number.isFinite(fetchedUnreadCount) && fetchedUnreadCount >= 0
+            ? fetchedUnreadCount
+            : null,
+        )
         if (serverItems.length === 0) return
         setItems((prev) => {
           const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
@@ -151,7 +164,11 @@ export function NotificationBell({ navigate }) {
     return () => { active = false }
   }, [canViewNotifications, storageKey])
 
-  const unread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
+  const localUnread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
+  // Once the server has answered, its count is authoritative even when the local
+  // dropdown only retains/displays the newest 30 rows. Before that, use the account-
+  // scoped cache so the bell remains useful during the request or offline.
+  const unread = serverUnreadCount ?? localUnread
 
   const markAllRead = useCallback(() => {
     setItems((prev) => {
@@ -161,13 +178,19 @@ export function NotificationBell({ navigate }) {
     })
     // Sync to the server so the unread state stays cleared across browsers and reloads.
     // Server chỉ dời mốc đã-đọc của RIÊNG tài khoản này (AUD-018/019) — không ảnh hưởng admin khác.
-    markAllAdminNotificationsRead().catch(() => {
-      // id: gộp toast trùng khi mở lại panel lúc offline (không xếp chồng vô hạn).
-      toast.error(
-        t('notifications.syncError', { defaultValue: 'Không đồng bộ được trạng thái đã đọc.' }),
-        { id: 'notif-sync-error', duration: 6000 },
-      )
-    })
+    markAllAdminNotificationsRead()
+      .then(({ unreadCount: remaining }) => {
+        setServerUnreadCount(
+          Number.isFinite(remaining) && remaining >= 0 ? remaining : 0,
+        )
+      })
+      .catch(() => {
+        // id: gộp toast trùng khi mở lại panel lúc offline (không xếp chồng vô hạn).
+        toast.error(
+          t('notifications.syncError', { defaultValue: 'Không đồng bộ được trạng thái đã đọc.' }),
+          { id: 'notif-sync-error', duration: 6000 },
+        )
+      })
   }, [t, storageKey])
 
   // Radix quản lý focus/keyboard/đóng-mở; chỉ cần chạy logic snapshot khi MỞ.
@@ -209,8 +232,8 @@ export function NotificationBell({ navigate }) {
         >
           <Bell size={18} aria-hidden="true" />
           {unread > 0 && (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold leading-none text-primary-foreground">
-              {unread > 9 ? '9+' : unread}
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center whitespace-nowrap rounded-full bg-primary px-1 text-xs font-bold leading-none text-primary-foreground">
+              {unread}
             </span>
           )}
         </Button>

@@ -210,7 +210,7 @@ describe('MediaPickerModal', () => {
 
     fireEvent.change(fileInput, { target: { files: [invalid, valid] } })
 
-    expect(await screen.findByText('media.unsupportedType')).toBeInTheDocument()
+    expect(await screen.findByText('media.unsupportedImageType')).toBeInTheDocument()
     await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(valid, '', expect.any(Function), null, false))
   })
 

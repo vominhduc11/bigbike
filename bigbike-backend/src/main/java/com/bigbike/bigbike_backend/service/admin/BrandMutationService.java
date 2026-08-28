@@ -286,12 +286,6 @@ public class BrandMutationService {
             clearBanner(entity);
         }
 
-        if (request.getMobileBanner() != null) {
-            applyMobileBanner(entity, request.getMobileBanner());
-        } else if (create) {
-            clearMobileBanner(entity);
-        }
-
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {

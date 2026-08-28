@@ -574,7 +574,6 @@ export function normalizeCategory(input) {
     // CATEGORY_RULE_010: only root categories can carry the header-menu icon.
     menuIconUrl: parentId ? undefined : toTrimmedString(source.menuIconUrl) || undefined,
     bannerImage: normalizeImageAsset(source.bannerImage),
-    mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
     deleted: source.deleted === true,
@@ -607,7 +606,6 @@ export function normalizeBrand(input) {
     logo: normalizeImageAsset(source.logo),
     logoQuality: normalizeBrandLogoQuality(source.logoQuality),
     bannerImage: normalizeImageAsset(source.bannerImage),
-    mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: typeof source.isVisible === 'boolean' ? source.isVisible : null,
     showOnHomepage: typeof source.showOnHomepage === 'boolean' ? source.showOnHomepage : null,

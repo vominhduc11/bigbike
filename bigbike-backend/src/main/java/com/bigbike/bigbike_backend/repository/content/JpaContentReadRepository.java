@@ -8,6 +8,12 @@ import com.bigbike.bigbike_backend.domain.content.ArticleTranslations;
 
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,23 +163,50 @@ public class JpaContentReadRepository implements ContentReadRepository {
     @Override
     public org.springframework.data.domain.Page<Article> listArticlesAdmin(
             PublishStatus publishStatus, String q, Pageable pageable, String locale) {
-        String normalizedQ = normalizeQuery(q);
-
-        org.springframework.data.domain.Page<String> idPage =
-                articleJpaRepository.findAdminArticleIds(
-                        publishStatus, PublishStatus.TRASH, normalizedQ, pageable);
-
-        return fetchAndOrderArticles(idPage, pageable, locale);
+        return articleJpaRepository.findAll(adminArticleSpecification(publishStatus, q), pageable)
+                .map(entity -> toDomain(entity, locale, false));
     }
 
     // --- Non-paginated filter for admin combined listing ---
 
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
-        return articleJpaRepository.findByFilter(
-                        publishStatus, PublishStatus.TRASH, normalizeQuery(q))
+        return articleJpaRepository.findAll(adminArticleSpecification(publishStatus, q))
                 .stream()
                 .map(e -> toDomain(e, locale, false)).toList();
+    }
+
+    /** Admin article search mirrors quick-search token and literal-wildcard rules. */
+    private static org.springframework.data.jpa.domain.Specification<ArticleEntity> adminArticleSpecification(
+            PublishStatus publishStatus, String rawQuery) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(publishStatus == null
+                    ? cb.notEqual(root.get("publishStatus"), PublishStatus.TRASH)
+                    : cb.equal(root.get("publishStatus"), publishStatus));
+
+            for (String token : AdminSearchText.tokens(rawQuery)) {
+                String pattern = AdminSearchText.likePattern(token);
+                predicates.add(cb.or(
+                        literalContains(cb, root.get("title"), pattern),
+                        literalContains(cb, root.get("titleEn"), pattern),
+                        literalContains(cb, root.get("slug"), pattern),
+                        literalContains(cb, root.get("slugEn"), pattern),
+                        literalContains(cb, root.get("excerpt"), pattern),
+                        literalContains(cb, root.get("excerptEn"), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private static Predicate literalContains(
+            CriteriaBuilder cb, Expression<?> value, String pattern) {
+        return cb.like(unaccentLower(cb, value), pattern, '\\');
+    }
+
+    private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
+        return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
     }
 
     private static boolean isPresent(String value) {

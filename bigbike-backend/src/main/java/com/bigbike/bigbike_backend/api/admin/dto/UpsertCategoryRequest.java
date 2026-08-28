@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -60,11 +61,16 @@ public class UpsertCategoryRequest {
     private ImageAssetRequest banner;
 
     @Valid
-    private ImageAssetRequest mobileBanner;
-
-    @Valid
     private SeoMetaRequest seo;
 
     @Valid
     private CategoryTranslationRequest translations;
+
+    /** Reject the removed mobile banner contract without binding or persisting it. */
+    @JsonAnySetter
+    public void rejectRemovedFields(String property, Object value) {
+        if ("mobileBanner".equals(property)) {
+            throw new IllegalArgumentException("mobileBanner is no longer supported.");
+        }
+    }
 }

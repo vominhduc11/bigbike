@@ -13,7 +13,7 @@ class CatalogReferenceCacheSerializationTest {
     void serializesAndRestoresImmutableCatalogProjectionWithTimestamps() {
         Brand brand = new Brand(
                 "brand-test", "thuong-hieu-test", "Thương hiệu thử nghiệm", null,
-                null, null, null, null, true, false, null,
+                null, null, null, true, false, null,
                 Instant.parse("2026-08-20T00:00:00Z"), Instant.parse("2026-08-20T01:00:00Z"));
 
         var serializer = CatalogReferenceCacheConfig.catalogReferenceValueSerializer();

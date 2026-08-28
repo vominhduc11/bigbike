@@ -14,7 +14,7 @@ import { FilterSelect } from './FilterSelect'
 import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
-import { MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES } from '../lib/mediaConstants'
+import { MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES, normalizeMediaMimeType } from '../lib/mediaConstants'
 
 const ALLOWED_MIME = VIDEO_MEDIA_MIME_TYPES
 const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
@@ -116,7 +116,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       error: '',
       refreshError: '',
     }))
-    fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+    fetchMedia({ search: debouncedSearch, mimeTypes: ALLOWED_MIME, page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
       .then((result) => {
         if (!active) return
         const items = result.items ?? []
@@ -152,7 +152,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!ALLOWED_MIME.includes(file.type)) {
+    if (!ALLOWED_MIME.includes(normalizeMediaMimeType(file.type))) {
       setUploadError(t('homeVideos.picker.unsupportedType', { type: file.type || 'unknown' }))
       event.target.value = ''
       return
@@ -184,7 +184,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         // Refetch ngay với search rỗng tường minh (không chờ debounce 300ms bắt kịp) để
         // video vừa tải chắc chắn hiện ra ngay.
         try {
-          const r = await fetchMedia({ search: '', mimeType: 'video/', page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+          const r = await fetchMedia({ search: '', mimeTypes: ALLOWED_MIME, page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
           const items = r.items ?? []
           items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
           setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 /**
  * Single shared place for decode → resize → encode logic used by every image upload path
  * (admin media originals + variants, review photos, customer avatars). Centralizing this
- * means the "no upscale / preserve alpha / skip SVG-GIF / fail soft" rules only exist once.
+ * means the "no upscale / preserve alpha / fail soft" rules only exist once.
  */
 @Service
 @Slf4j
@@ -22,7 +22,7 @@ public class ImageCompressionService {
 
     /**
      * Compresses a raster image according to {@code profile}. Always fails soft: any input
-     * that can't be safely processed (not an image, SVG/GIF, undecodable, encode error, or a
+     * that can't be safely processed (not an image, undecodable, encode error, or a
      * result that isn't actually smaller) comes back as the original {@code source} bytes
      * unchanged — callers never need to fall back themselves.
      */
@@ -30,10 +30,6 @@ public class ImageCompressionService {
         if (source == null || source.length == 0) return source;
         String mime = mimeType == null ? "" : mimeType.toLowerCase(Locale.ROOT);
         if (!mime.startsWith("image/")) return source;
-        // Vector (SVG) and animated (GIF) formats aren't safe to run through a raster
-        // resize — SVG isn't a bitmap at all, and GIF would lose every frame but the first.
-        if (mime.equals("image/svg+xml") || mime.equals("image/gif")) return source;
-
         BufferedImage decoded;
         try {
             decoded = ImageIO.read(new ByteArrayInputStream(source));

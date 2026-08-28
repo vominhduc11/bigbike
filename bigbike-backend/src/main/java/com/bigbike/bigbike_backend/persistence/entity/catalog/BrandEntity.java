@@ -45,11 +45,6 @@ public class BrandEntity {
 
     private String bannerAlt;
 
-    @Column(columnDefinition = "text")
-    private String mobileBannerUrl;
-
-    private String mobileBannerAlt;
-
     private String seoTitle;
 
     @Column(columnDefinition = "text")

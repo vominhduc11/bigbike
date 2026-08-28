@@ -199,7 +199,7 @@ describe('CategoryDetailScreen — khóa ghi theo trạng thái', () => {
 
     await nameInput()
     expect(document.querySelector('[data-field="menuIconUrl"]')).toBeNull()
-    expect(screen.getByText('0/4')).toBeInTheDocument()
+    expect(screen.getByText('0/3')).toBeInTheDocument()
   })
 
   it('ẩn và hiện lại ô biểu tượng ngay khi đổi danh mục cha', async () => {
@@ -210,19 +210,19 @@ describe('CategoryDetailScreen — khóa ghi theo trạng thái', () => {
 
     await nameInput()
     expect(document.querySelector('[data-field="menuIconUrl"]')).toBeInTheDocument()
-    expect(screen.getByText('1/5')).toBeInTheDocument()
+    expect(screen.getByText('1/4')).toBeInTheDocument()
 
     await user.click(screen.getByRole('combobox'))
     await user.click(screen.getByRole('option', { name: 'Danh mục cha' }))
 
     expect(document.querySelector('[data-field="menuIconUrl"]')).toBeNull()
-    expect(screen.getByText('0/4')).toBeInTheDocument()
+    expect(screen.getByText('0/3')).toBeInTheDocument()
 
     await user.click(screen.getByRole('combobox'))
     await user.click(screen.getByRole('option', { name: 'categories.detail.parentIdNone' }))
 
     expect(document.querySelector('[data-field="menuIconUrl"]')).toBeInTheDocument()
-    expect(screen.getByText('0/5')).toBeInTheDocument()
+    expect(screen.getByText('0/4')).toBeInTheDocument()
   })
 
   it('báo lỗi có nút thử lại khi không tải được danh mục', async () => {

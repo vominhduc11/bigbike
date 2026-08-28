@@ -15,13 +15,22 @@ test.describe("Shell interactions — header scroll + footer scroll @desktop", (
     await settle(page, "/");
     const header = page.locator("[data-bb-header]");
     await expect(header).toHaveAttribute("data-scrolled", "false");
-    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-logo.png");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
+      "src",
+      "/brand/header-logo.png",
+    );
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(header).toHaveAttribute("data-scrolled", "true");
-    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-mark.png");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
+      "src",
+      "/brand/header-mark.png",
+    );
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(header).toHaveAttribute("data-scrolled", "false");
-    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute("src", "/brand/header-logo.png");
+    await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
+      "src",
+      "/brand/header-logo.png",
+    );
   });
 
   test("footer scroll button returns to top", async ({ page }) => {
@@ -49,19 +58,6 @@ test.describe("Footer accordion @mobile", () => {
   });
 });
 
-test.describe("Store information drawer @desktop", () => {
-  test.use({ viewport: DESKTOP });
-
-  test("opens and closes", async ({ page }) => {
-    await settle(page, "/");
-    await page.getByRole("button", { name: "Thông tin cửa hàng" }).click();
-    const drawer = page.getByRole("dialog", { name: "Thông tin cửa hàng" });
-    await expect(drawer).toBeVisible();
-    await drawer.getByRole("button", { name: "Đóng" }).click();
-    await expect(drawer).toBeHidden();
-  });
-});
-
 test.describe("Mobile menu @mobile", () => {
   test.use({ viewport: MOBILE });
 
@@ -73,7 +69,12 @@ test.describe("Mobile menu @mobile", () => {
   async function expectMenuClosedAndUnlocked(page: Page) {
     await expect(page.locator("[data-header-mobile-menu]")).toBeHidden();
     await expect
-      .poll(() => page.evaluate(() => ({ body: document.body.style.overflow, html: document.documentElement.style.overflow })))
+      .poll(() =>
+        page.evaluate(() => ({
+          body: document.body.style.overflow,
+          html: document.documentElement.style.overflow,
+        })),
+      )
       .toEqual({ body: "", html: "" });
   }
 
@@ -81,13 +82,35 @@ test.describe("Mobile menu @mobile", () => {
     await expect.poll(() => new URL(page.url()).pathname).toBe(path);
   }
 
-  test("hamburger toggles the menu", async ({ page }) => {
+  test("traps focus, closes with Escape, and restores focus to the hamburger", async ({ page }) => {
     await settle(page, "/");
     const trigger = page.locator("[data-header-mobile-trigger]");
     await trigger.click();
-    await expect(page.locator("[data-header-mobile-menu]")).toBeVisible();
-    await trigger.click();
-    await expect(page.locator("[data-header-mobile-menu]")).toBeHidden();
+    const drawer = page.locator("[data-header-mobile-menu]");
+    await expect(drawer).toBeVisible();
+    const contactDetails = drawer
+      .getByRole("heading", { name: "Thông tin liên hệ" })
+      .locator("xpath=..");
+    await expect(contactDetails).toBeVisible();
+    await expect(contactDetails.locator("li")).toHaveCount(3);
+
+    for (let index = 0; index < 10; index += 1) {
+      await page.keyboard.press("Tab");
+      await expect
+        .poll(() => drawer.evaluate((element) => element.contains(document.activeElement)))
+        .toBe(true);
+    }
+
+    await page.keyboard.press("Escape");
+    await expectMenuClosedAndUnlocked(page);
+    await expect(trigger).toBeFocused();
+  });
+
+  test("clicking outside the drawer closes it", async ({ page }) => {
+    await settle(page, "/");
+    await openMenu(page);
+    await page.locator("[data-bb-sheet-overlay]").click({ position: { x: 8, y: 8 } });
+    await expectMenuClosedAndUnlocked(page);
   });
 
   test("a parent menu item expands its branch", async ({ page }) => {
@@ -104,15 +127,19 @@ test.describe("Mobile menu @mobile", () => {
   test("closes when selecting a category child", async ({ page }) => {
     await settle(page, "/");
     await openMenu(page);
-    const branchTrigger = page.locator("[data-header-mobile-menu] [data-header-submenu-trigger]").first();
-    if (await branchTrigger.count() === 0) {
+    const branchTrigger = page
+      .locator("[data-header-mobile-menu] [data-header-submenu-trigger]")
+      .first();
+    if ((await branchTrigger.count()) === 0) {
       test.skip(true, "No category branch in current navigation data");
       return;
     }
 
     await branchTrigger.click();
-    const childLink = page.locator('[data-header-mobile-menu] [data-header-submenu][data-state="open"] a').first();
-    if (await childLink.count() === 0) {
+    const childLink = page
+      .locator('[data-header-mobile-menu] [data-header-submenu][data-state="open"] a')
+      .first();
+    if ((await childLink.count()) === 0) {
       test.skip(true, "No child item in current navigation data");
       return;
     }
@@ -133,7 +160,9 @@ test.describe("Mobile menu @mobile", () => {
     }
   });
 
-  test("closes for the current-page menu item, logo, language switch, and Back", async ({ page }) => {
+  test("closes for the current-page menu item, logo, language switch, and Back", async ({
+    page,
+  }) => {
     await settle(page, "/sp/");
     await openMenu(page);
     await page.locator('[data-header-mobile-menu] a[href="/sp/"]').click();
@@ -163,7 +192,7 @@ test.describe("Mobile menu @mobile", () => {
     await settle(page, "/");
     await openMenu(page);
     const newTabLink = page.locator('[data-header-mobile-menu] a[target="_blank"]').first();
-    if (await newTabLink.count() === 0) {
+    if ((await newTabLink.count()) === 0) {
       test.skip(true, "No configured new-tab menu item in current navigation data");
       return;
     }
@@ -176,20 +205,22 @@ test.describe("Mobile menu @mobile", () => {
 
   test("closes account navigation and logout for an authenticated customer", async ({ page }) => {
     await page.addInitScript(() => window.localStorage.setItem("bb_customer_authenticated", "1"));
-    await page.route("**/api/v1/customer/me", (route) => route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        data: {
-          id: "menu-test-customer",
-          email: "menu-test@example.invalid",
-          phone: null,
-          displayName: "Khách kiểm thử",
-          status: "ACTIVE",
-          avatarUrl: null,
-        },
+    await page.route("**/api/v1/customer/me", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            id: "menu-test-customer",
+            email: "menu-test@example.invalid",
+            phone: null,
+            displayName: "Khách kiểm thử",
+            status: "ACTIVE",
+            avatarUrl: null,
+          },
+        }),
       }),
-    }));
+    );
     await page.route("**/api/v1/customer/auth/logout", (route) => route.fulfill({ status: 204 }));
 
     await settle(page, "/");

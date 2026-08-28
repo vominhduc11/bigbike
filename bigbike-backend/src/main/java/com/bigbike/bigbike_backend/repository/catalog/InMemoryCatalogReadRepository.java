@@ -16,9 +16,11 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -50,7 +52,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         800,
                         "image/jpeg"
                 ),
-                null,
                 null,
                 null,
                 null,
@@ -89,7 +90,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 null,
                 null,
-                null,
                 new SeoMeta(
                         "Áo giáp bảo hộ BigBike",
                         "Danh mục áo giáp bảo hộ cho rider.",
@@ -123,7 +123,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "image/png"
                 ),
                 null,
-                null,
                 new SeoMeta(
                         "Thương hiệu LS2",
                         "Sản phẩm LS2 tại BigBike.",
@@ -151,7 +150,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         260,
                         "image/png"
                 ),
-                null,
                 null,
                 new SeoMeta(
                         "Thương hiệu KYT",
@@ -578,9 +576,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         boolean allIncludingTrash = publishStatus != null && publishStatus.equalsIgnoreCase("ALL_INCLUDING_TRASH");
         boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");
         return products.stream()
-                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
-                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(),
-                        query == null ? List.of() : List.of(query)))
+                .filter(p -> matchesAdminProductQuery(p, query))
                 .filter(p -> allIncludingTrash ? true
                         : trashFilter ? p.publishStatus() == PublishStatus.TRASH
                         : defaultList ? p.publishStatus() != PublishStatus.TRASH
@@ -593,6 +589,19 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         || safeCategories(p).stream().anyMatch(category -> categoryId.equals(category.id())))
                 .filter(p -> genderMatchesAdminFilter(p, gender))
                 .toList();
+    }
+
+    private static boolean matchesAdminProductQuery(Product product, String query) {
+        List<String> identifiers = new ArrayList<>();
+        identifiers.add(product.name());
+        identifiers.add(englishName(product));
+        identifiers.add(product.slug());
+        identifiers.add(product.slugEn());
+        identifiers.add(product.sku());
+        if (product.variants() != null) {
+            product.variants().forEach(variant -> identifiers.add(variant == null ? null : variant.sku()));
+        }
+        return query == null || query.isBlank() || AdminSearchText.matchesAllTokens(query, identifiers);
     }
 
     private static boolean matchesGender(Product product, List<String> genders) {
@@ -697,9 +706,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
             stream = stream.filter(c -> c.isVisible() == wantVisible);
         }
         if (query != null && !query.isBlank()) {
-            String term = query.toLowerCase(java.util.Locale.ROOT);
-            stream = stream.filter(c -> c.name().toLowerCase(java.util.Locale.ROOT).contains(term)
-                    || c.slug().toLowerCase(java.util.Locale.ROOT).contains(term));
+            stream = stream.filter(c -> AdminSearchText.matchesAllTokens(
+                    query, java.util.Arrays.asList(c.name(), c.slug(), c.slugEn())));
         }
         java.util.Comparator<Category> cmp = switch (sortField) {
             case "name" -> java.util.Comparator.comparing(Category::name, String.CASE_INSENSITIVE_ORDER);

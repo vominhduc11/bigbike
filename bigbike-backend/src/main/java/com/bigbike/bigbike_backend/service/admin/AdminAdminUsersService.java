@@ -17,6 +17,7 @@ import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,9 +72,9 @@ public class AdminAdminUsersService {
         List<AdminUserEntity> all = adminUserRepo.findAll();
 
         if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
             all = all.stream()
-                    .filter(u -> matches(u.getEmail(), qLower) || matches(u.getDisplayName(), qLower))
+                    .filter(u -> AdminSearchText.matchesAllTokens(
+                            q, List.of(u.getEmail(), u.getDisplayName())))
                     .toList();
         }
         if (roleFilter != null && !roleFilter.isBlank()) {
@@ -336,10 +337,6 @@ public class AdminAdminUsersService {
         // Flyway + any custom roles). No hardcoded list — so it can never drift when the
         // built-in role set changes (e.g. V211 reduced it from 7 to 4).
         return adminRoleRepo.existsById(normalizedRole);
-    }
-
-    private boolean matches(String field, String q) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(q);
     }
 
     private String escapeJson(String s) {

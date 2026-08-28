@@ -29,6 +29,11 @@ import { getRoleDisplayName } from './roles/constants'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
+function readInitialAdminUserSearch() {
+  if (typeof window === 'undefined') return ''
+  return new URLSearchParams(window.location.search).get('search') || ''
+}
+
 // Đủ để bắt lỗi nhập sai phổ biến phía client; backend vẫn là nguồn xác thực cuối.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_MIN_LENGTH = 8
@@ -166,9 +171,10 @@ export function AdminUsersScreen({
   // ── List state ──────────────────────────────────────────────────────────
   const [query, setQuery] = useState(() => ({
     ...INITIAL_QUERY,
+    search: readInitialAdminUserSearch(),
     pageSize: readPageSizePreference(INITIAL_QUERY.pageSize),
   }))
-  const [searchInput, setSearchInput] = useState('')
+  const [searchInput, setSearchInput] = useState(readInitialAdminUserSearch)
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const debouncedSearch = useDebounce(searchInput, 300)
@@ -291,6 +297,20 @@ export function AdminUsersScreen({
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
     setQuery((p) => ({ ...p, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
+
+  // Cho phép ô tìm kiếm nhanh mở thẳng danh sách tài khoản với đúng từ khoá.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (query.search) params.set('search', query.search)
+    else params.delete('search')
+    const serialized = params.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${serialized ? `?${serialized}` : ''}${window.location.hash}`,
+    )
+  }, [query.search])
 
   // ── Handlers ────────────────────────────────────────────────────────────
   function openEdit(user) {

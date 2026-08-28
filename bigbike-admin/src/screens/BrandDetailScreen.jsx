@@ -302,7 +302,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       ...previous,
       [`${prefix}Url`]: url,
       ...(prefix === 'logo' ? { logoMediaId: media?.id || media?.mediaId || '' } : {}),
-      ...(prefix === 'logo' ? { logoQuality: null } : {}),
+      ...(prefix === 'logo' ? { logoQuality: media?.logoQuality || null } : {}),
       [`${prefix}Width`]: media?.width ?? null,
       [`${prefix}Height`]: media?.height ?? null,
       [`${prefix}MimeType`]: media?.mimeType ?? '',

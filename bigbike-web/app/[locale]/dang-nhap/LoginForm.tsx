@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { Label } from "@/components/ui/label";
+import { AuthSkeleton } from "@/components/ui/Skeletons";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 export function LoginForm({
@@ -67,7 +68,6 @@ export function LoginForm({
       await loginCustomer(values.login, values.password, values.remember);
       markCustomerAuthenticated();
       await refreshAuth();
-      router.push(resolvedReturnTo);
     } catch (err: unknown) {
       reportStorefrontFailure("login", err);
       const message =
@@ -78,7 +78,7 @@ export function LoginForm({
     }
   }
 
-  if (auth.status === "authenticated") return null;
+  if (auth.status === "authenticated") return <AuthSkeleton credential />;
 
   return (
     <div>

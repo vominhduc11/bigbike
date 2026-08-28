@@ -5,10 +5,15 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +44,7 @@ public final class ProductFilterSpecifications {
         Collection<PublishStatus> statuses = adminListStatuses(publishStatus);
         boolean excludeTrash = publishStatus == null || publishStatus.isBlank()
                 || "ALL".equalsIgnoreCase(publishStatus);
-        return build(query, statuses, excludeTrash, stockState, brandId, categoryIds, gender);
+        return buildAdmin(query, statuses, excludeTrash, stockState, brandId, categoryIds, gender);
     }
 
     public static Specification<ProductEntity> build(
@@ -50,6 +55,31 @@ public final class ProductFilterSpecifications {
             String brandId,
             Collection<String> categoryIds,
             String gender
+    ) {
+        return buildInternal(query, statuses, excludeTrash, stockState, brandId, categoryIds, gender, false);
+    }
+
+    private static Specification<ProductEntity> buildAdmin(
+            String query,
+            Collection<PublishStatus> statuses,
+            boolean excludeTrash,
+            String stockState,
+            String brandId,
+            Collection<String> categoryIds,
+            String gender
+    ) {
+        return buildInternal(query, statuses, excludeTrash, stockState, brandId, categoryIds, gender, true);
+    }
+
+    private static Specification<ProductEntity> buildInternal(
+            String query,
+            Collection<PublishStatus> statuses,
+            boolean excludeTrash,
+            String stockState,
+            String brandId,
+            Collection<String> categoryIds,
+            String gender,
+            boolean adminSearch
     ) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -64,7 +94,9 @@ public final class ProductFilterSpecifications {
                         ProductStockState.valueOf(stockState.toUpperCase(Locale.ROOT))));
             }
             if (query != null && !query.isBlank()) {
-                predicates.add(productTextSearch(root, cb, query));
+                predicates.add(adminSearch
+                        ? adminProductTextSearch(root, criteriaQuery, cb, query)
+                        : productTextSearch(root, cb, query));
             }
             if (brandId != null && !brandId.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
@@ -134,7 +166,7 @@ public final class ProductFilterSpecifications {
 
     /** ANDs meaningful tokens while allowing every token to match any public identifier field. */
     public static Predicate productTextSearch(
-            jakarta.persistence.criteria.Root<ProductEntity> root,
+            Root<ProductEntity> root,
             CriteriaBuilder cb,
             String rawQuery
     ) {
@@ -157,5 +189,54 @@ public final class ProductFilterSpecifications {
                     cb.like(slugEn, term)));
         }
         return cb.and(allTokens.toArray(new Predicate[0]));
+    }
+
+    /**
+     * Staff/admin search keeps every entered token and also searches selling SKUs on variants.
+     * Public catalog and assistant callers deliberately continue using productTextSearch().
+     */
+    public static Predicate adminProductTextSearch(
+            Root<ProductEntity> root,
+            CriteriaQuery<?> criteriaQuery,
+            CriteriaBuilder cb,
+            String rawQuery
+    ) {
+        List<String> tokens = AdminSearchText.tokens(rawQuery);
+        if (tokens.isEmpty()) return cb.disjunction();
+
+        Expression<String> name = unaccentLower(cb, root.get("name"));
+        Expression<String> slug = unaccentLower(cb, root.get("slug"));
+        Expression<String> sku = unaccentLower(cb, cb.coalesce(root.get("sku"), ""));
+        Expression<String> nameEn = unaccentLower(cb, cb.coalesce(root.get("nameEn"), ""));
+        Expression<String> slugEn = unaccentLower(cb, cb.coalesce(root.get("slugEn"), ""));
+        List<Predicate> allTokens = new ArrayList<>();
+        for (String token : tokens) {
+            String pattern = AdminSearchText.likePattern(token);
+            allTokens.add(cb.or(
+                    cb.like(name, pattern, '\\'),
+                    cb.like(slug, pattern, '\\'),
+                    cb.like(sku, pattern, '\\'),
+                    cb.like(nameEn, pattern, '\\'),
+                    cb.like(slugEn, pattern, '\\'),
+                    variantSkuContains(root, criteriaQuery, cb, pattern)
+            ));
+        }
+        return cb.and(allTokens.toArray(new Predicate[0]));
+    }
+
+    private static Predicate variantSkuContains(
+            Root<ProductEntity> productRoot,
+            CriteriaQuery<?> criteriaQuery,
+            CriteriaBuilder cb,
+            String pattern
+    ) {
+        Subquery<String> variants = criteriaQuery.subquery(String.class);
+        Root<ProductVariantEntity> variant = variants.from(ProductVariantEntity.class);
+        variants.select(variant.get("product").get("id"));
+        variants.where(
+                cb.equal(variant.get("product").get("id"), productRoot.get("id")),
+                cb.like(unaccentLower(cb, cb.coalesce(variant.get("sku"), "")), pattern, '\\')
+        );
+        return cb.exists(variants);
     }
 }

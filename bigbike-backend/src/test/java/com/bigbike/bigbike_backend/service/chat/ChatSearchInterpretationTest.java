@@ -373,13 +373,13 @@ class ChatSearchInterpretationTest {
     }
 
     private static Brand brand(String slug, String name) {
-        return new Brand(slug, slug, name, null, null, null, null, null,
+        return new Brand(slug, slug, name, null, null, null, null,
                 true, false, null, null, null);
     }
 
     private static Category category(String slug, String name) {
         return new Category(slug, slug, null, name, null, null, null, null, null,
-                null, null, null, true, false, null, null, null, null, null, null);
+                null, null, true, false, null, null, null, null, null, null);
     }
 
     private static Product product(String slug, String name, BigDecimal retailPrice) {

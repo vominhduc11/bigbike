@@ -1761,6 +1761,54 @@
         }
       }
     },
+    "/api/v1/admin/quick-search": {
+      "get": {
+        "tags": [
+          "Admin Quick Search"
+        ],
+        "summary": "Search admin records from the topbar",
+        "operationId": "adminQuickSearch",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Raw staff search text; Vietnamese accents are ignored and wildcard characters are literal.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Permission-scoped quick-search groups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminQuickSearchDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/api/v1/admin/orders": {
       "get": {
         "tags": [
@@ -2325,7 +2373,8 @@
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
           { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
           { "name": "q", "in": "query", "schema": { "type": "string" } },
-          { "name": "mimeType", "in": "query", "schema": { "type": "string" } },
+          { "name": "mimeType", "in": "query", "schema": { "type": "string" }, "description": "Optional MIME prefix filter." },
+          { "name": "mimeTypes", "in": "query", "schema": { "type": "string" }, "description": "Optional comma-separated exact MIME allowlist, for example image/jpeg,image/png,image/webp." },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "DELETED"] } },
           { "name": "storageProvider", "in": "query", "schema": { "type": "string" } },
           { "name": "usageFilter", "in": "query", "schema": { "type": "string", "enum": ["ALL", "USED", "UNUSED"] } },
@@ -2368,7 +2417,7 @@
                 "type": "object",
                 "required": ["file"],
                 "properties": {
-                  "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, WebP, GIF, sanitized SVG, or MP4; maximum 200 MB" },
+                  "file": { "type": "string", "format": "binary", "description": "JPEG/JPG, PNG, WebP image, or MP4 video; the server checks the actual content MIME; maximum 200 MB" },
                   "altText": { "type": "string" }
                 }
               }
@@ -5551,7 +5600,8 @@
         "security": [{ "AdminBearerAuth": [] }],
         "parameters": [
           { "name": "q", "in": "query", "schema": { "type": "string" } },
-          { "name": "mimeType", "in": "query", "schema": { "type": "string" } },
+          { "name": "mimeType", "in": "query", "schema": { "type": "string" }, "description": "Optional MIME prefix filter." },
+          { "name": "mimeTypes", "in": "query", "schema": { "type": "string" }, "description": "Optional comma-separated exact MIME allowlist, for example image/jpeg,image/png,image/webp." },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "DELETED"] } },
           { "name": "storageProvider", "in": "query", "schema": { "type": "string" } },
           { "name": "uploadedFrom", "in": "query", "schema": { "type": "string", "format": "date-time" } },
@@ -8684,6 +8734,189 @@
           }
         }
       },
+      "AdminQuickSearchDataResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminQuickSearchResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminQuickSearchResponse": {
+        "type": "object",
+        "required": [
+          "groups"
+        ],
+        "properties": {
+          "groups": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AdminQuickSearchGroup"
+            }
+          }
+        }
+      },
+      "AdminQuickSearchGroup": {
+        "type": "object",
+        "required": [
+          "state",
+          "items"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "ERROR"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/AdminQuickSearchItem"
+            }
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AdminQuickSearchItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "shippingRecipientName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "matchedField": {
+            "type": "string",
+            "nullable": true
+          },
+          "matchedVariants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuickSearchVariant"
+            }
+          }
+        }
+      },
+      "AdminQuickSearchVariant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuickSearchVariantOption"
+            }
+          }
+        }
+      },
+      "AdminQuickSearchVariantOption": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "type": "string",
+            "nullable": true
+          },
+          "attributeValueId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "PermissionKind": {
         "type": "string",
         "enum": [
@@ -11080,7 +11313,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["MISSING_LOGO", "LEGACY_LOGO", "NOT_SQUARE", "TOO_SMALL", "TOO_LARGE", "NOT_PNG", "NOT_TRANSPARENT", "TRANSPARENCY_UNVERIFIED", "MEDIA_UNAVAILABLE"]
+              "enum": ["MISSING_LOGO", "LEGACY_LOGO", "NOT_SQUARE", "TOO_SMALL", "TOO_LARGE", "UNSUPPORTED_TYPE", "NOT_TRANSPARENT", "TRANSPARENCY_UNVERIFIED", "MEDIA_UNAVAILABLE"]
             }
           },
           "width": { "type": "integer", "nullable": true },
@@ -11095,7 +11328,7 @@
         "type": "object",
         "required": ["url"],
         "properties": {
-          "url": { "type": "string", "maxLength": 2048, "format": "uri", "description": "Only http/https; downloaded into internal MinIO storage after SSRF and PNG checks." },
+          "url": { "type": "string", "maxLength": 2048, "format": "uri", "description": "Only http/https; downloaded into internal MinIO storage after SSRF and JPEG/JPG, PNG, or WebP content checks." },
           "altText": { "type": "string", "maxLength": 255 },
           "folderId": { "type": "string", "format": "uuid", "nullable": true }
         }
@@ -12798,10 +13031,6 @@
             "$ref": "#/components/schemas/ImageAsset",
             "nullable": true
           },
-          "mobileBannerImage": {
-            "$ref": "#/components/schemas/ImageAsset",
-            "nullable": true
-          },
           "seo": {
             "$ref": "#/components/schemas/CategorySeoMeta",
             "nullable": true
@@ -12960,9 +13189,6 @@
           "banner": {
             "$ref": "#/components/schemas/ImageAsset"
           },
-          "mobileBanner": {
-            "$ref": "#/components/schemas/ImageAsset"
-          },
           "seo": {
             "$ref": "#/components/schemas/CategorySeoMeta",
             "description": "Omit to preserve; {} clears all stored Category SEO."
@@ -13045,10 +13271,6 @@
           "banner": {
             "$ref": "#/components/schemas/ImageAsset",
             "description": "Desktop brand hero. Same MinIO whitelist and alt-overwrite behaviour as logo."
-          },
-          "mobileBanner": {
-            "$ref": "#/components/schemas/ImageAsset",
-            "description": "Stored but not currently rendered by the storefront; same MinIO whitelist as logo/banner."
           },
           "seo": {
             "$ref": "#/components/schemas/CategorySeoMeta",

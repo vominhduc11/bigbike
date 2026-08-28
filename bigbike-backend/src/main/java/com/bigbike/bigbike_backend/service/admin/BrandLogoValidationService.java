@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.BrandLogoQuality;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
+import com.bigbike.bigbike_backend.service.media.ImageDimensions;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import java.awt.image.BufferedImage;
@@ -16,6 +17,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,8 @@ public class BrandLogoValidationService {
     public static final long MAX_BYTES = 300L * 1024;
     public static final int MIN_PIXELS = 400;
     public static final double RATIO_TOLERANCE = 0.01d;
-    public static final String PNG_MIME = "image/png";
+    public static final Set<String> SUPPORTED_MIMES = Set.of(
+            "image/jpeg", "image/png", "image/webp");
 
     private static final String MINIO_PROVIDER = "MINIO";
     private static final Tika TIKA = new Tika();
@@ -141,9 +144,8 @@ public class BrandLogoValidationService {
 
         issues = new ArrayList<>(dedupe(issues));
         String status;
-        if (entity.getLogoStandardizedAt() != null && issues.isEmpty()) {
+        if (entity.getLogoStandardizedAt() != null && !hasBlockingIssues(issues)) {
             status = "VALID";
-            issues = List.of();
         } else if (entity.getLogoStandardizedAt() != null) {
             status = "INVALID";
         } else {
@@ -195,30 +197,33 @@ public class BrandLogoValidationService {
         }
 
         long fileSize = bytes.length;
+        String detected = TIKA.detect(bytes).toLowerCase(java.util.Locale.ROOT);
         if (fileSize > MAX_BYTES) {
-            return new Inspection(true, null, null, fileSize, TIKA.detect(bytes, "logo.png"),
+            return new Inspection(true, null, null, fileSize, detected,
                     null, List.of("TOO_LARGE"));
         }
 
-        String detected = TIKA.detect(bytes, "logo.png");
-        if (!PNG_MIME.equalsIgnoreCase(detected)) {
-            return new Inspection(true, null, null, fileSize, detected, null, List.of("NOT_PNG"));
+        if (!SUPPORTED_MIMES.contains(detected)) {
+            return new Inspection(true, null, null, fileSize, detected, null,
+                    List.of("UNSUPPORTED_TYPE"));
         }
 
         BufferedImage image;
         try {
             image = ImageIO.read(new ByteArrayInputStream(bytes));
         } catch (Exception e) {
-            return new Inspection(true, null, null, fileSize, detected, null,
-                    List.of("NOT_PNG"));
+            image = null;
         }
-        if (image == null) {
+        ImageDimensions.Dimensions dimensions = image != null
+                ? new ImageDimensions.Dimensions(image.getWidth(), image.getHeight())
+                : ImageDimensions.read(bytes, detected);
+        if (dimensions == null) {
             return new Inspection(true, null, null, fileSize, detected, null,
-                    List.of("NOT_PNG"));
+                    List.of("UNREADABLE"));
         }
 
-        int width = image.getWidth();
-        int height = image.getHeight();
+        int width = dimensions.width();
+        int height = dimensions.height();
         List<String> issues = new ArrayList<>();
         if (width <= 0 || height <= 0 || Math.abs(width - height) / (double) Math.max(width, height)
                 > RATIO_TOLERANCE) {
@@ -227,9 +232,11 @@ public class BrandLogoValidationService {
         if (width < MIN_PIXELS || height < MIN_PIXELS) {
             issues.add("TOO_SMALL");
         }
-        boolean transparent = hasTransparentPixel(image);
-        if (!transparent) {
+        Boolean transparent = image == null ? null : hasTransparentPixel(image);
+        if (Boolean.FALSE.equals(transparent)) {
             issues.add("NOT_TRANSPARENT");
+        } else if (transparent == null) {
+            issues.add("TRANSPARENCY_UNVERIFIED");
         }
         return new Inspection(true, width, height, fileSize, detected, transparent, dedupe(issues));
     }
@@ -282,8 +289,9 @@ public class BrandLogoValidationService {
             }
         }
         if (fileSize != null && fileSize > MAX_BYTES) issues.add("TOO_LARGE");
-        if (mimeType != null && !mimeType.isBlank() && !PNG_MIME.equalsIgnoreCase(mimeType)) {
-            issues.add("NOT_PNG");
+        if (mimeType != null && !mimeType.isBlank()
+                && !SUPPORTED_MIMES.contains(mimeType.toLowerCase(java.util.Locale.ROOT))) {
+            issues.add("UNSUPPORTED_TYPE");
         }
         return dedupe(issues);
     }
@@ -293,18 +301,31 @@ public class BrandLogoValidationService {
             throw validation("logo.mediaId", "BRAND_LOGO_MEDIA_UNAVAILABLE",
                     "Không đọc được object logo trong kho BigBike / the logo object could not be read from BigBike storage.");
         }
-        if (inspection.issues().isEmpty()) return;
-        String issue = inspection.issues().get(0);
+        String issue = inspection.issues().stream()
+                .filter(BrandLogoValidationService::isBlockingIssue)
+                .findFirst()
+                .orElse(null);
+        if (issue == null) return;
         String code = "BRAND_LOGO_" + issue;
         String message = switch (issue) {
             case "NOT_SQUARE" -> "Logo phải vuông, tỉ lệ 1:1 (sai lệch tối đa 1%) / the logo must be square, 1:1 (maximum 1% tolerance).";
             case "TOO_SMALL" -> "Ảnh logo tối thiểu 400 × 400 điểm ảnh / the logo must be at least 400 × 400 pixels.";
             case "TOO_LARGE" -> "Ảnh logo tối đa 300 KB / the logo must be at most 300 KB.";
-            case "NOT_PNG" -> "Logo phải là PNG / the logo must be a PNG file.";
-            case "NOT_TRANSPARENT" -> "Logo phải có nền trong suốt / the logo must have a transparent background.";
+            case "UNSUPPORTED_TYPE" -> "Logo chỉ nhận JPEG/JPG, PNG hoặc WebP / the logo must be a JPEG/JPG, PNG, or WebP image.";
+            case "UNREADABLE" -> "Không đọc được nội dung ảnh logo / the logo image content could not be read.";
             default -> "Logo không đạt chuẩn / the logo does not meet the brand-logo standard.";
         };
         throw validation("logo", code, message);
+    }
+
+    private static boolean hasBlockingIssues(List<String> issues) {
+        return issues.stream().anyMatch(BrandLogoValidationService::isBlockingIssue);
+    }
+
+    private static boolean isBlockingIssue(String issue) {
+        return !"NOT_TRANSPARENT".equals(issue)
+                && !"TRANSPARENCY_UNVERIFIED".equals(issue)
+                && !"LEGACY_LOGO".equals(issue);
     }
 
     private static ValidationException validation(String field, String code, String message) {

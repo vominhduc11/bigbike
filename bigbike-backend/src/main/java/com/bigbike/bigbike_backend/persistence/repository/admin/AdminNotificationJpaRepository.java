@@ -6,21 +6,11 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotificationEntity, UUID> {
-
-    // Recent notifications regardless of read state — read is now tracked per-admin
-    // (see AdminNotificationReadEntity), so the inbox shows the shared backlog and the
-    // service marks each item read/unread against the caller's own high-water mark.
-    List<AdminNotificationEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
-
-    // Count notifications created strictly after the given instant (per-admin unread count).
-    long countByCreatedAtAfter(Instant since);
-
-    // Total count — used when the admin has no read record yet (everything is unread).
-    long count();
 
     @Query("""
             select n from AdminNotificationEntity n
@@ -57,4 +47,22 @@ public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotif
             @Param("includeOrders") boolean includeOrders,
             @Param("includeChat") boolean includeChat,
             @Param("since") Instant since);
+
+    @Modifying
+    @Query(value = """
+            with candidates as (
+                select id
+                from admin_notifications
+                where created_at < :cutoff
+                order by created_at, id
+                limit :batchSize
+                for update skip locked
+            )
+            delete from admin_notifications notification
+            using candidates
+            where notification.id = candidates.id
+            """, nativeQuery = true)
+    int deleteOlderThanBatch(
+            @Param("cutoff") Instant cutoff,
+            @Param("batchSize") int batchSize);
 }

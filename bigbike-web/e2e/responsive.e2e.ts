@@ -33,9 +33,16 @@ async function expectBarFits(page: Page, selector: string, label: string): Promi
   if (!(await el.isVisible().catch(() => false))) return;
   const r = await el.evaluate((node) => {
     const rect = (node as HTMLElement).getBoundingClientRect();
-    return { left: Math.round(rect.left), right: Math.round(rect.right), innerW: window.innerWidth };
+    return {
+      left: Math.round(rect.left),
+      right: Math.round(rect.right),
+      innerW: window.innerWidth,
+    };
   });
-  expect(r.right, `${label}: extends past right edge (right=${r.right} > innerWidth=${r.innerW})`).toBeLessThanOrEqual(r.innerW + 2);
+  expect(
+    r.right,
+    `${label}: extends past right edge (right=${r.right} > innerWidth=${r.innerW})`,
+  ).toBeLessThanOrEqual(r.innerW + 2);
   expect(r.left, `${label}: starts left of viewport (left=${r.left})`).toBeGreaterThanOrEqual(-2);
 }
 
@@ -59,9 +66,16 @@ for (const route of KEY_ROUTES) {
           const stickyBarVisible = await stickyPurchaseBar.isVisible().catch(() => false);
 
           if (stickyBarVisible) {
-            await expectBarFits(page, ".bb-pdp-sticky-cta.is-visible", `PDP sticky purchase bar @ ${vp.name}`);
+            await expectBarFits(
+              page,
+              ".bb-pdp-sticky-cta.is-visible",
+              `PDP sticky purchase bar @ ${vp.name}`,
+            );
           } else {
-            await expect(bottomNav, `mobile bottom nav should be visible @ ${vp.name}`).toBeVisible();
+            await expect(
+              bottomNav,
+              `mobile bottom nav should be visible @ ${vp.name}`,
+            ).toBeVisible();
             await expectBarFits(page, "nav.bb-bottom-nav", `bottom nav @ ${vp.name}`);
           }
         }
@@ -70,7 +84,7 @@ for (const route of KEY_ROUTES) {
   });
 }
 
-const HEADER_NAV_VIEWPORTS = [1280, 1366, 1439, 1440, 1536, 1920];
+const HEADER_NAV_VIEWPORTS = [768, 1024, 1280, 1366, 1440, 1920];
 
 test.describe("Header primary navigation responsive mode", () => {
   for (const width of HEADER_NAV_VIEWPORTS) {
@@ -81,7 +95,7 @@ test.describe("Header primary navigation responsive mode", () => {
       const desktopMenu = page.locator("[data-header-desktop-menu]").first();
       const mobileMenuTrigger = page.locator("[data-header-mobile-trigger]").first();
 
-      if (width < 1440) {
+      if (width < 1280) {
         await expect(desktopMenu, `desktop menu should be hidden @ ${width}px`).toBeHidden();
         await expect(mobileMenuTrigger, `hamburger should be visible @ ${width}px`).toBeVisible();
         return;
@@ -91,24 +105,31 @@ test.describe("Header primary navigation responsive mode", () => {
       await expect(mobileMenuTrigger, `hamburger should be hidden @ ${width}px`).toBeHidden();
 
       const links = desktopMenu.locator(":scope > ul > li > a");
+      await expect(links, `five primary menu items should be visible @ ${width}px`).toHaveCount(5);
       await expect(links.first()).toBeVisible();
-      const measurements = await links.evaluateAll((nodes) => nodes.map((node) => {
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        const lineRects = Array.from(range.getClientRects());
-        const style = getComputedStyle(node);
-        return {
-          clientWidth: node.clientWidth,
-          scrollWidth: node.scrollWidth,
-          lineCount: lineRects.length,
-          whiteSpace: style.whiteSpace,
-        };
-      }));
+      const measurements = await links.evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const style = getComputedStyle(node);
+          return {
+            clientWidth: node.clientWidth,
+            scrollWidth: node.scrollWidth,
+            clientHeight: node.clientHeight,
+            scrollHeight: node.scrollHeight,
+            whiteSpace: style.whiteSpace,
+          };
+        }),
+      );
 
       for (const measurement of measurements) {
         expect(measurement.whiteSpace, `menu label should not wrap @ ${width}px`).toBe("nowrap");
-        expect(measurement.lineCount, `menu label should stay on one line @ ${width}px`).toBe(1);
-        expect(measurement.scrollWidth, `menu label should not overflow its link @ ${width}px`).toBeLessThanOrEqual(measurement.clientWidth);
+        expect(
+          measurement.scrollHeight,
+          `menu label should stay on one line @ ${width}px`,
+        ).toBeLessThanOrEqual(measurement.clientHeight);
+        expect(
+          measurement.scrollWidth,
+          `menu label should not overflow its link @ ${width}px`,
+        ).toBeLessThanOrEqual(measurement.clientWidth);
       }
     });
   }

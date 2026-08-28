@@ -49,8 +49,8 @@ export const mGridCard =
 // globals.css). Dual layout: desktop centered-bar dropdown ↔ mobile (≤767 =
 // max-md) full-screen. Raw var() refs + `color:`-hinted arbitraries mirror the
 // legacy cascade exactly (the mobile "light reskin" layer is already merged in).
-// The `bb-suggest-in` keyframe, the shared `.is-active` trigger color, and the
-// global prefers-reduced-motion duration override all stay in globals.css.
+// The `bb-suggest-in` keyframe and the global prefers-reduced-motion duration
+// override stay in globals.css.
 export const sLayer =
   "pointer-events-none opacity-0 invisible [transition:opacity_0.3s_ease,visibility_0s_linear_0.3s] " +
   // md+ stacking-context anchor: the opacity fade-in (opacity<1 mid-transition) makes
@@ -105,7 +105,7 @@ export const sInput =
   "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +
   "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
 export const sResults =
-  "absolute top-full left-[-40px] right-[-40px] z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
+  "absolute top-full left-10 right-10 z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
   "[box-shadow:0_8px_32px_rgba(0,0,0,0.18)] animate-[bb-suggest-in_180ms_var(--bb-ease-standard)_both] motion-reduce:animate-none " +
   "md:flex md:flex-col md:[max-height:min(520px,calc(100dvh-var(--bb-header-height)-24px))] " +
   "max-md:static max-md:left-auto max-md:right-auto max-md:flex-[1_1_auto] max-md:min-h-0 max-md:max-h-none " +

@@ -44,6 +44,7 @@
   },
   "Header": {
     "skipToContent": "Bỏ qua tới nội dung",
+    "opensInNewWindow": "Mở trong cửa sổ mới",
     "homeAriaLabel": "Trang chủ BigBike",
     "searchPlaceholder": "Tìm sản phẩm, thương hiệu…",
     "account": "Tài khoản",

@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/Avatar";
+import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
 import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import { toHomePath, toLoginPath, translatePath } from "@/lib/utils/routes";
@@ -71,12 +72,13 @@ export function AccountNav({
   const resolvedLoginRedirect = loginRedirect ?? pathname ?? "/tai-khoan/";
   const auth = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  const authReason = auth.status === "anonymous" ? auth.reason : undefined;
 
   useEffect(() => {
-    if (auth.status === "anonymous") {
+    if (auth.status === "anonymous" && authReason !== "logout") {
       router.replace(toLoginPath(resolvedLoginRedirect, locale));
     }
-  }, [auth.status, router, resolvedLoginRedirect, locale]);
+  }, [auth.status, authReason, router, resolvedLoginRedirect, locale]);
 
   const localizedNav = NAV.map((item) => ({
     ...item,
@@ -92,40 +94,8 @@ export function AccountNav({
     router.push(toHomePath(locale));
   }
 
-  if (auth.status === "loading") {
-    return (
-      <div
-        className="grid gap-8 py-10 md:grid-cols-4"
-        aria-busy="true"
-        aria-label={t("loadingAccount")}
-      >
-        <aside>
-          <div className="mb-8 animate-pulse">
-            <div className="h-5 w-2/3 rounded bg-black/10" />
-            <div className="mt-2 h-4 w-4/5 rounded bg-black/10" />
-          </div>
-          <div className="animate-pulse bg-card px-8 shadow-sm">
-            <ul className="m-0 list-none p-0">
-              {localizedNav.map((item) => (
-                <li key={item.href} className="border-b border-border py-7 last:border-b-0">
-                  <div className="h-4 w-1/2 rounded bg-black/10" />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-        <div className="bg-card p-5 shadow-sm md:col-span-3">
-          <div className="animate-pulse">
-            <div className="h-4 w-full rounded bg-black/10" />
-            <div className="mt-3 h-4 w-5/6 rounded bg-black/10" />
-            <div className="mt-3 h-4 w-2/3 rounded bg-black/10" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (auth.status !== "authenticated") return <AccountLayoutSkeleton />;
 
-  if (auth.status !== "authenticated") return null;
 
   const profile = auth.profile;
   const activeNav = localizedNav.find((item) => navIsActive(item, pathname));
@@ -149,6 +119,7 @@ export function AccountNav({
             <li>
               <Link
                 href={translatePath("/tai-khoan/", locale)}
+                prefetch={false}
                 className="font-semibold hover:text-brand"
               >
                 <span property="name">{t("breadcrumbAccount")}</span>
@@ -195,6 +166,7 @@ export function AccountNav({
                     <li key={item.href} className="border-b border-border py-7 last:border-b-0">
                       <Link
                         href={item.href}
+                        prefetch={false}
                         className={`font-body text-a5-meta font-semibold hover:text-brand ${active ? "text-brand" : "text-foreground"}`}
                         aria-current={active ? "page" : undefined}
                       >

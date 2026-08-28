@@ -356,16 +356,6 @@ public class CategoryMutationService {
             clearBanner(entity);
         }
 
-        if (request.getMobileBanner() != null) {
-            if (AdminMutationValidators.trimToNull(request.getMobileBanner().getUrl()) != null) {
-                applyMobileBanner(entity, request.getMobileBanner());
-            } else {
-                clearMobileBanner(entity);
-            }
-        } else if (create) {
-            clearMobileBanner(entity);
-        }
-
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {

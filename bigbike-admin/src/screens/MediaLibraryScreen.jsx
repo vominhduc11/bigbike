@@ -49,6 +49,7 @@ import {
   formatNumber,
   buildActiveChips,
 } from './media-library/constants'
+import { normalizeMediaMimeType } from '../lib/mediaConstants'
 import { UploadQueue } from './media-library/UploadQueue'
 
 function mediaActionError(t, error, fallback) {
@@ -165,7 +166,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     if (!canUpdate || files.length === 0) return
     const valid = []
     for (const file of files) {
-      if (!ALLOWED_MIME.includes(file.type)) {
+      if (!ALLOWED_MIME.includes(normalizeMediaMimeType(file.type))) {
         toast.error(t('media.unsupportedType', { type: file.type })); continue
       }
       if (file.size > MAX_FILE_SIZE) {

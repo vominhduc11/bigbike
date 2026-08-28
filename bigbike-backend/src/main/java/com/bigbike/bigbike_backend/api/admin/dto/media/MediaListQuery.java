@@ -19,6 +19,7 @@ public record MediaListQuery(
         int size,
         String q,
         String mimeType,
+        String mimeTypes,
         String status,
         String storageProvider,
         String usageFilter,

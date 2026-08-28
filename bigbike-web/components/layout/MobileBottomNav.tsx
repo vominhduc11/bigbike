@@ -106,6 +106,7 @@ export function MobileBottomNav() {
 
         <Link
           href={toAccountPath(locale)}
+          prefetch={false}
           className={tabClass(accountActive)}
           aria-current={accountActive ? "page" : undefined}
         >

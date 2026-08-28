@@ -717,8 +717,8 @@ public class CatalogRequestValidator {
                 );
             }
         }
-        // Banner (desktop + mobile) is admin-managed media and must satisfy the same MinIO
-        // whitelist as image/icon/menuIcon. Previously unvalidated, which let a category hero
+        // Desktop banner is admin-managed media and must satisfy the same MinIO whitelist as
+        // image/icon/menuIcon. Previously unvalidated, which let a category hero
         // point at an external host; existing URLs stay grandfathered so legacy rows still save.
         AdminMutationValidators.validateImageAsset(
                 request.getBanner(),
@@ -727,22 +727,9 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getBannerUrl(),
                 errors
         );
-        AdminMutationValidators.validateImageAsset(
-                request.getMobileBanner(),
-                "mobileBanner",
-                mediaUrlProperties.getPublicBaseUrl(),
-                current == null ? null : current.getMobileBannerUrl(),
-                errors
-        );
         if (request.getBanner() != null && request.getBanner().getMediaId() != null) {
             errors.add(new ApiErrorDetail(
                     "banner.mediaId",
-                    "BRAND_IMAGE_MEDIA_ID_UNSUPPORTED",
-                    "mediaId chỉ dùng cho logo thương hiệu / mediaId is supported only for the brand logo."));
-        }
-        if (request.getMobileBanner() != null && request.getMobileBanner().getMediaId() != null) {
-            errors.add(new ApiErrorDetail(
-                    "mobileBanner.mediaId",
                     "BRAND_IMAGE_MEDIA_ID_UNSUPPORTED",
                     "mediaId chỉ dùng cho logo thương hiệu / mediaId is supported only for the brand logo."));
         }
@@ -959,7 +946,7 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getLogoUrl(),
                 errors
         );
-        // Banner (desktop + mobile) is admin-managed media too and must satisfy the same
+        // Desktop banner is admin-managed media too and must satisfy the same
         // MinIO whitelist as the logo. Previously unvalidated, which let a brand hero point
         // at an external host; existing URLs stay grandfathered so legacy records still save.
         AdminMutationValidators.validateImageAsset(
@@ -967,13 +954,6 @@ public class CatalogRequestValidator {
                 "banner",
                 mediaUrlProperties.getPublicBaseUrl(),
                 current == null ? null : current.getBannerUrl(),
-                errors
-        );
-        AdminMutationValidators.validateImageAsset(
-                request.getMobileBanner(),
-                "mobileBanner",
-                mediaUrlProperties.getPublicBaseUrl(),
-                current == null ? null : current.getMobileBannerUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(

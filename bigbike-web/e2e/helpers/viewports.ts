@@ -17,6 +17,7 @@ export const VIEWPORTS: ViewportDef[] = [
   { name: "mobile-375x812", width: 375, height: 812, kind: "mobile" },
   { name: "mobile-390x844", width: 390, height: 844, kind: "mobile" },
   { name: "mobile-430x932", width: 430, height: 932, kind: "mobile" },
+  { name: "mobile-640x900", width: 640, height: 900, kind: "mobile" },
   { name: "tablet-768x1024", width: 768, height: 1024, kind: "tablet" },
   { name: "tablet-1024x768", width: 1024, height: 768, kind: "tablet" },
   { name: "desktop-1280x800", width: 1280, height: 800, kind: "desktop" },

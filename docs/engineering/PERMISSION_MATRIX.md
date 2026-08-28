@@ -207,9 +207,11 @@ HMAC identity limiter rather than a new account-lock state. Admin mutations use 
 
 | Endpoint / surface | Required role/permission | Status | Evidence |
 |---|---|---|---|
+| `/api/v1/admin/quick-search` GET | At least one of `orders.read`, `products.read`, `customers.read`, `catalog.read`, `content.read`, `admin-users.read`; response groups are limited to permissions currently held | `OWNER_CONFIRMED_FROM_HANDOFF_2026-08-28` | `AdminQuickSearchController`, `AdminQuickSearchService`, `RBAC_RULE_001`, `RBAC_RULE_004` |
 | `/api/v1/admin/**` | Spring Security URL gate requires an authenticated non-customer admin principal. Customer session cookies are intentionally ignored on this namespace, so a customer-only request receives `401` rather than creating an authenticated customer context that could interfere with an admin refresh; fine-grained permission is then enforced at controller level by `requirePermission()`. | `OWNER_CONFIRMED_2026-07-31` | `SecurityConfig.java`, `CustomerSessionFilter.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
 | `/api/v1/admin/dashboard` GET | `orders.read` only; no exact-role restriction | `OWNER_CONFIRMED_2026-07-31` | `AdminDashboardController.java`, `SecurityConfig.java` |
+| `/api/v1/admin/notifications` GET and `/mark-all-read` POST | At least one of `orders.read` or `chat.read`; each response is filtered to the held scope | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.java` |
 | `/api/v1/admin/orders` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listOrders` |
 | `/api/v1/admin/orders/{orderId}` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail` |
 | `/api/v1/admin/orders/{orderId}/allowed-transitions` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions` |

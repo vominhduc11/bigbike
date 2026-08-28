@@ -3,7 +3,12 @@ import { readImageFileDimensions } from './useMediaDimensions'
 export const BRAND_LOGO_MIN_PIXELS = 400
 export const BRAND_LOGO_MAX_BYTES = 300 * 1024
 export const BRAND_LOGO_RATIO_TOLERANCE = 0.01
-export const BRAND_LOGO_MIME = 'image/png'
+export const BRAND_LOGO_MIME_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp'])
+
+function normalizeMimeType(mimeType) {
+  const normalized = (mimeType || '').toLowerCase()
+  return normalized === 'image/jpg' ? 'image/jpeg' : normalized
+}
 
 export function brandLogoCheckerboardStyle() {
   return {
@@ -67,7 +72,7 @@ export async function inspectBrandLogoFile(file) {
     width: dimensions.width,
     height: dimensions.height,
     fileSize: Number(file.size) || 0,
-    mimeType: (file.type || '').toLowerCase(),
+    mimeType: normalizeMimeType(file.type),
     transparent: await detectTransparency(file, dimensions.width, dimensions.height),
   }
 }
@@ -77,7 +82,7 @@ export function getBrandLogoIssues(details) {
   if (!details || !Number.isFinite(details.width) || !Number.isFinite(details.height)) {
     return ['UNREADABLE']
   }
-  if ((details.mimeType || '').toLowerCase() !== BRAND_LOGO_MIME) issues.push('NOT_PNG')
+  if (!BRAND_LOGO_MIME_TYPES.includes(normalizeMimeType(details.mimeType))) issues.push('UNSUPPORTED_TYPE')
   if (Number(details.fileSize) > BRAND_LOGO_MAX_BYTES) issues.push('TOO_LARGE')
   if (details.width < BRAND_LOGO_MIN_PIXELS || details.height < BRAND_LOGO_MIN_PIXELS) issues.push('TOO_SMALL')
   if (!isSquareEnough(details.width, details.height)) issues.push('NOT_SQUARE')
@@ -88,15 +93,21 @@ export function getBrandLogoIssues(details) {
 
 export function getBrandLogoSourceDecision(details) {
   const issues = getBrandLogoIssues(details)
-  const blockingBeforeCrop = issues.filter((issue) => !['NOT_SQUARE', 'TOO_SMALL'].includes(issue))
+  // A non-square source may be larger than the final 300 KB limit. Let the crop
+  // step re-encode it, while still blocking an already-square oversized logo.
+  const blockingBeforeCrop = issues.filter((issue) => !['NOT_SQUARE', 'TOO_LARGE'].includes(issue))
   if (blockingBeforeCrop.length) return { needsCrop: false, issues }
   if (issues.includes('NOT_SQUARE')) return { needsCrop: true, issues: [] }
   return { needsCrop: false, issues }
 }
 
+export function isBrandLogoBlockingIssue(issue) {
+  return !['NOT_TRANSPARENT', 'TRANSPARENCY_UNVERIFIED', 'LEGACY_LOGO'].includes(issue)
+}
+
 export function brandLogoIssueTranslationKey(issue) {
   return {
-    NOT_PNG: 'brands.logo.errors.notPng',
+    UNSUPPORTED_TYPE: 'brands.logo.errors.unsupportedType',
     TOO_SMALL: 'brands.logo.errors.tooSmall',
     TOO_LARGE: 'brands.logo.errors.tooLarge',
     NOT_SQUARE: 'brands.logo.errors.notSquare',
@@ -108,5 +119,5 @@ export function brandLogoIssueTranslationKey(issue) {
 }
 
 export function isBrandLogoReady(details) {
-  return getBrandLogoIssues(details).length === 0
+  return getBrandLogoIssues(details).every((issue) => !isBrandLogoBlockingIssue(issue))
 }

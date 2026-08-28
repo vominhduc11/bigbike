@@ -56,7 +56,7 @@ class CatalogReadServiceAssistantCategorySummaryTest {
     private static Category category(
             String id, String slug, String name, String parentId, int sortOrder) {
         return new Category(id, slug, null, name, null, parentId, null, null, null,
-                null, null, null, true, false, null, sortOrder, null, null, null, null);
+                null, null, true, false, null, sortOrder, null, null, null, null);
     }
 
     private static Product product(String slug, CategorySummary category, BigDecimal retailPrice) {

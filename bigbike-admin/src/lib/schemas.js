@@ -641,8 +641,6 @@ export function createCategorySchema(t) {
       imageAlt: z.string().optional(),
       bannerImageUrl: z.string().optional(),
       bannerImageAlt: z.string().optional(),
-      mobileBannerImageUrl: z.string().optional(),
-      mobileBannerImageAlt: z.string().optional(),
       heroImageUrl: z.string().optional(),
       heroImageAlt: z.string().optional(),
       menuIconUrl: z.string().optional(),
@@ -692,9 +690,6 @@ export function createCategorySchema(t) {
       if (data.bannerImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.bannerImageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errBannerImageUrl'), path: ['bannerImageUrl'] })
       }
-      if (data.mobileBannerImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.mobileBannerImageUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errBannerImageUrl'), path: ['mobileBannerImageUrl'] })
-      }
       if (data.heroImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.heroImageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errHeroImageUrl'), path: ['heroImageUrl'] })
       }
@@ -722,7 +717,7 @@ export function createCategorySchema(t) {
       if ((data.seoOgImageAlt ?? '').trim().length > 255) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageAltTooLong'), path: ['seoOgImageAlt'] })
       }
-      for (const key of ['imageAlt', 'bannerImageAlt', 'mobileBannerImageAlt', 'heroImageAlt']) {
+      for (const key of ['imageAlt', 'bannerImageAlt', 'heroImageAlt']) {
         if ((data[key] ?? '').trim().length > 255) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageAltTooLong'), path: [key] })
         }

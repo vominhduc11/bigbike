@@ -96,7 +96,7 @@ describe('VideoPickerModal', () => {
     const item = await screen.findByTitle('gioi-thieu.mp4')
     expect(item).toBeDisabled()
     expect(screen.getByRole('img', { name: 'media.missingPublicUrl' })).toBeInTheDocument()
-    expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ mimeType: 'video/' }))
+    expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ mimeTypes: ['video/mp4'] }))
   })
 
   it('vẫn cho chọn video có sẵn nhưng ẩn tải lên khi thiếu media.write', async () => {

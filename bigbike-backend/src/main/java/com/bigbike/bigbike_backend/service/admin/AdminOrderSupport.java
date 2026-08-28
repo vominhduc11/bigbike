@@ -3,9 +3,15 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -103,19 +109,25 @@ final class AdminOrderSupport {
             );
         }
 
-        return (root, query, cb) -> {
+        return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (normalizedStatus != null && !normalizedStatus.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), normalizedStatus));
             }
             if (q != null && !q.isBlank()) {
-                String pattern = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("orderNumber")), pattern),
-                        cb.like(cb.lower(root.get("orderKey")), pattern),
-                        cb.like(cb.lower(root.get("customerEmail")), pattern),
-                        cb.like(cb.lower(root.get("customerPhone")), pattern)
-                ));
+                List<Predicate> tokenPredicates = new ArrayList<>();
+                for (String token : AdminSearchText.tokens(q)) {
+                    String pattern = AdminSearchText.likePattern(token);
+                    tokenPredicates.add(cb.or(
+                            cb.like(unaccentLower(cb, root.get("orderNumber")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("orderKey")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("customerEmail")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("customerPhone")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("customerName")), pattern, '\\'),
+                            shippingRecipientMatches(root, criteriaQuery, cb, pattern)
+                    ));
+                }
+                predicates.add(cb.and(tokenPredicates.toArray(new Predicate[0])));
             }
             if (fromInstant != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
@@ -125,6 +137,30 @@ final class AdminOrderSupport {
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    private static Expression<String> unaccentLower(
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            Expression<?> value
+    ) {
+        return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
+    }
+
+    private static Predicate shippingRecipientMatches(
+            Root<OrderEntity> orderRoot,
+            CriteriaQuery<?> criteriaQuery,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            String pattern
+    ) {
+        Subquery<UUID> addressSubquery = criteriaQuery.subquery(UUID.class);
+        Root<OrderAddressEntity> address = addressSubquery.from(OrderAddressEntity.class);
+        addressSubquery.select(address.get("id"));
+        addressSubquery.where(
+                cb.equal(address.get("order").get("id"), orderRoot.get("id")),
+                cb.equal(address.get("type"), "SHIPPING"),
+                cb.like(unaccentLower(cb, address.get("fullName")), pattern, '\\')
+        );
+        return cb.exists(addressSubquery);
     }
 
     static Sort resolveSort(String sort) {

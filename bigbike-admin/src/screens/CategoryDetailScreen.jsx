@@ -603,7 +603,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const imageValues = [
     form.imageUrl,
     form.bannerImageUrl,
-    form.mobileBannerImageUrl,
     form.heroImageUrl,
   ]
   if (!isChildCategory) imageValues.push(form.menuIconUrl)
@@ -764,7 +763,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           icon={ImageIcon}
           tone={imageCount > 0 ? 'success' : 'info'}
           label={t('categories.detail.imagesMetric', { defaultValue: 'Hình ảnh' })}
-          value={`${imageCount}/${isChildCategory ? 4 : 5}`}
+          value={`${imageCount}/${isChildCategory ? 3 : 4}`}
           hint={t(isChildCategory ? 'categories.detail.imagesMetricHintChild' : 'categories.detail.imagesMetricHint', {
             defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục, banner, ảnh minh hoạ và biểu tượng menu',
           })}
@@ -900,8 +899,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               title={t('categories.detail.imagesSection', { defaultValue: 'Hình ảnh trên website' })}
               description={t(isChildCategory ? 'categories.detail.imagesSectionDescChild' : 'categories.detail.imagesSectionDesc', {
                 defaultValue: isChildCategory
-                  ? 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại và ảnh minh hoạ.'
-                  : 'Quản lý ảnh thẻ danh mục, banner máy tính, banner điện thoại, ảnh minh hoạ và biểu tượng menu cho danh mục gốc.',
+                  ? 'Quản lý ảnh thẻ danh mục, banner máy tính và ảnh minh hoạ.'
+                  : 'Quản lý ảnh thẻ danh mục, banner máy tính, ảnh minh hoạ và biểu tượng menu cho danh mục gốc.',
               })}
             >
               <div className="grid gap-5 md:grid-cols-2">
@@ -932,19 +931,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     recommend={IMAGE_RECO.bannerWide}
                   />
                   <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
-                </div>
-                <div className="form-field" data-field="mobileBannerImageUrl">
-                  <span>{t('categories.detail.mobileBannerImageUrl', { defaultValue: 'Ảnh banner điện thoại' })}</span>
-                  <ImageUrlInput
-                    value={form.mobileBannerImageUrl}
-                    onChange={(url) => updateField('mobileBannerImageUrl', url)}
-                    alt={form.mobileBannerImageAlt}
-                    onAltChange={(alt) => updateField('mobileBannerImageAlt', alt)}
-                    previewAlt={form.mobileBannerImageAlt || t('categories.detail.mobileBannerAlt', { defaultValue: 'Ảnh nền đầu trang trên điện thoại' })}
-                    disabled={isReadOnly}
-                    error={validationErrors.mobileBannerImageUrl}
-                    recommend={IMAGE_RECO.bannerWide}
-                  />
                 </div>
                 <div className="form-field" data-field="heroImageUrl">
                   <span>{t('categories.detail.heroImageUrl')}</span>

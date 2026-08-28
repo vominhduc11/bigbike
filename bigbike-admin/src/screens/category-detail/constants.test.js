@@ -58,13 +58,12 @@ describe('Category payload contract', () => {
       imageUrl: '/media/category-thumb.jpg', imageAlt: 'Ảnh thumbnail',
       heroImageUrl: '/media/category-hero.jpg', heroImageAlt: 'Ảnh hero',
       bannerImageUrl: '/media/category-banner.jpg', bannerImageAlt: 'Ảnh banner',
-      mobileBannerImageUrl: '/media/category-banner-mobile.jpg', mobileBannerImageAlt: 'Ảnh banner mobile',
     })
 
     expect(payload.image.alt).toBe('Ảnh thumbnail')
     expect(payload.icon.alt).toBe('Ảnh hero')
     expect(payload.banner.alt).toBe('Ảnh banner')
-    expect(payload.mobileBanner.alt).toBe('Ảnh banner mobile')
+    expect(payload).not.toHaveProperty('mobileBanner')
   })
 
   it('giữ metadata ảnh thumbnail, ảnh hero và ảnh chia sẻ qua vòng đọc rồi lưu', () => {
@@ -141,7 +140,7 @@ describe('Category payload contract', () => {
 
     expect(payload.image).toEqual({ url: null })
     expect(payload.banner).toEqual({ url: null })
-    expect(payload.mobileBanner).toEqual({ url: null })
+    expect(payload).not.toHaveProperty('mobileBanner')
     expect(payload.icon).toEqual({ url: null })
     expect(payload.menuIcon).toEqual({ url: null })
   })

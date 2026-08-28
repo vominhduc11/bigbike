@@ -13,12 +13,29 @@ Evidence:
 - `CheckoutService.java`
 - cart and checkout tests
 
+### Admin notification data
+
+- `admin_notifications` is the shared notification backlog; application writes are append-only and the retention job may delete only expired rows. Active fields are `id`, `type`, optional `order_id`/`order_number`, `payload`, and `created_at`; the legacy shared `is_read` field is removed by the retention cleanup migration.
+- `admin_notification_reads` stores one `last_read_at` and `updated_at` per `admin_id`. It is never deleted by notification retention and is the only source used to derive `isRead` and `unreadCount` for the current admin.
+- The API returns at most 50 recent in-scope rows. The `unreadCount` in the response is the exact server count and can exceed the 30 rows cached/displayed by the admin bell. Order/chat scope remains permission-filtered, and this change adds no payload or browser-storage data.
+- Rows older than six calendar months by `created_at` are deleted in daily batches; expiry is age-based and does not inspect or mutate per-admin read markers.
+
+Status: `OWNER_CONFIRMED_2026-08-28` / `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `AdminNotificationEntity.java`
+- `AdminNotificationReadEntity.java`
+- `AdminNotificationController.java`
+- `AdminNotificationRetentionCleanupService.java`
+- `V1067__admin_notification_retention_and_remove_legacy_read_state.sql`
+
 ### Media fields
 
 - Canonical public media shape remains `image`, `gallery[]`, and `videos[]` at the product/content contract level.
 - Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, storage metadata, and `originalFilename`. New uploads preserve the safe basename supplied by the uploader (including Unicode and extension); historical rows are backfilled from the stored object path when no original name was previously recorded. The authenticated admin download contract always streams the stored MinIO object, including `DELETED` rows, never a thumbnail/variant or an external URL-only video.
 - `media.content_sha256` (V369) stores the lowercase SHA-256 of the bytes actually held in object storage. It is nullable for historical rows, format-checked, and unique when present. Live migration and admin upload use it to reuse identical content even when filenames differ; a checksum must never be populated until the object bytes have been read and verified.
-- Allowlist for **new Admin Media Library uploads** includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, and MP4 video only. Audio was removed by the owner decision recorded in `BUSINESS_RULES.md` § Media Rules (AUD-074); historical audio or other legacy objects already present in storage are not deleted automatically. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
+- Allowlist for **new Admin Media Library uploads** is `image/jpeg|image/png|image/webp` and `video/mp4`. Audio was removed by the owner decision recorded in `BUSINESS_RULES.md` § Media Rules (AUD-074); historical audio or other legacy objects already present in storage are not deleted automatically. The owner decision on 2026-08-28 also removed GIF and SVG from all new admin image uploads and selectors. Declared MIME and Apache Tika content detection must match exactly; the filename extension is not trusted. Customer review/avatar/chat contracts remain separate and continue to accept JPEG/PNG/WebP.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -74,7 +91,7 @@ audit, sửa code thì sửa cả bảng này.
 | `contentVideo` | Video nhúng khối "video" trong bài viết/content | Khung **NGANG** 16:9 rộng bằng cột nội dung (~1170px desktop) — khác hẳn `video` ở trên dù cùng là "video tải lên" | 2340×1320 | 16:9 |
 | `general` | Ảnh chèn khối "image" trong nội dung + ảnh chèn rich-text chung (FAQ, callout, mô tả hãng, `about_content_html`...) | Ngữ cảnh rộng nhất trong nhóm này: full cột nội dung ~1170px desktop | 2340×1560 | tự do |
 | `featureImage` | Ảnh khối "feature" (ảnh cạnh chữ) trong nội dung | Nửa cột nội dung, ÉP 4:3 (`aspect-[4/3] object-cover`) → ~565×424 desktop | 1130×850 | 4:3 |
-| *(không có key)* | `menuIconUrl` — icon 1 màu cạnh tên danh mục gốc trong menu đầu trang | Icon 1 màu, khuyến nghị SVG, hiển thị cố định 20×16px qua CSS mask | **Không kiểm tra kích thước** — SVG là vector (không có khái niệm "mờ vì thiếu pixel"); PNG thay thế cũng chỉ hiển thị 20×16px | — |
+| *(không có key)* | `menuIconUrl` — icon 1 màu cạnh tên danh mục gốc trong menu đầu trang | Icon raster 1 màu (JPEG/PNG/WebP), hiển thị cố định 20×16px qua CSS mask | **Không kiểm tra kích thước** — ảnh chỉ hiển thị 20×16px | — |
 
 **Chặn ở đâu:**
 
@@ -113,6 +130,18 @@ Evidence:
 - `CartService.java` (line 153)
 - `CheckoutService.java` (line 723)
 - `V1__create_catalog_content_tables.sql` (lines 65, 166)
+
+### Admin quick-search response
+
+The admin topbar quick-search response is a compact read model and does not change the existing product list payload. A product result contains the product-level `sku` plus `matchedVariants[]` when a product variant matched the query. Each matched variant carries its stable `id`, selling `sku`, derived `name` and ordered `options[]` (`name`, `value`, and `attributeValueId` when available). The count is the number of distinct products, not the number of matching variants.
+
+Order quick-search results carry both the order's stored customer-name snapshot and the shipping address `fullName` snapshot as separate fields, so the client can explain why the order matched without exposing a new write field. All other quick-search item fields are read-only projections of the existing admin list/detail data.
+
+Text matching for the admin read path is accent-insensitive and case-insensitive. The staff product path retains every entered word; the assistant/public `ProductSearchTerms` stop-word behavior remains a separate contract. `%`, `_` and `\\` are data characters and never wildcard operators.
+
+Status: `OWNER_CONFIRMED_FROM_HANDOFF_2026-08-28`
+
+Evidence: `AdminQuickSearchResponse` DTOs, `ProductVariant`, `ProductVariantOption`, `OrderEntity`, `OrderAddressEntity`, `ProductSearchTerms`.
 
 ### Variant display name (derived, not admin-entered)
 
@@ -1308,7 +1337,7 @@ The system Category `uncategorized` is permanently hidden and may be read in the
 
 ### Category media and SEO write shape
 
-The Category upsert DTO accepts separate assets for `image` (grid thumbnail), `icon` (hero illustration), `menuIcon` (root-category header-menu line icon), `banner` (desktop hero background), `mobileBanner` (mobile hero background), and `seo.ogImage`. Assets other than `menuIcon` retain the normal `ImageAsset { url, alt, width, height, mimeType }` shape; `menuIcon` persists only its `url`.
+The Category upsert DTO accepts separate assets for `image` (grid thumbnail), `icon` (hero illustration), `menuIcon` (root-category header-menu line icon), `banner` (desktop hero background), and `seo.ogImage`. Assets other than `menuIcon` retain the normal `ImageAsset { url, alt, width, height, mimeType }` shape; `menuIcon` persists only its `url`.
 
 For `PATCH`, omitting an asset block preserves it; `{ "url": null }` clears that asset. Omitting `seo` preserves SEO. Supplying `seo` normalizes blank text fields to `null`; `seo: {}` therefore clears title, description, canonical URL and the social image. Admin forms always send an explicit `seo` block when saved.
 
@@ -1325,7 +1354,7 @@ Phân biệt rõ với các cột ảnh khác trên `categories`:
 | `menu_icon_url` | Icon line đơn sắc cho menu đầu trang của danh mục gốc (mask-image). **Field này.** |
 | `icon_url` (`icon`) | Ảnh minh hoạ **hero** trang danh mục (WP ACF `image_left`) — KHÔNG dùng cho menu. |
 | `image_url` (`image`) | Ảnh thumbnail danh mục (lưới trang chủ). |
-| `banner_url` / `mobile_banner_url` | Ảnh nền hero. |
+| `banner_url` | Ảnh nền hero. |
 
 Trước đây icon menu đầu trang gắn theo **slug** (CSS theme WP `.{slug}>a::before`) → đổi slug là mất icon, và
 icon không quản được trong admin. Đã chuyển hẳn sang DATA-DRIVEN, một nguồn duy nhất là `menu_icon_url`:
@@ -1411,18 +1440,21 @@ chọn file hoặc nhập URL, media phải được lưu vào MinIO trước, s
 |---|---|---|---|
 | `logoStandardizedAt` | `logo_standardized_at` | `TIMESTAMPTZ NULL` | Có giá trị khi logo mới/thay thế đã vượt qua toàn bộ chuẩn logo; `NULL` giữ nghĩa logo legacy/chưa chuẩn hóa. Migration `V1064` không sửa 18 logo cũ. |
 
-Logo mới/thay thế chỉ hợp lệ khi bytes cuối cùng là PNG, dung lượng không quá `307200`
-bytes, kích thước tối thiểu 400×400, tỉ lệ nằm trong ±1% của 1:1 và có ít nhất một điểm
-ảnh alpha nhỏ hơn 255. Logo chưa vuông được cắt trong admin bằng vùng vuông admin chọn;
-server chỉ kiểm tra bản cuối, không tự cắt hoặc đệm. Logo cũ được grandfathered khi URL
-không đổi: vẫn trả về bình thường, không bị chặn khi sửa field khác. Nếu media legacy không
-còn đọc/đo được, admin quality dùng `TRANSPARENCY_UNVERIFIED` thay vì đoán là nền đặc.
+Logo mới/thay thế nhận JPEG/JPG, PNG hoặc WebP; bytes cuối cùng không quá `307200`
+bytes, kích thước tối thiểu 400×400, tỉ lệ nằm trong ±1% của 1:1. Ảnh có một chiều nhỏ
+hơn 400 bị chặn; ảnh chưa vuông được cắt trong admin bằng vùng vuông admin chọn; server
+chỉ kiểm tra bản cuối, không tự cắt hoặc đệm. Nền trong suốt không còn là điều kiện chặn:
+logo không có alpha được lưu nhưng quality trả về cảnh báo. Bộ cắt phải mã hóa bản cuối
+không vượt 300 KB. Logo cũ được grandfathered khi URL không đổi: vẫn trả về bình thường,
+không bị chặn khi sửa field khác. Nếu media legacy không còn đọc/đo được, admin quality
+dùng `TRANSPARENCY_UNVERIFIED` thay vì đoán là nền đặc.
 
 Admin Brand response thêm field tùy chọn `logoQuality` (public Brand response không trả field
 này): `{ status, issues[], width, height, fileSize, mimeType, transparent, ratio }`.
 `status` là `MISSING`, `LEGACY`, `VALID` hoặc `INVALID`; `issues[]` dùng các mã ổn định
-`MISSING_LOGO`, `LEGACY_LOGO`, `NOT_SQUARE`, `TOO_SMALL`, `TOO_LARGE`, `NOT_PNG`,
-`NOT_TRANSPARENT`, `TRANSPARENCY_UNVERIFIED` và `MEDIA_UNAVAILABLE`. Đây là dữ liệu cảnh
+`MISSING_LOGO`, `LEGACY_LOGO`, `NOT_SQUARE`, `TOO_SMALL`, `TOO_LARGE`, `UNSUPPORTED_TYPE`,
+`NOT_TRANSPARENT`, `TRANSPARENCY_UNVERIFIED` và `MEDIA_UNAVAILABLE`. `NOT_TRANSPARENT` chỉ
+là cảnh báo chất lượng, không phải lỗi khóa lưu. Đây là dữ liệu cảnh
 báo/hiển thị, không phải cờ khóa việc sửa Brand.
 
 Status: `OWNER_CONFIRMED_2026-08-28` — `BrandEntity.logoStandardizedAt`, `ImageAssetRequest.mediaId`,

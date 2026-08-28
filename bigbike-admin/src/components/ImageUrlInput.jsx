@@ -14,6 +14,7 @@ import {
   brandLogoIssueTranslationKey,
   brandLogoCheckerboardStyle,
   getBrandLogoSourceDecision,
+  isBrandLogoBlockingIssue,
   inspectBrandLogoFile,
 } from '@/lib/brandLogoPolicy'
 
@@ -65,6 +66,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
   const [externalUrl, setExternalUrl] = useState('')
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
+  const [importWarning, setImportWarning] = useState('')
   const [cropSource, setCropSource] = useState(null)
   const hasPermission = useHasPermission()
   const canReadMedia = hasPermission('media.read')
@@ -91,6 +93,19 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
     return failure?.message || fallback
   }
 
+  function brandLogoQualityFromDetails(details, issues) {
+    return {
+      status: 'VALID',
+      issues,
+      width: details?.width ?? null,
+      height: details?.height ?? null,
+      fileSize: details?.fileSize ?? null,
+      mimeType: details?.mimeType ?? null,
+      transparent: details?.transparent ?? null,
+      ratio: details?.width && details?.height ? details.width / details.height : null,
+    }
+  }
+
   function revokeCropSource() {
     if (cropSource?.url?.startsWith('blob:')) URL.revokeObjectURL(cropSource.url)
     setCropSource(null)
@@ -98,18 +113,33 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
 
   async function acceptImportedMedia(media) {
     const { blob, filename } = await fetchMediaBlob(media.id, media.filename || 'brand-logo.png')
-    const file = new File([blob], filename || 'brand-logo.png', { type: media.mimeType || blob.type || 'image/png' })
+    const file = new File([blob], filename || 'brand-logo.png', { type: media.mimeType || blob.type || '' })
     const details = await inspectBrandLogoFile(file)
     const decision = getBrandLogoSourceDecision(details)
-    if (decision.issues.length) {
-      setImportError(decision.issues.map((issue) => issueMessage(issue, details)).join(' '))
+    const blockingIssues = decision.issues.filter(isBrandLogoBlockingIssue)
+    if (blockingIssues.length) {
+      setImportError(blockingIssues.map((issue) => issueMessage(issue, details)).join(' '))
       return
     }
+    const warningIssues = decision.issues.filter((issue) => !isBrandLogoBlockingIssue(issue))
+    setImportWarning(warningIssues.map((issue) => issueMessage(issue, details)).join(' '))
     if (decision.needsCrop) {
-      setCropSource({ url: URL.createObjectURL(file), filename: file.name })
+      setCropSource({
+        url: URL.createObjectURL(file),
+        filename: file.name,
+        sourceMimeType: details.mimeType,
+        sourceTransparent: details.transparent,
+      })
       return
     }
-    onChange(media.publicUrl, media)
+    onChange(media.publicUrl, {
+      ...media,
+      width: media.width ?? details.width,
+      height: media.height ?? details.height,
+      fileSize: media.fileSize ?? details.fileSize,
+      mimeType: details.mimeType,
+      logoQuality: brandLogoQualityFromDetails(details, warningIssues),
+    })
     setExternalUrl('')
   }
 
@@ -119,6 +149,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
     if (!url) return
     setImporting(true)
     setImportError('')
+    setImportWarning('')
     try {
       const result = await importBrandLogoUrl({ url, altText: alt?.trim() || null })
       if (!result?.item?.id || !result.item.publicUrl) throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
@@ -136,10 +167,26 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
     setImporting(true)
     setImportError('')
     try {
+      const details = await inspectBrandLogoFile(file)
+      const decision = getBrandLogoSourceDecision(details)
+      const blockingIssues = decision.issues.filter(isBrandLogoBlockingIssue)
+      if (blockingIssues.length) {
+        setImportError(blockingIssues.map((issue) => issueMessage(issue, details)).join(' '))
+        return
+      }
+      const warningIssues = decision.issues.filter((issue) => !isBrandLogoBlockingIssue(issue))
+      setImportWarning(warningIssues.map((issue) => issueMessage(issue, details)).join(' '))
       const result = await uploadMedia(file, alt?.trim() || '')
       const media = result?.item
       if (!media?.publicUrl) throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
-      onChange(media.publicUrl, media)
+      onChange(media.publicUrl, {
+        ...media,
+        width: media.width ?? details.width,
+        height: media.height ?? details.height,
+        fileSize: media.fileSize ?? details.fileSize,
+        mimeType: details.mimeType,
+        logoQuality: brandLogoQualityFromDetails(details, warningIssues),
+      })
       setExternalUrl('')
     } catch (uploadFailure) {
       setImportError(failureMessage(uploadFailure, t('brands.logo.errors.uploadFailed')))
@@ -202,6 +249,9 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
       {isBrandLogo && importError ? (
         <small className="field-error" role="alert">{importError}</small>
       ) : null}
+      {isBrandLogo && importWarning ? (
+        <small className="mt-1 block text-warning" role="status">{importWarning}</small>
+      ) : null}
       {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} alt={previewAlt || alt} checkerboard={isBrandLogo} />
@@ -225,6 +275,8 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           open
           sourceUrl={cropSource.url}
           filename={cropSource.filename}
+          sourceMimeType={cropSource.sourceMimeType}
+          sourceTransparent={cropSource.sourceTransparent}
           onCancel={revokeCropSource}
           onComplete={handleCropComplete}
         />

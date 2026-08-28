@@ -88,6 +88,12 @@ Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trốn
 dữ liệu khách trước V1029. Không sửa checksum migration đã áp dụng và seed này không nằm trong
 classpath/runtime production.
 
+Notification retention coverage includes the 500-row batch loop unit test,
+`AdminNotificationRetentionMigrationPostgresTest` for V1067 plus the PostgreSQL delete statement
+and preserved per-admin marker, and `AdminNotificationPostgresQueryTest` for the full application
+context. The latter also depends on every earlier production migration being valid; in the local
+handoff run it was blocked by V1047's existing 109-row data-integrity guard before reaching V1067.
+
 ## Current Testing Gaps
 
 | Gap | Status | Evidence |

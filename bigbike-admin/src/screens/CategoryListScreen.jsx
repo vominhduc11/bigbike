@@ -51,11 +51,19 @@ import { CategoryEmptyState } from './category-list/CategoryEmptyState'
 import { CategoryFlatTableHead, CategoryTreeTableHead } from './category-list/CategoryTableHead'
 import { FilterBar, MobileCardList, MobileCard, Screen, ScreenHeader } from '../components/layout'
 
+function foldSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLocaleLowerCase()
+}
+
 // Wrap matched substring(s) in <mark> for live search highlighting.
 function highlightMatch(text, term) {
   if (!term) return text
-  const lower = String(text).toLowerCase()
-  const lowerTerm = term.toLowerCase()
+  const lower = foldSearchText(text)
+  const lowerTerm = foldSearchText(term)
   const i = lower.indexOf(lowerTerm)
   if (i === -1) return text
   const before = text.slice(0, i)
@@ -170,7 +178,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   // Compute matching ids (and ancestors) when search is active so the tree
   // can highlight matches and auto-expand paths to them.
-  const searchTerm = (query.search || '').trim().toLowerCase()
+  const searchTerm = foldSearchText(query.search).trim()
   const { matchedIds, matchAncestors } = useMemo(() => {
     if (!searchTerm) return { matchedIds: new Set(), matchAncestors: new Set() }
     const byId = new Map(allItems.map((c) => [c.id, c]))
@@ -178,8 +186,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const ancestors = new Set()
     for (const cat of allItems) {
       if (
-        (cat.name || '').toLowerCase().includes(searchTerm)
-        || (cat.slug || '').toLowerCase().includes(searchTerm)
+        foldSearchText(cat.name).includes(searchTerm)
+        || foldSearchText(cat.nameEn).includes(searchTerm)
+        || foldSearchText(cat.slug).includes(searchTerm)
+        || foldSearchText(cat.slugEn).includes(searchTerm)
       ) {
         matched.add(cat.id)
         let cur = cat.parentId ? byId.get(cat.parentId) : null

@@ -3,14 +3,18 @@
 import { ChevronDown } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState, type MouseEventHandler, type ReactNode } from "react";
 
-import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
+import {
+  getHeaderNodeHref,
+  isNodeActive,
+  isNodeCurrent,
+  type HeaderNavNode,
+} from "@/components/layout/header-nav/shared";
 import { Button } from "@/components/ui/button";
 import { type Locale } from "@/i18n/locale";
 import { cn } from "@/lib/utils";
-import { normalizeMenuUrl } from "@/lib/utils/nav";
-import { localizeStorefrontHref } from "@/lib/utils/routes";
 import { submenuIcon } from "@/lib/ui-classes";
 
 type HeaderMenuProps = {
@@ -34,8 +38,51 @@ const submenuReveal = [
 ];
 const mobileIndent = ["pl-[25px]", "pl-12.5", "pl-17.5", "pl-22.5"];
 
+type HeaderMenuLinkProps = {
+  node: HeaderNavNode;
+  href: string;
+  newWindowLabel: string;
+  className: string;
+  children: ReactNode;
+  current?: boolean;
+  ariaHasPopup?: "menu";
+  ariaExpanded?: boolean;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+};
+
+/** Every storefront menu link shares the new-window announcement so admin can
+ * enable that setting on any level without creating an inaccessible exception. */
+function HeaderMenuLink({
+  node,
+  href,
+  newWindowLabel,
+  className,
+  children,
+  current,
+  ariaHasPopup,
+  ariaExpanded,
+  onClick,
+}: HeaderMenuLinkProps) {
+  return (
+    <Link
+      href={href}
+      target={node.openInNewTab ? "_blank" : undefined}
+      rel={node.openInNewTab ? "noopener" : undefined}
+      aria-current={current ? "page" : undefined}
+      aria-haspopup={ariaHasPopup}
+      aria-expanded={ariaExpanded}
+      onClick={onClick}
+      className={className}
+    >
+      {children}
+      {node.openInNewTab ? <span className="sr-only"> ({newWindowLabel})</span> : null}
+    </Link>
+  );
+}
+
 export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProps) {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
+  const pathname = usePathname();
   const t = useTranslations("Header");
   const [expanded, setExpanded] = useState<Set<HeaderNavNode["id"]>>(new Set());
   const [openNodeId, setOpenNodeId] = useState<HeaderNavNode["id"] | null>(null);
@@ -59,6 +106,8 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
           expanded={expanded}
           toggleNode={toggleNode}
           onNavigate={onNavigate}
+          pathname={pathname}
+          newWindowLabel={t("opensInNewWindow")}
           expandLabel={t("mobileMenuExpandAriaLabel", { label: "{label}" })}
           collapseLabel={t("mobileMenuCollapseAriaLabel", { label: "{label}" })}
         />
@@ -84,9 +133,11 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
     >
       <ul className="m-0 flex h-full w-max list-none items-center p-0">
         {nodes.map((node) => {
-          const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
+          const href = getHeaderNodeHref(node, locale);
           const hasChildren = node.children.length > 0;
           const open = openNodeId === node.id;
+          const active = isNodeActive(pathname, node, locale);
+          const current = isNodeCurrent(pathname, node, locale);
           return (
             <li
               key={node.id}
@@ -97,24 +148,32 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 "relative flex h-full shrink-0 list-none items-center after:absolute after:right-[-3px] after:top-1/2 after:h-[5px] after:w-[5px] after:-translate-y-1/2 after:rotate-45 after:bg-brand-on-dark after:content-[''] last:after:hidden",
               )}
             >
-              <Link
+              <HeaderMenuLink
+                node={node}
                 href={href}
-                target={node.openInNewTab ? "_blank" : undefined}
-                rel={node.openInNewTab ? "noopener" : undefined}
-                aria-haspopup={hasChildren ? "menu" : undefined}
-                aria-expanded={hasChildren ? open : undefined}
+                newWindowLabel={t("opensInNewWindow")}
+                current={current}
+                ariaHasPopup={hasChildren ? "menu" : undefined}
+                ariaExpanded={hasChildren ? open : undefined}
                 onClick={() => setOpenNodeId(null)}
-                className="flex h-full shrink-0 items-center whitespace-nowrap px-7.5 font-cta text-header-nav font-bold leading-body tracking-wide text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className={cn(
+                  "flex h-full shrink-0 items-center whitespace-nowrap px-4 font-cta text-header-nav font-bold leading-body tracking-wide no-underline! transition-colors",
+                  active
+                    ? "text-brand-on-dark! hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                    : "text-white! hover:text-brand-on-dark! focus-visible:text-brand-on-dark!",
+                )}
               >
                 {node.label}
-              </Link>
+              </HeaderMenuLink>
               {hasChildren ? (
                 <DesktopSubmenu
                   nodes={node.children}
                   locale={locale}
+                  pathname={pathname}
                   depth={0}
                   open={open}
                   onNavigate={() => setOpenNodeId(null)}
+                  newWindowLabel={t("opensInNewWindow")}
                 />
               ) : null}
             </li>
@@ -128,15 +187,19 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
 function DesktopSubmenu({
   nodes,
   locale,
+  pathname,
   depth,
   open,
   onNavigate,
+  newWindowLabel,
 }: {
   nodes: HeaderNavNode[];
-  locale: string;
+  locale: Locale;
+  pathname: string | null;
   depth: number;
   open?: boolean;
   onNavigate: () => void;
+  newWindowLabel: string;
 }) {
   return (
     <ul
@@ -149,8 +212,10 @@ function DesktopSubmenu({
       )}
     >
       {nodes.map((node) => {
-        const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
+        const href = getHeaderNodeHref(node, locale);
         const hasChildren = node.children.length > 0;
+        const active = isNodeActive(pathname, node, locale);
+        const current = isNodeCurrent(pathname, node, locale);
         return (
           <li
             key={node.id}
@@ -159,23 +224,39 @@ function DesktopSubmenu({
               itemGroups[Math.min(depth, itemGroups.length - 1)],
             )}
           >
-            <Link
+            <HeaderMenuLink
+              node={node}
               href={href}
+              newWindowLabel={newWindowLabel}
+              current={current}
               onClick={onNavigate}
-              className="flex items-center px-6 py-3.5 font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!"
+              className={cn(
+                "flex items-center px-6 py-3.5 font-body text-a5-meta font-semibold normal-case no-underline! hover:text-brand-on-dark!",
+                active ? "text-brand-on-dark!" : "text-muted-foreground!",
+              )}
             >
               {node.iconUrl ? (
                 <span
                   data-header-submenu-icon
                   className={`${submenuIcon} mr-2 align-middle`}
-                  style={{ maskImage: `url(${node.iconUrl})`, WebkitMaskImage: `url(${node.iconUrl})` }}
+                  style={{
+                    maskImage: `url(${node.iconUrl})`,
+                    WebkitMaskImage: `url(${node.iconUrl})`,
+                  }}
                   aria-hidden
                 />
               ) : null}
               {node.label}
-            </Link>
+            </HeaderMenuLink>
             {hasChildren ? (
-              <DesktopSubmenu nodes={node.children} locale={locale} depth={depth + 1} onNavigate={onNavigate} />
+              <DesktopSubmenu
+                nodes={node.children}
+                locale={locale}
+                pathname={pathname}
+                depth={depth + 1}
+                onNavigate={onNavigate}
+                newWindowLabel={newWindowLabel}
+              />
             ) : null}
           </li>
         );
@@ -190,15 +271,19 @@ function MobileMenuList({
   expanded,
   toggleNode,
   onNavigate,
+  pathname,
+  newWindowLabel,
   depth = 0,
   expandLabel,
   collapseLabel,
 }: {
   nodes: HeaderNavNode[];
-  locale: string;
+  locale: Locale;
   expanded: Set<HeaderNavNode["id"]>;
   toggleNode: (id: HeaderNavNode["id"]) => void;
   onNavigate?: () => void;
+  pathname: string | null;
+  newWindowLabel: string;
   depth?: number;
   expandLabel: string;
   collapseLabel: string;
@@ -206,34 +291,55 @@ function MobileMenuList({
   return (
     <ul className="m-0 list-none p-0">
       {nodes.map((node) => {
-        const href = localizeStorefrontHref(normalizeMenuUrl(node.url) || "/", locale as Locale);
+        const href = getHeaderNodeHref(node, locale);
         const hasChildren = node.children.length > 0;
         const open = expanded.has(node.id);
+        const active = isNodeActive(pathname, node, locale);
+        const current = isNodeCurrent(pathname, node, locale);
         return (
-          <li key={node.id} data-header-menu-item-with-children={hasChildren ? "" : undefined} className="relative">
-            <Link
+          <li
+            key={node.id}
+            data-header-menu-item-with-children={hasChildren ? "" : undefined}
+            className="relative"
+          >
+            <HeaderMenuLink
+              node={node}
               href={href}
-              target={node.openInNewTab ? "_blank" : undefined}
-              rel={node.openInNewTab ? "noopener" : undefined}
-              onClick={onNavigate}
+              newWindowLabel={newWindowLabel}
+              current={current}
+              onClick={(event) => {
+                if (
+                  node.openInNewTab ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                onNavigate?.();
+              }}
               className={cn(
-                "flex min-h-13 items-center whitespace-nowrap pr-17.5 text-white! no-underline!",
+                "flex min-h-13 items-center whitespace-nowrap pr-17.5 no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
                 depth === 0
                   ? "py-[15px] font-cta text-header-nav font-bold leading-body tracking-wide"
                   : "py-3 font-body text-a5-meta",
+                active ? "text-brand-on-dark!" : "text-white!",
               )}
             >
               {node.iconUrl ? (
                 <span
                   data-header-submenu-icon
                   className={`${submenuIcon} mr-2 align-middle`}
-                  style={{ maskImage: `url(${node.iconUrl})`, WebkitMaskImage: `url(${node.iconUrl})` }}
+                  style={{
+                    maskImage: `url(${node.iconUrl})`,
+                    WebkitMaskImage: `url(${node.iconUrl})`,
+                  }}
                   aria-hidden
                 />
               ) : null}
               {node.label}
-            </Link>
+            </HeaderMenuLink>
             {hasChildren ? (
               <Button
                 type="button"
@@ -245,7 +351,10 @@ function MobileMenuList({
                 onClick={() => toggleNode(node.id)}
                 className="absolute right-2 top-1 min-h-11 w-11 text-white hover:bg-white/10 hover:text-white hover:not-disabled:scale-100"
               >
-                <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", open && "rotate-180")} aria-hidden />
+                <ChevronDown
+                  className={cn("h-4 w-4 transition-transform duration-300", open && "rotate-180")}
+                  aria-hidden
+                />
               </Button>
             ) : null}
             {hasChildren ? (
@@ -260,7 +369,18 @@ function MobileMenuList({
                 )}
               >
                 <div className="min-h-0 overflow-hidden">
-                  <MobileMenuList nodes={node.children} locale={locale} expanded={expanded} toggleNode={toggleNode} onNavigate={onNavigate} depth={depth + 1} expandLabel={expandLabel} collapseLabel={collapseLabel} />
+                  <MobileMenuList
+                    nodes={node.children}
+                    locale={locale}
+                    expanded={expanded}
+                    toggleNode={toggleNode}
+                    onNavigate={onNavigate}
+                    pathname={pathname}
+                    newWindowLabel={newWindowLabel}
+                    depth={depth + 1}
+                    expandLabel={expandLabel}
+                    collapseLabel={collapseLabel}
+                  />
                 </div>
               </div>
             ) : null}

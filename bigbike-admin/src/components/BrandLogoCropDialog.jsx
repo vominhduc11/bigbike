@@ -12,6 +12,7 @@ import {
 
 const FRAME_SIZE = 420
 const OUTPUT_SIZES = [800, 640, 512, 400]
+const LOSSY_QUALITIES = [0.9, 0.82, 0.74, 0.66, 0.58, 0.5]
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -26,19 +27,18 @@ function loadImage(url) {
   })
 }
 
-function canvasToBlob(canvas) {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
-      else reject(new Error('BRAND_LOGO_EXPORT_FAILED'))
-    }, 'image/png')
+function canvasToBlob(canvas, mimeType, quality) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob || null), mimeType, quality)
   })
 }
 
-async function createCroppedFile(image, crop, filename) {
+async function createCroppedFile(image, crop, filename, sourceMimeType, sourceTransparent) {
   const targetSide = Math.min(crop.width, crop.height)
   const sourceX = clamp(crop.x, 0, image.naturalWidth - targetSide)
   const sourceY = clamp(crop.y, 0, image.naturalHeight - targetSide)
+  const normalizedSourceMime = (sourceMimeType || '').toLowerCase()
+  const preserveTransparency = sourceTransparent !== false && normalizedSourceMime !== 'image/jpeg'
   let lastBlob = null
 
   for (const outputSize of OUTPUT_SIZES) {
@@ -59,11 +59,22 @@ async function createCroppedFile(image, crop, filename) {
       outputSize,
       outputSize,
     )
-    const blob = await canvasToBlob(canvas)
-    lastBlob = blob
-    if (blob.size <= BRAND_LOGO_MAX_BYTES && outputSize >= BRAND_LOGO_MIN_PIXELS) {
-      const safeName = (filename || 'brand-logo').replace(/\.[^.]+$/, '') || 'brand-logo'
-      return new File([blob], `${safeName}.png`, { type: 'image/png' })
+    const encodings = preserveTransparency
+      ? [
+          ...LOSSY_QUALITIES.map((quality) => ({ mimeType: 'image/webp', quality })),
+          { mimeType: 'image/png' },
+        ]
+      : LOSSY_QUALITIES.map((quality) => ({ mimeType: 'image/jpeg', quality }))
+
+    for (const encoding of encodings) {
+      const blob = await canvasToBlob(canvas, encoding.mimeType, encoding.quality)
+      if (!blob || blob.type !== encoding.mimeType) continue
+      lastBlob = blob
+      if (blob.size <= BRAND_LOGO_MAX_BYTES && outputSize >= BRAND_LOGO_MIN_PIXELS) {
+        const safeName = (filename || 'brand-logo').replace(/\.[^.]+$/, '') || 'brand-logo'
+        const extension = encoding.mimeType === 'image/jpeg' ? 'jpg' : encoding.mimeType === 'image/webp' ? 'webp' : 'png'
+        return new File([blob], `${safeName}.${extension}`, { type: encoding.mimeType })
+      }
     }
   }
 
@@ -71,7 +82,16 @@ async function createCroppedFile(image, crop, filename) {
   throw new Error('BRAND_LOGO_EXPORT_FAILED')
 }
 
-export function BrandLogoCropDialog({ open, sourceUrl, filename, onCancel, onComplete, error }) {
+export function BrandLogoCropDialog({
+  open,
+  sourceUrl,
+  filename,
+  sourceMimeType,
+  sourceTransparent,
+  onCancel,
+  onComplete,
+  error,
+}) {
   const { t } = useTranslation()
   const frameRef = useRef(null)
   const imageRef = useRef(null)
@@ -152,7 +172,13 @@ export function BrandLogoCropDialog({ open, sourceUrl, filename, onCancel, onCom
       const sourceX = image.naturalWidth / 2 - position.x / scale - frameSize / (2 * scale)
       const sourceY = image.naturalHeight / 2 - position.y / scale - frameSize / (2 * scale)
       const sourceSide = frameSize / scale
-      const file = await createCroppedFile(image, { x: sourceX, y: sourceY, width: sourceSide, height: sourceSide }, filename)
+      const file = await createCroppedFile(
+        image,
+        { x: sourceX, y: sourceY, width: sourceSide, height: sourceSide },
+        filename,
+        sourceMimeType,
+        sourceTransparent,
+      )
       await onComplete(file)
     } catch (cropError) {
       const key = cropError?.message === 'BRAND_LOGO_TOO_LARGE'

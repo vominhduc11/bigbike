@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.chat;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.service.media.CompressionProfile;
 import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
+import com.bigbike.bigbike_backend.service.media.ImageDimensions;
 import io.minio.GetObjectArgs;
 import io.minio.GetBucketPolicyArgs;
 import io.minio.MinioClient;
@@ -197,7 +198,7 @@ public class ChatImageStorageService {
                 }
             }
             if ("image/webp".equals(mimeType)) {
-                Dimensions parsed = webpDimensions(bytes);
+                ImageDimensions.Dimensions parsed = ImageDimensions.readWebp(bytes);
                 if (parsed != null) {
                     checkedDimensions(parsed.width(), parsed.height());
                     return;
@@ -222,7 +223,7 @@ public class ChatImageStorageService {
             // WebP is not supported by every JRE ImageIO installation; parse its header below.
         }
         if ("image/webp".equals(mimeType)) {
-            Dimensions parsed = webpDimensions(bytes);
+            ImageDimensions.Dimensions parsed = ImageDimensions.readWebp(bytes);
             if (parsed != null) return checkedDimensions(parsed.width(), parsed.height());
         }
         throw ValidationException.fromField(
@@ -236,33 +237,6 @@ public class ChatImageStorageService {
                     "file", "CHAT_IMAGE_INVALID", "Kích thước ảnh không hợp lệ.");
         }
         return new Dimensions(width, height);
-    }
-
-    private static Dimensions webpDimensions(byte[] bytes) {
-        if (bytes.length < 30
-                || !"RIFF".equals(new String(bytes, 0, 4, StandardCharsets.US_ASCII))
-                || !"WEBP".equals(new String(bytes, 8, 4, StandardCharsets.US_ASCII))) return null;
-        String chunk = new String(bytes, 12, 4, StandardCharsets.US_ASCII);
-        if ("VP8X".equals(chunk) && bytes.length >= 30) {
-            int width = 1 + little24(bytes, 24);
-            int height = 1 + little24(bytes, 27);
-            return new Dimensions(width, height);
-        }
-        if ("VP8 ".equals(chunk) && bytes.length >= 30) {
-            int width = (bytes[26] & 0xff) | ((bytes[27] & 0x3f) << 8);
-            int height = (bytes[28] & 0xff) | ((bytes[29] & 0x3f) << 8);
-            return new Dimensions(width, height);
-        }
-        if ("VP8L".equals(chunk) && bytes.length >= 25 && (bytes[20] & 0xff) == 0x2f) {
-            int b1 = bytes[21] & 0xff;
-            int b2 = bytes[22] & 0xff;
-            int b3 = bytes[23] & 0xff;
-            int b4 = bytes[24] & 0xff;
-            int width = 1 + b1 + ((b2 & 0x3f) << 8);
-            int height = 1 + ((b2 & 0xc0) >> 6) + (b3 << 2) + ((b4 & 0x0f) << 10);
-            return new Dimensions(width, height);
-        }
-        return null;
     }
 
     /** Remove standard EXIF/XMP WebP chunks when no ImageIO WebP decoder is installed. */
@@ -299,12 +273,6 @@ public class ChatImageStorageService {
         } catch (Exception exception) {
             return null;
         }
-    }
-
-    private static int little24(byte[] bytes, int offset) {
-        return (bytes[offset] & 0xff)
-                | ((bytes[offset + 1] & 0xff) << 8)
-                | ((bytes[offset + 2] & 0xff) << 16);
     }
 
     private static long little32(byte[] bytes, int offset) {

@@ -6,7 +6,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Random;
 import javax.imageio.ImageIO;
@@ -61,22 +60,8 @@ class ImageCompressionServiceTest {
     }
 
     @Test
-    void passesThroughSvgUnchanged() {
-        byte[] source = "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8);
-        byte[] result = service.compress(source, "image/svg+xml", new CompressionProfile(400, 400, 0.85f, false));
-        assertThat(result).isSameAs(source);
-    }
-
-    @Test
-    void passesThroughGifUnchanged() {
-        byte[] source = "not-a-real-gif-but-does-not-matter".getBytes(StandardCharsets.UTF_8);
-        byte[] result = service.compress(source, "image/gif", new CompressionProfile(400, 400, 0.85f, false));
-        assertThat(result).isSameAs(source);
-    }
-
-    @Test
     void failsSoftOnUndecodableBytes() {
-        byte[] garbage = "definitely not an image".getBytes(StandardCharsets.UTF_8);
+        byte[] garbage = "definitely not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         byte[] result = service.compress(garbage, "image/jpeg", new CompressionProfile(400, 400, 0.85f, false));
         assertThat(result).isSameAs(garbage);
     }

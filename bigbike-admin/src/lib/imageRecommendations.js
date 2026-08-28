@@ -31,7 +31,7 @@ export const IMAGE_RECO = {
   // Slide trang chủ mobile: container max-md aspect-[411/548] ≈ 3:4; viewport tham chiếu 390px.
   // Ảnh này tùy chọn, website fallback về sliderDesktop khi không có.
   sliderMobile: { idealW: 780, idealH: 1040, minW: 780, minH: 1040, ratio: [3, 4], ratioTolerance: 0.12 },
-  // Logo thương hiệu: file mới luôn là PNG nền trong suốt, vuông 1:1 (sai lệch tối đa 1%).
+  // Logo thương hiệu: JPEG/JPG, PNG hoặc WebP, vuông 1:1 (sai lệch tối đa 1%).
   // Admin sẽ mở khung cắt vuông để người dùng tự chọn vùng logo; ảnh cũ vẫn được đọc và cảnh báo.
   logo: {
     idealW: 800,
@@ -43,8 +43,8 @@ export const IMAGE_RECO = {
     brandLogo: true,
     allowCrop: true,
     maxBytes: 300 * 1024,
-    mimeType: 'image/png',
-    requiresTransparency: true,
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    requiresTransparency: false,
   },
   // Ảnh OG/chia sẻ mạng xã hội (seoOgImageUrl per-sản phẩm/danh mục/bài viết): KHÔNG có khung hiển thị trên
   // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
@@ -74,9 +74,8 @@ export const IMAGE_RECO = {
   featureImage: { idealW: 1130, idealH: 850, minW: 1130, minH: 850, ratio: [4, 3], ratioTolerance: 0.1 },
 }
 
-// menuIconUrl (icon danh mục trong menu đầu trang): icon 1 màu, khuyến nghị SVG, hiển thị
-// cố định 20×16px qua CSS mask — KHÔNG kiểm tra kích thước (SVG là vector, không có khái niệm
-// "mờ vì thiếu pixel"; PNG thay thế cũng chỉ hiển thị 20×16px nên mọi file hợp lệ đều đủ nét).
+// menuIconUrl (icon danh mục trong menu đầu trang): khuyến nghị ảnh JPEG/JPG, PNG hoặc WebP,
+// hiển thị cố định 20×16px qua CSS mask — KHÔNG kiểm tra kích thước.
 // Không thêm field vào IMAGE_RECO cho vị trí này — ImageUrlInput không nhận `recommend` sẽ tự bỏ qua.
 
 // So tỉ lệ thực tế của ảnh/video với spec khuyến nghị (kích thước không còn bị chặn, chỉ tỉ lệ).

@@ -7,7 +7,7 @@ const ISSUE_KEYS = {
   NOT_SQUARE: 'brands.logo.quality.issueNotSquare',
   TOO_SMALL: 'brands.logo.quality.issueTooSmall',
   TOO_LARGE: 'brands.logo.quality.issueTooLarge',
-  NOT_PNG: 'brands.logo.quality.issueNotPng',
+  UNSUPPORTED_TYPE: 'brands.logo.quality.issueUnsupportedType',
   NOT_TRANSPARENT: 'brands.logo.quality.issueNotTransparent',
   TRANSPARENCY_UNVERIFIED: 'brands.logo.quality.issueTransparencyUnverified',
   MEDIA_UNAVAILABLE: 'brands.logo.quality.issueMediaUnavailable',
@@ -20,7 +20,7 @@ function ratioLabel(ratio) {
 
 export function BrandLogoQualityNotice({ quality, compact = false }) {
   const { t } = useTranslation()
-  if (!quality || quality.status === 'VALID') return null
+  if (!quality) return null
 
   const rawIssues = quality.status === 'LEGACY'
     ? (quality.issues || []).filter((issue) => issue !== 'LEGACY_LOGO')
@@ -38,7 +38,11 @@ export function BrandLogoQualityNotice({ quality, compact = false }) {
     ? t('brands.logo.quality.missing')
     : quality.status === 'LEGACY'
       ? t('brands.logo.quality.legacy', { issues: issueText })
+      : quality.status === 'VALID'
+        ? t('brands.logo.quality.warning', { issues: issueText })
       : t('brands.logo.quality.invalid', { issues: issueText })
+
+  if (quality.status === 'VALID' && !issues.length) return null
 
   return (
     <Alert tone="warning" size="sm" className={compact ? 'mt-1 max-w-sm' : 'mt-3'}>

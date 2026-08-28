@@ -33,6 +33,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.admin.BrandLogoValidationService;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -660,11 +661,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 }
             }
             if (query != null && !query.isBlank()) {
-                String like = "%" + query.toLowerCase(Locale.ROOT) + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), like),
-                        cb.like(cb.lower(root.get("slug")), like)
-                ));
+                List<Predicate> tokenPredicates = new ArrayList<>();
+                for (String token : AdminSearchText.tokens(query)) {
+                    String like = AdminSearchText.likePattern(token);
+                    tokenPredicates.add(cb.or(
+                            cb.like(unaccentLower(cb, root.get("name")), like, '\\'),
+                            cb.like(unaccentLower(cb, root.get("slug")), like, '\\'),
+                            cb.like(unaccentLower(cb, root.get("nameEn")), like, '\\'),
+                            cb.like(unaccentLower(cb, root.get("slugEn")), like, '\\')
+                    ));
+                }
+                predicates.add(cb.and(tokenPredicates.toArray(new Predicate[0])));
             }
             return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -905,7 +912,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 entity.getMenuIconUrl(),
                 toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
-                toImageAsset(null, entity.getMobileBannerUrl(), entity.getMobileBannerAlt(), null, null, null),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -972,7 +978,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getLogoMimeType()
                 ),
                 toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
-                toImageAsset(null, entity.getMobileBannerUrl(), entity.getMobileBannerAlt(), null, null, null),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),

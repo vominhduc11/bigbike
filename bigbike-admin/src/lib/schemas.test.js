@@ -344,7 +344,6 @@ describe('createCategorySchema — CATEGORY_RULE_001 and TRANSLATION_RULE_002', 
       seoTitle: '', seoDescription: '', seoCanonicalUrl: '', seoOgImageUrl: '',
       imageUrl: 'https://cdn.example.test/category.jpg', imageAlt: 'Ảnh danh mục',
       bannerImageUrl: 'https://cdn.example.test/banner.jpg', bannerImageAlt: 'Banner desktop',
-      mobileBannerImageUrl: 'https://cdn.example.test/banner-mobile.jpg', mobileBannerImageAlt: 'Banner mobile',
       heroImageUrl: 'https://cdn.example.test/hero.jpg', heroImageAlt: 'Minh họa hero',
       menuIconUrl: 'https://cdn.example.test/menu.svg',
     }))

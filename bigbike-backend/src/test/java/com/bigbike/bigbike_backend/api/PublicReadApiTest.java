@@ -108,6 +108,30 @@ class PublicReadApiTest {
     }
 
     @Test
+    void publicCatalogDetailsReturnDesktopBannersWithoutMobileBanners() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity category = seedCategory("pub-cat-banner-" + suffix, "Pub Cat Banner " + suffix);
+        category.setBannerUrl("/media/category-desktop-banner-" + suffix + ".jpg");
+        category.setBannerAlt("Category desktop banner");
+        categoryRepo.save(category);
+
+        BrandEntity brand = seedBrand("pub-brand-banner-" + suffix, "Pub Brand Banner " + suffix);
+        brand.setBannerUrl("/media/brand-desktop-banner-" + suffix + ".jpg");
+        brand.setBannerAlt("Brand desktop banner");
+        brandRepo.save(brand);
+
+        mockMvc.perform(get("/api/v1/categories/" + category.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bannerImage.url").value(category.getBannerUrl()))
+                .andExpect(jsonPath("$.data.mobileBannerImage").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/brands/" + brand.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bannerImage.url").value(brand.getBannerUrl()))
+                .andExpect(jsonPath("$.data.mobileBannerImage").doesNotExist());
+    }
+
+    @Test
     void publicCategoryList_excludesHiddenCategories() throws Exception {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String hiddenSlug = "pub-cat-hid-" + suffix;

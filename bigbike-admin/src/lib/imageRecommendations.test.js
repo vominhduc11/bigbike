@@ -34,7 +34,7 @@ describe('brand logo policy', () => {
   }
 
   it('opens the manual square crop for a transparent non-square PNG', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 250, height: 108 }))
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1080 }))
       .toEqual({ needsCrop: true, issues: [] })
   })
 
@@ -48,8 +48,31 @@ describe('brand logo policy', () => {
       .toEqual({ needsCrop: false, issues: ['TOO_SMALL'] })
   })
 
-  it('blocks JPG, opaque PNG and files over 300 KB', () => {
-    expect(getBrandLogoIssues({ ...validPng, mimeType: 'image/jpeg' })).toContain('NOT_PNG')
+  it('accepts JPEG and keeps an opaque-background warning non-blocking', () => {
+    const issues = getBrandLogoIssues({ ...validPng, mimeType: 'image/jpeg', transparent: false })
+    expect(issues).toContain('NOT_TRANSPARENT')
+    expect(getBrandLogoSourceDecision({ ...validPng, mimeType: 'image/jpeg', transparent: false }))
+      .toEqual({ needsCrop: false, issues: ['NOT_TRANSPARENT'] })
+  })
+
+  it('accepts all three image formats and rejects other types', () => {
+    for (const mimeType of ['image/jpeg', 'image/png', 'image/webp']) {
+      expect(getBrandLogoIssues({ ...validPng, mimeType })).not.toContain('UNSUPPORTED_TYPE')
+    }
+    expect(getBrandLogoIssues({ ...validPng, mimeType: 'image/gif' })).toContain('UNSUPPORTED_TYPE')
+  })
+
+  it('allows an oversized non-square source to reach the crop encoder', () => {
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1000, fileSize: 300 * 1024 + 1 }))
+      .toEqual({ needsCrop: true, issues: [] })
+  })
+
+  it('still blocks files over 300 KB after they are already square', () => {
+    expect(getBrandLogoSourceDecision({ ...validPng, fileSize: 300 * 1024 + 1 }))
+      .toEqual({ needsCrop: false, issues: ['TOO_LARGE'] })
+  })
+
+  it('reports opaque PNG as a warning rather than a blocking issue', () => {
     expect(getBrandLogoIssues({ ...validPng, transparent: false })).toContain('NOT_TRANSPARENT')
     expect(getBrandLogoIssues({ ...validPng, fileSize: 300 * 1024 + 1 })).toContain('TOO_LARGE')
   })

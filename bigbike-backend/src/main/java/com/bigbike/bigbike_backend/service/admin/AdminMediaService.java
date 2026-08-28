@@ -31,7 +31,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.StatObjectArgs;
-import java.awt.image.BufferedImage;
+import io.minio.errors.ErrorResponseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
@@ -40,12 +40,12 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
@@ -68,15 +68,13 @@ public class AdminMediaService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "DELETED");
-    // Audio removed (owner decision 2026-07-15, AUD-074): Media Library accepts images
-    // (+ SVG) and mp4 video only. The admin never uploaded audio and the storefront has
-    // no audio surface. Legacy audio objects already in MinIO are left untouched.
+    // Audio removed (owner decision 2026-07-15, AUD-074). Owner decision 2026-08-28
+    // removes GIF/SVG from all new admin image uploads; legacy rows remain readable.
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+            "image/jpeg", "image/png", "image/webp",
             "video/mp4");
-    private static final String SVG_MIME = "image/svg+xml";
     private static final Set<String> RASTER_IMAGE_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif");
+            "image/jpeg", "image/png", "image/webp");
     private static final long MAX_UPLOAD_BYTES = 200L * 1024 * 1024; // 200 MB
     private static final String MINIO_PROVIDER = "MINIO";
     static final String MEDIA_PATH_PREFIX = "/media/";
@@ -128,7 +126,7 @@ public class AdminMediaService {
             boolean clearFolder,
             UUID adminId
     ) {
-        validateMimeContent(sourceBytes, declaredMimeType, originalFilename);
+        String mimeType = validateMimeContent(sourceBytes, declaredMimeType);
         if (sourceBytes.length > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
                     "File exceeds 200 MB limit / tệp vượt quá giới hạn 200 MB.");
@@ -138,14 +136,8 @@ public class AdminMediaService {
         // "Chưa phân loại" (clearFolder) — chỉ "Tất cả" (cả hai đều rỗng) là không có đích.
         boolean hasExplicitDestination = clearFolder || folderId != null;
 
-        String mimeType = declaredMimeType != null
-                ? declaredMimeType.toLowerCase(Locale.ROOT) : "";
         String safeOriginalFilename = preserveOriginalFilename(originalFilename);
         byte[] bytes = sourceBytes;
-        // SVG: strip scripts/handlers/external refs before storing (also validates it IS an SVG).
-        if (SVG_MIME.equals(mimeType)) {
-            bytes = SvgSanitizer.sanitize(bytes);
-        }
 
         // Extract raster dimensions for metadata before writing to MinIO. The library upload has
         // no shared minimum pixel floor; position-specific ratio checks happen when a media item
@@ -154,12 +146,12 @@ public class AdminMediaService {
         Integer height = null;
         if (RASTER_IMAGE_TYPES.contains(mimeType)) {
             try {
-                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                if (img != null) {
-                    width = img.getWidth();
-                    height = img.getHeight();
+                var dimensions = com.bigbike.bigbike_backend.service.media.ImageDimensions.read(bytes, mimeType);
+                if (dimensions != null) {
+                    width = dimensions.width();
+                    height = dimensions.height();
                 }
-            } catch (IOException e) {
+            } catch (RuntimeException e) {
                 log.warn("Could not extract image dimensions for {}: {}", originalFilename, e.getMessage());
             }
         }
@@ -170,12 +162,12 @@ public class AdminMediaService {
             bytes = imageCompressionService.compress(bytes, mimeType, ADMIN_ORIGINAL_PROFILE);
             if (RASTER_IMAGE_TYPES.contains(mimeType)) {
                 try {
-                    BufferedImage compressedImg = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                    if (compressedImg != null) {
-                        width = compressedImg.getWidth();
-                        height = compressedImg.getHeight();
+                    var dimensions = com.bigbike.bigbike_backend.service.media.ImageDimensions.read(bytes, mimeType);
+                    if (dimensions != null) {
+                        width = dimensions.width();
+                        height = dimensions.height();
                     }
-                } catch (IOException e) {
+                } catch (RuntimeException e) {
                     log.warn("Could not re-measure compressed image for {}: {}", originalFilename, e.getMessage());
                 }
             }
@@ -243,8 +235,8 @@ public class AdminMediaService {
         media.setStorageProvider(MINIO_PROVIDER);
         media.setBucket(bucket);
         media.setMimeType(mimeType);
-        // `bytes` always reflects what was actually written to MinIO — sanitized SVG, compressed
-        // raster image, or the untouched original for anything else (e.g. video/mp4).
+        // `bytes` always reflects what was actually written to MinIO — compressed raster image
+        // or the untouched original for video/mp4.
         media.setFileSize((long) bytes.length);
         media.setContentSha256(contentSha256);
         media.setWidth(width);
@@ -399,6 +391,9 @@ public class AdminMediaService {
         }
         if (query.mimeType() != null && !query.mimeType().isBlank()) {
             spec = spec.and(MediaSpecifications.withMimeTypePrefix(query.mimeType()));
+        }
+        if (query.mimeTypes() != null && !query.mimeTypes().isBlank()) {
+            spec = spec.and(MediaSpecifications.withMimeTypes(parseMimeTypes(query.mimeTypes())));
         }
         if (query.storageProvider() != null && !query.storageProvider().isBlank()) {
             spec = spec.and(MediaSpecifications.withStorageProvider(query.storageProvider()));
@@ -639,19 +634,29 @@ public class AdminMediaService {
         String bucket = media.getBucket() != null && !media.getBucket().isBlank()
                 ? media.getBucket()
                 : minioProperties.getBucket();
+        List<String> objectKeys = storageObjectCandidates(media);
+        if (objectKeys.isEmpty()) {
+            throw new IllegalStateException(
+                    "Storage deletion failed; media record has no resolvable object key.");
+        }
         try {
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(media.getFilePath())
-                            .build());
+            for (String objectKey : objectKeys) {
+                if (!storageObjectExists(bucket, objectKey)) continue;
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(bucket)
+                                .object(objectKey)
+                                .build());
+            }
         } catch (Exception e) {
             throw new IllegalStateException(
                     "Storage deletion failed; database record retained. Cause: " + e.getMessage(), e);
         }
 
         // Variants are best-effort — we already committed to deleting the original
-        imageVariantService.deleteVariants(media.getFilePath(), bucket);
+        for (String objectKey : objectKeys) {
+            imageVariantService.deleteVariants(objectKey, bucket);
+        }
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MEDIA_HARD_DELETED", "MEDIA", mediaId, before, null));
@@ -740,16 +745,15 @@ public class AdminMediaService {
      * Rejects empty files, unsupported declared types, and content that doesn't match
      * any allowed MIME — preventing MIME spoofing attacks (P0-2).
      */
-    private void validateMimeContent(byte[] bytes, String declaredMimeType, String filename) {
+    private String validateMimeContent(byte[] bytes, String declaredMimeType) {
         if (bytes == null || bytes.length == 0) {
             throw ValidationException.fromField("file", "EMPTY_FILE",
                     "File must not be empty / tệp không được để trống.");
         }
-        String declared = declaredMimeType != null
-                ? declaredMimeType.toLowerCase(Locale.ROOT) : "";
+        String declared = normalizeMimeType(declaredMimeType);
         if (!ALLOWED_MIME_TYPES.contains(declared)) {
             throw ValidationException.fromField("file", "INVALID_MIME",
-                    "Unsupported file type / loại tệp không được hỗ trợ: " + declared);
+                    "Only JPEG/JPG, PNG, WebP images and MP4 video are accepted / chỉ nhận ảnh JPEG/JPG, PNG, WebP và video MP4; MIME khai báo: " + declared);
         }
         byte[] header = new byte[TIKA_HEADER_BYTES];
         int read = Math.min(bytes.length, header.length);
@@ -758,15 +762,65 @@ public class AdminMediaService {
             throw ValidationException.fromField("file", "EMPTY_FILE",
                     "File must not be empty / tệp không được để trống.");
         }
-        // SVG is XML — Tika magic-byte detection is unreliable for it. Structural validation
-        // (must parse to an <svg> root) + sanitization happen in SvgSanitizer before storage.
-        if (SVG_MIME.equals(declared)) {
-            return;
-        }
-        String detected = TIKA.detect(Arrays.copyOf(header, read), filename);
-        if (!ALLOWED_MIME_TYPES.contains(detected)) {
+        String detected = normalizeMimeType(TIKA.detect(Arrays.copyOf(header, read)));
+        if (!ALLOWED_MIME_TYPES.contains(detected) || !detected.equals(declared)) {
             throw ValidationException.fromField("file", "MIME_MISMATCH",
-                    "File content does not match an allowed type / nội dung tệp không khớp loại cho phép (detected/phát hiện: " + detected + ").");
+                    "Only JPEG/JPG, PNG, WebP images and MP4 video are accepted; file content does not match the declared type / chỉ nhận ảnh JPEG/JPG, PNG, WebP và video MP4; nội dung tệp không khớp MIME khai báo (detected/phát hiện: " + detected + ").");
+        }
+        return declared;
+    }
+
+    private static String normalizeMimeType(String mimeType) {
+        String normalized = mimeType == null ? "" : mimeType.trim().toLowerCase(Locale.ROOT);
+        return "image/jpg".equals(normalized) ? "image/jpeg" : normalized;
+    }
+
+    private static Set<String> parseMimeTypes(String raw) {
+        return Arrays.stream(raw.split(","))
+                .map(AdminMediaService::normalizeMimeType)
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Legacy WordPress rows may store a database-relative path while their actual MinIO object
+     * retains the {@code wp-uploads/} prefix visible in the public URL. Only these exact keys
+     * derived from the row are candidates; no prefix or wildcard deletion is used.
+     */
+    private static List<String> storageObjectCandidates(MediaEntity media) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        addStorageKey(keys, media.getFilePath());
+        String publicUrl = media.getPublicUrl();
+        if (publicUrl != null && !publicUrl.isBlank()) {
+            int marker = publicUrl.indexOf(MEDIA_PATH_PREFIX);
+            if (marker >= 0) {
+                addStorageKey(keys, publicUrl.substring(marker + MEDIA_PATH_PREFIX.length()));
+            }
+        }
+        return List.copyOf(keys);
+    }
+
+    private static void addStorageKey(Set<String> keys, String value) {
+        if (value == null || value.isBlank()) return;
+        String key = value.trim();
+        while (key.startsWith("/")) key = key.substring(1);
+        if (!key.isBlank() && !key.contains("..")) keys.add(key);
+    }
+
+    private boolean storageObjectExists(String bucket, String objectKey) throws Exception {
+        try {
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(objectKey)
+                    .build());
+            return true;
+        } catch (ErrorResponseException e) {
+            var error = e.errorResponse();
+            String code = error == null ? "" : error.code();
+            if ("NoSuchKey".equalsIgnoreCase(code) || "NoSuchObject".equalsIgnoreCase(code)) {
+                return false;
+            }
+            throw e;
         }
     }
 }

@@ -814,15 +814,6 @@ header.headroom {
   z-index: var(--bb-z-header);
 }
 
-/* Drawer "Thông tin liên hệ" (.information-slide-bigbike) ở WP gốc là z-index:99 —
-   cao hơn header (z-12) nên khi mở nó phủ kín cả header. Sau khi ghim header lên
-   --bb-z-header (200), header lại cao hơn 99 → header thò lên đè drawer (sai). Nâng
-   drawer về tầng modal để nó phủ lên header như bản WP gốc. Phải dùng `body .…`
-   (0,1,1) để thắng `.information-slide-bigbike` (0,1,0) của theme WP nạp sau. */
-body .information-slide-bigbike {
-  z-index: var(--bb-z-modal); /* phủ lên header (z-200) */
-}
-
 /* Drawer bộ lọc danh mục mobile (.sidebar-wrap-product) ở WP gốc là z-index:99 —
    sau khi ghim header lên z-200 và thêm thanh điều hướng đáy mobile (.bb-bottom-nav
    z-650), cả hai thò lên đè drawer. Nâng drawer lên tầng modal (800) để nó phủ kín
@@ -841,229 +832,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   padding-bottom: 0;
   border-bottom: none;
 }
-
-/* ─────────────────────────────────────────────────────────────
-   WP header (.headroom / .navigation) — menu ngang ở desktop.
-   Bản port theme WP chỉ mang theo trạng thái off-canvas của .navigation
-   (position:fixed, trượt từ phải) và THIẾU phần reset về menu ngang ở
-   desktop, nên header luôn là hamburger ở mọi bề rộng. Khôi phục menu
-   ngang từ ≥1261px (khớp mốc `@media (min-width:1261px)` của theme gốc); dưới
-   mức đó giữ hamburger + off-canvas cho mobile/tablet. Đặt mốc thấp hơn (vd
-   1024px) khiến dải 1024–1260 ép menu ngang khi chưa đủ chỗ → menu tràn xuống
-   đè banner.
-   ───────────────────────────────────────────────────────────── */
-@media (min-width: 1261px) {
-  /* off-canvas → inline. Selector thêm .js-navigation để vượt specificity
-     của `body .container .navigation{position:fixed…}` trong stylesheet cũ. */
-  body .container .navigation.js-navigation {
-    position: static;
-    transform: none;
-    top: auto;
-    right: auto;
-    width: auto;
-    max-width: none;
-    height: auto;
-    background: transparent;
-    visibility: visible;
-    opacity: 1;
-    overflow: visible;
-    padding-bottom: 0;
-  }
-  /* Khối user/contact chỉ dành cho menu off-canvas — ẩn khi menu đã nằm ngang. */
-  body .container .navigation .mobile-item {
-    display: none;
-  }
-  /* "Tất cả sản phẩm" — dropdown desktop port 1:1 từ bigbike.vn live
-     (header.php + styles/custom.css): .sub-menu hẹp 300px, hover hiện, cấp 3+
-     bay ra phải (left:100%). Bản port theme thiếu phần khôi phục dropdown desktop
-     nên dựng lại ở đây. Prefix `body .container …` để thắng base
-     `.sub-menu{display:none}` của stylesheet cũ (load sau globals).
-     Màu/viền dùng token khớp đúng WP live: chữ nghỉ gray-500 (#6f6f6f) =
-     --bb-text-secondary, hover đỏ tươi (#ff0c09) = --bb-brand-primary, viền
-     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav. */
-  body .container .navigation ul .navigation--item > .sub-menu,
-  body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
-    display: block;
-    position: absolute;
-    width: 300px;
-    padding: 0;
-    margin: 0;
-    background: var(--bb-bg-surface);
-    box-shadow: var(--bb-shadow-dropdown);
-    z-index: var(--bb-z-dropdown);
-    visibility: hidden;
-    opacity: 0;
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease,
-      visibility 0.25s ease;
-  }
-  /* Cấp 2 thả xuống dưới mục cha; cấp 3+ bay ra phải. */
-  body .container .navigation ul .navigation--item > .sub-menu {
-    top: 100%;
-    left: 0;
-    transform: translateY(-10px);
-  }
-  body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
-    top: 0;
-    left: 100%;
-    transform: translateX(-10px);
-  }
-  /* Hover mục cha → hiện submenu tương ứng. */
-  body .container .navigation ul .navigation--item:hover > .sub-menu {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-  }
-  body .container .navigation ul .navigation--item > .sub-menu li:hover > .sub-menu {
-    visibility: visible;
-    opacity: 1;
-    transform: translateX(0);
-  }
-  /* Sau khi bấm link trong dropdown, điều hướng SPA KHÔNG tải lại trang nên chuột
-     vẫn nằm trên mục → `:hover` còn đúng → dropdown kẹt mở (WP gốc reset nhờ reload).
-     HeaderClient gắn `.bb-nav-hover-off` lên đúng mục vừa bấm để ép ẩn cho tới
-     khi chuột rời mục đó; mục khác vẫn hover bình thường. */
-  body .container .navigation ul .navigation--item.bb-nav-hover-off:hover > .sub-menu,
-  body
-    .container
-    .navigation
-    ul
-    .navigation--item.bb-nav-hover-off
-    > .sub-menu
-    li:hover
-    > .sub-menu {
-    visibility: hidden;
-    opacity: 0;
-  }
-  /* Mỗi mục trong dropdown (mọi cấp). */
-  body .container .navigation ul .navigation--item > .sub-menu li {
-    position: relative;
-    border-bottom: 1px solid var(--bb-border-subtle);
-  }
-  body .container .navigation ul .navigation--item > .sub-menu li:last-child {
-    border-bottom: none;
-  }
-  body .container .navigation ul .navigation--item > .sub-menu li > a {
-    display: block;
-    padding: 14px 24px;
-    color: var(--bb-text-secondary);
-    font-weight: 600;
-    text-transform: none;
-    white-space: normal;
-    transition: color 0.15s ease;
-  }
-  body .container .navigation ul .navigation--item > .sub-menu li > a:hover {
-    /* Đỏ tươi khớp đúng WP live (#ff0c09) thay vì đỏ AA-safe — theo yêu cầu giống live. */
-    color: var(--bb-brand-primary);
-  }
-  /* Chevron `.arrow` chỉ phục vụ off-canvas mobile — ẩn ở dropdown desktop. */
-  body .container .navigation .menu-item-has-children > .arrow {
-    display: none;
-  }
-  /* Ẩn hamburger ở desktop — thắng rule
-     `header .user-control--item.hammer-menu{display:inline-block!important}`. */
-  header .user-control--item.hammer-menu.hammer-menu-mb {
-    display: none !important;
-  }
-  /* Vạch ngăn dọc giữa menu ngang và cụm tiện ích (ngôn ngữ/tìm kiếm/giỏ/tài
-     khoản) — yếu tố phân biệt giúp khối điều hướng đọc thành một nhóm riêng
-     thay vì dồn lẫn vào icon. Vạch mảnh, căn giữa chiều cao header. */
-  body .container .right-header .user-control.d-inline-block {
-    position: relative;
-    margin-left: 14px;
-    padding-left: 14px;
-  }
-  body .container .right-header .user-control.d-inline-block::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 30px;
-    background: rgba(255, 255, 255, 0.5);
-  }
-}
-
-/* Mobile (≤767): giỏ hàng đã có ở thanh điều hướng dưới (MobileBottomNav) nên ẩn
-   icon giỏ trùng lặp trên WP header. Thắng `display:inline-block` của
-   stylesheet cũ nhờ specificity cao hơn + !important (cùng kiểu rule hammer-menu
-   phía trên). Dải tablet 768–1260 giữ giỏ trên header vì không có bottom nav. */
-@media (max-width: 767px) {
-  header .user-control--item.cart {
-    display: none !important;
-  }
-}
-
-/* Off-canvas mobile (≤1260): căn giữa chevron (.arrow do home.min.js chèn) theo
-   ĐÚNG dòng chữ của mục menu. Theme gốc dùng `top:28px` + `padding:10px` cố định
-   (và rule căn riêng cho sub-item dựa vào class `menu-item-object-product_cat`
-   mà bản port React KHÔNG gắn) → mọi chevron bị đẩy xuống thấp hơn tâm dòng, lệch
-   trên/dưới. Ở mỗi cấp: ghim đỉnh arrow trùng padding-top của dòng link rồi cho hộp
-   arrow cao đúng 1 dòng link + flex-center glyph → tâm chevron khớp tâm chữ. Mốc đo
-   từ link-top (không phải 50% cả li) nên arrow vẫn bám hàng link khi submenu mở. */
-@media (max-width: 1260px) {
-  /* Cấp 1 — li `.navigation--item` padding-top 26px, link 1.143rem */
-  header .navigation .header-nav > .navigation--item > a {
-    display: block;
-    line-height: var(--bb-line-body);
-  }
-  /* Vùng bấm chevron: nới rộng thành ~44px cao × ~42px rộng (chuẩn tap-target di
-     động) để dễ chạm, NHƯNG giữ glyph đúng vị trí cũ — bù `right`/`padding` ngược
-     với phần nới thêm nên mũi tên không xê dịch, chỉ vùng bấm trong suốt lớn lên.
-     `top` lùi lên để tâm ô vẫn trùng tâm dòng chữ. */
-  header .navigation .header-nav > .navigation--item.menu-item-has-children > .arrow {
-    /* !important để thắng rule trùng selector của theme nằm trong cùng @media
-       (stylesheet trang chủ cũ load SAU globals nên thắng tie nếu chỉ dựa specificity). */
-    top: 15px !important;
-    right: 8px !important;
-    padding: 0 16px !important;
-    height: 44px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Cấp 2+ — link `.sub-menu li a` padding-top 15px, font 14px */
-  header .navigation .sub-menu .menu-item-has-children > .arrow {
-    top: 3px !important;
-    right: 8px !important;
-    padding: 0 16px !important;
-    height: 44px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Khi submenu mở (home.min.js gắn `.active` lên li), lật chevron lên trên để
-     báo trạng thái đã mở. Theme WP gốc chỉ trượt submenu chứ không xoay mũi tên.
-     `.arrow` đã có `transition:.7s` sẵn nên động tác xoay mượt theo. */
-  header .navigation .menu-item-has-children.active > .arrow {
-    transform: rotate(180deg) !important;
-    transform-origin: center !important;
-  }
-  /* Thụt lề tăng dần theo độ sâu submenu. Theme WP để mọi cấp con cùng
-     padding-left:50px (`.sub-menu li>a`) nên cấp 3 trở xuống trông ngang hàng
-     cấp 2 → mất phân cấp. Cộng 20px cho mỗi cấp lồng thêm để lộ rõ quan hệ
-     cha–con; font/cỡ chữ giữ nguyên. */
-  header .navigation .sub-menu .sub-menu li > a {
-    padding-left: 70px !important;
-  }
-  header .navigation .sub-menu .sub-menu .sub-menu li > a {
-    padding-left: 90px !important;
-  }
-}
-
-/* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
-   layout) migrated to inline Tailwind in SiteHeader.tsx. The icon-btn base it used to host
-   is now the shared `iconBtn` constant (lib/ui-classes.ts); the bb-user-control marker has
-   been removed from the JSX (no remaining rule or JS hook). */
-
-/* -- Logo: top-aligned so red diagonal stripe overflows below 80px header */
-
-/* Scrolled state: logo-1.png is a compact horizontal logo */
-
-/* Desktop logo swap on scroll - mirrors WP headroom--not-top behavior:
-   logo-1 (ngang, nhỏ) ẩn sẵn dưới dạng absolute, fade-in khi cuộn. */
 
 /* Hero-less pages: push main content below the logo emblem's vertical extent so
    the hanging emblem gets its own clear zone above the breadcrumb/heading instead
@@ -1117,35 +885,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     padding-top: 82px;
   }
 }
-/* Mobile: logo-1.png hiện mặc định, không có scroll-swap */
-
-/* -- Right column: navigation + user-control.
-   .bb-navigation / .bb-header-nav (wrapper layout), .bb-header-nav-item (base +
-   red diamond separator) and .bb-header-nav-link (base + hover/active/open color)
-   migrated to inline Tailwind in SiteHeader.tsx / HeaderNavItem.tsx. The legacy
-   cascade had unscoped overrides (further down this file) winning over the base
-   rules, so the effective nav-link padding was 26px 30px 27px (not the base clamp)
-   and line-height 1.357rem (not 1) — those effective values are what is inlined.
-   .bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`). */
-
-/* Submenu category icon (.bb-submenu-icon) migrated to the shared `submenuIcon`
-   constant in lib/ui-classes.ts (mask-image glyph, currentColor). The desktop nav
-   dropdown ("Tất cả sản phẩm") is the CSS-only `.sub-menu` flyout defined
-   in the `@media (min-width:1261px)` block above (port 1:1 từ bigbike.vn live). */
-
-/* -- User control action icons: the .bb-icon-btn / .bb-cart-icon-link base,
-   hover and focus styling migrated to the shared `iconBtn` constant in
-   lib/ui-classes.ts (search / shop-info / mobile-menu triggers + cart link).
-   The `.bb-user-control` marker has been removed from the JSX. */
-
-/* Cart badge (.bb-cart-badge) migrated to inline Tailwind in CartIcon.tsx. */
-
-.bb-header-search-trigger.is-active,
-.bb-header-info-trigger.is-active,
-.bb-menu-toggle.is-active {
-  color: var(--bb-brand-primary);
-}
-
 /* Live search suggestions dropdown */
 @keyframes bb-suggest-in {
   from {
@@ -1157,87 +896,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     transform: translateY(0);
   }
 }
-
-/* Closed-state uses `display: none` so neither the panel nor its descendants
-   (drawer, account, nav, sub-icons) contribute to body.scrollWidth at 768-1260px
-   viewports where the panel is in DOM but not yet open. Previous transform-based
-   off-canvas left a 25px (vp=768) / 17px (vp=992/1200) latent horizontal bleed
-   in body.scrollWidth — `overflow-x: hidden` on html/body clips the visible
-   scrollbar but Chrome's body.scrollWidth still reflects descendant natural-width
-   bboxes regardless of `visibility: hidden`, `width: 0`, or `contain: strict`.
-
-   `@starting-style + transition: display allow-discrete` keeps the slide-in
-   animation from the right via the WP-parity timing (Chrome 117+, Safari 17.4+,
-   Firefox 129+). Older browsers degrade gracefully to instant show/hide. */
-@media (max-width: 1260px) {
-  @supports (transition-behavior: allow-discrete) {
-    body .container .navigation.js-navigation {
-      transition-property: transform, opacity, visibility, display !important;
-      transition-duration: 1s, 1s, 1s, 1s !important;
-      transition-timing-function: ease, ease, ease, ease !important;
-      transition-behavior: allow-discrete;
-    }
-
-    body .container .navigation.js-navigation:not(.active) {
-      display: none !important;
-    }
-
-    body .container .navigation.js-navigation.active {
-      display: block !important;
-    }
-
-    @starting-style {
-      body .container .navigation.js-navigation.active {
-        transform: translate(100%, 0);
-        opacity: 0;
-        visibility: hidden;
-      }
-    }
-  }
-}
-
-/* Tablet drawer — 768px–1260px
-   1. transform: none on open state → fixed children position vs. viewport (not the 500px panel)
-   2. Overlay backdrop below header
-   3. Close button (no logo — header is still visible above)
-   4. Light/white theme — consistent with desktop mega menu and ShopInfoDrawer */
-@media (min-width: 768px) and (max-width: 1260px) {
-  /* Starts below header — header stays visible for orientation */
-
-  .bb-mobile-header-overlay.is-open {
-    top: var(--bb-header-height);
-  }
-
-  /* Header visible above — only close button needed, no logo */
-  .bb-mobile-drawer-head {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 8px;
-    border-bottom: 1px solid #e8e8e8;
-  }
-
-  .bb-mobile-drawer-head img {
-    display: none;
-  }
-
-  .bb-mobile-drawer-head button {
-    display: inline-flex;
-    width: var(--bb-touch-target);
-    height: var(--bb-touch-target);
-    align-items: center;
-    justify-content: center;
-    color: var(--bb-text-primary);
-  }
-
-  .bb-mobile-drawer-head button:hover,
-  .bb-mobile-drawer-head button:focus-visible {
-    color: var(--bb-brand-primary);
-    outline: none;
-  }
-}
-
-/* Tablet drawer — nav-children accordion background (light theme) */
 
 /* -- Hero Slider -------------------------------------------- */
 
@@ -3760,31 +3418,6 @@ body .banner-ads > .container > .row {
   }
 }
 
-/* Mobile homepage prototype parity. Scoped to small mobile only so tablet/desktop
-   keep the existing WP-parity composition. */
-.bb-mobile-drawer-head {
-  display: none;
-}
-
-/* Overlay: outside panel — avoids being clipped by panel overflow/transform context.
-   The site header carries backdrop-filter, which makes it the containing block for
-   fixed descendants — so the overlay needs explicit viewport sizing (like the panel)
-   or it collapses to the header's height instead of covering the screen. */
-.bb-mobile-header-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  border: 0;
-  z-index: var(--bb-z-overlay);
-  background: color-mix(in srgb, var(--bb-color-black) 60%, transparent);
-}
-
-.bb-mobile-header-overlay.is-open {
-  display: block;
-}
-
 @media (max-width: 767px) {
   :root {
     --bb-mobile-nav-height: 3.75rem;
@@ -3832,74 +3465,6 @@ body .banner-ads > .container > .row {
     border-bottom: 1px solid var(--bb-mobile-shell-border);
     backdrop-filter: blur(14px);
     box-shadow: none;
-  }
-
-  html[data-header-scrolled] .bb-site-header {
-    background: color-mix(in srgb, var(--bb-color-black) 92%, transparent);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
-  }
-
-  .bb-mobile-header-overlay.is-open {
-    background: color-mix(in srgb, var(--bb-color-black) 58%, transparent);
-    backdrop-filter: blur(2px);
-  }
-
-  .bb-mobile-header-drawer {
-    position: absolute;
-    top: var(--bb-header-height); /* WP: drawer opens BELOW the header (header stays visible) */
-    bottom: 0;
-    right: 0; /* WP: off-canvas enters from the RIGHT */
-    display: flex;
-    width: min(100vw, 500px); /* WP: phone full-width (≤500), tablet capped 500px */
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-anchor: none;
-    scrollbar-width: none;
-    border-left: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-bg);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
-    transform: translateX(100%);
-    transition: transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .bb-mobile-header-drawer::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-  }
-
-  /* Keep the chrome (logo head / account / contact) at natural size when the
-     menu overflows — without this, default flex-shrink squishes the head and
-     drags the logo up a few px as the accordion expands. Overflow scrolls. */
-  .bb-mobile-header-drawer > * {
-    flex-shrink: 0;
-  }
-
-  .bb-mobile-drawer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: calc(var(--bb-header-height) + env(safe-area-inset-top));
-    padding: max(12px, env(safe-area-inset-top)) 14px 12px;
-    border-bottom: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-surface-2);
-  }
-
-  .bb-mobile-drawer-head img {
-    width: 112px;
-    height: auto;
-  }
-
-  .bb-mobile-drawer-head button {
-    display: inline-flex;
-    width: var(--bb-touch-target);
-    height: var(--bb-touch-target);
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    background: transparent;
-    color: var(--bb-text-inverse);
-    cursor: pointer;
   }
 
   .bb-cart-toast {
@@ -4212,9 +3777,7 @@ html[data-bb-header-panel] .bb-scroll-top-anchor,
 html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
 html[data-bb-keyboard-focus] .bb-scroll-top-anchor,
 html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor,
-html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor,
-body:has(header .navigation.active) .bb-floating-chat-anchor,
-body:has(header .navigation.active) .bb-scroll-top-anchor {
+html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
   display: none !important;
 }
 
@@ -4248,27 +3811,6 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
     visibility: hidden;
   }
 
-  /* WP off-canvas menu (header .navigation.active — toggled by the theme hamburger)
-     is a full-screen takeover; the bottom tab bar must slide out so it doesn't sit
-     on top of the drawer's contact block. Mirrors the React drawer's
-     html[data-bb-header-panel] rule, which this WP header doesn't go through. */
-  body:has(header .navigation.active) .bb-bottom-nav {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
-    visibility: hidden;
-  }
-
-  /* Same takeover logic for the PDP sticky purchase bar: when the off-canvas menu
-     is open it must slide out too, otherwise it floats over the drawer's contact
-     block at the bottom. Mirrors the .bb-bottom-nav rule above. */
-  body:has(header .navigation.active) .bb-pdp-sticky-cta {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
-    visibility: hidden;
-  }
-
   body:has(.bb-page--auth) .bb-floating-chat-anchor,
   body:has(.bb-page--auth) .bb-scroll-top-anchor,
   body:has([data-auth-page]) .bb-floating-chat-anchor,
@@ -4280,24 +3822,6 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
 
   .bb-site-header {
     z-index: var(--bb-z-header);
-  }
-
-  .bb-mobile-header-overlay.is-open {
-    background: color-mix(in srgb, var(--bb-color-black) 68%, transparent);
-  }
-
-  .bb-mobile-header-drawer {
-    width: min(100vw, 500px); /* WP: phone full-width, tablet ≤500 (was min(88vw,360px)) */
-    transition: transform 280ms var(--bb-ease-standard);
-  }
-
-  .bb-mobile-drawer-head button:focus-visible {
-    outline: var(--bb-focus-outline);
-    outline-offset: -2px;
-  }
-
-  .bb-mobile-drawer-head button {
-    min-height: var(--bb-touch-target);
   }
 
   .bb-product-image img,

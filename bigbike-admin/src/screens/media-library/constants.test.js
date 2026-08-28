@@ -8,7 +8,9 @@ import {
 
 describe('media constants', () => {
   it('cho phép đúng nhóm định dạng ảnh + video mp4, không nhận loại lạ', () => {
-    expect(ALLOWED_MIME).toEqual(expect.arrayContaining(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'video/mp4']))
+    expect(ALLOWED_MIME).toEqual(['image/jpeg', 'image/png', 'image/webp', 'video/mp4'])
+    expect(ALLOWED_MIME).not.toContain('image/gif')
+    expect(ALLOWED_MIME).not.toContain('image/svg+xml')
     expect(ALLOWED_MIME).not.toContain('application/pdf')
     expect(ALLOWED_MIME).not.toContain('text/html')
   })

@@ -381,16 +381,6 @@ final class ProductFieldApplier {
         entity.setBannerAlt(null);
     }
 
-    public static void applyMobileBanner(CategoryEntity entity, ImageAssetRequest request) {
-        entity.setMobileBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
-        entity.setMobileBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
-    }
-
-    public static void clearMobileBanner(CategoryEntity entity) {
-        entity.setMobileBannerUrl(null);
-        entity.setMobileBannerAlt(null);
-    }
-
     public static void applyIcon(CategoryEntity entity, ImageAssetRequest request) {
         entity.setIconId(null);
         entity.setIconUrl(AdminMutationValidators.trimToNull(request.getUrl()));
@@ -446,16 +436,6 @@ final class ProductFieldApplier {
     public static void clearBanner(BrandEntity entity) {
         entity.setBannerUrl(null);
         entity.setBannerAlt(null);
-    }
-
-    public static void applyMobileBanner(BrandEntity entity, ImageAssetRequest request) {
-        entity.setMobileBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
-        entity.setMobileBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
-    }
-
-    public static void clearMobileBanner(BrandEntity entity) {
-        entity.setMobileBannerUrl(null);
-        entity.setMobileBannerAlt(null);
     }
 
     public static void applySeo(ProductEntity entity, SeoMetaRequest request) {

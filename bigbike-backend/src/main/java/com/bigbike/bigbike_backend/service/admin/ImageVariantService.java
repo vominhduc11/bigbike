@@ -69,11 +69,6 @@ public class ImageVariantService {
     ) {
         if (sourceBytes == null || sourceBytes.length == 0) return Map.of();
         if (mimeType == null || !mimeType.toLowerCase().startsWith("image/")) return Map.of();
-        // Don't variant SVG/GIF — Thumbnailator can't handle them well, and animations would lose frames
-        if (mimeType.equalsIgnoreCase("image/svg+xml") || mimeType.equalsIgnoreCase("image/gif")) {
-            return Map.of();
-        }
-
         BufferedImage source;
         try {
             source = ImageIO.read(new ByteArrayInputStream(sourceBytes));

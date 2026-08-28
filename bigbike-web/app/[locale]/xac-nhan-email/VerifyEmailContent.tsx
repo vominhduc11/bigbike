@@ -104,7 +104,7 @@ export function VerifyEmailContent() {
                       </div>
                     )}
                     <p className="m-0">
-                      <Link href={toAccountPath(locale)} className="font-semibold underline">{t("backToAccount")}</Link>
+                      <Link href={toAccountPath(locale)} prefetch={false} className="font-semibold underline">{t("backToAccount")}</Link>
                     </p>
                   </>
                 ) : (

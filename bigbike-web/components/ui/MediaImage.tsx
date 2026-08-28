@@ -33,6 +33,9 @@ type MediaImageProps = {
    *  deprecated but still an alias) — named to match here. */
   preload?: boolean;
   loading?: "eager" | "lazy";
+  /** Hint the browser to fetch an above-the-fold image sooner without injecting a
+   * preload for responsive alternatives that are hidden at this viewport. */
+  fetchPriority?: "high" | "low" | "auto";
   /** Responsive sizes hint so next/image picks an appropriately scaled source
    *  for grid cells (without it, next/image assumes 100vw and over-fetches). */
   sizes?: string;
@@ -55,11 +58,18 @@ function canOptimizeWithNextImage(src: string): boolean {
     const isGoogleCdn = host.endsWith(".googleusercontent.com");
     const isFacebookCdn = host.endsWith(".fbcdn.net");
     return (
-      (url.protocol === "https:" && host === "cdn.bigbike.vn" && url.pathname.startsWith("/uploads/")) ||
+      (url.protocol === "https:" &&
+        host === "cdn.bigbike.vn" &&
+        url.pathname.startsWith("/uploads/")) ||
       (url.protocol === "http:" && host === "localhost" && url.port === "9000") ||
-      (url.protocol === "https:" && host === "img.youtube.com" && url.pathname.startsWith("/vi/")) ||
-      (url.protocol === "https:" && (isGoogleCdn || isFacebookCdn || host === "platform-lookaside.fbsbx.com")) ||
-      (url.protocol === "https:" && host === "res.cloudinary.com" && url.pathname.startsWith("/daohufjec/image/upload/"))
+      (url.protocol === "https:" &&
+        host === "img.youtube.com" &&
+        url.pathname.startsWith("/vi/")) ||
+      (url.protocol === "https:" &&
+        (isGoogleCdn || isFacebookCdn || host === "platform-lookaside.fbsbx.com")) ||
+      (url.protocol === "https:" &&
+        host === "res.cloudinary.com" &&
+        url.pathname.startsWith("/daohufjec/image/upload/"))
     );
   } catch {
     return false;
@@ -74,6 +84,7 @@ export function MediaImage({
   height = 1200,
   preload = false,
   loading,
+  fetchPriority,
   sizes,
   fill = false,
 }: MediaImageProps) {
@@ -108,7 +119,8 @@ export function MediaImage({
         width={resolvedWidth}
         height={resolvedHeight}
         className={cn(fill && "absolute inset-0 h-full w-full", className)}
-        loading={preload ? "eager" : loading ?? "lazy"}
+        loading={preload ? "eager" : (loading ?? "lazy")}
+        fetchPriority={fetchPriority}
       />
     );
   }
@@ -120,7 +132,8 @@ export function MediaImage({
       {...(fill ? { fill: true } : { width: resolvedWidth, height: resolvedHeight })}
       className={cn(fill && "absolute inset-0 h-full w-full", className)}
       preload={preload}
-      loading={preload ? "eager" : loading ?? "lazy"}
+      loading={preload ? "eager" : (loading ?? "lazy")}
+      fetchPriority={fetchPriority}
       sizes={sizes}
     />
   );

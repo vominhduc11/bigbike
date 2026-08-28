@@ -1404,6 +1404,12 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.details[0].field").value("banner.url"))
                 .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+    }
+
+    @Test
+    void categoryShouldRejectRemovedMobileBannerOnCreateAndPatch() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String rejectedSlug = "cat-removed-mobile-banner-" + suffix;
 
         mockMvc.perform(post("/api/v1/admin/categories")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1411,14 +1417,43 @@ class AdminMutationApiTest {
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
                                 {
-                                  "slug":"cat-mobile-banner-external-%s",
-                                  "name":"Danh mục banner mobile ngoài %s",
-                                  "translations":{"en":{"name":"External mobile banner category %s"}},
-                                  "mobileBanner":{"url":"https://cdn.ben-thu-ba.com/hero-mobile.jpg"}
+                                  "slug":"%s",
+                                  "name":"Danh mục trường ảnh đã bỏ %s",
+                                  "translations":{"en":{"name":"Removed mobile banner category %s"}},
+                                  "mobileBanner":{"url":"/media/legacy-mobile-banner.jpg"}
                                 }
-                                """.formatted(suffix, suffix, suffix)))
+                                """.formatted(rejectedSlug, suffix, suffix)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("mobileBanner.url"));
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        assertThat(categoryJpaRepository.findBySlug(rejectedSlug)).isEmpty();
+
+        String patchSlug = "cat-removed-mobile-banner-patch-" + suffix;
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Danh mục kiểm tra cập nhật %s",
+                                  "translations":{"en":{"name":"Removed mobile banner patch category %s"}}
+                                }
+                                """.formatted(patchSlug, suffix, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity category = categoryJpaRepository.findBySlug(patchSlug).orElseThrow();
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", category.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("{\"mobileBanner\":{\"url\":\"/media/legacy-mobile-banner.jpg\"}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        assertThat(categoryJpaRepository.findById(category.getId()).orElseThrow().getBannerUrl()).isNull();
     }
 
     @Test
@@ -1789,6 +1824,12 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.details[0].field").value("banner.url"))
                 .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+    }
+
+    @Test
+    void brandShouldRejectRemovedMobileBannerOnCreateAndPatch() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String rejectedSlug = "brand-removed-mobile-banner-" + suffix;
 
         mockMvc.perform(post("/api/v1/admin/brands")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1796,13 +1837,41 @@ class AdminMutationApiTest {
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
                                 {
-                                  "slug":"brand-mobile-banner-external-%s",
-                                  "name":"Thương hiệu banner mobile ngoài %s",
-                                  "mobileBanner":{"url":"https://cdn.ben-thu-ba.com/banner-mobile.jpg"}
+                                  "slug":"%s",
+                                  "name":"Thương hiệu trường ảnh đã bỏ %s",
+                                  "mobileBanner":{"url":"/media/legacy-mobile-banner.jpg"}
                                 }
-                                """.formatted(suffix, suffix)))
+                                """.formatted(rejectedSlug, suffix)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("mobileBanner.url"));
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        assertThat(brandJpaRepository.findBySlug(rejectedSlug)).isEmpty();
+
+        String patchSlug = "brand-removed-mobile-banner-patch-" + suffix;
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Thương hiệu kiểm tra cập nhật %s"
+                                }
+                                """.formatted(patchSlug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(patchSlug).orElseThrow();
+        mockMvc.perform(patch("/api/v1/admin/brands/{id}", brand.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("{\"mobileBanner\":{\"url\":\"/media/legacy-mobile-banner.jpg\"}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        assertThat(brandJpaRepository.findById(brand.getId()).orElseThrow().getBannerUrl()).isNull();
     }
 
     @Test

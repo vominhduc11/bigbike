@@ -22,8 +22,6 @@ export function buildEmptyForm() {
     imageMimeType: '',
     bannerImageUrl: '',
     bannerImageAlt: '',
-    mobileBannerImageUrl: '',
-    mobileBannerImageAlt: '',
     heroImageUrl: '',
     heroImageAlt: '',
     heroImageWidth: null,
@@ -60,8 +58,6 @@ export function buildFormFromItem(item) {
     imageMimeType: item.image?.mimeType || '',
     bannerImageUrl: item.bannerImage?.rawUrl || item.bannerImage?.url || '',
     bannerImageAlt: item.bannerImage?.alt || '',
-    mobileBannerImageUrl: item.mobileBannerImage?.rawUrl || item.mobileBannerImage?.url || '',
-    mobileBannerImageAlt: item.mobileBannerImage?.alt || '',
     // Ảnh minh hoạ hero (WP ACF "image_left") nằm ở field `icon` của response, không phải `image`.
     heroImageUrl: item.icon?.rawUrl || item.icon?.url || '',
     heroImageAlt: item.icon?.alt || '',
@@ -184,11 +180,6 @@ export function toPayload(form, { isCreate = false } = {}) {
 
   const bannerImageUrl = form.bannerImageUrl.trim()
   payload.banner = bannerImageUrl ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null } : { url: null }
-
-  const mobileBannerImageUrl = form.mobileBannerImageUrl.trim()
-  payload.mobileBanner = mobileBannerImageUrl
-    ? { url: mobileBannerImageUrl, alt: String(form.mobileBannerImageAlt ?? '').trim() || null }
-    : { url: null }
 
   // Ảnh minh hoạ hero (WP ACF "image_left") → backend field `icon` (icon_url). Đây là ảnh
   // web hiển thị ở hero trang danh mục; KHÁC `image` (thumbnail lưới) và `menuIcon` (icon menu).

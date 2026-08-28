@@ -11,7 +11,6 @@ public record Brand(
         String description,
         ImageAsset logo,
         ImageAsset bannerImage,
-        ImageAsset mobileBannerImage,
         SeoMeta seo,
         boolean isVisible,
         boolean showOnHomepage,
@@ -32,7 +31,6 @@ public record Brand(
             String description,
             ImageAsset logo,
             ImageAsset bannerImage,
-            ImageAsset mobileBannerImage,
             SeoMeta seo,
             boolean isVisible,
             boolean showOnHomepage,
@@ -40,12 +38,12 @@ public record Brand(
             Instant createdAt,
             Instant updatedAt
     ) {
-        this(id, slug, name, description, logo, bannerImage, mobileBannerImage, seo,
+        this(id, slug, name, description, logo, bannerImage, seo,
                 isVisible, showOnHomepage, translations, createdAt, updatedAt, null);
     }
 
     public Brand withLogoQuality(BrandLogoQuality quality) {
-        return new Brand(id, slug, name, description, logo, bannerImage, mobileBannerImage,
+        return new Brand(id, slug, name, description, logo, bannerImage,
                 seo, isVisible, showOnHomepage, translations, createdAt, updatedAt,
                 Objects.requireNonNull(quality));
     }

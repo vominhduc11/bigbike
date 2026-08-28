@@ -10,7 +10,8 @@ import { iconBtn } from "@/lib/ui-classes";
 
 export function HeaderSearchButton() {
   const t = useTranslations("Common");
-  const { openPanel } = useHeaderUi();
+  const { isPanelOpen, openPanel } = useHeaderUi();
+  const open = isPanelOpen("search");
 
   return (
     <Button
@@ -19,7 +20,12 @@ export function HeaderSearchButton() {
       size="icon"
       onClick={() => openPanel("search")}
       aria-label={t("search")}
-      className={cn(iconBtn, "bb-header-search-trigger h-20! min-h-20! px-5! hover:not-disabled:scale-100")}
+      aria-expanded={open}
+      className={cn(
+        iconBtn,
+        "bb-header-search-trigger h-full! min-h-0! w-11! px-0! hover:not-disabled:scale-100",
+        open && "!text-brand-on-dark hover:!text-brand-on-dark",
+      )}
     >
       <Search className="-translate-x-0.5" size={18} strokeWidth={1.75} aria-hidden />
     </Button>

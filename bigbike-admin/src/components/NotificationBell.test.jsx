@@ -72,4 +72,26 @@ describe('NotificationBell chat handoff', () => {
     await user.click(screen.getByText('notifications.chatHandoff'))
     expect(mocks.navigate).toHaveBeenCalledWith('/admin/chat/conversation-1')
   })
+
+  it('shows the exact server unread count beyond the 30 displayed rows', async () => {
+    mocks.fetchAdminNotifications.mockResolvedValue({
+      unreadCount: 42,
+      items: Array.from({ length: 30 }, (_, index) => ({
+        id: `notification-${index}`,
+        type: 'CHAT_HANDOFF_WAITING',
+        handoffId: `handoff-${index}`,
+        conversationId: `conversation-${index}`,
+        questionSummary: `Câu hỏi ${index}`,
+        customerKind: 'GUEST',
+        products: [],
+        at: Date.now() - index,
+        read: false,
+      })),
+    })
+
+    render(<NotificationBell navigate={mocks.navigate} />)
+
+    await waitFor(() => expect(screen.getByText('42')).toBeInTheDocument())
+    expect(screen.queryByText('9+')).not.toBeInTheDocument()
+  })
 })

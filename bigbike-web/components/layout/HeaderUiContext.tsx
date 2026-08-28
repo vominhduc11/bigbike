@@ -11,7 +11,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 
-export type HeaderPanel = "none" | "search" | "desktop-info" | "mobile-menu" | "cart";
+export type HeaderPanel = "none" | "search" | "mobile-menu" | "cart";
 type ToggleableHeaderPanel = Exclude<HeaderPanel, "none">;
 
 type HeaderUiContextValue = {
@@ -37,7 +37,7 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
     // Không để drawer mobile tồn tại sau khi đổi trang, kể cả khi mục mới thêm
     // chưa biết đến HeaderUiContext.
     const closeTimer = window.setTimeout(() => {
-      setActivePanel((current) => current === "mobile-menu" ? "none" : current);
+      setActivePanel((current) => (current === "mobile-menu" ? "none" : current));
     }, 0);
 
     return () => window.clearTimeout(closeTimer);
@@ -45,10 +45,7 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const shouldLockScroll =
-      activePanel === "search" ||
-      activePanel === "desktop-info" ||
-      activePanel === "mobile-menu" ||
-      activePanel === "cart";
+      activePanel === "search" || activePanel === "mobile-menu" || activePanel === "cart";
 
     document.body.style.overflow = shouldLockScroll ? "hidden" : "";
     document.documentElement.style.overflow = shouldLockScroll ? "hidden" : "";
@@ -134,15 +131,12 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
       isPanelOpen: (panel) => activePanel === panel,
       openPanel: (panel) => setActivePanel(panel),
       closePanel: () => setActivePanel("none"),
-      togglePanel: (panel) =>
-        setActivePanel((current) => (current === panel ? "none" : panel)),
+      togglePanel: (panel) => setActivePanel((current) => (current === panel ? "none" : panel)),
     }),
     [activePanel],
   );
 
-  return (
-    <HeaderUiContext.Provider value={value}>{children}</HeaderUiContext.Provider>
-  );
+  return <HeaderUiContext.Provider value={value}>{children}</HeaderUiContext.Provider>;
 }
 
 export function useHeaderUi() {

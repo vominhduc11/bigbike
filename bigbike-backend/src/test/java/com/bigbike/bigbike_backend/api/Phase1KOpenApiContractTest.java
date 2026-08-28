@@ -388,7 +388,7 @@ class Phase1KOpenApiContractTest {
 
         JsonNode listParameters = paths.path("/api/v1/admin/media").path("get").path("parameters");
         assertThat(listParameters.findValuesAsText("name")).containsExactly(
-                "page", "size", "q", "mimeType", "status", "storageProvider",
+                "page", "size", "q", "mimeType", "mimeTypes", "status", "storageProvider",
                 "usageFilter", "uploadedFrom", "uploadedTo", "minSize", "maxSize",
                 "minWidth", "minHeight", "sort", "dir", "folderFilter", "tag");
         assertThat(parameterNamed(listParameters, "size").path("schema").path("maximum").asInt())

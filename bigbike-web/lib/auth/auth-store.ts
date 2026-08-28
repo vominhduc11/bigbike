@@ -7,7 +7,7 @@ import type { CustomerProfile } from "@/lib/contracts/commerce";
 
  type AuthState =
   | { status: "loading" }
-  | { status: "anonymous" }
+  | { status: "anonymous"; reason?: "logout" }
   | { status: "authenticated"; profile: CustomerProfile };
 
 type Listener = (state: AuthState) => void;
@@ -101,8 +101,8 @@ export function refreshAuth(): Promise<void> {
   return inflight;
 }
 
- function setAnonymous(): void {
-  setState({ status: "anonymous" });
+ function setAnonymous(reason?: "logout"): void {
+  setState(reason ? { status: "anonymous", reason } : { status: "anonymous" });
 }
 
 export async function performLogout(): Promise<void> {
@@ -113,7 +113,7 @@ export async function performLogout(): Promise<void> {
   }
   clearCustomerAuthMarker();
   clearChatSnapshot();
-  setAnonymous();
+  setAnonymous("logout");
 }
 
 const ANONYMOUS_SERVER_SNAPSHOT: AuthState = { status: "loading" };

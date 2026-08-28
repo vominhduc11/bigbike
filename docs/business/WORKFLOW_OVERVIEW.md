@@ -62,7 +62,7 @@ The point-of-sale / walk-in ("bán tại quầy") workflow was removed entirely.
 |---|---|---|---|---|
 | 1 | Admin | Upload file to admin media endpoint | `CONFIRMED_FROM_CODE` | `AdminMediaController.java` |
 | 2 | System | Detect MIME from content with Apache Tika | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
-| 3 | System | Reject unsupported/empty/fake MIME uploads; accept SVG but sanitize it (strip scripts/handlers/external refs) | `CONFIRMED_FROM_CODE` | `AdminMediaP0Test.java`, `SvgSanitizer.java` |
+| 3 | System | Reject empty files, unsupported types and declared/content MIME mismatches. Admin image uploads accept only JPEG/JPG, PNG and WebP; MP4 video remains accepted. | `OWNER_CONFIRMED_2026-08-28` | `AdminMediaP0Test.java`, `AdminMediaService.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 
 ## Product Authoring & Live Preview Workflow
@@ -105,13 +105,13 @@ Khung xem trước chỉ để **xem giao diện**, nên các thao tác/điều 
 
 **Lý do:** Menu thực tế sâu 4 cấp (L1 → 9 nhóm L2 → 17 danh mục L3 → 4 mục L4). Flyout dọc cho cấu trúc này đẩy cột cấp 4 ra ~1200px chiều ngang, gây overflow viewport, scrollbar ngang, và mất hover khi rê chéo — không khắc phục được triệt để bằng collision detection.
 
-**Layout mới (desktop ≥1440px):**
+**Layout mới (desktop ≥1280px):**
 - Hover "Tất cả sản phẩm" → mega panel rộng container (75rem) hiện ngay dưới header.
 - **Sidebar trái:** 9 nhóm L2 dạng danh sách dọc. Nhóm có con → hover/focus đổi nội dung panel phải, **và bấm vào tên nhóm cũng điều hướng tới trang category của chính nhóm đó** (cập nhật 2026-06-16 — trước đó nhóm có con render bằng `<button>` không có `href`/`onClick`, bấm vào không có gì xảy ra, user phản ánh nhầm là lỗi). Nhóm leaf → link điều hướng trực tiếp.
 - **Panel phải:** L3 dạng grid nhiều cột. L4 hiện dạng sub-list thụt lề dưới L3 cha (không dùng flyout thêm cấp).
 - Default-active: nhóm L2 đầu tiên có con.
 
-**Mobile/tablet/desktop hẹp (<1440px):** Giữ nguyên accordion (`MobileHeaderMenu`) qua nút hamburger, không thay đổi.
+**Mobile/tablet/desktop hẹp (<1280px):** Giữ nguyên accordion (`MobileHeaderMenu`) qua nút hamburger, không thay đổi. Khối thông tin liên hệ đi cùng ngăn kéo này; trên desktop rộng không có ngăn kéo thông tin liên hệ riêng.
 
 **Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
 

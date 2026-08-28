@@ -3,7 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportBrandLogoUrlRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaDetailResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuard;
+import com.bigbike.bigbike_backend.service.media.ImageDimensions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,9 +11,10 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import javax.imageio.ImageIO;
 import okhttp3.Dns;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -31,7 +32,7 @@ public class BrandLogoUrlImportService {
 
     private static final long MAX_SOURCE_BYTES = BrandLogoValidationService.MAX_BYTES;
     private static final int MAX_REDIRECTS = 5;
-    private static final String PNG_MIME = "image/png";
+    private static final Set<String> SUPPORTED_MIMES = BrandLogoValidationService.SUPPORTED_MIMES;
     private static final Tika TIKA = new Tika();
 
     private final AdminMediaService adminMediaService;
@@ -56,12 +57,12 @@ public class BrandLogoUrlImportService {
     ) {
         URI uri = validateUrl(request.url());
         byte[] bytes = download(uri);
-        validatePng(bytes, request.url());
+        String mimeType = validateImage(bytes);
         String filename = filenameFor(uri);
         return adminMediaService.storeMediaBytes(
                 bytes,
                 filename,
-                PNG_MIME,
+                mimeType,
                 request.altText(),
                 request.folderId(),
                 false,
@@ -74,7 +75,7 @@ public class BrandLogoUrlImportService {
             validateResolvedHost(current);
             Request httpRequest = new Request.Builder()
                     .url(current.toString())
-                    .header("Accept", "image/png,image/*;q=0.8")
+                    .header("Accept", "image/jpeg,image/png,image/webp,image/*;q=0.8")
                     .get()
                     .build();
 
@@ -137,25 +138,28 @@ public class BrandLogoUrlImportService {
         }
     }
 
-    private void validatePng(byte[] bytes, String sourceUrl) {
+    private String validateImage(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             throw validation("url", "BRAND_LOGO_FETCH_FAILED",
                     "URL không trả về nội dung ảnh / the logo URL returned no image content.");
         }
-        String detected = TIKA.detect(bytes, filenameFor(validateUrl(sourceUrl)));
-        if (!PNG_MIME.equalsIgnoreCase(detected)) {
-            throw validation("url", "BRAND_LOGO_NOT_PNG",
-                    "Logo từ URL phải là PNG / the logo URL must point to a PNG.");
+        String detected = TIKA.detect(bytes)
+                .toLowerCase(Locale.ROOT);
+        if (!SUPPORTED_MIMES.contains(detected)) {
+            throw validation("url", "BRAND_LOGO_UNSUPPORTED_TYPE",
+                    "Logo từ URL chỉ nhận JPEG/JPG, PNG hoặc WebP / a logo URL must point to a JPEG/JPG, PNG, or WebP image.");
         }
-        try {
-            if (ImageIO.read(new java.io.ByteArrayInputStream(bytes)) == null) {
-                throw validation("url", "BRAND_LOGO_NOT_PNG",
-                        "Logo từ URL phải là PNG / the logo URL must point to a PNG.");
-            }
-        } catch (IOException e) {
-            throw validation("url", "BRAND_LOGO_NOT_PNG",
-                    "Logo từ URL phải là PNG / the logo URL must point to a PNG.");
+        ImageDimensions.Dimensions dimensions = ImageDimensions.read(bytes, detected);
+        if (dimensions == null) {
+            throw validation("url", "BRAND_LOGO_UNREADABLE",
+                    "Không đọc được nội dung ảnh logo từ URL / the logo image content could not be read.");
         }
+        if (dimensions.width() < BrandLogoValidationService.MIN_PIXELS
+                || dimensions.height() < BrandLogoValidationService.MIN_PIXELS) {
+            throw validation("url", "BRAND_LOGO_TOO_SMALL",
+                    "Ảnh logo tối thiểu 400 × 400 điểm ảnh / the logo must be at least 400 × 400 pixels.");
+        }
+        return detected;
     }
 
     private static URI validateUrl(String raw) {

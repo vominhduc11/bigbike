@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
@@ -202,9 +203,7 @@ public class AdminCatalogReadService {
         if (query == null || query.isBlank()) {
             return true;
         }
-        String term = query.toLowerCase(Locale.ROOT);
-        return brand.name().toLowerCase(Locale.ROOT).contains(term)
-                || brand.slug().toLowerCase(Locale.ROOT).contains(term);
+        return AdminSearchText.matchesAllTokens(query, List.of(brand.name(), brand.slug()));
     }
 
     private static Comparator<Product> productComparator(SortSpec sortSpec) {

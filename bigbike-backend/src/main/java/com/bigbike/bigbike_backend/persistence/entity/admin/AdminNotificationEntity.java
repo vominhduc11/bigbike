@@ -33,9 +33,6 @@ public class AdminNotificationEntity {
     @Column(columnDefinition = "text")
     private String payload;
 
-    @Column(name = "is_read", nullable = false)
-    private boolean read = false;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

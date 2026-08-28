@@ -318,12 +318,14 @@ class AdminReadApiTest {
                         .header("X-Admin-Permissions", "catalog.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].id").exists());
+                .andExpect(jsonPath("$.data[0].id").exists())
+                .andExpect(jsonPath("$.data[0].mobileBannerImage").doesNotExist());
 
         mockMvc.perform(get("/api/v1/admin/brands/brand_ls2")
                         .header("X-Admin-Permissions", "catalog.read"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value("brand_ls2"));
+                .andExpect(jsonPath("$.data.id").value("brand_ls2"))
+                .andExpect(jsonPath("$.data.mobileBannerImage").doesNotExist());
 
         mockMvc.perform(get("/api/v1/admin/content")
                         .param("type", "ARTICLE")

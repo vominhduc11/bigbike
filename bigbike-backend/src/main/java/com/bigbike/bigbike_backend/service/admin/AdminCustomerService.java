@@ -25,10 +25,13 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.customer.CustomerAvatarStorageService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
 import com.bigbike.bigbike_backend.util.PhoneNumbers;
+import com.bigbike.bigbike_backend.util.AdminSearchText;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -115,12 +118,18 @@ public class AdminCustomerService {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (q != null && !q.isBlank()) {
-                String pattern = "%" + escapeLike(q.toLowerCase(Locale.ROOT)) + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("email")), pattern, '\\'),
-                        cb.like(cb.lower(root.get("phone")), pattern, '\\'),
-                        cb.like(cb.lower(root.get("displayName")), pattern, '\\')
-                ));
+                List<Predicate> tokenPredicates = new ArrayList<>();
+                for (String token : AdminSearchText.tokens(q)) {
+                    String pattern = AdminSearchText.likePattern(token);
+                    tokenPredicates.add(cb.or(
+                            cb.like(unaccentLower(cb, root.get("email")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("phone")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("displayName")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("firstName")), pattern, '\\'),
+                            cb.like(unaccentLower(cb, root.get("lastName")), pattern, '\\')
+                    ));
+                }
+                predicates.add(cb.and(tokenPredicates.toArray(new Predicate[0])));
             }
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -135,6 +144,10 @@ public class AdminCustomerService {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
+        return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
     }
 
     /** Returns Map<customerId, [orderCount, totalSpentRaw]> for the given customer IDs. */
@@ -387,13 +400,6 @@ public class AdminCustomerService {
             throw ValidationException.fromField("status", "INVALID", "Unknown customer status: " + normalized);
         }
         return normalized;
-    }
-
-    private static String escapeLike(String value) {
-        return value
-                .replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_");
     }
 
     private static void rejectReadOnlyProfileFields(UpdateCustomerRequest req) {

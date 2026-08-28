@@ -3,15 +3,20 @@ package com.bigbike.bigbike_backend.repository.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationEntity;
+import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationReadEntity;
 import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationReadJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -38,7 +43,9 @@ class AdminNotificationPostgresQueryTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired AdminNotificationJpaRepository notificationRepository;
+    @Autowired AdminNotificationReadJpaRepository readRepository;
     @Autowired AdminNotificationService service;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     private AdminNotificationEntity persist(String type, Instant createdAt) {
         AdminNotificationEntity notification = new AdminNotificationEntity();
@@ -89,5 +96,49 @@ class AdminNotificationPostgresQueryTest {
 
         assertThat(after).isGreaterThanOrEqualTo(1);
         assertThat(after).isLessThan(before);
+    }
+
+    @Test
+    void retentionDeletesExpiredRowsWithoutChangingPerAdminReadMarker() {
+        ZoneId vietnam = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime now = ZonedDateTime.now(vietnam);
+        Instant cutoff = now.minusMonths(6).toInstant();
+        Instant expiredAt = now.minusMonths(7).toInstant();
+        Instant retainedAt = now.minusMonths(5).toInstant();
+        UUID adminId = UUID.randomUUID();
+        Instant markerAt = now.minusMonths(8).toInstant();
+
+        AdminNotificationReadEntity marker = new AdminNotificationReadEntity();
+        marker.setAdminId(adminId);
+        marker.setLastReadAt(markerAt);
+        marker.setUpdatedAt(now.toInstant());
+        readRepository.saveAndFlush(marker);
+
+        AdminNotificationEntity expired = persist("NEW_ORDER", expiredAt);
+        AdminNotificationEntity retained = persist("CHAT_LEAD", retainedAt);
+
+        int deleted = notificationRepository.deleteOlderThanBatch(cutoff, 500);
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(notificationRepository.findById(expired.getId())).isEmpty();
+        assertThat(notificationRepository.findById(retained.getId())).isPresent();
+        assertThat(readRepository.findById(adminId).orElseThrow().getLastReadAt())
+                .isEqualTo(markerAt);
+    }
+
+    @Test
+    void migrationRemovesLegacySharedReadStateIndexAndColumn() {
+        Integer legacyColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where table_name = 'admin_notifications' and column_name = 'is_read'",
+                Integer.class);
+        Integer legacyIndexCount = jdbcTemplate.queryForObject(
+                "select count(*) from pg_indexes "
+                        + "where tablename = 'admin_notifications' "
+                        + "and indexname = 'idx_admin_notifications_unread'",
+                Integer.class);
+
+        assertThat(legacyColumnCount).isZero();
+        assertThat(legacyIndexCount).isZero();
     }
 }

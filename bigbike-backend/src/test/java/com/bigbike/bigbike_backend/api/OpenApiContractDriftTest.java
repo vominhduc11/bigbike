@@ -109,6 +109,33 @@ class OpenApiContractDriftTest {
                 .hasSizeGreaterThan(100);
     }
 
+    @Test
+    void catalogMediaSchemasExcludeRemovedMobileBannerFields() throws Exception {
+        JsonNode schemas = curatedContract().path("components").path("schemas");
+
+        assertThat(schemas.path("CategoryResponse").path("properties").has("mobileBannerImage")).isFalse();
+        assertThat(schemas.path("CategoryResponse").path("properties").has("bannerImage")).isTrue();
+        assertThat(schemas.path("UpsertCategoryRequest").path("properties").has("mobileBanner")).isFalse();
+        assertThat(schemas.path("UpsertCategoryRequest").path("properties").has("banner")).isTrue();
+        assertThat(schemas.path("UpsertBrandRequest").path("properties").has("mobileBanner")).isFalse();
+        assertThat(schemas.path("UpsertBrandRequest").path("properties").has("logo")).isTrue();
+        assertThat(schemas.path("UpsertBrandRequest").path("properties").has("banner")).isTrue();
+    }
+
+    @Test
+    void liveCatalogSchemasExcludeRemovedMobileBannerFields() throws Exception {
+        JsonNode schemas = generatedContract().path("components").path("schemas");
+        Set<String> schemasWithRemovedFields = new LinkedHashSet<>();
+        schemas.fields().forEachRemaining(entry -> {
+            JsonNode properties = entry.getValue().path("properties");
+            if (properties.has("mobileBanner") || properties.has("mobileBannerImage")) {
+                schemasWithRemovedFields.add(entry.getKey());
+            }
+        });
+
+        assertThat(schemasWithRemovedFields).isEmpty();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private JsonNode generatedContract() throws Exception {

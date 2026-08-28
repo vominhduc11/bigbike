@@ -515,6 +515,75 @@ export async function fetchProducts(query) {
   }
 }
 
+function normalizeQuickSearchVariant(input) {
+  const source = input && typeof input === 'object' ? input : {}
+  const options = Array.isArray(source.options)
+    ? source.options.map((option) => {
+      const item = option && typeof option === 'object' ? option : {}
+      return {
+        name: String(item.name || ''),
+        value: String(item.value || ''),
+        attributeValueId: item.attributeValueId ? String(item.attributeValueId) : undefined,
+      }
+    })
+    : []
+  return {
+    id: String(source.id || ''),
+    sku: String(source.sku || ''),
+    name: String(source.name || ''),
+    options,
+  }
+}
+
+function normalizeQuickSearchItem(input) {
+  const source = input && typeof input === 'object' ? input : {}
+  const stringFields = [
+    'id', 'orderNumber', 'status', 'customerName', 'shippingRecipientName',
+    'customerEmail', 'customerPhone', 'currency', 'displayName', 'email',
+    'phone', 'name', 'title', 'slug', 'sku', 'role', 'matchedField',
+  ]
+  const item = { matchedVariants: [] }
+  stringFields.forEach((field) => {
+    if (source[field] !== undefined && source[field] !== null) item[field] = String(source[field])
+  })
+  if (source.totalAmount !== undefined && source.totalAmount !== null) {
+    const amount = Number(source.totalAmount)
+    item.totalAmount = Number.isFinite(amount) ? amount : undefined
+  }
+  if (Array.isArray(source.matchedVariants)) {
+    item.matchedVariants = source.matchedVariants.map(normalizeQuickSearchVariant)
+  }
+  return item
+}
+
+function normalizeQuickSearchGroup(input) {
+  const source = input && typeof input === 'object' ? input : {}
+  const isError = source.state === 'ERROR'
+  const hasTotal = source.total !== undefined && source.total !== null
+  const total = hasTotal ? Number(source.total) : NaN
+  return {
+    state: isError ? 'ERROR' : 'READY',
+    total: !isError && Number.isFinite(total) && total >= 0 ? Math.trunc(total) : null,
+    items: Array.isArray(source.items) ? source.items.map(normalizeQuickSearchItem) : [],
+    errorCode: isError && source.errorCode ? String(source.errorCode) : null,
+  }
+}
+
+export async function fetchAdminQuickSearch(query) {
+  try {
+    const payload = await requestJson('/admin/quick-search', { query: { q: query } })
+    const source = payload?.data?.groups && typeof payload.data.groups === 'object'
+      ? payload.data.groups
+      : {}
+    const groups = Object.fromEntries(
+      Object.entries(source).map(([key, value]) => [key, normalizeQuickSearchGroup(value)]),
+    )
+    return withLiveData({ groups })
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function fetchProductDetail(productId) {
   try {
     const payload = await requestJson(`/admin/products/${productId}`)
@@ -1119,6 +1188,9 @@ function buildMediaQueryParams(query) {
   return {
     q: query?.search || undefined,
     mimeType: query?.mimeType && query.mimeType !== 'ALL' ? query.mimeType : undefined,
+    mimeTypes: Array.isArray(query?.mimeTypes)
+      ? query.mimeTypes.join(',')
+      : (query?.mimeTypes || undefined),
     status: query?.status && query.status !== 'ALL' ? query.status : undefined,
     usageFilter: query?.usageFilter && query.usageFilter !== 'ALL' ? query.usageFilter : undefined,
     uploadedFrom: query?.uploadedFrom || undefined,

@@ -44,6 +44,7 @@
   },
   "Header": {
     "skipToContent": "Skip to content",
+    "opensInNewWindow": "Opens in a new window",
     "homeAriaLabel": "BigBike home",
     "searchPlaceholder": "Search products, brands…",
     "account": "Account",

@@ -36,9 +36,21 @@ const sharedMetadata: Omit<Metadata, "title" | "description"> = {
   metadataBase: new URL(getSiteOrigin()),
   icons: {
     icon: [
-      { url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-16x16.png`), sizes: "16x16", type: "image/png" },
-      { url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-32x32.png`), sizes: "32x32", type: "image/png" },
-      { url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-96x96.png`), sizes: "96x96", type: "image/png" },
+      {
+        url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-16x16.png`),
+        sizes: "16x16",
+        type: "image/png",
+      },
+      {
+        url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-32x32.png`),
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: absoluteAssetUrl(`${FAVICON_BASE}/favicon-96x96.png`),
+        sizes: "96x96",
+        type: "image/png",
+      },
       { url: absoluteAssetUrl(`${FAVICON_BASE}/favicon.ico`), rel: "shortcut icon" },
     ],
     apple: [
@@ -106,10 +118,7 @@ export default async function RootLayout({
     ? buildPublicMenuTree(primaryMenuResult.data.items)
     : [];
   return (
-    <html
-      lang={locale}
-      className="h-full antialiased"
-    >
+    <html lang={locale} className="h-full antialiased">
       <body className="bb-theme min-h-full flex flex-col pt-0!">
         {GTM_ID && (
           <Script
@@ -137,17 +146,18 @@ export default async function RootLayout({
               <CartProvider>
                 <AltSlugProvider>
                   <Header menuNodesVi={primaryNodes} menuNodesEn={primaryNodes} locale={locale} />
-                  <main id="main-content" className="bb-main w-full">{children}</main>
+                  <main id="main-content" tabIndex={-1} className="bb-main w-full">
+                    {children}
+                  </main>
                   <div className="block md:hidden">
                     <MobileBottomNav />
                   </div>
                   {/* Gắn panel tìm kiếm React như "panel host" ở mọi breakpoint để cả header
                       desktop/tablet lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
-                      renderTrigger={false} để không render nút trigger trùng.
                       Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
                       render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
                   <Suspense fallback={null}>
-                    <SearchToggle renderTrigger={false} />
+                    <SearchToggle />
                   </Suspense>
                   <MobileCartSheet />
                   <FooterMobileGate>

@@ -64,7 +64,6 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
     await performLogout();
     setLoggingOut(false);
     router.push(toHomePath(locale));
-    router.refresh();
   }
 
   if (variant === "mobile") {
@@ -76,7 +75,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
               <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />
               <div>
                 <p className="m-0! font-cta text-b4-action font-semibold uppercase text-white">{t("greeting")} <span>{displayName}</span></p>
-                <Link href={toAccountPath(locale)} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
+                <Link href={toAccountPath(locale)} prefetch={false} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
               </div>
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => void handleLogout()} disabled={loggingOut} aria-label={t("logout")} className="text-white hover:not-disabled:scale-100">
@@ -141,7 +140,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         <span className="absolute right-15 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white" aria-hidden />
         <div className="flex flex-col gap-5">
           <Button asChild variant="primary" size="auth">
-            <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)} role="menuitem" onClick={closeMenu}>
+            <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)} prefetch={false} role="menuitem" onClick={closeMenu}>
               {isAuthed ? t("account") : t("register")}
             </Link>
           </Button>

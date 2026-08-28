@@ -14,7 +14,6 @@ import { useSearchSuggestions } from "@/lib/query/search-suggestions";
 import { cn } from "@/lib/utils";
 import { toSearchPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
-import { iconBtn } from "@/lib/ui-classes";
 import type { PopularCategory } from "./search/types";
 import {
   sClose,
@@ -33,15 +32,9 @@ import { MobileSearchBody } from "./search/MobileSearchBody";
 
 type SearchToggleProps = {
   popularCategories?: PopularCategory[];
-  // Khi false: chỉ dựng panel/overlay, KHÔNG render nút trigger riêng. Dùng cho
-  // route storefront — nút bấm là HeaderSearchButton trong header, SearchToggle chỉ là "panel host".
-  renderTrigger?: boolean;
 };
 
-export function SearchToggle({
-  popularCategories: categoriesFromApi = [],
-  renderTrigger = true,
-}: SearchToggleProps) {
+export function SearchToggle({ popularCategories: categoriesFromApi = [] }: SearchToggleProps) {
   const t = useTranslations("Search");
   const locale = useLocale() as Locale;
   const router = useRouter();
@@ -50,7 +43,7 @@ export function SearchToggle({
   const wasOpenRef = useRef(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query.trim(), 300);
-  const { isPanelOpen, togglePanel, closePanel } = useHeaderUi();
+  const { isPanelOpen, closePanel } = useHeaderUi();
   const open = isPanelOpen("search");
   const currentSearchQuery = searchParams.get("s") ?? searchParams.get("q") ?? "";
 
@@ -59,20 +52,27 @@ export function SearchToggle({
   const quickSearches = t.raw("quickSearchSuggestions") as string[];
   const trendingSearches = t.raw("trendingSearches") as string[];
   const localCategories = t.raw("popularCategories") as string[];
-  const resolvedCategories: PopularCategory[] = categoriesFromApi.length > 0
-    ? categoriesFromApi
-    : localCategories.map(name => ({ name, slug: "" }));
+  const resolvedCategories: PopularCategory[] =
+    categoriesFromApi.length > 0
+      ? categoriesFromApi
+      : localCategories.map((name) => ({ name, slug: "" }));
 
   const trimmedQuery = query.trim();
   const suggestQuery = open && debouncedQuery.length >= 1;
-  const { data: suggestionResult, isFetching: suggestLoading } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
+  const { data: suggestionResult, isFetching: suggestLoading } = useSearchSuggestions(
+    locale,
+    debouncedQuery,
+    suggestQuery,
+  );
   const suggestions = suggestionResult?.products ?? [];
   const articleSuggestions = suggestionResult?.articles ?? [];
   const isDebouncing = trimmedQuery.length >= 1 && trimmedQuery !== debouncedQuery;
   const isLoading = isDebouncing || suggestLoading;
   const showSuggestions = open && debouncedQuery.length >= 1 && !isLoading;
   const showPreSuggestions =
-    open && !trimmedQuery && !isLoading &&
+    open &&
+    !trimmedQuery &&
+    !isLoading &&
     (recentSearches.length > 0 || trendingSearches.length > 0);
 
   useEffect(() => {
@@ -95,15 +95,6 @@ export function SearchToggle({
     closePanel();
   }
 
-  function handleToggle() {
-    if (open) {
-      handleClose();
-      return;
-    }
-    setQuery(currentSearchQuery);
-    togglePanel("search");
-  }
-
   function runSearch(value = query) {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -123,31 +114,10 @@ export function SearchToggle({
         // về đúng 80px px tại md+ để thanh + dropdown bám sát mép dưới header. Mirror
         // cách mega-menu ghim cứng 80px trong globals.css. Mobile (<md) giữ nguyên
         // (panel full-screen, không phụ thuộc mép header).
-        !renderTrigger && "md:[--bb-header-height:80px]",
+        "md:[--bb-header-height:80px]",
       )}
     >
-      {renderTrigger && (
-        <Button
-          variant="ghost"
-          className={cn(
-            iconBtn,
-            "bb-header-search-trigger hidden md:inline-flex",
-            open && "is-active",
-          )}
-          aria-label={t("toggleAriaLabel")}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          type="button"
-          onClick={handleToggle}
-        >
-          <Search size={20} aria-hidden />
-        </Button>
-      )}
-
-      <div
-        className={cn(sLayer, open && sLayerOpen)}
-        aria-hidden={!open}
-      >
+      <div className={cn(sLayer, open && sLayerOpen)} aria-hidden={!open}>
         <button
           type="button"
           className={cn(sOverlay, open && sOverlayOpen)}
@@ -155,12 +125,7 @@ export function SearchToggle({
           onClick={handleClose}
         />
 
-        <div
-          className={sPanel}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("dialogAriaLabel")}
-        >
+        <div className={sPanel} role="dialog" aria-modal="true" aria-label={t("dialogAriaLabel")}>
           <form
             role="search"
             className={sForm}
@@ -196,9 +161,11 @@ export function SearchToggle({
               aria-label={isLoading ? t("inputPlaceholder") : t("closeAriaLabel")}
               onClick={isLoading ? undefined : handleClose}
             >
-              {isLoading
-                ? <Loader2 size={20} aria-hidden className="animate-spin" />
-                : <X size={20} aria-hidden />}
+              {isLoading ? (
+                <Loader2 size={20} aria-hidden className="animate-spin" />
+              ) : (
+                <X size={20} aria-hidden />
+              )}
             </Button>
           </form>
 

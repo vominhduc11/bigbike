@@ -415,7 +415,7 @@ class ChatClarificationDecisionTest {
     ) {
         return new Category(
                 id, slug, null, name, null, parentId, null, null, null,
-                null, null, null, true, false, null, sortOrder,
+                null, null, true, false, null, sortOrder,
                 null, null, Instant.now(), Instant.now());
     }
 

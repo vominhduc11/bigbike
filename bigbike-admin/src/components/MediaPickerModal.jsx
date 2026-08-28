@@ -15,14 +15,15 @@ import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 import { sendAdminWs } from '../lib/adminWebSocket'
-import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES } from '../lib/mediaConstants'
+import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES, normalizeMediaMimeType } from '../lib/mediaConstants'
 import { evaluateImageDimensions } from '../lib/imageRecommendations'
 import { BrandLogoCropDialog } from './BrandLogoCropDialog'
 import {
-  BRAND_LOGO_MIME,
+  BRAND_LOGO_MIME_TYPES,
   BRAND_LOGO_MAX_BYTES,
   brandLogoIssueTranslationKey,
   getBrandLogoSourceDecision,
+  isBrandLogoBlockingIssue,
   inspectBrandLogoFile,
 } from '../lib/brandLogoPolicy'
 
@@ -91,6 +92,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   // media.write gates uploading new files from inside the picker.
   const canWrite = canRead && hasPermission('media.write')
   const isBrandLogo = Boolean(recommend?.brandLogo)
+  const pickerMimeTypes = kind === 'video' ? VIDEO_MEDIA_MIME_TYPES : ALLOWED_MIME
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -106,6 +108,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   const [uploading, setUploading] = useState(false)
   const [uploadQueue, setUploadQueue] = useState([]) // { name, progress, error }
   const [uploadError, setUploadError] = useState('')
+  const [uploadWarning, setUploadWarning] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [validatingSelection, setValidatingSelection] = useState(false)
@@ -147,7 +150,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       error: '',
       refreshError: '',
     }))
-    fetchMedia({ search: debouncedSearch, mimeType: `${kind}/`, page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+    fetchMedia({ search: debouncedSearch, mimeTypes: pickerMimeTypes, page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
       .then((r) => {
         if (!active) return
         const items = r.items ?? []
@@ -172,7 +175,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           : { status: 'error', items: [], totalPages: 1, error: e.message || '', refreshError: '' })
       })
     return () => { active = false }
-  }, [canRead, debouncedSearch, page, refreshKey, kind, folderFilter, tag])
+  }, [canRead, debouncedSearch, page, refreshKey, kind, folderFilter, tag, pickerMimeTypes])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
   useModalFocusTrap({ modalRef, onClose: attemptClose })
@@ -199,10 +202,28 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     return failure?.message || fallback
   }
 
-  function openCropForFile(file) {
+  function brandLogoQualityFromDetails(details, issues) {
+    return {
+      status: 'VALID',
+      issues,
+      width: details?.width ?? null,
+      height: details?.height ?? null,
+      fileSize: details?.fileSize ?? null,
+      mimeType: details?.mimeType ?? null,
+      transparent: details?.transparent ?? null,
+      ratio: details?.width && details?.height ? details.width / details.height : null,
+    }
+  }
+
+  function openCropForFile(file, details) {
     setUploadError('')
     setSelectedUrl(null)
-    setCropSource({ url: URL.createObjectURL(file), filename: file.name || 'brand-logo.png' })
+    setCropSource({
+      url: URL.createObjectURL(file),
+      filename: file.name || 'brand-logo.png',
+      sourceMimeType: details?.mimeType || file.type || '',
+      sourceTransparent: details?.transparent,
+    })
   }
 
   async function uploadFiles(files) {
@@ -212,17 +233,16 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     }
     const valid = []
     const validationErrors = []
+    const validationWarnings = []
+    setUploadWarning('')
     for (const file of files) {
-      if (isBrandLogo && file.type !== BRAND_LOGO_MIME) {
-        validationErrors.push(brandLogoErrorMessage('NOT_PNG'))
+      const fileType = normalizeMediaMimeType(file.type)
+      if (isBrandLogo && !BRAND_LOGO_MIME_TYPES.includes(fileType)) {
+        validationErrors.push(brandLogoErrorMessage('UNSUPPORTED_TYPE'))
         continue
       }
-      if (isBrandLogo && file.size > BRAND_LOGO_MAX_BYTES) {
-        validationErrors.push(brandLogoErrorMessage('TOO_LARGE', { fileSize: file.size }))
-        continue
-      }
-      if (!ALLOWED_MIME.includes(file.type)) {
-        validationErrors.push(t('media.unsupportedType', { type: file.type || file.name }))
+      if (!pickerMimeTypes.includes(fileType)) {
+        validationErrors.push(t(kind === 'image' ? 'media.unsupportedImageType' : 'media.unsupportedType', { type: file.type || file.name }))
         continue
       }
       if (file.size > MAX_FILE_SIZE) {
@@ -234,16 +254,28 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         try {
           const details = await inspectBrandLogoFile(file)
           const decision = getBrandLogoSourceDecision(details)
-          if (decision.issues.length) {
-            validationErrors.push(decision.issues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
+          const blockingIssues = decision.issues.filter(isBrandLogoBlockingIssue)
+          if (blockingIssues.length) {
+            validationErrors.push(blockingIssues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
             continue
+          }
+          const warningIssues = decision.issues.filter((issue) => !isBrandLogoBlockingIssue(issue))
+          if (warningIssues.length) {
+            validationWarnings.push(warningIssues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
           }
           if (decision.needsCrop) {
             setUploadError(validationErrors.join(' '))
-            openCropForFile(file)
+            setUploadWarning(validationWarnings.join(' '))
+            openCropForFile(file, details)
             return
           }
           dimensions = { width: details.width, height: details.height }
+          valid.push({
+            file,
+            dimensions,
+            logoQuality: brandLogoQualityFromDetails(details, warningIssues),
+          })
+          continue
         } catch {
           validationErrors.push(brandLogoErrorMessage('UNREADABLE'))
           continue
@@ -271,6 +303,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       valid.push({ file, dimensions })
     }
     setUploadError(validationErrors.join(' '))
+    setUploadWarning(validationWarnings.join(' '))
     if (!valid.length) return
 
     setUploading(true)
@@ -281,7 +314,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     const targetClearFolder = folderFilter === 'NONE'
 
     for (const entry of valid) {
-      const { file, dimensions } = entry
+      const { file, dimensions, logoQuality } = entry
       // Khoá theo id duy nhất, KHÔNG theo tên: hai file trùng tên sẽ không còn bị
       // cập nhật nhầm tiến trình lẫn nhau.
       const itemId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
@@ -296,7 +329,12 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
         if (url) {
           uploadedUrls.push(url)
           mediaCacheRef.current.set(url, dimensions
-            ? { ...result.item, width: result.item?.width ?? dimensions.width, height: result.item?.height ?? dimensions.height }
+            ? {
+                ...result.item,
+                width: result.item?.width ?? dimensions.width,
+                height: result.item?.height ?? dimensions.height,
+                ...(logoQuality ? { logoQuality } : {}),
+              }
             : result.item)
           setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100, status: 'done' } : item))
           sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'DONE' })
@@ -326,7 +364,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     if (canRead) {
       setState((p) => ({ ...p, status: p.items.length > 0 ? 'refreshing' : 'loading', error: '', refreshError: '' }))
       try {
-        const r = await fetchMedia({ search: '', mimeType: `${kind}/`, page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
+        const r = await fetchMedia({ search: '', mimeTypes: pickerMimeTypes, page: 1, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
         const items = r.items ?? []
         items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
         setState({ status: 'success', items, totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1), error: '', refreshError: '' })
@@ -374,29 +412,34 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
 
     setValidatingSelection(true)
     setUploadError('')
+    setUploadWarning('')
     try {
       if (!media.id) throw new Error('MEDIA_UNAVAILABLE')
       const { blob, filename } = await fetchMediaBlob(media.id, media.filename || 'brand-logo.png')
       const file = new File([blob], filename || media.filename || 'brand-logo.png', {
-        type: media.mimeType || blob.type || BRAND_LOGO_MIME,
+        type: media.mimeType || blob.type || '',
       })
       const details = await inspectBrandLogoFile(file)
       const decision = getBrandLogoSourceDecision(details)
-      if (decision.issues.length) {
-        setUploadError(decision.issues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
+      const blockingIssues = decision.issues.filter(isBrandLogoBlockingIssue)
+      if (blockingIssues.length) {
+        setUploadError(blockingIssues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
       } else if (decision.needsCrop) {
         if (!canWrite) {
           setUploadError(t('media.permissionDeniedDesc'))
           return
         }
         setSelectedUrl(null)
-        setCropSource({ url: URL.createObjectURL(file), filename: file.name })
+        openCropForFile(file, details)
       } else {
+        const warningIssues = decision.issues.filter((issue) => !isBrandLogoBlockingIssue(issue))
+        setUploadWarning(warningIssues.map((issue) => brandLogoErrorMessage(issue, details)).join(' '))
         mediaCacheRef.current.set(url, {
           ...media,
           width: details.width,
           height: details.height,
           mimeType: details.mimeType,
+          logoQuality: brandLogoQualityFromDetails(details, warningIssues),
         })
         setSelectedUrl(url)
       }
@@ -509,7 +552,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={isBrandLogo ? BRAND_LOGO_MIME : ALLOWED_MIME.join(',')}
+                  accept={pickerMimeTypes.join(',')}
                   multiple
                   className="hidden"
                   onChange={handleFileChange}
@@ -617,6 +660,12 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           <div className="mpicker-upload-error">
             {uploadError}
             <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><IconClose /></Button>
+          </div>
+        )}
+        {uploadWarning && (
+          <div className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-sm border border-warning bg-warning-bg px-3 py-2 text-sm text-warning" role="status">
+            <span>{uploadWarning}</span>
+            <Button variant="unstyled" onClick={() => setUploadWarning('')} aria-label={t('media.picker.dismissError')}><IconClose /></Button>
           </div>
         )}
 
@@ -733,6 +782,8 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
           open
           sourceUrl={cropSource.url}
           filename={cropSource.filename}
+          sourceMimeType={cropSource.sourceMimeType}
+          sourceTransparent={cropSource.sourceTransparent}
           onCancel={closeCrop}
           onComplete={handleCropComplete}
         />

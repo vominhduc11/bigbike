@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.persistence.repository.media;
 
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Locale;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -23,6 +24,19 @@ public final class MediaSpecifications {
         return (root, query, cb) -> cb.like(
                 cb.lower(root.get("mimeType")),
                 prefix.toLowerCase(Locale.ROOT) + "%");
+    }
+
+    public static Specification<MediaEntity> withMimeTypes(Collection<String> mimeTypes) {
+        Collection<String> normalized = mimeTypes == null
+                ? java.util.List.of()
+                : mimeTypes.stream()
+                        .filter(value -> value != null && !value.isBlank())
+                        .map(value -> value.toLowerCase(Locale.ROOT))
+                        .toList();
+        return (root, query, cb) -> {
+            if (normalized.isEmpty()) return cb.disjunction();
+            return cb.lower(root.get("mimeType")).in(normalized);
+        };
     }
 
     public static Specification<MediaEntity> withStorageProvider(String provider) {
