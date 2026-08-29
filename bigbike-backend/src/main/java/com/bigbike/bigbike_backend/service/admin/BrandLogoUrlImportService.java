@@ -21,6 +21,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.apache.tika.Tika;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BrandLogoUrlImportService {
 
-    private static final long MAX_SOURCE_BYTES = BrandLogoValidationService.MAX_BYTES;
+    static final long MAX_SOURCE_BYTES = 10L * 1024 * 1024;
     private static final int MAX_REDIRECTS = 5;
     private static final Set<String> SUPPORTED_MIMES = BrandLogoValidationService.SUPPORTED_MIMES;
     private static final Tika TIKA = new Tika();
@@ -38,9 +39,18 @@ public class BrandLogoUrlImportService {
     private final AdminMediaService adminMediaService;
     private final OkHttpClient httpClient;
 
+    @Autowired
     public BrandLogoUrlImportService(AdminMediaService adminMediaService) {
+        this(adminMediaService, defaultHttpClient());
+    }
+
+    BrandLogoUrlImportService(AdminMediaService adminMediaService, OkHttpClient httpClient) {
         this.adminMediaService = adminMediaService;
-        this.httpClient = new OkHttpClient.Builder()
+        this.httpClient = httpClient;
+    }
+
+    private static OkHttpClient defaultHttpClient() {
+        return new OkHttpClient.Builder()
                 .followRedirects(false)
                 .followSslRedirects(false)
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -110,7 +120,7 @@ public class BrandLogoUrlImportService {
                 long declaredLength = body.contentLength();
                 if (declaredLength > MAX_SOURCE_BYTES) {
                     throw validation("url", "BRAND_LOGO_TOO_LARGE",
-                            "Ảnh logo tối đa 300 KB / the logo must be at most 300 KB.");
+                            "Ảnh logo từ URL không được vượt quá 10 MB / the logo URL source must not exceed 10 MB.");
                 }
                 return readLimited(body.byteStream());
             } catch (IOException e) {
@@ -122,7 +132,7 @@ public class BrandLogoUrlImportService {
                 "URL logo chuyển hướng quá nhiều / the logo URL redirected too many times.");
     }
 
-    private byte[] readLimited(InputStream input) throws IOException {
+    byte[] readLimited(InputStream input) throws IOException {
         try (InputStream stream = input) {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             byte[] buffer = new byte[8192];
@@ -131,7 +141,7 @@ public class BrandLogoUrlImportService {
                 output.write(buffer, 0, read);
                 if (output.size() > MAX_SOURCE_BYTES) {
                     throw validation("url", "BRAND_LOGO_TOO_LARGE",
-                            "Ảnh logo tối đa 300 KB / the logo must be at most 300 KB.");
+                            "Ảnh logo từ URL không được vượt quá 10 MB / the logo URL source must not exceed 10 MB.");
                 }
             }
             return output.toByteArray();

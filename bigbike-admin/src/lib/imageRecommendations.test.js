@@ -44,7 +44,7 @@ describe('brand logo policy', () => {
   })
 
   it('blocks a square logo below the 400×400 minimum', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 200, height: 200 }))
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 300, height: 300 }))
       .toEqual({ needsCrop: false, issues: ['TOO_SMALL'] })
   })
 
@@ -62,18 +62,20 @@ describe('brand logo policy', () => {
     expect(getBrandLogoIssues({ ...validPng, mimeType: 'image/gif' })).toContain('UNSUPPORTED_TYPE')
   })
 
-  it('allows an oversized non-square source to reach the crop encoder', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1000, fileSize: 300 * 1024 + 1 }))
+  it('allows a large non-square source to reach the crop encoder', () => {
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1000, fileSize: 2 * 1024 * 1024 }))
       .toEqual({ needsCrop: true, issues: [] })
   })
 
-  it('still blocks files over 300 KB after they are already square', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, fileSize: 300 * 1024 + 1 }))
-      .toEqual({ needsCrop: false, issues: ['TOO_LARGE'] })
+  it('accepts a large square source without a size issue', () => {
+    expect(getBrandLogoSourceDecision({ ...validPng, fileSize: 3 * 1024 * 1024 }))
+      .toEqual({ needsCrop: false, issues: [] })
+    expect(getBrandLogoIssues({ ...validPng, fileSize: 3 * 1024 * 1024 })).not.toContain('TOO_LARGE')
   })
 
-  it('reports opaque PNG as a warning rather than a blocking issue', () => {
-    expect(getBrandLogoIssues({ ...validPng, transparent: false })).toContain('NOT_TRANSPARENT')
-    expect(getBrandLogoIssues({ ...validPng, fileSize: 300 * 1024 + 1 })).toContain('TOO_LARGE')
+  it('opens crop for a non-square opaque source while keeping transparency soft', () => {
+    const details = { ...validPng, width: 800, height: 1000, transparent: false, fileSize: 2 * 1024 * 1024 }
+    expect(getBrandLogoSourceDecision(details)).toEqual({ needsCrop: true, issues: [] })
+    expect(getBrandLogoIssues(details)).toEqual(['NOT_SQUARE', 'NOT_TRANSPARENT'])
   })
 })

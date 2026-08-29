@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/layout/Modal'
 import {
-  BRAND_LOGO_MAX_BYTES,
-  BRAND_LOGO_MIN_PIXELS,
   brandLogoCheckerboardStyle,
 } from '@/lib/brandLogoPolicy'
 
 const FRAME_SIZE = 420
-const OUTPUT_SIZES = [800, 640, 512, 400]
-const LOSSY_QUALITIES = [0.9, 0.82, 0.74, 0.66, 0.58, 0.5]
+const OUTPUT_SIZE = 800
+const CROP_QUALITY = 0.9
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -39,47 +37,36 @@ async function createCroppedFile(image, crop, filename, sourceMimeType, sourceTr
   const sourceY = clamp(crop.y, 0, image.naturalHeight - targetSide)
   const normalizedSourceMime = (sourceMimeType || '').toLowerCase()
   const preserveTransparency = sourceTransparent !== false && normalizedSourceMime !== 'image/jpeg'
-  let lastBlob = null
+  const canvas = document.createElement('canvas')
+  canvas.width = OUTPUT_SIZE
+  canvas.height = OUTPUT_SIZE
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('BRAND_LOGO_EXPORT_FAILED')
+  context.clearRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    targetSide,
+    targetSide,
+    0,
+    0,
+    OUTPUT_SIZE,
+    OUTPUT_SIZE,
+  )
 
-  for (const outputSize of OUTPUT_SIZES) {
-    const canvas = document.createElement('canvas')
-    canvas.width = outputSize
-    canvas.height = outputSize
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('BRAND_LOGO_EXPORT_FAILED')
-    context.clearRect(0, 0, outputSize, outputSize)
-    context.drawImage(
-      image,
-      sourceX,
-      sourceY,
-      targetSide,
-      targetSide,
-      0,
-      0,
-      outputSize,
-      outputSize,
-    )
-    const encodings = preserveTransparency
-      ? [
-          ...LOSSY_QUALITIES.map((quality) => ({ mimeType: 'image/webp', quality })),
-          { mimeType: 'image/png' },
-        ]
-      : LOSSY_QUALITIES.map((quality) => ({ mimeType: 'image/jpeg', quality }))
-
-    for (const encoding of encodings) {
-      const blob = await canvasToBlob(canvas, encoding.mimeType, encoding.quality)
-      if (!blob || blob.type !== encoding.mimeType) continue
-      lastBlob = blob
-      if (blob.size <= BRAND_LOGO_MAX_BYTES && outputSize >= BRAND_LOGO_MIN_PIXELS) {
-        const safeName = (filename || 'brand-logo').replace(/\.[^.]+$/, '') || 'brand-logo'
-        const extension = encoding.mimeType === 'image/jpeg' ? 'jpg' : encoding.mimeType === 'image/webp' ? 'webp' : 'png'
-        return new File([blob], `${safeName}.${extension}`, { type: encoding.mimeType })
-      }
-    }
+  const primaryMimeType = preserveTransparency ? 'image/webp' : 'image/jpeg'
+  let outputMimeType = primaryMimeType
+  let blob = await canvasToBlob(canvas, primaryMimeType, CROP_QUALITY)
+  if (preserveTransparency && (!blob || blob.type !== primaryMimeType)) {
+    outputMimeType = 'image/png'
+    blob = await canvasToBlob(canvas, outputMimeType)
   }
 
-  if (lastBlob && lastBlob.size > BRAND_LOGO_MAX_BYTES) throw new Error('BRAND_LOGO_TOO_LARGE')
-  throw new Error('BRAND_LOGO_EXPORT_FAILED')
+  if (!blob || blob.type !== outputMimeType) throw new Error('BRAND_LOGO_EXPORT_FAILED')
+  const safeName = (filename || 'brand-logo').replace(/\.[^.]+$/, '') || 'brand-logo'
+  const extension = outputMimeType === 'image/jpeg' ? 'jpg' : outputMimeType === 'image/webp' ? 'webp' : 'png'
+  return new File([blob], `${safeName}.${extension}`, { type: outputMimeType })
 }
 
 export function BrandLogoCropDialog({
@@ -180,11 +167,8 @@ export function BrandLogoCropDialog({
         sourceTransparent,
       )
       await onComplete(file)
-    } catch (cropError) {
-      const key = cropError?.message === 'BRAND_LOGO_TOO_LARGE'
-        ? 'brands.logo.errors.tooLarge'
-        : 'brands.logo.errors.exportFailed'
-      setLocalError(t(key))
+    } catch {
+      setLocalError(t('brands.logo.errors.exportFailed'))
     } finally {
       setBusy(false)
     }

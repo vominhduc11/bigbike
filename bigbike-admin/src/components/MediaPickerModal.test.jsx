@@ -6,6 +6,7 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 
 const mocks = vi.hoisted(() => ({
   fetchMedia: vi.fn(),
+  fetchMediaBlob: vi.fn(),
   fetchMediaFolders: vi.fn(),
   fetchMediaTags: vi.fn(),
   uploadMedia: vi.fn(),
@@ -13,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   showConfirm: vi.fn(),
   readImageFileDimensions: vi.fn(),
   mediaValidation: vi.fn(),
+  getBrandLogoSourceDecision: vi.fn(),
+  isBrandLogoBlockingIssue: vi.fn(),
+  inspectBrandLogoFile: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
@@ -22,6 +26,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../lib/adminApi', () => ({
   fetchMedia: mocks.fetchMedia,
+  fetchMediaBlob: mocks.fetchMediaBlob,
   fetchMediaFolders: mocks.fetchMediaFolders,
   fetchMediaTags: mocks.fetchMediaTags,
   uploadMedia: mocks.uploadMedia,
@@ -46,6 +51,14 @@ vi.mock('../lib/useDebounce', () => ({
 vi.mock('../lib/useMediaDimensions', () => ({
   readImageFileDimensions: mocks.readImageFileDimensions,
   useMediaValidation: () => mocks.mediaValidation(),
+}))
+
+vi.mock('../lib/brandLogoPolicy', () => ({
+  BRAND_LOGO_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
+  brandLogoIssueTranslationKey: (issue) => `brands.logo.errors.${issue}`,
+  getBrandLogoSourceDecision: mocks.getBrandLogoSourceDecision,
+  isBrandLogoBlockingIssue: mocks.isBrandLogoBlockingIssue,
+  inspectBrandLogoFile: mocks.inspectBrandLogoFile,
 }))
 
 vi.mock('../lib/contracts', () => ({
@@ -116,11 +129,25 @@ beforeEach(() => {
   mocks.fetchMediaFolders.mockResolvedValue([])
   mocks.fetchMediaTags.mockResolvedValue([])
   mocks.fetchMedia.mockResolvedValue(mediaResponse([firstMedia]))
+  mocks.fetchMediaBlob.mockResolvedValue({
+    blob: new Blob(['library-image'], { type: 'image/jpeg' }),
+    filename: firstMedia.filename,
+  })
   mocks.uploadMedia.mockImplementation(async (_file, _altText, onProgress) => {
     onProgress?.(100)
     return { item: uploadedMedia }
   })
   mocks.readImageFileDimensions.mockResolvedValue({ width: 200, height: 200 })
+  mocks.inspectBrandLogoFile.mockImplementation(async (file) => ({
+    file,
+    width: 800,
+    height: 800,
+    fileSize: file.size,
+    mimeType: file.type,
+    transparent: true,
+  }))
+  mocks.getBrandLogoSourceDecision.mockReturnValue({ needsCrop: false, issues: [] })
+  mocks.isBrandLogoBlockingIssue.mockReturnValue(false)
   mocks.mediaValidation.mockReturnValue({
     blocked: false,
     status: 'idle',
@@ -341,5 +368,53 @@ describe('MediaPickerModal', () => {
     await user.click(item)
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'media.picker.confirmSingle' })).toBeDisabled())
+  })
+
+  it('cho phép tải file logo lớn hơn mức cũ mà vẫn qua kiểm tra logo', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    renderPicker({ recommend: IMAGE_RECO.logo, onSelect })
+
+    await screen.findByTitle('helmet-one.jpg')
+    const fileInput = document.querySelector('input[type="file"]')
+    const file = new File([new Uint8Array(1024 * 1024)], 'logo-lon.jpg', { type: 'image/jpeg' })
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalledWith(
+      file,
+      '',
+      expect.any(Function),
+      null,
+      false,
+    ))
+    const confirm = screen.getByRole('button', { name: 'media.picker.confirmSingle' })
+    await waitFor(() => expect(confirm).toBeEnabled())
+    await user.click(confirm)
+
+    expect(onSelect).toHaveBeenCalledWith(
+      uploadedMedia.publicUrl,
+      expect.objectContaining({ id: uploadedMedia.id }),
+    )
+  })
+
+  it('cho phép chọn logo lớn đã có trong thư viện', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    renderPicker({ recommend: IMAGE_RECO.logo, onSelect })
+
+    await user.click(await screen.findByTitle('helmet-one.jpg'))
+    await waitFor(() => expect(mocks.fetchMediaBlob).toHaveBeenCalledWith(
+      firstMedia.id,
+      firstMedia.filename,
+    ))
+    const confirm = screen.getByRole('button', { name: 'media.picker.confirmSingle' })
+    await waitFor(() => expect(confirm).toBeEnabled())
+    await user.click(confirm)
+
+    expect(onSelect).toHaveBeenCalledWith(
+      firstMedia.publicUrl,
+      expect.objectContaining({ id: firstMedia.id }),
+    )
   })
 })

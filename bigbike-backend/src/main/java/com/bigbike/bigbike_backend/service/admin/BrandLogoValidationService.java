@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BrandLogoValidationService {
 
-    public static final long MAX_BYTES = 300L * 1024;
     public static final int MIN_PIXELS = 400;
     public static final double RATIO_TOLERANCE = 0.01d;
     public static final Set<String> SUPPORTED_MIMES = Set.of(
@@ -123,7 +122,7 @@ public class BrandLogoValidationService {
         if (media == null || !MINIO_PROVIDER.equalsIgnoreCase(media.getStorageProvider())
                 || media.getFilePath() == null || media.getFilePath().isBlank()
                 || !"ACTIVE".equalsIgnoreCase(media.getStatus())) {
-            issues.addAll(metadataIssues(width, height, fileSize, mimeType));
+            issues.addAll(metadataIssues(width, height, mimeType));
             issues.add("MEDIA_UNAVAILABLE");
             issues.add("TRANSPARENCY_UNVERIFIED");
         } else {
@@ -136,7 +135,7 @@ public class BrandLogoValidationService {
                 transparent = inspection.transparent();
                 issues.addAll(inspection.issues());
             } else {
-                issues.addAll(metadataIssues(width, height, fileSize, mimeType));
+                issues.addAll(metadataIssues(width, height, mimeType));
                 issues.add("MEDIA_UNAVAILABLE");
                 issues.add("TRANSPARENCY_UNVERIFIED");
             }
@@ -198,11 +197,6 @@ public class BrandLogoValidationService {
 
         long fileSize = bytes.length;
         String detected = TIKA.detect(bytes).toLowerCase(java.util.Locale.ROOT);
-        if (fileSize > MAX_BYTES) {
-            return new Inspection(true, null, null, fileSize, detected,
-                    null, List.of("TOO_LARGE"));
-        }
-
         if (!SUPPORTED_MIMES.contains(detected)) {
             return new Inspection(true, null, null, fileSize, detected, null,
                     List.of("UNSUPPORTED_TYPE"));
@@ -253,9 +247,6 @@ public class BrandLogoValidationService {
             int read;
             while ((read = input.read(buffer)) != -1) {
                 output.write(buffer, 0, read);
-                if (output.size() > MAX_BYTES) {
-                    return output.toByteArray();
-                }
             }
             return output.toByteArray();
         }
@@ -274,7 +265,6 @@ public class BrandLogoValidationService {
     private static List<String> metadataIssues(
             Integer width,
             Integer height,
-            Long fileSize,
             String mimeType
     ) {
         List<String> issues = new ArrayList<>();
@@ -288,7 +278,6 @@ public class BrandLogoValidationService {
                 issues.add("TOO_SMALL");
             }
         }
-        if (fileSize != null && fileSize > MAX_BYTES) issues.add("TOO_LARGE");
         if (mimeType != null && !mimeType.isBlank()
                 && !SUPPORTED_MIMES.contains(mimeType.toLowerCase(java.util.Locale.ROOT))) {
             issues.add("UNSUPPORTED_TYPE");
@@ -310,7 +299,6 @@ public class BrandLogoValidationService {
         String message = switch (issue) {
             case "NOT_SQUARE" -> "Logo phải vuông, tỉ lệ 1:1 (sai lệch tối đa 1%) / the logo must be square, 1:1 (maximum 1% tolerance).";
             case "TOO_SMALL" -> "Ảnh logo tối thiểu 400 × 400 điểm ảnh / the logo must be at least 400 × 400 pixels.";
-            case "TOO_LARGE" -> "Ảnh logo tối đa 300 KB / the logo must be at most 300 KB.";
             case "UNSUPPORTED_TYPE" -> "Logo chỉ nhận JPEG/JPG, PNG hoặc WebP / the logo must be a JPEG/JPG, PNG, or WebP image.";
             case "UNREADABLE" -> "Không đọc được nội dung ảnh logo / the logo image content could not be read.";
             default -> "Logo không đạt chuẩn / the logo does not meet the brand-logo standard.";

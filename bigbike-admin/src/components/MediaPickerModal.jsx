@@ -21,7 +21,6 @@ import { BrandLogoCropDialog } from './BrandLogoCropDialog'
 import { HelpTooltip } from './HelpTooltip'
 import {
   BRAND_LOGO_MIME_TYPES,
-  BRAND_LOGO_MAX_BYTES,
   brandLogoIssueTranslationKey,
   getBrandLogoSourceDecision,
   isBrandLogoBlockingIssue,
@@ -188,8 +187,6 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     return t(brandLogoIssueTranslationKey(issue), {
       w: details?.width,
       h: details?.height,
-      size: formatBytes(details?.fileSize || 0),
-      limit: formatBytes(BRAND_LOGO_MAX_BYTES),
       defaultValue: t('common.unknown'),
     })
   }

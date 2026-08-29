@@ -8,7 +8,6 @@ const ISSUE_KEYS = {
   LEGACY_LOGO: 'brands.logo.quality.issueLegacy',
   NOT_SQUARE: 'brands.logo.quality.issueNotSquare',
   TOO_SMALL: 'brands.logo.quality.issueTooSmall',
-  TOO_LARGE: 'brands.logo.quality.issueTooLarge',
   UNSUPPORTED_TYPE: 'brands.logo.quality.issueUnsupportedType',
   NOT_TRANSPARENT: 'brands.logo.quality.issueNotTransparent',
   TRANSPARENCY_UNVERIFIED: 'brands.logo.quality.issueTransparencyUnverified',

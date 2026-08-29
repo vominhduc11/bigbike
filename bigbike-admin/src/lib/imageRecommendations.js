@@ -42,7 +42,6 @@ export const IMAGE_RECO = {
     ratioTolerance: 0.01,
     brandLogo: true,
     allowCrop: true,
-    maxBytes: 300 * 1024,
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
     requiresTransparency: false,
   },

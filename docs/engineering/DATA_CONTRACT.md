@@ -1440,24 +1440,23 @@ chọn file hoặc nhập URL, media phải được lưu vào MinIO trước, s
 |---|---|---|---|
 | `logoStandardizedAt` | `logo_standardized_at` | `TIMESTAMPTZ NULL` | Có giá trị khi logo mới/thay thế đã vượt qua toàn bộ chuẩn logo; `NULL` giữ nghĩa logo legacy/chưa chuẩn hóa. Migration `V1064` không sửa 18 logo cũ. |
 
-Logo mới/thay thế nhận JPEG/JPG, PNG hoặc WebP; bytes cuối cùng không quá `307200`
-bytes, kích thước tối thiểu 400×400, tỉ lệ nằm trong ±1% của 1:1. Ảnh có một chiều nhỏ
-hơn 400 bị chặn; ảnh chưa vuông được cắt trong admin bằng vùng vuông admin chọn; server
-chỉ kiểm tra bản cuối, không tự cắt hoặc đệm. Nền trong suốt không còn là điều kiện chặn:
-logo không có alpha được lưu nhưng quality trả về cảnh báo. Bộ cắt phải mã hóa bản cuối
-không vượt 300 KB. Logo cũ được grandfathered khi URL không đổi: vẫn trả về bình thường,
-không bị chặn khi sửa field khác. Nếu media legacy không còn đọc/đo được, admin quality
-dùng `TRANSPARENCY_UNVERIFIED` thay vì đoán là nền đặc.
+Logo mới/thay thế nhận JPEG/JPG, PNG hoặc WebP; không còn trần dung lượng riêng cho logo,
+kích thước tối thiểu 400×400, tỉ lệ nằm trong ±1% của 1:1. Ảnh có một chiều nhỏ hơn 400
+bị chặn; ảnh chưa vuông được cắt trong admin bằng vùng vuông admin chọn; server chỉ kiểm tra
+bản cuối, không tự cắt hoặc đệm. Nền trong suốt không còn là điều kiện chặn: logo không có
+alpha được lưu nhưng quality trả về cảnh báo. Logo cũ được grandfathered khi URL không đổi:
+vẫn trả về bình thường, không bị chặn khi sửa field khác. Nếu media legacy không còn đọc/đo
+được, admin quality dùng `TRANSPARENCY_UNVERIFIED` thay vì đoán là nền đặc.
 
 Admin Brand response thêm field tùy chọn `logoQuality` (public Brand response không trả field
 này): `{ status, issues[], width, height, fileSize, mimeType, transparent, ratio }`.
 `status` là `MISSING`, `LEGACY`, `VALID` hoặc `INVALID`; `issues[]` dùng các mã ổn định
-`MISSING_LOGO`, `LEGACY_LOGO`, `NOT_SQUARE`, `TOO_SMALL`, `TOO_LARGE`, `UNSUPPORTED_TYPE`,
+`MISSING_LOGO`, `LEGACY_LOGO`, `NOT_SQUARE`, `TOO_SMALL`, `UNSUPPORTED_TYPE`,
 `NOT_TRANSPARENT`, `TRANSPARENCY_UNVERIFIED` và `MEDIA_UNAVAILABLE`. `NOT_TRANSPARENT` chỉ
 là cảnh báo chất lượng, không phải lỗi khóa lưu. Đây là dữ liệu cảnh
 báo/hiển thị, không phải cờ khóa việc sửa Brand.
 
-Status: `OWNER_CONFIRMED_2026-08-28` — `BrandEntity.logoStandardizedAt`, `ImageAssetRequest.mediaId`,
+Status: `OWNER_CONFIRMED_2026-08-29` — `BrandEntity.logoStandardizedAt`, `ImageAssetRequest.mediaId`,
 `BrandLogoValidationService`, migration `V1064__add_brand_logo_standardized_at.sql`.
 
 ### English URL slug — `slug_en` (V213 categories / V214 products / V216 articles)
