@@ -641,7 +641,6 @@ export function createCategorySchema(t) {
       bannerImageAlt: z.string().optional(),
       heroImageUrl: z.string().optional(),
       heroImageAlt: z.string().optional(),
-      menuIconUrl: z.string().optional(),
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
@@ -690,11 +689,6 @@ export function createCategorySchema(t) {
       }
       if (data.heroImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.heroImageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errHeroImageUrl'), path: ['heroImageUrl'] })
-      }
-      // CATEGORY_RULE_010: a child has no menu icon field in the UI. Ignore any
-      // stale draft value here as well; the backend remains the final authority.
-      if (!data.parentId?.trim() && data.menuIconUrl?.trim() && !MEDIA_URL_REGEX.test(data.menuIconUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errMenuIconUrl'), path: ['menuIconUrl'] })
       }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoTitleTooLong'), path: ['seoTitle'] })

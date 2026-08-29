@@ -10839,6 +10839,11 @@
           },
           "cssClass": {
             "type": "string"
+          },
+          "iconUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Level-1 category image URL used as the current-colour header-menu mask; null for child categories, non-category items or categories without an image."
           }
         }
       },
@@ -12789,7 +12794,7 @@
           "menuIconUrl": {
             "type": "string",
             "nullable": true,
-            "description": "Root-category header-menu icon only; child categories always return null."
+            "description": "Legacy menu-icon URL retained for compatibility only; the active header-menu icon comes from image.url and this field is not rendered."
           },
           "bannerImage": {
             "$ref": "#/components/schemas/ImageAsset",
@@ -12941,14 +12946,15 @@
           },
           "image": {
             "$ref": "#/components/schemas/ImageAsset",
-            "description": "Homepage category thumbnail. On create or URL replacement, width and height must be positive and exactly equal (1:1); no minimum pixel size. An unchanged legacy URL remains grandfathered."
+            "description": "Shared category image for the homepage grid and the level-1 header-menu icon. Select from internal media. On create or URL replacement, width and height must be positive and exactly equal (1:1); no minimum pixel size. An unchanged legacy URL remains grandfathered."
           },
           "icon": {
             "$ref": "#/components/schemas/ImageAsset"
           },
           "menuIcon": {
             "$ref": "#/components/schemas/ImageAsset",
-            "description": "Root-category header-menu icon only; child categories silently ignore this block and persist null. Demoting clears the icon; promoting does not restore it. Only url is persisted."
+            "deprecated": true,
+            "description": "Legacy compatibility input only. The current admin omits this block; omitting it preserves the stored legacy value, and the public menu does not use it. Only url is persisted for clients that still send it."
           },
           "banner": {
             "$ref": "#/components/schemas/ImageAsset"

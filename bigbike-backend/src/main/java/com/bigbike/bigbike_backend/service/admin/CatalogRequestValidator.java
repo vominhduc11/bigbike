@@ -701,10 +701,9 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getIconUrl(),
                 errors
         );
-        // CATEGORY_RULE_010: menuIcon is meaningful only for a root category. The request DTO
-        // deliberately does not cascade Bean Validation for this field because an update may omit
-        // parentId and only the merged entity tells us whether the result is a child. This keeps a
-        // stale/invalid menuIcon from blocking an otherwise valid child save.
+        // CATEGORY_RULE_010: menuIcon is a legacy compatibility field. Keep its old validation
+        // boundary for clients that still send it, while allowing stale/invalid values to be
+        // ignored for a child category and letting the current admin omit the field entirely.
         if (!categoryWillBeChild(request, current, create)) {
             boolean menuIconShapeValid = validateCategoryMenuIconShape(request.getMenuIcon(), errors);
             if (menuIconShapeValid) {
@@ -718,8 +717,8 @@ public class CatalogRequestValidator {
             }
         }
         // Desktop banner is admin-managed media and must satisfy the same MinIO whitelist as
-        // image/icon/menuIcon. Previously unvalidated, which let a category hero
-        // point at an external host; existing URLs stay grandfathered so legacy rows still save.
+        // image/icon (and the legacy menuIcon input). Previously unvalidated, which let a category
+        // hero point at an external host; existing URLs stay grandfathered so legacy rows still save.
         AdminMutationValidators.validateImageAsset(
                 request.getBanner(),
                 "banner",
@@ -834,8 +833,8 @@ public class CatalogRequestValidator {
     }
 
     /**
-     * Preserves the former ImageAssetRequest boundary constraints for root-category menu icons.
-     * Child-category menu icons are intentionally ignored before this method is reached.
+     * Preserves the former ImageAssetRequest boundary constraints for legacy root-category
+     * menu-icon clients. The current admin no longer exposes this input.
      */
     private static boolean validateCategoryMenuIconShape(
             ImageAssetRequest image,

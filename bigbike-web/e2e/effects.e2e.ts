@@ -227,6 +227,19 @@ test.describe("Effects — mobile @390", () => {
     const desktopIconCount = await page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").count();
     const mobileIconCount = await drawer.locator("[data-header-submenu-icon]").count();
     expect(mobileIconCount, "mobile menu should render category icons").toBeGreaterThanOrEqual(desktopIconCount);
+    if (desktopIconCount > 0) {
+      await expect(page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first())
+        .toHaveClass(/\bw-6\b/);
+      await expect(page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first())
+        .toHaveClass(/\bh-6\b/);
+    }
+    if (mobileIconCount > 0) {
+      await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveAttribute(
+        "data-header-submenu-icon-depth", "1",
+      );
+      await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveClass(/\bw-6\b/);
+      await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveClass(/\bh-6\b/);
+    }
     const openingMotion = await drawer.evaluate((el) => {
       const rect = el.getBoundingClientRect();
       const styles = getComputedStyle(el);

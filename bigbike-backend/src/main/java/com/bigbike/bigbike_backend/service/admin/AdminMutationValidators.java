@@ -118,7 +118,7 @@ final class AdminMutationValidators {
 
     /**
      * {@code existingUrl} is the URL already persisted on the entity for this single-image field
-     * (product.image, category.image/icon/menuIcon, brand.logo, article.coverImage). A match is
+     * (product.image, category.image/icon, legacy category.menuIcon, brand.logo, article.coverImage). A match is
      * grandfathered and skips the MinIO whitelist check — mirrors the gallery/content-block legacy
      * tolerance (MEDIA_RULE_002/003) so editing a legacy record whose image still hotlinks the old
      * WordPress host is never blocked; only a genuinely NEW url must pass the whitelist.

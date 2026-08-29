@@ -396,14 +396,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   function handleParentChange(value) {
     const parentId = value === '__none__' ? '' : value
-    // CATEGORY_RULE_010: hierarchy changes clear the icon immediately. A
-    // promoted category therefore starts blank and must be selected again.
-    setForm((previous) => ({ ...previous, parentId, menuIconUrl: '' }))
+    setForm((previous) => ({ ...previous, parentId }))
     setValidationErrors((previous) => {
-      if (!previous.parentId && !previous.menuIconUrl) return previous
+      if (!previous.parentId) return previous
       const next = { ...previous }
       delete next.parentId
-      delete next.menuIconUrl
       return next
     })
   }
@@ -606,7 +603,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     form.bannerImageUrl,
     form.heroImageUrl,
   ]
-  if (!isChildCategory) imageValues.push(form.menuIconUrl)
   const imageCount = imageValues.filter((v) => Boolean(v?.trim())).length
   const currentSlug = isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug
   const displayName = isEnLang ? (form.translations?.en?.name || form.name) : form.name
@@ -654,11 +650,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             type="button"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
-              const recoveredForm = draftRecovery.form
-              setForm({
-                ...recoveredForm,
-                menuIconUrl: String(recoveredForm?.parentId ?? '').trim() ? '' : recoveredForm?.menuIconUrl || '',
-              })
+              const recoveredForm = { ...(draftRecovery.form || {}) }
+              // Drafts created before the field was removed must not resurrect it in the form.
+              delete recoveredForm.menuIconUrl
+              setForm(recoveredForm)
               setDraftRecovery(null)
               setSlugManuallyEdited(true)
               setEnSlugManuallyEdited(Boolean(recoveredForm?.translations?.en?.slug))
@@ -761,9 +756,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           icon={ImageIcon}
           tone={imageCount > 0 ? 'success' : 'info'}
           label={t('categories.detail.imagesMetric')}
-          value={`${imageCount}/${isChildCategory ? 3 : 4}`}
+          value={`${imageCount}/3`}
           hint={t(isChildCategory ? 'categories.detail.imagesMetricHintChild' : 'categories.detail.imagesMetricHint', {
-            defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục, banner, ảnh minh hoạ và biểu tượng menu',
+            defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục dùng cho lưới trang chủ và biểu tượng menu, banner, ảnh minh hoạ',
           })}
         />
       </div>
@@ -904,7 +899,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <div className="flex flex-col gap-2" data-field="imageUrl">
                   <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
                     {t('categories.detail.imageUrl')}
-                    <HelpTooltip content={t('categories.detail.imageUrlHint')} />
+                    <HelpTooltip content={t(isChildCategory ? 'categories.detail.imageUrlHintChild' : 'categories.detail.imageUrlHint', {
+                      defaultValue: isChildCategory
+                        ? 'Ảnh vuông dùng ở lưới danh mục trang chủ. Danh mục con không hiển thị biểu tượng trong menu đầu trang; không có yêu cầu kích thước điểm ảnh tối thiểu.'
+                        : 'Ảnh vuông, nét vẽ một màu trên nền trong suốt. Ảnh này dùng ở lưới danh mục trang chủ và làm biểu tượng cạnh tên danh mục cấp 1 trong menu đầu trang. Ảnh chụp hoặc nền đặc sẽ hiện thành khối đen trong menu. Không yêu cầu kích thước tối thiểu.',
+                    })} />
                   </span>
                   <ImageUrlInput
                     value={form.imageUrl}
@@ -949,21 +948,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     recommend={IMAGE_RECO.illustration}
                   />
                 </div>
-                {!isChildCategory ? (
-                  <div className="flex flex-col gap-2 md:col-span-2" data-field="menuIconUrl">
-                    <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                      {t('categories.detail.menuIconUrl')}
-                      <HelpTooltip content={t('categories.detail.menuIconUrlHint')} />
-                    </span>
-                    <ImageUrlInput
-                      value={form.menuIconUrl}
-                      onChange={(url) => updateField('menuIconUrl', url)}
-                      previewAlt={t('categories.detail.menuIconAlt')}
-                      disabled={isReadOnly}
-                      error={validationErrors.menuIconUrl}
-                    />
-                  </div>
-                ) : null}
               </div>
             </DetailSection>
 

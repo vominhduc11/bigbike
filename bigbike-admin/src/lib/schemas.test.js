@@ -345,29 +345,16 @@ describe('createCategorySchema — CATEGORY_RULE_001 and TRANSLATION_RULE_002', 
       imageUrl: 'https://cdn.example.test/category.jpg', imageAlt: 'Ảnh danh mục',
       bannerImageUrl: 'https://cdn.example.test/banner.jpg', bannerImageAlt: 'Banner desktop',
       heroImageUrl: 'https://cdn.example.test/hero.jpg', heroImageAlt: 'Minh họa hero',
-      menuIconUrl: 'https://cdn.example.test/menu.svg',
     }))
 
     expect(valid.success).toBe(true)
   })
 
-  it('ignores a stale invalid menu icon value when the category is a child', () => {
+  it('does not validate the removed legacy menu icon field', () => {
     const schema = createCategorySchema(t)
-    const child = schema.safeParse(categoryForm({
-      parentId: 'cat_parent',
-      menuIconUrl: 'javascript:legacy-child-icon',
-    }))
+    const result = schema.safeParse(categoryForm({ menuIconUrl: 'javascript:legacy-icon' }))
 
-    expect(child.success).toBe(true)
-  })
-
-  it('still validates the menu icon URL for a root category', () => {
-    const schema = createCategorySchema(t)
-    const root = schema.safeParse(categoryForm({
-      menuIconUrl: 'javascript:invalid-root-icon',
-    }))
-
-    expect(root.success).toBe(false)
-    expect(pathsOf(root)).toContain('menuIconUrl')
+    expect(result.success).toBe(true)
+    expect(pathsOf(result)).not.toContain('menuIconUrl')
   })
 })

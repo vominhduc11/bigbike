@@ -591,7 +591,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 **Ghi:**
 - `POST /api/v1/admin/categories` và `PATCH /api/v1/admin/categories/{id}` nhận `UpsertCategoryRequest`: name/slug VI, `translations.en.name` bắt buộc khi field name được tạo/sửa, `slugEn` tùy chọn, parent, mô tả/intro/SEO song ngữ, asset theo vai trò, `sortOrder` và `showOnHomepage`.
-- **Ảnh theo vai trò** (`image` thumbnail lưới, `icon` hero, `menuIcon` biểu tượng menu, `banner` hero desktop): `menuIcon` chỉ có hiệu lực với danh mục gốc. Với danh mục con, máy chủ bỏ qua im lặng mọi `menuIcon` được gửi và luôn lưu `menu_icon_url = NULL`, không trả lỗi riêng cho field này; hạ root thành con cũng xoá icon. Với root, `menuIcon` và các ảnh khác đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `<vai trò>.url`. Riêng `category.image`, khi tạo mới hoặc đổi URL, bắt buộc `width` và `height` là số dương bằng nhau tuyệt đối; không có ngưỡng pixel tối thiểu. Vi phạm trả `400 VALIDATION_ERROR` với `field = image.url`, `code = CATEGORY_IMAGE_NOT_SQUARE` và message nêu kích thước thực tế; thiếu kích thước trả `code = CATEGORY_IMAGE_DIMENSIONS_REQUIRED`. URL ảnh cũ không đổi được miễn kiểm tra tỉ lệ để vẫn sửa được thông tin danh mục. Gửi `url: ""`/`null` để xóa ảnh. `alt` bị ghi đè mỗi lần lưu nên form luôn gửi kèm (audit 2026-07-28 — trước đây `banner` **không** được máy chủ kiểm whitelist dù form đã kiểm định dạng, để lọt ảnh hero trỏ host ngoài).
+- **Ảnh theo vai trò** (`image` ảnh dùng chung cho lưới danh mục và biểu tượng menu cấp 1, `icon` hero, `banner` hero desktop): `image` phải được chọn từ kho ảnh nội bộ. Khi tạo mới hoặc đổi URL, `image.width` và `image.height` phải là số dương bằng nhau tuyệt đối; không có ngưỡng pixel tối thiểu. Vi phạm trả `400 VALIDATION_ERROR` với `field = image.url`, `code = CATEGORY_IMAGE_NOT_SQUARE` và message nêu kích thước thực tế; thiếu kích thước trả `code = CATEGORY_IMAGE_DIMENSIONS_REQUIRED`. URL ảnh cũ không đổi được miễn kiểm tra tỉ lệ để vẫn sửa được thông tin danh mục. Gửi `url: ""`/`null` để xóa ảnh. `alt` bị ghi đè mỗi lần lưu nên form luôn gửi kèm. `menuIcon` vẫn tồn tại trong DTO như field tương thích cho client cũ: giao diện quản trị hiện tại không gửi field này, việc bỏ qua field này khi PATCH giữ nguyên `menu_icon_url` cũ; menu công khai không còn dùng nó. Client cũ gửi `menuIcon` vẫn được máy chủ xử lý theo hợp đồng tương thích và chịu whitelist kho ảnh nội bộ; không được dùng field này để thay đổi nguồn biểu tượng mới. (audit 2026-07-28 — trước đây `banner` **không** được máy chủ kiểm whitelist dù form đã kiểm định dạng, để lọt ảnh hero trỏ host ngoài).
 - **Xóa mô tả / khối giới thiệu**: `description` và `introContent` theo presence-flag — **không gửi** field thì giữ nguyên, gửi chuỗi rỗng `""` thì xóa. Form quản trị luôn gửi cả hai (kể cả rỗng) để admin xóa được nội dung cũ, cùng cách form luôn gửi khối `seo`.
 - `isVisible` là patch trạng thái riêng (`PATCH /{id}`); ẩn Category có con trực tiếp đang hiển thị trả `409` với hướng dẫn ẩn hoặc chuyển cha cho con trước. Không áp dụng kiểm tra đệ quy.
 - `showOnHomepage` độc lập với `isVisible` và `deleted`, mặc định `false`. Create client không gửi field ở giá trị mặc định; PATCH bỏ field giữ nguyên. `seo` bị bỏ qua thì giữ nguyên, SEO được gửi với text trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ gồm ảnh chia sẻ.
@@ -1603,31 +1603,29 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.validateCategoryTarget`,
 (cột có sẵn, không migration mới), `CategoryEntity.name/nameEn/slug/slugEn`,
 `AdminMenuServiceTest`.
 
-### Menu/category line-icon — DB-driven with legacy slug fallback (V213/V360)
+### Menu/category icon — shared category image, legacy field retained (V213/V360/V1069)
 
-`GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc). Shape **không đổi**;
-chỉ đổi **nguồn**:
-- Ưu tiên resolve theo danh mục trong DB: backend tách slug từ URL mục menu (`/danh-muc/{slug}` cho VI,
-  `/categories/{slugEn}` cho EN) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
-- Nếu mục menu là item legacy không còn category record tương ứng, backend dùng fallback slug→icon cho các
-  menu/header item lịch sử của WP, với asset phục vụ từ MinIO (`/media/uploads/wp-icons/*`).
+`GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl`; shape **không đổi**. Với mục liên kết tới
+danh mục cấp 1, `iconUrl` được lấy từ `CategoryEntity.imageUrl` (`category.image`). Ảnh được storefront
+render bằng mặt nạ theo `currentColor`, nên hình đổi theo màu chữ. Mục danh mục cấp 2/cấp 3, mục không
+phải danh mục hoặc danh mục cấp 1 chưa có ảnh trả `iconUrl = null`; tên và đường dẫn của mục vẫn được giữ.
+Không còn bảng đối chiếu tĩnh theo đường dẫn WordPress cũ và không có fallback icon ngoài dữ liệu danh mục.
+Khung hiển thị 24×24px ở cả menu máy tính và điện thoại; chiều cao dòng menu giữ nguyên.
 
-`GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category.
-Field này chỉ phục vụ biểu tượng cạnh tên danh mục gốc trong menu đầu trang website; bộ lọc
-"Danh mục sản phẩm" không đọc field này. Xem `DATA_CONTRACT` §"Category header menu icon".
+`GET /api/v1/categories`, `/api/v1/categories/{slug}` và các response Category vẫn có thể trả field
+`menuIconUrl` để client cũ đọc dữ liệu legacy. Field này không còn là nguồn icon công khai, không còn ô
+nhập trong admin, và file ảnh cũ không bị xoá. Xem `DATA_CONTRACT` §"Category media and SEO write shape".
 
-**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận `menuIcon` (`ImageAssetRequest`, chỉ `url`
-được lưu vào `menu_icon_url`). Với danh mục gốc, field đi qua whitelist media như `image`/`icon`/`banner`;
-presence-flag vẫn giữ nguyên: bỏ khóa `menuIcon` thì PATCH giữ icon cũ, gửi `menuIcon: { url: null }`
-để xoá. Với danh mục con, máy chủ luôn ghi trống và âm thầm bỏ qua payload, kể cả khi client cũ còn
-gửi icon. Khi chuyển root thành con, icon bị xoá; chuyển ngược thành root không tự khôi phục icon.
-Admin sửa icon này ở form danh mục (`CategoryDetailScreen`, field "Biểu tượng menu"). Khác với `icon`
-(ảnh hero trang danh mục → `icon_url`).
+**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` dùng `image` cho cả ảnh lưới trang chủ và icon
+menu cấp 1. `menuIcon` vẫn được chấp nhận ở DTO như đường tương thích cho client cũ; admin hiện tại bỏ
+qua field này, nên PATCH không có `menuIcon` sẽ giữ nguyên `menu_icon_url` cũ. Explicit `menuIcon` của
+client cũ vẫn được xử lý theo hợp đồng cũ, nhưng không làm thay đổi nguồn icon mới của menu.
 
-Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl`
-(DB lookup + legacy slug fallback), `Category` domain record (`menuIconUrl`), `CatalogController`
-`/categories`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`,
-`CatalogRequestValidator`, migration `V1065__clear_category_child_menu_icons.sql`, migrations `V213`/`V360`.
+Status: `OWNER_CONFIRMED_2026-08-29` + `CONFIRMED_FROM_CODE` — `AdminMenuService` resolve
+`CategoryEntity.imageUrl` theo `targetId`/URL hiện hành, `Category`/`CategoryResponse` giữ field
+`menuIconUrl` tương thích, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`,
+`CatalogRequestValidator`, migration `V1065__clear_category_child_menu_icons.sql` (lịch sử),
+`V1069__move_khuyen_mai_hot_menu_icon_to_category_image.sql`.
 
 ### Category `introContent` — khối giới thiệu ĐẦU trang danh mục (admin-editable)
 

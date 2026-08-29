@@ -27,7 +27,6 @@ export function buildEmptyForm() {
     heroImageWidth: null,
     heroImageHeight: null,
     heroImageMimeType: '',
-    menuIconUrl: '',
     seoTitle: '',
     seoDescription: '',
     seoNoIndex: false,
@@ -64,9 +63,6 @@ export function buildFormFromItem(item) {
     heroImageWidth: item.icon?.width ?? null,
     heroImageHeight: item.icon?.height ?? null,
     heroImageMimeType: item.icon?.mimeType || '',
-    // CATEGORY_RULE_010: a child never hydrates a menu icon, including legacy
-    // data that has not yet been cleaned by the server migration.
-    menuIconUrl: parentId ? '' : item.menuIconUrl || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
@@ -181,8 +177,7 @@ export function toPayload(form, { isCreate = false } = {}) {
   const bannerImageUrl = form.bannerImageUrl.trim()
   payload.banner = bannerImageUrl ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null } : { url: null }
 
-  // Ảnh minh hoạ hero (WP ACF "image_left") → backend field `icon` (icon_url). Đây là ảnh
-  // web hiển thị ở hero trang danh mục; KHÁC `image` (thumbnail lưới) và `menuIcon` (icon menu).
+  // Ảnh minh hoạ hero (WP ACF "image_left") → backend field `icon` (icon_url).
   const heroImageUrl = form.heroImageUrl.trim()
   payload.icon = heroImageUrl
     ? {
@@ -193,11 +188,6 @@ export function toPayload(form, { isCreate = false } = {}) {
         mimeType: form.heroImageMimeType?.trim() || null,
       }
     : { url: null }
-
-  // CATEGORY_RULE_010: menu icons belong to root categories only. Keep sending
-  // an explicit empty block for children so a demotion clears the stored URL.
-  const menuIconUrl = parentId ? '' : String(form.menuIconUrl ?? '').trim()
-  payload.menuIcon = menuIconUrl ? { url: menuIconUrl } : { url: null }
 
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()

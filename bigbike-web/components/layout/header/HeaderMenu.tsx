@@ -232,13 +232,15 @@ function DesktopSubmenu({
               current={current}
               onClick={onNavigate}
               className={cn(
-                "flex items-center px-6 py-3.5 font-body text-a5-meta font-semibold normal-case no-underline! hover:text-brand-on-dark!",
+                // Keep the existing 44px desktop submenu row while the mask grows to 24px.
+                "flex items-center px-6 py-2.5 font-body text-a5-meta font-semibold normal-case no-underline! hover:text-brand-on-dark!",
                 active ? "text-brand-on-dark!" : "text-muted-foreground!",
               )}
             >
-              {node.iconUrl ? (
+              {node.iconUrl && depth === 0 ? (
                 <span
                   data-header-submenu-icon
+                  data-header-submenu-icon-depth={depth}
                   className={`${submenuIcon} mr-2 align-middle`}
                   style={{
                     maskImage: `url(${node.iconUrl})`,
@@ -330,9 +332,10 @@ function MobileMenuList({
                 active ? "text-brand-on-dark!" : "text-white!",
               )}
             >
-              {node.iconUrl ? (
+              {node.iconUrl && depth === 1 ? (
                 <span
                   data-header-submenu-icon
+                  data-header-submenu-icon-depth={depth}
                   className={`${submenuIcon} mr-2 mt-1`}
                   style={{
                     maskImage: `url(${node.iconUrl})`,

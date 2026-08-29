@@ -100,7 +100,12 @@ Khung xem trước chỉ để **xem giao diện**, nên các thao tác/điều 
 - **Panel phải:** L3 dạng grid nhiều cột. L4 hiện dạng sub-list thụt lề dưới L3 cha (không dùng flyout thêm cấp).
 - Default-active: nhóm L2 đầu tiên có con.
 
-**Mobile/tablet/desktop hẹp (<1280px):** Giữ nguyên accordion (`MobileHeaderMenu`) qua nút hamburger, không thay đổi. Khối thông tin liên hệ đi cùng ngăn kéo này; trên desktop rộng không có ngăn kéo thông tin liên hệ riêng.
+**Biểu tượng danh mục trong header (owner decision 2026-08-29):** chỉ 10 mục danh mục cấp 1 dưới
+“Tất cả sản phẩm” được hiển thị biểu tượng. Biểu tượng lấy từ `category.image`, tô theo màu chữ và
+hiển thị trong khung 24×24px ở cả máy tính lẫn điện thoại; không làm dòng menu cao thêm. Danh mục cấp
+2/cấp 3 không hiện biểu tượng. Danh mục cấp 1 chưa có ảnh vẫn giữ tên và đường dẫn trong menu.
+
+**Mobile/tablet/desktop hẹp (<1280px):** Giữ nguyên accordion (`MobileHeaderMenu`) qua nút hamburger; quy tắc nguồn và khung 24×24px của biểu tượng nêu trên cũng áp dụng trong ngăn kéo. Khối thông tin liên hệ đi cùng ngăn kéo này; trên desktop rộng không có ngăn kéo thông tin liên hệ riêng.
 
 **Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
 

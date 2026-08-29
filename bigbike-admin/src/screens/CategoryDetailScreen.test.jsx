@@ -202,15 +202,15 @@ describe('CategoryDetailScreen — khóa ghi theo trạng thái', () => {
     expect(screen.getByText('0/3')).toBeInTheDocument()
   })
 
-  it('ẩn và hiện lại ô biểu tượng ngay khi đổi danh mục cha', async () => {
+  it('không hiển thị lại ô biểu tượng riêng khi đổi danh mục cha', async () => {
     const user = userEvent.setup()
     const parent = { id: 'cat_parent', name: 'Danh mục cha', parentId: null }
     const item = { ...helmet, menuIconUrl: '/media/menu.svg' }
     renderScreen({ item, treeItems: [item, parent] })
 
     await nameInput()
-    expect(document.querySelector('[data-field="menuIconUrl"]')).toBeInTheDocument()
-    expect(screen.getByText('1/4')).toBeInTheDocument()
+    expect(document.querySelector('[data-field="menuIconUrl"]')).toBeNull()
+    expect(screen.getByText('0/3')).toBeInTheDocument()
 
     await user.click(screen.getByRole('combobox'))
     await user.click(screen.getByRole('option', { name: 'Danh mục cha' }))
@@ -221,8 +221,8 @@ describe('CategoryDetailScreen — khóa ghi theo trạng thái', () => {
     await user.click(screen.getByRole('combobox'))
     await user.click(screen.getByRole('option', { name: 'categories.detail.parentIdNone' }))
 
-    expect(document.querySelector('[data-field="menuIconUrl"]')).toBeInTheDocument()
-    expect(screen.getByText('0/4')).toBeInTheDocument()
+    expect(document.querySelector('[data-field="menuIconUrl"]')).toBeNull()
+    expect(screen.getByText('0/3')).toBeInTheDocument()
   })
 
   it('báo lỗi có nút thử lại khi không tải được danh mục', async () => {

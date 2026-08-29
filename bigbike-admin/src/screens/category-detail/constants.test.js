@@ -85,21 +85,14 @@ describe('Category payload contract', () => {
     })
   })
 
-  it('luôn xoá biểu tượng menu khỏi form và payload của danh mục con', () => {
+  it('không hydrate hoặc gửi lại field biểu tượng menu legacy', () => {
     const form = buildFormFromItem({
       parentId: 'cat_parent',
       menuIconUrl: '/media/legacy-child-menu.svg',
     })
 
-    expect(form.menuIconUrl).toBe('')
-    expect(toPayload({ ...form, menuIconUrl: '/media/stale-draft.svg' }).menuIcon).toEqual({ url: null })
-  })
-
-  it('giữ biểu tượng menu của danh mục gốc trong vòng đọc rồi lưu', () => {
-    const form = buildFormFromItem({ menuIconUrl: '/media/root-menu.svg' })
-
-    expect(form.menuIconUrl).toBe('/media/root-menu.svg')
-    expect(toPayload(form).menuIcon).toEqual({ url: '/media/root-menu.svg' })
+    expect(form).not.toHaveProperty('menuIconUrl')
+    expect(toPayload({ ...form, menuIconUrl: '/media/stale-draft.svg' })).not.toHaveProperty('menuIcon')
   })
 
   it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xoá được nội dung cũ', () => {
@@ -142,6 +135,6 @@ describe('Category payload contract', () => {
     expect(payload.banner).toEqual({ url: null })
     expect(payload).not.toHaveProperty('mobileBanner')
     expect(payload.icon).toEqual({ url: null })
-    expect(payload.menuIcon).toEqual({ url: null })
+    expect(payload).not.toHaveProperty('menuIcon')
   })
 })

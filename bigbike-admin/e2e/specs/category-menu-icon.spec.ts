@@ -29,8 +29,8 @@ async function createCategory(page: Page, name: string, slug: string) {
   return page.url().match(/\/admin\/categories\/([^/?#]+)/)?.[1] ?? null
 }
 
-test.describe('E2E_CATEGORY_menu_icon', () => {
-  test('ẩn biểu tượng ở danh mục con, lưu được và hiện lại khi bỏ cha', async ({ adminPage, collect }, testInfo) => {
+test.describe('E2E_CATEGORY_shared_image', () => {
+  test('không còn ô biểu tượng riêng và không gửi field legacy khi lưu', async ({ adminPage, collect }, testInfo) => {
     test.setTimeout(120_000)
 
     const parentName = categoryName('PARENT', testInfo.retry)
@@ -44,14 +44,14 @@ test.describe('E2E_CATEGORY_menu_icon', () => {
     expect(childId).toBeTruthy()
 
     const menuField = adminPage.locator('[data-field="menuIconUrl"]')
-    await expect(menuField).toBeVisible()
-    await expect(adminPage.getByText('0/5', { exact: true })).toBeVisible()
+    await expect(menuField).toHaveCount(0)
+    await expect(adminPage.getByText('0/3', { exact: true })).toBeVisible()
 
     const parentSelect = adminPage.locator('#category-parent-select')
     await parentSelect.click()
     await adminPage.getByRole('option', { name: parentName, exact: true }).click()
     await expect(menuField).toHaveCount(0)
-    await expect(adminPage.getByText('0/4', { exact: true })).toBeVisible()
+    await expect(adminPage.getByText('0/3', { exact: true })).toBeVisible()
 
     await adminPage.locator('#category-form input[name="name"]').fill(`${childName}_EDITED`)
     const [updateResponse] = await Promise.all([
@@ -60,17 +60,18 @@ test.describe('E2E_CATEGORY_menu_icon', () => {
       adminPage.getByRole('button', { name: 'Lưu thay đổi', exact: true }).first().click(),
     ])
     expect(updateResponse.status(), 'API lưu danh mục con phải trả 2xx').toBeLessThan(300)
+    expect(JSON.parse(updateResponse.request().postData() ?? '{}')).not.toHaveProperty('menuIcon')
     await expect(menuField).toHaveCount(0)
 
     await navigateSpa(adminPage, '/admin/categories')
     await navigateSpa(adminPage, `/admin/categories/${childId}`)
     await expect(menuField).toHaveCount(0)
-    await expect(adminPage.getByText('0/4', { exact: true })).toBeVisible()
+    await expect(adminPage.getByText('0/3', { exact: true })).toBeVisible()
 
     await parentSelect.click()
     await adminPage.getByRole('option', { name: /danh mục gốc/i }).click()
-    await expect(menuField).toBeVisible()
-    await expect(adminPage.getByText('0/5', { exact: true })).toBeVisible()
+    await expect(menuField).toHaveCount(0)
+    await expect(adminPage.getByText('0/3', { exact: true })).toBeVisible()
 
     expectRuntimeClean(collect)
   })

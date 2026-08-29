@@ -1052,8 +1052,9 @@ class AdminMutationApiTest {
     }
 
     @Test
-    void categoryChildMenuIconIsSilentlyClearedAcrossCreateDemoteAndPromote() throws Exception {
-        // CATEGORY_RULE_010: menuIcon is root-only and a child payload must never block a save.
+    void legacyCategoryMenuIconIsRetainedWhenCurrentAdminOmitsIt() throws Exception {
+        // CATEGORY_RULE_010: the old field remains available for rollback, but current edits do
+        // not clear it and child payloads do not block a save.
         String suffix = String.valueOf(System.currentTimeMillis());
         String parentSlug = "category-menu-parent-" + suffix;
         String childSlug = "category-menu-child-" + suffix;
@@ -1117,16 +1118,15 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "parentId":"%s",
-                                  "menuIcon":{"url":"javascript:should-be-ignored"},
                                   "name":"Menu root demoted %s",
                                   "translations":{"en":{"name":"Menu root demoted EN %s"}}
                                 }
                                 """.formatted(parent.getId(), suffix, suffix)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.menuIconUrl").value(nullValue()));
+                .andExpect(jsonPath("$.data.menuIconUrl").value(rootIconUrl));
         CategoryEntity demoted = categoryJpaRepository.findById(root.getId()).orElseThrow();
         assertThat(demoted.getParentId()).isEqualTo(parent.getId());
-        assertThat(demoted.getMenuIconUrl()).isNull();
+        assertThat(demoted.getMenuIconUrl()).isEqualTo(rootIconUrl);
 
         mockMvc.perform(patch("/api/v1/admin/categories/{id}", child.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1136,7 +1136,6 @@ class AdminMutationApiTest {
                                 {
                                   "name":"Menu child edited %s",
                                   "description":"Child description",
-                                  "menuIcon":{"url":"ftp://ignored.example/icon.svg"},
                                   "translations":{"en":{"name":"Menu child edited EN %s"}}
                                 }
                                 """.formatted(suffix, suffix)))

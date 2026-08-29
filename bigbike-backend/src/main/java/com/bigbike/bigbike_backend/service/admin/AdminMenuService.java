@@ -54,25 +54,18 @@ public class AdminMenuService {
     private static final Set<String> ALLOWED_MENU_STATUSES = Set.of("ACTIVE", "INACTIVE");
     private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
-    // Icon line đơn sắc của mục menu danh mục gốc: resolve từ DB theo slug trong URL mục menu
-    // (/danh-muc/{slug} hoặc /categories/{slugEn}) → CategoryEntity.menuIconUrl.
-    // (WP-parity) — giờ icon gắn theo danh mục trong DB, không còn phụ thuộc tên slug. Xem V213.
+    // Icon của mục menu danh mục cấp 1: resolve từ CategoryEntity.imageUrl.
+    // menu_icon_url chỉ là dữ liệu legacy và không còn được dùng để render menu.
     private static final String CATEGORY_VI_URL_PREFIX = "/danh-muc/";
     private static final String CATEGORY_EN_URL_PREFIX = "/categories/";
-    private static final Map<String, String> LEGACY_MENU_ICON_FALLBACKS = Map.ofEntries(
-            Map.entry("/danh-muc/san-pham-khuyen-mai", "/media/uploads/wp-icons/icon-1.png"),
-            Map.entry("/danh-muc/non-bao-hiem-moto", "/media/uploads/wp-icons/icon-2.svg"),
-            Map.entry("/danh-muc/ao-quan-moto-phuot", "/media/uploads/wp-icons/icon-3.svg"),
-            Map.entry("/danh-muc/gang-tay", "/media/uploads/wp-icons/icon-4.svg"),
-            Map.entry("/danh-muc/giay-bao-ho-moto-phuot", "/media/uploads/wp-icons/icon-5.svg"),
-            Map.entry("/danh-muc/bao-ho-tay-chan-phu-kien-do-bao-ho", "/media/uploads/wp-icons/icon-6.svg"),
-            Map.entry("/danh-muc/balo-tui-deo-tui-treo-xe", "/media/uploads/wp-icons/icon-7.svg"),
-            Map.entry("/danh-muc/tai-nghe-bluetooth-mu-bao-hiem", "/media/uploads/wp-icons/icon-8.svg"),
-            Map.entry("/danh-muc/gia-do-dien-thoai-phu-kien-camera", "/media/uploads/wp-icons/icon-9.svg"),
-            Map.entry("/danh-muc/phu-kien-khac-do-lot-do-mua", "/media/uploads/wp-icons/icon-10.svg")
-    );
+    private String resolveMenuIconUrl(MenuItemEntity item) {
+        Optional<CategoryEntity> linkedCategory = resolveLinkedCategory(item);
+        if ("CATEGORY".equalsIgnoreCase(item.getTargetType())) {
+            // A deleted/stale category link must not fall back to a legacy URL or icon map.
+            return linkedCategory.map(this::rootCategoryImageUrl).orElse(null);
+        }
 
-    private String resolveMenuIconUrl(String url) {
+        String url = item.getUrl();
         if (url == null || url.isBlank()) return null;
         String path = normalizeStorefrontUrl(url);
         int q = path.indexOf('?');
@@ -83,21 +76,17 @@ public class AdminMenuService {
         String slug = path.substring(prefix.length());
         if (slug.endsWith("/")) slug = slug.substring(0, slug.length() - 1);
         if (slug.isBlank()) return null;
+
         Optional<CategoryEntity> category = englishPath
                 ? categoryRepo.findBySlugEn(slug.toLowerCase(Locale.ROOT))
                 : categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT));
-        if (category.isPresent()) {
-            CategoryEntity resolved = category.get();
-            // CATEGORY_RULE_010: a real child category suppresses menu icons even if a legacy
-            // row has not been normalized yet. A present category also intentionally prevents
-            // the legacy slug fallback from reintroducing an icon after a root is demoted.
-            if (resolved.getParent() != null) {
-                return null;
-            }
-            String iconUrl = resolved.getMenuIconUrl();
-            return iconUrl != null && !iconUrl.isBlank() ? iconUrl : null;
-        }
-        return LEGACY_MENU_ICON_FALLBACKS.get(path);
+        return category.map(this::rootCategoryImageUrl).orElse(null);
+    }
+
+    private String rootCategoryImageUrl(CategoryEntity category) {
+        if (category.getParent() != null) return null;
+        String imageUrl = category.getImageUrl();
+        return imageUrl == null || imageUrl.isBlank() ? null : imageUrl;
     }
 
     private String categoryUrl(CategoryEntity category, String lang) {
@@ -618,7 +607,7 @@ public class AdminMenuService {
                         i.getId(), i.getParentId(), resolveDisplayLabel(i, lang),
                         resolveDisplayUrl(i, lang),
                         i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
-                        resolveMenuIconUrl(i.getUrl())))
+                        resolveMenuIconUrl(i)))
                 .toList();
 
         return new PublicMenuResponse(menu.getLocation(), menu.getName(), items);

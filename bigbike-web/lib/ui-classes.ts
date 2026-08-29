@@ -83,12 +83,12 @@ export const iconBtn =
   // out-specified the old touch-target min-height, so that stays at the header height.
   "pointer-coarse:min-w-[var(--bb-touch-target)] max-[769px]:min-w-[var(--bb-touch-target)]";
 
-/** Header-menu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
+/** Header-menu category icon (was `.bb-submenu-icon`): a 24×24 mask-image glyph that
  * paints with currentColor, so it follows the parent link's text color (white →
  * brand-red on hover). The mask-image URL is set inline per item. Used by the
  * website's desktop and mobile header menu. */
 export const submenuIcon =
-  "inline-block shrink-0 w-5 h-4 bg-current " +
+  "inline-block shrink-0 w-6 h-6 bg-current " +
   "[mask-repeat:no-repeat] [mask-position:center] [mask-size:contain] " +
   "[-webkit-mask-repeat:no-repeat] [-webkit-mask-position:center] [-webkit-mask-size:contain] " +
   "transition-[background-color] duration-[var(--bb-duration-normal)] ease-[ease]";

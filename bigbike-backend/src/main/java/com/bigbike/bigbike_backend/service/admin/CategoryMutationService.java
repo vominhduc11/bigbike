@@ -335,12 +335,11 @@ public class CategoryMutationService {
             clearIcon(entity);
         }
 
-        // CATEGORY_RULE_010: a child category can never retain a menu icon. Apply this after
-        // the parent presence-flag so both an explicit re-parent and a PATCH that omits parentId
-        // use the effective parent currently on the entity.
-        if (entity.getParent() != null) {
-            entity.setMenuIconUrl(null);
-        } else if (request.getMenuIcon() != null) {
+        // CATEGORY_RULE_010: menu_icon_url is legacy data. The current admin omits menuIcon, so
+        // omission must preserve the stored value. Keep the old explicit root-client write path
+        // for rollback compatibility, but never clear a legacy value merely because the category
+        // is a child or has been re-parented.
+        if (entity.getParent() == null && request.getMenuIcon() != null) {
             entity.setMenuIconUrl(AdminMutationValidators.trimToNull(request.getMenuIcon().getUrl()));
         } else if (create) {
             entity.setMenuIconUrl(null);

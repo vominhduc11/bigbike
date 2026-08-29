@@ -571,7 +571,8 @@ export function normalizeCategory(input) {
     parentId: parentId || undefined,
     image: normalizeImageAsset(source.image),
     icon: normalizeImageAsset(source.icon),
-    // CATEGORY_RULE_010: only root categories can carry the header-menu icon.
+    // Legacy API compatibility only. The active header-menu icon comes from category.image;
+    // the category detail form intentionally does not hydrate or edit this field.
     menuIconUrl: parentId ? undefined : toTrimmedString(source.menuIconUrl) || undefined,
     bannerImage: normalizeImageAsset(source.bannerImage),
     seo: normalizeSeoMeta(source.seo),

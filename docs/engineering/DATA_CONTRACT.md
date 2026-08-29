@@ -80,7 +80,7 @@ audit, sửa code thì sửa cả bảng này.
 | Spec key (`IMAGE_RECO`) | Vị trí dùng | Khung hiển thị thật (1×, evidence) | Kích thước khuyến nghị (2×, không chặn) | Tỉ lệ ép (vẫn chặn) |
 |---|---|---|---|---|
 | `productImage` | Ảnh đại diện + gallery sản phẩm (PDP) | Khung vuông tối đa 903×903px (desktop ≥1920px) — kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong 2×903 | 1800×1800 | 1:1 |
-| `categoryImage` | Ảnh danh mục (`image`, lưới danh mục trang chủ) | Khung vuông 64px (điện thoại), 80px (máy tính bảng), 96px (máy tính); `object-contain`, không cắt | Không có kích thước tối thiểu; nguồn được tối ưu theo khung | 1:1 tuyệt đối khi ảnh mới/thay URL; ảnh cũ giữ nguyên nếu URL không đổi |
+| `categoryImage` | Ảnh đại diện danh mục (`image`), dùng ở lưới danh mục trang chủ và làm biểu tượng danh mục cấp 1 trong menu đầu trang | Lưới: khung vuông 64px (điện thoại), 80px (máy tính bảng), 96px (máy tính); menu: mặt nạ 24×24px; `object-contain`/mask, không cắt | Không có kích thước tối thiểu; nguồn được tối ưu theo khung | 1:1 tuyệt đối khi ảnh mới/thay URL; ảnh cũ giữ nguyên nếu URL không đổi |
 | `logo` | Logo hãng (`brand.logo`; lưới hãng, trang chi tiết hãng và Giới thiệu) | Khung vuông dùng chung: khoảng 88×88px ở carousel trang chủ, 96×96px ở danh sách, tối đa 320×320px ở chi tiết, 128×128px ở Giới thiệu; `object-contain`, không cắt | 800×800 | 1:1, sai lệch tối đa 1% khi ghi logo mới |
 | `cover` | Ảnh OG/chia sẻ mạng xã hội (sản phẩm/danh mục/hãng/bài viết) | **Không có khung hiển thị trên bigbike-web** — chỉ nằm trong `<meta og:image>`, Facebook/Zalo tự crop → dùng thẳng chuẩn Open Graph, không áp công thức 2× nội bộ | 1200×630 | 40:21 |
 | `promo` | Banner khuyến mãi trang chủ | Container rộng tối đa 1600px (≥1920px viewport), cao tự do theo ảnh (không crop) | 3200×1050 (chiều cao chỉ là gợi ý theo tỉ lệ 3:1, không ép) | tự do |
@@ -91,7 +91,7 @@ audit, sửa code thì sửa cả bảng này.
 | `contentVideo` | Video nhúng khối "video" trong bài viết/content | Khung **NGANG** 16:9 rộng bằng cột nội dung (~1170px desktop) — khác hẳn `video` ở trên dù cùng là "video tải lên" | 2340×1320 | 16:9 |
 | `general` | Ảnh chèn khối "image" trong nội dung + ảnh chèn rich-text chung (FAQ, callout, mô tả hãng, `about_content_html`...) | Ngữ cảnh rộng nhất trong nhóm này: full cột nội dung ~1170px desktop | 2340×1560 | tự do |
 | `featureImage` | Ảnh khối "feature" (ảnh cạnh chữ) trong nội dung | Nửa cột nội dung, ÉP 4:3 (`aspect-[4/3] object-cover`) → ~565×424 desktop | 1130×850 | 4:3 |
-| *(không có key)* | `menuIconUrl` — icon 1 màu cạnh tên danh mục gốc trong menu đầu trang | Icon raster 1 màu (JPEG/PNG/WebP), hiển thị cố định 20×16px qua CSS mask | **Không kiểm tra kích thước** — ảnh chỉ hiển thị 20×16px | — |
+| *(không có key)* | `menuIconUrl` — dữ liệu icon cũ cạnh tên danh mục gốc, chỉ giữ để tương thích | Không còn vị trí hiển thị đang dùng; file và URL cũ vẫn được giữ nguyên | Không áp dụng kiểm tra mới | — |
 
 **Chặn ở đâu:**
 
@@ -1337,49 +1337,37 @@ The system Category `uncategorized` is permanently hidden and may be read in the
 
 ### Category media and SEO write shape
 
-The Category upsert DTO accepts separate assets for `image` (grid thumbnail), `icon` (hero illustration), `menuIcon` (root-category header-menu line icon), `banner` (desktop hero background), and `seo.ogImage`. Assets other than `menuIcon` retain the normal `ImageAsset { url, alt, width, height, mimeType }` shape; `menuIcon` persists only its `url`.
+The Category upsert DTO accepts `image` (the shared category image for the homepage grid and the level-1
+header-menu icon), `icon` (hero illustration), `banner` (desktop hero background), and `seo.ogImage`.
+`image` uses the normal `ImageAsset { url, alt, width, height, mimeType }` shape and must be square when
+new or changed; there is no minimum pixel threshold. The menu presentation guidance for `image` is a
+square, single-colour line drawing on a transparent background. Images remain selected from internal media.
+The legacy `menuIcon` input and `menuIconUrl` response/storage field remain in the contract for old clients,
+but the current admin does not display or send that field and the public menu does not render it.
 
 For `PATCH`, omitting an asset block preserves it; `{ "url": null }` clears that asset. Omitting `seo` preserves SEO. Supplying `seo` normalizes blank text fields to `null`; `seo: {}` therefore clears title, description, canonical URL and the social image. Admin forms always send an explicit `seo` block when saved.
 
-### Category header menu icon — `menu_icon_url` (V213)
+### Category header menu icon — shared `image_url`, legacy `menu_icon_url` retained (V213/V360/V1069)
 
-Cột `menu_icon_url` (`TEXT`, nullable) trên `categories` lưu **icon line đơn sắc** cạnh tên danh mục
-gốc trong menu đầu trang website (máy tính và điện thoại). Bộ lọc "Danh mục sản phẩm" không đọc field
-này. Render qua CSS `mask-image` theo `currentColor`.
+`image_url` (`image`) is the single active source for both the homepage category image and the icon beside
+level-1 category names under “Tất cả sản phẩm” in the website header. The storefront uses the image as a
+`currentColor` mask at 24×24px on desktop and mobile. Level-2/level-3 categories, non-category items and
+level-1 categories without an image return no icon but keep their label and URL.
 
 Phân biệt rõ với các cột ảnh khác trên `categories`:
 
 | Cột | Vai trò |
 |---|---|
-| `menu_icon_url` | Icon line đơn sắc cho menu đầu trang của danh mục gốc (mask-image). **Field này.** |
-| `icon_url` (`icon`) | Ảnh minh hoạ **hero** trang danh mục (WP ACF `image_left`) — KHÔNG dùng cho menu. |
-| `image_url` (`image`) | Ảnh thumbnail danh mục (lưới trang chủ). |
+| `image_url` (`image`) | Ảnh đại diện dùng ở lưới trang chủ và icon menu cấp 1; ảnh mới/thay URL phải vuông. |
+| `menu_icon_url` | Dữ liệu icon cũ, nullable, giữ để tương thích; không còn được menu hoặc admin hiện tại dùng. |
+| `icon_url` (`icon`) | Ảnh minh hoạ **hero** trang danh mục (WP ACF `image_left`) — không dùng cho menu. |
 | `banner_url` | Ảnh nền hero. |
 
-Trước đây icon menu đầu trang gắn theo **slug** (CSS theme WP `.{slug}>a::before`) → đổi slug là mất icon, và
-icon không quản được trong admin. Đã chuyển hẳn sang DATA-DRIVEN, một nguồn duy nhất là `menu_icon_url`:
-- **File icon gốc nằm trong repo web** (`bigbike-web/public/wp/icon-N.svg`, `abdominals.png`). **`V223`** đã upload
-  11 file icon menu này lên MinIO (`bigbike-media/uploads/wp-icons/*`) và migrate `menu_icon_url` từ seed cũ
-  `/wp/<file>` → `/media/uploads/wp-icons/<file>` (phục vụ qua rewrite `/media/*`, cùng origin nên mask-image render
-  đúng). Các asset `/wp/*` khác (vd banner `/wp/page-title-bg.png`) vẫn do web phục vụ tĩnh + admin proxy
-  `/wp/ → bigbike-web` (`bigbike-admin/nginx.conf`).
-- **`V217`** thêm cột + backfill theo slug; **`V219`** hoàn thiện: khoá theo **ID danh mục** (`wp-cat-NNN`, ổn
-  định từ WP import — không drift như slug) cho 13 danh mục, idempotent + guard (chỉ đè NULL hoặc giá-trị-mặc-
-  định `/wp/*`,`/media/uploads/wp-icons/*`). Mô tả lịch sử của `WpCategorySidebar` render icon cho cả danh
-  mục con đã bị supersede bởi `CATEGORY_RULE_010`; code hiện hành chỉ dùng icon cho menu đầu trang.
-- **`V360`** bổ sung fallback slug→icon cho các mục menu header legacy không còn category record tương ứng, để
-  các item lịch sử trên menu chính vẫn hiển thị icon đúng theo asset MinIO dù DB category không có dòng khớp.
-
-**Admin-writable:** admin chỉnh ở form danh mục (`CategoryDetailScreen` → "Biểu tượng menu"), gửi
-qua `UpsertCategoryRequest.menuIcon` → `menu_icon_url`. URL phải qua whitelist
-`AdminMutationValidators.validateWhitelistedMediaUrl` (`/media/`, `/media-proxy/`, hoặc MinIO public base). Seed
-hiện tại `/media/uploads/wp-icons/*` (sau `V223`) hợp lệ với whitelist → lưu lại trong admin không còn HTTP 400;
-seed cũ `/wp/*` (file tĩnh, KHÔNG qua được whitelist) đã được migrate. Xem `API_CONTRACT` §"Menu/category line-icon".
-
-DANH MỤC CON (`parent_id IS NOT NULL`) không được giữ `menu_icon_url`: mọi request ghi có `menuIcon` đều
-bị bỏ qua im lặng và lưu `NULL`, kể cả khi URL không thuộc kho media; khi hạ root thành con, icon bị xoá.
-Khi nâng lại thành root, field bắt đầu trống và admin phải chọn lại. Migration `V1065__clear_category_child_menu_icons.sql`
-chuẩn hoá dữ liệu cũ bằng cách đặt `menu_icon_url = NULL` cho toàn bộ danh mục con, không đụng các danh mục gốc.
+`menu_icon_url` và các file ảnh mà field này tham chiếu **không bị xoá**. Khi danh mục đổi cha, dữ liệu
+legacy không bị dọn; lớp đọc chỉ suppress icon cho danh mục con. Bảng đối chiếu slug/đường dẫn WordPress
+cũ không còn là nguồn dữ liệu. `V1065__clear_category_child_menu_icons.sql` là migration lịch sử, còn
+`V1069__move_khuyen_mai_hot_menu_icon_to_category_image.sql` sao chép có điều kiện icon hiện có của
+“Khuyến mãi hot” sang `image_url` và không xoá `menu_icon_url`.
 
 **Banner hero + hero illustration (V219):** `banner_url` (ảnh nền hero) trước là hardcode `DEFAULT_BG`
 (`WpCategoryHero.tsx` → `/wp/page-title-bg.png`); V219 đưa vào DB cho mọi danh mục để ô "Ảnh banner hero" trong
@@ -1387,7 +1375,7 @@ admin quản được (web y nguyên, fallback `DEFAULT_BG` giữ trong code cho
 minh hoạ hero, ACF `image_left`) V219 đổi URL ngoài `bigbike.vn/wp-content/uploads/` → `/media-proxy/wp-uploads/`
 (ảnh sẵn trong MinIO từ WP import). Cả hai admin sửa qua `UpsertCategoryRequest.banner` / `.icon`.
 
-Status: `OWNER_CONFIRMED_2026-08-28` + `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`, `CatalogRequestValidator`, `AdminMenuService`, migrations `V213`/`V217`/`V219`/`V223`/`V1065`.
+Status: `OWNER_CONFIRMED_2026-08-29` + `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon`, `CategoryMutationService.applyCategoryPatch`, `CatalogRequestValidator`, `AdminMenuService`, migrations `V213`/`V217`/`V219`/`V223`/`V1065`/`V1069`.
 
 ### Brand bilingual content — English columns (V137); `name`/`slug` de-duplicated (V352)
 

@@ -137,14 +137,17 @@ class AdminMenuServiceTest {
         when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
         when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId))
                 .thenReturn(List.of(categoryLinkedItem(menuEntity)));
-        when(categoryRepo.findById(CATEGORY_ID))
-                .thenReturn(Optional.of(category(CATEGORY_ID, "mu-bao-hiem", "helmets", "Mũ bảo hiểm", "Helmets")));
+        CategoryEntity root = category(CATEGORY_ID, "mu-bao-hiem", "helmets", "Mũ bảo hiểm", "Helmets");
+        root.setImageUrl("/media/categories/helmets.png");
+        root.setMenuIconUrl("/media/uploads/wp-icons/legacy.svg");
+        when(categoryRepo.findById(CATEGORY_ID)).thenReturn(Optional.of(root));
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).url()).isEqualTo("/categories/helmets/");
         assertThat(response.items().get(0).label()).isEqualTo("Helmets");
+        assertThat(response.items().get(0).iconUrl()).isEqualTo("/media/categories/helmets.png");
     }
 
     @Test
@@ -179,7 +182,7 @@ class AdminMenuServiceTest {
     }
 
     @Test
-    void getPublicMenuByLocation_customMenuItem_usesLegacyIconFallbackWhenCategoryMissing() {
+    void getPublicMenuByLocation_customMenuItem_withoutCategoryHasNoIconFallback() {
         UUID menuId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
         MenuItemEntity item = new MenuItemEntity();
@@ -198,11 +201,11 @@ class AdminMenuServiceTest {
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "vi");
 
         assertThat(response.items()).hasSize(1);
-        assertThat(response.items().get(0).iconUrl()).isEqualTo("/media/uploads/wp-icons/icon-1.png");
+        assertThat(response.items().get(0).iconUrl()).isNull();
     }
 
     @Test
-    void getPublicMenuByLocation_categoryPresentWithoutIcon_doesNotUseLegacyFallback() {
+    void getPublicMenuByLocation_categoryPresentWithoutImage_keepsMenuItemWithoutIcon() {
         UUID menuId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
         MenuItemEntity item = new MenuItemEntity();
@@ -227,6 +230,33 @@ class AdminMenuServiceTest {
     }
 
     @Test
+    void getPublicMenuByLocation_rootCategoryUsesCategoryImageAndIgnoresLegacyIcon() {
+        UUID menuId = UUID.randomUUID();
+        MenuEntity menuEntity = menu(menuId, "primary");
+        MenuItemEntity item = new MenuItemEntity();
+        item.setId(UUID.randomUUID());
+        item.setMenu(menuEntity);
+        item.setLabel("Mũ bảo hiểm");
+        item.setUrl("/danh-muc/mu-bao-hiem");
+        item.setSortOrder(0);
+        item.setStatus("ACTIVE");
+        item.setCreatedAt(Instant.now());
+        item.setUpdatedAt(Instant.now());
+
+        CategoryEntity root = category(
+                "wp-cat-root-with-image", "mu-bao-hiem", null, "Mũ bảo hiểm", null);
+        root.setImageUrl("/media/categories/helmets.png");
+        root.setMenuIconUrl("/media/uploads/wp-icons/old-helmet.svg");
+        when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
+        when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId)).thenReturn(List.of(item));
+        when(categoryRepo.findBySlug("mu-bao-hiem")).thenReturn(Optional.of(root));
+
+        PublicMenuResponse response = service.getPublicMenuByLocation("primary", "vi");
+
+        assertThat(response.items().get(0).iconUrl()).isEqualTo("/media/categories/helmets.png");
+    }
+
+    @Test
     void getPublicMenuByLocation_childCategoryIconIsAlwaysSuppressed() {
         UUID menuId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
@@ -244,6 +274,7 @@ class AdminMenuServiceTest {
         CategoryEntity child = category(
                 "wp-cat-child", "san-pham-khuyen-mai", null, "Danh mục con", null);
         child.setParent(parent);
+        child.setImageUrl("/media/categories/child-photo.jpg");
         child.setMenuIconUrl("/media/uploads/wp-icons/icon-1.png");
         when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
         when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId)).thenReturn(List.of(item));

@@ -73,9 +73,9 @@ export const IMAGE_RECO = {
   featureImage: { idealW: 1130, idealH: 850, minW: 1130, minH: 850, ratio: [4, 3], ratioTolerance: 0.1 },
 }
 
-// menuIconUrl (icon danh mục trong menu đầu trang): khuyến nghị ảnh JPEG/JPG, PNG hoặc WebP,
-// hiển thị cố định 20×16px qua CSS mask — KHÔNG kiểm tra kích thước.
-// Không thêm field vào IMAGE_RECO cho vị trí này — ImageUrlInput không nhận `recommend` sẽ tự bỏ qua.
+// The root header menu uses the shared categoryImage as a 24×24px CSS mask.
+// There is no separate menu-icon field or additional pixel-size threshold; the categoryImage
+// exact-square rule above remains the only ratio validation for a new/replaced category image.
 
 // So tỉ lệ thực tế của ảnh/video với spec khuyến nghị (kích thước không còn bị chặn, chỉ tỉ lệ).
 // Spec exactRatio dành riêng cho ảnh thumbnail danh mục: mọi lệch dù chỉ một pixel đều bị chặn.

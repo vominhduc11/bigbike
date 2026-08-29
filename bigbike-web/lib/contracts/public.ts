@@ -379,12 +379,7 @@ export type Category = {
   parentId?: string | null;
   image?: ImageAsset;
   icon?: ImageAsset;
-  /**
-   * Monochrome line-icon shown beside a root category name in the website header menu,
-   * rendered via CSS mask-image (e.g. /wp/icon-N.svg). Child categories always return
-   * null. Distinct from `icon` (the category hero illustration, WP ACF "image_left").
-   * DB-driven (V213/CATEGORY_RULE_010).
-   */
+  /** Legacy menu-icon URL retained for API compatibility; active menu icons come from `image`. */
   menuIconUrl?: string | null;
   bannerImage?: ImageAsset;
   seo?: SeoMeta;
@@ -503,12 +498,8 @@ export type PublicMenuItem = {
   sortOrder: number;
   openInNewTab: boolean;
   cssClass: string | null;
-  /**
-   * Icon URL resolved by the backend from category slug in the URL.
-   * Null for non-category menu items. Static WP parity mapping via
-   * /wp/icon-N.svg in Next.js public folder.
-   * TODO: populated from CategoryEntity.iconUrl when DB icons are set.
-   */
+  /** Level-1 category image URL resolved by the backend for the header-menu mask.
+   * Null for child categories, non-category items or categories without an image. */
   iconUrl?: string | null;
 };
 

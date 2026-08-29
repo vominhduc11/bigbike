@@ -12,7 +12,7 @@ public record Category(
         String parentId,
         ImageAsset image,
         ImageAsset icon,
-        /** Icon line đơn sắc cho menu đầu trang của danh mục gốc (mask-image). Khác `icon` (ảnh hero, WP "image_left"). V213/CATEGORY_RULE_010. */
+        /** Legacy menu icon URL retained for compatibility; active menu icons come from {@code image}. CATEGORY_RULE_010. */
         String menuIconUrl,
         ImageAsset bannerImage,
         SeoMeta seo,
