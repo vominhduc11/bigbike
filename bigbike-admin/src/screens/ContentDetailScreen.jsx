@@ -626,7 +626,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           badge={
             <span className="inline-flex items-center gap-2">
               <span className={publishBadgeClass(form.publishStatus)}>
-                {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
+                {t(`status.publish.${form.publishStatus}`, { defaultValue: t('common.unknown') })}
               </span>
               {!canUpdate && (
                 <span className="bb-badge bb-badge-warning">
@@ -896,11 +896,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <SelectTrigger>
                         {/* Render the loaded label directly. Radix can miss the initial
                             item-text lookup even though the matching option is present. */}
-                        <span>{t(`status.publish.${selectedPublishStatus}`, { defaultValue: selectedPublishStatus })}</span>
+                        <span>{t(`status.publish.${selectedPublishStatus}`, { defaultValue: t('common.unknown') })}</span>
                       </SelectTrigger>
                       <SelectContent>
                         {publishOptions.map((status) => (
-                          <SelectItem key={status} value={status}>{t(`status.publish.${status}`)}</SelectItem>
+                    <SelectItem key={status} value={status}>{t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

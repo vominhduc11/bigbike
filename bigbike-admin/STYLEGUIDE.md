@@ -127,10 +127,15 @@ Mọi màn hoặc khối dữ liệu phải thiết kế rõ các trạng thái 
 Chạy từ `bigbike-admin`:
 
 ```powershell
-node scripts/check-i18n.js
+npm run check:i18n
 npm run lint
 $env:VITE_STOREFRONT_BASE_URL='https://bigbike.vn'; npm test -- --run
 $env:VITE_STOREFRONT_BASE_URL='https://bigbike.vn'; npm run build
 ```
+
+`npm run check:i18n` kiểm tra đồng thời cấu trúc hai bộ chữ và mọi lời gọi chữ
+trong mã chạy thật. Chốt này cũng được gọi tự động bởi `npm run lint` và
+`npm run build`, nên không thể bàn giao khi màn hình gọi thiếu mã hoặc hai bộ
+chữ lệch nhau.
 
 Khi Docker backend/database đang hoạt động, chạy đủ Playwright qua preview kiểm thử cô lập `:4280`; không tự khởi động hoặc restart dịch vụ dùng chung. Chỉ cập nhật ảnh chuẩn sau khi xem trực tiếp khác biệt ở 1440, 768 và 375px.

@@ -258,7 +258,7 @@ export function AuditLogListScreen() {
   const filterChips = []
   if (query.resourceType !== 'ALL') {
     const value = t(`auditLog.module.${query.resourceType}`, {
-      defaultValue: query.resourceType,
+      defaultValue: t('auditLog.module.OTHER'),
     })
     filterChips.push({
       key: 'module',
@@ -271,7 +271,7 @@ export function AuditLogListScreen() {
   }
   if (query.actorType !== 'ALL') {
     const value = t(`auditLog.actorType.${query.actorType}`, {
-      defaultValue: query.actorType,
+      defaultValue: t('common.unknown'),
     })
     filterChips.push({
       key: 'actorType',
@@ -369,7 +369,7 @@ export function AuditLogListScreen() {
             value: resourceType,
             label: resourceType === 'ALL'
               ? t('auditLog.filterModule')
-              : t(`auditLog.module.${resourceType}`, { defaultValue: resourceType }),
+              : t(`auditLog.module.${resourceType}`, { defaultValue: t('auditLog.module.OTHER') }),
           }))}
         />
 
@@ -382,7 +382,7 @@ export function AuditLogListScreen() {
             value: actorType,
             label: actorType === 'ALL'
               ? t('auditLog.filterActorType')
-              : t(`auditLog.actorType.${actorType}`, { defaultValue: actorType }),
+              : t(`auditLog.actorType.${actorType}`, { defaultValue: t('common.unknown') }),
           }))}
         />
 
@@ -411,7 +411,7 @@ export function AuditLogListScreen() {
                   className="min-h-9"
                   onClick={() => handlePreset(key)}
                 >
-                  {t(`auditLog.preset.${key}`)}
+                  {t(`auditLog.preset.${key}`, { defaultValue: t('common.unknown') })}
                 </Button>
               ))}
             </div>

@@ -66,15 +66,11 @@ class ChatPhase3SettingsTest {
     }
 
     @Test
-    @DisplayName("AC20: proactive chat is off by default and thresholds are owner-adjustable")
-    void proactiveDefaultsOffAndReadsFreshThresholds() {
-        assertThat(settings.proactive()).isEqualTo(new ChatPhase3Settings.Proactive(false, 45, 120));
+    @DisplayName("customer memory is fixed at thirty days and is not an owner setting")
+    void memoryDurationIsFixedAtThirtyDays() {
+        put("ai_assistant_memory_days", "7");
 
-        put("ai_assistant_proactive_enabled", "true");
-        put("ai_assistant_proactive_product_seconds", "75");
-        put("ai_assistant_proactive_cart_seconds", "180");
-
-        assertThat(settings.proactive()).isEqualTo(new ChatPhase3Settings.Proactive(true, 75, 180));
+        assertThat(settings.memoryDays()).isEqualTo(30);
     }
 
     private void put(String key, String value) {

@@ -302,7 +302,7 @@ export function AdminUsersScreen({
     setEditError('')
     setEditFieldErrors({})
     setEditSuccess(false)
-    if (savedForm) toast.info(t('adminUsers.draftRestored', { defaultValue: 'Đã khôi phục bản nháp tài khoản quản trị.' }))
+    if (savedForm) toast.info(t('adminUsers.draftRestored'))
   }
 
   function closeEdit() {
@@ -341,7 +341,7 @@ export function AdminUsersScreen({
     setCreateForm(savedForm ? { ...savedForm, role } : { email: '', displayName: '', role: defaultRole })
     setCreateError('')
     setCreateOpen(true)
-    if (savedForm) toast.info(t('adminUsers.draftRestored', { defaultValue: 'Đã khôi phục bản nháp tài khoản quản trị.' }))
+    if (savedForm) toast.info(t('adminUsers.draftRestored'))
   }
 
   function closeCreate() {
@@ -450,11 +450,11 @@ export function AdminUsersScreen({
       if (!ok) return
     } else if (passwordChanged) {
       const ok = await showConfirm(
-        t('adminUsers.confirmPasswordChange', { defaultValue: 'Bạn có chắc muốn đổi mật khẩu tài khoản này không?' }),
+        t('adminUsers.confirmPasswordChange'),
         t('adminUsers.confirmSensitiveTitle'),
         {
           variant: 'danger',
-          confirmLabel: t('adminUsers.confirmPasswordChangeBtn', { defaultValue: 'Đổi mật khẩu' }),
+          confirmLabel: t('adminUsers.sectionPassword'),
         },
       )
       if (!ok) return
@@ -489,7 +489,7 @@ export function AdminUsersScreen({
       clearEditDraft()
       setEditSuccess(true)
       if (payload.role || payload.status || payload.newPassword) {
-        toast.success(t('adminUsers.accessApplied'))
+        toast.success(t('settings.accessApplied'))
       }
       if (r.item.role !== editForm.role && editForm.role) {
         // Vai trò bị bỏ qua (do quyền) → gắn cạnh ô vai trò, không để ở banner.
@@ -622,7 +622,7 @@ export function AdminUsersScreen({
     const term = searchInput.trim()
     activeFilterChips.push({
       key: 'search',
-      label: t('adminUsers.chipSearch', { term, defaultValue: `Tìm: "${term}"` }),
+      label: t('adminUsers.chipSearch', { value: term }),
       onRemove: () => setSearchInput(''),
     })
   }
@@ -630,7 +630,7 @@ export function AdminUsersScreen({
     const roleLabel = resolveRoleLabel(roleFilter)
     activeFilterChips.push({
       key: 'role',
-      label: t('adminUsers.chipRole', { value: roleLabel, defaultValue: `Vai trò: ${roleLabel}` }),
+      label: t('adminUsers.chipRole', { value: roleLabel }),
       onRemove: () => handleFilterChange('role', ''),
     })
   }
@@ -638,7 +638,7 @@ export function AdminUsersScreen({
     const statusLabel = STATUS_META[statusFilter] ? t(STATUS_META[statusFilter].labelKey) : statusFilter
     activeFilterChips.push({
       key: 'status',
-      label: t('adminUsers.chipStatus', { value: statusLabel, defaultValue: `Trạng thái: ${statusLabel}` }),
+      label: t('adminUsers.chipStatus', { value: statusLabel }),
       onRemove: () => handleFilterChange('status', ''),
     })
   }
@@ -985,7 +985,7 @@ export function AdminUsersScreen({
               )}
               {isSuperAdminAccountLocked && (
                 <Alert tone="warning" size="sm" className="mb-3 break-words">
-                  {t('adminUsers.superAdminEditLocked', { defaultValue: 'Chỉ Chủ hệ thống mới sửa được tài khoản Chủ hệ thống khác.' })}
+                  {t('adminUsers.superAdminEditLocked')}
                 </Alert>
               )}
               <div className="flex flex-col gap-4">

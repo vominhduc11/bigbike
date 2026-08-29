@@ -250,7 +250,10 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
               <div className="hidden h-full shrink-0 xl:block!">
                 <HeaderMenu initialNodes={menuNodes} variant="desktop" />
               </div>
-              <div className="flex h-full shrink-0 items-center xl:ml-2 xl:border-l xl:border-white/25 xl:pl-2">
+              <div
+                data-header-actions
+                className="flex h-full shrink-0 items-center xl:ml-6 xl:border-l xl:border-white/25 xl:pl-6"
+              >
                 <LanguageSwitch />
                 <HeaderSearchButton />
                 <div className="hidden h-full md:block!">

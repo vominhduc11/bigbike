@@ -17,7 +17,8 @@ import { describe, expect, it } from "vitest";
  * (node_modules/next/dist/client/components/layout-router.js: "If no loading property
  * is provided it renders the children without a suspense boundary").
  *
- * Hậu quả đo được trên container ngày 2026-08-06, khi `app/[locale]/loading.tsx` còn
+ * Hậu quả đo được trên container ngày 2026-08-06, khi loading boundary đặt sai ở
+ * `app/[locale]/loading.tsx` còn
  * tồn tại: 6/6 URL rác trả HTTP 200 kèm HTML của HomeSkeleton; redirect 301/308 chuẩn
  * hoá slug EN (PRODUCT_RULE_003) im lặng không chạy; 410 Gone của sản phẩm đã xoá bị
  * nuốt thành 200.
@@ -27,31 +28,32 @@ import { describe, expect, it } from "vitest";
  */
 const APP = join(process.cwd(), "app");
 const LOCALE = join(APP, "[locale]");
+const STOREFRONT = join(LOCALE, "(storefront)");
 
 // Các route gọi notFound() và/hoặc permanentRedirect() khi render.
 // [segment, file thực sự chứa guard] — `huong-dan/[...sub]` uỷ quyền sang GuidePage
 // ở thư mục cha, các route còn lại giữ guard ngay trong page.tsx.
 const STATUS_CRITICAL_SEGMENTS = [
-  ["product/[slug]", "product/[slug]/page.tsx"],
-  ["danh-muc/[slug]", "danh-muc/[slug]/page.tsx"],
-  ["tin-tuc/[slug]", "tin-tuc/[slug]/page.tsx"],
-  ["brands/[slug]", "brands/[slug]/page.tsx"],
-  ["[slug]", "[slug]/page.tsx"],
-  ["chinh-sach/[slug]", "chinh-sach/[slug]/page.tsx"],
-  ["huong-dan/[...sub]", "huong-dan/GuidePage.tsx"],
+  ["(storefront)/product/[slug]", "(storefront)/product/[slug]/page.tsx"],
+  ["(storefront)/danh-muc/[slug]", "(storefront)/danh-muc/[slug]/page.tsx"],
+  ["(storefront)/tin-tuc/[slug]", "(storefront)/tin-tuc/[slug]/page.tsx"],
+  ["(storefront)/brands/[slug]", "(storefront)/brands/[slug]/page.tsx"],
+  ["(storefront)/[slug]", "(storefront)/[slug]/page.tsx"],
+  ["(storefront)/chinh-sach/[slug]", "(storefront)/chinh-sach/[slug]/page.tsx"],
+  ["(storefront)/huong-dan/[...sub]", "(storefront)/huong-dan/GuidePage.tsx"],
 ] as const;
 
 describe("Ranh giới stream — điều kiện để mã trạng thái HTTP hoạt động", () => {
   it("KHÔNG được có app/[locale]/loading.tsx (nó bọc cả app)", () => {
     expect(
       existsSync(join(LOCALE, "loading.tsx")),
-      "Khung chờ chung phải nằm trong route group (home)/, xem app/[locale]/(home)/loading.tsx",
+      "Khung chờ chung phải nằm trong route group storefront/(home)/, xem app/[locale]/(storefront)/(home)/loading.tsx",
     ).toBe(false);
   });
 
-  it("khung chờ trang chủ vẫn còn trong route group (home)", () => {
-    expect(existsSync(join(LOCALE, "(home)", "loading.tsx"))).toBe(true);
-    expect(existsSync(join(LOCALE, "(home)", "page.tsx"))).toBe(true);
+  it("khung chờ trang chủ vẫn còn trong route group (storefront)/(home)", () => {
+    expect(existsSync(join(STOREFRONT, "(home)", "loading.tsx"))).toBe(true);
+    expect(existsSync(join(STOREFRONT, "(home)", "page.tsx"))).toBe(true);
   });
 
   it.each(STATUS_CRITICAL_SEGMENTS)(
@@ -88,15 +90,15 @@ describe("Ranh giới stream — điều kiện để mã trạng thái HTTP ho�
     expect(contents).toContain("<body");
   });
 
-  it("vẫn giữ trang 404 trong segment [locale] (có header/footer)", () => {
-    expect(existsSync(join(LOCALE, "not-found.tsx"))).toBe(true);
+  it("vẫn giữ trang 404 trong segment storefront (có header/footer)", () => {
+    expect(existsSync(join(STOREFRONT, "not-found.tsx"))).toBe(true);
   });
 
   it.each([
     ["product/[slug]/page.tsx", "sản phẩm"],
     ["tin-tuc/[slug]/page.tsx", "bài viết"],
   ])("%s giữ render động để %s phát đúng status/Location", (relativeFile: string) => {
-    const source = readFileSync(join(LOCALE, relativeFile), "utf8");
+    const source = readFileSync(join(STOREFRONT, relativeFile), "utf8");
     expect(source).toContain('export const dynamic = "force-dynamic";');
   });
 });

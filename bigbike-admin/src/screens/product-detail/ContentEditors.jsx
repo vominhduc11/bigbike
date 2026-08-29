@@ -126,7 +126,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           {['youtube', 'tiktok', 'facebook'].includes(provider) ? (
             <Input
               type="text"
-              placeholder={t(`products.detail.video.${provider}Placeholder`)}
+              placeholder={t(`products.detail.video.${provider}Placeholder`, { defaultValue: t('common.unknown') })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
@@ -455,7 +455,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
               {['youtube', 'tiktok', 'facebook'].includes(type) ? (
                 <div>
                   <Input className={urlError  ? 'border-danger' : undefined}
-                    placeholder={t(`products.detail.video.${type}Placeholder`)}
+                    placeholder={t(`products.detail.video.${type}Placeholder`, { defaultValue: t('common.unknown') })}
                     aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}

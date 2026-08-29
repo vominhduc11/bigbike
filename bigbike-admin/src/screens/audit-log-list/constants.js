@@ -77,7 +77,7 @@ export function getModuleTone(resourceType) {
 
 // Nhãn module/hành động dùng chung (fallback thống nhất giữa bảng và thẻ mobile).
 export function getModuleLabel(t, resourceType) {
-  return t(`auditLog.module.${resourceType}`, { defaultValue: resourceType || t('auditLog.module.OTHER') })
+  return t(`auditLog.module.${resourceType}`, { defaultValue: t('auditLog.module.OTHER') })
 }
 
 export function getActionLabel(t, action) {
@@ -85,8 +85,8 @@ export function getActionLabel(t, action) {
   const key = `auditLog.action.${action}`
   const translated = t(key, { defaultValue: '' })
   if (translated && translated !== key) return translated
-  const fallback = t('auditLog.actionOther', { code: action, defaultValue: 'Hoạt động khác' })
-  return fallback && !/^\(.+\)$/.test(fallback) ? fallback : 'Hoạt động khác'
+  const fallback = t('auditLog.actionOther', { code: action, defaultValue: t('common.unknown') })
+  return fallback && !/^\(.+\)$/.test(fallback) ? fallback : t('common.unknown')
 }
 
 export function getAuditCardData(log, t) {
@@ -117,10 +117,10 @@ export function tryParse(str) {
 
 // ── CSV export ─────────────────────────────────────────────────────────────────
 export function buildCsvRow(log, t) {
-  const actor = log.actorDisplayName || log.actorEmail || t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType || '' })
-  const actorType = t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType || '' })
-  const action = t(`auditLog.action.${log.action}`, { defaultValue: log.action || '' })
-  const module = t(`auditLog.module.${log.resourceType}`, { defaultValue: log.resourceType || '' })
+  const actor = log.actorDisplayName || log.actorEmail || t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
+  const actorType = t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
+  const action = t(`auditLog.action.${log.action}`, { defaultValue: t('common.unknown') })
+  const module = t(`auditLog.module.${log.resourceType}`, { defaultValue: t('auditLog.module.OTHER') })
   const entity = log.resourceCode || log.resourceDisplayName || log.resourceId || ''
   return [formatDateTimeWithSeconds(log.createdAt), actor, actorType, action, module, entity]
 }

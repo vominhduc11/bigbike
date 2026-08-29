@@ -98,38 +98,6 @@ describe('NotificationBell chat handoff', () => {
     expect(screen.queryByText('9+')).not.toBeInTheDocument()
   })
 
-  it('shows a chat lead that arrives live, without storing the phone number', async () => {
-    // Sự kiện CHAT_LEAD từng bị bỏ qua ở kênh realtime: khách để lại liên hệ mà chuông
-    // im, chỉ hiện sau khi tải lại trang.
-    mocks.fetchAdminNotifications.mockResolvedValue({ unreadCount: 0, items: [] })
-    const user = userEvent.setup()
-    render(<NotificationBell navigate={mocks.navigate} />)
-
-    await waitFor(() => expect(mocks.subscribeAdminWs)
-      .toHaveBeenCalledWith('/topic/admin/chat', expect.any(Function)))
-    const handler = mocks.subscribeAdminWs.mock.calls
-      .find(([topic]) => topic === '/topic/admin/chat')[1]
-
-    act(() => handler({
-      type: 'CHAT_LEAD',
-      conversationId: 'conversation-9',
-      name: 'Nguyễn Văn A',
-      phone: '0900000000',
-      note: 'Gọi lại sau 18h',
-    }))
-
-    await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
-    expect(await screen.findByText('notifications.chatLead')).toBeInTheDocument()
-
-    // Số điện thoại/tên/ghi chú không được ghi xuống trình duyệt.
-    const stored = JSON.stringify(localStorage)
-    expect(stored).not.toContain('0900000000')
-    expect(stored).not.toContain('Gọi lại sau 18h')
-
-    await user.click(screen.getByText('notifications.chatLead'))
-    expect(mocks.navigate).toHaveBeenCalledWith('/admin/chat/conversation-9')
-  })
-
   it('keeps cleared notifications gone after a later reload', async () => {
     // "Xoá tất cả" chỉ dọn được phía trình duyệt (kho dùng chung mọi admin) — mốc xoá
     // phải chặn đúng phần cũ khi nạp lại, nếu không nút trông như không ăn.

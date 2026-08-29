@@ -259,7 +259,7 @@ export function ReportsScreen() {
     : ''
 
   const presetTabs = [
-    ...REPORT_PRESETS.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
+    ...REPORT_PRESETS.map((p) => ({ key: p.value, label: t(`reports.${p.key}`, { defaultValue: t('common.unknown') }) })),
     { key: 'custom', label: t('reports.presetCustom') },
   ]
 
@@ -360,14 +360,14 @@ export function ReportsScreen() {
           <div className="flex gap-2">
             <ExportButton
               disabled={!canExport || !shouldFetch}
-              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : undefined}
+              title={!canExport ? t('reports.requirePermission') : undefined}
               onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
             >
               {t('reports.exportOrders')}
             </ExportButton>
             <ExportButton
               disabled={!canExport}
-              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : t('reports.exportAllHint')}
+              title={!canExport ? t('reports.requirePermission') : t('reports.exportAllHint')}
               onExport={() => runExport(() => exportCustomersCsv())}
             >
               {t('reports.exportCustomers')}

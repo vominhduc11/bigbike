@@ -10,7 +10,6 @@ public record ChatHandoffWsEvent(
         UUID conversationId,
         String questionSummary,
         List<ProductReference> products,
-        boolean contactPresent,
         String customerKind,
         Instant requestedAt,
         long waitingCount

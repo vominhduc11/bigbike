@@ -1,19 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { VariantPicker } from "@/components/catalog/purchase/VariantPicker";
 import Link from "@/i18n/StorefrontLink";
-import {
-  attachCartAssistantAttribution,
-  fetchPublicProduct,
-  recordChatInteraction,
-  type ChatProductCard,
-} from "@/lib/api/client-api";
-import { saveChatAttributionProof } from "@/lib/chat/chat-attribution";
+import { fetchPublicProduct, type ChatProductCard } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/lib/contracts/public";
 import { toCartPath, toCheckoutPath, toProductPath } from "@/lib/utils/routes";
@@ -24,9 +18,6 @@ import type { Locale } from "@/i18n/locale";
 type BigBikeProductCardProps = {
   product: ChatProductCard;
   locale: Locale;
-  conversationId?: string;
-  assistantMessageId?: string;
-  visitorToken?: string;
 };
 
 function effectivePrice(product: ChatProductCard): number | null {
@@ -49,9 +40,6 @@ function formatPrice(product: ChatProductCard, locale: Locale): string | null {
 export function BigBikeProductCard({
   product,
   locale,
-  conversationId,
-  assistantMessageId,
-  visitorToken,
 }: BigBikeProductCardProps) {
   const t = useTranslations("Support");
   const { addToCart } = useCart();
@@ -63,7 +51,6 @@ export function BigBikeProductCard({
   const [noticeKind, setNoticeKind] = useState<"error" | "success" | "info">("info");
   const [cartCount, setCartCount] = useState<number | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-  const attributionRequestRef = useRef<Promise<string | null> | null>(null);
   const name = product.name?.trim();
   const slug = product.slug?.trim();
   const variants = useMemo(() => detail?.variants ?? [], [detail?.variants]);
@@ -74,45 +61,6 @@ export function BigBikeProductCard({
   );
 
   if (!name || !slug) return null;
-
-  async function ensureAttribution(): Promise<string | null> {
-    if (!conversationId || !assistantMessageId) return null;
-    if (attributionRequestRef.current) return attributionRequestRef.current;
-    attributionRequestRef.current = (async () => {
-      try {
-        const interaction = await recordChatInteraction({
-          clientEventId: crypto.randomUUID(),
-          conversationId,
-          assistantMessageId,
-          type: "PRODUCT_VIEWED",
-          productSlug: slug,
-          visitorToken,
-        });
-        const token = interaction.attributionToken?.trim();
-        const expiresAt = interaction.attributionExpiresAt
-          ? new Date(interaction.attributionExpiresAt).getTime()
-          : Number.NaN;
-        if (!token || !Number.isFinite(expiresAt)) return null;
-        saveChatAttributionProof({ productSlug: slug, token, expiresAt });
-
-        // If this product was already in the current cart, attach the new last touch without
-        // changing its quantity or price. A missing cart line is expected and safely ignored.
-        try {
-          const loaded = detail ?? await fetchPublicProduct(slug, locale);
-          if (!detail) setDetail(loaded);
-          await attachCartAssistantAttribution(loaded.id, token);
-        } catch {
-          // The normal add-to-cart path will apply the proof later.
-        }
-        return token;
-      } catch {
-        return null;
-      } finally {
-        attributionRequestRef.current = null;
-      }
-    })();
-    return attributionRequestRef.current;
-  }
 
   async function loadDetail(): Promise<Product | null> {
     if (detail) return detail;
@@ -159,17 +107,7 @@ export function BigBikeProductCard({
     setAdding(true);
     setNotice("");
     try {
-      const attributionToken = await ensureAttribution();
-      const cart = await addToCart(
-        loaded.id,
-        1,
-        variant?.id,
-        conversationId,
-        undefined,
-        true,
-        slug,
-        attributionToken ?? undefined,
-      );
+      const cart = await addToCart(loaded.id, 1, variant?.id, true);
       setNoticeKind("success");
       const selection = variant?.name?.trim() || Object.values(selectedOptions).filter(Boolean).join(" / ");
       setNotice(selection
@@ -213,7 +151,6 @@ export function BigBikeProductCard({
         target="_blank"
         rel="noopener noreferrer"
         className="flex min-w-0 text-inherit no-underline"
-        onClick={() => void ensureAttribution()}
       >
         <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden border-r border-border bg-secondary">
           <MediaImage

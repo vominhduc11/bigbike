@@ -16,7 +16,9 @@ import {
   translatePath,
 } from "@/lib/utils/routes";
 
-export function LanguageSwitch() {
+export function LanguageSwitch({
+  variant = "storefront",
+}: { variant?: "storefront" | "auth" } = {}) {
   const locale = useLocale() as Locale;
   const altSlug = useAltSlug();
   const router = useRouter();
@@ -44,11 +46,15 @@ export function LanguageSwitch() {
   }
 
   return (
-    <div data-language-switch className="flex h-full shrink-0 items-center px-1">
+    <div
+      data-language-switch
+      data-auth-language-switch={variant === "auth" ? true : undefined}
+      className="flex h-full shrink-0 items-center px-1"
+    >
       {LOCALES.map((code, index) => (
         <span key={code} className="inline-flex items-center">
           {index > 0 ? (
-            <span className="select-none px-0.5 font-cta text-b5-label uppercase text-white/40">
+            <span className="select-none px-0.5 font-cta text-b5-label uppercase text-primary-foreground/40">
               /
             </span>
           ) : null}
@@ -60,7 +66,7 @@ export function LanguageSwitch() {
             disabled={isPending}
             aria-pressed={code === locale}
             className={cn(
-              "h-full! min-h-0! w-11! min-w-11! px-0! py-0 font-cta text-b4-action uppercase text-white hover:bg-transparent hover:text-white hover:not-disabled:scale-100",
+              "h-full! min-h-0! w-11! min-w-11! px-0! py-0 font-cta text-b4-action uppercase text-primary-foreground hover:bg-transparent hover:text-primary-foreground hover:not-disabled:scale-100",
               code === locale ? "font-bold opacity-100" : "opacity-60",
             )}
           >

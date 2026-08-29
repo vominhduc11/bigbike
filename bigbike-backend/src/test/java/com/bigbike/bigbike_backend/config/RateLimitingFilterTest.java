@@ -45,12 +45,12 @@ class RateLimitingFilterTest {
     }
 
     @Test
-    void chatLeadAndDeclineUseTheSameChatTier() throws Exception {
+    void customerChatMessagesUseTheChatTier() throws Exception {
         RateLimitingFilter filter = createFilter("127.0.0.1");
 
         for (int index = 0; index < 10; index++) {
-            String path = index % 2 == 0 ? "/api/v1/chat/leads" : "/api/v1/chat/leads/decline";
-            assertThat(execute(filter, "POST", path, "203.0.113.55", null).chainInvoked()).isTrue();
+            assertThat(execute(filter, "POST", "/api/v1/chat/messages", "203.0.113.55", null)
+                    .chainInvoked()).isTrue();
         }
 
         FilterResult rejected = execute(filter, "POST", "/api/v1/chat/messages", "203.0.113.55", null);

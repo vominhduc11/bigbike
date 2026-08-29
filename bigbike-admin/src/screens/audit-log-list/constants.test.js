@@ -125,10 +125,12 @@ describe('nhãn hiển thị', () => {
   })
 
   it('mã hành động lạ vẫn có nhãn dự phòng khi bộ dịch trả lại nguyên khóa', () => {
-    const keyReturningT = (key, options = {}) => (
-      key === 'auditLog.actionOther' ? `(${options.code})` : key
-    )
-    expect(getActionLabel(keyReturningT, 'SOMETHING_BRAND_NEW')).toBe('Hoạt động khác')
+    const keyReturningT = (key, options = {}) => {
+      if (key === 'auditLog.actionOther') return `(${options.code})`
+      if (key === 'common.unknown') return 'Không xác định'
+      return key
+    }
+    expect(getActionLabel(keyReturningT, 'SOMETHING_BRAND_NEW')).toBe('Không xác định')
   })
 
   it('hành động rỗng hiển thị dấu gạch, không phải chuỗi rỗng', () => {
@@ -136,8 +138,8 @@ describe('nhãn hiển thị', () => {
     expect(getActionLabel(t, null)).toBe('—')
   })
 
-  it('nhóm quản lý lạ hiển thị nguyên mã, nhóm rỗng hiển thị "Khác"', () => {
-    expect(getModuleLabel(t, 'BRAND_NEW_MODULE')).toBe('BRAND_NEW_MODULE')
+  it('nhóm quản lý lạ rơi về nhãn an toàn, nhóm rỗng hiển thị "Khác"', () => {
+    expect(getModuleLabel(t, 'BRAND_NEW_MODULE')).toBe('Khác')
     expect(getModuleLabel(t, '')).toBe('Khác')
   })
 

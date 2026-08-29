@@ -51,13 +51,13 @@ function initialBrandQuery() {
 
 function brandActionError(t, error, fallback) {
   if (error?.status === 403) {
-    return t('brands.actionForbidden', { defaultValue: 'Bạn không có quyền thực hiện thao tác này.' })
+    return t('brands.actionForbidden')
   }
   if (error?.status === 404) {
-    return t('brands.actionNotFound', { defaultValue: 'Thương hiệu không còn tồn tại. Danh sách đã được làm mới.' })
+    return t('brands.actionNotFound')
   }
   if (error?.status === 409) {
-    return error.message || t('brands.actionConflict', { defaultValue: 'Thương hiệu không còn ở trạng thái phù hợp để thực hiện thao tác này.' })
+    return error.message || t('brands.actionConflict')
   }
   return error?.message || fallback
 }
@@ -116,10 +116,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   async function hideBrand(brand) {
     if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.hideConfirm', {
-        name: formatText(brand.name),
-        defaultValue: 'Chuyển thương hiệu "{{name}}" vào Thùng rác. Đây là xoá mềm và có thể khôi phục sau.',
-      }),
+      t('brands.detail.hideConfirm', { name: formatText(brand.name) }),
       t('common.moveToTrashTitle'),
       { variant: 'default', confirmLabel: t('common.moveToTrash') },
     )
@@ -129,7 +126,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
     try {
       await deleteBrand(brand.id)
       await queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.hideSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }))
+      toast.success(t('brands.deleteSuccess'))
     } catch (error) {
       toast.error(brandActionError(t, error, t('common.error')))
       if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
@@ -141,10 +138,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   async function restoreBrandFromTrash(brand) {
     if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.restoreConfirm', {
-        name: formatText(brand.name),
-        defaultValue: 'Khôi phục thương hiệu "{{name}}"? Thương hiệu sẽ hiển thị lại trên website.',
-      }),
+      t('brands.detail.restoreConfirm', { name: formatText(brand.name) }),
       t('brands.restoreConfirmTitle', { defaultValue: 'Khôi phục thương hiệu?' }),
       { variant: 'default', confirmLabel: t('products.restore', { defaultValue: 'Khôi phục' }) },
     )
@@ -166,10 +160,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   async function permanentlyDeleteBrand(brand) {
     if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.permanentDeleteConfirm', {
-        name: formatText(brand.name),
-        defaultValue: 'Xoá vĩnh viễn thương hiệu "{{name}}". Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
-      }),
+      t('brands.permanentDeleteConfirm', { name: formatText(brand.name) }),
       t('common.permanentDeleteTitle'),
       { variant: 'danger', confirmLabel: t('common.permanentDelete') },
     )
@@ -365,11 +356,11 @@ export function BrandListScreen({ navigate, canUpdate }) {
       <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
 
       {!canUpdate ? (
-        <ReadOnlyBanner warning={t('brands.readOnly', { defaultValue: 'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.' })} />
+        <ReadOnlyBanner warning={t('brands.readOnly')} />
       ) : null}
 
       <ResponsiveFilterBar
-        ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })}
+        ariaLabel={t('brands.filterAria')}
         className="items-center"
         activeFilterCount={activeFilterChips.length}
         onReset={resetFilters}
@@ -410,7 +401,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
         </Button>
         {state.isFetching && state.status === 'success' ? (
           <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
-            {t('brands.refreshing', { defaultValue: 'Đang cập nhật' })}
+            {t('brands.refreshing')}
           </span>
         ) : null}
       </ResponsiveFilterBar>

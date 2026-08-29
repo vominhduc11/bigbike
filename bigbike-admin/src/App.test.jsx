@@ -18,7 +18,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => values.defaultValue || key,
+    t: (key, values = {}) => ({
+      'app.noAllowedModules': 'Tài khoản chưa được cấp quyền sử dụng khu vực nào',
+      'app.noAllowedModulesDesc': 'Hãy liên hệ người quản trị để được cấp quyền phù hợp.',
+    }[key] || values.defaultValue || key),
   }),
 }))
 

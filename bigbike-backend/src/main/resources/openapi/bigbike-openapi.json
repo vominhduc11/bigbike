@@ -1319,19 +1319,6 @@
         }
       }
     },
-    "/api/v1/cart/assistant-attributions": {
-      "post": {
-        "tags": ["Cart"],
-        "summary": "Attach one verified assistant product-view proof to matching lines already in the current cart",
-        "operationId": "attachCartAssistantAttribution",
-        "security": [{"CsrfHeader":[]}],
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["productId","attributionToken"],"properties":{"productId":{"type":"string","maxLength":255},"attributionToken":{"type":"string","maxLength":2048}}}}}
-        },
-        "responses": {"200":{"description":"Attribution attached without changing quantity or price"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"},"409":{"$ref":"#/components/responses/Conflict"}}
-      }
-    },
     "/api/v1/cart/items/{itemId}": {
       "patch": {
         "tags": [
@@ -8266,9 +8253,9 @@
         "operationId": "sendChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","maxLength":1000,"description":"Optional only when exactly one owned imageId is supplied."},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"},"description":"At most one previously uploaded, owned image for this turn."},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}},"description":"Optional quick-choice metadata; accepted only when it matches the pending clarification. The visible option label remains message."},"originInteractionId":{"type":"string","format":"uuid","nullable":true,"description":"Accepted only for a verified action click from this conversation."}}}}}
+          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","maxLength":1000,"description":"Optional only when exactly one owned imageId is supplied."},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"},"description":"At most one previously uploaded, owned image for this turn."},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}},"description":"Optional quick-choice metadata; accepted only when it matches the pending clarification. The visible option label remains message."}}}}}
         },
-        "responses": {"200":{"description":"Guarded answer with assistantMessageId, 16 or 20 maxTurns, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call."},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
+        "responses": {"200":{"description":"Guarded answer with assistantMessageId, a 40-turn conversation limit, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call."},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
       }
     },
     "/api/v1/chat/messages/stream": {
@@ -8278,57 +8265,9 @@
         "operationId": "streamChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","maxLength":1000},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"}},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}}},"originInteractionId":{"type":"string","format":"uuid","nullable":true}}}}}
+          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","maxLength":1000},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"}},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}}}}}}}
         },
         "responses": {"200":{"description":"text/event-stream: UNDERSTANDING, optional CHECKING_PRODUCTS, FINALIZING, then one guarded result with optional clarification; never model draft"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded"}}
-      }
-    },
-    "/api/v1/chat/interactions": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Record a verified lead-prompt view or fixed action click idempotently",
-        "operationId": "recordChatInteraction",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["clientEventId","conversationId","assistantMessageId","type"],"properties":{"clientEventId":{"type":"string","format":"uuid"},"conversationId":{"type":"string","format":"uuid"},"assistantMessageId":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["LEAD_PROMPT_VIEWED","ACTION_CLICKED","PRODUCT_VIEWED"]},"leadPromptSequence":{"type":"integer","minimum":0,"maximum":2},"actionType":{"type":"string","maxLength":48,"nullable":true},"productSlug":{"type":"string","maxLength":255,"nullable":true},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}
-        },
-        "responses": {"200":{"description":"Recorded or replayed interaction id; a verified PRODUCT_VIEWED also returns a signed attributionToken and attributionExpiresAt"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"429":{"description":"CHAT tier exceeded"}}
-      }
-    },
-    "/api/v1/chat/leads": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Capture an explicitly consented callback lead",
-        "operationId": "captureChatLead",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["conversationId","consent"],"properties":{"conversationId":{"type":"string","format":"uuid"},"contactSource":{"type":"string","enum":["FORM","ACCOUNT"],"default":"FORM","description":"FORM uses the submitted contact fields; ACCOUNT requires an authenticated customer and resolves name/phone server-side."},"name":{"type":"string","maxLength":100},"phone":{"type":"string","maxLength":32},"note":{"type":"string","maxLength":500},"consent":{"type":"boolean","enum":[true]},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}
-        },
-        "responses": {"200":{"description":"Lead captured and admin notified"},"400":{"$ref":"#/components/responses/ValidationError"}}
-      }
-    },
-    "/api/v1/chat/leads/offer": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Open the callback form only after the customer explicitly requests it",
-        "operationId": "offerChatLead",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["requestId"],"properties":{"requestId":{"type":"string","format":"uuid","description":"Idempotency key for this explicit form-open action."},"conversationId":{"type":"string","format":"uuid","nullable":true},"locale":{"type":"string","enum":["vi","en"],"default":"vi"},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}
-        },
-        "responses": {"200":{"description":"Callback form is available for the returned conversation; no contact data is captured yet"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"429":{"description":"CHAT tier exceeded"}}
-      }
-    },
-    "/api/v1/chat/leads/decline": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Decline a callback invitation without sending contact details",
-        "operationId": "declineChatLead",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["conversationId"],"properties":{"conversationId":{"type":"string","format":"uuid"},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}
-        },
-        "responses": {"200":{"description":"Lead invitation marked as declined"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"description":"The invitation is not available or a lead was already accepted"}}
       }
     },
     "/api/v1/chat/handoffs": {
@@ -8383,84 +8322,6 @@
         "responses": {"200":{"description":"Short-lived conversation-scoped token and expiry"},"404":{"$ref":"#/components/responses/NotFound"}}
       }
     },
-    "/api/v1/chat/messages/{messageId}/feedback": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Rate an owned assistant answer with an optional fixed reason",
-        "operationId": "submitChatMessageFeedback",
-        "parameters": [
-          {"name":"messageId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},
-          {"name":"X-Chat-Visitor-Token","in":"header","schema":{"type":"string","maxLength":128}}
-        ],
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["rating"],"properties":{"rating":{"type":"string","enum":["HELPFUL","UNHELPFUL"]},"reason":{"type":"string","enum":["WRONG_ANSWER","MISUNDERSTOOD","MISSING_INFORMATION","OFF_TOPIC"],"nullable":true}}}}}},
-        "responses": {"200":{"description":"Feedback recorded idempotently for the answer"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"}}
-      }
-    },
-    "/api/v1/admin/chat/models": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List stable priced Gemini models currently available to the shop account",
-        "operationId": "getAssistantModelCatalog",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"refresh","in":"query","schema":{"type":"boolean","default":false},"description":"Refresh the provider model list instead of using the short cache."}],
-        "responses": {"200":{"description":"Current, fallback and independently configured review model plus bilingual speed/cost descriptions and verified prices"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/model": {
-      "put": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Change the customer assistant model immediately without changing review moderation",
-        "operationId": "updateAssistantModel",
-        "security": [{"AdminBearerAuth":[]}],
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["modelId"],"properties":{"modelId":{"type":"string","maxLength":120,"pattern":"^[a-z0-9][a-z0-9.-]*$"}}}}}},
-        "responses": {"200":{"description":"Updated model catalog with the new currentModel"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/evaluations/datasets": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List versioned offline evaluation datasets and acceptance-case coverage",
-        "operationId": "listAssistantEvaluationDatasets",
-        "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"Dataset checksums, case counts, source disclosure and phase 1-4 coverage"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/evaluations/runs": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List the latest persisted offline model evaluation runs",
-        "operationId": "listAssistantEvaluationRuns",
-        "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"Up to 50 persisted runs and side-by-side model metrics"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      },
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Start a cost-capped evaluation outside the customer request and quota path",
-        "operationId": "startAssistantEvaluationRun",
-        "security": [{"AdminBearerAuth":[]}],
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["datasetVersion","modelIds"],"properties":{"datasetVersion":{"type":"string","maxLength":80},"modelIds":{"type":"array","minItems":1,"maxItems":4,"uniqueItems":true,"items":{"type":"string","maxLength":120}},"maxCostUsd":{"type":"number","minimum":0.01,"maximum":2.00}}}}}},
-        "responses": {"200":{"description":"Persisted pending run; execution never consumes the customer-facing daily quota"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/evaluations/compare": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Compare selected persisted evaluation runs side by side",
-        "operationId": "compareAssistantEvaluationRuns",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"runIds","in":"query","required":true,"schema":{"type":"array","minItems":1,"maxItems":10,"items":{"type":"string","format":"uuid"}}}],
-        "responses": {"200":{"description":"Accuracy, intent, non-fabrication, give-up, latency and estimated-cost metrics per model"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/evaluations/dataset-draft": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Create a PII-redacted owner-review draft from stored customer questions",
-        "operationId": "createSanitizedAssistantEvaluationDraft",
-        "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"Draft JSON only; owner must verify redaction and add answers from real shop data before it can become a dataset"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
     "/api/v1/admin/chat/images/{id}/content": {
       "get": {
         "tags": ["Admin AI Assistant"],
@@ -8481,8 +8342,7 @@
           {"name":"page","in":"query","schema":{"type":"integer","minimum":1,"default":1}},
           {"name":"size","in":"query","schema":{"type":"integer","minimum":1,"maximum":100,"default":20}},
           {"name":"from","in":"query","schema":{"type":"string","format":"date"}},
-          {"name":"to","in":"query","schema":{"type":"string","format":"date"}},
-          {"name":"hasLead","in":"query","schema":{"type":"boolean"}}
+          {"name":"to","in":"query","schema":{"type":"string","format":"date"}}
         ],
         "responses": {"200":{"description":"Paginated conversation summaries"},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
@@ -8493,17 +8353,7 @@
         "summary": "List all customers currently waiting for staff, oldest first",
         "operationId": "listWaitingChatHandoffs",
         "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"waitingCount and WAITING items with elapsed seconds and consent-safe context"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/handoffs/{id}/acknowledge": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Explicitly acknowledge a waiting customer",
-        "operationId": "acknowledgeChatHandoff",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "responses": {"200":{"description":"Acknowledged handoff and updated waiting count"},"403":{"$ref":"#/components/responses/Forbidden"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "responses": {"200":{"description":"waitingCount and live handoff items with elapsed seconds and conversation context"},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     },
     "/api/v1/admin/chat/handoffs/{id}/claim": {
@@ -8549,65 +8399,6 @@
         "responses": {"200":{"description":"Handoff is CLOSED and customer receives a system notice"},"403":{"$ref":"#/components/responses/Forbidden"},"409":{"description":"Conversation is not assigned to this employee"}}
       }
     },
-    "/api/v1/admin/chat/feedback": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Aggregate answer feedback, top issues, weekly trend and recent samples",
-        "operationId": "getChatFeedbackReport",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"from","in":"query","schema":{"type":"string","format":"date"}},{"name":"to","in":"query","schema":{"type":"string","format":"date"}}],
-        "responses": {"200":{"description":"Helpful/unhelpful totals, issue ranking, weeks and sanitized samples"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/feedback/{id}/template-prefill": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Prefill a disabled standard-answer draft from criticized customer wording",
-        "operationId": "prefillAssistantTemplateFromFeedback",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "responses": {"200":{"description":"Sanitized topic and VI/EN trigger draft"},"403":{"$ref":"#/components/responses/Forbidden"},"404":{"$ref":"#/components/responses/NotFound"}}
-      }
-    },
-    "/api/v1/admin/settings/ai-assistant/templates/preview": {
-      "post": {
-        "tags": ["Admin Settings"],
-        "summary": "Preview exact bilingual customer copy and list non-fabrication violations",
-        "operationId": "previewAssistantAnswerTemplate",
-        "security": [{"AdminBearerAuth":[]}],
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["locale","sampleQuestion"],"properties":{"topic":{"type":"string","maxLength":120},"triggersVi":{"type":"array","items":{"type":"string","maxLength":160}},"triggersEn":{"type":"array","items":{"type":"string","maxLength":160}},"answerVi":{"type":"string","maxLength":2000},"answerEn":{"type":"string","maxLength":2000},"locale":{"type":"string","enum":["vi","en"]},"sampleQuestion":{"type":"string","minLength":1,"maxLength":1000}}}}}},
-        "responses": {"200":{"description":"Exact matched answer or stable violation codes; owner draft is never rewritten"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/funnel": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Get the seven-day conversation-cohort sales funnel",
-        "operationId": "getChatSalesFunnel",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"from","in":"query","schema":{"type":"string","format":"date"}},{"name":"to","in":"query","schema":{"type":"string","format":"date"}}],
-        "responses": {"200":{"description":"Conversations, product views, cart adds, distinct orders, line revenue, rates and cohort completeness"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/unanswered": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List up to 200 unresolved assistant questions in the selected period",
-        "operationId": "listUnansweredChatQuestions",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"from","in":"query","schema":{"type":"string","format":"date"}},{"name":"to","in":"query","schema":{"type":"string","format":"date"}}],
-        "responses": {"200":{"description":"Unresolved question, server-owned reason, conversation link and timestamp"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/data-gaps": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List sales-critical product data gaps",
-        "operationId": "listAssistantProductDataGaps",
-        "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"Counts and prioritized product list for missing size guides, specifications, raw options and accessory links"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
     "/api/v1/policies/{topic}": {
       "get": {
         "tags": ["Public Store Policies"],
@@ -8623,7 +8414,7 @@
     "/api/v1/admin/chat/conversations/{id}": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get one BigBike Assistant conversation with messages and consented lead",
+        "summary": "Get one BigBike Assistant conversation with messages, images and staff-handoff status",
         "operationId": "getChatConversation",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
@@ -8633,11 +8424,11 @@
     "/api/v1/admin/chat/stats": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get chat snapshot and selected-period quality, funnel, cost and fallback stats",
+        "summary": "Get daily AI quota and selected-period reply-quality stats",
         "operationId": "getChatStats",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"},"description":"Snapshot anchor for today, current month and 14-day monitoring."},{"name":"from","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period start in Asia/Ho_Chi_Minh."},{"name":"to","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period end in Asia/Ho_Chi_Minh."}],
-        "responses": {"200":{"description":"Snapshot plus selected-period stats; calendar-month USD totals, warning and 14-day monitoring remain anchored to date. Response includes periodFrom and periodTo."},"403":{"$ref":"#/components/responses/Forbidden"}}
+        "responses": {"200":{"description":"Daily AI quota plus selected-period reply-quality stats. Response includes periodFrom and periodTo."},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     }
   },
@@ -10212,15 +10003,6 @@
           },
           "itemCount": {
             "type": "integer"
-          },
-          "leadPrompt": {
-            "type": "boolean",
-            "description": "Compatibility flag; true when this cart mutation emits lead prompt sequence 2."
-          },
-          "leadPromptSequence": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2
           }
         }
       },
@@ -10252,24 +10034,6 @@
           "productVariantId": {
             "type": "string",
             "nullable": true
-          },
-          "assistantConversationId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true,
-            "description": "Legacy context only; this field alone never attributes a cart line."
-          },
-          "assistantInteractionId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true,
-            "description": "Accepted only for a verified action -> assistant response/card -> cart chain."
-          },
-          "assistantAttributionToken": {
-            "type": "string",
-            "maxLength": 2048,
-            "nullable": true,
-            "description": "Signed 7-day proof issued for a verified PRODUCT_VIEWED interaction; invalid proof is ignored without blocking add-to-cart."
           }
         }
       },

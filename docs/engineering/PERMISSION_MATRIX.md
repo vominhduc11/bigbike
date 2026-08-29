@@ -51,7 +51,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
-| Trợ lý BigBike | `chat.read` | — | `chat.reply` | `chat.reply` tiếp nhận/nhắn/bàn giao/kết thúc và phụ thuộc `chat.read`; không sửa transcript/lead |
+| Trợ lý BigBike | `chat.read` | — | `chat.reply` | `chat.reply` tiếp nhận/nhắn/bàn giao/kết thúc và phụ thuộc `chat.read`; không sửa transcript/ảnh |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
@@ -89,13 +89,13 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail, phễu, handoff waiting, unanswered và data gaps (data gaps còn cần `products.read`); cũng được đọc stats | `CHAT_RULE_013`, `CHAT_RULE_029`, `CHAT_RULE_040`–`042`, `PermissionCatalog`, migrations `V1016`/`V1052` |
-| `settings.read` | Theo ma trận settings hiện hành | Snapshot stats không chứa transcript/PII: token/request, model usage, chi phí, latency và fallback telemetry để hiển thị trong Cài đặt → Trợ lý BigBike | `CHAT_RULE_056_UI_SETTINGS`, `API_CONTRACT.md` §Admin chat history |
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail, ảnh riêng tư, hàng chờ và stats quota/chất lượng không chứa transcript ngoài phạm vi | `CHAT_RULE_013`, `CHAT_RULE_040`–`047`, `PermissionCatalog`, migrations `V1016`/`V1052` |
+| `settings.read` | Theo ma trận settings hiện hành | Snapshot quota/chất lượng không chứa transcript/PII và các cài đặt Trợ lý còn được giữ | `CHAT_RULE_010`, `API_CONTRACT.md` §Admin chat history |
 | `chat.reply` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Claim/send/return/close handoff; dependency bắt buộc `chat.read` | `CHAT_RULE_040`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
 
-`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` là quyền ghi hẹp, nhạy cảm, phụ thuộc `chat.read`; lưu đúng admin và thời điểm nhận/gửi/bàn giao nhưng không cho sửa/xoá transcript. Migration đổi mọi role-permission `chat.handle` hiện có sang `chat.reply` và không tự cấp role thường. Chỉ người đang nhận được gửi/bàn giao/đóng. Lead chứa số/Zalo nên list/handoff chung chỉ trả cờ có liên hệ; detail chỉ mở sau `chat.read`.
+`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` là quyền ghi hẹp, nhạy cảm, phụ thuộc `chat.read`; lưu đúng admin và thời điểm nhận/gửi/bàn giao nhưng không cho sửa/xoá transcript. Migration đổi mọi role-permission `chat.handle` hiện có sang `chat.reply` và không tự cấp role thường. Chỉ người đang nhận được gửi/bàn giao/đóng.
 
-Giai đoạn 4 không tạo quyền mới. Danh mục model, chi phí và kết quả bộ đề là dữ liệu vận hành nên đọc bằng `settings.read`; đổi model, bật/tắt ảnh, thay trần ảnh hoặc chạy bộ đề dùng `settings.write`. Dấu vân tay catalog được backend tự làm mới cục bộ, không mở mutation công khai. Nội dung ảnh khách vẫn là một phần riêng tư của transcript: cả endpoint storefront lẫn admin đều kiểm ownership/`chat.read` ở mỗi lần tải, không phát URL MinIO công khai. `settings.read` đứng một mình không cấp quyền xem ảnh; `chat.read` đứng một mình không cho đổi cấu hình hay chạy bộ đề có chi phí.
+Không có quyền chat mới. `settings.read/settings.write` chỉ đọc/sửa các cài đặt Trợ lý còn được giữ; chúng không cho đổi model cố định, chạy bộ đề hoặc xem chi phí đã gỡ. Dấu vân tay catalog là cục bộ. Nội dung ảnh khách là phần riêng tư của transcript: endpoint storefront/admin đều kiểm ownership/`chat.read` mỗi lần tải, không phát URL MinIO công khai. `settings.read` không cấp quyền xem ảnh; `chat.read` không cho đổi cài đặt.
 
 ### Catalog / Product permissions
 

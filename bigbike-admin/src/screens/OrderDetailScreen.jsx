@@ -167,9 +167,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         || errorStatus === 0
         || err?.code === 'NETWORK_ERROR'
       if (maintenanceFailure) {
-        setUnsavedActionWarning(t('orders.detail.unsavedActionWarning', {
-          defaultValue: 'Thao tác CHƯA được lưu. Hệ thống đang bảo trì hoặc kết nối đã ngắt. Sau khi hệ thống hoạt động, dữ liệu đơn sẽ được tải lại.',
-        }))
+        setUnsavedActionWarning(t('orders.detail.unsavedActionWarning'))
         setReasonModal(null)
         clearOrderReasonDraft()
         await Promise.allSettled([
@@ -212,7 +210,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     }
     if (newStatus === 'COMPLETED') {
       const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted' }
-      const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : newStatus
+      const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : t('common.unknown')
       const confirmed = await showConfirm(
         t('orders.detail.confirmStatusMessage', { label }),
         t('orders.detail.confirmStatusTitle')

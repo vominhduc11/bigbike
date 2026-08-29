@@ -173,12 +173,6 @@ export type ChatAvailability = {
   quickPrompts: string[];
   maxTurns: number;
   contacts: ChatContact;
-  memoryDays: number;
-  proactive: {
-    enabled: boolean;
-    productSeconds: number;
-    cartSeconds: number;
-  };
   images: {
     enabled: boolean;
     maxBytes: number;
@@ -227,12 +221,6 @@ export type ChatNextStep = {
   type: string;
   productSlug?: string | null;
   clarificationId?: string | null;
-};
-
-export type ChatLeadOffer = {
-  sequence: 1 | 2;
-  reason: "HOLD_STOCK" | "RESTOCK_ALERT" | "SIZE_ADVICE" | "QUOTE" | "STAFF_CONFIRMATION";
-  presentation: string;
 };
 
 export type ChatHandoffStatus = {
@@ -299,11 +287,8 @@ export type ChatMessageResult = {
   salesStage: ChatSalesStage;
   nextStep?: ChatNextStep | null;
   handoff?: ChatHandoffStatus | null;
-  leadOffer?: ChatLeadOffer | null;
   clarification?: ChatClarification | null;
   handoffRecommended: boolean;
-  leadPrompt: boolean;
-  leadPromptSequence: 0 | 1 | 2;
   actions: ChatAction[];
   contacts: ChatContact;
   answerFormat: "PLAIN_TEXT" | "MARKDOWN";
@@ -557,29 +542,6 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
               : null,
         }
       : null;
-  const leadSource =
-    source.leadOffer && typeof source.leadOffer === "object"
-      ? (source.leadOffer as Record<string, unknown>)
-      : null;
-  const leadReasons = new Set([
-    "HOLD_STOCK",
-    "RESTOCK_ALERT",
-    "SIZE_ADVICE",
-    "QUOTE",
-    "STAFF_CONFIRMATION",
-  ]);
-  const leadOffer =
-    leadSource &&
-    (leadSource.sequence === 1 || leadSource.sequence === 2) &&
-    typeof leadSource.reason === "string" &&
-    leadReasons.has(leadSource.reason) &&
-    isSafeChatDisplayText(leadSource.presentation, lang)
-      ? {
-          sequence: leadSource.sequence as 1 | 2,
-          reason: leadSource.reason as ChatLeadOffer["reason"],
-          presentation: leadSource.presentation.trim(),
-        }
-      : null;
   const mode = source.mode === "AI" && safeAnswer && !unsafe ? "AI" : "CONTACT";
   const channelState = [
     "AI_ACTIVE",
@@ -605,16 +567,8 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
     salesStage: stage,
     nextStep: unsafe ? null : nextStep,
     handoff: unsafe ? null : handoff,
-    leadOffer: unsafe ? null : leadOffer,
     clarification: unsafe ? null : normalizedClarification.clarification,
     handoffRecommended: mode === "CONTACT" || source.handoffRecommended === true,
-    leadPrompt: !unsafe && source.leadPrompt === true,
-    leadPromptSequence:
-      !unsafe && (source.leadPromptSequence === 1 || source.leadPromptSequence === 2)
-        ? source.leadPromptSequence
-        : !unsafe && source.leadPrompt === true
-          ? 1
-          : 0,
     actions:
       unsafe || !answer || normalizedClarification.clarification
         ? []
@@ -683,18 +637,6 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
         quickPrompts,
         maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 16,
         contacts: normalizeChatContacts(source.contacts),
-        memoryDays: Number.isFinite(source.memoryDays)
-          ? Math.max(1, Math.min(30, source.memoryDays))
-          : 30,
-        proactive: {
-          enabled: source.proactive?.enabled === true,
-          productSeconds: Number.isFinite(source.proactive?.productSeconds)
-            ? source.proactive.productSeconds
-            : 45,
-          cartSeconds: Number.isFinite(source.proactive?.cartSeconds)
-            ? source.proactive.cartSeconds
-            : 120,
-        },
         images: {
           enabled: source.images?.enabled === true,
           maxBytes: Number.isFinite(source.images?.maxBytes)
@@ -721,7 +663,6 @@ export function sendChatMessage(
   signal?: AbortSignal,
   requestId?: string,
   pageContext?: { type: "PRODUCT"; productSlug: string } | null,
-  originInteractionId?: string,
   clarificationSelection?: ChatClarificationSelection,
   visitorToken?: string,
   imageIds?: string[],
@@ -735,7 +676,6 @@ export function sendChatMessage(
       lang,
       requestId: requestId || null,
       pageContext: pageContext ?? null,
-      originInteractionId: originInteractionId || null,
       clarificationSelection: clarificationSelection ?? null,
       visitorToken: visitorToken || null,
       imageIds: imageIds?.slice(0, 1) ?? [],
@@ -767,7 +707,6 @@ export async function streamChatMessage(
   onProgress: (code: ChatProgressCode) => void,
   signal?: AbortSignal,
   pageContext?: { type: "PRODUCT"; productSlug: string } | null,
-  originInteractionId?: string,
   clarificationSelection?: ChatClarificationSelection,
   visitorToken?: string,
   imageIds?: string[],
@@ -789,7 +728,6 @@ export async function streamChatMessage(
       lang,
       requestId,
       pageContext: pageContext ?? null,
-      originInteractionId: originInteractionId || null,
       clarificationSelection: clarificationSelection ?? null,
       visitorToken: visitorToken || null,
       imageIds: imageIds?.slice(0, 1) ?? [],
@@ -833,33 +771,6 @@ export async function streamChatMessage(
   if (buffer.trim()) consume(buffer);
   if (!result) throw new Error(invalidPayloadMessage());
   return result;
-}
-
-export function recordChatInteraction(input: {
-  clientEventId: string;
-  conversationId: string;
-  assistantMessageId: string;
-  type: "LEAD_PROMPT_VIEWED" | "ACTION_CLICKED" | "PRODUCT_VIEWED";
-  leadPromptSequence?: 1 | 2;
-  actionType?: ChatActionType;
-  productSlug?: string;
-  visitorToken?: string;
-}): Promise<{
-  recorded: boolean;
-  interactionId: string;
-  attributionToken?: string | null;
-  attributionExpiresAt?: string | null;
-}> {
-  return clientRequest("POST", "/api/v1/chat/interactions", {
-    clientEventId: input.clientEventId,
-    conversationId: input.conversationId,
-    assistantMessageId: input.assistantMessageId,
-    type: input.type,
-    leadPromptSequence: input.leadPromptSequence ?? null,
-    actionType: input.actionType ?? null,
-    productSlug: input.productSlug ?? null,
-    visitorToken: input.visitorToken || null,
-  });
 }
 
 export function requestChatHandoff(input: {
@@ -1029,55 +940,6 @@ export function createChatRealtimeToken(
   });
 }
 
-export function submitChatFeedback(input: {
-  messageId: string;
-  rating: "HELPFUL" | "UNHELPFUL";
-  reason?: "WRONG_ANSWER" | "MISUNDERSTOOD" | "MISSING_INFORMATION" | "OFF_TOPIC";
-  visitorToken?: string;
-}): Promise<{ id: string; rating: string; reason?: string | null; recorded: boolean }> {
-  return clientRequest(
-    "POST",
-    `/api/v1/chat/messages/${encodeURIComponent(input.messageId)}/feedback`,
-    { rating: input.rating, reason: input.reason || null },
-    input.visitorToken ? { "X-Chat-Visitor-Token": input.visitorToken } : undefined,
-  );
-}
-
-export function captureChatLead(input: {
-  conversationId: string;
-  name?: string;
-  phone?: string;
-  note?: string;
-  contactSource?: "FORM" | "ACCOUNT";
-  visitorToken?: string;
-}): Promise<{ captured: boolean }> {
-  return clientRequest("POST", "/api/v1/chat/leads", { ...input, consent: true });
-}
-
-export function offerChatLead(input: {
-  requestId: string;
-  conversationId?: string;
-  locale: "vi" | "en";
-  visitorToken?: string;
-}): Promise<{ conversationId: string; status: string }> {
-  return clientRequest("POST", "/api/v1/chat/leads/offer", {
-    requestId: input.requestId,
-    conversationId: input.conversationId ?? null,
-    locale: input.locale,
-    visitorToken: input.visitorToken || null,
-  });
-}
-
-export function declineChatLead(
-  conversationId: string,
-  visitorToken?: string,
-): Promise<{ declined: boolean }> {
-  return clientRequest("POST", "/api/v1/chat/leads/decline", {
-    conversationId,
-    visitorToken: visitorToken || null,
-  });
-}
-
 export function fetchCart(): Promise<Cart> {
   return clientRequest("GET", "/api/v1/cart");
 }
@@ -1086,27 +948,11 @@ export function addCartItem(
   productId: string,
   quantity: number,
   variantId?: string,
-  assistantConversationId?: string,
-  assistantInteractionId?: string,
-  assistantAttributionToken?: string,
 ): Promise<Cart> {
   return clientRequest("POST", "/api/v1/cart/items", {
     productId,
     quantity,
     productVariantId: variantId ?? null,
-    assistantConversationId: assistantConversationId ?? null,
-    assistantInteractionId: assistantInteractionId ?? null,
-    assistantAttributionToken: assistantAttributionToken ?? null,
-  });
-}
-
-export function attachCartAssistantAttribution(
-  productId: string,
-  attributionToken: string,
-): Promise<Cart> {
-  return clientRequest("POST", "/api/v1/cart/assistant-attributions", {
-    productId,
-    attributionToken,
   });
 }
 

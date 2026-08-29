@@ -105,7 +105,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const permLabels = {}
   catalog.forEach(g => g.permissions.forEach(p => {
     const lk = PERM_LABEL_KEY_MAP[p.key]
-    permLabels[p.key] = lk ? t(lk, { defaultValue: p.key }) : p.key
+    permLabels[p.key] = lk ? t(lk, { defaultValue: t('common.unknown') }) : t('common.unknown')
   }))
 
   const selectedDisplayName = selected ? getRoleDisplayName(selected, t) : ''

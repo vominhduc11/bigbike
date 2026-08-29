@@ -95,7 +95,7 @@ export function MaintenanceScreen() {
   if (isError) {
     return (
       <Screen>
-        <StatePanel tone="danger" title={t('common.loadFailed')} actionLabel={t('common.retry')} onAction={() => refetch()} />
+        <StatePanel tone="danger" title={t('common.errorLoading')} actionLabel={t('common.retry')} onAction={() => refetch()} />
       </Screen>
     )
   }
@@ -112,7 +112,7 @@ export function MaintenanceScreen() {
       )}
 
       <DetailSection
-        title={t('maintenance.statusTitle', { defaultValue: 'Trạng thái hiện tại' })}
+        title={t('maintenance.statusTitle')}
         badge={(
           <span className={`bb-badge ${tone.badge}`}>
             <tone.Icon size={14} aria-hidden="true" /> {tone.label}

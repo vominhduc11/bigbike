@@ -14,7 +14,6 @@ import com.bigbike.bigbike_backend.persistence.entity.chat.ChatHandoffEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatHandoffJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.AdminChatWsService;
@@ -33,7 +32,6 @@ class ChatHandoffServiceTest {
     private ChatHandoffJpaRepository handoffs;
     private ChatConversationJpaRepository conversations;
     private ChatMessageJpaRepository messages;
-    private ChatLeadJpaRepository leads;
     private AdminChatWsService adminChat;
     private CustomerChatWsService customerChat;
     private ChatHandoffEmailService email;
@@ -45,7 +43,6 @@ class ChatHandoffServiceTest {
         handoffs = mock(ChatHandoffJpaRepository.class);
         conversations = mock(ChatConversationJpaRepository.class);
         messages = mock(ChatMessageJpaRepository.class);
-        leads = mock(ChatLeadJpaRepository.class);
         adminChat = mock(AdminChatWsService.class);
         customerChat = mock(CustomerChatWsService.class);
         email = mock(ChatHandoffEmailService.class);
@@ -54,7 +51,7 @@ class ChatHandoffServiceTest {
                 new ChatPhase3Settings.BusinessHoursStatus(
                         true, null, "T2–T6 09:00–21:00 · T7–CN 09:00–18:00"));
         service = new ChatHandoffService(
-                handoffs, conversations, messages, leads, mock(AdminUserJpaRepository.class),
+                handoffs, conversations, messages, mock(AdminUserJpaRepository.class),
                 adminChat, customerChat, email, phase3Settings);
     }
 
@@ -89,7 +86,6 @@ class ChatHandoffServiceTest {
                 .thenReturn(Optional.of(question));
         when(messages.findByConversationIdOrderByCreatedAtAsc(conversationId))
                 .thenReturn(java.util.List.of(question, answer));
-        when(leads.existsByConversationId(conversationId)).thenReturn(false);
         when(handoffs.countByStatus("WAITING")).thenReturn(1L);
         when(handoffs.saveAndFlush(any())).thenAnswer(invocation -> {
             ChatHandoffEntity saved = invocation.getArgument(0);
@@ -111,7 +107,6 @@ class ChatHandoffServiceTest {
         assertThat(event.getValue().products()).extracting(ChatHandoffWsEvent.ProductReference::slug)
                 .containsExactly("mu-a");
         assertThat(event.getValue().customerKind()).isEqualTo("SIGNED_IN");
-        assertThat(event.getValue().contactPresent()).isFalse();
         verify(email).send(handoffId);
     }
 

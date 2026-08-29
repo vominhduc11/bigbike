@@ -60,7 +60,7 @@ function CustomerStatusBadge({ value }) {
   return (
     <span className={`bb-badge ${cls}`}>
       <span className="dot" />
-      {t(`status.customer.${value}`, { defaultValue: value })}
+      {t(`status.customer.${value}`, { defaultValue: t('common.unknown') })}
     </span>
   )
 }
@@ -200,7 +200,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     activeFilterChips.push({
       key: 'status',
       label: t('customers.filterChipStatus', {
-        value: t(`status.customer.${query.status}`, { defaultValue: query.status }),
+        value: t(`status.customer.${query.status}`, { defaultValue: t('common.unknown') }),
         defaultValue: `Trạng thái: {{value}}`,
       }),
       removeLabel: t('customers.removeFilter', { filter: t('customers.filterStatus'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
@@ -252,7 +252,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         </SelectTrigger>
         <SelectContent onClick={(e) => e.stopPropagation()}>
           {CUSTOMER_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+            <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: t('common.unknown') })}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -526,7 +526,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         <CustomerStatusReasonModal
           title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
           description={t('customers.detail.statusConfirmBody', {
-            status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
+            status: t(`status.customer.${reasonModal.value}`, { defaultValue: t('common.unknown') }),
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
           confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}

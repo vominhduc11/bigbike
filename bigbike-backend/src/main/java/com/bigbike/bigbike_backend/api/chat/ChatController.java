@@ -1,14 +1,6 @@
 package com.bigbike.bigbike_backend.api.chat;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatAvailabilityResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadDeclineResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatInteractionRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatInteractionResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffRequest;
@@ -19,8 +11,6 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatHistoryResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatDeleteHistoryResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatRealtimeTokenRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatRealtimeTokenResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatFeedbackRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatFeedbackResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatImageUploadResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -29,16 +19,13 @@ import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
 import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.chat.ChatService;
-import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
 import com.bigbike.bigbike_backend.service.chat.ChatHandoffService;
 import com.bigbike.bigbike_backend.service.chat.ChatVisitorService;
-import com.bigbike.bigbike_backend.service.chat.ChatFeedbackService;
 import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -63,17 +50,31 @@ import java.util.concurrent.CompletableFuture;
 @Validated
 @RestController
 @RequestMapping("/api/v1/chat")
-@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatController {
 
     private final ChatService chatService;
-    private final ChatInteractionService chatInteractionService;
     private final ChatHandoffService chatHandoffService;
     private final ChatVisitorService chatVisitorService;
-    private final ChatFeedbackService chatFeedbackService;
     private final ChatImageService chatImageService;
     private final ApiResponseFactory apiResponseFactory;
     private final RateLimitService rateLimitService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ChatController(
+            ChatService chatService,
+            ChatHandoffService chatHandoffService,
+            ChatVisitorService chatVisitorService,
+            ChatImageService chatImageService,
+            ApiResponseFactory apiResponseFactory,
+            RateLimitService rateLimitService
+    ) {
+        this.chatService = chatService;
+        this.chatHandoffService = chatHandoffService;
+        this.chatVisitorService = chatVisitorService;
+        this.chatImageService = chatImageService;
+        this.apiResponseFactory = apiResponseFactory;
+        this.rateLimitService = rateLimitService;
+    }
 
     /** Compatibility constructor used by focused controller tests that do not call interactions. */
     public ChatController(
@@ -81,14 +82,7 @@ public class ChatController {
             ApiResponseFactory apiResponseFactory,
             RateLimitService rateLimitService
     ) {
-        this.chatService = chatService;
-        this.chatInteractionService = null;
-        this.chatHandoffService = null;
-        this.chatVisitorService = null;
-        this.chatFeedbackService = null;
-        this.chatImageService = null;
-        this.apiResponseFactory = apiResponseFactory;
-        this.rateLimitService = rateLimitService;
+        this(chatService, null, null, null, apiResponseFactory, rateLimitService);
     }
 
     @GetMapping("/availability")
@@ -135,17 +129,6 @@ public class ChatController {
     ) {
         return apiResponseFactory.data(chatVisitorService.realtimeToken(
                 body.conversationId(), currentCustomerId(), body.visitorToken()), request);
-    }
-
-    @PostMapping("/messages/{messageId}/feedback")
-    public ApiDataResponse<ChatFeedbackResponse> feedback(
-            @PathVariable UUID messageId,
-            @Valid @RequestBody ChatFeedbackRequest body,
-            @RequestHeader(value = "X-Chat-Visitor-Token", required = false) String visitorToken,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(chatFeedbackService.record(
-                messageId, body, currentCustomerId(), visitorToken), request);
     }
 
     @PostMapping("/messages")
@@ -228,18 +211,6 @@ public class ChatController {
         emitter.send(SseEmitter.event().name("progress").data(Map.of("code", code)));
     }
 
-    @PostMapping("/interactions")
-    public ApiDataResponse<ChatInteractionResponse> recordInteraction(
-            @Valid @RequestBody ChatInteractionRequest body,
-            HttpServletRequest request
-    ) {
-        rateLimitService.checkOrThrow(
-                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.conversationId().toString());
-        return apiResponseFactory.data(
-                chatInteractionService.record(
-                        body, currentCustomerId(), resolveVisitorId(body.visitorToken())), request);
-    }
-
     @PostMapping("/handoffs")
     public ApiDataResponse<ChatHandoffResponse> requestHandoff(
             @Valid @RequestBody ChatHandoffRequest body,
@@ -251,40 +222,6 @@ public class ChatController {
         UUID visitorId = resolveVisitorId(body.visitorToken());
         return apiResponseFactory.data(
                 chatHandoffService.request(body, currentCustomerId(), visitorId), request);
-    }
-
-    @PostMapping("/leads")
-    public ApiDataResponse<ChatLeadResponse> captureLead(
-            @Valid @RequestBody ChatLeadRequest body,
-            HttpServletRequest request
-    ) {
-        rateLimitService.checkOrThrow(
-                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.getConversationId().toString());
-        return apiResponseFactory.data(chatService.captureLead(
-                body, currentCustomerId(), resolveVisitorId(body.getVisitorToken())), request);
-    }
-
-    @PostMapping("/leads/offer")
-    public ApiDataResponse<ChatLeadOfferResponse> offerLead(
-            @Valid @RequestBody ChatLeadOfferRequest body,
-            HttpServletRequest request
-    ) {
-        UUID scopeId = body.conversationId() == null ? body.requestId() : body.conversationId();
-        rateLimitService.checkOrThrow(
-                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, scopeId.toString());
-        return apiResponseFactory.data(chatService.offerLead(
-                body, currentCustomerId(), resolveVisitorId(body.visitorToken())), request);
-    }
-
-    @PostMapping("/leads/decline")
-    public ApiDataResponse<ChatLeadDeclineResponse> declineLead(
-            @Valid @RequestBody ChatLeadDeclineRequest body,
-            HttpServletRequest request
-    ) {
-        rateLimitService.checkOrThrow(
-                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, body.conversationId().toString());
-        return apiResponseFactory.data(chatService.declineLead(
-                body.conversationId(), currentCustomerId(), resolveVisitorId(body.visitorToken())), request);
     }
 
     private UUID resolveVisitorId(String visitorToken) {

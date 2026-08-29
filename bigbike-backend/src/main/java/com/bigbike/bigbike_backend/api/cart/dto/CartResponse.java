@@ -8,17 +8,5 @@ public record CartResponse(
         String status,
         String currency,
         List<CartItemResponse> items,
-        CartTotalsResponse totals,
-        boolean leadPrompt,
-        int leadPromptSequence
-) {
-    public CartResponse(
-            UUID id,
-            String status,
-            String currency,
-            List<CartItemResponse> items,
-            CartTotalsResponse totals
-    ) {
-        this(id, status, currency, items, totals, false, 0);
-    }
-}
+        CartTotalsResponse totals
+) {}

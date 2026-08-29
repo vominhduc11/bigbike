@@ -431,7 +431,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                 return (
                   <div key={group.key} className="mb-2 last:mb-0">
                     <div className="flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      <span>{t(`search.group.${group.key}`)}</span>
+                      <span>{t(`search.group.${group.key}`, { defaultValue: t('common.unknown') })}</span>
                       {result.state === 'READY' && total !== null ? <span>{total}</span> : null}
                     </div>
                     {result.state === 'ERROR' ? (

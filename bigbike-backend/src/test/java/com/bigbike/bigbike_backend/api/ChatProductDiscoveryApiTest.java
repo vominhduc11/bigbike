@@ -125,29 +125,12 @@ public class ChatProductDiscoveryApiTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         reset(assistantSettings, aiChatClient);
         when(assistantSettings.load(anyString())).thenAnswer(invocation -> settings(invocation.getArgument(0)));
-        when(assistantSettings.currentModel()).thenReturn("gemini-2.5-flash");
         when(aiChatClient.isConfigured()).thenReturn(true);
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
                 anyBoolean(), any(AiChatClient.ToolExecutor.class),
                 any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
                 .thenAnswer(this::executeSearchAnswer);
-        bridgeModelAwareAnswer(aiChatClient);
-    }
-
-    private static void bridgeModelAwareAnswer(AiChatClient client) {
-        when(client.answerWithFallback(
-                anyString(), anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
-                .thenAnswer(invocation -> client.answer(
-                                invocation.getArgument(1), invocation.getArgument(2),
-                                invocation.getArgument(3), invocation.getArgument(4),
-                                invocation.getArgument(5), invocation.getArgument(6),
-                                invocation.getArgument(7), invocation.getArgument(8))
-                        .map(answer -> new AiChatClient.ModelAnswer(
-                                answer, invocation.getArgument(0), invocation.getArgument(0),
-                                false, null)));
     }
 
     @ParameterizedTest(name = "{0} ({1})")
@@ -435,7 +418,7 @@ public class ChatProductDiscoveryApiTest {
                 .thenAnswer(invocation -> {
                     AiChatClient.HybridAnswer base = executeSearchAnswer(invocation).orElseThrow();
                     return Optional.of(new AiChatClient.HybridAnswer(
-                            new AiChatClient.Answer("Giá là 12.000.000 VND.", false, false, true),
+                            new AiChatClient.Answer("Giá là 12.000.000 VND.", false, false),
                             base.products(), base.actions(), base.executedTools(), base.providerCallCount()));
                 });
 
@@ -474,7 +457,6 @@ public class ChatProductDiscoveryApiTest {
                                             + "Anh/chị xem các thẻ bên dưới để cân nhắc. "
                                             + "Em có thể hỗ trợ lọc tiếp.",
                                     false,
-                                    false,
                                     false),
                             base.products(),
                             base.actions(),
@@ -492,7 +474,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void unparseableProviderResultStillUsesRecoverableClarification() throws Exception {
+    void unparseableProviderResultShowsTheFixedModelApologyAndTalkToStaff() throws Exception {
         when(aiChatClient.answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
                 anyBoolean(), any(AiChatClient.ToolExecutor.class),
@@ -505,7 +487,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("đang bận", "hỏi lại đúng câu", "Gặp nhân viên")
+                .contains("chưa hoàn tất được lần kiểm tra này", "Gặp nhân viên")
                 .doesNotContain("chưa có đúng mẫu", "shop không bán");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         assertThat(data.path("contacts").path("zaloUrl").asText()).isEqualTo("https://zalo.example");
@@ -513,7 +495,7 @@ public class ChatProductDiscoveryApiTest {
     }
 
     @Test
-    void providerHttp400StillUsesRecoverableClarificationWithoutChangingPublicResponse() throws Exception {
+    void providerHttp400ShowsTheFixedModelApologyWithoutChangingPublicResponse() throws Exception {
         HttpClientErrorException badRequest = HttpClientErrorException.create(
                 HttpStatus.BAD_REQUEST,
                 "Bad Request",
@@ -532,7 +514,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("đang bận", "hỏi lại đúng câu", "Gặp nhân viên")
+                .contains("chưa hoàn tất được lần kiểm tra này", "Gặp nhân viên")
                 .doesNotContain("chưa có đúng mẫu", "shop không bán");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
@@ -611,8 +593,7 @@ public class ChatProductDiscoveryApiTest {
                     new AiChatClient.Answer(
                             terminal.answer(),
                             terminal.offTopic(),
-                            terminal.handoffRecommended(),
-                            terminal.leadPrompt()),
+                            terminal.handoffRecommended()),
                     execution.products(),
                     execution.actions(),
                     List.of(ChatToolRegistry.SEARCH_PRODUCTS),
@@ -627,13 +608,13 @@ public class ChatProductDiscoveryApiTest {
                     ? "I could not find a currently sold product matching that request. I will not guess product or stock information. Please choose Talk to staff for direct help."
                     : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Em không đoán tên hàng hoặc tình trạng kho. Anh/chị vui lòng bấm Gặp nhân viên để được hỗ trợ trực tiếp.";
             return Optional.of(new AiChatClient.HybridAnswer(
-                    new AiChatClient.Answer(answer, false, true, false),
+                    new AiChatClient.Answer(answer, false, true),
                     List.of(), List.of(), List.of(ChatToolRegistry.SEARCH_PRODUCTS),
                     execution.requiredDisclosures(), 2, "AI",
                     execution.catalogTotals(), execution.searchScope()));
         }
         return Optional.of(new AiChatClient.HybridAnswer(
-                new AiChatClient.Answer(safeModelAnswer(lang), false, false, false),
+                new AiChatClient.Answer(safeModelAnswer(lang), false, false),
                 execution.products(), execution.actions(),
                 List.of(ChatToolRegistry.SEARCH_PRODUCTS), execution.requiredDisclosures(), 2, "AI",
                 execution.catalogTotals(), execution.searchScope()));

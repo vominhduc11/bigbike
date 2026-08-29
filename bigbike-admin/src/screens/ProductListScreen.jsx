@@ -346,9 +346,9 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     const ids = [...selected]
     if (ids.length === 0) return
     const confirmed = await showConfirm(
-      t(confirmKey, { count: ids.length }),
-      t(titleKey),
-      { confirmLabel: t(confirmLabel), variant },
+      t(confirmKey, { count: ids.length, defaultValue: t('common.unknown') }),
+      t(titleKey, { defaultValue: t('common.unknown') }),
+      { confirmLabel: t(confirmLabel, { defaultValue: t('common.unknown') }), variant },
     )
     if (!confirmed) return
     setBulkBusy(true)
@@ -437,14 +437,14 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
-        label: `${t('products.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: query.publishStatus })}`,
+        label: `${t('products.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: t('common.unknown') })}`,
         onRemove: () => updateQuery({ publishStatus: 'ALL' }, { resetPage: true }),
       })
     }
     if (query.stockState !== 'ALL') {
       chips.push({
         key: 'stock',
-        label: `${t('products.filterStock')}: ${t(`status.stock.${query.stockState}`, { defaultValue: query.stockState })}`,
+        label: `${t('products.filterStock')}: ${t(`status.stock.${query.stockState}`, { defaultValue: t('common.unknown') })}`,
         onRemove: () => updateQuery({ stockState: 'ALL' }, { resetPage: true }),
       })
     }
@@ -1039,7 +1039,7 @@ export function ProductListScreen({ navigate, canUpdate, canReadCatalog, adminUs
         (() => {
           const totalFlagged = pagination?.totalItems ?? items.length
           const limit = HOMEPAGE_BLOCK_LIMITS[query.homepageBlock]
-          const blockLabel = t(HOMEPAGE_BLOCK_LABEL_KEYS[query.homepageBlock] ?? query.homepageBlock)
+          const blockLabel = t(HOMEPAGE_BLOCK_LABEL_KEYS[query.homepageBlock] ?? query.homepageBlock, { defaultValue: t('common.unknown') })
           if (totalFlagged <= limit) return null
           return (
             <Alert tone="warning" role="status" className="my-3">

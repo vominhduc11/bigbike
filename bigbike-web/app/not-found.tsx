@@ -11,7 +11,7 @@ import "./globals.css";
  * ("404: This page could not be found." — tiếng Anh, không thương hiệu).
  *
  * URL có khớp route nhưng dữ liệu không tồn tại (sản phẩm/danh mục/bài viết đã xoá)
- * vẫn dùng `app/[locale]/not-found.tsx` — trang đó có header/footer đầy đủ.
+ * vẫn dùng `app/[locale]/(storefront)/not-found.tsx` — trang đó có header/footer đầy đủ.
  */
 export const metadata: Metadata = {
   title: "Không tìm thấy trang — BigBike",

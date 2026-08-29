@@ -23,24 +23,24 @@ function collectDisallow(): string[] {
  * test đọc-file bên dưới đỏ ngay.
  */
 const NOINDEX_ROUTES: ReadonlyArray<readonly [path: string, source: string]> = [
-  ["/gio-hang/", "app/[locale]/gio-hang/layout.tsx"],
-  ["/en/cart/", "app/[locale]/gio-hang/layout.tsx"],
-  ["/dat-hang/", "app/[locale]/dat-hang/layout.tsx"],
-  ["/en/order/", "app/[locale]/dat-hang/layout.tsx"],
-  ["/don-hang/", "app/[locale]/don-hang/xac-nhan/page.tsx"],
-  ["/en/orders/", "app/[locale]/don-hang/xac-nhan/page.tsx"],
-  ["/tai-khoan", "app/[locale]/tai-khoan/layout.tsx"],
-  ["/en/account/", "app/[locale]/tai-khoan/layout.tsx"],
-  ["/dang-nhap", "app/[locale]/dang-nhap/page.tsx"],
-  ["/en/login/", "app/[locale]/dang-nhap/page.tsx"],
-  ["/dang-ky", "app/[locale]/dang-ky/page.tsx"],
-  ["/en/register/", "app/[locale]/dang-ky/page.tsx"],
-  ["/quen-mat-khau", "app/[locale]/quen-mat-khau/page.tsx"],
-  ["/en/forgot-password/", "app/[locale]/quen-mat-khau/page.tsx"],
-  ["/xac-nhan-email", "app/[locale]/xac-nhan-email/page.tsx"],
-  ["/en/verify-email/", "app/[locale]/xac-nhan-email/page.tsx"],
-  ["/tim-kiem", "app/[locale]/tim-kiem/page.tsx"],
-  ["/en/search/", "app/[locale]/tim-kiem/page.tsx"],
+  ["/gio-hang/", "app/[locale]/(storefront)/gio-hang/layout.tsx"],
+  ["/en/cart/", "app/[locale]/(storefront)/gio-hang/layout.tsx"],
+  ["/dat-hang/", "app/[locale]/(storefront)/dat-hang/layout.tsx"],
+  ["/en/order/", "app/[locale]/(storefront)/dat-hang/layout.tsx"],
+  ["/don-hang/", "app/[locale]/(storefront)/don-hang/xac-nhan/page.tsx"],
+  ["/en/orders/", "app/[locale]/(storefront)/don-hang/xac-nhan/page.tsx"],
+  ["/tai-khoan", "app/[locale]/(storefront)/tai-khoan/layout.tsx"],
+  ["/en/account/", "app/[locale]/(storefront)/tai-khoan/layout.tsx"],
+  ["/dang-nhap", "app/[locale]/(auth)/dang-nhap/page.tsx"],
+  ["/en/login/", "app/[locale]/(auth)/dang-nhap/page.tsx"],
+  ["/dang-ky", "app/[locale]/(auth)/dang-ky/page.tsx"],
+  ["/en/register/", "app/[locale]/(auth)/dang-ky/page.tsx"],
+  ["/quen-mat-khau", "app/[locale]/(auth)/quen-mat-khau/page.tsx"],
+  ["/en/forgot-password/", "app/[locale]/(auth)/quen-mat-khau/page.tsx"],
+  ["/xac-nhan-email", "app/[locale]/(auth)/xac-nhan-email/page.tsx"],
+  ["/en/verify-email/", "app/[locale]/(auth)/xac-nhan-email/page.tsx"],
+  ["/tim-kiem", "app/[locale]/(storefront)/tim-kiem/page.tsx"],
+  ["/en/search/", "app/[locale]/(storefront)/tim-kiem/page.tsx"],
 ];
 
 // Chỉ 3 tiền tố này được phép nằm trong Disallow: chúng không render HTML nên không
@@ -52,16 +52,13 @@ describe("SEO_RULE_004 — không chặn robots.txt cái đã có thẻ noindex"
     expect(collectDisallow().sort()).toEqual([...ALLOWED_DISALLOW].sort());
   });
 
-  it.each(NOINDEX_ROUTES)(
-    "%s có thẻ noindex nên KHÔNG được nằm trong Disallow",
-    (path) => {
-      const disallow = collectDisallow();
-      // Google không tải được trang thì không đọc được thẻ noindex → URL đã lỡ index
-      // nằm lại vĩnh viễn trong kết quả tìm kiếm.
-      const blocked = disallow.filter((rule) => path.startsWith(rule) || rule.startsWith(path));
-      expect(blocked).toEqual([]);
-    },
-  );
+  it.each(NOINDEX_ROUTES)("%s có thẻ noindex nên KHÔNG được nằm trong Disallow", (path) => {
+    const disallow = collectDisallow();
+    // Google không tải được trang thì không đọc được thẻ noindex → URL đã lỡ index
+    // nằm lại vĩnh viễn trong kết quả tìm kiếm.
+    const blocked = disallow.filter((rule) => path.startsWith(rule) || rule.startsWith(path));
+    expect(blocked).toEqual([]);
+  });
 
   it.each(NOINDEX_ROUTES)("%s vẫn thực sự đặt noindex trong %s", (_path, source) => {
     const contents = readFileSync(join(process.cwd(), source), "utf8");
@@ -94,7 +91,10 @@ describe("Trang xem thử phải noindex ở CẢ hai ngôn ngữ", () => {
   });
 
   it("hai trang preview vẫn là client component (nên phải dựa vào header)", () => {
-    for (const file of ["preview/product/page.tsx", "preview/article/page.tsx"]) {
+    for (const file of [
+      "(storefront)/preview/product/page.tsx",
+      "(storefront)/preview/article/page.tsx",
+    ]) {
       const contents = readFileSync(join(APP_DIR, "[locale]", file), "utf8");
       expect(contents.startsWith('"use client"')).toBe(true);
     }

@@ -131,7 +131,7 @@ function SegmentBadge({ segment }) {
   return (
     <span className={`bb-badge bb-badge-${tone}`}>
       <span className="dot" aria-hidden="true" />
-      {t(`customers.segment.${segment}`, { defaultValue: segment })}
+      {t(`customers.segment.${segment}`, { defaultValue: t('common.unknown') })}
     </span>
   )
 }
@@ -332,7 +332,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     })
     setFieldErrors({})
     setEditOpen(true)
-    if (savedForm) toast.info(t('customers.detail.draftRestored', { defaultValue: 'Đã khôi phục bản nháp thông tin khách hàng.' }))
+    if (savedForm) toast.info(t('customers.detail.draftRestored'))
   }
 
   function handleEditCancel() {
@@ -617,7 +617,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                   </SelectTrigger>
                   <SelectContent>
                     {CUSTOMER_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+                      <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: t('common.unknown') })}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -699,7 +699,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         <CustomerStatusReasonModal
           title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
           description={t('customers.detail.statusConfirmBody', {
-            status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
+            status: t(`status.customer.${reasonModal.value}`, { defaultValue: t('common.unknown') }),
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
           confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}

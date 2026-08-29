@@ -418,10 +418,10 @@ function AdminApp() {
           tone={fallbackPath ? 'info' : 'neutral'}
           title={fallbackPath
             ? t('app.loadingSession')
-            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng khu vực nào' })}
+            : t('app.noAllowedModules')}
           description={fallbackPath
             ? t('app.loadingSessionDesc')
-            : t('app.noAllowedModulesDesc', { defaultValue: 'Liên hệ người quản trị để được cấp quyền phù hợp với công việc.' })}
+            : t('app.noAllowedModulesDesc')}
         />
       </AdminShell>
     )
@@ -435,7 +435,7 @@ function AdminApp() {
           title={t('app.routeNotFound')}
           description={fallbackPath
             ? t('app.routeNotFoundDesc')
-            : t('app.noAllowedModules', { defaultValue: 'Tài khoản chưa được cấp quyền sử dụng khu vực nào' })}
+            : t('app.noAllowedModules')}
           actionLabel={fallbackPath ? t('app.goToModule') : undefined}
           onAction={fallbackPath ? () => navigate(fallbackPath) : undefined}
         />

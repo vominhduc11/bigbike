@@ -6,10 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.review.AiReviewModerationClient;
-import com.bigbike.bigbike_backend.service.ws.AdminChatWsService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -61,7 +59,6 @@ class ChatAvailabilityTest {
     private static ChatService service(AiChatClient client, int limit, long spent) {
         ChatConversationJpaRepository conversations = mock(ChatConversationJpaRepository.class);
         ChatMessageJpaRepository messages = mock(ChatMessageJpaRepository.class);
-        ChatLeadJpaRepository leads = mock(ChatLeadJpaRepository.class);
         ChatAssistantSettings settings = mock(ChatAssistantSettings.class);
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
                 true, limit, "Xin chào", List.of("A", "B", "C"), CONTACTS,
@@ -72,14 +69,16 @@ class ChatAvailabilityTest {
         return new ChatService(
                 conversations,
                 messages,
-                leads,
-                mock(com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository.class),
                 settings,
                 mock(ChatToolService.class),
                 new ChatToolRegistry(),
                 client,
                 new ChatResponseGuard(),
                 quota,
-                mock(AdminChatWsService.class));
+                mock(ChatSalesAdvisorService.class),
+                null,
+                null,
+                null,
+                null);
     }
 }

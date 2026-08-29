@@ -158,15 +158,7 @@ export function PurchaseSection({
     setAddError("");
     setAdding(true);
     try {
-      await addToCart(
-        product.id,
-        quantity,
-        selectedVariant?.id || undefined,
-        undefined,
-        undefined,
-        false,
-        product.slug,
-      );
+      await addToCart(product.id, quantity, selectedVariant?.id || undefined);
     } catch (error) {
       reportStorefrontFailure("add_to_cart", error);
       setAddError(tb("addToCartFailed"));

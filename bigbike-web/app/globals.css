@@ -191,50 +191,6 @@
   }
 }
 
-/* Login and registration keep the shared footer, but use its compact variant.
-   These selectors cross the route/footer sibling boundary, which Tailwind cannot
-   express from either component alone. */
-body:has([data-auth-primary-page]) .bb-floating-chat-anchor {
-  display: none !important;
-}
-
-/* The brand panel is intentionally treated like a hero: it may sit behind the
-   hanging logo instead of inheriting the 92px clearance for ordinary hero-less
-   pages. This removes the unused band above the desktop auth experience. */
-@media (min-width: 768px) {
-  body:has(.bb-heroless [data-auth-primary-page]) .bb-main {
-    padding-top: 0;
-  }
-}
-
-body:has([data-auth-primary-page]) footer [data-footer-intro],
-body:has([data-auth-primary-page]) footer [data-footer-description],
-body:has([data-auth-primary-page]) footer [data-footer-social],
-body:has([data-auth-primary-page]) footer [data-footer-certification] {
-  display: none !important;
-}
-
-body:has([data-auth-primary-page]) footer [data-footer-top] {
-  padding-block: var(--bb-space-8) !important;
-}
-
-body:has([data-auth-primary-page]) footer [data-footer-contacts] {
-  margin-bottom: 0 !important;
-}
-
-body:has([data-auth-primary-page]) footer [data-footer-section="menu"] {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-body:has([data-auth-primary-page])
-  footer
-  [data-footer-menu-link]:not([data-footer-menu-link="returns"]):not(
-    [data-footer-menu-link="warranty"]
-  ) {
-  display: none;
-}
-
 /* shadcn Sheet motion. Kept explicit because the imported animate utilities
    are not emitted reliably by the current Tailwind build. */
 [data-bb-sheet-overlay] {
@@ -854,21 +810,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   }
   body:has(.bb-contact-page.bb-heroless) .bb-main {
     padding-top: 0px;
-  }
-}
-
-/* Credential pages use the same hero-less logo clearance only while the large
-   emblem is visible. Compact header logos below 1261px do not need the extra
-   vertical band. */
-@media (min-width: 768px) and (max-width: 1260px) {
-  body:has([data-auth-page]) .bb-main {
-    padding-top: 0;
-  }
-}
-
-@media (min-width: 768px) {
-  body:has([data-auth-page]) .bb-main {
-    padding-bottom: 0;
   }
 }
 
@@ -3811,10 +3752,6 @@ html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
     visibility: hidden;
   }
 
-  body:has(.bb-page--auth) .bb-floating-chat-anchor,
-  body:has(.bb-page--auth) .bb-scroll-top-anchor,
-  body:has([data-auth-page]) .bb-floating-chat-anchor,
-  body:has([data-auth-page]) .bb-scroll-top-anchor,
   body:has(.bb-account-layout) .bb-floating-chat-anchor,
   body:has(.bb-account-layout) .bb-scroll-top-anchor {
     display: none !important;

@@ -32,7 +32,7 @@ const TONE_BADGE_VARIANT = {
 }
 
 function categoryLabel(code, t) {
-  return t(`reviews.moderation.category.${code}`, { defaultValue: code })
+  return t(`reviews.moderation.category.${code}`, { defaultValue: t('common.unknown') })
 }
 
 function headline(review, state, t) {
@@ -42,7 +42,7 @@ function headline(review, state, t) {
       : t('reviews.moderation.blockedByAi')
   }
   if (state === 'skipped') {
-    return t(`reviews.moderation.skip.${getAutoModerationSkipReasonKey(review.moderationReason)}`)
+  return t(`reviews.moderation.skip.${getAutoModerationSkipReasonKey(review.moderationReason)}`, { defaultValue: t('common.unknown') })
   }
   if (state === 'clean') return t('reviews.moderation.clean')
   return t('reviews.moderation.unchecked')

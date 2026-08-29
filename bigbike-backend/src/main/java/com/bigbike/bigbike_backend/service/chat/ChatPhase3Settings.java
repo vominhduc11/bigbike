@@ -24,8 +24,6 @@ public class ChatPhase3Settings {
 
     public static final int DEFAULT_TURN_LIMIT = 40;
     public static final int DEFAULT_MEMORY_DAYS = 30;
-    public static final int DEFAULT_PRODUCT_SECONDS = 45;
-    public static final int DEFAULT_CART_SECONDS = 120;
     public static final ZoneId SHOP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -39,15 +37,7 @@ public class ChatPhase3Settings {
 
     @Transactional(readOnly = true)
     public int memoryDays() {
-        return rangedInteger("ai_assistant_memory_days", DEFAULT_MEMORY_DAYS, 1, 30);
-    }
-
-    @Transactional(readOnly = true)
-    public Proactive proactive() {
-        return new Proactive(
-                booleanValue("ai_assistant_proactive_enabled", false),
-                rangedInteger("ai_assistant_proactive_product_seconds", DEFAULT_PRODUCT_SECONDS, 15, 600),
-                rangedInteger("ai_assistant_proactive_cart_seconds", DEFAULT_CART_SECONDS, 15, 600));
+        return DEFAULT_MEMORY_DAYS;
     }
 
     @Transactional(readOnly = true)
@@ -136,8 +126,8 @@ public class ChatPhase3Settings {
                 false,
                 null,
                 "en".equals(lang)
-                        ? "Staff hours are being updated. Please leave your contact details."
-                        : "Giờ trực nhân viên đang được cập nhật. Anh/chị vui lòng để lại liên hệ.");
+                        ? "Staff hours are being updated. You can still choose Talk to staff."
+                        : "Giờ trực nhân viên đang được cập nhật. Anh/chị vẫn có thể bấm Gặp nhân viên.");
     }
 
     private int rangedInteger(String key, int fallback, int min, int max) {
@@ -147,11 +137,6 @@ public class ChatPhase3Settings {
         } catch (RuntimeException exception) {
             return fallback;
         }
-    }
-
-    private boolean booleanValue(String key, boolean fallback) {
-        String raw = value(key);
-        return raw == null || raw.isBlank() ? fallback : Boolean.parseBoolean(raw);
     }
 
     private String value(String key) {
@@ -166,7 +151,6 @@ public class ChatPhase3Settings {
                 "SAT", weekend, "SUN", weekend));
     }
 
-    public record Proactive(boolean enabled, int productSeconds, int cartSeconds) {}
     public record BusinessHoursStatus(boolean withinHours, Instant nextOpenAt, String scheduleText) {}
     private record DayWindow(boolean enabled, LocalTime open, LocalTime close) {
         static DayWindow closed() { return new DayWindow(false, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT); }

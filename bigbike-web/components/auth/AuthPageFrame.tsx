@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
-import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { cn } from "@/lib/utils";
 
 type AuthBrandPanel = {
@@ -16,7 +15,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
   return (
     <aside
       data-auth-brand-panel
-      className="relative hidden overflow-hidden bg-surface-dark p-10 text-primary-foreground min-[1024px]:flex min-[1024px]:min-h-screen min-[1024px]:flex-col min-[1024px]:justify-end"
+      className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground min-[1024px]:flex min-[1024px]:flex-col min-[1024px]:justify-end"
     >
       <Image
         src="/brand/page-title-bg.png"
@@ -55,6 +54,9 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
   );
 }
 
+export type AuthPageKind = "login" | "register" | "forgot" | "verify";
+
+/** Auth content frame. The surrounding header/main/footer belongs to AuthLayout. */
 export function AuthPageFrame({
   children,
   wide = false,
@@ -66,52 +68,33 @@ export function AuthPageFrame({
   wide?: boolean;
   primary?: boolean;
   brandPanel?: AuthBrandPanel;
-  authPage?: "login" | "register";
+  authPage: AuthPageKind;
 }) {
-  const isCredentialPage = authPage != null;
-
   if (primary && brandPanel) {
     return (
-      <StaticPageShell title="" breadcrumb={[]} showHero={false} mainClassName="">
-        <section
-          data-auth-primary-page="true"
-          data-auth-page={authPage}
-          className="px-4 py-8 sm:px-6 min-[1024px]:px-0 min-[1024px]:py-0"
-        >
-          <div className="mx-auto grid w-full max-w-[1200px] bg-background min-[1024px]:grid-cols-2">
-            <AuthBenefitsPanel panel={brandPanel} />
-            <div
-              data-auth-form-panel
-              className="flex min-w-0 justify-center py-10 min-[1024px]:items-center min-[1024px]:py-16"
-            >
-              <div className={cn("w-full", wide ? "max-w-xl" : "max-w-md")}>{children}</div>
-            </div>
+      <section
+        data-auth-page={authPage}
+        className="w-full px-4 py-8 sm:px-6 min-[1024px]:px-0 min-[1024px]:py-0"
+      >
+        <div className="mx-auto grid w-full max-w-[1200px] bg-background min-[1024px]:grid-cols-2">
+          <AuthBenefitsPanel panel={brandPanel} />
+          <div
+            data-auth-form-panel
+            className="flex min-w-0 justify-center py-10 min-[1024px]:items-center min-[1024px]:py-3"
+          >
+            <div className={cn("w-full", wide ? "max-w-xl" : "max-w-md")}>{children}</div>
           </div>
-        </section>
-      </StaticPageShell>
+        </div>
+      </section>
     );
   }
 
   return (
-    <StaticPageShell title="" breadcrumb={[]} showHero={false} mainClassName="">
-      <section
-        data-auth-page={authPage}
-        className={cn(
-          "px-4 sm:px-6",
-          isCredentialPage
-            ? cn(
-                "pt-5",
-                authPage === "register" &&
-                  "[padding-bottom:calc(var(--bb-mobile-nav-height)+var(--bb-space-16)+env(safe-area-inset-bottom))] md:pb-0",
-              )
-            : "py-15",
-        )}
-      >
-        <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
-          {children}
-        </div>
-      </section>
-    </StaticPageShell>
+    <section data-auth-page={authPage} className="w-full px-4 py-10 sm:px-6 md:py-15">
+      <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
+        {children}
+      </div>
+    </section>
   );
 }
 

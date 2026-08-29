@@ -1020,7 +1020,7 @@ export function BlockTypeLabel({ type, compactMobile = false }) {
       'text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1',
       compactMobile && 'max-sm:hidden',
     )}>
-      {t(key, { defaultValue: type })}
+      {t(key, { defaultValue: t('common.unknown') })}
     </span>
   )
 }

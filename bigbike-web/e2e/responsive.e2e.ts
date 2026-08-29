@@ -8,7 +8,7 @@ import { SAMPLE } from "./helpers/routes";
  * check is horizontal overflow (the #1 responsive defect), plus landmark
  * visibility and that fixed bars (header / mobile bottom nav) fit the viewport.
  */
-const KEY_ROUTES: { path: string; name: string }[] = [
+const KEY_ROUTES: { path: string; name: string; auth?: boolean }[] = [
   { path: "/", name: "Trang chủ" },
   { path: "/sp/", name: "PLP" },
   { path: SAMPLE.product, name: "PDP" },
@@ -18,7 +18,10 @@ const KEY_ROUTES: { path: string; name: string }[] = [
   { path: SAMPLE.news, name: "Bài viết" },
   { path: "/tim-kiem/", name: "Tìm kiếm" },
   { path: "/gio-hang/", name: "Giỏ hàng" },
-  { path: "/dang-nhap/", name: "Đăng nhập" },
+  { path: "/dang-nhap/", name: "Đăng nhập", auth: true },
+  { path: "/dang-ky/", name: "Đăng ký", auth: true },
+  { path: "/quen-mat-khau/", name: "Quên mật khẩu", auth: true },
+  { path: "/xac-nhan-email/", name: "Xác nhận email", auth: true },
   { path: "/lien-he/", name: "Liên hệ" },
 ];
 
@@ -54,14 +57,32 @@ for (const route of KEY_ROUTES) {
         await gotoAndSettle(page, route.path);
 
         await expect(page.locator("main").first()).toBeVisible();
-        await expect(page.locator("footer").first()).toBeVisible();
-        await expect(page.locator("header, .bb-header-container").first()).toBeVisible();
+        if (route.auth) {
+          await expect(page.locator("[data-auth-shell]")).toHaveCount(1);
+          await expect(page.locator("header[data-auth-header]")).toBeVisible();
+          await expect(page.locator("footer[data-auth-footer]")).toBeVisible();
+          await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
+        } else {
+          await expect(page.locator("footer").first()).toBeVisible();
+          await expect(page.locator("header, .bb-header-container").first()).toBeVisible();
+        }
 
         await expectNoHorizontalOverflow(page, `${route.name} @ ${vp.name}`);
-        await expectBarFits(page, ".bb-header-container, header", `header @ ${vp.name}`);
+        await expectBarFits(
+          page,
+          route.auth ? "header[data-auth-header]" : ".bb-header-container, header",
+          `header @ ${vp.name}`,
+        );
 
         if (vp.kind === "mobile") {
           const bottomNav = page.locator("nav.bb-bottom-nav");
+          if (route.auth) {
+            await expect(
+              bottomNav,
+              `auth pages must not render bottom nav @ ${vp.name}`,
+            ).toHaveCount(0);
+            return;
+          }
           const stickyPurchaseBar = page.locator(".bb-pdp-sticky-cta.is-visible").first();
           const stickyBarVisible = await stickyPurchaseBar.isVisible().catch(() => false);
 
@@ -84,7 +105,7 @@ for (const route of KEY_ROUTES) {
   });
 }
 
-const HEADER_NAV_VIEWPORTS = [768, 1024, 1280, 1366, 1440, 1920];
+const HEADER_NAV_VIEWPORTS = [768, 1024, 1280, 1366, 1440, 1600, 1920];
 
 test.describe("Header primary navigation responsive mode", () => {
   for (const width of HEADER_NAV_VIEWPORTS) {

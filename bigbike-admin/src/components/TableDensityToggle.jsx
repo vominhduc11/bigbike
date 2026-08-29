@@ -19,7 +19,7 @@ export function TableDensityToggle({ value, onChange }) {
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="min-h-9 shrink-0">
           <Rows3 size={15} aria-hidden="true" />
-          {t(`common.tableDensity.${value}`)}
+          {t(`common.tableDensity.${value}`, { defaultValue: t('common.unknown') })}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -27,7 +27,7 @@ export function TableDensityToggle({ value, onChange }) {
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
           {OPTIONS.map((option) => (
             <DropdownMenuRadioItem key={option} value={option}>
-              {t(`common.tableDensity.${option}`)}
+              {t(`common.tableDensity.${option}`, { defaultValue: t('common.unknown') })}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

@@ -15,7 +15,7 @@ function Badge({ tone = 'muted', className, children }) {
 export function StatusBadge({ status, type = 'order', className }) {
   const { t } = useTranslation()
   let tone = 'muted'
-  let label = status
+  let label = t('common.unknown')
 
   // Trạng thái rỗng (null/undefined/'') ở các loại enum → nhãn "Không xác định" thay vì render key thô
   // ("status.order.undefined") hay chuỗi rỗng. Loại 'visibility' dùng boolean (false = Ẩn là hợp lệ) nên bỏ qua.
@@ -25,7 +25,7 @@ export function StatusBadge({ status, type = 'order', className }) {
 
   if (type === 'order') {
     tone = ORDER_STATUS_TONE[status] ?? 'muted'
-    label = t(`status.order.${status}`, { defaultValue: status })
+    label = t(`status.order.${status}`, { defaultValue: t('common.unknown') })
   } else if (type === 'visibility') {
     if (status !== true && status !== false) {
       return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
@@ -51,7 +51,7 @@ export function StatusBadge({ status, type = 'order', className }) {
       : t('categories.homepageHidden', { defaultValue: 'Không trên trang chủ' })
   } else if (type === 'customer') {
     tone = CUSTOMER_STATUS_TONE[status] ?? 'muted'
-    label = t(`status.customer.${status}`, { defaultValue: status })
+    label = t(`status.customer.${status}`, { defaultValue: t('common.unknown') })
   } else if (type === 'source') {
     // Nguồn tài khoản: true = tạo tự động từ đơn hàng cũ khi migrate (không có đăng nhập
     // thật), false = khách đăng ký/OAuth thật. Xem DATA_CONTRACT.md "Customer isSynthetic Flag".
@@ -73,7 +73,7 @@ export function StatusBadge({ status, type = 'order', className }) {
       SUSPENDED: { tone: 'warning', labelKey: 'adminUsers.statusSuspended' },
     }[status]
     tone = adminUserMeta?.tone ?? 'muted'
-    label = adminUserMeta ? t(adminUserMeta.labelKey) : status
+    label = adminUserMeta ? t(adminUserMeta.labelKey) : t('common.unknown')
   }
 
   return <Badge tone={tone} className={className}>{label}</Badge>
@@ -82,11 +82,11 @@ export function StatusBadge({ status, type = 'order', className }) {
 export function PublishStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizePublishStatus(value)
-  return <Badge tone={toneFromPublish(status)}>{t(`status.publish.${status}`)}</Badge>
+  return <Badge tone={toneFromPublish(status)}>{t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}</Badge>
 }
 
 export function StockStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizeStockState(value)
-  return <Badge tone={toneFromStock(status)}>{t(`status.stock.${status}`)}</Badge>
+  return <Badge tone={toneFromStock(status)}>{t(`status.stock.${status}`, { defaultValue: t('common.unknown') })}</Badge>
 }

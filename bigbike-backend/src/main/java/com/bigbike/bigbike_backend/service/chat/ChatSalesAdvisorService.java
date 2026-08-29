@@ -2,7 +2,6 @@ package com.bigbike.bigbike_backend.service.chat;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatClarificationResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatLeadOfferDetailsResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatNextStepResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -11,7 +10,6 @@ import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntit
 import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -40,7 +38,6 @@ public class ChatSalesAdvisorService {
             ChatConversationEntity conversation,
             String question,
             String lang,
-            UUID customerId,
             ChatAssistantSettings.Snapshot settings,
             ChatToolService.ConversationContext context,
             String baseAnswer,
@@ -95,11 +92,9 @@ public class ChatSalesAdvisorService {
             conversation.setDeclinedNextStepType(conversation.getLastNextStepType());
         }
 
-        LeadDecision lead = leadDecision(
-                conversation, normalized, customerId, missingSizeGuide, answer, english);
         NextStep next = chooseNextStep(
                 normalized, stage, products, crossSell, clarification, handoffRecommended,
-                lead.offer(), cheaper != null, declinedStep, english);
+                cheaper != null, declinedStep, english);
         if (conversation.getDeclinedNextStepType() != null
                 && conversation.getDeclinedNextStepType().equals(next.response().type())) {
             next = lowPressureAlternative(english);
@@ -111,7 +106,7 @@ public class ChatSalesAdvisorService {
         List<ChatActionResponse> actions = stageActions(
                 stage, next.response().type(), proposedActions, handoffRecommended);
         return new Advice(
-                answer, products, crossSell, stage, outcome, next.response(), lead.offer(),
+                answer, products, crossSell, stage, outcome, next.response(),
                 actions, handoffRecommended);
     }
 
@@ -263,60 +258,6 @@ public class ChatSalesAdvisorService {
                 : "Với món chính này, BigBike đã khai đúng phụ kiện còn hàng gồm " + names + ".";
     }
 
-    private static LeadDecision leadDecision(
-            ChatConversationEntity conversation,
-            String normalized,
-            UUID customerId,
-            boolean missingSizeGuide,
-            String answer,
-            boolean english
-    ) {
-        if (customerId != null || "DECLINED".equals(conversation.getLeadOfferStatus())
-                || "ACCEPTED".equals(conversation.getLeadOfferStatus())
-                || conversation.getLeadOfferCount() >= 2
-                || "OFFERED".equals(conversation.getLeadOfferStatus())) {
-            return LeadDecision.none();
-        }
-        String reason = null;
-        if (missingSizeGuide || asksSize(normalized)) reason = "SIZE_ADVICE";
-        else if (containsAny(normalized, "het hang", "het size", "out of stock")) reason = "RESTOCK_ALERT";
-        else if (containsAny(normalized, "con hang", "co con", "in stock", "available")) reason = "HOLD_STOCK";
-        else if (containsAny(normalized, "gia cuoi", "bao gia", "final price", "quote")) reason = "QUOTE";
-        else if (answer != null && containsAny(ChatToolService.normalize(answer),
-                "chua co thong tin", "chua cap nhat", "not yet available", "not saved")) {
-            reason = "STAFF_CONFIRMATION";
-        }
-        if (reason == null) return LeadDecision.none();
-        int sequence = Math.min(2, conversation.getLeadOfferCount() + 1);
-        conversation.setLeadOfferCount(sequence);
-        conversation.setLeadOfferStatus("OFFERED");
-        if (conversation.getLeadOfferOpenedAt() == null) {
-            conversation.setLeadOfferOpenedAt(Instant.now());
-        }
-        String presentation = leadPresentation(reason, english);
-        return new LeadDecision(new ChatLeadOfferDetailsResponse(sequence, reason, presentation));
-    }
-
-    private static String leadPresentation(String reason, boolean english) {
-        return switch (reason) {
-            case "SIZE_ADVICE" -> english
-                    ? "Leave a phone number only if you want a staff member to help confirm the size."
-                    : "Anh/chị chỉ để lại số nếu muốn nhân viên tư vấn size; shop dùng số cho đúng việc này.";
-            case "RESTOCK_ALERT" -> english
-                    ? "Leave a phone number only if you want BigBike to notify you when this item is available again."
-                    : "Anh/chị chỉ để lại số nếu muốn BigBike báo khi món này có hàng lại.";
-            case "HOLD_STOCK" -> english
-                    ? "Leave a phone number only if you want staff to confirm and hold this item."
-                    : "Anh/chị chỉ để lại số nếu muốn nhân viên xác nhận và giữ đúng món này.";
-            case "QUOTE" -> english
-                    ? "Leave a phone number only if you want staff to send the current quote."
-                    : "Anh/chị chỉ để lại số nếu muốn nhân viên gửi báo giá hiện tại.";
-            default -> english
-                    ? "Leave a phone number only if you want staff to confirm the missing information."
-                    : "Anh/chị chỉ để lại số nếu muốn nhân viên xác nhận phần thông tin còn thiếu.";
-        };
-    }
-
     private static NextStep chooseNextStep(
             String normalized,
             String stage,
@@ -324,7 +265,6 @@ public class ChatSalesAdvisorService {
             List<ChatProductCardResponse> crossSell,
             ChatClarificationResponse clarification,
             boolean handoff,
-            ChatLeadOfferDetailsResponse leadOffer,
             boolean cheaper,
             boolean declined,
             boolean english
@@ -338,8 +278,6 @@ public class ChatSalesAdvisorService {
                 "Choose one option below so I can continue with the right need.",
                 "Anh/chị chọn một phương án bên dưới để em tư vấn tiếp đúng nhu cầu.");
         if (declined) return lowPressureAlternative(english);
-        if (leadOffer != null) return next(
-                "LEAVE_CONTACT", slug, null, english, leadOffer.presentation(), leadOffer.presentation());
         if (!crossSell.isEmpty()) return next(
                 "VIEW_ACCESSORIES", crossSell.get(0).slug(), null, english,
                 "Open an accessory below only if you want to complete this setup.",
@@ -597,7 +535,6 @@ public class ChatSalesAdvisorService {
             String salesStage,
             String outcomeCode,
             ChatNextStepResponse nextStep,
-            ChatLeadOfferDetailsResponse leadOffer,
             List<ChatActionResponse> actions,
             boolean handoffRecommended
     ) {
@@ -609,10 +546,5 @@ public class ChatSalesAdvisorService {
     }
 
     private record CheaperAlternative(ChatProductCardResponse card, String answer) {}
-    private record LeadDecision(ChatLeadOfferDetailsResponse offer) {
-        static LeadDecision none() {
-            return new LeadDecision(null);
-        }
-    }
     private record NextStep(ChatNextStepResponse response, String copy) {}
 }

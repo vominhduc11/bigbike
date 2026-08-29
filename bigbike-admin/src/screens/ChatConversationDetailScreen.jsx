@@ -32,24 +32,14 @@ function DetailValue({ label, children }) {
 function sourceLabel(source, t) {
   const labels = {
     AI: t('chatAdmin.detail.sources.ai'),
-    TEMPLATE: t('chatAdmin.detail.sources.template'),
+    RULE: t('chatAdmin.detail.sources.rule'),
+    TEMPLATE: t('chatAdmin.detail.sources.rule'),
     TOOL: t('chatAdmin.detail.sources.data'),
     CONTACT_FALLBACK: t('chatAdmin.detail.sources.staff'),
+    PROVIDER_UNAVAILABLE: t('chatAdmin.detail.sources.providerUnavailable'),
     OUT_OF_SCOPE: t('chatAdmin.detail.sources.outOfScope'),
     CONTENT_REFUSAL: t('chatAdmin.detail.sources.contentRefusal'),
     ROLE_DEFENSE: t('chatAdmin.detail.sources.roleDefense'),
-  }
-  return labels[source] || t('common.unknown')
-}
-
-function formatVnd(value, locale) {
-  return value == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
-}
-
-function leadSourceLabel(source, t) {
-  const labels = {
-    ACCOUNT: t('chatAdmin.detail.contactSources.account'),
-    FORM: t('chatAdmin.detail.contactSources.form'),
   }
   return labels[source] || t('common.unknown')
 }
@@ -114,7 +104,6 @@ function PrivateCustomerImage({ image, alt, loadError }) {
 
 export function ChatConversationDetailScreen({ conversationId, navigate }) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'vi-VN'
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const hasPermission = useHasPermission()
@@ -134,7 +123,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
     refetchInterval: 30_000,
   })
   const conversation = detailQuery.data?.item
-  const handoff = handoffsQuery.data?.items?.find((item) => item.conversationId === conversationId)
+  const handoff = conversation?.handoff || handoffsQuery.data?.items?.find((item) => item.conversationId === conversationId)
   const currentAdminId = String(user?.id || '')
   const isAssignedToMe = Boolean(handoff?.assignedAdminId && currentAdminId
     && handoff.assignedAdminId === currentAdminId)
@@ -372,15 +361,7 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
               <DetailValue label={t('chatAdmin.columns.startedAt')}>{formatDateTime(conversation.startedAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.columns.lastMessage')}>{formatDateTime(conversation.lastMessageAt)}</DetailValue>
               <DetailValue label={t('chatAdmin.detail.endedReason')}>{endedReasonLabel(conversation.endedReason, t)}</DetailValue>
-              <DetailValue label={t('chatAdmin.detail.assistedOrdersSummary')}>
-                <div className="grid gap-1">
-                  <span>{conversation.assistedOrders} · {formatVnd(conversation.assistedRevenue, locale)}</span>
-                  {conversation.orderAttributions?.length ? <div className="flex flex-wrap gap-x-2 gap-y-1">{conversation.orderAttributions.map((attribution) => <Button key={attribution.orderLineItemId || `${attribution.orderId}-${attribution.createdAt}`} type="button" variant="link" className="h-auto p-0 font-mono text-xs" onClick={() => navigate(`/admin/orders/${attribution.orderId}`)}>{t('chatAdmin.detail.openOrder', { id: attribution.orderId.slice(0, 8) })}</Button>)}</div> : <span className="text-muted-foreground">{t('chatAdmin.detail.noAssistedOrders')}</span>}
-                </div>
-              </DetailValue>
-              <DetailValue label={t('chatAdmin.detail.contactSummary')}>
-                {conversation.lead ? <div className="grid gap-1"><span>{conversation.lead.name} · {conversation.lead.phone}</span><span className="text-muted-foreground">{leadSourceLabel(conversation.lead.source, t)} · {formatDateTime(conversation.lead.consentedAt)}</span>{conversation.lead.note ? <span className="text-muted-foreground">{conversation.lead.note}</span> : null}</div> : <span className="text-muted-foreground">{t('chatAdmin.detail.noLead')}</span>}
-              </DetailValue>
+              <DetailValue label={t('chatAdmin.detail.handoffSummary')}>{handoff ? t(`chatAdmin.handoffStatus.${handoff.status}`, { defaultValue: t('common.unknown') }) : t('chatAdmin.detail.noHandoff')}</DetailValue>
             </dl>
           </DetailSection>
         </aside>

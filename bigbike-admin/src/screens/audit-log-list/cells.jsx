@@ -26,7 +26,7 @@ export function ActorCell({ log }) {
   const secondary = log.actorDisplayName && log.actorEmail
     ? log.actorEmail
     : (log.actorType && log.actorType !== 'ADMIN'
-      ? t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType })
+      ? t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
       : null)
 
   return (

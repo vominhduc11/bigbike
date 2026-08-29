@@ -285,7 +285,7 @@ describe('admin interface composition contract', () => {
       ['src/screens/AuditLogListScreen.jsx', 1, true],
       ['src/screens/BrandListScreen.jsx', 1],
       ['src/screens/CategoryListScreen.jsx', 2],
-      ['src/screens/ChatConversationListScreen.jsx', 4],
+      ['src/screens/ChatConversationListScreen.jsx', 1],
       ['src/screens/ContentListScreen.jsx', 1],
       ['src/screens/CustomerListScreen.jsx', 1],
       ['src/screens/DashboardScreen.jsx', 2],
@@ -298,7 +298,6 @@ describe('admin interface composition contract', () => {
       ['src/screens/ReportsScreen.jsx', 1],
       ['src/screens/ReviewListScreen.jsx', 1],
       ['src/screens/category-detail/ProductsInCategoryCard.jsx', 1],
-      ['src/screens/settings/AssistantModelOperations.jsx', 1],
       ['src/components/ImportProductsDialog.jsx', 1],
     ]
 

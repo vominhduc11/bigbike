@@ -5,7 +5,6 @@ import type {
   ChatProductCard,
   ChatHandoffStatus,
   ChatImage,
-  ChatLeadOffer,
   ChatNextStep,
   ChatSalesStage,
 } from "@/lib/api/client-api";
@@ -15,7 +14,7 @@ export const CHAT_STORAGE_KEY = "bb_ai_chat_session_v1";
 // display cache so a reopened tab is quick without turning UI text into a hidden profile.
 export const CHAT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-const CHAT_SNAPSHOT_VERSION = 3 as const;
+const CHAT_SNAPSHOT_VERSION = 4 as const;
 const MAX_MESSAGES = 64;
 const MAX_CONTENT_LENGTH = 4000;
 const MAX_PRODUCT_FIELDS_LENGTH = 500;
@@ -33,7 +32,6 @@ export type ChatPersistenceMessage = {
   salesStage?: ChatSalesStage;
   nextStep?: ChatNextStep;
   handoff?: ChatHandoffStatus;
-  leadOffer?: ChatLeadOffer;
   clarification?: ChatClarification;
   clarificationSelection?: ChatClarificationSelection;
   actions?: ChatAction[];
@@ -41,7 +39,6 @@ export type ChatPersistenceMessage = {
   answerFormat?: "PLAIN_TEXT" | "MARKDOWN";
   resultKind?: string;
   requestId?: string;
-  originInteractionId?: string;
   failed?: boolean;
   images?: ChatImage[];
 };
@@ -54,11 +51,6 @@ export type ChatPersistenceSnapshot = {
   messages: ChatPersistenceMessage[];
   remainingTurns: number;
   serviceMode: "AI" | "CONTACT";
-  leadPromptSequence: 0 | 1 | 2;
-  leadPromptMessageId?: string;
-  viewedLeadSequences: Array<1 | 2>;
-  leadCaptured: boolean;
-  leadDeclined: boolean;
   pendingRequestId?: string;
 };
 
@@ -273,17 +265,6 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     if (!id || !requestedAt || !["WAITING", "ACTIVE", "RETURNED_TO_AI", "CLOSED"].includes(String(value.handoff.status))) return undefined;
     message.handoff = { id, status: value.handoff.status as ChatHandoffStatus["status"], requestedAt };
   }
-  if (isRecord(value.leadOffer)) {
-    const presentation = boundedString(value.leadOffer.presentation, 500);
-    const allowedReasons = new Set(["HOLD_STOCK", "RESTOCK_ALERT", "SIZE_ADVICE", "QUOTE", "STAFF_CONFIRMATION"]);
-    if ((value.leadOffer.sequence !== 1 && value.leadOffer.sequence !== 2)
-      || !allowedReasons.has(String(value.leadOffer.reason)) || !presentation) return undefined;
-    message.leadOffer = {
-      sequence: value.leadOffer.sequence,
-      reason: value.leadOffer.reason as ChatLeadOffer["reason"],
-      presentation,
-    };
-  }
   if (value.clarification != null) {
     const clarification = readClarification(value.clarification);
     if (!clarification) return undefined;
@@ -317,11 +298,6 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     const requestId = boundedString(value.requestId, 120);
     if (!requestId) return undefined;
     message.requestId = requestId;
-  }
-  if (value.originInteractionId != null) {
-    const originInteractionId = boundedString(value.originInteractionId, 120);
-    if (!originInteractionId) return undefined;
-    message.originInteractionId = originInteractionId;
   }
   if (value.failed != null) {
     if (typeof value.failed !== "boolean") return undefined;
@@ -360,7 +336,7 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
     const parsed: unknown = JSON.parse(raw);
     if (
       !isRecord(parsed) ||
-      (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== CHAT_SNAPSHOT_VERSION) ||
+      parsed.version !== CHAT_SNAPSHOT_VERSION ||
       typeof parsed.expiresAt !== "number" ||
       !Number.isFinite(parsed.expiresAt) ||
       parsed.expiresAt <= now ||
@@ -375,44 +351,11 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       !Number.isInteger(parsed.remainingTurns) ||
       parsed.remainingTurns < 0 ||
       parsed.remainingTurns > 100 ||
-      (parsed.serviceMode !== "AI" && parsed.serviceMode !== "CONTACT") ||
-      typeof parsed.leadCaptured !== "boolean" ||
-      typeof parsed.leadDeclined !== "boolean"
+      (parsed.serviceMode !== "AI" && parsed.serviceMode !== "CONTACT")
     ) {
       removeSnapshot();
       return null;
     }
-    const legacy = parsed.version === 1;
-    if (legacy && typeof parsed.leadPrompt !== "boolean") {
-      removeSnapshot();
-      return null;
-    }
-    const leadPromptSequence = legacy
-      ? parsed.leadPrompt === true
-        ? 1
-        : 0
-      : parsed.leadPromptSequence;
-    if (leadPromptSequence !== 0 && leadPromptSequence !== 1 && leadPromptSequence !== 2) {
-      removeSnapshot();
-      return null;
-    }
-    const leadPromptMessageId =
-      parsed.leadPromptMessageId == null
-        ? undefined
-        : boundedString(parsed.leadPromptMessageId, 120);
-    if (parsed.leadPromptMessageId != null && !leadPromptMessageId) {
-      removeSnapshot();
-      return null;
-    }
-    const rawViewedSequences = legacy ? [] : parsed.viewedLeadSequences;
-    if (
-      !Array.isArray(rawViewedSequences) ||
-      rawViewedSequences.some((item) => item !== 1 && item !== 2)
-    ) {
-      removeSnapshot();
-      return null;
-    }
-    const viewedLeadSequences = Array.from(new Set(rawViewedSequences)) as Array<1 | 2>;
     const pendingRequestId =
       parsed.pendingRequestId == null ? undefined : boundedString(parsed.pendingRequestId, 120);
     if (parsed.pendingRequestId != null && !pendingRequestId) {
@@ -434,11 +377,6 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
       messages: messages as ChatPersistenceMessage[],
       remainingTurns: parsed.remainingTurns,
       serviceMode: parsed.remainingTurns === 0 ? "CONTACT" : parsed.serviceMode,
-      leadPromptSequence: parsed.leadCaptured || parsed.leadDeclined ? 0 : leadPromptSequence,
-      leadPromptMessageId,
-      viewedLeadSequences,
-      leadCaptured: parsed.leadCaptured,
-      leadDeclined: parsed.leadDeclined,
       pendingRequestId,
     };
   } catch {

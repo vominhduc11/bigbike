@@ -4,6 +4,22 @@ import userEvent from '@testing-library/user-event'
 import { AdminTable } from './AdminTable'
 import { TableCell, TableRow } from '@/components/ui/table'
 
+const i18nMock = vi.hoisted(() => ({
+  translations: {
+    'common.tableDensity.spacious': 'Thoáng',
+    'common.tableDensity.compact': 'Gọn',
+    'common.tableDensity.regular': 'Vừa',
+    'common.tableDensity.label': 'Mật độ bảng',
+    'common.unknown': 'Không xác định',
+  },
+}))
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key, options = {}) => i18nMock.translations[key] || options.defaultValue || key,
+  }),
+}))
+
 const rows = [{ id: 'row-1', name: 'Bản ghi một' }]
 
 describe('AdminTable', () => {

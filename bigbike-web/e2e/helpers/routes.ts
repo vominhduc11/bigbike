@@ -20,12 +20,24 @@ export const PUBLIC_ROUTES: RouteDef[] = [
   { path: "/lien-he/", name: "Liên hệ", group: "content", kind: "static", hasForm: true },
   { path: "/huong-dan/", name: "Hướng dẫn", group: "content", kind: "static" },
   { path: "/huong-dan/size-mu/", name: "Hướng dẫn size mũ", group: "content", kind: "static" },
-  { path: "/huong-dan/size-trang-phuc/", name: "Hướng dẫn size trang phục", group: "content", kind: "static" },
+  {
+    path: "/huong-dan/size-trang-phuc/",
+    name: "Hướng dẫn size trang phục",
+    group: "content",
+    kind: "static",
+  },
   { path: "/gio-hang/", name: "Giỏ hàng", group: "commerce", kind: "data" },
   { path: "/tim-kiem/", name: "Tìm kiếm", group: "search", kind: "data" },
   { path: "/dang-nhap/", name: "Đăng nhập", group: "auth", kind: "static", hasForm: true },
   { path: "/dang-ky/", name: "Đăng ký", group: "auth", kind: "static", hasForm: true },
   { path: "/quen-mat-khau/", name: "Quên mật khẩu", group: "auth", kind: "static", hasForm: true },
+  {
+    path: "/xac-nhan-email/",
+    name: "Xác nhận email",
+    group: "auth",
+    kind: "static",
+    hasForm: false,
+  },
 ];
 
 /** Real deep-link slugs (harvested from live sitemap / listing pages). */
@@ -58,9 +70,9 @@ export async function discoverFirstHref(
   page: import("@playwright/test").Page,
   pattern: RegExp,
 ): Promise<string | null> {
-  const hrefs = await page.locator("a[href]").evaluateAll((els) =>
-    (els as HTMLAnchorElement[]).map((a) => a.getAttribute("href") || ""),
-  );
+  const hrefs = await page
+    .locator("a[href]")
+    .evaluateAll((els) => (els as HTMLAnchorElement[]).map((a) => a.getAttribute("href") || ""));
   const match = hrefs.find((h) => pattern.test(h));
   if (!match) return null;
   try {

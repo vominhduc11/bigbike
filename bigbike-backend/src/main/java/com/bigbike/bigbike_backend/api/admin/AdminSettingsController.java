@@ -8,9 +8,6 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminSettingsService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
-import com.bigbike.bigbike_backend.service.chat.ChatTemplatePreviewService;
-import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatTemplatePreviewRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatTemplatePreviewResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PostMapping;
 
 @Validated
 @RestController
@@ -36,7 +32,6 @@ public class AdminSettingsController extends AdminControllerSupport {
     private final AdminSettingsService adminSettingsService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-    private final ChatTemplatePreviewService chatTemplatePreviewService;
 
     @GetMapping
     public ApiListResponse<AdminSiteSettingResponse> listSettings(
@@ -76,15 +71,6 @@ public class AdminSettingsController extends AdminControllerSupport {
         boolean superAdmin = profile.permissions().contains("*");
         return apiResponseFactory.data(
                 adminSettingsService.updateSetting(settingKey, resolveAdminId(), superAdmin, body), request);
-    }
-
-    @PostMapping("/ai-assistant/templates/preview")
-    public ApiDataResponse<AdminChatTemplatePreviewResponse> previewTemplate(
-            @Valid @RequestBody AdminChatTemplatePreviewRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "settings.read");
-        return apiResponseFactory.data(chatTemplatePreviewService.preview(body), request);
     }
 
 }

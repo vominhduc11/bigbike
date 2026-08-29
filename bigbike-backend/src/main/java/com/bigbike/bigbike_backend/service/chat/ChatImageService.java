@@ -48,7 +48,6 @@ public class ChatImageService {
     private final ChatImageDailyQuotaService quotaService;
     private final ChatImageAnalysisClient analysisClient;
     private final CatalogReadService catalogReadService;
-    private final ChatAiUsageService usageService;
     private final ChatProductImageFingerprintService fingerprintService;
 
     @Transactional
@@ -151,33 +150,9 @@ public class ChatImageService {
                     exception.getClass().getSimpleName());
             visualMatch = Optional.empty();
         }
-        String requestedModel = assistantSettings.currentModel();
         ChatImageAnalysisClient.AnalysisCall call = analysisClient.analyze(
-                requestedModel, content.bytes(), content.mimeType(), caption,
+                content.bytes(), content.mimeType(), caption,
                 catalogContext.candidates(), catalogContext.groups());
-        if (call.providerRequests() > 0) {
-            if (call.modelUsages().isEmpty()) {
-                usageService.record(
-                        "CUSTOMER_IMAGE", conversation.getId(), customerMessageId, null,
-                        call.requestedModel(), call.servedModel(), call.providerRequests(),
-                        call.usage().inputTokens(), call.usage().outputTokens(),
-                        call.usage().thinkingTokens(), 1, call.estimatedCostUsd(),
-                        call.priceEffectiveFrom(), call.fallback(), call.analysis().isPresent(),
-                        call.latencyMs());
-            } else {
-                for (int index = 0; index < call.modelUsages().size(); index++) {
-                    ChatImageAnalysisClient.ModelUsage usage = call.modelUsages().get(index);
-                    usageService.record(
-                            "CUSTOMER_IMAGE", conversation.getId(), customerMessageId, null,
-                            call.requestedModel(), usage.modelId(), usage.providerRequests(),
-                            usage.usage().inputTokens(), usage.usage().outputTokens(),
-                            usage.usage().thinkingTokens(), index == 0 ? 1 : 0,
-                            usage.estimatedCostUsd(), usage.priceEffectiveFrom(), usage.fallback(),
-                            usage.success(), usage.modelId().equals(call.servedModel())
-                                    ? call.latencyMs() : 0);
-                }
-            }
-        }
         if (call.analysis().isEmpty()
                 && visualMatch.filter(match -> "CONTENT_SHA256".equals(match.evidence())).isEmpty()) {
             image.setStatus("UNRECOGNIZED");

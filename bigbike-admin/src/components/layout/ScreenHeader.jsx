@@ -34,7 +34,7 @@ function countVisibleActions(node, hiddenByParent = false) {
 export function ScreenHeader({ group, eyebrow, title, description, help, helpLabel, actions, badge }) {
   const { t } = useTranslation()
   const isMobile = useMediaQuery('(max-width: 639px)')
-  const groupLabel = group && SCREEN_GROUPS.includes(group) ? t(`nav.group.${group}`) : eyebrow
+  const groupLabel = group && SCREEN_GROUPS.includes(group) ? t(`nav.group.${group}`, { defaultValue: t('common.unknown') }) : eyebrow
   const showGroupLabel = groupLabel && normalizedText(groupLabel) !== normalizedText(title)
   const collapseActions = isMobile && countVisibleActions(actions) > 1
 

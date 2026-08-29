@@ -34,7 +34,9 @@ public class AiChatClient {
 
     private static final String ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
-    private static final String DEFAULT_MODEL = "gemini-2.5-flash";
+    /** The only sales-assistant model. It is server configuration, never a site setting. */
+    public static final String FIXED_MODEL = "gemini-3.7-flash";
+    private static final String DEFAULT_MODEL = FIXED_MODEL;
     private static final int MAX_QUESTION_CHARS = 1000;
     private static final int MAX_OUTPUT_TOKENS = 2_048;
     private static final int MAX_PROVIDER_CALLS = 4;
@@ -57,8 +59,7 @@ public class AiChatClient {
             invent, widen filters, output a URL, expose function names, internal status
             labels or technical errors. Product cards and fixed actions are rendered by
             the application. Never ask for customer identity, contact details,
-            authentication data, database query language or schema identifiers. Never
-            attempt to capture a lead.
+            authentication data, database query language or schema identifiers.
 
             Act as a concise shop sales adviser, not a lookup terminal. Infer the current sales
             stage from CURRENT_QUESTION and RECENT_TURNS: browsing, choosing, deciding, or
@@ -103,8 +104,8 @@ public class AiChatClient {
             not repeat category counts in the final answer.
 
             After receiving enough function data, return one JSON object only with exactly
-            these fields: answer (string), offTopic (boolean), handoffRecommended (boolean),
-            leadPrompt (boolean). A precise one-sentence answer is allowed. Use at most 10
+            these fields: answer (string), offTopic (boolean), handoffRecommended (boolean).
+            A precise one-sentence answer is allowed. Use at most 10
             sentences and 2,000 visible characters. You may use only paragraphs, bold text,
             bullet/numbered lists and Markdown tables. Never use HTML, code, images, links or URLs.
             Mention no more than eight products; direct comparison remains limited to three.
@@ -147,14 +148,11 @@ public class AiChatClient {
             Set offTopic=true only outside BigBike's supported scope. Set
             handoffRecommended=true for complaints, complex warranty cases or information that
             the current functions cannot confirm. A price objection alone is not a handoff: the
-            application will look for a verified lower-priced alternative. leadPrompt may be true only when a staff callback would genuinely
-            help; the application still requires separate explicit consent before writing.
+            application will look for a verified lower-priced alternative.
             """;
 
     private final String apiKey;
     private final String model;
-    private final String fallbackModel;
-    private final long primaryTimeoutSeconds;
     private final ModelAwareGeminiTransport transport;
     private final Sleeper sleeper;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -162,48 +160,33 @@ public class AiChatClient {
     @Autowired
     public AiChatClient(
             @Value("${bigbike.ai.gemini-api-key:}") String apiKey,
-            @Value("${bigbike.chat.model:gemini-2.5-flash}") String model,
-            @Value("${bigbike.chat.fallback-model:gemini-2.5-flash-lite}") String fallbackModel,
-            @Value("${bigbike.chat.primary-timeout-seconds:35}") long primaryTimeoutSeconds,
+            @Value("${bigbike.chat.model:gemini-3.7-flash}") String model,
             @Value("${bigbike.chat.timeout-seconds:65}") long timeoutSeconds
     ) {
-        this(apiKey, model, fallbackModel, primaryTimeoutSeconds,
-                buildTransport(apiKey, timeoutSeconds), Thread::sleep);
+        this(apiKey, model, buildTransport(apiKey, timeoutSeconds), Thread::sleep);
     }
 
     AiChatClient(String apiKey, String model, GeminiTransport transport) {
-        this(apiKey, model, model, 65,
+        this(apiKey, model,
                 (ignoredModel, body, ignoredTimeoutMillis) -> transport.generate(body), Thread::sleep);
     }
 
-    /** Compatibility constructor used by request-shape and availability tests. */
-    AiChatClient(String apiKey, String model, long timeoutSeconds) {
-        this(apiKey, model, model, Math.max(1, Math.min(60, timeoutSeconds)),
-                buildTransport(apiKey, timeoutSeconds), Thread::sleep);
-    }
-
     AiChatClient(String apiKey, String model, GeminiTransport transport, Sleeper sleeper) {
-        this(apiKey, model, model, 65,
+        this(apiKey, model,
                 (ignoredModel, body, ignoredTimeoutMillis) -> transport.generate(body), sleeper);
     }
 
     AiChatClient(
             String apiKey,
             String model,
-            String fallbackModel,
-            long primaryTimeoutSeconds,
             ModelAwareGeminiTransport transport,
             Sleeper sleeper
     ) {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
-        this.model = model == null || model.isBlank() ? DEFAULT_MODEL : model.trim();
-        this.fallbackModel = fallbackModel == null || fallbackModel.isBlank()
-                ? "gemini-2.5-flash-lite" : fallbackModel.trim();
-        this.primaryTimeoutSeconds = Math.max(1, Math.min(60, primaryTimeoutSeconds));
+        this.model = fixedModel(model);
         this.transport = transport;
         this.sleeper = sleeper;
-        log.info("Trợ lý BigBike AI client configured={} bootstrapModel={} fallbackModel={}",
-                isConfigured(), this.model, this.fallbackModel);
+        log.info("Trợ lý BigBike AI client configured={} model={}", isConfigured(), this.model);
     }
 
     public boolean isConfigured() {
@@ -282,73 +265,6 @@ public class AiChatClient {
                 recentVerifiedProducts, recentTurns, "");
     }
 
-    /**
-     * Runs the owner-selected primary model and, only when no safe result is produced, one
-     * fast fallback. Both attempts share the existing four-request/65-second logical budget.
-     */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Optional<ModelAnswer> answerWithFallback(
-            String requestedModel,
-            String question,
-            String lang,
-            ChatToolRegistry registry,
-            boolean toolRequired,
-            ToolExecutor executor,
-            ChatToolService.AssistantCatalogVocabulary vocabulary,
-            List<String> recentVerifiedProducts,
-            List<ChatHistorySanitizer.RecentTurn> recentTurns
-    ) {
-        String primary = cleanModel(requestedModel, model);
-        ProviderBudget budget = new ProviderBudget();
-        // When a distinct fast fallback exists, do not spend the shared deadline retrying the
-        // same slow/failed primary. One failed primary call must leave time for the fallback.
-        budget.beginModel(
-                primary,
-                Duration.ofSeconds(primaryTimeoutSeconds),
-                fallbackModel.equals(primary));
-        Optional<HybridAnswer> first = answerForModel(
-                question, lang, registry, toolRequired, executor, vocabulary,
-                recentVerifiedProducts, recentTurns, "", budget);
-        if (first.isPresent()) {
-            return Optional.of(new ModelAnswer(
-                    first.get(), primary, primary, false, null, budget.modelUsages()));
-        }
-        String reason = budget.failureReason();
-        if (fallbackModel.equals(primary) || budget.calls() >= MAX_PROVIDER_CALLS
-                || budget.logicalDeadlineExceeded()) {
-            return Optional.empty();
-        }
-        budget.beginModel(fallbackModel, budget.remainingLogicalDuration(), true);
-        Optional<HybridAnswer> fallback = answerForModel(
-                question, lang, registry, toolRequired, executor, vocabulary,
-                recentVerifiedProducts, recentTurns, "", budget);
-        return fallback.map(answer -> new ModelAnswer(
-                answer, primary, fallbackModel, true,
-                reason == null ? "INVALID_RESPONSE" : reason,
-                budget.modelUsages()));
-    }
-
-    /** Exact-model path for the owner-triggered offline evaluation; never falls back. */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Optional<ModelAnswer> answerForEvaluation(
-            String evaluationModel,
-            String question,
-            String lang,
-            ChatToolRegistry registry,
-            boolean toolRequired,
-            ToolExecutor executor,
-            ChatToolService.AssistantCatalogVocabulary vocabulary
-    ) {
-        String selected = cleanModel(evaluationModel, model);
-        ProviderBudget budget = new ProviderBudget();
-        budget.beginModel(selected, Duration.ofSeconds(65), true);
-        Optional<HybridAnswer> answer = answerForModel(
-                question, lang, registry, toolRequired, executor, vocabulary,
-                List.of(), List.of(), "", budget);
-        return answer.map(value -> new ModelAnswer(
-                value, selected, selected, false, null, budget.modelUsages()));
-    }
-
     private Optional<HybridAnswer> answer(
             String question,
             String lang,
@@ -361,7 +277,7 @@ public class AiChatClient {
             String responseInstruction
     ) {
         ProviderBudget budget = new ProviderBudget();
-        budget.beginModel(model, Duration.ofSeconds(65), true);
+        budget.beginModel(Duration.ofSeconds(65));
         return answerForModel(
                 question, lang, registry, toolRequired, executor, vocabulary,
                 recentVerifiedProducts, recentTurns, responseInstruction, budget);
@@ -426,8 +342,7 @@ public class AiChatClient {
                     if (directAnswer.isEmpty()) return Optional.empty();
                     return Optional.of(new HybridAnswer(
                             directAnswer.get(), products, actions, executedTools,
-                            requiredDisclosures, providerCalls, "AI", null, null,
-                            providerBudget.usage()));
+                            requiredDisclosures, providerCalls, "AI", null, null));
                 }
             }
 
@@ -488,8 +403,7 @@ public class AiChatClient {
                         new Answer(
                                 terminal.answer(),
                                 terminal.offTopic(),
-                                terminal.handoffRecommended(),
-                                terminal.leadPrompt()),
+                                terminal.handoffRecommended()),
                         products,
                         actions,
                         executedTools,
@@ -497,8 +411,7 @@ public class AiChatClient {
                         providerCalls,
                         "TOOL",
                         catalogTotals,
-                        searchScope,
-                        providerBudget.usage()));
+                        searchScope));
             }
             appendFunctionExchange(contents, turn, toolResults);
 
@@ -564,12 +477,10 @@ public class AiChatClient {
             ChatToolService.SearchScope safeSearchScope = searchScope;
             return finalAnswer.map(answer -> new HybridAnswer(
                     answer, safeProducts, safeActions, executedTools,
-                    requiredDisclosures, totalProviderCalls, "AI", safeCatalogTotals, safeSearchScope,
-                    providerBudget.usage()));
+                    requiredDisclosures, totalProviderCalls, "AI", safeCatalogTotals, safeSearchScope));
         } catch (SafetyBlockedException exception) {
-            throw new SafetyBlockedException(providerBudget.calls(), providerBudget.usage());
+            throw new SafetyBlockedException(providerBudget.calls());
         } catch (RuntimeException exception) {
-            providerBudget.recordFailure(exception);
             logOrchestrationFailure(exception, stage);
             return Optional.empty();
         }
@@ -691,17 +602,13 @@ public class AiChatClient {
             budget.recordCall();
             try {
                 String response = transport.generate(
-                        budget.currentModel(), body, budget.remainingModelMillis());
+                        FIXED_MODEL, body, budget.remainingModelMillis());
                 budget.ensureWithinDeadline();
-                budget.recordUsage(response, objectMapper);
                 return parseTurn(response)
                         .orElseThrow(() -> new IllegalStateException("Invalid Gemini response"));
             } catch (RuntimeException exception) {
-                if (budget.retryAllowed()
-                        && !budget.retryUsed()
-                        && budget.calls() < MAX_PROVIDER_CALLS
+                if (budget.calls() < MAX_PROVIDER_CALLS
                         && isTransientProviderFailure(exception)) {
-                    budget.recordRetry();
                     log.warn("Trợ lý BigBike provider retry stage={} reason=TRANSIENT_PROVIDER_FAILURE", stage);
                     sleepBeforeRetry();
                     continue;
@@ -721,7 +628,10 @@ public class AiChatClient {
     }
 
     private static boolean isTransientProviderFailure(RuntimeException exception) {
+        if (exception instanceof SafetyBlockedException) return false;
         if (exception instanceof ResourceAccessException) return true;
+        // Empty or malformed provider payloads are retried on the same fixed model as well.
+        if (exception instanceof IllegalStateException) return true;
         if (exception instanceof RestClientResponseException providerException) {
             int status = providerException.getStatusCode().value();
             return status == 429 || status >= 500;
@@ -783,8 +693,7 @@ public class AiChatClient {
         properties.put("answer", Map.of("type", "string"));
         properties.put("offTopic", Map.of("type", "boolean"));
         properties.put("handoffRecommended", Map.of("type", "boolean"));
-        properties.put("leadPrompt", Map.of("type", "boolean"));
-        List<String> fields = List.of("answer", "offTopic", "handoffRecommended", "leadPrompt");
+        List<String> fields = List.of("answer", "offTopic", "handoffRecommended");
 
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
@@ -1005,7 +914,7 @@ public class AiChatClient {
         Optional<Answer> parsed = parseFinal(turn.finalText());
         if (parsed.isPresent() || !turn.truncated()) return parsed;
         return extractCompleteAnswerPrefix(turn.finalText())
-                .map(content -> new Answer(content, false, false, false));
+                .map(content -> new Answer(content, false, false));
     }
 
     private Optional<String> extractCompleteAnswerPrefix(String partialJson) {
@@ -1049,14 +958,12 @@ public class AiChatClient {
             if (!answer.isObject()) return Optional.empty();
             Set<String> fields = new LinkedHashSet<>();
             answer.fieldNames().forEachRemaining(fields::add);
-            if (!fields.equals(Set.of(
-                    "answer", "offTopic", "handoffRecommended", "leadPrompt"))) {
+            if (!fields.equals(Set.of("answer", "offTopic", "handoffRecommended"))) {
                 return Optional.empty();
             }
             if (!answer.path("answer").isTextual()
                     || !answer.path("offTopic").isBoolean()
-                    || !answer.path("handoffRecommended").isBoolean()
-                    || !answer.path("leadPrompt").isBoolean()) {
+                    || !answer.path("handoffRecommended").isBoolean()) {
                 return Optional.empty();
             }
             String content = answer.path("answer").textValue().trim();
@@ -1064,8 +971,7 @@ public class AiChatClient {
             return Optional.of(new Answer(
                     content,
                     answer.path("offTopic").booleanValue(),
-                    answer.path("handoffRecommended").booleanValue(),
-                    answer.path("leadPrompt").booleanValue()));
+                    answer.path("handoffRecommended").booleanValue()));
         } catch (Exception exception) {
             return Optional.empty();
         }
@@ -1083,7 +989,7 @@ public class AiChatClient {
             factory.setReadTimeout((int) Math.min(Integer.MAX_VALUE, readMillis));
             RestClient client = RestClient.builder().requestFactory(factory).build();
             return client.post()
-                    .uri(String.format(ENDPOINT, cleanModel(modelId, DEFAULT_MODEL)))
+                    .uri(String.format(ENDPOINT, FIXED_MODEL))
                     .header("x-goog-api-key", safeKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
@@ -1092,11 +998,14 @@ public class AiChatClient {
         };
     }
 
-    private static String cleanModel(String value, String fallback) {
-        if (value == null || value.isBlank()) return fallback;
-        String clean = value.trim();
+    private static String fixedModel(String configuredValue) {
+        String clean = configuredValue == null ? "" : configuredValue.trim();
         if (clean.startsWith("models/")) clean = clean.substring("models/".length());
-        return clean.matches("[a-z0-9][a-z0-9.-]{0,119}") ? clean : fallback;
+        if (!clean.isBlank() && !FIXED_MODEL.equals(clean)) {
+            log.warn("Ignoring unsupported BigBike assistant model configuration; fixed model={}",
+                    FIXED_MODEL);
+        }
+        return FIXED_MODEL;
     }
 
     private static String truncate(String value, int max) {
@@ -1137,56 +1046,28 @@ public class AiChatClient {
 
     private static final class ProviderBudget {
         private final long startedAtNanos = System.nanoTime();
-        private final Map<String, MutableModelUsage> usageByModel = new LinkedHashMap<>();
         private int calls;
-        private boolean retryUsed;
-        private boolean retryAllowed = true;
-        private int inputTokens;
-        private int outputTokens;
-        private int thinkingTokens;
-        private String currentModel = DEFAULT_MODEL;
         private long modelStartedAtNanos = startedAtNanos;
         private long modelDeadlineNanos = LOGICAL_TURN_DEADLINE_NANOS;
-        private String failureReason;
 
         int calls() {
             return calls;
         }
 
-        boolean retryUsed() {
-            return retryUsed;
-        }
-
-        boolean retryAllowed() {
-            return retryAllowed;
-        }
-
         void recordCall() {
             calls++;
-            usageByModel.computeIfAbsent(currentModel, ignored -> new MutableModelUsage()).calls++;
         }
 
-        void recordRetry() {
-            retryUsed = true;
-        }
-
-        void beginModel(String model, Duration timeout, boolean allowRetry) {
-            currentModel = cleanModel(model, DEFAULT_MODEL);
+        void beginModel(Duration timeout) {
             modelStartedAtNanos = System.nanoTime();
             long requested = timeout == null ? LOGICAL_TURN_DEADLINE_NANOS : timeout.toNanos();
             modelDeadlineNanos = Math.max(Duration.ofMillis(250).toNanos(), requested);
-            retryAllowed = allowRetry;
-        }
-
-        String currentModel() {
-            return currentModel;
         }
 
         void ensureWithinDeadline() {
             long now = System.nanoTime();
             if (now - startedAtNanos >= LOGICAL_TURN_DEADLINE_NANOS
                     || now - modelStartedAtNanos >= modelDeadlineNanos) {
-                failureReason = "TIMEOUT";
                 throw new IllegalStateException("Logical chat turn deadline exceeded");
             }
         }
@@ -1199,141 +1080,30 @@ public class AiChatClient {
             return Math.max(250L, Duration.ofNanos(Math.max(0L, remaining)).toMillis());
         }
 
-        boolean logicalDeadlineExceeded() {
-            return System.nanoTime() - startedAtNanos >= LOGICAL_TURN_DEADLINE_NANOS;
-        }
-
-        Duration remainingLogicalDuration() {
-            long remaining = LOGICAL_TURN_DEADLINE_NANOS - (System.nanoTime() - startedAtNanos);
-            return Duration.ofNanos(Math.max(Duration.ofMillis(250).toNanos(), remaining));
-        }
-
-        void recordFailure(RuntimeException exception) {
-            if (failureReason != null) return;
-            if (exception instanceof ResourceAccessException) {
-                failureReason = "NETWORK";
-            } else if (exception instanceof RestClientResponseException providerException) {
-                int status = providerException.getStatusCode().value();
-                failureReason = status == 429 ? "RATE_LIMIT"
-                        : status >= 500 ? "PROVIDER_5XX" : "INVALID_RESPONSE";
-            } else {
-                failureReason = "INVALID_RESPONSE";
-            }
-        }
-
-        String failureReason() {
-            return failureReason;
-        }
-
-        void recordUsage(String response, ObjectMapper objectMapper) {
-            if (response == null || response.isBlank()) return;
-            try {
-                JsonNode usage = objectMapper.readTree(response).path("usageMetadata");
-                int responseInput = Math.max(0, usage.path("promptTokenCount").asInt(0));
-                int responseOutput = Math.max(0, usage.path("candidatesTokenCount").asInt(0));
-                int responseThinking = Math.max(0, usage.path("thoughtsTokenCount").asInt(0));
-                inputTokens += responseInput;
-                outputTokens += responseOutput;
-                thinkingTokens += responseThinking;
-                MutableModelUsage modelUsage = usageByModel.computeIfAbsent(
-                        currentModel, ignored -> new MutableModelUsage());
-                modelUsage.inputTokens += responseInput;
-                modelUsage.outputTokens += responseOutput;
-                modelUsage.thinkingTokens += responseThinking;
-            } catch (Exception ignored) {
-                // Telemetry must never turn a valid customer answer into an error.
-            }
-        }
-
-        TokenUsage usage() {
-            return new TokenUsage(inputTokens, outputTokens, thinkingTokens);
-        }
-
-        List<ModelUsage> modelUsages() {
-            return usageByModel.entrySet().stream()
-                    .map(entry -> new ModelUsage(
-                            entry.getKey(),
-                            entry.getValue().calls,
-                            new TokenUsage(
-                                    entry.getValue().inputTokens,
-                                    entry.getValue().outputTokens,
-                                    entry.getValue().thinkingTokens)))
-                    .toList();
-        }
-
-        private static final class MutableModelUsage {
-            private int calls;
-            private int inputTokens;
-            private int outputTokens;
-            private int thinkingTokens;
-        }
     }
 
     public static final class SafetyBlockedException extends RuntimeException {
         private final int providerCallCount;
-        private final TokenUsage usage;
 
         public SafetyBlockedException() {
-            this(0, TokenUsage.empty());
+            this(0);
         }
 
-        public SafetyBlockedException(int providerCallCount, TokenUsage usage) {
+        public SafetyBlockedException(int providerCallCount) {
             super("Gemini safety block");
             this.providerCallCount = Math.max(0, providerCallCount);
-            this.usage = usage == null ? TokenUsage.empty() : usage;
         }
 
         public int providerCallCount() {
             return providerCallCount;
         }
 
-        public TokenUsage usage() {
-            return usage;
-        }
-    }
-
-    public record TokenUsage(int inputTokens, int outputTokens, int thinkingTokens) {
-        public static TokenUsage empty() {
-            return new TokenUsage(0, 0, 0);
-        }
-    }
-
-    public record ModelUsage(String modelId, int providerRequestCount, TokenUsage usage) {
-        public ModelUsage {
-            modelId = cleanModel(modelId, DEFAULT_MODEL);
-            providerRequestCount = Math.max(0, providerRequestCount);
-            usage = usage == null ? TokenUsage.empty() : usage;
-        }
-    }
-
-    public record ModelAnswer(
-            HybridAnswer answer,
-            String requestedModel,
-            String servedModel,
-            boolean fallbackUsed,
-            String fallbackReason,
-            List<ModelUsage> modelUsages
-    ) {
-        public ModelAnswer {
-            modelUsages = modelUsages == null ? List.of() : List.copyOf(modelUsages);
-        }
-
-        public ModelAnswer(
-                HybridAnswer answer,
-                String requestedModel,
-                String servedModel,
-                boolean fallbackUsed,
-                String fallbackReason
-        ) {
-            this(answer, requestedModel, servedModel, fallbackUsed, fallbackReason, List.of());
-        }
     }
 
     public record Answer(
             String answer,
             boolean offTopic,
-            boolean handoffRecommended,
-            boolean leadPrompt
+            boolean handoffRecommended
     ) {}
 
     public record HybridAnswer(
@@ -1345,24 +1115,8 @@ public class AiChatClient {
             int providerCallCount,
             String source,
             ChatToolService.CatalogTotals catalogTotals,
-            ChatToolService.SearchScope searchScope,
-            TokenUsage usage
+            ChatToolService.SearchScope searchScope
     ) {
-        public HybridAnswer(
-                Answer answer,
-                List<ChatProductCardResponse> products,
-                List<ChatActionResponse> actions,
-                List<String> executedTools,
-                Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
-                int providerCallCount,
-                String source,
-                ChatToolService.CatalogTotals catalogTotals,
-                ChatToolService.SearchScope searchScope
-        ) {
-            this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, source, catalogTotals, searchScope, TokenUsage.empty());
-        }
-
         public HybridAnswer(
                 Answer answer,
                 List<ChatProductCardResponse> products,
@@ -1374,7 +1128,7 @@ public class AiChatClient {
                 ChatToolService.CatalogTotals catalogTotals
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, source, catalogTotals, null, TokenUsage.empty());
+                    providerCallCount, source, catalogTotals, null);
         }
 
         public HybridAnswer(
@@ -1387,7 +1141,7 @@ public class AiChatClient {
                 String source
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, source, null, null, TokenUsage.empty());
+                    providerCallCount, source, null, null);
         }
 
         public HybridAnswer(
@@ -1399,7 +1153,7 @@ public class AiChatClient {
                 int providerCallCount
         ) {
             this(answer, products, actions, executedTools, requiredDisclosures,
-                    providerCallCount, "AI", null, null, TokenUsage.empty());
+                    providerCallCount, "AI", null, null);
         }
 
         public HybridAnswer(
@@ -1419,7 +1173,6 @@ public class AiChatClient {
             requiredDisclosures = requiredDisclosures == null
                     ? Set.of() : Set.copyOf(requiredDisclosures);
             source = "TOOL".equals(source) ? "TOOL" : "AI";
-            usage = usage == null ? TokenUsage.empty() : usage;
         }
     }
 }

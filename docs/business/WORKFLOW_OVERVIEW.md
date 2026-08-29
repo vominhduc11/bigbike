@@ -12,34 +12,23 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
-## Trợ lý BigBike — Sales And Staff Handoff Flow
+## Trợ lý BigBike — tư vấn và Gặp nhân viên (owner decision 2026-08-29)
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Guest/Customer | Trợ lý giữ cơ chế hỏi rõ giai đoạn 1 rồi đổi cách nói theo `BROWSING|CHOOSING|DECIDING|POST_PURCHASE`; mỗi lượt có một bước tiếp theo | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_034`–`038` |
-| 2 | System | Nỗi lo dùng catalog/policy thật; bán kèm chỉ từ accessory relation, tối đa hai món còn hàng; thiếu dữ liệu thì nói thiếu | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_038`–`039` |
-| 3 | Guest/Customer | Lời mời liên hệ chỉ hiện đúng thời điểm/lý do, tối đa hai; khách đăng nhập xác nhận số đã che thay vì nhập lại | `OWNER_CONFIRMED_2026-08-24` | `CHAT_RULE_012`, `CHAT_RULE_025` |
-| 4 | Guest/Customer | Bấm/nói Gặp nhân viên → `WAITING`; trong giờ trợ lý tiếp tục cho đến khi có người nhận, ngoài giờ báo lần mở cửa kế tiếp và mời để lại liên hệ | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_046` |
-| 5 | System/Admin | Realtime + email báo staff; hàng chờ lâu nhất ở trên. Người có `chat.reply` bấm Tiếp nhận nguyên tử → `ACTIVE`, nhắn trực tiếp; trợ lý lùi | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_045`, `PERMISSION_MATRIX.md` |
-| 6 | Admin/System | Nhân viên bàn giao → `RETURNED_TO_AI` và trợ lý tiếp tục, hoặc đóng lịch sự → `CLOSED`; mọi đổi trạng thái hiện ngay cho khách | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `STATE_MACHINES.md` §15C |
-| 7 | Guest/Customer | Click sản phẩm từ chat → chọn đúng biến thể còn hàng → add cart đã hậu kiểm → đi checkout; proof 168 giờ giữ attribution | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_041`, `CHAT_RULE_052` |
-| 8 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy/tắt/xóa được. Đăng nhập chỉ gộp lịch sử thiết bị hiện tại | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_049` |
-| 9 | Owner | Xem feedback/trend/unanswered/data gap và mở thẳng editor câu chuẩn; preview/cảnh báo trước khi bật | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_048`, `CHAT_RULE_050` |
-| 10 | Owner/System | Mở Cài đặt, tải danh sách model Gemini thật sự dùng được với tài khoản hiện tại, xem nhãn nhanh/chậm và rẻ/đắt, rồi đổi model trả lời; model kiểm duyệt đánh giá giữ độc lập | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_053` |
-| 11 | Owner/System | Chạy bộ đề offline đã phiên bản hoá ngoài luồng khách thật, với trần chi phí 2 USD/lần; hệ thống lưu kết quả đúng số liệu/hiểu ý/không bịa/chịu thua/tốc độ/chi phí để so cạnh nhau, không chia đôi khách thật | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_054` |
-| 12 | System | Mỗi lượt dùng model owner chọn trong giới hạn 35 giây cho model chính và 65 giây cho toàn lượt; lỗi/quá hạn thì lùi một lần sang model nhanh, vẫn trả lời và ghi telemetry/fallback để owner theo dõi | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_055`, `CHAT_RULE_056` |
-| 13 | Owner | Sau khi chọn model tốt hơn, bật cho toàn bộ khách và theo dõi 14 ngày; so tỷ lệ chịu thua với mốc thật `5/58 ≈ 9%`, độ trễ và chi phí, rồi đổi ngược bằng Cài đặt nếu tệ hơn | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_056` |
-| 14 | Guest/Customer | Khi owner đã bật đọc ảnh, khách thấy thông báo ảnh được gửi tới dịch vụ AI, chọn tối đa một JPG/PNG/WebP không quá 8 MB mỗi lượt, xem preview và gửi cùng câu hỏi | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_057`, `CHAT_RULE_059` |
-| 15 | System | Backend kiểm MIME/nội dung, re-encode bỏ metadata, lưu kho MinIO riêng tư, áp trần 3 ảnh/hội thoại và 20 ảnh/ngày; ảnh không phù hợp hoặc vượt trần bị từ chối nhưng chat chữ vẫn dùng được | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_057`, `CHAT_RULE_059` |
-| 16 | System/Guest | Hệ thống phân biệt tìm sản phẩm, hàng hỏng, hoá đơn/đơn hàng, hỏi size và ảnh ngoài phạm vi. Chỉ tìm trong hàng thật đang bán, chỉ nói “trông giống”, không đoán size/bảo hành/OCR/giá hay khẳng định cùng sản phẩm | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_058` |
-| 17 | Admin/System | Người có `chat.read` xem được ảnh trong đúng hội thoại; xoá lịch sử hoặc hết 90 ngày sẽ xoá object riêng tư trước khi xoá metadata hội thoại. Người thiếu quyền không lấy được URL công khai hay nội dung ảnh | `OWNER_CONFIRMED_2026-08-26` | `CHAT_RULE_059`, `STATE_MACHINES.md` §15D |
+| 1 | Guest/Customer | Trợ lý tư vấn hàng thật theo giai đoạn nhu cầu: chọn/so sánh sản phẩm, size, giá, còn hàng, chính sách, thông tin shop và đơn của chính khách đăng nhập. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_001`–`020`, `034`–`039` |
+| 2 | System | Mỗi lượt cần AI dùng duy nhất Gemini 3.7 Flash, trong trần 400 lượt/ngày và 40 lượt/hội thoại mặc định. Fast-path không dùng AI. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_006`, `009`, `010`, `019` |
+| 3 | System | Nếu Gemini lỗi/quá tải, hệ thống thử lại chính model trong deadline 65 giây và tối đa bốn lần gọi. Vẫn lỗi thì trả lời xin lỗi kèm nút Gặp nhân viên; không đổi model và không tự tạo yêu cầu. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_011`, `019` |
+| 4 | Guest/Customer | Bấm/nói Gặp nhân viên tạo `WAITING`; trong giờ trợ lý tiếp tục cho đến khi có người nhận, ngoài giờ khách được báo lần mở cửa kế tiếp. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `046` |
+| 5 | Admin/System | Realtime + email báo nhân viên; người có `chat.reply` nhận nguyên tử → `ACTIVE`, nhắn trực tiếp; trợ lý lùi. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `045`, `047` |
+| 6 | Admin/System | Nhân viên trả lại AI → `RETURNED_TO_AI`, hoặc kết thúc → `CLOSED`; trạng thái đồng bộ ngay cho khách. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `045` |
+| 7 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_014`, `052` |
+| 8 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy, tắt hoặc xóa được. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_049` |
+| 9 | Guest/Customer/Admin | Đọc ảnh mặc định tắt; khi bật, khách gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày. Ảnh được bảo vệ riêng tư; admin có `chat.read` xem trong đúng hội thoại. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_057`–`059` |
 
-### Admin chat reporting layout (owner decision 2026-08-26)
+### Màn quản trị chat
 
-Màn `/admin/chat` hiển thị theo một mạch cuộn: tiêu đề/Cài đặt, cảnh báo chi phí tháng, hàng chờ nhân viên, bộ lọc ngày, hàng Hôm nay, danh sách hội thoại, Việc cần làm và các nhóm phân tích theo khoảng đã chọn. Hàng Hôm nay không đổi khi đổi bộ lọc. Danh sách hội thoại còn bảy cột; chi tiết hội thoại còn bảy dòng tóm tắt và bỏ telemetry số dưới từng câu trả lời nhưng giữ nguồn câu trả lời và toàn bộ thao tác nhân viên.
-
-Các số kỹ thuật được xem ở Cài đặt → Trợ lý BigBike: token/request trong ngày, model thực tế trong tháng, latency trung bình và p50/p95 14 ngày, số/lý do fallback gần nhất, chi phí lập chỉ mục/chấm điểm. Câu hỏi bó tay, dữ liệu sản phẩm thiếu và feedback vẫn là nhóm Việc cần làm; dữ liệu sản phẩm thiếu giữ bảng từng sản phẩm và chỉ bỏ bốn ô đếm tổng.
-
+Màn `/admin/chat` giữ hàng chờ Gặp nhân viên, danh sách hội thoại, chi tiết hội thoại, bộ đếm “hôm nay đã dùng bao nhiêu lượt AI trên trần” và các chỉ số chất lượng còn phục vụ trực tiếp việc tư vấn. Không còn khu vực chọn/so sánh model, chấm model, chi phí/độ trễ/fallback theo model, phễu liên hệ, gắn đơn, phản hồi câu trả lời, câu bó tay hoặc dữ liệu sản phẩm thiếu.
 ## Account Login Workflow
 
 | Step | Actor | Current flow | Status | Evidence |

@@ -12,7 +12,6 @@ public record AdminChatHandoffResponse(
         String customerKind,
         String questionSummary,
         List<ProductReference> products,
-        boolean contactPresent,
         Instant requestedAt,
         long waitingSeconds,
         Instant acknowledgedAt,

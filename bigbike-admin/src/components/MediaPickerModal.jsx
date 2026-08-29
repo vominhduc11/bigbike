@@ -190,7 +190,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       h: details?.height,
       size: formatBytes(details?.fileSize || 0),
       limit: formatBytes(BRAND_LOGO_MAX_BYTES),
-      defaultValue: issue,
+      defaultValue: t('common.unknown'),
     })
   }
 

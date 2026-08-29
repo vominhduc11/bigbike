@@ -185,7 +185,7 @@ export function DashboardScreen({ navigate }) {
     .map((d) => ({
       ...d,
       count: Number(d.count) || 0,
-      name: t(`status.order.${d.status}`, d.status),
+      name: t(`status.order.${d.status}`, { defaultValue: t('common.unknown') }),
       color: ORDER_STATUS_COLORS[d.status] ?? 'var(--admin-color-text-muted)',
       total: pieTotal,
     }))
@@ -332,7 +332,7 @@ export function DashboardScreen({ navigate }) {
         group="sales"
         title={firstName
           ? t(`dashboard.${greetingKey}`, { name: firstName })
-          : t(`dashboard.${greetingKey}Fallback`)}
+          : t(`dashboard.${greetingKey}Fallback`, { defaultValue: t('common.unknown') })}
         description={t('dashboard.greetingDesc', { date: todayLabel })}
         actions={(
           <div

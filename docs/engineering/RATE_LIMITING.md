@@ -57,7 +57,7 @@ session token and API token are not written into rate-limit keys, metrics or app
 | `ORDER_LOOKUP` | Public order lookup | IP + normalized lookup identity HMAC when present | 20/minute |
 | `SEARCH` | `GET /api/v1/products?q=...` and `GET /api/v1/search-suggest`, direct or via BFF | IP | 60/minute |
 | `REVIEW` / `REVIEW_PHOTO` | Review submit/photo upload | IP + HMAC customer/review session | 5/minute / 30/minute |
-| `CHAT` | `POST /api/v1/chat/messages`, `/images`, `/leads`, `/leads/decline` | IP/customer + HMAC conversation hoặc request | 10/minute |
+| `CHAT` | `POST /api/v1/chat/messages`, `/images`, `/handoffs` | IP/customer + HMAC conversation hoặc request | 10/minute |
 | `OAUTH` | OAuth authorize/callback | IP + opaque state HMAC when present | 20/minute |
 | `ADMIN_MUTATION` | Admin write/default expensive command | Admin account + IP | 60/minute |
 | `ADMIN_MEDIA` | Admin media upload and brand logo URL import | Admin account + IP | 30/minute, 2 concurrent/account, 10 global |

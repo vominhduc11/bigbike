@@ -20,15 +20,6 @@ export function createAddressSchema(t: ValidationT) {
   });
 }
 
-export function createChatLeadSchema(t: ValidationT) {
-  return z.object({
-    name: z.string().trim().max(100, t("max100")),
-    phone: z.string().trim().min(1, t("required")).regex(/^[+0-9][0-9 .()-]{7,31}$/, t("phoneInvalid")),
-    note: z.string().trim().max(500, t("max500")),
-    consented: z.boolean().refine((value) => value === true, t("consentRequired")),
-  });
-}
-
 export function createReviewSchema(t: ValidationT, signedIn: boolean) {
   return z.object({
     rating: z.number().refine((value) => value >= 1 && value <= 5 && Number.isInteger(value * 2), t("ratingInvalid")),
@@ -67,7 +58,6 @@ export function createOrderLookupSchema(t: ValidationT) {
 }
 
 export type AddressFormValues = z.infer<ReturnType<typeof createAddressSchema>>;
-export type ChatLeadFormValues = z.infer<ReturnType<typeof createChatLeadSchema>>;
 export type ReviewFormValues = z.infer<ReturnType<typeof createReviewSchema>>;
 export type ProfileFormValues = z.infer<ReturnType<typeof createProfileSchema>>;
 export type OrderLookupFormValues = z.infer<ReturnType<typeof createOrderLookupSchema>>;

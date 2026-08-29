@@ -13,8 +13,6 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatSendMessageRequest;
 import com.bigbike.bigbike_backend.service.admin.AdminChatService;
-import com.bigbike.bigbike_backend.service.admin.AdminChatInsightsService;
-import com.bigbike.bigbike_backend.service.chat.ChatFeedbackService;
 import com.bigbike.bigbike_backend.service.chat.ChatHandoffService;
 import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
@@ -32,7 +30,7 @@ class AdminChatPermissionTest {
         HttpServletRequest request = mock(HttpServletRequest.class);
         AdminChatController controller = new AdminChatController(service, auth, responses);
 
-        controller.list(1, 20, null, null, null, request);
+        controller.list(1, 20, null, null, request);
         controller.get(UUID.randomUUID(), request);
         controller.stats(null, null, null, request);
 
@@ -68,8 +66,7 @@ class AdminChatPermissionTest {
         AdminChatController controller = new AdminChatController(
                 chat,
                 handoffs,
-                mock(ChatFeedbackService.class),
-                mock(AdminChatInsightsService.class),
+                null,
                 auth,
                 mock(ApiResponseFactory.class));
 
@@ -95,8 +92,6 @@ class AdminChatPermissionTest {
         AdminChatController controller = new AdminChatController(
                 chat,
                 mock(ChatHandoffService.class),
-                mock(ChatFeedbackService.class),
-                mock(AdminChatInsightsService.class),
                 images,
                 auth,
                 mock(ApiResponseFactory.class));

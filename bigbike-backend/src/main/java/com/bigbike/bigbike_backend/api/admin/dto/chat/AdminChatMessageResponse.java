@@ -1,11 +1,11 @@
 package com.bigbike.bigbike_backend.api.admin.dto.chat;
 
-import java.time.Instant;
-import java.util.UUID;
-import java.math.BigDecimal;
-import java.util.List;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
+/** Stored chat content and result classification; provider model/cost telemetry is not exposed. */
 public record AdminChatMessageResponse(
         UUID id,
         long sequenceNo,
@@ -17,12 +17,6 @@ public record AdminChatMessageResponse(
         boolean aiCalled,
         String answerFormat,
         String resultKind,
-        Integer inputTokens,
-        Integer outputTokens,
-        Integer thinkingTokens,
-        Integer providerRequestCount,
-        Integer latencyMs,
-        BigDecimal estimatedCostUsd,
         String productsJson,
         Instant createdAt,
         List<ChatImageResponse> images
@@ -30,5 +24,4 @@ public record AdminChatMessageResponse(
     public AdminChatMessageResponse {
         images = images == null ? List.of() : List.copyOf(images);
     }
-
 }

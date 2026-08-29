@@ -107,11 +107,11 @@ export function LoginScreen() {
             <span className="brand-dot" />
             Admin
           </h1>
-          <p className="bb-login-tagline">{t('auth.loginTagline', 'Quản lý toàn bộ hoạt động kinh doanh của BigBike tại đây.')}</p>
+          <p className="bb-login-tagline">{t('auth.loginTagline')}</p>
         </div>
         <div className="bb-login-foot">
           <p>
-            © {new Date().getFullYear()} BigBike. {t('auth.allRightsReserved', 'Bảo lưu mọi quyền.')}
+            © {new Date().getFullYear()} BigBike. {t('auth.allRightsReserved')}
           </p>
         </div>
       </div>

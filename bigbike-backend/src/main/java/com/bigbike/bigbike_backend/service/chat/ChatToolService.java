@@ -38,14 +38,13 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Fixed, read-only tool allowlist for Trợ lý BigBike. No tool accepts SQL, table names or customer identity. */
 @Service
-@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatToolService {
 
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -143,8 +142,6 @@ public class ChatToolService {
      * such as "mu bh" take priority over their shorter components.
      */
     private static final Map<String, String> APPROVED_ABBREVIATIONS = approvedAbbreviations();
-    private static final ThreadLocal<Map<String, String>> ACTIVE_ABBREVIATIONS =
-            ThreadLocal.withInitial(() -> APPROVED_ABBREVIATIONS);
     /**
      * An approved product-type text filter prevents a product merely co-categorized with
      * headsets (for example a camera) from being counted or shown as a headset. This is an
@@ -167,14 +164,23 @@ public class ChatToolService {
     private final ContentReadRepository contentReadRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    public ChatToolService(
+            CatalogReadService catalogReadService,
+            OrderReadService orderReadService,
+            ContentReadRepository contentReadRepository
+    ) {
+        this.catalogReadService = catalogReadService;
+        this.orderReadService = orderReadService;
+        this.contentReadRepository = contentReadRepository;
+    }
+
     /** Compatibility constructor for unit tests that predate article grounding. */
     public ChatToolService(
             CatalogReadService catalogReadService,
             OrderReadService orderReadService
     ) {
-        this.catalogReadService = catalogReadService;
-        this.orderReadService = orderReadService;
-        this.contentReadRepository = null;
+        this(catalogReadService, orderReadService, null);
     }
 
     public ToolOutcome resolve(
@@ -198,23 +204,18 @@ public class ChatToolService {
             ChatAssistantSettings.Snapshot settings,
             ConversationContext conversationContext
     ) {
-        Map<String, String> previousAbbreviations = activateAbbreviations(settings, lang);
-        try {
-            String normalized = normalizeIntent(question);
-            boolean english = "en".equals(lang);
+        String normalized = normalizeIntent(question);
+        boolean english = "en".equals(lang);
 
-            Optional<ToolOutcome> fastPath = resolveFastPathActive(
-                    question, lang, customerId, settings, conversationContext, null);
-            if (fastPath.isPresent()) return fastPath.get();
-            // Kept for direct service callers and legacy regression tests. Production chat uses
-            // resolveFastPath followed by Gemini function selection for signed-in orders.
-            if (isOrderQuestion(normalized)) {
-                return orderOutcome(customerId, english, orderScope(normalized));
-            }
-            return productOutcome(question, normalized, lang, english, true, conversationContext);
-        } finally {
-            ACTIVE_ABBREVIATIONS.set(previousAbbreviations);
+        Optional<ToolOutcome> fastPath = resolveFastPathActive(
+                question, lang, customerId, settings, conversationContext, null);
+        if (fastPath.isPresent()) return fastPath.get();
+        // Kept for direct service callers and legacy regression tests. Production chat uses
+        // resolveFastPath followed by Gemini function selection for signed-in orders.
+        if (isOrderQuestion(normalized)) {
+            return orderOutcome(customerId, english, orderScope(normalized));
         }
+        return productOutcome(question, normalized, lang, english, true, conversationContext);
     }
 
     /** Local answers that are deterministic and do not need Gemini or a data-bearing tool. */
@@ -251,14 +252,9 @@ public class ChatToolService {
             ConversationContext conversationContext,
             ChatClarificationSelectionRequest clarificationSelection
     ) {
-        Map<String, String> previousAbbreviations = activateAbbreviations(settings, lang);
-        try {
-            return resolveFastPathActive(
-                    question, lang, customerId, settings, conversationContext,
-                    clarificationSelection);
-        } finally {
-            ACTIVE_ABBREVIATIONS.set(previousAbbreviations);
-        }
+        return resolveFastPathActive(
+                question, lang, customerId, settings, conversationContext,
+                clarificationSelection);
     }
 
     private Optional<ToolOutcome> resolveFastPathActive(
@@ -289,7 +285,7 @@ public class ChatToolService {
                     english
                             ? "You’re welcome. If you need anything else, I can help with products currently sold by BigBike, store policies or orders on your signed-in account."
                             : "Dạ, em rất vui được hỗ trợ anh/chị. Khi cần thêm, anh/chị cứ hỏi em về sản phẩm BigBike đang bán, chính sách cửa hàng hoặc đơn của tài khoản đã đăng nhập nhé.",
-                    "TEMPLATE", false, false, false));
+                    "RULE", false, false));
         }
 
         Optional<ToolOutcome> productDecision = productDecisionOutcome(
@@ -305,38 +301,31 @@ public class ChatToolService {
                     english
                             ? "Hello, I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you find currently sold products, check verified store policies or view orders on your signed-in account. Tell me the product, brand, category or price range you are considering, or choose Talk to staff for direct help."
                             : "Em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm; nếu cần, anh/chị có thể bấm Gặp nhân viên.",
-                    "TEMPLATE", false, false, false));
+                    "RULE", false, false));
         }
         if (isAmbiguousComparison(question, normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
                             ? "I can compare products once you share the names or links of the models you want to compare. Which two or three models should I check for you?"
                             : "Em có thể so sánh khi anh/chị cho em tên hoặc link của các mẫu cần xem. Anh/chị muốn so sánh hai hoặc ba mẫu nào ạ?",
-                    "TEMPLATE", false, false, false));
+                    "RULE", false, false));
         }
         if (isAmbiguousBudget(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
                             ? "I can filter products once I know your budget. What price range would you like me to check?"
                             : "Anh/chị muốn xem trong tầm giá nào để em lọc sản phẩm theo ngân sách ạ?",
-                    "TEMPLATE", false, false, false));
+                    "RULE", false, false));
         }
         if (isLightestQuestion(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
                             ? "BigBike does not yet have consistently verified weight data for every currently sold helmet, so I cannot name a lightest model reliably. Tell me another priority such as helmet type, budget, size or safety standard and I will narrow the choice."
                             : "BigBike chưa có cân nặng được xác minh đồng nhất cho toàn bộ mũ đang bán, nên em chưa thể khẳng định mẫu nhẹ nhất. Anh/chị cho em tiêu chí khác như loại mũ, tầm giá, size hoặc chuẩn an toàn để em lọc đúng nhé.",
-                    "TEMPLATE", false, false, false));
+                    "RULE", false, false));
         }
         if (isSafetyHelmetAdvice(normalized)) {
             return Optional.of(safetyHelmetAdviceOutcome(lang, english));
-        }
-        if (isLeadDecline(normalized)) {
-            return Optional.of(ToolOutcome.local(
-                    english
-                            ? "No problem — I won’t ask for your contact details again. You can keep chatting with me or choose Talk to staff at any time. Your contact options will remain available if you change your mind."
-                            : "Không sao ạ, em sẽ không hỏi lại thông tin liên hệ. Anh/chị vẫn có thể hỏi tiếp hoặc bấm Gặp nhân viên bất cứ lúc nào. Các kênh liên hệ vẫn được giữ sẵn nếu anh/chị đổi ý.",
-                    "TEMPLATE", false, false, true));
         }
         if (isPromotionLookup(normalized)) {
             return Optional.of(promotionOutcome(lang, english));
@@ -346,19 +335,13 @@ public class ChatToolService {
                     english
                             ? "This request needs a BigBike staff member to review it directly. Please choose Talk to staff below so the team can help without making an unsupported promise. I’ll keep the contact options available."
                             : "Trường hợp này cần nhân viên BigBike kiểm tra trực tiếp để hỗ trợ đúng chính sách. Anh/chị bấm Gặp nhân viên bên dưới giúp em nhé; em không tự hứa giảm giá, ngày giao hoặc ngoại lệ đổi trả. Các kênh liên hệ luôn được giữ sẵn.",
-                    "TEMPLATE", false, true, false));
+                    "RULE", false, true));
         }
         if (isOrderQuestion(normalized) && customerId == null) {
             return Optional.of(orderOutcome(null, english, orderScope(normalized)));
         }
         if (isOrderQuestion(normalized)) {
             return Optional.of(orderOutcome(customerId, english, orderScope(normalized)));
-        }
-        Optional<String> configuredTemplate = settings == null
-                ? Optional.empty() : settings.matchAnswerTemplate(question, lang);
-        if (configuredTemplate.isPresent()) {
-            return Optional.of(ToolOutcome.local(
-                    configuredTemplate.get(), "TEMPLATE", false, false, false));
         }
         if (isBankDetailsQuestion(normalized)) {
             return Optional.of(bankTransferOutcome(settings, english));
@@ -377,7 +360,7 @@ public class ChatToolService {
                     english
                             ? "I can only help with products currently sold by BigBike, store policies and your signed-in orders. I can’t advise on motorcycles, politics or topics outside the shop. Please choose Talk to staff if you need other help from BigBike."
                             : "Em chỉ hỗ trợ sản phẩm BigBike đang bán, chính sách cửa hàng và đơn của tài khoản đã đăng nhập. Em không tư vấn xe, chính trị hoặc nội dung ngoài phạm vi shop. Anh/chị có thể bấm Gặp nhân viên nếu cần BigBike hỗ trợ việc khác.",
-                    "TEMPLATE", true, false, false));
+                    "RULE", true, false));
         }
         return Optional.empty();
     }
@@ -628,7 +611,6 @@ public class ChatToolService {
                 || isKnownOffTopic(normalized)
                 || isLightestQuestion(normalized)
                 || isSafetyHelmetAdvice(normalized)
-                || isLeadDecline(normalized)
                 || isAmbiguousComparison(question, normalized)) {
             return false;
         }
@@ -1662,7 +1644,7 @@ public class ChatToolService {
                 .map(ChatToolService::toCard)
                 .toList();
         return ToolOutcome.local(
-                comparisonAnswer(selected, english), "TOOL", false, false, false, List.of(), cards);
+                comparisonAnswer(selected, english), "TOOL", false, false, List.of(), cards);
     }
 
     /**
@@ -1945,7 +1927,7 @@ public class ChatToolService {
                             : (english
                             ? "I could not find a currently sold BigBike product matching that request. Tell me the product type or budget you prefer so I can search again without guessing."
                             : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Anh/chị cho em loại hàng hoặc tầm giá mong muốn để em tra lại, em sẽ không đoán sản phẩm nhé."),
-                    "TOOL", false, false, false);
+                    "TOOL", false, false);
         }
 
         List<Product> orderedProducts = used.priceDropped()
@@ -2012,14 +1994,14 @@ public class ChatToolService {
                         english
                                 ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or choose Talk to staff."
                                 : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc bấm Gặp nhân viên giúp em nhé.",
-                        "TOOL", false, true, false);
+                        "TOOL", false, true);
             }
             if (detail == null) {
                 return ToolOutcome.local(
                         english
                                 ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or choose Talk to staff."
                                 : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc bấm Gặp nhân viên giúp em nhé.",
-                        "TOOL", false, true, false);
+                        "TOOL", false, true);
             }
             payload.put("detailTool", "get_product");
             payload.put("detail", productDetail(detail, english));
@@ -2113,7 +2095,7 @@ public class ChatToolService {
                     english
                             ? "Did you mean " + name + "? Please confirm this model and I will recheck its current price, stock or product details."
                             : "Dạ, có phải anh/chị đang tìm " + name + " không ạ? Anh/chị xác nhận đúng mẫu này, em sẽ tra lại giá, tồn kho hoặc thông tin sản phẩm hiện tại.",
-                    "TOOL", false, false, false, List.of(), cards));
+                    "TOOL", false, false, List.of(), cards));
         }
 
         List<String> choices = cards.stream()
@@ -2125,7 +2107,7 @@ public class ChatToolService {
                                 + ". Which exact model did you mean?"
                         : "Dạ, các mẫu gần nhất đang bán gồm " + String.join(", ", choices)
                                 + ". Anh/chị đang tìm đúng mẫu nào ạ?",
-                "TOOL", false, false, false, List.of(), cards));
+                "TOOL", false, false, List.of(), cards));
     }
 
     private static List<String> fuzzyCandidateSeeds(List<String> identifiers) {
@@ -2298,7 +2280,7 @@ public class ChatToolService {
                 List.of(),
                 List.of(),
                 Set.of(),
-                new DeterministicAnswer(answer, false, false, false),
+                new DeterministicAnswer(answer, false, false),
                 null,
                 null);
     }
@@ -2353,7 +2335,7 @@ public class ChatToolService {
                 List.of(toCard(product)),
                 List.of(),
                 Set.of(),
-                new DeterministicAnswer(answer, false, false, false),
+                new DeterministicAnswer(answer, false, false),
                 null,
                 null));
     }
@@ -2404,7 +2386,7 @@ public class ChatToolService {
                 : "Bộ lọc đã nêu ở lượt trước không có kết quả phù hợp nên em đã bỏ riêng bộ lọc cũ và tìm lại yêu cầu này."
                 + retainedPriceScope + " Các sản phẩm bên dưới là kết quả đang bán sau lần tìm lại. "
                 + "Anh/chị có thể gửi tầm giá mới để em lọc hẹp lại nhé.";
-        return new DeterministicAnswer(answer, false, false, false);
+        return new DeterministicAnswer(answer, false, false);
     }
 
     /**
@@ -2460,7 +2442,7 @@ public class ChatToolService {
                 : (names != null && names.size() > 1
                 ? "Anh/chị muốn em kiểm tra chi tiết mẫu nào ạ?"
                 : "Anh/chị có thể mở sản phẩm bên dưới để xem thông tin và lựa chọn hiện có nhé."));
-        return new DeterministicAnswer(String.join(" ", sentences), false, false, false);
+        return new DeterministicAnswer(String.join(" ", sentences), false, false);
     }
 
     private String catalogGroupLabel(SearchScope currentScope, String lang) {
@@ -2519,7 +2501,7 @@ public class ChatToolService {
                         + "Please open the product below to review its current options and details."
                 : "Em đã tìm thấy " + name + " và mẫu này hiện còn hàng tại BigBike. "
                         + "Anh/chị mở sản phẩm bên dưới để xem lựa chọn và thông tin hiện có nhé.";
-        return new DeterministicAnswer(answer, false, false, false);
+        return new DeterministicAnswer(answer, false, false);
     }
 
     /**
@@ -2557,7 +2539,6 @@ public class ChatToolService {
                                     ? " Danh sách này cũng rộng hơn cách hỏi ban đầu; anh/chị cho em tên hoặc loại hàng cụ thể hơn để em thu hẹp lại nhé."
                                     : ""),
                     false,
-                    false,
                     false);
         }
         if (outcome.requiredDisclosures().contains(RequiredDisclosure.BROADENED_SEARCH)) {
@@ -2573,7 +2554,6 @@ public class ChatToolService {
                                     ? "Các sản phẩm bên dưới đang rộng hơn yêu cầu ban đầu của anh/chị. "
                                     : inheritedScope + ". Các sản phẩm bên dưới đang rộng hơn yêu cầu ban đầu của anh/chị. ")
                                     + "Anh/chị cho em tên mẫu, loại hàng hoặc tầm giá cụ thể hơn để em lọc lại nhé.",
-                    false,
                     false,
                     false);
         }
@@ -2641,7 +2621,7 @@ public class ChatToolService {
                 : scopeLead + ". " + countSentence
                         + " Các sản phẩm bên dưới đang bán và còn hàng trong phạm vi này; "
                         + "anh/chị có thể xem thêm để chọn mẫu phù hợp nhé.";
-        return new DeterministicAnswer(answer, false, false, false);
+        return new DeterministicAnswer(answer, false, false);
     }
 
     /** Uses only current-turn count evidence; no count is invented when the search has none. */
@@ -2889,7 +2869,7 @@ public class ChatToolService {
                 : detailIntent.size()
                 ? "Anh/chị nên đo vòng đầu trước, rồi bấm Gặp nhân viên nếu cần tư vấn chọn cỡ nhé."
                 : "Anh/chị có thể mở trang sản phẩm để xem đầy đủ thông tin, hoặc bấm Gặp nhân viên nếu cần shop xác nhận thêm nhé."));
-        return new DeterministicAnswer(String.join(" ", sentences), false, false, false);
+        return new DeterministicAnswer(String.join(" ", sentences), false, false);
     }
 
     private static boolean isDetailConfirmation(String normalized) {
@@ -3204,8 +3184,7 @@ public class ChatToolService {
                         ? "I found the matching product, but its " + requested + " is not available right now. I will not guess. Please open the product page later or choose Talk to staff so BigBike can check it directly."
                         : "Dạ, em đã tìm thấy sản phẩm phù hợp nhưng hiện chưa có đủ thông tin về " + requested + ". Em không đoán thông tin này. Anh/chị mở trang sản phẩm sau hoặc bấm Gặp nhân viên để BigBike kiểm tra trực tiếp giúp mình nhé.",
                 false,
-                true,
-                false);
+                true);
     }
 
     private SearchIntent validateSearchAgainstQuestion(
@@ -4697,7 +4676,7 @@ public class ChatToolService {
                     english
                             ? "I can only read orders from a signed-in BigBike account. Please sign in and ask again, or use the existing order lookup page with your order number and verification code. I won’t ask for an email or phone number in chat."
                             : "Em chỉ xem được đơn của tài khoản BigBike đang đăng nhập. Anh/chị có thể đăng nhập rồi hỏi lại, hoặc mở trang Tra cứu đơn hàng bằng mã đơn và mã xác thực đơn hàng. Em không nhận email hay số điện thoại qua chat.",
-                    "TOOL", false, false, false,
+                    "TOOL", false, false,
                     List.of(new ChatActionResponse("LOGIN"), new ChatActionResponse("ORDER_LOOKUP")));
         }
 
@@ -4709,7 +4688,7 @@ public class ChatToolService {
                     english
                             ? "This signed-in account does not have any orders yet. I checked only the account that is currently signed in and did not use identity details from chat. Please choose Talk to staff if an order appears to be missing."
                             : "Tài khoản đang đăng nhập chưa có đơn hàng nào. Em chỉ kiểm tra đúng tài khoản hiện tại và không dùng thông tin nhận dạng gửi trong chat. Nếu anh/chị thấy thiếu đơn, vui lòng bấm Gặp nhân viên.",
-                    "TOOL", false, false, false);
+                    "TOOL", false, false);
         }
 
         if (scope == OrderScope.LATEST) {
@@ -4723,7 +4702,7 @@ public class ChatToolService {
                             + statusLabel(order.status(), false) + ". Ngày đặt: " + dateLabel(order, false)
                             + ". Sản phẩm: " + orderItemsLabel(order, false) + ". Tổng tiền: "
                             + amountLabel(order, false) + ". Anh/chị mở mục Đơn hàng trong tài khoản để xem thêm.";
-            return ToolOutcome.local(answer, "TOOL", false, false, false,
+            return ToolOutcome.local(answer, "TOOL", false, false,
                     List.of(new ChatActionResponse("ORDER_HISTORY")));
         }
 
@@ -4736,7 +4715,7 @@ public class ChatToolService {
                         + ". I’m showing only the order number, status, order date and total. Open your account orders to see more."
                 : "Đây là các đơn hàng gần đây của tài khoản đang đăng nhập: " + String.join("; ", lines)
                         + ". Em chỉ hiển thị mã đơn, trạng thái, ngày đặt và tổng tiền. Anh/chị mở mục Đơn hàng trong tài khoản để xem thêm.";
-        return ToolOutcome.local(answer, "TOOL", false, false, false,
+        return ToolOutcome.local(answer, "TOOL", false, false,
                 List.of(new ChatActionResponse("ORDER_HISTORY")));
     }
 
@@ -4814,7 +4793,7 @@ public class ChatToolService {
                                 + ". Please choose Talk to staff for a direct conversation. Your contact options remain available below."
                         : "Thông tin liên hệ hiện có của BigBike: " + details
                                 + ". Anh/chị có thể bấm Gặp nhân viên để trao đổi trực tiếp. Các kênh liên hệ vẫn được giữ sẵn bên dưới.",
-                "TEMPLATE", false, false, false);
+                "RULE", false, false);
     }
 
     private ToolOutcome promotionOutcome(String lang, boolean english) {
@@ -4833,7 +4812,7 @@ public class ChatToolService {
                     english
                             ? "BigBike does not have a currently available sale product at the moment. You can keep asking about another product type or budget."
                             : "Hiện BigBike chưa có sản phẩm còn hàng nào đang giảm giá. Anh/chị vẫn có thể cho em loại hàng hoặc tầm giá khác để em tìm tiếp nhé.",
-                    "TOOL", false, false, false);
+                    "TOOL", false, false);
         }
         List<ChatProductCardResponse> cards = saleProducts.stream().limit(8)
                 .map(ChatToolService::toCard).toList();
@@ -4843,7 +4822,7 @@ public class ChatToolService {
                         + ". The current sale price is shown with the product below."
                 : "BigBike hiện có " + saleProducts.size()
                         + " sản phẩm còn hàng đang giảm giá. Giá ưu đãi hiện tại được hiển thị cùng sản phẩm bên dưới.";
-        return ToolOutcome.local(answer, "TOOL", false, false, false, List.of(), cards);
+        return ToolOutcome.local(answer, "TOOL", false, false, List.of(), cards);
     }
 
     private ToolOutcome safetyHelmetAdviceOutcome(String lang, boolean english) {
@@ -4857,7 +4836,7 @@ public class ChatToolService {
         String answer = english
                 ? "No helmet can prevent every injury. For road protection, prioritise a correctly fitted helmet with a safety standard stated on its product page and the coverage suitable for your riding. The models below are currently sold by BigBike; open each one to check its verified standard and fit."
                 : "Không mũ nào ngăn được mọi chấn thương. Khi đi đường, anh/chị nên ưu tiên mũ vừa đầu, có chuẩn an toàn ghi rõ trên trang sản phẩm và độ che phủ phù hợp cách sử dụng. Các mẫu bên dưới đang được BigBike bán; anh/chị mở từng mẫu để kiểm tra chuẩn và size đã xác minh.";
-        return ToolOutcome.local(answer, "TOOL", false, false, false, List.of(), cards);
+        return ToolOutcome.local(answer, "TOOL", false, false, List.of(), cards);
     }
 
     private static ToolOutcome bankTransferOutcome(
@@ -4871,7 +4850,7 @@ public class ChatToolService {
                     english
                             ? "Please choose Talk to staff so BigBike can confirm the current bank-transfer details before you pay."
                             : "Anh/chị vui lòng bấm Gặp nhân viên để BigBike xác nhận thông tin chuyển khoản hiện hành trước khi thanh toán nhé.",
-                    "TEMPLATE", false, true, false);
+                    "RULE", false, true);
         }
         String answer = english
                 ? "BigBike bank transfer details — Bank: " + bank.bankName()
@@ -4884,7 +4863,7 @@ public class ChatToolService {
                         + "; Chủ tài khoản: " + bank.accountHolder()
                         + "; Chi nhánh: " + bank.branch()
                         + ". Anh/chị chỉ chuyển khoản sau khi BigBike đã xác nhận đơn hàng nhé.";
-        return ToolOutcome.local(plain(answer, 900), "TEMPLATE", false, false, false);
+        return ToolOutcome.local(plain(answer, 900), "RULE", false, false);
     }
 
     private static ToolOutcome policyOutcome(
@@ -4926,7 +4905,7 @@ public class ChatToolService {
                     ? "BigBike provides free delivery for purchase orders. Delivery time depends on the destination; choose Talk to staff and share the delivery area if you need an estimate. Return or exchange shipping follows the separate Returns and Exchanges Policy."
                     : "BigBike miễn phí giao hàng cho đơn mua. Thời gian giao tùy khu vực; anh/chị bấm Gặp nhân viên và cho biết nơi nhận nếu cần shop ước tính. Phí gửi hàng đổi/trả áp dụng theo Chính sách đổi trả riêng.";
         }
-        return ToolOutcome.local(answer, "TEMPLATE", false, false, false);
+        return ToolOutcome.local(answer, "RULE", false, false);
     }
 
     private static Map<String, Object> productSummary(Product product) {
@@ -5447,7 +5426,7 @@ public class ChatToolService {
                 .trim();
         if (normalized.isBlank()) return normalized;
         String expanded = " " + normalized + " ";
-        for (Map.Entry<String, String> entry : ACTIVE_ABBREVIATIONS.get().entrySet()) {
+        for (Map.Entry<String, String> entry : APPROVED_ABBREVIATIONS.entrySet()) {
             String expression = "(?<![\\p{Alnum}])" + Pattern.quote(entry.getKey())
                     + "(?![\\p{Alnum}])";
             expanded = expanded.replaceAll(expression, entry.getValue());
@@ -5462,17 +5441,6 @@ public class ChatToolService {
 
     private static boolean containsWholePhrase(String value, String phrase) {
         return (" " + value + " ").contains(" " + phrase + " ");
-    }
-
-    private static Map<String, String> activateAbbreviations(
-            ChatAssistantSettings.Snapshot settings, String lang) {
-        Map<String, String> previous = ACTIVE_ABBREVIATIONS.get();
-        if (settings == null) return previous;
-        Map<String, String> configured = settings.abbreviationMap(lang);
-        ACTIVE_ABBREVIATIONS.set(configured.isEmpty() && !"en".equals(lang)
-                ? APPROVED_ABBREVIATIONS
-                : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(configured)));
-        return previous;
     }
 
     private static boolean isPriceScopeReset(String normalized) {
@@ -5513,8 +5481,7 @@ public class ChatToolService {
     }
 
     private static boolean isThanks(String value) {
-        return !isLeadDecline(value)
-                && hasWord(value, "cam on", "xin cam on", "thank you", "thanks")
+        return hasWord(value, "cam on", "xin cam on", "thank you", "thanks")
                 && !hasTaskCue(value);
     }
 
@@ -5667,7 +5634,7 @@ public class ChatToolService {
                     ? "BigBike’s main product groups include " + choices + ". Which group or riding need would you like help with?"
                     : "Một số nhóm hàng chính của BigBike gồm " + choices + ". Anh/chị đang cần nhóm nào hoặc muốn dùng cho nhu cầu gì ạ?";
         }
-        return ToolOutcome.local(answer, "TEMPLATE", false, false, false);
+        return ToolOutcome.local(answer, "RULE", false, false);
     }
 
     private static boolean isAmbiguousBudget(String normalized) {
@@ -5683,33 +5650,6 @@ public class ChatToolService {
                 "toi da dang nhap", "minh da dang nhap", "toi dang nhap roi", "minh dang nhap roi",
                 "da dang nhap roi",
                 "i am signed in", "i signed in", "logged in");
-    }
-
-    private static boolean isLeadDecline(String value) {
-        return hasWord(value, "khong can lien he", "khong de lai so", "no thanks", "do not contact");
-    }
-
-    /** Backend-owned lead eligibility; the model cannot suppress a qualifying product/fallback signal. */
-    static boolean shouldOfferLeadPrompt(
-            String question,
-            List<ChatProductCardResponse> products,
-            boolean recoverableFallback
-    ) {
-        if (recoverableFallback || (products != null && !products.isEmpty())) return true;
-        String normalized = normalizeIntent(question);
-        if (normalized.isBlank()
-                || isGreetingOrHelp(normalized)
-                || isKnownOffTopic(normalized)
-                || isHumanHandoff(normalized)
-                || isLeadDecline(normalized)) {
-            return false;
-        }
-        ProductDetailIntent detailIntent = productDetailIntent(normalized);
-        return detailIntent.hasRequestedDetail()
-                || asksForProductAvailability(normalized)
-                || extractProductQuery(question).hasSpecificIdentifier()
-                || hasWord(normalized, "gia", "price", "size", "stock", "con hang", "ton kho",
-                        "available", "mau", "color", "colour");
     }
 
     private static String plain(String html, int max) {
@@ -6591,23 +6531,20 @@ public class ChatToolService {
     public record DeterministicAnswer(
             String answer,
             boolean offTopic,
-            boolean handoffRecommended,
-            boolean leadPrompt
+            boolean handoffRecommended
     ) {
         static DeterministicAnswer from(ToolOutcome outcome) {
             return new DeterministicAnswer(
                     outcome.localAnswer(),
                     outcome.offTopic(),
-                    outcome.handoffRecommended(),
-                    false);
+                    outcome.handoffRecommended());
         }
 
         static DeterministicAnswer from(ToolOutcome outcome, String question) {
             return new DeterministicAnswer(
                     outcome.localAnswer(),
                     outcome.offTopic(),
-                    outcome.handoffRecommended(),
-                    shouldOfferLeadPrompt(question, outcome.products(), outcome.aiRequired()));
+                    outcome.handoffRecommended());
         }
     }
 
@@ -6619,7 +6556,6 @@ public class ChatToolService {
             List<ChatProductCardResponse> products,
             boolean offTopic,
             boolean handoffRecommended,
-            boolean leadDeclined,
             List<ChatActionResponse> actions,
             Set<RequiredDisclosure> requiredDisclosures,
             boolean inheritedPrice,
@@ -6682,15 +6618,15 @@ public class ChatToolService {
                 SearchScope effectiveSearchScope
         ) {
             return new ToolOutcome(
-                    true, null, "AI", toolJson, List.copyOf(products), false, false, false,
+                    true, null, "AI", toolJson, List.copyOf(products), false, false,
                     List.of(), Set.copyOf(requiredDisclosures), inheritedPrice, catalogTotals,
                     matchingProductNames == null ? List.of() : List.copyOf(matchingProductNames),
                     effectiveSearchScope, null, null);
         }
 
         static ToolOutcome local(
-                String answer, String source, boolean offTopic, boolean handoff, boolean leadDeclined) {
-            return local(answer, source, offTopic, handoff, leadDeclined, List.of());
+                String answer, String source, boolean offTopic, boolean handoff) {
+            return local(answer, source, offTopic, handoff, List.of());
         }
 
         static ToolOutcome local(
@@ -6698,9 +6634,8 @@ public class ChatToolService {
                 String source,
                 boolean offTopic,
                 boolean handoff,
-                boolean leadDeclined,
                 List<ChatActionResponse> actions) {
-            return local(answer, source, offTopic, handoff, leadDeclined, actions, List.of());
+            return local(answer, source, offTopic, handoff, actions, List.of());
         }
 
         static ToolOutcome local(
@@ -6708,11 +6643,10 @@ public class ChatToolService {
                 String source,
                 boolean offTopic,
                 boolean handoff,
-                boolean leadDeclined,
                 List<ChatActionResponse> actions,
                 List<ChatProductCardResponse> products) {
             return new ToolOutcome(false, answer, source, "{}",
-                    products == null ? List.of() : List.copyOf(products), offTopic, handoff, leadDeclined,
+                    products == null ? List.of() : List.copyOf(products), offTopic, handoff,
                     List.copyOf(actions), Set.of(), false, null, List.of(), null, null, null);
         }
 
@@ -6733,7 +6667,7 @@ public class ChatToolService {
             return new ToolOutcome(
                     false, answer, "TOOL", "{}",
                     products == null ? List.of() : List.copyOf(products),
-                    false, false, false, List.of(), Set.of(), false, null, List.of(),
+                    false, false, List.of(), Set.of(), false, null, List.of(),
                     searchScope, response, decision);
         }
 
@@ -6746,7 +6680,7 @@ public class ChatToolService {
             return new ToolOutcome(
                     false, answer, "TOOL", "{}",
                     products == null ? List.of() : List.copyOf(products),
-                    false, false, false, List.of(), Set.of(), false, null, List.of(),
+                    false, false, List.of(), Set.of(), false, null, List.of(),
                     searchScope, null, decision);
         }
     }

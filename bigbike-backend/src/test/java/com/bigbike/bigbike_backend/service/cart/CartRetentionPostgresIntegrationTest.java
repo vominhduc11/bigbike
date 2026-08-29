@@ -145,14 +145,14 @@ class CartRetentionPostgresIntegrationTest {
         jdbcTemplate.update("""
                 insert into maintenance_cart_purge_backup_items (
                     run_id, purged_at, id, cart_id, product_id, product_pk, product_variant_id,
-                    product_variant_pk, assistant_conversation_id, assistant_interaction_id, sku,
+                    product_variant_pk, sku,
                     product_name, variant_name, product_image_id, product_image_url, product_image_alt,
                     product_image_width, product_image_height, product_image_mime_type, quantity,
                     unit_price, regular_price, sale_price, line_subtotal, line_discount, line_total,
                     metadata, created_at, updated_at
                 )
                 select ?, now(), id, cart_id, product_id, product_pk, product_variant_id,
-                    product_variant_pk, assistant_conversation_id, assistant_interaction_id, sku,
+                    product_variant_pk, sku,
                     product_name, variant_name, product_image_id, product_image_url, product_image_alt,
                     product_image_width, product_image_height, product_image_mime_type, quantity,
                     unit_price, regular_price, sale_price, line_subtotal, line_discount, line_total,
@@ -173,13 +173,13 @@ class CartRetentionPostgresIntegrationTest {
         jdbcTemplate.update("""
                 insert into cart_items (
                     id, cart_id, product_id, product_pk, product_variant_id, product_variant_pk,
-                    assistant_conversation_id, assistant_interaction_id, sku, product_name, variant_name,
+                    sku, product_name, variant_name,
                     product_image_id, product_image_url, product_image_alt, product_image_width,
                     product_image_height, product_image_mime_type, quantity, unit_price, regular_price,
                     sale_price, line_subtotal, line_discount, line_total, metadata, created_at, updated_at
                 )
                 select id, cart_id, product_id, product_pk, product_variant_id, product_variant_pk,
-                    assistant_conversation_id, assistant_interaction_id, sku, product_name, variant_name,
+                    sku, product_name, variant_name,
                     product_image_id, product_image_url, product_image_alt, product_image_width,
                     product_image_height, product_image_mime_type, quantity, unit_price, regular_price,
                     sale_price, line_subtotal, line_discount, line_total, metadata, created_at, updated_at

@@ -547,7 +547,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const handleSoftDelete = async (category) => {
     if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
-      t('categories.deleteConfirm', { name: category.name, defaultValue: `Chuyển danh mục ${category.name} vào Thùng rác. Các danh mục con cũng sẽ được xoá mềm và có thể khôi phục.` }),
+      t('categories.deleteConfirm', { name: category.name }),
       t('common.moveToTrashTitle'),
       { confirmLabel: t('common.moveToTrash'), variant: 'default' }
     )
@@ -569,7 +569,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const handleRestore = async (category) => {
     if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
-      t('categories.restoreConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${category.name}? Các danh mục con cũng sẽ được khôi phục.` }),
+      t('categories.restoreConfirm', { name: category.name }),
       t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
       { confirmLabel: t('products.restore'), variant: 'default' }
     )
@@ -720,7 +720,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
     const visibilityLabel = category.isVisible
       ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
-      : t('categories.showAction', { defaultValue: 'Hiện trên website' })
+      : t('categories.showAction')
     return (
       <TableRowActions
         primaryActions={[
@@ -974,7 +974,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       key: 'deleted',
       label: t('categories.filterChipTrash', {
         value: t('categories.filterTrashTab', { defaultValue: 'Thùng rác' }),
-        defaultValue: 'Trạng thái: {{value}}',
       }),
       removeLabel: t('categories.removeFilter', {
         filter: t('categories.filterTrash', { defaultValue: 'Trạng thái' }),
@@ -998,7 +997,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   if (query.sort !== 'sortOrder:asc') {
     activeFilterChips.push({
       key: 'sort',
-      label: t('categories.filterChipSort', { value: t(`sort.${sortLabelKey}`) }),
+      label: t('categories.filterChipSort', { value: t(`sort.${sortLabelKey}`, { defaultValue: t('common.unknown') }) }),
       removeLabel: t('categories.removeFilter', { filter: t('categories.filterSort') }),
       onRemove: () => updateQuery({ sort: 'sortOrder:asc' }, { resetPage: true }),
     })
@@ -1007,29 +1006,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const hasActiveFilters = activeFilterChips.length > 0
   const isRefreshing = useTreeMode ? isTreeFetching : paginatedState.isFetching
   const resultSummary = useTreeMode
-    ? t('categories.resultSummaryTree', {
-      shown: visibleTreeRows.length,
-      total: allItems.length,
-      defaultValue: `${visibleTreeRows.length}/${allItems.length} danh mục`,
-    })
+    ? t('categories.resultSummaryTree', { shown: visibleTreeRows.length, total: allItems.length })
     : flatModeStatus === 'success'
-      ? t('categories.resultSummaryFlat', {
-        count: paginatedState.pagination?.totalItems ?? flatItems.length,
-        defaultValue: `${paginatedState.pagination?.totalItems ?? flatItems.length} danh mục`,
-      })
+      ? t('categories.resultSummaryFlat', { count: paginatedState.pagination?.totalItems ?? flatItems.length })
       : ''
 
   const resultAnnounce = useTreeMode
-    ? t('categories.resultsAnnounceTree', {
-      shown: visibleTreeRows.length,
-      total: allItems.length,
-      defaultValue: `Đang hiển thị ${visibleTreeRows.length}/${allItems.length} danh mục trong cây`,
-    })
+    ? t('categories.resultsAnnounceTree', { shown: visibleTreeRows.length, total: allItems.length })
     : flatModeStatus === 'success'
-      ? t('categories.resultsAnnounce', {
-        count: paginatedState.pagination?.totalItems ?? flatItems.length,
-        defaultValue: `Đã lọc: ${paginatedState.pagination?.totalItems ?? flatItems.length} danh mục`,
-      })
+      ? t('categories.resultsAnnounce', { count: paginatedState.pagination?.totalItems ?? flatItems.length })
       : ''
 
   return (
@@ -1073,7 +1058,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       )}
 
       <ResponsiveFilterBar
-        ariaLabel={t('categories.filterAria', { defaultValue: 'Bộ lọc danh mục' })}
+        ariaLabel={t('categories.filterAria')}
         className="mt-4"
         activeFilterCount={activeFilterChips.length}
         onReset={resetFilters}
@@ -1302,10 +1287,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             <StatePanel
               tone="neutral"
               title={hasActiveFilters
-                ? t('categories.emptyFiltered', { defaultValue: 'Không có danh mục phù hợp' })
+                ? t('categories.emptyFiltered')
                 : t('categories.empty')}
               description={hasActiveFilters
-                ? t('categories.emptyFilteredDesc', { defaultValue: 'Hãy đổi từ khóa hoặc bộ lọc để xem kết quả khác.' })
+                ? t('categories.emptyFilteredDesc')
                 : t('categories.emptyDesc')}
               actionLabel={hasActiveFilters ? t('common.resetFilters') : canUpdate ? t('categories.create') : undefined}
               onAction={hasActiveFilters ? resetFilters : canUpdate ? () => navigate('/admin/categories/new') : undefined}

@@ -126,15 +126,11 @@ export function validateValue(key, value) {
   if (k.includes('hotline') || k.includes('phone')) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
-  // Money / stock thresholds must be non-negative numbers.
+  // Money / stock thresholds and retained assistant limits must be non-negative numbers.
   if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')
-      || k === 'ai_assistant_monthly_cost_warning_usd'
+      || k === 'ai_assistant_daily_limit'
       || k === 'ai_assistant_conversation_turn_limit'
-      || k === 'ai_assistant_memory_days'
-      || k === 'ai_assistant_image_daily_limit'
-      || k === 'ai_assistant_image_conversation_limit'
-      || k === 'ai_assistant_proactive_product_seconds'
-      || k === 'ai_assistant_proactive_cart_seconds') {
+      || k === 'ai_assistant_recent_turn_pairs') {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
@@ -155,43 +151,6 @@ export function validateValue(key, value) {
       }
     } catch {
       return 'settings.assistantConfig.invalidBusinessHours'
-    }
-  }
-  if (k === 'ai_assistant_abbreviations' || k === 'ai_assistant_answer_templates') {
-    try {
-      const items = JSON.parse(value)
-      if (!Array.isArray(items)) return 'settings.assistantConfig.invalid'
-      if (k === 'ai_assistant_abbreviations') {
-        if (items.length > 100) return 'settings.assistantConfig.invalid'
-        const seen = new Set()
-        for (const item of items) {
-          const locale = String(item?.locale || '').toLowerCase()
-          const phrase = String(item?.phrase || '').trim().toLowerCase()
-          if (!['vi', 'en'].includes(locale) || !phrase || !String(item?.expansion || '').trim()) return 'settings.assistantConfig.invalid'
-          const signature = `${locale}|${phrase}`
-          if (seen.has(signature)) return 'settings.assistantConfig.duplicate'
-          seen.add(signature)
-        }
-      } else {
-        if (items.length > 50) return 'settings.assistantConfig.invalid'
-        const ids = new Set()
-        for (const item of items) {
-          const id = String(item?.id || '').trim()
-          const enabled = item?.enabled !== false
-          if (enabled && (!id || !String(item?.topic || '').trim()
-            || !Array.isArray(item?.triggersVi) || item.triggersVi.length === 0
-            || !Array.isArray(item?.triggersEn) || item.triggersEn.length === 0
-            || !String(item?.answerVi || '').trim() || !String(item?.answerEn || '').trim())) {
-            return 'settings.assistantConfig.invalid'
-          }
-          if (id) {
-            if (ids.has(id)) return 'settings.assistantConfig.duplicate'
-            ids.add(id)
-          }
-        }
-      }
-    } catch {
-      return 'settings.assistantConfig.invalid'
     }
   }
   return null
@@ -265,10 +224,8 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
 export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'])
 
-// Model trả lời được quản lý bằng bộ chọn động riêng: danh sách phải được xác minh trực tiếp
-// với tài khoản Gemini hiện tại, nên không được rơi về ô text chung dễ nhập sai model.
 // Dữ liệu cũ của seo_home_h1 vẫn được giữ trong site_settings nhưng không còn là ô chỉnh sửa.
-export const HIDDEN_KEYS = new Set(['ai_assistant_model', 'seo_home_h1'])
+export const HIDDEN_KEYS = new Set(['seo_home_h1'])
 
 export const TAB_META = {
   GENERAL: {
@@ -346,23 +303,14 @@ export const KEY_LABELS_VI = {
   ai_assistant_enabled: 'Bật Trợ lý BigBike',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
   ai_assistant_conversation_turn_limit: 'Số lượt tư vấn tối đa trong một hội thoại',
-  ai_assistant_monthly_cost_warning_usd: 'Ngưỡng cảnh báo chi phí tháng (USD)',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled: 'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
   ai_assistant_greeting: 'Câu chào đầu khung chat',
   ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
-  ai_assistant_abbreviations: 'Từ và cụm viết tắt',
-  ai_assistant_answer_templates: 'Câu trả lời mẫu song ngữ',
   ai_assistant_handoff_email_enabled: 'Gửi email khi khách xin gặp nhân viên',
   ai_assistant_handoff_email_recipient: 'Email nhận yêu cầu gặp nhân viên',
   ai_assistant_business_hours: 'Giờ nhân viên trực chat',
-  ai_assistant_memory_days: 'Số ngày trợ lý nhớ khách trên cùng thiết bị',
-  ai_assistant_proactive_enabled: 'Cho trợ lý chủ động mở lời',
-  ai_assistant_proactive_product_seconds: 'Chờ trên trang sản phẩm trước khi mở lời (giây)',
-  ai_assistant_proactive_cart_seconds: 'Chờ khi giỏ có hàng trước khi mở lời (giây)',
   ai_assistant_image_enabled: 'Cho khách gửi ảnh để trợ lý tìm hàng',
-  ai_assistant_image_daily_limit: 'Số ảnh AI được đọc tối đa mỗi ngày',
-  ai_assistant_image_conversation_limit: 'Số ảnh tối đa trong một hội thoại',
   // store_policy — nguồn nội dung chung cho trang chính sách và Trợ lý BigBike
   policy_warranty_title: 'Tiêu đề chính sách bảo hành',
   policy_warranty_body_html: 'Nội dung chính sách bảo hành',
@@ -419,8 +367,6 @@ export const KEY_HINTS_VI = {
     'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
   ai_assistant_conversation_turn_limit:
     'Từ 10 đến 100, mặc định 40. Các vòng khách trả lời câu hỏi làm rõ không bị tính vào trần này.',
-  ai_assistant_monthly_cost_warning_usd:
-    'Cảnh báo trong quản trị khi tổng chi phí tháng đạt ngưỡng này. Đặt 0 để tắt cảnh báo; không tự khoá Trợ lý BigBike.',
   ai_assistant_recent_turn_pairs:
     'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
@@ -429,30 +375,14 @@ export const KEY_HINTS_VI = {
     'Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Trợ lý BigBike là trợ lý ảo AI.',
   ai_assistant_quick_prompts:
     'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
-  ai_assistant_abbreviations:
-    'Tối đa 100 mục. Hệ thống khớp nguyên cụm, ưu tiên cụm dài hơn và sẽ từ chối mục trùng hoặc va chạm tên hàng.',
-  ai_assistant_answer_templates:
-    'Tối đa 50 mẫu, mỗi mẫu phải có trigger và câu trả lời đầy đủ bằng tiếng Việt lẫn tiếng Anh.',
   ai_assistant_handoff_email_enabled:
     'Chỉ tắt email; khách đang chờ vẫn xuất hiện ngay trong màn quản trị.',
   ai_assistant_handoff_email_recipient:
     'Để trống để dùng email quản trị đã khai trên máy chủ. Chỉ nhập một địa chỉ email hợp lệ.',
   ai_assistant_business_hours:
-    'Khách xin gặp nhân viên ngoài lịch này sẽ được báo giờ trực và mời để lại liên hệ, không bị giữ ở trạng thái chờ vô hạn.',
-  ai_assistant_memory_days:
-    'Từ 1 đến 30 ngày. Khách luôn có thể xem trợ lý đang nhớ gì và tự xoá lịch sử; dữ liệu vẫn tự xoá sau 90 ngày.',
-  ai_assistant_proactive_enabled:
-    'Mặc định tắt. Khi bật, trợ lý chỉ mở lời một lần mỗi phiên, không hiện ở trang thanh toán và không lặp lại sau khi khách đóng.',
-  ai_assistant_proactive_product_seconds:
-    'Từ 15 đến 600 giây. Chỉ áp dụng khi công tắc chủ động mở lời đang bật.',
-  ai_assistant_proactive_cart_seconds:
-    'Từ 15 đến 600 giây. Chỉ áp dụng khi giỏ đang có hàng và khách chưa vào trang thanh toán.',
+    'Khách xin gặp nhân viên ngoài lịch này sẽ được báo giờ trực tiếp theo, không bị giữ ở trạng thái chờ vô hạn.',
   ai_assistant_image_enabled:
     'Mặc định tắt. Khi bật, khách được báo rõ ảnh sẽ gửi tới Google AI; ảnh lưu riêng trong hệ thống và tự xoá sau 90 ngày hoặc khi khách xoá lịch sử.',
-  ai_assistant_image_daily_limit:
-    'Trần riêng cho phần đọc ảnh, tính theo ngày giờ Việt Nam. Hết lượt ảnh thì chat chữ vẫn hoạt động bình thường.',
-  ai_assistant_image_conversation_limit:
-    'Giới hạn chống lạm dụng trong từng hội thoại. Mỗi lượt chỉ nhận một ảnh JPG, PNG hoặc WebP tối đa 8 MB.',
   policy_warranty_title:
     'Dùng chung cho trang Chính sách bảo hành và câu trả lời của Trợ lý BigBike.',
   policy_warranty_body_html:
@@ -550,31 +480,19 @@ export const SECTION_GUIDE = {
   },
   ai_assistant_switch: {
     title: 'Vận hành và ngân sách của Trợ lý BigBike',
-    description: 'Bật/tắt trợ lý và giới hạn số lượt có dùng AI trong ngày. Khi không khả dụng, widget tự quay về bảng liên hệ.',
+    description: 'Bật/tắt trợ lý, giới hạn lượt AI mỗi ngày và cấu hình email báo yêu cầu gặp nhân viên.',
   },
   ai_assistant_copy: {
     title: 'Nội dung đầu khung chat',
     description: 'Câu chào và các câu hỏi gợi ý có bản tiếng Việt và tiếng Anh riêng.',
   },
-  ai_assistant_language: {
-    title: 'Cách hiểu từ viết tắt',
-    description: 'Chủ shop tự quản các cách viết ngắn mà khách thường dùng khi hỏi hàng.',
-  },
-  ai_assistant_templates: {
-    title: 'Câu trả lời mẫu an toàn',
-    description: 'Câu mẫu song ngữ cho các chủ đề ổn định; máy chủ vẫn kiểm tra an toàn trước khi lưu.',
-  },
   ai_assistant_live: {
-    title: 'Tiếp nhận khách và ghi nhớ hội thoại',
-    description: 'Giới hạn hội thoại, lịch trực nhân viên và thời gian nối lại nhu cầu của khách.',
-  },
-  ai_assistant_proactive: {
-    title: 'Chủ động mở lời có tiết chế',
-    description: 'Mặc định tắt; chủ shop quyết định có bật và chờ bao lâu trước khi trợ lý gợi ý đúng ngữ cảnh.',
+    title: 'Tiếp nhận khách',
+    description: 'Giới hạn lượt tư vấn và lịch trực để nhân viên tiếp nhận chat.',
   },
   ai_assistant_images: {
     title: 'Đọc ảnh khách gửi',
-    description: 'Tính năng mặc định tắt, có trần riêng và không được dùng ảnh để đoán chắc sản phẩm, giá, thông số hoặc size.',
+    description: 'Tính năng mặc định tắt; ảnh chỉ hỗ trợ tư vấn và không được dùng để khẳng định giá, thông số hoặc size.',
   },
   store_policy_content: {
     title: 'Nội dung chính sách dùng chung',
@@ -643,23 +561,14 @@ export const KEY_GUIDE = {
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
   ai_assistant_conversation_turn_limit: ['ai_assistant_live', 'trần lượt tư vấn có nội dung; vòng làm rõ không tính'],
-  ai_assistant_monthly_cost_warning_usd: ['ai_assistant_switch', 'ngưỡng cảnh báo tổng chi phí tháng bằng USD; 0 để tắt'],
   ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
   ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
   ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
-  ai_assistant_abbreviations:           ['ai_assistant_language', 'danh sách từ/cụm viết tắt do chủ shop quản lý'],
-  ai_assistant_answer_templates:        ['ai_assistant_templates', 'danh sách câu trả lời mẫu song ngữ do chủ shop quản lý'],
   ai_assistant_handoff_email_enabled:   ['ai_assistant_switch', 'bật/tắt email báo khách đang chờ nhân viên'],
   ai_assistant_handoff_email_recipient: ['ai_assistant_switch', 'địa chỉ nhận email báo khách đang chờ'],
   ai_assistant_business_hours:          ['ai_assistant_live', 'lịch nhân viên có thể tiếp nhận chat theo từng ngày'],
-  ai_assistant_memory_days:             ['ai_assistant_live', 'thời hạn nối nhu cầu trên cùng thiết bị'],
-  ai_assistant_proactive_enabled:       ['ai_assistant_proactive', 'bật/tắt lời mời chủ động, mặc định tắt'],
-  ai_assistant_proactive_product_seconds: ['ai_assistant_proactive', 'thời gian chờ trên trang sản phẩm'],
-  ai_assistant_proactive_cart_seconds:  ['ai_assistant_proactive', 'thời gian chờ khi giỏ có hàng'],
   ai_assistant_image_enabled:           ['ai_assistant_images', 'bật/tắt toàn bộ nút gửi ảnh trong khung chat'],
-  ai_assistant_image_daily_limit:       ['ai_assistant_images', 'trần lượt đọc ảnh mỗi ngày, tách khỏi lượt chat chữ'],
-  ai_assistant_image_conversation_limit: ['ai_assistant_images', 'trần ảnh trong một hội thoại'],
   policy_warranty_title:                ['store_policy_content', 'tiêu đề trang và câu trả lời về bảo hành'],
   policy_warranty_body_html:            ['store_policy_content', 'nội dung trang và câu trả lời về bảo hành'],
   policy_return_exchange_title:         ['store_policy_content', 'tiêu đề trang và câu trả lời về đổi trả/hoàn tiền'],

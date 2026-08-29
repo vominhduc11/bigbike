@@ -99,7 +99,7 @@ class AdminNotificationServiceTest {
                 "CHAT_HANDOFF_WAITING", UUID.randomUUID(), UUID.randomUUID(),
                 "Size M còn không?",
                 java.util.List.of(new ChatHandoffWsEvent.ProductReference("mu-a", "Mũ A")),
-                false, "GUEST", Instant.now(), 1));
+                "GUEST", Instant.now(), 1));
 
         InboxView ordersOnly = service.inboxFor(UUID.randomUUID(), true, false);
         InboxView chatOnly = service.inboxFor(UUID.randomUUID(), false, true);

@@ -20,7 +20,7 @@ function Toast({ toast, onDismiss, navigate }) {
     meta.push(formatCurrencyVnd(toast.total))
   }
   if (!isNew && toast.status) {
-    meta.push(t('status.order.' + toast.status, toast.status))
+    meta.push(t('status.order.' + toast.status, { defaultValue: t('common.unknown') }))
   }
 
   // Body là <button> thật để bàn phím mở đơn bằng Enter/Space (nút đóng là sibling —

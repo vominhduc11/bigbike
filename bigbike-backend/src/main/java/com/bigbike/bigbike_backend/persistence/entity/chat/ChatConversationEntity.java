@@ -55,18 +55,6 @@ public class ChatConversationEntity {
     @Column(name = "consecutive_off_topic", nullable = false)
     private int consecutiveOffTopic;
 
-    @Column(name = "lead_offer_status", nullable = false, length = 16)
-    private String leadOfferStatus = "NONE";
-
-    @Column(name = "lead_offer_count", nullable = false)
-    private int leadOfferCount;
-
-    @Column(name = "lead_offer_request_id", unique = true)
-    private UUID leadOfferRequestId;
-
-    @Column(name = "lead_offer_opened_at")
-    private Instant leadOfferOpenedAt;
-
     /** Server-only, non-PII catalog/order follow-up context; see DATA_CONTRACT.md. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "context_json", columnDefinition = "jsonb")

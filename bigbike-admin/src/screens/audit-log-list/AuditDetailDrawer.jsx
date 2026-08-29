@@ -44,7 +44,7 @@ export function AuditDetailDrawer({ log, onClose }) {
       defaultValue: t('auditLog.actorType.ADMIN'),
     })
   const actorTypeLabel = t(`auditLog.actorType.${log.actorType}`, {
-    defaultValue: log.actorType || t('auditLog.actorType.ADMIN'),
+    defaultValue: t('common.unknown'),
   })
   const resourceLabel = log.resourceCode
     || log.resourceDisplayName
@@ -74,7 +74,7 @@ export function AuditDetailDrawer({ log, onClose }) {
 
       return [{
         key,
-        label: t(`auditLog.field.${key}`, { defaultValue: key }),
+        label: t(`auditLog.field.${key}`, { defaultValue: t('common.unknown') }),
         before: displayValue(before[key], t),
         after: displayValue(after[key], t),
         rawAfter: after[key] !== null && typeof after[key] === 'object'

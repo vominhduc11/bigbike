@@ -90,7 +90,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
                       <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                       {isEn
                         ? t(`products.detail.commitments.icons.${opt.labelKey}`, { lng: 'en', defaultValue: opt.labelEn })
-                        : t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                        : t(`products.detail.commitments.icons.${opt.labelKey}`, { defaultValue: t('common.unknown') })}
                     </span>
                   </SelectItem>
                 ))}

@@ -2,10 +2,7 @@ package com.bigbike.bigbike_backend.service.chat;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -17,15 +14,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
-/** One bounded multimodal classification call. Customer image bytes and captions are never logged. */
+/**
+ * One bounded multimodal recognition turn. It uses the same fixed Gemini model as text chat;
+ * a transient provider fault is retried on that model only.
+ */
 @Component
 @Slf4j
 public class ChatImageAnalysisClient {
 
     private static final String ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
+    private static final int MAX_PROVIDER_CALLS = 4;
+    private static final long LOGICAL_DEADLINE_NANOS = Duration.ofSeconds(65).toNanos();
+    private static final long RETRY_DELAY_MILLIS = 1_500L;
     private static final String SYSTEM_PROMPT = """
             You classify one customer image for BigBike, a motorcycle gear shop. Do not identify
             a person, infer health/body measurements, read an order number, invoice value, price,
@@ -47,108 +52,55 @@ public class ChatImageAnalysisClient {
             """;
 
     private final String apiKey;
-    private final String fallbackModel;
-    private final RestClient primaryRestClient;
-    private final RestClient fallbackRestClient;
+    private final long configuredTimeoutMillis;
     private final ObjectMapper objectMapper;
-    private final GeminiModelCatalogService modelCatalogService;
 
     public ChatImageAnalysisClient(
             @Value("${bigbike.ai.gemini-api-key:}") String apiKey,
-            @Value("${bigbike.chat.fallback-model:gemini-2.5-flash-lite}") String fallbackModel,
-            @Value("${bigbike.chat.primary-timeout-seconds:35}") long primaryTimeoutSeconds,
-            @Value("${bigbike.chat.timeout-seconds:65}") long totalTimeoutSeconds,
-            ObjectMapper objectMapper,
-            GeminiModelCatalogService modelCatalogService
+            @Value("${bigbike.chat.timeout-seconds:65}") long timeoutSeconds,
+            ObjectMapper objectMapper
     ) {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
-        this.fallbackModel = fallbackModel == null || fallbackModel.isBlank()
-                ? "gemini-2.5-flash-lite" : fallbackModel.trim();
-        long primarySeconds = Math.max(5, Math.min(primaryTimeoutSeconds, 60));
-        long totalSeconds = Math.max(primarySeconds + 5, Math.min(totalTimeoutSeconds, 70));
-        this.primaryRestClient = restClient(primarySeconds);
-        this.fallbackRestClient = restClient(Math.max(5, totalSeconds - primarySeconds));
+        this.configuredTimeoutMillis = Duration.ofSeconds(
+                Math.max(5, Math.min(timeoutSeconds, 65))).toMillis();
         this.objectMapper = objectMapper;
-        this.modelCatalogService = modelCatalogService;
     }
 
     public AnalysisCall analyze(
-            String requestedModel,
             byte[] image,
             String mimeType,
             String caption,
             List<CatalogCandidate> candidates,
             List<String> groups
     ) {
-        if (apiKey.isBlank()) return AnalysisCall.unavailable(requestedModel);
-        long started = System.nanoTime();
-        List<String> models = new ArrayList<>();
-        models.add(cleanModel(requestedModel));
-        if (!fallbackModel.equals(models.get(0))) models.add(fallbackModel);
+        if (apiKey.isBlank()) return AnalysisCall.unavailable();
+        long startedAtNanos = System.nanoTime();
         String failure = null;
-        List<ModelUsage> modelUsages = new ArrayList<>();
-        for (int index = 0; index < models.size(); index++) {
-            String model = models.get(index);
+        for (int attempt = 1; attempt <= MAX_PROVIDER_CALLS; attempt++) {
+            long remainingMillis = remainingMillis(startedAtNanos);
+            if (remainingMillis <= 0) break;
             try {
-                ProviderResult result = call(
-                        index == 0 ? primaryRestClient : fallbackRestClient,
-                        model, image, mimeType, caption, candidates, groups);
-                modelUsages.add(modelUsage(model, result.usage(), index > 0, true));
-                int latency = elapsedMillis(started);
                 return new AnalysisCall(
-                        Optional.of(result.analysis()), models.get(0), model, index > 0,
-                        modelUsages.size(), totalUsage(modelUsages), totalCost(modelUsages),
-                        modelCatalogService.requirePrice(model, Instant.now()).effectiveFrom(),
-                        latency, null, modelUsages);
+                        Optional.of(call(remainingMillis, image, mimeType, caption, candidates, groups)),
+                        attempt,
+                        null);
             } catch (UnsafeImageException exception) {
-                modelUsages.add(modelUsage(model, exception.usage(), index > 0, true));
-                return new AnalysisCall(
-                        Optional.of(ImageAnalysis.blocked()), models.get(0), model, index > 0,
-                        modelUsages.size(), totalUsage(modelUsages), totalCost(modelUsages),
-                        modelCatalogService.requirePrice(model, Instant.now()).effectiveFrom(),
-                        elapsedMillis(started), "SAFETY", modelUsages);
+                return new AnalysisCall(Optional.of(ImageAnalysis.blocked()), attempt, "SAFETY");
             } catch (RuntimeException exception) {
-                failure = exception.getClass().getSimpleName();
-                // A timeout or provider error may not include usage metadata. Count the attempt,
-                // but record zero tokens/cost rather than inventing a billable amount.
-                modelUsages.add(modelUsage(model, TokenUsage.ZERO, index > 0, false));
-                log.warn("chat_image_analysis_failed model={} type={}", model, failure);
+                failure = failureCode(exception);
+                log.warn("chat_image_analysis_failed model={} type={}",
+                        AiChatClient.FIXED_MODEL, exception.getClass().getSimpleName());
+                if (attempt >= MAX_PROVIDER_CALLS || !isTransientProviderFailure(exception)
+                        || !sleepBeforeRetry(startedAtNanos)) {
+                    break;
+                }
             }
         }
-        return new AnalysisCall(
-                Optional.empty(), models.get(0), models.get(models.size() - 1), models.size() > 1,
-                modelUsages.size(), totalUsage(modelUsages), totalCost(modelUsages),
-                modelCatalogService.requirePrice(models.get(models.size() - 1), Instant.now()).effectiveFrom(),
-                elapsedMillis(started), failure, modelUsages);
+        return new AnalysisCall(Optional.empty(), 0, failure == null ? "TIMEOUT" : failure);
     }
 
-    private ModelUsage modelUsage(
-            String model,
-            TokenUsage usage,
-            boolean fallback,
-            boolean success
-    ) {
-        var price = modelCatalogService.requirePrice(model, Instant.now());
-        return new ModelUsage(model, 1, usage, estimateCost(model, usage),
-                price.effectiveFrom(), fallback, success);
-    }
-
-    private static TokenUsage totalUsage(List<ModelUsage> modelUsages) {
-        return new TokenUsage(
-                modelUsages.stream().mapToInt(item -> item.usage().inputTokens()).sum(),
-                modelUsages.stream().mapToInt(item -> item.usage().outputTokens()).sum(),
-                modelUsages.stream().mapToInt(item -> item.usage().thinkingTokens()).sum());
-    }
-
-    private static BigDecimal totalCost(List<ModelUsage> modelUsages) {
-        return modelUsages.stream()
-                .map(ModelUsage::estimatedCostUsd)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private ProviderResult call(
-            RestClient client,
-            String model,
+    private ImageAnalysis call(
+            long remainingMillis,
             byte[] image,
             String mimeType,
             String caption,
@@ -163,8 +115,7 @@ public class ChatImageAnalysisClient {
                     "PUBLIC_GROUPS", groups == null ? List.of() : groups.stream().limit(100).toList(),
                     "PUBLIC_CATALOG", candidates == null ? List.of() : candidates.stream().limit(250).toList()));
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("systemInstruction", Map.of(
-                    "parts", List.of(Map.of("text", SYSTEM_PROMPT))));
+            body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", SYSTEM_PROMPT))));
             body.put("contents", List.of(Map.of(
                     "role", "user",
                     "parts", List.of(
@@ -181,8 +132,8 @@ public class ChatImageAnalysisClient {
                     safety("HARM_CATEGORY_HATE_SPEECH"),
                     safety("HARM_CATEGORY_SEXUALLY_EXPLICIT"),
                     safety("HARM_CATEGORY_DANGEROUS_CONTENT")));
-            String payload = client.post()
-                    .uri(ENDPOINT.formatted(model))
+            String payload = restClient(Math.min(configuredTimeoutMillis, remainingMillis)).post()
+                    .uri(ENDPOINT.formatted(AiChatClient.FIXED_MODEL))
                     .header("x-goog-api-key", apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
@@ -190,13 +141,12 @@ public class ChatImageAnalysisClient {
                     .retrieve()
                     .body(String.class);
             JsonNode root = objectMapper.readTree(payload);
-            TokenUsage usage = usage(root.path("usageMetadata"));
-            if (isSafetyBlocked(root)) throw new UnsafeImageException(usage);
+            if (isSafetyBlocked(root)) throw new UnsafeImageException();
             String text = root.path("candidates").path(0).path("content")
                     .path("parts").path(0).path("text").asText("");
             ImageAnalysis analysis = parseAnalysis(text);
-            if (analysis.unsafe()) throw new UnsafeImageException(usage);
-            return new ProviderResult(analysis, usage);
+            if (analysis.unsafe()) throw new UnsafeImageException();
+            return analysis;
         } catch (UnsafeImageException exception) {
             throw exception;
         } catch (RuntimeException exception) {
@@ -233,23 +183,14 @@ public class ChatImageAnalysisClient {
                 json.path("unsafe").asBoolean(false));
     }
 
-    private BigDecimal estimateCost(String model, TokenUsage usage) {
-        var price = modelCatalogService.requirePrice(model, Instant.now());
-        BigDecimal input = price.inputUsdPerMillion()
-                .multiply(BigDecimal.valueOf(usage.inputTokens()));
-        BigDecimal output = price.outputUsdPerMillion()
-                .multiply(BigDecimal.valueOf((long) usage.outputTokens() + usage.thinkingTokens()));
-        return input.add(output).divide(BigDecimal.valueOf(1_000_000L), 8, RoundingMode.HALF_UP);
-    }
-
     private static Map<String, String> safety(String category) {
         return Map.of("category", category, "threshold", "BLOCK_MEDIUM_AND_ABOVE");
     }
 
-    private static RestClient restClient(long readTimeoutSeconds) {
+    private static RestClient restClient(long readTimeoutMillis) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(readTimeoutSeconds).toMillis());
+        factory.setConnectTimeout((int) Math.min(Duration.ofSeconds(5).toMillis(), readTimeoutMillis));
+        factory.setReadTimeout((int) Math.max(250L, readTimeoutMillis));
         return RestClient.builder().requestFactory(factory).build();
     }
 
@@ -262,27 +203,44 @@ public class ChatImageAnalysisClient {
         return false;
     }
 
-    private static TokenUsage usage(JsonNode node) {
-        return new TokenUsage(
-                Math.max(0, node.path("promptTokenCount").asInt(0)),
-                Math.max(0, node.path("candidatesTokenCount").asInt(0)),
-                Math.max(0, node.path("thoughtsTokenCount").asInt(0)));
+    private static boolean isTransientProviderFailure(RuntimeException exception) {
+        if (exception instanceof ResourceAccessException) return true;
+        if (exception instanceof RestClientResponseException provider) {
+            int status = provider.getStatusCode().value();
+            return status == 429 || status >= 500;
+        }
+        return false;
     }
 
-    private static String cleanModel(String value) {
-        if (value == null || value.isBlank()) return "gemini-2.5-flash";
-        String clean = value.trim();
-        return clean.startsWith("models/") ? clean.substring(7) : clean;
+    private static String failureCode(RuntimeException exception) {
+        if (exception instanceof ResourceAccessException) return "NETWORK";
+        if (exception instanceof RestClientResponseException provider) {
+            int status = provider.getStatusCode().value();
+            if (status == 429) return "RATE_LIMIT";
+            if (status >= 500) return "PROVIDER_5XX";
+        }
+        return "INVALID_RESPONSE";
+    }
+
+    private static long remainingMillis(long startedAtNanos) {
+        long remaining = LOGICAL_DEADLINE_NANOS - (System.nanoTime() - startedAtNanos);
+        return Duration.ofNanos(Math.max(0L, remaining)).toMillis();
+    }
+
+    private static boolean sleepBeforeRetry(long startedAtNanos) {
+        if (remainingMillis(startedAtNanos) <= RETRY_DELAY_MILLIS) return false;
+        try {
+            Thread.sleep(RETRY_DELAY_MILLIS);
+            return true;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     private static String cleanText(String value, int max) {
         String clean = value == null ? "" : value.replaceAll("[\\p{Cntrl}]", " ").trim();
         return clean.length() <= max ? clean : clean.substring(0, max);
-    }
-
-    private static int elapsedMillis(long started) {
-        return (int) Math.min(Integer.MAX_VALUE,
-                Math.max(0L, (System.nanoTime() - started) / 1_000_000L));
     }
 
     public record CatalogCandidate(String slug, String name, String group, String brand) {}
@@ -299,68 +257,20 @@ public class ChatImageAnalysisClient {
         }
     }
 
-    public record TokenUsage(int inputTokens, int outputTokens, int thinkingTokens) {
-        private static final TokenUsage ZERO = new TokenUsage(0, 0, 0);
-    }
-
-    public record ModelUsage(
-            String modelId,
-            int providerRequests,
-            TokenUsage usage,
-            BigDecimal estimatedCostUsd,
-            java.time.LocalDate priceEffectiveFrom,
-            boolean fallback,
-            boolean success
-    ) {}
-
     public record AnalysisCall(
             Optional<ImageAnalysis> analysis,
-            String requestedModel,
-            String servedModel,
-            boolean fallback,
             int providerRequests,
-            TokenUsage usage,
-            BigDecimal estimatedCostUsd,
-            java.time.LocalDate priceEffectiveFrom,
-            int latencyMs,
-            String failureReason,
-            List<ModelUsage> modelUsages
+            String failureReason
     ) {
         public AnalysisCall {
             analysis = analysis == null ? Optional.empty() : analysis;
-            usage = usage == null ? TokenUsage.ZERO : usage;
-            estimatedCostUsd = estimatedCostUsd == null ? BigDecimal.ZERO : estimatedCostUsd;
-            modelUsages = modelUsages == null ? List.of() : List.copyOf(modelUsages);
+            providerRequests = Math.max(0, providerRequests);
         }
 
-        public AnalysisCall(
-                Optional<ImageAnalysis> analysis,
-                String requestedModel,
-                String servedModel,
-                boolean fallback,
-                int providerRequests,
-                TokenUsage usage,
-                BigDecimal estimatedCostUsd,
-                java.time.LocalDate priceEffectiveFrom,
-                int latencyMs,
-                String failureReason
-        ) {
-            this(analysis, requestedModel, servedModel, fallback, providerRequests, usage,
-                    estimatedCostUsd, priceEffectiveFrom, latencyMs, failureReason, List.of());
-        }
-
-        static AnalysisCall unavailable(String model) {
-            String clean = cleanModel(model);
-            return new AnalysisCall(Optional.empty(), clean, clean, false, 0, TokenUsage.ZERO,
-                    BigDecimal.ZERO, null, 0, "NOT_CONFIGURED", List.of());
+        static AnalysisCall unavailable() {
+            return new AnalysisCall(Optional.empty(), 0, "NOT_CONFIGURED");
         }
     }
 
-    private record ProviderResult(ImageAnalysis analysis, TokenUsage usage) {}
-
-    private static final class UnsafeImageException extends RuntimeException {
-        private final TokenUsage usage;
-        private UnsafeImageException(TokenUsage usage) { this.usage = usage; }
-        private TokenUsage usage() { return usage; }
-    }
+    private static final class UnsafeImageException extends RuntimeException {}
 }

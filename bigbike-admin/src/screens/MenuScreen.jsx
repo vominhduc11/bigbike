@@ -524,7 +524,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     setEditItemForm(savedForm ? { ...form, ...savedForm } : form)
     setEditItemSnapshot(form)
     setEditItemError('')
-    if (savedForm) toast.info(t('menus.draftRestored', { defaultValue: 'Đã khôi phục bản nháp mục menu.' }))
+    if (savedForm) toast.info(t('menus.draftRestored'))
   }
 
   function openAddItem() {
@@ -533,7 +533,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     setNewItem(savedForm ? { ...EMPTY_ITEM, ...savedForm } : EMPTY_ITEM)
     setItemError('')
     setShowItemModal(true)
-    if (savedForm) toast.info(t('menus.draftRestored', { defaultValue: 'Đã khôi phục bản nháp mục menu.' }))
+    if (savedForm) toast.info(t('menus.draftRestored'))
   }
 
   // F6 — đóng modal Thêm mục: hỏi xác nhận nếu form đang khác EMPTY_ITEM (còn

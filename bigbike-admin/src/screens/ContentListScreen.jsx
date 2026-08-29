@@ -111,9 +111,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
 
   async function runSingle({ item, action, confirmKey, titleKey, confirmLabel, variant, successKey }) {
     const confirmed = await showConfirm(
-      t(confirmKey, { title: item.title }),
-      t(titleKey),
-      { confirmLabel: t(confirmLabel), variant },
+      t(confirmKey, { title: item.title, defaultValue: t('common.unknown') }),
+      t(titleKey, { defaultValue: t('common.unknown') }),
+      { confirmLabel: t(confirmLabel, { defaultValue: t('common.unknown') }), variant },
     )
     if (!confirmed) return
     setRowBusy(`${action}:${item.id}`)
@@ -180,9 +180,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
       return
     }
     const confirmed = await showConfirm(
-      t(confirmKey, { count: eligible.length }),
-      t(titleKey),
-      { confirmLabel: t(confirmLabel), variant },
+      t(confirmKey, { count: eligible.length, defaultValue: t('common.unknown') }),
+      t(titleKey, { defaultValue: t('common.unknown') }),
+      { confirmLabel: t(confirmLabel, { defaultValue: t('common.unknown') }), variant },
     )
     if (!confirmed) return
 
@@ -290,7 +290,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
-        label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`)}`,
+      label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: t('common.unknown') })}`,
         onRemove: () => updateQuery({ publishStatus: 'ALL' }, { resetPage: true }),
       })
     }

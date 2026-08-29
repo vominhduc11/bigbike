@@ -2299,9 +2299,6 @@ class ChatToolServiceTest {
                 "08:00–18:00",
                 "08:00–17:00",
                 0,
-                BigDecimal.ZERO,
-                List.of(),
-                List.of(),
                 new ChatAssistantSettings.BankDetails(
                         "Vietcombank", "123456789", "BIGBIKE STORE", "Quận 1"),
                 new ChatAssistantSettings.PolicyText(

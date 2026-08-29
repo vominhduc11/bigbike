@@ -2,7 +2,6 @@ package com.bigbike.bigbike_backend.persistence.repository.commerce.cart;
 
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import java.util.List;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,18 +25,4 @@ public interface CartItemJpaRepository extends JpaRepository<CartItemEntity, UUI
             @Param("productPk") String productPk,
             @Param("variantPk") String variantPk);
 
-    @Query(value = """
-            select interaction.action_type as actionType, count(item.id) as cartLines
-            from cart_items item
-            join chat_interactions interaction on interaction.id = item.assistant_interaction_id
-            where item.updated_at >= :from and item.updated_at < :to
-            group by interaction.action_type
-            """, nativeQuery = true)
-    List<ActionCartSummary> summarizeAssistantCartLinesBetween(
-            @Param("from") Instant from, @Param("to") Instant to);
-
-    interface ActionCartSummary {
-        String getActionType();
-        Long getCartLines();
-    }
 }

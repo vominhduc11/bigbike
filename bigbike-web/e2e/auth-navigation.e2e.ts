@@ -6,6 +6,8 @@ import { VIEWPORTS } from "./helpers/viewports";
 const LOGIN_PATH = "/dang-nhap/";
 const ACCOUNT_PATH = "/tai-khoan/";
 const ORDER_HISTORY_PATH = "/tai-khoan/don-hang/";
+const CART_PATH = "/gio-hang/";
+const CHECKOUT_PATH = "/dat-hang/";
 const HOME_PATH = "/";
 const PRODUCT_LIST_PATH = "/sp/";
 const AUTH_MARKER = "bb_customer_authenticated";
@@ -32,6 +34,7 @@ type MockState = {
   loginDelayMs: number;
   meDelayMs: number;
   logoutDelayMs: number;
+  cart: CartResponse;
 };
 
 type NavigationEvent = {
@@ -84,6 +87,40 @@ const EMPTY_CART = {
   },
 };
 
+const GUEST_CART = {
+  data: {
+    id: "e2e-cart",
+    status: "ACTIVE",
+    currency: "VND",
+    items: [
+      {
+        id: "guest-cart-item",
+        productId: "guest-product",
+        productVariantId: null,
+        sku: "E2E-GUEST-001",
+        productName: "Sản phẩm trong giỏ khách",
+        variantName: null,
+        image: null,
+        quantity: 1,
+        unitPrice: 100000,
+        lineSubtotal: 100000,
+        lineDiscount: 0,
+        lineTotal: 100000,
+        available: true,
+      },
+    ],
+    totals: {
+      subtotalAmount: 100000,
+      discountAmount: 0,
+      shippingAmount: 0,
+      feeAmount: 0,
+      totalAmount: 100000,
+    },
+  },
+};
+
+type CartResponse = typeof EMPTY_CART | typeof GUEST_CART;
+
 function createMockState(): MockState {
   return {
     loggedIn: false,
@@ -97,6 +134,7 @@ function createMockState(): MockState {
     loginDelayMs: 0,
     meDelayMs: 0,
     logoutDelayMs: 0,
+    cart: EMPTY_CART,
   };
 }
 
@@ -266,13 +304,19 @@ async function installMocks(page: Page): Promise<MockState> {
     });
   });
 
-  await page.route("**/api/v1/cart**", (route) =>
-    route.fulfill({
+  await page.route("**/api/v1/cart**", async (route) => {
+    if (
+      route.request().method() === "POST" &&
+      new URL(route.request().url()).pathname.endsWith("/items")
+    ) {
+      state.cart = GUEST_CART;
+    }
+    await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(EMPTY_CART),
-    }),
-  );
+      body: JSON.stringify(state.cart),
+    });
+  });
 
   return state;
 }
@@ -289,6 +333,7 @@ async function resetSession(page: Page, state: MockState): Promise<void> {
   state.loginDelayMs = 0;
   state.meDelayMs = 0;
   state.logoutDelayMs = 0;
+  state.cart = EMPTY_CART;
   await page.context().clearCookies();
   await page
     .evaluate(() => {
@@ -574,7 +619,7 @@ test("3. mở Đăng nhập từ Trang chủ rồi đăng nhập thành công", 
   }
 });
 
-test("4. chờ thanh đáy đủ lâu vẫn không prefetch Tài khoản sai trạng thái", async ({ page }) => {
+test("4. ở lâu tại Đăng nhập vẫn không prefetch Tài khoản sai trạng thái", async ({ page }) => {
   const state = await installMocks(page);
   for (const viewport of LOGIN_VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -692,4 +737,38 @@ test("8. đăng xuất từ menu trên cùng ở trang sản phẩm và Trang ch
       });
     }
   }
+});
+
+test("9. giỏ khách còn nguyên sau khi đăng nhập và khách vẫn được vào trang đặt hàng", async ({
+  page,
+}) => {
+  const state = await installMocks(page);
+
+  await resetSession(page, state);
+  await gotoAndSettle(page, HOME_PATH, { scroll: false });
+  const addResponse = await page.evaluate(async () => {
+    const response = await fetch("/api/v1/cart/items", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ productId: "guest-product", quantity: 1 }),
+    });
+    return { status: response.status, body: await response.json() };
+  });
+  expect(addResponse.status).toBe(200);
+  expect(addResponse.body.data.items).toHaveLength(1);
+
+  await gotoAndSettle(page, `${LOGIN_PATH}?tiep=${encodeURIComponent(CART_PATH)}`, {
+    scroll: false,
+  });
+  await expect(page).toHaveURL(/\/dang-nhap\/\?tiep=%2Fgio-hang%2F$/);
+  await submitLogin(page);
+  await expect(page).toHaveURL(/\/gio-hang\/$/);
+  await expect(page.locator("[data-cart-content]")).toContainText("Sản phẩm trong giỏ khách");
+
+  await resetSession(page, state);
+  state.cart = GUEST_CART;
+  await gotoAndSettle(page, CHECKOUT_PATH, { scroll: false });
+  await expect(page).toHaveURL(/\/dat-hang\/$/);
+  await expect(page.locator("main")).toContainText(/Thông tin giao hàng|Shipping information/i);
+  await expect(page.locator("[data-auth-shell]")).toHaveCount(0);
 });

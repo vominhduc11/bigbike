@@ -61,7 +61,6 @@ class ChatConcurrencyTest {
         reset(assistantSettings, toolService, aiChatClient);
         deleteFixtureData();
         when(assistantSettings.load(anyString())).thenAnswer(invocation -> settings(invocation.getArgument(0)));
-        when(assistantSettings.currentModel()).thenReturn("gemini-2.5-flash");
         when(aiChatClient.isConfigured()).thenReturn(true);
         when(toolService.resolveFastPath(
                 anyString(), anyString(), nullable(UUID.class), any(), any()))
@@ -71,22 +70,6 @@ class ChatConcurrencyTest {
         when(toolService.recordConversationContext(
                 any(), anyString(), anyString(), any(), any(), any()))
                 .thenReturn(ChatToolService.ConversationContext.empty());
-        bridgeModelAwareAnswer(aiChatClient);
-    }
-
-    private static void bridgeModelAwareAnswer(AiChatClient client) {
-        when(client.answerWithFallback(
-                anyString(), anyString(), anyString(), any(ChatToolRegistry.class),
-                anyBoolean(), any(AiChatClient.ToolExecutor.class),
-                any(ChatToolService.AssistantCatalogVocabulary.class), any(), any()))
-                .thenAnswer(invocation -> client.answer(
-                                invocation.getArgument(1), invocation.getArgument(2),
-                                invocation.getArgument(3), invocation.getArgument(4),
-                                invocation.getArgument(5), invocation.getArgument(6),
-                                invocation.getArgument(7), invocation.getArgument(8))
-                        .map(answer -> new AiChatClient.ModelAnswer(
-                                answer, invocation.getArgument(0), invocation.getArgument(0),
-                                false, null)));
     }
 
     @AfterEach
@@ -224,9 +207,9 @@ class ChatConcurrencyTest {
                 """
                 insert into chat_conversations (
                     id, thread_id, locale, turn_count, counted_turns, ai_call_count, consecutive_off_topic,
-                    lead_offer_status, lead_offer_count, sales_stage, started_at, last_message_at, expires_at,
+                    sales_stage, started_at, last_message_at, expires_at,
                     created_at, updated_at)
-                values (?, ?, 'en', 0, 0, 0, 0, 'NONE', 0, 'BROWSING', current_timestamp, current_timestamp,
+                values (?, ?, 'en', 0, 0, 0, 0, 'BROWSING', current_timestamp, current_timestamp,
                         dateadd('DAY', 90, current_timestamp), current_timestamp, current_timestamp)
                 """,
                 id,
@@ -246,7 +229,7 @@ class ChatConcurrencyTest {
                 new AiChatClient.Answer(
                         "I can continue with " + question + ". "
                                 + "Please tell me the product type or exact detail you want help with.",
-                        false, false, false),
+                        false, false),
                 List.of(), List.of(), List.of(), java.util.Set.of(), 1,
                 "TOOL", null, null);
     }

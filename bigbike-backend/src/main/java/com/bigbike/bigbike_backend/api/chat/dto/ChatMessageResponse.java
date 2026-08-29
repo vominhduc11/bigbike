@@ -17,15 +17,12 @@ public record ChatMessageResponse(
         List<ChatProductCardResponse> products,
         ChatClarificationResponse clarification,
         boolean handoffRecommended,
-        boolean leadPrompt,
-        int leadPromptSequence,
         List<ChatActionResponse> actions,
         ChatContactResponse contacts,
         List<ChatProductCardResponse> crossSellProducts,
         String salesStage,
         ChatNextStepResponse nextStep,
         ChatHandoffStatusResponse handoff,
-        ChatLeadOfferDetailsResponse leadOffer,
         String channelState,
         int countedTurns,
         int turnLimit,
@@ -46,16 +43,14 @@ public record ChatMessageResponse(
             List<ChatProductCardResponse> products,
             ChatClarificationResponse clarification,
             boolean handoffRecommended,
-            boolean leadPrompt,
-            int leadPromptSequence,
             List<ChatActionResponse> actions,
             ChatContactResponse contacts
     ) {
         this(
                 conversationId, assistantMessageId, mode, reason, answer, answerFormat,
                 resultKind, turnCount, maxTurns, remainingTurns, products, clarification,
-                handoffRecommended, leadPrompt, leadPromptSequence, actions, contacts,
-                List.of(), "BROWSING", null, null, null,
+                handoffRecommended, actions, contacts,
+                List.of(), "BROWSING", null, null,
                 "AI_ACTIVE", turnCount, maxTurns, remainingTurns, null);
     }
 
@@ -71,15 +66,14 @@ public record ChatMessageResponse(
             int remainingTurns,
             List<ChatProductCardResponse> products,
             boolean handoffRecommended,
-            boolean leadPrompt,
             List<ChatActionResponse> actions,
             ChatContactResponse contacts
     ) {
         this(
                 conversationId, null, mode, reason, answer, answerFormat, resultKind,
                 turnCount, maxTurns, remainingTurns, products, null, handoffRecommended,
-                leadPrompt, leadPrompt ? 1 : 0, actions, contacts,
-                List.of(), "BROWSING", null, null, null,
+                actions, contacts,
+                List.of(), "BROWSING", null, null,
                 "AI_ACTIVE", turnCount, maxTurns, remainingTurns, null);
     }
 

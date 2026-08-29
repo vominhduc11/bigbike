@@ -30,8 +30,8 @@ function storageKeyFor(identity, scopes) {
 function keyOf(it) {
   if (it.orderId) return `${it.orderId}:${it.type}`
   if (it.handoffId) return `${it.handoffId}:${it.type}`
-  // Chat lead mang mỗi conversationId (không có handoffId) — thiếu nhánh này thì bản
-  // đến qua realtime và bản tải lại từ máy chủ bị tính là 2 dòng khác nhau.
+  // Chat handoff is keyed by its conversation when a persisted notification has
+  // not yet received a handoff id.
   if (it.conversationId) return `${it.conversationId}:${it.type}`
   return `id:${it.id}`
 }
@@ -134,10 +134,6 @@ export function NotificationBell({ navigate }) {
       unsubscribers.push(subscribeAdminWs('/topic/admin/chat', (event) => {
         if (!event?.conversationId) return
         if (event.type === 'CHAT_HANDOFF_WAITING') addItem(event)
-        // Khách để lại số điện thoại: sự kiện này vốn bị bỏ qua nên chuông chỉ hiện sau
-        // khi tải lại trang. Chỉ giữ id cuộc trò chuyện — tên/điện thoại/ghi chú không
-        // được ghi vào trình duyệt, đúng như kho thông báo phía máy chủ vẫn làm.
-        else if (event.type === 'CHAT_LEAD') addItem({ type: 'CHAT_LEAD', conversationId: event.conversationId })
       }))
     }
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
@@ -329,11 +325,9 @@ export function NotificationBell({ navigate }) {
                       <span className="block text-sm font-semibold text-foreground">
                         {item.type === 'CHAT_HANDOFF_WAITING'
                           ? t('notifications.chatHandoff')
-                          : item.type === 'CHAT_LEAD'
-                            ? t('notifications.chatLead')
-                            : item.type === 'NEW_ORDER'
-                              ? t('notifications.newOrder')
-                              : t('notifications.orderUpdate')}
+                          : item.type === 'NEW_ORDER'
+                            ? t('notifications.newOrder')
+                            : t('notifications.orderUpdate')}
                       </span>
                       {fresh && (
                         <>

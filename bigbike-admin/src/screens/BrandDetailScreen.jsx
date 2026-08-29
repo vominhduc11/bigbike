@@ -440,8 +440,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     <Screen>
       <ScreenHeader
         group="products"
-        title={isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' }) : t('brands.detail.editTitle')}
-        description={!isCreate && isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : undefined}
+        title={isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle') : t('brands.detail.editTitle')}
+        description={!isCreate && isSystemBrand ? t('brands.detail.systemDesc') : undefined}
         actions={(
           <>
           <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate('/admin/brands')}>
@@ -525,7 +525,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </div>
           {state.item?.createdAt ? (
             <div>
-              <dt className="text-muted-foreground">{t('common.createdAt', { defaultValue: 'Tạo lúc' })}</dt>
+              <dt className="text-muted-foreground">{t('common.createdAt')}</dt>
               <dd className="mt-1 text-foreground">{formatDateTime(state.item.createdAt)}</dd>
             </div>
           ) : null}
@@ -576,8 +576,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       {isSystemBrand ? (
         <StatePanel
           tone="warning"
-          title={t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' })}
-          description={t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' })}
+          title={t('brands.detail.systemTitle')}
+          description={t('brands.detail.systemDesc')}
         />
       ) : null}
 

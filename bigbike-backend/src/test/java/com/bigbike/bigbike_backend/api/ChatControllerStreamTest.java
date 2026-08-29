@@ -34,7 +34,7 @@ class ChatControllerStreamTest {
         ChatService service = mock(ChatService.class);
         when(service.send(any(ChatMessageRequest.class), isNull())).thenReturn(new ChatMessageResponse(
                 conversationId, "AI", "AI", "Em đã kiểm tra xong.", "PLAIN_TEXT", "ANSWER",
-                1, 12, 11, List.of(), false, false, List.of(),
+                1, 12, 11, List.of(), false, List.of(),
                 new ChatContactResponse("", "", "", "", "")));
         ChatController controller = new ChatController(
                 service, mock(ApiResponseFactory.class), mock(RateLimitService.class));

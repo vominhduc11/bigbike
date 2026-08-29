@@ -14,8 +14,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
-import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
-import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
@@ -23,9 +21,6 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJ
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatOrderAttributionJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -62,9 +57,6 @@ class Phase1FCheckoutApiTest {
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
-    @Autowired ChatConversationJpaRepository chatConversationRepo;
-    @Autowired ChatMessageJpaRepository chatMessageRepo;
-    @Autowired ChatOrderAttributionJpaRepository chatOrderAttributionRepo;
 
     private MockMvc mockMvc;
 
@@ -634,73 +626,6 @@ class Phase1FCheckoutApiTest {
         ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
         // Boolean availability model (V261): no decrement on sale, idempotent or not.
         assertThat(refreshed.getStockQuantity()).isEqualTo(5);
-    }
-
-    @Test
-    void checkout_attributesOnlyVerifiedProductClick_andRetryDoesNotDuplicateRevenue() throws Exception {
-        ProductEntity product = createTestProduct(
-                "Assistant-attributed product", 1_590_000, null, PublishStatus.PUBLISHED);
-        ChatConversationEntity conversation = new ChatConversationEntity();
-        conversation.setLocale("vi");
-        conversation = chatConversationRepo.save(conversation);
-        ChatMessageEntity assistant = new ChatMessageEntity();
-        assistant.setConversationId(conversation.getId());
-        assistant.setRole("ASSISTANT");
-        assistant.setContent("Sản phẩm đã được kiểm tra.");
-        assistant.setSource("TOOL");
-        assistant.setProductsJson("[{\"slug\":\"" + product.getSlug() + "\"}]");
-        assistant.setActionMetadata("{}");
-        assistant = chatMessageRepo.save(assistant);
-
-        GuestSession session = newGuestSession();
-        ProductEntity unshown = createTestProduct(
-                "Product not shown by assistant", 990_000, null, PublishStatus.PUBLISHED);
-        MvcResult interaction = mockMvc.perform(post("/api/v1/chat/interactions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"clientEventId\":\"" + UUID.randomUUID()
-                                + "\",\"conversationId\":\"" + conversation.getId()
-                                + "\",\"assistantMessageId\":\"" + assistant.getId()
-                                + "\",\"type\":\"PRODUCT_VIEWED\",\"productSlug\":\""
-                                + product.getSlug() + "\"}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.attributionToken").isString())
-                .andReturn();
-        String attributionToken = extractJsonValue(
-                interaction.getResponse().getContentAsString(), "attributionToken");
-
-        // A mismatched proof never blocks the sale, but that line is not attributed.
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + unshown.getId()
-                                + "\",\"quantity\":1,\"assistantAttributionToken\":\""
-                                + attributionToken + "\"}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId()
-                                + "\",\"quantity\":2,\"assistantAttributionToken\":\""
-                                + attributionToken + "\"}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk());
-
-        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
-        String idempotencyKey = "assistant-checkout-" + UUID.randomUUID();
-        for (int attempt = 0; attempt < 2; attempt++) {
-            mockMvc.perform(post("/api/v1/checkout")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(payload)
-                            .header("Idempotency-Key", idempotencyKey)
-                            .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                    .andExpect(status().isOk());
-        }
-
-        var attributions = chatOrderAttributionRepo.findByConversationId(conversation.getId());
-        assertThat(attributions).hasSize(1);
-        assertThat(attributions.get(0).getAttributedAmount())
-                .isEqualByComparingTo(BigDecimal.valueOf(3_180_000));
-        assertThat(attributions.get(0).getCurrency()).isEqualTo("VND");
     }
 
     @Test

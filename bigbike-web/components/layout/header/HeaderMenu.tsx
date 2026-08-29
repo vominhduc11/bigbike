@@ -157,7 +157,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 ariaExpanded={hasChildren ? open : undefined}
                 onClick={() => setOpenNodeId(null)}
                 className={cn(
-                  "flex h-full shrink-0 items-center whitespace-nowrap px-4 font-cta text-header-nav font-bold leading-body tracking-wide no-underline! transition-colors",
+                  "flex h-full shrink-0 items-center whitespace-nowrap px-5 font-cta text-header-nav font-bold leading-body tracking-wide no-underline! transition-colors min-[1440px]:px-6",
                   active
                     ? "text-brand-on-dark! hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
                     : "text-white! hover:text-brand-on-dark! focus-visible:text-brand-on-dark!",
@@ -204,8 +204,9 @@ function DesktopSubmenu({
   return (
     <ul
       data-header-submenu
+      data-header-submenu-depth={depth}
       className={cn(
-        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-75 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
+        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-92 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
         depth === 0 ? "left-0 top-full -translate-y-[10px]" : "left-full top-0 -translate-x-[10px]",
         depth === 0 && open && "visible translate-y-0 opacity-100",
         submenuReveal[Math.min(depth, submenuReveal.length - 1)],
@@ -246,7 +247,9 @@ function DesktopSubmenu({
                   aria-hidden
                 />
               ) : null}
-              {node.label}
+              <span data-header-menu-label className="min-w-0">
+                {node.label}
+              </span>
             </HeaderMenuLink>
             {hasChildren ? (
               <DesktopSubmenu
@@ -319,7 +322,7 @@ function MobileMenuList({
                 onNavigate?.();
               }}
               className={cn(
-                "flex min-h-13 items-center whitespace-nowrap pr-17.5 no-underline!",
+                "flex min-h-13 min-w-0 items-start whitespace-normal pr-17.5 no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
                 depth === 0
                   ? "py-[15px] font-cta text-header-nav font-bold leading-body tracking-wide"
@@ -330,7 +333,7 @@ function MobileMenuList({
               {node.iconUrl ? (
                 <span
                   data-header-submenu-icon
-                  className={`${submenuIcon} mr-2 align-middle`}
+                  className={`${submenuIcon} mr-2 mt-1`}
                   style={{
                     maskImage: `url(${node.iconUrl})`,
                     WebkitMaskImage: `url(${node.iconUrl})`,
@@ -338,7 +341,9 @@ function MobileMenuList({
                   aria-hidden
                 />
               ) : null}
-              {node.label}
+              <span data-header-menu-label className="min-w-0 flex-1 break-words">
+                {node.label}
+              </span>
             </HeaderMenuLink>
             {hasChildren ? (
               <Button

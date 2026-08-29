@@ -16,12 +16,11 @@ import com.bigbike.bigbike_backend.service.auth.JwtService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatVisitorService {
 
     private final ChatVisitorJpaRepository visitorRepo;
@@ -32,6 +31,25 @@ public class ChatVisitorService {
     private final ChatPhase3Settings phase3Settings;
     private final ChatImageService chatImageService;
 
+    @Autowired
+    public ChatVisitorService(
+            ChatVisitorJpaRepository visitorRepo,
+            ChatConversationJpaRepository conversationRepo,
+            ChatMessageJpaRepository messageRepo,
+            ChatHandoffService handoffService,
+            JwtService jwtService,
+            ChatPhase3Settings phase3Settings,
+            ChatImageService chatImageService
+    ) {
+        this.visitorRepo = visitorRepo;
+        this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
+        this.handoffService = handoffService;
+        this.jwtService = jwtService;
+        this.phase3Settings = phase3Settings;
+        this.chatImageService = chatImageService;
+    }
+
     /** Compatibility constructor for phase-3 focused tests that predate customer images. */
     public ChatVisitorService(
             ChatVisitorJpaRepository visitorRepo,
@@ -41,8 +59,7 @@ public class ChatVisitorService {
             JwtService jwtService,
             ChatPhase3Settings phase3Settings
     ) {
-        this(visitorRepo, conversationRepo, messageRepo, handoffService, jwtService,
-                phase3Settings, null);
+        this(visitorRepo, conversationRepo, messageRepo, handoffService, jwtService, phase3Settings, null);
     }
 
     @Transactional

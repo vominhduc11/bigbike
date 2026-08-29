@@ -6,6 +6,12 @@ import { FeaturedProductsScreen } from './FeaturedProductsScreen'
 import { featuredSaveErrorMessage } from './featured-products/constants'
 
 const t = (key, values = {}) => {
+  const knownTranslations = {
+    'common.unknown': 'Không xác định',
+    'status.publish.DRAFT': 'Nháp',
+    'status.publish.PUBLISHED': 'Đã xuất bản',
+  }
+  if (knownTranslations[key]) return knownTranslations[key]
   if (values && typeof values === 'object' && 'defaultValue' in values) {
     return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
   }
@@ -194,7 +200,7 @@ describe('FeaturedProductsScreen', () => {
     const warning = await screen.findByText(/không còn đang bán nên không hiện trên trang chủ/)
     expect(warning).toHaveTextContent('Sản phẩm 2')
     expect(warning).not.toHaveTextContent('Sản phẩm 1')
-    expect(screen.getByText('status.publish.DRAFT')).toBeInTheDocument()
+    expect(screen.getByText('Nháp')).toBeInTheDocument()
   })
 
   it('không cảnh báo khi mọi sản phẩm trong danh sách đều đang bán', async () => {
@@ -206,7 +212,7 @@ describe('FeaturedProductsScreen', () => {
     })
 
     await screen.findByText('Sản phẩm 2')
-    expect(screen.queryByText('status.publish.DRAFT')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nháp')).not.toBeInTheDocument()
     expect(screen.queryByText(/không còn đang bán/)).not.toBeInTheDocument()
   })
 

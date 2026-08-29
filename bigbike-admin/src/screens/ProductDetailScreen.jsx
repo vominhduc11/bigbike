@@ -1135,7 +1135,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           badge={
             <span className="inline-flex items-center gap-2">
               <span className={publishBadgeClass(form.publishStatus)}>
-                {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
+                {t(`status.publish.${form.publishStatus}`, { defaultValue: t('common.unknown') })}
               </span>
               {!canUpdate && (
                 <span className="bb-badge bb-badge-warning">

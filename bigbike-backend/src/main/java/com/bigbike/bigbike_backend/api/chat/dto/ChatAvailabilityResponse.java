@@ -10,6 +10,5 @@ public record ChatAvailabilityResponse(
         int maxTurns,
         ChatContactResponse contacts,
         int memoryDays,
-        ChatProactiveSettingsResponse proactive,
         ChatImageAvailabilityResponse images
 ) {}

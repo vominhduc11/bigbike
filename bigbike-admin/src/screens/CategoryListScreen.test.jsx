@@ -21,6 +21,9 @@ vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key, values = {}) => {
+      if (key === 'categories.deleteConfirm') {
+        return `Chuyển danh mục ${values.name} vào Thùng rác. Các danh mục con cũng sẽ được xoá mềm và có thể khôi phục.`
+      }
       if (values && typeof values === 'object' && 'defaultValue' in values) {
         return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
       }

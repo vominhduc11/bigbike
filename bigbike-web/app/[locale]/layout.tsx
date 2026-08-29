@@ -1,23 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import Script from "next/script";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { FooterMobileGate } from "@/components/layout/FooterMobileGate";
-import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
-import { getPublicMenu } from "@/lib/api/public-api";
-import { buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { ClientIntlProvider } from "@/components/providers/ClientIntlProvider";
 import { isLocale, LOCALES, type Locale } from "@/i18n/locale";
-import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
-import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-import { ScrollToTopFab } from "@/components/layout/ScrollToTopFab";
-import { SettingsFocusScroller } from "@/components/layout/SettingsFocusScroller";
-import { SearchToggle } from "@/components/layout/SearchToggle";
-import { MobileCartSheet } from "@/components/layout/MobileCartSheet";
 import { CartProvider } from "@/lib/cart-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
@@ -110,13 +97,7 @@ export default async function RootLayout({
   if (!isLocale(localeParam)) notFound();
   const locale: Locale = localeParam;
   setRequestLocale(locale);
-  const [messages, primaryMenuResult] = await Promise.all([
-    getMessages({ locale }),
-    getPublicMenu("primary", locale),
-  ]);
-  const primaryNodes: HeaderNavNode[] = primaryMenuResult.data?.items?.length
-    ? buildPublicMenuTree(primaryMenuResult.data.items)
-    : [];
+  const messages = await getMessages({ locale });
   return (
     <html lang={locale} className="h-full antialiased">
       <body className="bb-theme min-h-full flex flex-col pt-0!">
@@ -144,31 +125,7 @@ export default async function RootLayout({
           <QueryProvider>
             <HeaderUiProvider>
               <CartProvider>
-                <AltSlugProvider>
-                  <Header menuNodesVi={primaryNodes} menuNodesEn={primaryNodes} locale={locale} />
-                  <main id="main-content" tabIndex={-1} className="bb-main w-full">
-                    {children}
-                  </main>
-                  <div className="block md:hidden">
-                    <MobileBottomNav />
-                  </div>
-                  {/* Gắn panel tìm kiếm React như "panel host" ở mọi breakpoint để cả header
-                      desktop/tablet lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
-                      Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
-                      render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
-                  <Suspense fallback={null}>
-                    <SearchToggle />
-                  </Suspense>
-                  <MobileCartSheet />
-                  <FooterMobileGate>
-                    <Footer locale={locale} />
-                  </FooterMobileGate>
-                  <SettingsFocusScroller />
-                  <div className="bb-floating-chat-anchor fixed z-[var(--bb-z-floating)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
-                    <FloatingChatLoader locale={locale} />
-                  </div>
-                  <ScrollToTopFab />
-                </AltSlugProvider>
+                <AltSlugProvider>{children}</AltSlugProvider>
               </CartProvider>
             </HeaderUiProvider>
           </QueryProvider>

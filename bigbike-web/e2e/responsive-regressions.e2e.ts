@@ -232,7 +232,7 @@ test("Ba dòng liên hệ chân trang không bị cắt ở 320px", async ({ pag
 test("Ô ghi nhớ và nút VI/EN có vùng chạm tối thiểu 44px", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
 
-  for (const path of ["/dang-nhap/", "/dang-ky/"]) {
+  for (const path of ["/dang-nhap/", "/dang-ky/", "/quen-mat-khau/", "/xac-nhan-email/"]) {
     await gotoAndSettle(page, path);
     const languageButtons = page.locator("[data-language-switch] button");
     await expect(languageButtons).toHaveCount(2);

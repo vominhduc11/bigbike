@@ -9,7 +9,7 @@ import {
 } from "./chat-persistence";
 
 const snapshot: ChatPersistenceSnapshot = {
-  version: 3,
+  version: 4,
   expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
   locale: "vi",
   conversationId: "conversation-persistence",
@@ -42,11 +42,6 @@ const snapshot: ChatPersistenceSnapshot = {
   ],
   remainingTurns: 7,
   serviceMode: "AI",
-  leadPromptSequence: 1,
-  leadPromptMessageId: "assistant-1",
-  viewedLeadSequences: [1],
-  leadCaptured: false,
-  leadDeclined: false,
 };
 
 describe("chat persistence", () => {
@@ -68,7 +63,7 @@ describe("chat persistence", () => {
     expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
-  it("upgrades a valid version-one snapshot without losing its active lead prompt", () => {
+  it("removes an older snapshot so obsolete contact data is not restored", () => {
     window.localStorage.setItem(
       CHAT_STORAGE_KEY,
       JSON.stringify({
@@ -79,21 +74,14 @@ describe("chat persistence", () => {
         messages: [{ id: "assistant-old", role: "ASSISTANT", content: "Nội dung cũ" }],
         remainingTurns: 5,
         serviceMode: "AI",
-        leadPrompt: true,
-        leadCaptured: false,
-        leadDeclined: false,
       }),
     );
 
-    expect(readChatSnapshot()).toMatchObject({
-      version: 3,
-      conversationId: "legacy-conversation",
-      leadPromptSequence: 1,
-      viewedLeadSequences: [],
-    });
+    expect(readChatSnapshot()).toBeNull();
+    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
-  it("upgrades a valid version-two snapshot to the current format", () => {
+  it("removes a version-three snapshot from the retired flow", () => {
     window.localStorage.setItem(
       CHAT_STORAGE_KEY,
       JSON.stringify({
@@ -102,10 +90,8 @@ describe("chat persistence", () => {
       }),
     );
 
-    expect(readChatSnapshot()).toMatchObject({
-      version: 3,
-      conversationId: snapshot.conversationId,
-    });
+    expect(readChatSnapshot()).toBeNull();
+    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
   it("clears the snapshot immediately", () => {

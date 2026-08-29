@@ -106,7 +106,6 @@ class AiChatFunctionCallingTest {
                         new ChatToolService.DeterministicAnswer(
                                 "Dạ, em chưa tìm thấy đúng mẫu anh/chị hỏi. Em không đổi sang sản phẩm khác. Anh/chị có thể bấm Gặp nhân viên để được hỗ trợ thêm.",
                                 false,
-                                false,
                                 false)));
 
         assertThat(result).isPresent();
@@ -144,7 +143,7 @@ class AiChatFunctionCallingTest {
         String finalRequest = MAPPER.valueToTree(transport.requests().get(1)).toString();
         assertThat(finalRequest).contains("functionResponse", "search-1")
                 .contains("functionDeclarations", "\"mode\":\"NONE\"")
-                // The final turn calls no function, so it pins the four-field contract with
+                // The final turn calls no function, so it pins the three-field contract with
                 // provider structured output; without it the model replies in prose.
                 .contains("responseSchema", "\"responseMimeType\":\"application/json\"",
                         "propertyOrdering");
@@ -427,11 +426,15 @@ class AiChatFunctionCallingTest {
         assertThat(client(new ScriptedTransport(failingCall, failingCall)).answer(
                 "Tìm mũ", "vi", REGISTRY, true, failingTool)).isEmpty();
 
-        assertThat(client(new ScriptedTransport(new IllegalStateException("provider timeout"))).answer(
+        assertThat(client(new ScriptedTransport(
+                new IllegalStateException("provider timeout"),
+                new IllegalStateException("provider timeout"),
+                new IllegalStateException("provider timeout"),
+                new IllegalStateException("provider timeout"))).answer(
                 "Tìm mũ", "vi", REGISTRY, true,
                 (call, session) -> execution(call.name(), "{}", List.of()))).isEmpty();
 
-        assertThat(client(new ScriptedTransport("not-json")).answer(
+        assertThat(client(new ScriptedTransport("not-json", "not-json", "not-json", "not-json")).answer(
                 "Tìm mũ", "vi", REGISTRY, true,
                 (call, session) -> execution(call.name(), "{}", List.of()))).isEmpty();
 
@@ -475,7 +478,7 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
-    void transientProviderFailureRetriesExactlyOnceWithinTheThreeCallBudget() {
+    void transientProviderFailureRetriesExactlyOnceWithinTheFourCallBudget() {
         HttpServerErrorException unavailable = HttpServerErrorException.create(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Unavailable",
@@ -505,7 +508,7 @@ class AiChatFunctionCallingTest {
     }
 
     @Test
-    void selectedPrimaryFailureImmediatelyUsesTheFastFallback() {
+    void transientFailureRetriesGemini37FlashInsteadOfSwitchingModels() {
         HttpServerErrorException unavailable = HttpServerErrorException.create(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Unavailable",
@@ -514,53 +517,42 @@ class AiChatFunctionCallingTest {
                 StandardCharsets.UTF_8);
         List<String> calledModels = new ArrayList<>();
         AtomicInteger sleeps = new AtomicInteger();
+        AtomicInteger attempts = new AtomicInteger();
         AiChatClient client = new AiChatClient(
                 "test-key",
-                "gemini-2.5-flash",
-                "gemini-2.5-flash-lite",
-                35,
+                "any-legacy-configured-model",
                 (model, body, timeoutMillis) -> {
                     calledModels.add(model);
-                    if ("gemini-3.5-flash".equals(model)) throw unavailable;
-                    return functionCall(
-                            "search_products",
-                            Map.of("query", "tanami", "lang", "vi"),
-                            "fallback-search");
+                    return switch (attempts.incrementAndGet()) {
+                        case 1 -> throw unavailable;
+                        case 2 -> functionCall(
+                                "search_products",
+                                Map.of("query", "tanami", "lang", "vi"),
+                                "retry-search");
+                        default -> finalAnswer(safeAnswer(
+                                "Em đã kiểm tra sản phẩm đang bán để anh/chị xem bên dưới."));
+                    };
                 },
                 milliseconds -> sleeps.incrementAndGet());
 
-        Optional<AiChatClient.ModelAnswer> result = client.answerWithFallback(
-                "gemini-3.5-flash",
+        Optional<AiChatClient.HybridAnswer> result = client.answer(
                 "Tìm mũ tanami",
                 "vi",
                 REGISTRY,
                 true,
-                (call, session) -> new ChatToolService.ToolExecution(
+                (call, session) -> execution(
                         call.name(),
                         "{\"results\":[{\"slug\":\"" + PRODUCT_SLUG + "\"}]}",
-                        List.of(card()),
-                        List.of(),
-                        Set.of(),
-                        new ChatToolService.DeterministicAnswer(
-                                "Em đã tìm thấy một mẫu đang bán để anh/chị xem.",
-                                false, false, false)),
+                        List.of(card())),
                 ChatToolService.AssistantCatalogVocabulary.empty(),
                 List.of(),
                 List.of());
 
         assertThat(result).isPresent();
-        assertThat(result.orElseThrow().requestedModel()).isEqualTo("gemini-3.5-flash");
-        assertThat(result.orElseThrow().servedModel()).isEqualTo("gemini-2.5-flash-lite");
-        assertThat(result.orElseThrow().fallbackUsed()).isTrue();
-        assertThat(result.orElseThrow().fallbackReason()).isEqualTo("PROVIDER_5XX");
-        assertThat(result.orElseThrow().modelUsages())
-                .extracting(AiChatClient.ModelUsage::modelId)
-                .containsExactly("gemini-3.5-flash", "gemini-2.5-flash-lite");
-        assertThat(result.orElseThrow().modelUsages())
-                .extracting(AiChatClient.ModelUsage::providerRequestCount)
-                .containsExactly(1, 1);
-        assertThat(calledModels).containsExactly("gemini-3.5-flash", "gemini-2.5-flash-lite");
-        assertThat(sleeps).hasValue(0);
+        assertThat(result.orElseThrow().providerCallCount()).isEqualTo(3);
+        assertThat(calledModels).containsOnly(AiChatClient.FIXED_MODEL);
+        assertThat(calledModels).hasSize(3);
+        assertThat(sleeps).hasValue(1);
     }
 
     @Test
@@ -645,8 +637,7 @@ class AiChatFunctionCallingTest {
         return Map.of(
                 "answer", answer,
                 "offTopic", false,
-                "handoffRecommended", false,
-                "leadPrompt", false);
+                "handoffRecommended", false);
     }
 
     private static String functionCall(String name, Map<String, ?> args, String id) {

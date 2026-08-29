@@ -52,7 +52,7 @@ export function ProductExportDialog({
   const selectedSet = useMemo(() => new Set(selectedColumns), [selectedColumns])
   const normalizedSearch = columnSearch.trim().toLowerCase()
   const columnLabel = useCallback(
-    (column) => t(`products.exportDialog.columnLabels.${column}`, { defaultValue: column }),
+    (column) => t(`products.exportDialog.columnLabels.${column}`, { defaultValue: t('common.unknown') }),
     [t],
   )
 

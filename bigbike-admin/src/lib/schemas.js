@@ -403,9 +403,7 @@ export function createProductSchema(t, isCreate = false) {
           path: ['seoDescription'],
         })
       }
-      const seoTextMessage = t('common.errSeoPlainText', {
-        defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
-      })
+      const seoTextMessage = t('common.errSeoPlainText')
       validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
       validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
       if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
@@ -704,9 +702,7 @@ export function createCategorySchema(t) {
       if ((data.seoDescription ?? '').trim().length > 5000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoDescriptionTooLong'), path: ['seoDescription'] })
       }
-      const seoTextMessage = t('common.errSeoPlainText', {
-        defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
-      })
+      const seoTextMessage = t('common.errSeoPlainText')
       validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
       validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
       validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
@@ -759,9 +755,7 @@ export function createBrandSchema(t) {
     if ((data.description || '').length > 5000) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errDescriptionTooLong'), path: ['description'] })
     }
-    const seoTextMessage = t('common.errSeoPlainText', {
-      defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
-    })
+    const seoTextMessage = t('common.errSeoPlainText')
     validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
     validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
     validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)
@@ -893,9 +887,7 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
     if (data.productImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.productImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errProductImageUrl'), path: ['productImageUrl'] })
     }
-    const seoTextMessage = t('common.errSeoPlainText', {
-      defaultValue: 'Tiêu đề và mô tả SEO chỉ nhận chữ thuần, không dán mã HTML.',
-    })
+    const seoTextMessage = t('common.errSeoPlainText')
     validatePlainSeoText(data.seoTitle, ['seoTitle'], ctx, seoTextMessage)
     validatePlainSeoText(data.seoDescription, ['seoDescription'], ctx, seoTextMessage)
     validatePlainSeoText(data.translations?.en?.seoTitle, ['translations', 'en', 'seoTitle'], ctx, seoTextMessage)

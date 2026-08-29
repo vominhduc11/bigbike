@@ -107,7 +107,7 @@ export function MobileFilterDrawer({
                 value: resourceType,
                 label: resourceType === 'ALL'
                   ? t('common.all')
-                  : t(`auditLog.module.${resourceType}`, { defaultValue: resourceType }),
+                  : t(`auditLog.module.${resourceType}`, { defaultValue: t('auditLog.module.OTHER') }),
               }))}
             />
           </FormField>
@@ -122,7 +122,7 @@ export function MobileFilterDrawer({
                 value: actorType,
                 label: actorType === 'ALL'
                   ? t('common.all')
-                  : t(`auditLog.actorType.${actorType}`, { defaultValue: actorType }),
+                  : t(`auditLog.actorType.${actorType}`, { defaultValue: t('common.unknown') }),
               }))}
             />
           </FormField>
@@ -149,7 +149,7 @@ export function MobileFilterDrawer({
                 className="min-h-9 flex-1"
                 onClick={() => applyPreset(key)}
               >
-                {t(`auditLog.preset.${key}`)}
+                {t(`auditLog.preset.${key}`, { defaultValue: t('common.unknown') })}
               </Button>
             ))}
           </div>

@@ -22,19 +22,31 @@ test.describe("Public + deep-link routes @1440", () => {
       expect(resp?.status() ?? 0, `HTTP status for ${route.path}`).toBeLessThan(400);
 
       await expect(page.locator("main").first()).toBeVisible();
-      await expect(page.locator("footer").first()).toBeVisible();
-      await expect(page.locator("header, .bb-header-container").first()).toBeVisible();
+      if (route.group === "auth") {
+        await expect(page.locator("[data-auth-shell]")).toHaveCount(1);
+        await expect(page.locator("header[data-auth-header]")).toBeVisible();
+        await expect(page.locator("footer[data-auth-footer]")).toBeVisible();
+        await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
+      } else {
+        await expect(page.locator("footer").first()).toBeVisible();
+        await expect(page.locator("header, .bb-header-container").first()).toBeVisible();
+      }
 
       // The page must not be blank.
       const mainText = (await page.locator("main").first().textContent()) ?? "";
-      expect(mainText.replace(/\s+/g, " ").trim().length, `main content length on ${route.path}`).toBeGreaterThan(30);
+      expect(
+        mainText.replace(/\s+/g, " ").trim().length,
+        `main content length on ${route.path}`,
+      ).toBeGreaterThan(30);
 
       await expectNoHorizontalOverflow(page, `${route.name} @1440`);
       await expectNoBrokenImages(page, `${route.name} @1440`);
 
       const summary = expectNoSeriousIssues(guards, route.name);
       if (summary.warnings.length) {
-        console.log(`[routes] ${route.path} warnings (${summary.warnings.length}):\n${summary.warnings.join("\n")}`);
+        console.log(
+          `[routes] ${route.path} warnings (${summary.warnings.length}):\n${summary.warnings.join("\n")}`,
+        );
       }
     });
   }
@@ -57,7 +69,10 @@ test.describe("Account routes — guest gating @1440", () => {
         .catch(() => false);
 
       console.log(`[account] ${route.path} -> ${finalUrl} (onLogin=${onLogin})`);
-      expect(onLogin || hasLoginAffordance, `${route.path} should gate guests (redirect/login affordance)`).toBeTruthy();
+      expect(
+        onLogin || hasLoginAffordance,
+        `${route.path} should gate guests (redirect/login affordance)`,
+      ).toBeTruthy();
 
       expectNoSeriousIssues(guards, route.name);
     });
@@ -69,7 +84,8 @@ test.describe("Error handling @1440", () => {
     const guards = installPageGuards(page);
     const resp = await gotoAndSettle(page, "/khong-ton-tai-zzz-9999/");
 
-    // Phải là 404 thật. Trước 2026-08-06 route này trả 200 vì `app/[locale]/loading.tsx`
+    // Phải là 404 thật. Trước 2026-08-06 route này trả 200 vì loading boundary ở
+    // `app/[locale]/loading.tsx`
     // bọc cả app và làm response stream trước khi notFound() chạy — xem
     // __tests__/seo/render-boundaries.test.ts và e2e/http-status.e2e.ts.
     expect(resp?.status() ?? 0, "404 status").toBe(404);

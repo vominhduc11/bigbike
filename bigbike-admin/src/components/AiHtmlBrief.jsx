@@ -33,7 +33,7 @@ export default function AiHtmlBrief({
   const previewAttempted = useRef(false)
   const fallbackPromptRef = useRef(null)
   const panelId = useId()
-  const fallbackPrompt = promptValue ?? (promptKey ? t(promptKey) : '')
+  const fallbackPrompt = promptValue ?? (promptKey ? t(promptKey, { defaultValue: t('common.unknown') }) : '')
   const prompt = dynamicPrompt ?? fallbackPrompt
 
   async function copyText(value) {

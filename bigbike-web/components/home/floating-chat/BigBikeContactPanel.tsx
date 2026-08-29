@@ -3,7 +3,6 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { MessagesSquare, Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
 import type { ChatContact } from "@/lib/api/client-api";
 import { telHref } from "@/lib/utils/format";
@@ -26,13 +25,7 @@ function validExternalUrl(value: string | null | undefined): string | null {
   }
 }
 
-export function BigBikeContactPanel({
-  contacts,
-  onRequestCallback,
-}: {
-  contacts: ChatContact;
-  onRequestCallback?: () => void;
-}) {
+export function BigBikeContactPanel({ contacts }: { contacts: ChatContact }) {
   const t = useTranslations("Support");
   const items = useMemo<ContactItem[]>(() => {
     const result: ContactItem[] = [];
@@ -107,16 +100,6 @@ export function BigBikeContactPanel({
           </p>
         )}
       </div>
-      {onRequestCallback ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-4 w-full border-chat text-foreground hover:border-chat hover:bg-cyan/10"
-          onClick={onRequestCallback}
-        >
-          {t("requestCallback")}
-        </Button>
-      ) : null}
     </section>
   );
 }

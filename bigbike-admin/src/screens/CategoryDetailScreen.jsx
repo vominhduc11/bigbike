@@ -376,7 +376,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   async function handleRestore() {
     const name = form.name || categoryId
     const confirmed = await showConfirm(
-      t('categories.restoreConfirm', { name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${name}? Các danh mục con cũng sẽ được khôi phục.` }),
+      t('categories.restoreConfirm', { name }),
       t('categories.restoreConfirmTitle', { defaultValue: 'Khôi phục' }),
       { confirmLabel: t('products.restore'), variant: 'default' }
     )
@@ -480,7 +480,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const clientErrors = zodErrors(result)
     const imageValidation = getCategoryImageValidationError(form, currentItem, { isCreate })
     if (imageValidation) {
-      clientErrors.imageUrl = t(imageValidation.key, imageValidation.values)
+      clientErrors.imageUrl = t(imageValidation.key, { ...imageValidation.values, defaultValue: t('common.unknown') })
     }
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
@@ -598,8 +598,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const requiredProgressText = t('categories.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })
   const selectedParent = parentOptions.find((c) => c.id === form.parentId)
   const parentSummary = form.parentId
-    ? (selectedParent?.label || t('categories.detail.parentSelected', { defaultValue: 'Danh mục con' }))
-    : t('categories.detail.rootCategory', { defaultValue: 'Danh mục gốc' })
+    ? (selectedParent?.label || t('categories.detail.parentSelected'))
+    : t('categories.detail.rootCategory')
   const isChildCategory = Boolean(form.parentId?.trim())
   const imageValues = [
     form.imageUrl,
@@ -618,7 +618,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         title={isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}
         description={(
           <span className="flex flex-wrap items-center gap-2">
-            <span>{displayName || t('categories.detail.untitledCategory', { defaultValue: 'Danh mục chưa đặt tên' })}</span>
+            <span>{displayName || t('categories.detail.untitledCategory')}</span>
             {currentSlug ? (
               <>
                 <span aria-hidden="true">/</span>
@@ -735,32 +735,32 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         <CategoryMetricCard
           icon={Package}
           tone="info"
-          label={t('categories.detail.productsMetric', { defaultValue: 'Sản phẩm' })}
+          label={t('categories.detail.productsMetric')}
           value={isCreate ? '0' : productsTotal.toLocaleString('vi-VN')}
           hint={isCreate
-            ? t('categories.detail.productsMetricCreateHint', { defaultValue: 'Sẽ gắn sau khi tạo danh mục' })
+            ? t('categories.detail.productsMetricCreateHint')
             : t('categories.detail.productCount', { count: productsTotal })}
         />
         <CategoryMetricCard
           icon={FolderTree}
           tone="brand"
-          label={t('categories.detail.parentMetric', { defaultValue: 'Vị trí' })}
+          label={t('categories.detail.parentMetric')}
           value={form.parentId
-            ? t('categories.detail.childCategoryShort', { defaultValue: 'Cấp con' })
-            : t('categories.detail.rootCategoryShort', { defaultValue: 'Gốc' })}
+            ? t('categories.detail.childCategoryShort')
+            : t('categories.detail.rootCategoryShort')}
           hint={parentSummary}
         />
         <CategoryMetricCard
           icon={Star}
           tone={form.showOnHomepage ? 'warning' : 'info'}
-          label={t('categories.detail.homepageMetric', { defaultValue: 'Trang chủ' })}
+          label={t('categories.detail.homepageMetric')}
           value={form.showOnHomepage ? t('common.yes', { defaultValue: 'Có' }) : t('common.no', { defaultValue: 'Không' })}
           hint={t('categories.detail.showOnHomepage')}
         />
         <CategoryMetricCard
           icon={ImageIcon}
           tone={imageCount > 0 ? 'success' : 'info'}
-          label={t('categories.detail.imagesMetric', { defaultValue: 'Hình ảnh' })}
+          label={t('categories.detail.imagesMetric')}
           value={`${imageCount}/${isChildCategory ? 3 : 4}`}
           hint={t(isChildCategory ? 'categories.detail.imagesMetricHintChild' : 'categories.detail.imagesMetricHint', {
             defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục, banner, ảnh minh hoạ và biểu tượng menu',
@@ -793,7 +793,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
                     helper={isEnLang
                       ? t('categories.detail.namePlaceholderEn', { defaultValue: 'Tên danh mục bằng tiếng Anh.' })
-                      : t('categories.detail.nameHelper', { defaultValue: 'Tên khách nhìn thấy trên website và trong bộ lọc sản phẩm.' })}
+                      : t('categories.detail.nameHelper')}
                   >
                     <Input
                       name={isEnLang ? 'translations.en.name' : 'name'}
@@ -856,7 +856,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <div className="min-w-0">
                     <p className="m-0 text-sm font-semibold text-foreground">{t('categories.detail.showOnHomepage')}</p>
                     <p className="m-0 mt-1 text-xs text-muted-foreground">
-                      {t('categories.detail.showOnHomepageHint', { defaultValue: 'Bật khi danh mục cần xuất hiện ở khu vực nổi bật trên trang chủ.' })}
+                      {t('categories.detail.showOnHomepageHint')}
                     </p>
                   </div>
                   <Switch
@@ -893,7 +893,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             </DetailSection>
 
             <DetailSection
-              title={t('categories.detail.imagesSection', { defaultValue: 'Hình ảnh trên website' })}
+              title={t('categories.detail.imagesSection')}
               description={t(isChildCategory ? 'categories.detail.imagesSectionDescChild' : 'categories.detail.imagesSectionDesc', {
                 defaultValue: isChildCategory
                   ? 'Quản lý ảnh thẻ danh mục, banner máy tính và ảnh minh hoạ.'
@@ -911,7 +911,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     onChange={(url, media) => updateImageAsset('image', url, media)}
                     alt={form.imageAlt}
                     onAltChange={(alt) => updateField('imageAlt', alt)}
-                    previewAlt={form.imageAlt || t('categories.detail.imageAlt', { defaultValue: 'Ảnh đại diện danh mục' })}
+                    previewAlt={form.imageAlt || t('categories.detail.imageAlt')}
                     disabled={isReadOnly}
                     error={validationErrors.imageUrl}
                     recommend={IMAGE_RECO.categoryImage}
@@ -927,7 +927,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     onChange={(url) => updateField('bannerImageUrl', url)}
                     alt={form.bannerImageAlt}
                     onAltChange={(alt) => updateField('bannerImageAlt', alt)}
-                    previewAlt={form.bannerImageAlt || t('categories.detail.bannerAlt', { defaultValue: 'Ảnh nền hero danh mục' })}
+                    previewAlt={form.bannerImageAlt || t('categories.detail.bannerAlt')}
                     disabled={isReadOnly}
                     error={validationErrors.bannerImageUrl}
                     recommend={IMAGE_RECO.bannerWide}
@@ -943,7 +943,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     onChange={(url, media) => updateImageAsset('heroImage', url, media)}
                     alt={form.heroImageAlt}
                     onAltChange={(alt) => updateField('heroImageAlt', alt)}
-                    previewAlt={form.heroImageAlt || t('categories.detail.heroAlt', { defaultValue: 'Ảnh minh họa hero danh mục' })}
+                    previewAlt={form.heroImageAlt || t('categories.detail.heroAlt')}
                     disabled={isReadOnly}
                     error={validationErrors.heroImageUrl}
                     recommend={IMAGE_RECO.illustration}
@@ -958,7 +958,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     <ImageUrlInput
                       value={form.menuIconUrl}
                       onChange={(url) => updateField('menuIconUrl', url)}
-                      previewAlt={t('categories.detail.menuIconAlt', { defaultValue: 'Icon menu danh mục' })}
+                      previewAlt={t('categories.detail.menuIconAlt')}
                       disabled={isReadOnly}
                       error={validationErrors.menuIconUrl}
                     />
@@ -1004,21 +1004,21 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
           <aside className="grid h-fit gap-6 lg:sticky lg:top-4">
             <DetailSection
-              title={t('categories.detail.statusSection', { defaultValue: 'Tình trạng danh mục' })}
-              description={t('categories.detail.statusSectionDesc', { defaultValue: 'Các thông tin giúp kiểm tra nhanh trước khi lưu.' })}
+              title={t('categories.detail.statusSection')}
+              description={t('categories.detail.statusSectionDesc')}
             >
               <dl className="m-0">
-                <SidebarInfoRow label={t('categories.detail.visibility', { defaultValue: 'Hiển thị' })} icon={Globe2}>
-                  {!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : t('categories.detail.createStatusDraft', { defaultValue: 'Chưa lưu' })}
+                <SidebarInfoRow label={t('common.visible')} icon={Globe2}>
+                  {!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : t('categories.detail.createStatusDraft')}
                 </SidebarInfoRow>
-                <SidebarInfoRow label={t('categories.detail.productsMetric', { defaultValue: 'Sản phẩm' })} icon={Package}>
+                <SidebarInfoRow label={t('categories.detail.productsMetric')} icon={Package}>
                   {isCreate ? '0' : productsTotal.toLocaleString('vi-VN')}
                 </SidebarInfoRow>
-                <SidebarInfoRow label={t('categories.detail.parentMetric', { defaultValue: 'Vị trí' })} icon={FolderTree}>
+                <SidebarInfoRow label={t('categories.detail.parentMetric')} icon={FolderTree}>
                   <span className="break-words">{parentSummary}</span>
                 </SidebarInfoRow>
                 <SidebarInfoRow label={t('categories.detail.slug')} icon={Link2}>
-                {currentSlug ? <code className="break-all font-mono">{currentSlug}</code> : t('common.empty', { defaultValue: 'Chưa có' })}
+                {currentSlug ? <code className="break-all font-mono">{currentSlug}</code> : t('common.empty')}
                 </SidebarInfoRow>
                 {!isCreate && state.item?.updatedAt ? (
                   <SidebarInfoRow label={t('common.lastUpdated')} icon={Save}>

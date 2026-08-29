@@ -21,20 +21,20 @@ const ROUTES = [
   { name: "Giới thiệu", path: "/gioi-thieu/" },
   { name: "Liên hệ", path: "/lien-he/" },
   { name: "Hướng dẫn", path: "/huong-dan/" },
-  { name: "Đăng nhập", path: "/dang-nhap/" },
-  { name: "Đăng ký", path: "/dang-ky/" },
-  { name: "Quên mật khẩu", path: "/quen-mat-khau/" },
+  { name: "Đăng nhập", path: "/dang-nhap/", auth: true },
+  { name: "Đăng ký", path: "/dang-ky/", auth: true },
+  { name: "Quên mật khẩu", path: "/quen-mat-khau/", auth: true },
   { name: "Giỏ hàng", path: "/gio-hang/" },
   { name: "Đặt hàng", path: "/dat-hang/" },
   { name: "Xác nhận đơn", path: "/don-hang/xac-nhan/" },
   { name: "Tài khoản khách", path: "/tai-khoan/" },
-  { name: "Lỗi xác nhận email", path: "/xac-nhan-email/" },
+  { name: "Xác nhận email", path: "/xac-nhan-email/", auth: true },
   { name: "Trang chủ tiếng Anh", path: "/en/" },
   { name: "Sản phẩm tiếng Anh", path: "/en/sp/" },
   { name: "Tin tức tiếng Anh", path: "/en/tin-tuc/" },
   { name: "Giới thiệu tiếng Anh", path: "/en/gioi-thieu/" },
   { name: "Liên hệ tiếng Anh", path: "/en/lien-he/" },
-  { name: "Đăng nhập tiếng Anh", path: "/en/dang-nhap/" },
+  { name: "Đăng nhập tiếng Anh", path: "/en/login/", auth: true },
 ] as const;
 
 type CanvasMetrics = {
@@ -102,10 +102,15 @@ async function gotoCanvasRoute(page: Page, path: string): Promise<void> {
 
 async function expectFixedElementsFit(page: Page, label: string): Promise<void> {
   const boxes = await page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>(
-      "[data-bb-header], nav.bb-bottom-nav, .bb-pdp-sticky-cta.is-visible, .bb-floating-chat-anchor, .bb-scroll-top-anchor",
-    ))
-      .filter((element) => getComputedStyle(element).display !== "none" && element.getBoundingClientRect().width > 0)
+    Array.from(
+      document.querySelectorAll<HTMLElement>(
+        "[data-bb-header], nav.bb-bottom-nav, .bb-pdp-sticky-cta.is-visible, .bb-floating-chat-anchor, .bb-scroll-top-anchor",
+      ),
+    )
+      .filter(
+        (element) =>
+          getComputedStyle(element).display !== "none" && element.getBoundingClientRect().width > 0,
+      )
       .map((element) => {
         const rect = element.getBoundingClientRect();
         return { selector: element.tagName.toLowerCase(), left: rect.left, right: rect.right };
@@ -113,7 +118,9 @@ async function expectFixedElementsFit(page: Page, label: string): Promise<void> 
   );
   for (const box of boxes) {
     expect(box.left, `${label}: ${box.selector} tràn mép trái`).toBeGreaterThanOrEqual(-2);
-    expect(box.right, `${label}: ${box.selector} tràn mép phải`).toBeLessThanOrEqual(await page.evaluate(() => innerWidth) + 2);
+    expect(box.right, `${label}: ${box.selector} tràn mép phải`).toBeLessThanOrEqual(
+      (await page.evaluate(() => innerWidth)) + 2,
+    );
   }
 }
 
@@ -131,35 +138,68 @@ test.describe("Desktop canvas 1440px", () => {
           await expect(page.locator("main").first()).toBeVisible();
           await expectNoHorizontalOverflow(page, `${route.name} @ ${viewport.name}`);
 
+          if (route.auth) {
+            await expect(page.locator("[data-auth-shell]")).toHaveCount(1);
+            await expect(page.locator("header[data-auth-header]")).toBeVisible();
+            await expect(page.locator("footer[data-auth-footer]")).toBeVisible();
+            await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
+            return;
+          }
+
           const metrics = await readCanvasMetrics(page);
           const expectedWidth = Math.min(metrics.main.width, CANVAS_MAX);
-          expect(metrics.canvases.length, `${route.name}: thiếu content canvas`).toBeGreaterThanOrEqual(1);
-          expect(metrics.fullBleeds.length, `${route.name}: thiếu full-bleed surface`).toBeGreaterThanOrEqual(1);
+          expect(
+            metrics.canvases.length,
+            `${route.name}: thiếu content canvas`,
+          ).toBeGreaterThanOrEqual(1);
+          expect(
+            metrics.fullBleeds.length,
+            `${route.name}: thiếu full-bleed surface`,
+          ).toBeGreaterThanOrEqual(1);
 
           for (const canvas of metrics.canvases) {
-            expect(canvas.width, `${route.name}: ${canvas.tag} sai chiều rộng canvas`).toBeCloseTo(expectedWidth, 0);
+            expect(canvas.width, `${route.name}: ${canvas.tag} sai chiều rộng canvas`).toBeCloseTo(
+              expectedWidth,
+              0,
+            );
             const leftGap = canvas.left - metrics.main.left;
             const rightGap = metrics.main.right - canvas.right;
             expect(leftGap, `${route.name}: ${canvas.tag} lệch tâm`).toBeCloseTo(rightGap, 0);
           }
 
           for (const surface of metrics.fullBleeds) {
-            expect(surface.left, `${route.name}: ${surface.tag} chưa phủ mép trái`).toBeCloseTo(metrics.main.left, 0);
-            expect(surface.right, `${route.name}: ${surface.tag} chưa phủ mép phải`).toBeCloseTo(metrics.main.right, 0);
+            expect(surface.left, `${route.name}: ${surface.tag} chưa phủ mép trái`).toBeCloseTo(
+              metrics.main.left,
+              0,
+            );
+            expect(surface.right, `${route.name}: ${surface.tag} chưa phủ mép phải`).toBeCloseTo(
+              metrics.main.right,
+              0,
+            );
           }
 
           expect(
-            await page.locator("[data-bb-header]").evaluate((element) => getComputedStyle(element).position),
+            await page
+              .locator("[data-bb-header]")
+              .evaluate((element) => getComputedStyle(element).position),
             `${route.name}: header không còn fixed`,
           ).toBe("fixed");
 
           if (metrics.hero) {
-            expect(metrics.hero.left, `${route.name}: hero lệch mép trái main`).toBeCloseTo(metrics.main.left, 0);
-            expect(metrics.hero.right, `${route.name}: hero lệch mép phải main`).toBeCloseTo(metrics.main.right, 0);
+            expect(metrics.hero.left, `${route.name}: hero lệch mép trái main`).toBeCloseTo(
+              metrics.main.left,
+              0,
+            );
+            expect(metrics.hero.right, `${route.name}: hero lệch mép phải main`).toBeCloseTo(
+              metrics.main.right,
+              0,
+            );
           }
 
           for (const railWidth of metrics.rails) {
-            expect(railWidth, `${route.name}: inner rail vượt 1200px`).toBeLessThanOrEqual(Math.min(metrics.root.width, 1200) + 1);
+            expect(railWidth, `${route.name}: inner rail vượt 1200px`).toBeLessThanOrEqual(
+              Math.min(metrics.root.width, 1200) + 1,
+            );
           }
 
           await expectFixedElementsFit(page, `${route.name} @ ${viewport.name}`);

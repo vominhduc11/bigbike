@@ -48,9 +48,6 @@ public class ChatHandoffEntity {
     @Column(name = "products_json", columnDefinition = "jsonb")
     private String productsJson;
 
-    @Column(name = "contact_present", nullable = false)
-    private boolean contactPresent;
-
     @Column(name = "requested_at", nullable = false)
     private Instant requestedAt;
 

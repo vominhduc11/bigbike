@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
  * Mã trạng thái HTTP của các route chi tiết.
  *
  * Sự cố 2026-08-06: mọi URL không tồn tại trả HTTP 200 (soft-404) và redirect chuẩn
- * hoá slug tiếng Anh im lặng không chạy. Gốc rễ là `app/[locale]/loading.tsx` bọc cả
+ * hoá slug tiếng Anh im lặng không chạy. Gốc rễ là loading boundary ở
+ * `app/[locale]/loading.tsx` bọc cả
  * app: response bắt đầu stream trước khi notFound()/permanentRedirect() kịp chạy, mà
  * header đã gửi đi thì không đổi được mã trạng thái nữa (Next 16 —
  * node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md,

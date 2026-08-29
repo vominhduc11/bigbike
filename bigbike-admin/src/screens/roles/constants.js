@@ -226,7 +226,7 @@ export function formatRoleName(id) {
 }
 
 export function getRoleDisplayName(role, t) {
-  return t(`roles.roleLabel_${role.id}`, { defaultValue: role.name || formatRoleName(role.id) })
+  return t(`roles.roleLabel_${role.id}`, { defaultValue: role.name || t('common.unknown') })
 }
 
 export function setsEqual(a, b) {

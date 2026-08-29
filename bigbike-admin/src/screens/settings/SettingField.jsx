@@ -12,9 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { HelpTooltip } from '@/components/HelpTooltip'
 import {
   AssistantConfigEditor,
-  ASSISTANT_ABBREVIATIONS_KEY,
   ASSISTANT_BUSINESS_HOURS_KEY,
-  ASSISTANT_TEMPLATES_KEY,
 } from './AssistantConfigEditor'
 import {
   displayValue, inputTypeFor, placeholderFor, isTranslatableSetting,
@@ -41,9 +39,7 @@ export function SettingField({
   const isBoolean = setting.valueType === 'BOOLEAN'
   const isEnum = setting.valueType === 'ENUM' && Array.isArray(setting.allowedValues) && setting.allowedValues.length > 0
   const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
-  const isAssistantConfig = setting.key === ASSISTANT_ABBREVIATIONS_KEY
-    || setting.key === ASSISTANT_TEMPLATES_KEY
-    || setting.key === ASSISTANT_BUSINESS_HOURS_KEY
+  const isAssistantConfig = setting.key === ASSISTANT_BUSINESS_HOURS_KEY
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = isEnLang
     ? t('settings.englishPlaceholder')

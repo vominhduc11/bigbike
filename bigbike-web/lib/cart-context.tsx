@@ -9,7 +9,6 @@ import { useCartQuery } from "@/lib/query/hooks";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
-import { readChatAttributionProof } from "@/lib/chat/chat-attribution";
 import type { Locale } from "@/i18n/locale";
 
 type Toast = {
@@ -24,11 +23,7 @@ type CartContextValue = {
     productId: string,
     quantity: number,
     variantId?: string,
-    assistantConversationId?: string,
-    assistantInteractionId?: string,
     suppressToast?: boolean,
-    productSlug?: string,
-    assistantAttributionToken?: string,
   ) => Promise<import("@/lib/contracts/commerce").Cart>;
   showToast: (title: string, message: string) => void;
   refreshCount: () => void;
@@ -77,21 +72,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       productId: string,
       quantity: number,
       variantId?: string,
-      assistantConversationId?: string,
-      assistantInteractionId?: string,
       suppressToast = false,
-      productSlug?: string,
-      assistantAttributionToken?: string,
     ) => {
-      const savedProof = productSlug ? readChatAttributionProof(productSlug) : null;
-      const updated = await addCartItem(
-        productId,
-        quantity,
-        variantId,
-        assistantConversationId,
-        assistantInteractionId,
-        assistantAttributionToken || savedProof?.token,
-      );
+      const updated = await addCartItem(productId, quantity, variantId);
       qc.setQueryData(queryKeys.cart(), updated);
       if (!suppressToast) showToast(t("toastAddedTitle"), t("toastAddedBody"));
       return updated;

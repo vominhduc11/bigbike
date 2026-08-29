@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,7 +26,6 @@ import com.bigbike.bigbike_backend.persistence.repository.chat.ChatImageJpaRepos
 import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -150,7 +148,7 @@ class ChatImageServiceTest {
                     ? "vẫn có thể mô tả sản phẩm bằng chữ"
                     : "still describe the item in text");
             verify(fixture.analysisClient, never()).analyze(
-                    anyString(), any(), anyString(), anyString(), any(), any());
+                    any(), anyString(), anyString(), any(), any());
         }
     }
 
@@ -167,42 +165,6 @@ class ChatImageServiceTest {
         assertThat(fixture.image.getDeletedAt()).isNotNull();
         verify(fixture.storageService).delete("private", "chat/object.jpg");
         assertThat(fixture.service.referencesByMessageIds(List.of(fixture.messageId))).isEmpty();
-    }
-
-    @Test
-    void imageFallbackCostIsRecordedAgainstEachModelWithoutDoubleCountingTheImage() {
-        Fixture fixture = fixture("vi");
-        ChatImageAnalysisClient.ImageAnalysis analysis = new ChatImageAnalysisClient.ImageAnalysis(
-                "PRODUCT_SEARCH", "Mũ bảo hiểm", "HIGH", List.of("mu-tanami"), false);
-        fixture.analysisCall(new ChatImageAnalysisClient.AnalysisCall(
-                Optional.of(analysis),
-                "gemini-3.5-flash", "gemini-2.5-flash-lite", true, 2,
-                new ChatImageAnalysisClient.TokenUsage(120, 20, 0),
-                new BigDecimal("0.00008000"), LocalDate.of(2026, 8, 26), 50, null,
-                List.of(
-                        new ChatImageAnalysisClient.ModelUsage(
-                                "gemini-3.5-flash", 1,
-                                new ChatImageAnalysisClient.TokenUsage(0, 0, 0),
-                                BigDecimal.ZERO, LocalDate.of(2026, 8, 26), false, false),
-                        new ChatImageAnalysisClient.ModelUsage(
-                                "gemini-2.5-flash-lite", 1,
-                                new ChatImageAnalysisClient.TokenUsage(120, 20, 0),
-                                new BigDecimal("0.00008000"), LocalDate.of(2026, 8, 26),
-                                true, true))));
-
-        fixture.process("Shop có mẫu này không?");
-
-        List<org.mockito.invocation.Invocation> records = mockingDetails(fixture.usageService())
-                .getInvocations().stream()
-                .filter(invocation -> invocation.getMethod().getName().equals("record"))
-                .toList();
-        assertThat(records).hasSize(2);
-        assertThat(records).extracting(invocation -> invocation.getArgument(5, String.class))
-                .containsExactly("gemini-3.5-flash", "gemini-2.5-flash-lite");
-        assertThat(records).extracting(invocation -> invocation.getArgument(10, Integer.class))
-                .containsExactly(1, 0);
-        assertThat(records).extracting(invocation -> invocation.getArgument(13, Boolean.class))
-                .containsExactly(false, true);
     }
 
     @Test
@@ -244,7 +206,7 @@ class ChatImageServiceTest {
         assertThat(fixture.image.getStatus()).isEqualTo("ATTACHED");
         verify(fixture.quotaService, never()).tryReserve(anyInt());
         verify(fixture.analysisClient, never()).analyze(
-                anyString(), any(), anyString(), anyString(), any(), any());
+                any(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -289,12 +251,11 @@ class ChatImageServiceTest {
         ChatImageDailyQuotaService quotaService = mock(ChatImageDailyQuotaService.class);
         ChatImageAnalysisClient analysisClient = mock(ChatImageAnalysisClient.class);
         CatalogReadService catalog = mock(CatalogReadService.class);
-        ChatAiUsageService usage = mock(ChatAiUsageService.class);
         ChatProductImageFingerprintService fingerprints = mock(
                 ChatProductImageFingerprintService.class);
         ChatImageService service = new ChatImageService(
                 imageRepo, conversationRepo, assistantSettings, storageService,
-                quotaService, analysisClient, catalog, usage, fingerprints);
+                quotaService, analysisClient, catalog, fingerprints);
 
         ChatConversationEntity conversation = new ChatConversationEntity();
         conversation.setId(UUID.randomUUID());
@@ -325,7 +286,6 @@ class ChatImageServiceTest {
                         ? List.of() : List.of(image));
         when(assistantSettings.imageSettings())
                 .thenReturn(new ChatAssistantSettings.ImageSettings(true, 20, 3));
-        when(assistantSettings.currentModel()).thenReturn("gemini-2.5-flash");
         when(quotaService.tryReserve(20)).thenReturn(true);
         when(storageService.read("private", "chat/object.jpg", "image/jpeg"))
                 .thenReturn(new ChatImageStorageService.StoredContent(new byte[] {1, 2, 3}, "image/jpeg"));
@@ -335,7 +295,7 @@ class ChatImageServiceTest {
 
         return new Fixture(
                 service, imageRepo, conversationRepo, assistantSettings, storageService,
-                quotaService, analysisClient, usage, fingerprints,
+                quotaService, analysisClient, fingerprints,
                 conversation, image, messageId, lang);
     }
 
@@ -363,7 +323,6 @@ class ChatImageServiceTest {
             ChatImageStorageService storageService,
             ChatImageDailyQuotaService quotaService,
             ChatImageAnalysisClient analysisClient,
-            ChatAiUsageService usageService,
             ChatProductImageFingerprintService fingerprints,
             ChatConversationEntity conversation,
             ChatImageEntity image,
@@ -378,19 +337,9 @@ class ChatImageServiceTest {
 
         void analysis(ChatImageAnalysisClient.ImageAnalysis analysis) {
             when(analysisClient.analyze(
-                    anyString(), any(), anyString(), anyString(), any(), any()))
+                    any(), anyString(), anyString(), any(), any()))
                     .thenReturn(new ChatImageAnalysisClient.AnalysisCall(
-                            Optional.of(analysis),
-                            "gemini-2.5-flash", "gemini-2.5-flash", false, 1,
-                            new ChatImageAnalysisClient.TokenUsage(100, 20, 0),
-                            new BigDecimal("0.00004000"), LocalDate.of(2026, 8, 26),
-                            25, null));
-        }
-
-        void analysisCall(ChatImageAnalysisClient.AnalysisCall call) {
-            when(analysisClient.analyze(
-                    anyString(), any(), anyString(), anyString(), any(), any()))
-                    .thenReturn(call);
+                            Optional.of(analysis), 1, null));
         }
 
         ChatImageService.ImageTurnResult process(String caption) {

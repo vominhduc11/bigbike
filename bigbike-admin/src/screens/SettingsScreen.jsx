@@ -20,7 +20,6 @@ import {
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
-import { AssistantModelOperations } from './settings/AssistantModelOperations'
 import { DetailSection } from '../components/DetailSection'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
@@ -648,9 +647,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 saving={saving}
                 saveSuccess={saveSuccess}
                 saveError={saveError}
-                beforeContent={activeTab === 'AI_ASSISTANT'
-                  ? <AssistantModelOperations canUpdate={canUpdate} />
-                  : null}
               />
             )}
             </div>

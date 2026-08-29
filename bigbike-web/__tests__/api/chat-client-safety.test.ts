@@ -48,7 +48,6 @@ describe("chat client safety normalization", () => {
           },
         ],
         handoffRecommended: false,
-        leadPrompt: false,
         actions: [],
         contacts: {},
       }) as never,
@@ -72,7 +71,6 @@ describe("chat client safety normalization", () => {
       remainingTurns: 11,
       products: [],
       handoffRecommended: false,
-      leadPrompt: false,
       actions: [],
       contacts: {},
     };
@@ -148,7 +146,7 @@ describe("chat client safety normalization", () => {
     await streamChatMessage(
       "Shop có mẫu này không?", "vi", uploaded.conversationId,
       "22222222-2222-4222-8222-222222222222", vi.fn(), undefined,
-      null, undefined, undefined, "private-visitor-token", [uploaded.image.id],
+      null, undefined, "private-visitor-token", [uploaded.image.id],
     );
 
     expect(String(fetchMock.mock.calls[0][0])).toContain("/api/v1/chat/images?");
@@ -214,7 +212,6 @@ describe("chat client safety normalization", () => {
           ],
         },
         handoffRecommended: false,
-        leadPrompt: false,
         actions: [{ type: "CHECK_SIZE" }],
         contacts: {},
       }) as never,
@@ -227,7 +224,6 @@ describe("chat client safety normalization", () => {
       undefined,
       "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
       null,
-      undefined,
       {
         clarificationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         optionId: "group-helmet",
@@ -261,7 +257,6 @@ describe("chat client safety normalization", () => {
           options: [{ id: "bad", label: "IN_STOCK", count: 1, kind: "FILTER" }],
         },
         handoffRecommended: false,
-        leadPrompt: false,
         actions: [],
         contacts: {},
       }) as never,

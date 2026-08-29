@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { MediaPreviewLightbox } from './MediaPreviewLightbox'
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key, options = {}) => options.defaultValue || key }),
+  useTranslation: () => ({
+    t: (key, options = {}) => ({ 'brands.logo.loading': 'Đang tải ảnh…' }[key] || options.defaultValue || key),
+  }),
 }))
 
 const items = [

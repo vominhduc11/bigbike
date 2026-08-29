@@ -27,16 +27,6 @@
                     th:text="${customerKind}">Khách lạ</td>
               </tr>
               <tr>
-                <td style="padding:0 16px 16px;font-size:13px;color:#6b7280;">Liên hệ</td>
-                <td align="right" style="padding:0 16px 16px;font-size:14px;color:#151515;"
-                    th:text="${contactStatus}">Chưa có liên hệ</td>
-              </tr>
-              <tr th:if="${contactPhone != null and !#strings.isEmpty(contactPhone)}">
-                <td style="padding:0 16px 16px;font-size:13px;color:#6b7280;">Số điện thoại</td>
-                <td align="right" style="padding:0 16px 16px;font-size:14px;color:#151515;"
-                    th:text="${contactPhone}">0900000000</td>
-              </tr>
-              <tr>
                 <td colspan="2" style="border-top:1px solid #e5e7eb;padding:16px;">
                   <div style="font-size:13px;color:#6b7280;margin-bottom:6px;">Khách đang hỏi</div>
                   <div style="font-size:15px;color:#151515;line-height:1.5;" th:text="${question}">

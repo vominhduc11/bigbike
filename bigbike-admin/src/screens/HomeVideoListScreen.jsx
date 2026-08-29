@@ -590,7 +590,7 @@ export function HomeVideoListScreen({ canUpdate }) {
         toast.error(t('homeVideos.bulkActionError'))
       } else {
         setLocalItems(null)
-        toast.warning(t('homeVideos.bulkPartial', { ok, fail, defaultValue: `Đã cập nhật ${ok} video, ${fail} video lỗi.` }))
+        toast.warning(t('homeVideos.bulkPartial', { ok, fail }))
       }
     } finally {
       setIsBulkBusy(false)
@@ -618,7 +618,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       } else if (ok === 0) {
         toast.error(t('homeVideos.bulkActionError'))
       } else {
-        toast.warning(t('homeVideos.bulkDeletePartial', { ok, fail, defaultValue: `Đã xoá ${ok} video, ${fail} video lỗi.` }))
+        toast.warning(t('homeVideos.bulkDeletePartial', { ok, fail }))
       }
     } finally {
       setIsBulkBusy(false)
@@ -690,7 +690,7 @@ export function HomeVideoListScreen({ canUpdate }) {
            />
           <span className="text-sm text-muted-foreground">
             {selectionMode
-              ? t('homeVideos.selectedOf', { selected: selectedIds.size, total: items.length, defaultValue: `Đã chọn ${selectedIds.size} / ${items.length}` })
+              ? t('homeVideos.selectedOf', { selected: selectedIds.size, total: items.length })
               : t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
           </span>
           {selectionMode && (
@@ -704,7 +704,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
       {selectionMode && canUpdate && (
         <BulkActionBar
-          selectedCount={t('homeVideos.bulkSelectedLabel', { count: selectedIds.size, defaultValue: `${selectedIds.size} video đã chọn` })}
+          selectedCount={t('homeVideos.bulkSelectedLabel', { count: selectedIds.size })}
           onClear={() => setSelectedIds(new Set())}
           actions={[
             { label: t('homeVideos.hideAction'), onClick: () => handleBulkSetActive(false), disabled: isBulkBusy },
@@ -719,7 +719,6 @@ export function HomeVideoListScreen({ canUpdate }) {
           {t('homeVideos.filterReorderHint', {
             shown: filteredItems.length,
             total: items.length,
-            defaultValue: `${filteredItems.length} / ${items.length} video — kéo thả sắp xếp bị tắt khi đang lọc`,
           })}
         </p>
       )}

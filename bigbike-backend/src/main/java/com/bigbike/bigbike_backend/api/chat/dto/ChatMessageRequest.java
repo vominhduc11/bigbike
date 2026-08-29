@@ -36,9 +36,6 @@ public class ChatMessageRequest {
     @Valid
     private ChatClarificationSelectionRequest clarificationSelection;
 
-    /** Optional source action click; accepted only after backend verification. */
-    private UUID originInteractionId;
-
     @Size(max = 1000, message = "Tin nhắn không được dài quá 1.000 ký tự.")
     private String message;
 

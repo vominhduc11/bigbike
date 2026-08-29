@@ -2,29 +2,20 @@ package com.bigbike.bigbike_backend.service.admin.settings;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantOptionJpaRepository;
-import com.bigbike.bigbike_backend.service.chat.ChatTemplatePolicy;
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class SettingValueValidator {
 
     // IMAGE_URL settings (hero banners, OG image…) must point at an approved media source —
@@ -32,11 +23,6 @@ public class SettingValueValidator {
     // policy instead of the generic URL check (which rejected relative paths → HTTP 400 on save).
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final ObjectMapper objectMapper;
-    private final ProductJpaRepository productRepo;
-    private final ProductVariantJpaRepository productVariantRepo;
-    private final ProductVariantOptionJpaRepository productVariantOptionRepo;
-    private final CategoryJpaRepository categoryRepo;
-    private final BrandJpaRepository brandRepo;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
@@ -48,18 +34,13 @@ public class SettingValueValidator {
     private static final int MAX_LONG_TEXT_LENGTH = 65_536;
     private static final int MAX_HTML_LENGTH = 262_144;
 
-    /** Compatibility constructor for tests that do not exercise assistant catalog collisions. */
+    @Autowired
     public SettingValueValidator(
             SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
             ObjectMapper objectMapper
     ) {
         this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
         this.objectMapper = objectMapper;
-        this.productRepo = null;
-        this.productVariantRepo = null;
-        this.productVariantOptionRepo = null;
-        this.categoryRepo = null;
-        this.brandRepo = null;
     }
 
     private static final Set<String> GOOGLE_MAPS_ONLY_KEYS = Set.of("google_maps_url");
@@ -73,17 +54,7 @@ public class SettingValueValidator {
     private static final String PRODUCT_ASSIGN_ROLES_KEY = "product_assign_roles";
     private static final int MIN_ASSIGNMENT_ROLES = 1;
     private static final int MAX_ASSIGNMENT_ROLES = 6;
-    private static final String ASSISTANT_ABBREVIATIONS_KEY = "ai_assistant_abbreviations";
-    private static final String ASSISTANT_TEMPLATES_KEY = "ai_assistant_answer_templates";
     private static final String ASSISTANT_BUSINESS_HOURS_KEY = "ai_assistant_business_hours";
-    private static final Pattern TEMPLATE_URL = Pattern.compile(
-            "(?i)(?:https?://|www\\.|(?:zalo|facebook|messenger)\\.me)");
-    private static final Pattern TEMPLATE_PHONE = Pattern.compile("(?<!\\d)(?:\\+?84|0)\\d{8,10}(?!\\d)");
-    private static final Pattern TEMPLATE_DYNAMIC_PRICE = Pattern.compile(
-            "(?i)\\b\\d[\\d.,]*\\s*(?:vnd|đ|dong|triệu|trieu|million|k)\\b");
-    private static final Pattern TEMPLATE_TECHNICAL_CODE = Pattern.compile("\\b[A-Z]{2,}[A-Z0-9-]*\\d{2,}\\b");
-    private static final Pattern TEMPLATE_UNSAFE_PROMISE = Pattern.compile(
-            "(?i)(?:giảm giá|giam gia|discount|cam kết giao|cam ket giao|guaranteed delivery|chắc chắn giao|chac chan giao)");
 
     public void validate(String key, String rawValue, SettingDefinition def) {
         if (rawValue == null) return;
@@ -299,10 +270,6 @@ public class SettingValueValidator {
         }
         if (PRODUCT_ASSIGN_ROLES_KEY.equals(key)) {
             validateProductAssignRoles(key, node);
-        } else if (ASSISTANT_ABBREVIATIONS_KEY.equals(key)) {
-            validateAssistantAbbreviations(key, node);
-        } else if (ASSISTANT_TEMPLATES_KEY.equals(key)) {
-            validateAssistantTemplates(key, node);
         } else if (ASSISTANT_BUSINESS_HOURS_KEY.equals(key)) {
             validateAssistantBusinessHours(key, node);
         }
@@ -331,117 +298,6 @@ public class SettingValueValidator {
                 }
             }
         }
-    }
-
-    private void validateAssistantAbbreviations(String key, JsonNode node) {
-        if (!node.isArray()) throw fail(key, "NOT_ARRAY", "Danh sách viết tắt phải là một mảng JSON.");
-        if (node.size() > 100) throw fail(key, "TOO_MANY_ITEMS", "Tối đa 100 từ/cụm viết tắt.");
-        Set<String> seen = new HashSet<>();
-        Set<String> catalog = catalogPhrases();
-        for (JsonNode item : node) {
-            String locale = item.path("locale").asString("").trim().toLowerCase(Locale.ROOT);
-            String phrase = normalize(item.path("phrase").asString(""));
-            String expansion = normalize(item.path("expansion").asString(""));
-            if (!("vi".equals(locale) || "en".equals(locale))) {
-                throw fail(key, "LOCALE_INVALID", "Locale viết tắt phải là vi hoặc en.");
-            }
-            if (phrase.isBlank() || expansion.isBlank() || phrase.length() > 80 || expansion.length() > 160) {
-                throw fail(key, "PHRASE_INVALID", "Từ viết tắt và nội dung mở rộng không được trống hoặc quá dài.");
-            }
-            if (!seen.add(locale + "|" + phrase)) {
-                throw fail(key, "DUPLICATE_PHRASE", "Từ/cụm viết tắt bị trùng: " + phrase);
-            }
-            if (catalog.stream().anyMatch(value -> containsWholePhrase(value, phrase))) {
-                throw fail(key, "CATALOG_COLLISION", "Từ/cụm viết tắt va chạm dữ liệu catalog: " + phrase);
-            }
-        }
-    }
-
-    private void validateAssistantTemplates(String key, JsonNode node) {
-        if (!node.isArray()) throw fail(key, "NOT_ARRAY", "Danh sách câu mẫu phải là một mảng JSON.");
-        if (node.size() > 50) throw fail(key, "TOO_MANY_ITEMS", "Tối đa 50 câu mẫu.");
-        Set<String> ids = new HashSet<>();
-        for (JsonNode item : node) {
-            String id = item.path("id").asString("").trim();
-            String topic = item.path("topic").asString("").trim();
-            if (id.isBlank() || topic.isBlank() || id.length() > 80 || topic.length() > 120) {
-                throw fail(key, "TEMPLATE_ID_INVALID", "Mỗi câu mẫu cần id và topic hợp lệ.");
-            }
-            if (!ids.add(id)) throw fail(key, "TEMPLATE_ID_DUPLICATE", "Id câu mẫu bị trùng: " + id);
-            boolean enabled = item.path("enabled").asBoolean(false);
-            validateTriggerList(key, item.path("triggersVi"), "triggersVi", enabled);
-            validateTriggerList(key, item.path("triggersEn"), "triggersEn", enabled);
-            String answerVi = item.path("answerVi").asString("").trim();
-            String answerEn = item.path("answerEn").asString("").trim();
-            if (enabled && (answerVi.isBlank() || answerEn.isBlank())) {
-                throw fail(key, "BILINGUAL_ANSWER_REQUIRED", "Câu mẫu phải có đủ câu trả lời Việt và Anh.");
-            }
-            if (enabled) {
-                validateSafeTemplateAnswer(key, answerVi);
-                validateSafeTemplateAnswer(key, answerEn);
-            }
-        }
-    }
-
-    private void validateTriggerList(String key, JsonNode triggers, String field, boolean required) {
-        if (!triggers.isArray()) {
-            if (!required && triggers.isMissingNode()) return;
-            throw fail(key, "TRIGGER_INVALID", field + " phải là danh sách.");
-        }
-        if (required && triggers.size() == 0) {
-            throw fail(key, "BILINGUAL_TRIGGER_REQUIRED", field + " phải có ít nhất một trigger.");
-        }
-        Set<String> seen = new HashSet<>();
-        for (JsonNode trigger : triggers) {
-            String value = normalize(trigger.asString(""));
-            if (value.isBlank() || value.length() > 160) {
-                throw fail(key, "TRIGGER_INVALID", field + " chứa trigger trống hoặc quá dài.");
-            }
-            if (!seen.add(value)) throw fail(key, "TRIGGER_DUPLICATE", field + " chứa trigger trùng.");
-        }
-    }
-
-    private void validateSafeTemplateAnswer(String key, String answer) {
-        List<String> violations = ChatTemplatePolicy.violations(answer);
-        if (!violations.isEmpty()) {
-            throw fail(key, violations.get(0),
-                    "Câu mẫu chưa thể bật vì vi phạm: " + String.join(", ", violations) + ".");
-        }
-    }
-
-    private Set<String> catalogPhrases() {
-        Set<String> values = new HashSet<>();
-        if (productRepo == null) return values;
-        productRepo.findAll().forEach(item -> addCatalog(values,
-                item.getName(), item.getNameEn(), item.getSlug(), item.getSlugEn(), item.getSku()));
-        productVariantRepo.findAll().forEach(item -> addCatalog(values, item.getName(), item.getSku()));
-        productVariantOptionRepo.findAll().forEach(item -> addCatalog(
-                values, item.getOptionName(), item.getOptionValue()));
-        categoryRepo.findAll().forEach(item -> addCatalog(
-                values, item.getName(), item.getNameEn(), item.getSlug(), item.getSlugEn()));
-        brandRepo.findAll().forEach(item -> addCatalog(values, item.getName(), item.getSlug()));
-        return values;
-    }
-
-    private static void addCatalog(Set<String> target, String... candidates) {
-        for (String candidate : candidates) {
-            String normalized = normalize(candidate);
-            if (!normalized.isBlank()) target.add(normalized);
-        }
-    }
-
-    private static String normalize(String value) {
-        if (value == null) return "";
-        return Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "")
-                .replace('đ', 'd').replace('Đ', 'D')
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^\\p{Alnum}]+", " ")
-                .replaceAll("\\s+", " ").trim();
-    }
-
-    private static boolean containsWholePhrase(String value, String phrase) {
-        return (" " + value + " ").contains(" " + phrase + " ");
     }
 
     private void validateProductAssignRoles(String key, JsonNode node) {

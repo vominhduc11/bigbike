@@ -376,7 +376,7 @@ async function lookupPublicBrandExists(slug: string, locale: "vi" | "en"): Promi
 }
 
 // Bài viết không tồn tại phải trả 404 thật (SEO_RULE_005). Route
-// `/[locale]/tin-tuc/[slug]` không tự làm được: `app/[locale]/tin-tuc/loading.tsx`
+// `/[locale]/tin-tuc/[slug]` không tự làm được: `app/[locale]/(storefront)/tin-tuc/loading.tsx`
 // bọc cả nhánh con trong Suspense nên Next đã stream shell (status 200) trước khi
 // `notFound()` chạy — y hệt lý do thương hiệu phải đi đường vòng này. Chặn ở proxy
 // để Google nhận 404 thay vì "soft 404".

@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.cart;
 
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
-import com.bigbike.bigbike_backend.api.cart.dto.AttachAssistantAttributionRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
@@ -14,11 +13,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
-import com.bigbike.bigbike_backend.service.chat.ChatInteractionService;
-import com.bigbike.bigbike_backend.service.chat.ChatAttributionTokenService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,9 +42,6 @@ public class CartService {
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final CartCalculator calculator;
-    private final ChatConversationJpaRepository chatConversationRepo;
-    private final ChatMessageJpaRepository chatMessageRepo;
-    private final ChatInteractionService chatInteractionService;
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {
@@ -103,8 +95,6 @@ public class CartService {
     public CartEntity addItem(CartEntity cart, AddCartItemRequest req) {
         ProductEntity product = productRepo.findById(req.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
-        AssistantAttribution attribution = resolveAssistantAttribution(cart, product, req);
-
         if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
             throw new ConflictException("Product is not available.");
         }
@@ -147,7 +137,6 @@ public class CartService {
             item = existing.get();
             item.setQuantity(newQuantity);
             item.setUnitPrice(unitPrice);
-            applyAssistantAttribution(item, attribution);
             applyImageSnapshot(item, product, variant);
         } else {
             item = new CartItemEntity();
@@ -164,45 +153,12 @@ public class CartService {
             item.setUnitPrice(unitPrice);
             item.setRegularPrice(VariantPricing.regularPrice(product, variant));
             item.setSalePrice(VariantPricing.salePrice(product, variant));
-            applyAssistantAttribution(item, attribution);
             item.setCreatedAt(Instant.now());
         }
         item.setUpdatedAt(Instant.now());
         calculator.recalculateItem(item);
         cartItemRepo.save(item);
 
-        if (attribution.tokenPayload() != null) {
-            chatInteractionService.recordServerCartAdded(
-                    attribution.tokenPayload(),
-                    chatInteractionService.assistantMessageId(attribution.interactionId()),
-                    item.getId());
-        }
-
-        return refreshCartTotals(cart);
-    }
-
-    @Transactional
-    public CartEntity attachAssistantAttribution(
-            CartEntity cart,
-            AttachAssistantAttributionRequest request
-    ) {
-        ProductEntity product = productRepo.findById(request.productId())
-                .orElseThrow(() -> new NotFoundException("Product not found: " + request.productId()));
-        ChatAttributionTokenService.Payload payload = chatInteractionService.verifiedAttributionToken(
-                request.attributionToken(), product.getSlug(), cart.getCustomerId());
-        List<CartItemEntity> matching = cartItemRepo.findByCartId(cart.getId()).stream()
-                .filter(item -> product.getId().equals(item.getProductPk()))
-                .toList();
-        if (matching.isEmpty()) {
-            throw new ConflictException("Sản phẩm chưa có trong giỏ hàng.");
-        }
-        AssistantAttribution attribution = new AssistantAttribution(
-                payload.conversationId(), payload.interactionId(), payload.issuedAt(), payload);
-        matching.forEach(item -> applyAssistantAttribution(item, attribution));
-        cartItemRepo.saveAll(matching);
-        UUID assistantMessageId = chatInteractionService.assistantMessageId(payload.interactionId());
-        matching.forEach(item -> chatInteractionService.recordServerCartAdded(
-                payload, assistantMessageId, item.getId()));
         return refreshCartTotals(cart);
     }
 
@@ -256,7 +212,6 @@ public class CartService {
                     ci.setQuantity(ci.getQuantity() + guestItem.getQuantity());
                     ci.setUpdatedAt(Instant.now());
                     calculator.recalculateItem(ci);
-                    mergeAssistantAttribution(ci, guestItem);
                     cartItemRepo.save(ci);
                     cartItemRepo.delete(guestItem);
                 } else {
@@ -271,28 +226,6 @@ public class CartService {
 
             return refreshCartTotals(customerCart);
         }).orElse(customerCart);
-    }
-
-    /**
-     * Attribution is one proof tuple. Copying only a newer timestamp would associate that
-     * timestamp with an older conversation and break last-touch reporting.
-     */
-    static void mergeAssistantAttribution(CartItemEntity target, CartItemEntity source) {
-        if (target == null || source == null
-                || source.getAssistantConversationId() == null
-                || source.getAssistantInteractionId() == null
-                || source.getAssistantAttributedAt() == null) {
-            return;
-        }
-        boolean targetIncomplete = target.getAssistantConversationId() == null
-                || target.getAssistantInteractionId() == null
-                || target.getAssistantAttributedAt() == null;
-        boolean sourceIsNewer = target.getAssistantAttributedAt() == null
-                || source.getAssistantAttributedAt().isAfter(target.getAssistantAttributedAt());
-        if (!targetIncomplete && !sourceIsNewer) return;
-        target.setAssistantConversationId(source.getAssistantConversationId());
-        target.setAssistantInteractionId(source.getAssistantInteractionId());
-        target.setAssistantAttributedAt(source.getAssistantAttributedAt());
     }
 
     public List<CartItemEntity> getItems(CartEntity cart) {
@@ -434,80 +367,4 @@ public class CartService {
         }
     }
 
-    private UUID validateAssistantAttribution(
-            CartEntity cart,
-            ProductEntity product,
-            UUID conversationId
-    ) {
-        if (conversationId == null) return null;
-        var conversation = chatConversationRepo.findById(conversationId)
-                .orElseThrow(() -> new ConflictException("Hội thoại trợ lý không hợp lệ."));
-        UUID cartCustomerId = cart.getCustomerId();
-        if (conversation.getCustomerId() != null
-                && !conversation.getCustomerId().equals(cartCustomerId)) {
-            throw new ConflictException("Hội thoại trợ lý không thuộc giỏ hàng này.");
-        }
-        if (conversation.getCustomerId() == null && cartCustomerId != null) {
-            throw new ConflictException("Hội thoại trợ lý không thuộc giỏ hàng này.");
-        }
-        String slug = product.getSlug();
-        if (slug == null || slug.isBlank()
-                || chatMessageRepo.countShownProduct(conversationId, slug) == 0) {
-            throw new ConflictException("Sản phẩm chưa được hiển thị trong hội thoại trợ lý này.");
-        }
-        return conversationId;
-    }
-
-    private AssistantAttribution resolveAssistantAttribution(
-            CartEntity cart,
-            ProductEntity product,
-            AddCartItemRequest request
-    ) {
-        if (request.assistantAttributionToken() != null
-                && !request.assistantAttributionToken().isBlank()) {
-            try {
-                ChatAttributionTokenService.Payload payload = chatInteractionService
-                        .verifiedAttributionToken(
-                                request.assistantAttributionToken(), product.getSlug(), cart.getCustomerId());
-                return new AssistantAttribution(
-                        payload.conversationId(), payload.interactionId(), payload.issuedAt(), payload);
-            } catch (ConflictException ignored) {
-                // Attribution must never block a legitimate cart mutation. An expired,
-                // mismatched or forged proof is simply excluded from assistant revenue.
-                return AssistantAttribution.none();
-            }
-        }
-        UUID interactionId = chatInteractionService.verifiedCartInteraction(
-                request.assistantInteractionId(), request.assistantConversationId(), product.getSlug());
-        if (interactionId == null) return AssistantAttribution.none();
-        UUID conversationId = validateAssistantAttribution(
-                cart, product, request.assistantConversationId());
-        Instant touchAt = chatInteractionService.interactionAt(interactionId);
-        return new AssistantAttribution(conversationId, interactionId, touchAt, null);
-    }
-
-    private static void applyAssistantAttribution(
-            CartItemEntity item,
-            AssistantAttribution attribution
-    ) {
-        if (attribution == null || attribution.conversationId() == null) return;
-        if (item.getAssistantAttributedAt() != null && attribution.touchAt() != null
-                && attribution.touchAt().isBefore(item.getAssistantAttributedAt())) {
-            return;
-        }
-        item.setAssistantConversationId(attribution.conversationId());
-        item.setAssistantInteractionId(attribution.interactionId());
-        item.setAssistantAttributedAt(attribution.touchAt());
-    }
-
-    private record AssistantAttribution(
-            UUID conversationId,
-            UUID interactionId,
-            Instant touchAt,
-            ChatAttributionTokenService.Payload tokenPayload
-    ) {
-        static AssistantAttribution none() {
-            return new AssistantAttribution(null, null, null, null);
-        }
-    }
 }

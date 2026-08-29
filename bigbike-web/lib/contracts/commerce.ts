@@ -30,8 +30,6 @@ export type Cart = {
   currency: string
   items: CartItem[]
   totals: CartTotals
-  leadPrompt?: boolean
-  leadPromptSequence?: 0 | 1 | 2
 }
 
  type CheckoutAddress = {

@@ -80,7 +80,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
     return t(brandLogoIssueTranslationKey(issue), {
       w: details?.width,
       h: details?.height,
-      defaultValue: issue,
+      defaultValue: t('common.unknown'),
     })
   }
 

@@ -207,7 +207,7 @@ export function AdminShell({
   }, [userMenuOpen])
 
   function formatRoles(roles) {
-    return (roles ?? []).map(r => t(`roles.roleLabel_${r}`, { defaultValue: r.replace(/_/g, ' ') })).join(', ')
+    return (roles ?? []).map(r => t(`roles.roleLabel_${r}`, { defaultValue: t('common.unknown') })).join(', ')
   }
 
   const initials = useMemo(() => {

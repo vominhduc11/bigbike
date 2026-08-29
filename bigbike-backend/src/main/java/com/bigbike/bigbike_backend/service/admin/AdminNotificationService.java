@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationRea
 import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationReadJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import com.bigbike.bigbike_backend.service.ws.ChatLeadWsEvent;
 import com.bigbike.bigbike_backend.service.ws.ChatHandoffWsEvent;
 import java.time.Instant;
 import java.util.List;
@@ -43,19 +42,6 @@ public class AdminNotificationService {
         n.setPayload(buildPayload(event));
         n.setCreatedAt(Instant.now());
         notificationRepo.save(n);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void persistChatLead(ChatLeadWsEvent event) {
-        AdminNotificationEntity notification = new AdminNotificationEntity();
-        notification.setType(event.type());
-        // The shared notification inbox is readable by every authenticated admin. Keep PII out
-        // of that payload; phone/name/note stay behind the chat.read-protected detail endpoint
-        // and realtime topic. The conversation id is sufficient for an authorized admin to open it.
-        notification.setPayload("{\"type\":\"CHAT_LEAD\""
-                + ",\"conversationId\":\"" + event.conversationId() + "\"}");
-        notification.setCreatedAt(event.timestamp() == null ? Instant.now() : event.timestamp());
-        notificationRepo.save(notification);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

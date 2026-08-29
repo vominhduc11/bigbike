@@ -442,7 +442,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
       ) : null}
 
       <ResponsiveFilterBar
-        ariaLabel={t('orders.filterAria', { defaultValue: 'Bộ lọc đơn hàng' })}
+        ariaLabel={t('orders.filterAria')}
         className="items-center"
         activeFilterCount={filterChips.length}
         onReset={resetFilters}
@@ -463,7 +463,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
             { value: 'ALL', label: t('orders.filterStatus') },
             ...ORDER_STATUS_KEYS.map((status) => ({
               value: status,
-              label: t(`status.order.${status}`),
+            label: t(`status.order.${status}`, { defaultValue: t('common.unknown') }),
             })),
           ]}
         />

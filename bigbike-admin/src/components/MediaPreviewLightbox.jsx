@@ -103,11 +103,11 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate,
         {isImage && current.publicUrl && (
           errorImageUrl === current.publicUrl ? (
             <div role="alert" className="rounded-md bg-surface px-6 py-8 text-center text-sm text-danger">
-              {t('media.imageLoadError', { defaultValue: 'Không thể tải ảnh này.' })}
+              {t('media.imageLoadError')}
             </div>
           ) : (
             <>
-              {loadedImageUrl !== current.publicUrl ? <span className="absolute text-sm text-white/80">{t('media.imageLoading', { defaultValue: 'Đang tải ảnh…' })}</span> : null}
+              {loadedImageUrl !== current.publicUrl ? <span className="absolute text-sm text-white/80">{t('brands.logo.loading')}</span> : null}
               <img
                 src={current.publicUrl}
                 alt={current.altText || filename}

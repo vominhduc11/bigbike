@@ -17,15 +17,15 @@ import { getSiteOrigin } from "@/lib/utils/routes";
  * không mang được thẻ meta.
  *
  * Thẻ noindex tương ứng nằm ở:
- *   /gio-hang/              app/[locale]/gio-hang/layout.tsx
- *   /dat-hang/              app/[locale]/dat-hang/layout.tsx
- *   /don-hang/xac-nhan/     app/[locale]/don-hang/xac-nhan/page.tsx
- *   /tai-khoan/*            app/[locale]/tai-khoan/layout.tsx  (+ proxy 307 về đăng nhập)
- *   /dang-nhap/             app/[locale]/dang-nhap/page.tsx
- *   /dang-ky/               app/[locale]/dang-ky/page.tsx
- *   /quen-mat-khau/         app/[locale]/quen-mat-khau/page.tsx
- *   /xac-nhan-email/        app/[locale]/xac-nhan-email/page.tsx
- *   /tim-kiem/              app/[locale]/tim-kiem/page.tsx
+ *   /gio-hang/              app/[locale]/(storefront)/gio-hang/layout.tsx
+ *   /dat-hang/              app/[locale]/(storefront)/dat-hang/layout.tsx
+ *   /don-hang/xac-nhan/     app/[locale]/(storefront)/don-hang/xac-nhan/page.tsx
+ *   /tai-khoan/*            app/[locale]/(storefront)/tai-khoan/layout.tsx  (+ proxy 307 về đăng nhập)
+ *   /dang-nhap/             app/[locale]/(auth)/dang-nhap/page.tsx
+ *   /dang-ky/               app/[locale]/(auth)/dang-ky/page.tsx
+ *   /quen-mat-khau/         app/[locale]/(auth)/quen-mat-khau/page.tsx
+ *   /xac-nhan-email/        app/[locale]/(auth)/xac-nhan-email/page.tsx
+ *   /tim-kiem/              app/[locale]/(storefront)/tim-kiem/page.tsx
  *   /preview/*, /en/preview/*   X-Robots-Tag trong next.config.ts headers()
  *
  * Test khoá bất biến này: __tests__/seo/robots-noindex.test.ts

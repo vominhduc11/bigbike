@@ -29,7 +29,7 @@ export function BrandLogoQualityNotice({ quality, compact = false }) {
     : (quality.issues || [])
   const issues = rawIssues.map((issue) => t(ISSUE_KEYS[issue] || 'brands.logo.quality.issueMediaUnavailable', {
     ratio: ratioLabel(quality.ratio),
-    defaultValue: issue,
+    defaultValue: t('common.unknown'),
   }))
   const issueText = issues.join(', ') || t(
     quality.status === 'LEGACY'

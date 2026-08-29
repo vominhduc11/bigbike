@@ -13,7 +13,6 @@ import com.bigbike.bigbike_backend.persistence.entity.chat.ChatHandoffEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatHandoffJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatLeadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.AdminChatWsService;
@@ -29,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +36,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
-// Two public constructors (Lombok's + the Phase-2 test-compat one below) leave Spring
-// with no injection target unless the generated one is marked — same pattern as ChatService.
-@RequiredArgsConstructor(onConstructor_ = @org.springframework.beans.factory.annotation.Autowired)
 public class ChatHandoffService {
 
     private static final ObjectMapper PRODUCT_MAPPER = new ObjectMapper();
@@ -52,31 +48,43 @@ public class ChatHandoffService {
     private final ChatHandoffJpaRepository handoffRepo;
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
-    private final ChatLeadJpaRepository leadRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final AdminChatWsService adminChatWsService;
     private final CustomerChatWsService customerChatWsService;
     private final ChatHandoffEmailService emailService;
     private final ChatPhase3Settings phase3Settings;
 
+    @Autowired
+    public ChatHandoffService(
+            ChatHandoffJpaRepository handoffRepo,
+            ChatConversationJpaRepository conversationRepo,
+            ChatMessageJpaRepository messageRepo,
+            AdminUserJpaRepository adminUserRepo,
+            AdminChatWsService adminChatWsService,
+            CustomerChatWsService customerChatWsService,
+            ChatHandoffEmailService emailService,
+            ChatPhase3Settings phase3Settings
+    ) {
+        this.handoffRepo = handoffRepo;
+        this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
+        this.adminUserRepo = adminUserRepo;
+        this.adminChatWsService = adminChatWsService;
+        this.customerChatWsService = customerChatWsService;
+        this.emailService = emailService;
+        this.phase3Settings = phase3Settings;
+    }
+
     /** Compatibility constructor for focused Phase-2 unit tests. */
     public ChatHandoffService(
             ChatHandoffJpaRepository handoffRepo,
             ChatConversationJpaRepository conversationRepo,
             ChatMessageJpaRepository messageRepo,
-            ChatLeadJpaRepository leadRepo,
             AdminChatWsService adminChatWsService,
             ChatHandoffEmailService emailService
     ) {
-        this.handoffRepo = handoffRepo;
-        this.conversationRepo = conversationRepo;
-        this.messageRepo = messageRepo;
-        this.leadRepo = leadRepo;
-        this.adminUserRepo = null;
-        this.adminChatWsService = adminChatWsService;
-        this.customerChatWsService = null;
-        this.emailService = emailService;
-        this.phase3Settings = null;
+        this(handoffRepo, conversationRepo, messageRepo, null, adminChatWsService,
+                null, emailService, null);
     }
 
     @Transactional
@@ -275,7 +283,6 @@ public class ChatHandoffService {
         handoff.setCustomerKind(conversation.getCustomerId() == null ? "GUEST" : "SIGNED_IN");
         handoff.setQuestionSummary(summarize(question));
         handoff.setProductsJson(ChatHandoffProductJson.write(products));
-        handoff.setContactPresent(hasContact(conversation));
         handoff.setRequestedAt(Instant.now());
         ChatPhase3Settings.BusinessHoursStatus hours = businessHours(
                 handoff.getRequestedAt(), conversation.getLocale());
@@ -401,13 +408,6 @@ public class ChatHandoffService {
         return conversation;
     }
 
-    private boolean hasContact(ChatConversationEntity conversation) {
-        // A signed-in account is useful context, but it is not consent to disclose the
-        // account phone in a handoff alert. Only a contact explicitly submitted in this
-        // conversation counts as "contact present".
-        return leadRepo.existsByConversationId(conversation.getId());
-    }
-
     private List<ChatProductCardResponse> readConversationProducts(UUID conversationId) {
         List<ChatMessageEntity> history = messageRepo.findByConversationIdOrderByCreatedAtAsc(conversationId);
         Map<String, ChatProductCardResponse> recent = new LinkedHashMap<>();
@@ -502,7 +502,7 @@ public class ChatHandoffService {
             String type, ChatHandoffEntity entity, long waitingCount) {
         return new ChatHandoffWsEvent(
                 type, entity.getId(), entity.getConversationId(), entity.getQuestionSummary(),
-                ChatHandoffProductJson.readWs(entity.getProductsJson()), entity.isContactPresent(),
+                ChatHandoffProductJson.readWs(entity.getProductsJson()),
                 entity.getCustomerKind(), entity.getRequestedAt(), waitingCount);
     }
 
@@ -516,7 +516,7 @@ public class ChatHandoffService {
         return new AdminChatHandoffResponse(
                 entity.getId(), entity.getConversationId(), entity.getStatus(),
                 entity.getTriggerSource(), entity.getCustomerKind(), entity.getQuestionSummary(),
-                products, entity.isContactPresent(), entity.getRequestedAt(), waitingSeconds,
+                products, entity.getRequestedAt(), waitingSeconds,
                 entity.getAcknowledgedAt(), entity.getAcknowledgedBy(),
                 entity.getAssignedAt(), entity.getAssignedAdminId(), entity.getAssignedDisplayName(),
                 entity.getResolvedAt(), entity.getResolution(), entity.isWithinBusinessHours(),
