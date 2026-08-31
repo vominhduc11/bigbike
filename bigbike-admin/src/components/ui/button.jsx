@@ -9,36 +9,40 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:   'bg-primary text-primary-foreground hover:opacity-90 active:opacity-80',
-        secondary: 'bg-secondary text-secondary-foreground border border-border hover:bg-surface-hover',
-        danger:    'bg-destructive text-destructive-foreground hover:opacity-90',
-        success:   'bg-success text-primary-foreground hover:opacity-90',
-        ghost:     'bg-transparent text-foreground hover:bg-surface-hover',
-        link:      'text-primary underline-offset-4 hover:underline bg-transparent',
-        outline:   'border border-border bg-transparent text-foreground hover:bg-surface-hover',
+        default: 'bg-primary text-primary-foreground hover:opacity-90 active:opacity-80',
+        secondary:
+          'bg-secondary text-secondary-foreground border border-border hover:bg-surface-hover',
+        danger: 'bg-destructive text-destructive-foreground hover:opacity-90',
+        success: 'bg-success text-primary-foreground hover:opacity-90',
+        ghost: 'bg-transparent text-foreground hover:bg-surface-hover',
+        link: 'text-primary underline-offset-4 hover:underline bg-transparent',
+        outline: 'border border-border bg-transparent text-foreground hover:bg-surface-hover',
       },
       size: {
-        sm:   'h-7 px-3 text-xs rounded-[var(--admin-radius-xs)]',
-        md:   'h-9 px-4 text-sm rounded-[var(--admin-radius-control)]',
-        lg:   'h-11 px-6 text-base rounded-[var(--admin-radius-control)]',
+        sm: 'h-7 px-3 text-xs rounded-[var(--admin-radius-xs)]',
+        md: 'h-9 px-4 text-sm rounded-[var(--admin-radius-control)]',
+        lg: 'h-11 px-6 text-base rounded-[var(--admin-radius-control)]',
         icon: 'h-9 w-9 max-sm:h-11 max-sm:w-11 rounded-[var(--admin-radius-control)]',
       },
     },
     defaultVariants: { variant: 'default', size: 'md' },
-  }
+  },
 )
 
-const Button = forwardRef(function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  loading = false,
-  disabled,
-  children,
-  type = 'button',
-  ...props
-}, ref) {
+const Button = forwardRef(function Button(
+  {
+    className,
+    variant,
+    size,
+    asChild = false,
+    loading = false,
+    disabled,
+    children,
+    type = 'button',
+    ...props
+  },
+  ref,
+) {
   const Comp = asChild ? Slot : 'button'
   // asChild forwards to a single child element (Radix Slot) — Slot rejects
   // multiple children, so we can't inject a sibling spinner. Pass children
@@ -50,9 +54,10 @@ const Button = forwardRef(function Button({
   // variant="unstyled": nút thuộc hệ chassis CSS (`bb-*`/`medialib-*`) — mọi styling
   // do class truyền vào quyết định, KHÔNG áp cva base/variant (tránh utility Tailwind
   // đè lên CSS chassis). Vẫn hưởng type mặc định, loading, disabled, ref của primitive.
-  const buttonClassName = variant === 'unstyled'
-    ? cn(className)
-    : cn(buttonVariants({ variant, size, className }), 'max-sm:min-h-11')
+  const buttonClassName =
+    variant === 'unstyled'
+      ? cn(className)
+      : cn(buttonVariants({ variant, size, className }), 'max-sm:min-h-11')
   return (
     <Comp
       ref={ref}
@@ -62,7 +67,9 @@ const Button = forwardRef(function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      {asChild ? children : (
+      {asChild ? (
+        children
+      ) : (
         <>
           {showSpinner && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
           {!hideChildren && children}

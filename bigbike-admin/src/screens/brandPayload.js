@@ -1,4 +1,5 @@
-const MEDIA_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const MEDIA_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function toBrandPayload(form) {
   const payload = {
@@ -62,10 +63,7 @@ export function toBrandPayload(form) {
 }
 
 export function getBrandRequiredProgress(form) {
-  const requiredValues = [
-    form.slug,
-    form.name,
-  ]
+  const requiredValues = [form.slug, form.name]
   return {
     total: requiredValues.length,
     filled: requiredValues.filter((value) => Boolean(value?.trim())).length,

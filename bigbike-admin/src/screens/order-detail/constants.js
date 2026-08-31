@@ -18,9 +18,9 @@ export function sameAddress(a, b) {
 }
 
 export const ORDER_STATUS_ACTION = {
-  PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
-  COMPLETED:  { labelKey: 'orders.detail.actionCompleted',  variant: 'success',     confirm: true  },
-  CANCELLED:  { labelKey: 'orders.detail.actionCancelled',  variant: 'destructive', confirm: true  },
+  PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary', confirm: false },
+  COMPLETED: { labelKey: 'orders.detail.actionCompleted', variant: 'success', confirm: true },
+  CANCELLED: { labelKey: 'orders.detail.actionCancelled', variant: 'destructive', confirm: true },
 }
 
 export function getOrderStatusLabel(targetStatus, order, t) {
@@ -41,9 +41,9 @@ export function getOrderMutationError(error, t) {
       return t('orders.detail.errorConflict')
     default:
       if (
-        error instanceof TypeError
-        || error?.code === 'NETWORK_ERROR'
-        || /failed to fetch|network/i.test(String(error?.message ?? ''))
+        error instanceof TypeError ||
+        error?.code === 'NETWORK_ERROR' ||
+        /failed to fetch|network/i.test(String(error?.message ?? ''))
       ) {
         return t('orders.detail.errorNetwork')
       }
@@ -67,12 +67,13 @@ export function getOrderAuditDetails(entry, t) {
   const after = parseOrderAuditData(entry?.afterData)
   const fromStatus = typeof before.status === 'string' ? before.status : ''
   const toStatus = typeof after.status === 'string' ? after.status : ''
-  const transition = fromStatus && toStatus
-    ? t('orders.audit.transition', {
-        from: t(`status.order.${fromStatus}`, { defaultValue: t('common.unknown') }),
-        to: t(`status.order.${toStatus}`, { defaultValue: t('common.unknown') }),
-      })
-    : ''
+  const transition =
+    fromStatus && toStatus
+      ? t('orders.audit.transition', {
+          from: t(`status.order.${fromStatus}`, { defaultValue: t('common.unknown') }),
+          to: t(`status.order.${toStatus}`, { defaultValue: t('common.unknown') }),
+        })
+      : ''
   const cancelReason = typeof after.cancelReason === 'string' ? after.cancelReason.trim() : ''
   return { transition, cancelReason }
 }

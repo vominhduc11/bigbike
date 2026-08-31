@@ -3,14 +3,31 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
 import { DeferredRichTextEditor } from '../DeferredRichTextEditor'
 import { cn, generateId } from '@/lib/utils'
 import { parseSizeGuide, parseSizeGuideResult, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
-import { parseSuitabilityCards, parseSuitabilityResult, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
+import {
+  parseSuitabilityCards,
+  parseSuitabilityResult,
+  mergeSuitabilityIntoHtml,
+  emptySuitabilityCard,
+  suitabilityCardHasContent,
+} from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../AiHtmlBrief'
 import { HtmlImportNotice } from '../HtmlImportNotice'
@@ -25,50 +42,98 @@ import { nextProductFeatureSide } from './constants'
 // Các loại khối có trình sửa riêng trong BlockCard. Khối ngoài tập này (vd dữ liệu cũ như
 // suitability/sizeGuide nay tách card riêng, hoặc loại chưa hỗ trợ) sẽ hiện thẻ giải thích rõ
 // thay vì card trống — nội dung vẫn được giữ nguyên khi lưu.
-const KNOWN_BLOCK_TYPES = new Set(['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'feature', 'divider'])
+const KNOWN_BLOCK_TYPES = new Set([
+  'heading',
+  'paragraph',
+  'list',
+  'image',
+  'video',
+  'callout',
+  'feature',
+  'divider',
+])
 
-export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate, onRemove, productMode, block }) {
+export function BlockControls({
+  disabled,
+  insertMenu,
+  onInsertBelow,
+  onDuplicate,
+  onRemove,
+  productMode,
+  block,
+}) {
   const { t } = useTranslation()
-  const insertLabel = t('products.detail.blocks.insertBelow', { defaultValue: 'Chèn khối bên dưới' })
+  const insertLabel = t('products.detail.blocks.insertBelow', {
+    defaultValue: 'Chèn khối bên dưới',
+  })
   // Sản phẩm: chèn khối bên dưới tự gợi ý phía ngược khối hiện tại (so le tự động), không cần chọn tay.
-  const suggestedInsertEntry = productMode && insertMenu
-    ? insertMenu.find((m) => m.preset?.side === nextProductFeatureSide(block?.side)) ?? insertMenu[0]
-    : null
+  const suggestedInsertEntry =
+    productMode && insertMenu
+      ? (insertMenu.find((m) => m.preset?.side === nextProductFeatureSide(block?.side)) ??
+        insertMenu[0])
+      : null
   return (
     <div className="flex items-center gap-1 shrink-0">
-      {insertMenu && onInsertBelow && (
-        suggestedInsertEntry ? (
-          <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
-            aria-label={t(suggestedInsertEntry.labelKey)} title={t(suggestedInsertEntry.labelKey)}
-            onClick={() => onInsertBelow(suggestedInsertEntry.type, suggestedInsertEntry.preset)}>
+      {insertMenu &&
+        onInsertBelow &&
+        (suggestedInsertEntry ? (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            disabled={disabled}
+            aria-label={t(suggestedInsertEntry.labelKey)}
+            title={t(suggestedInsertEntry.labelKey)}
+            onClick={() => onInsertBelow(suggestedInsertEntry.type, suggestedInsertEntry.preset)}
+          >
             <Plus size={14} />
           </Button>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
-                aria-label={insertLabel} title={insertLabel}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                disabled={disabled}
+                aria-label={insertLabel}
+                title={insertLabel}
+              >
                 <Plus size={14} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {insertMenu.map((entry, i) => (
-                <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => onInsertBelow(entry.type, entry.preset)}>
+                <DropdownMenuItem
+                  key={`${entry.type}-${i}`}
+                  onClick={() => onInsertBelow(entry.type, entry.preset)}
+                >
                   {t(entry.labelKey)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        )
-      )}
-      <Button variant="outline" size="icon" className="h-7 w-7"
-        onClick={onDuplicate} disabled={disabled}
-        aria-label={t('products.detail.blocks.duplicate')} title={t('products.detail.blocks.duplicate')}>
+        ))}
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-7 w-7"
+        onClick={onDuplicate}
+        disabled={disabled}
+        aria-label={t('products.detail.blocks.duplicate')}
+        title={t('products.detail.blocks.duplicate')}
+      >
         <Copy size={14} aria-hidden="true" />
       </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-        onClick={onRemove} disabled={disabled}
-        aria-label={t('products.detail.blocks.remove')} title={t('products.detail.blocks.remove')}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-destructive hover:text-destructive"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={t('products.detail.blocks.remove')}
+        title={t('products.detail.blocks.remove')}
+      >
         <X size={14} aria-hidden="true" />
       </Button>
     </div>
@@ -77,8 +142,12 @@ export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate
 
 // Xem trước ngắn khi khối bị thu gọn — lấy field văn bản đầu tiên, bỏ thẻ HTML.
 function collapsedPreview(block) {
-  const raw = block?.heading || block?.text || block?.html || block?.caption || block?.subheading || ''
-  return String(raw).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const raw =
+    block?.heading || block?.text || block?.html || block?.caption || block?.subheading || ''
+  return String(raw)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
@@ -87,7 +156,11 @@ export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'v
   const fText = isEn ? 'textEn' : 'text'
   return (
     <div className="flex gap-2 flex-1">
-      <Select value={String(block.level)} onValueChange={(v) => onChange({ level: Number(v) })} disabled={disabled || isEn}>
+      <Select
+        value={String(block.level)}
+        onValueChange={(v) => onChange({ level: Number(v) })}
+        disabled={disabled || isEn}
+      >
         <SelectTrigger className="w-44 shrink-0">
           <SelectValue />
         </SelectTrigger>
@@ -134,11 +207,11 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
 
   function updateItem(i, value) {
     if (isEn) {
-      const nextEn = items.map((_, idx) => (idx === i ? value : (itemsEn[idx] || '')))
+      const nextEn = items.map((_, idx) => (idx === i ? value : itemsEn[idx] || ''))
       onChange({ itemsEn: nextEn })
       return
     }
-    const next = items.map((it, idx) => idx === i ? value : it)
+    const next = items.map((it, idx) => (idx === i ? value : it))
     onChange({ items: next })
   }
   function addItem() {
@@ -146,7 +219,10 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
   }
   async function removeItem(i) {
     if ((items[i] || '').trim()) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = items.filter((_, idx) => idx !== i)
@@ -156,7 +232,11 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
 
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.style} onValueChange={(v) => onChange({ style: v })} disabled={disabled || isEn}>
+      <Select
+        value={block.style}
+        onValueChange={(v) => onChange({ style: v })}
+        disabled={disabled || isEn}
+      >
         <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
@@ -180,13 +260,26 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
               placeholder={t('products.detail.blocks.listItemPlaceholder')}
               maxLength={2000}
             />
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-              onClick={() => removeItem(i)} disabled={disabled || isEn}
-              aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+              onClick={() => removeItem(i)}
+              disabled={disabled || isEn}
+              aria-label={t('products.detail.blocks.listRemoveItem')}
+            >
+              <X size={14} aria-hidden="true" />
+            </Button>
           </div>
         ))}
       </div>
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || isEn} className="self-start">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={addItem}
+        disabled={disabled || isEn}
+        className="self-start"
+      >
         + {t('products.detail.blocks.listAddItem')}
       </Button>
     </div>
@@ -202,21 +295,41 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage, conte
       <div className="flex gap-2 items-start">
         {block.url ? (
           <div className="relative shrink-0">
-            <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
+            <img
+              src={block.url}
+              alt={block.alt || ''}
+              className="h-24 w-36 object-cover rounded-sm border border-border"
+            />
             <div className="mt-1 flex flex-wrap gap-1">
-              <Button variant="outline" size="sm" className="text-xs"
-                onClick={onPickImage} disabled={disabled || isEn}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={onPickImage}
+                disabled={disabled || isEn}
+              >
                 {t('products.detail.blocks.imageChange')}
               </Button>
-              <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg"
-                onClick={() => onChange({ url: '', alt: '' })} disabled={disabled || isEn}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '', alt: '' })}
+                disabled={disabled || isEn}
+              >
                 <X size={14} aria-hidden="true" />
                 {t('products.detail.blocks.imageRemove')}
               </Button>
             </div>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPickImage}
+            disabled={disabled || isEn}
+            className="h-24 w-36 flex flex-col gap-1 text-xs"
+          >
             <span className="text-2xl">🖼</span>
             {t('products.detail.blocks.imagePick')}
           </Button>
@@ -241,7 +354,9 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fCaption = isEn ? 'captionEn' : 'caption'
-  const provider = ['youtube', 'tiktok', 'facebook', 'upload'].includes(block.provider) ? block.provider : undefined
+  const provider = ['youtube', 'tiktok', 'facebook', 'upload'].includes(block.provider)
+    ? block.provider
+    : undefined
   const changeProvider = async (nextProvider) => {
     if (provider === nextProvider) return
     if ((block.url || '').trim()) {
@@ -255,8 +370,19 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
   }
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={provider} onValueChange={(value) => { void changeProvider(value) }} disabled={disabled || isEn}>
-        <SelectTrigger className="w-44" aria-label={t('products.detail.blocks.videoProviderLabel', { defaultValue: 'Nguồn video' })}>
+      <Select
+        value={provider}
+        onValueChange={(value) => {
+          void changeProvider(value)
+        }}
+        disabled={disabled || isEn}
+      >
+        <SelectTrigger
+          className="w-44"
+          aria-label={t('products.detail.blocks.videoProviderLabel', {
+            defaultValue: 'Nguồn video',
+          })}
+        >
           <SelectValue placeholder={t('products.detail.blocks.videoProviderPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
@@ -269,8 +395,12 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
       {['youtube', 'tiktok', 'facebook'].includes(provider) ? (
         <div className="flex items-center gap-2">
           <Input
-            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-            placeholder={t(`products.detail.video.${provider}Placeholder`, { defaultValue: 'Đường dẫn video đầy đủ' })}
+            aria-label={t('products.detail.blocks.videoUrlLabel', {
+              defaultValue: 'Đường dẫn video',
+            })}
+            placeholder={t(`products.detail.video.${provider}Placeholder`, {
+              defaultValue: 'Đường dẫn video đầy đủ',
+            })}
             value={block.url || ''}
             onChange={(e) => onChange({ url: e.target.value })}
             disabled={disabled || isEn}
@@ -278,8 +408,13 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
             className="flex-1"
           />
           {block.url && (
-            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
-              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-danger hover:bg-danger-bg"
+              onClick={() => onChange({ url: '' })}
+              disabled={disabled || isEn}
+            >
               <X size={14} aria-hidden="true" />
               {t('products.detail.blocks.videoRemove')}
             </Button>
@@ -289,20 +424,35 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         <>
           <div className="flex gap-2 items-center">
             <Input
-              aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-              placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'Địa chỉ video đã tải lên' })}
+              aria-label={t('products.detail.blocks.videoUrlLabel', {
+                defaultValue: 'Đường dẫn video',
+              })}
+              placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', {
+                defaultValue: 'Địa chỉ video đã tải lên',
+              })}
               value={block.url || ''}
               onChange={(e) => onChange({ url: e.target.value })}
               disabled={disabled || isEn}
               maxLength={2000}
               className="flex-1"
             />
-            <Button variant="outline" size="sm" onClick={onPickVideo} disabled={disabled || isEn} className="shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onPickVideo}
+              disabled={disabled || isEn}
+              className="shrink-0"
+            >
               {t('products.detail.blocks.videoPick')}
             </Button>
             {block.url && (
-              <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
-                onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '' })}
+                disabled={disabled || isEn}
+              >
                 <X size={14} aria-hidden="true" />
                 {t('products.detail.blocks.videoRemove')}
               </Button>
@@ -311,7 +461,10 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
           <MediaRequirementHint recommend={IMAGE_RECO.contentVideo} />
         </>
       ) : (
-        <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+        <div
+          className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning"
+          role="alert"
+        >
           {t('products.detail.blocks.legacySourceWarning')}
         </div>
       )}
@@ -333,13 +486,19 @@ export function CalloutBlockEditor({ block, onChange, disabled, contentLang = 'v
   const fHtml = isEn ? 'htmlEn' : 'html'
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.variant} onValueChange={(v) => onChange({ variant: v })} disabled={disabled || isEn}>
+      <Select
+        value={block.variant}
+        onValueChange={(v) => onChange({ variant: v })}
+        disabled={disabled || isEn}
+      >
         <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="info">{t('products.detail.blocks.calloutVariantInfo')}</SelectItem>
-          <SelectItem value="warning">{t('products.detail.blocks.calloutVariantWarning')}</SelectItem>
+          <SelectItem value="warning">
+            {t('products.detail.blocks.calloutVariantWarning')}
+          </SelectItem>
           <SelectItem value="note">{t('products.detail.blocks.calloutVariantNote')}</SelectItem>
         </SelectContent>
       </Select>
@@ -354,7 +513,14 @@ export function CalloutBlockEditor({ block, onChange, disabled, contentLang = 'v
   )
 }
 
-export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode, contentLang = 'vi' }) {
+export function FeatureBlockEditor({
+  block,
+  onChange,
+  disabled,
+  onPickImage,
+  productMode,
+  contentLang = 'vi',
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fCaption = isEn ? 'captionEn' : 'caption'
@@ -363,19 +529,28 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
   const fHtml = isEn ? 'htmlEn' : 'html'
 
   // Sản phẩm: chỉ trái/phải (không "tự đảo"); Content: giữ cả auto.
-  const sideValue = block.side === 'left' || block.side === 'right'
-    ? block.side
-    : (productMode ? 'right' : 'auto')
+  const sideValue =
+    block.side === 'left' || block.side === 'right' ? block.side : productMode ? 'right' : 'auto'
 
   return (
     <div className="flex-1 flex flex-col gap-3">
       {/* Vị trí ảnh */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground shrink-0">{t('products.detail.blocks.featureSideLabel')}</span>
-        <Select value={sideValue} onValueChange={(v) => onChange({ side: v })} disabled={disabled || isEn}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+        <span className="text-xs text-muted-foreground shrink-0">
+          {t('products.detail.blocks.featureSideLabel')}
+        </span>
+        <Select
+          value={sideValue}
+          onValueChange={(v) => onChange({ side: v })}
+          disabled={disabled || isEn}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
-            {!productMode && <SelectItem value="auto">{t('products.detail.blocks.featureSideAuto')}</SelectItem>}
+            {!productMode && (
+              <SelectItem value="auto">{t('products.detail.blocks.featureSideAuto')}</SelectItem>
+            )}
             <SelectItem value="left">{t('products.detail.blocks.featureSideLeft')}</SelectItem>
             <SelectItem value="right">{t('products.detail.blocks.featureSideRight')}</SelectItem>
           </SelectContent>
@@ -386,21 +561,41 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       <div className="flex gap-2 items-start">
         {block.url ? (
           <div className="relative shrink-0">
-            <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
+            <img
+              src={block.url}
+              alt={block.alt || ''}
+              className="h-24 w-36 object-cover rounded-sm border border-border"
+            />
             <div className="mt-1 flex flex-wrap gap-1">
-              <Button variant="outline" size="sm" className="text-xs"
-                onClick={onPickImage} disabled={disabled || isEn}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={onPickImage}
+                disabled={disabled || isEn}
+              >
                 {t('products.detail.blocks.imageChange')}
               </Button>
-              <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg"
-                onClick={() => onChange({ url: '', alt: '' })} disabled={disabled || isEn}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '', alt: '' })}
+                disabled={disabled || isEn}
+              >
                 <X size={14} aria-hidden="true" />
                 {t('products.detail.blocks.imageRemove')}
               </Button>
             </div>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPickImage}
+            disabled={disabled || isEn}
+            className="h-24 w-36 flex flex-col gap-1 text-xs"
+          >
             <span className="text-2xl">🖼</span>
             {t('products.detail.blocks.imagePick')}
           </Button>
@@ -462,11 +657,18 @@ export function DividerBlockEditor() {
 /** Trình sửa danh sách chuỗi đơn giản (mỗi dòng một Input) — dùng cho ưu điểm / nhược điểm. */
 export function StringListEditor({ items, onChange, disabled, placeholder, addLabel }) {
   const list = items && items.length ? items : ['']
-  function updateItem(i, value) { onChange(list.map((it, idx) => (idx === i ? value : it))) }
-  function addItem() { onChange([...list, '']) }
+  function updateItem(i, value) {
+    onChange(list.map((it, idx) => (idx === i ? value : it)))
+  }
+  function addItem() {
+    onChange([...list, ''])
+  }
   async function removeItem(i) {
     if ((list[i] || '').trim()) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = list.filter((_, idx) => idx !== i)
@@ -486,12 +688,25 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
             placeholder={placeholder}
             maxLength={2000}
           />
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-            onClick={() => removeItem(i)} disabled={disabled}
-            aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+            onClick={() => removeItem(i)}
+            disabled={disabled}
+            aria-label={t('products.detail.blocks.listRemoveItem')}
+          >
+            <X size={14} aria-hidden="true" />
+          </Button>
         </div>
       ))}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={addItem}
+        disabled={disabled}
+        className="self-start"
+      >
         + {addLabel}
       </Button>
     </div>
@@ -513,21 +728,28 @@ function isGeneratedSuitabilityHtml(html) {
  *  - Cấu trúc → HTML: `html` đã được merge cập nhật sẵn.
  *  - Cho phép CSS inline khi dán HTML (sanitizeHtml admin đã mở `style`).
  */
-export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang = 'vi', aiPromptBuilder }) {
+export function SuitabilityBlockEditor({
+  block,
+  onChange,
+  disabled,
+  contentLang = 'vi',
+  aiPromptBuilder,
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
   const fHtml = isEn ? 'htmlEn' : 'html'
   const sourceHtml = block[fHtml] || ''
   const [mode, setMode] = useState(() =>
-    (sourceHtml.trim() && !isGeneratedSuitabilityHtml(sourceHtml)) ? 'html' : 'structured',
+    sourceHtml.trim() && !isGeneratedSuitabilityHtml(sourceHtml) ? 'html' : 'structured',
   )
   const importer = useHtmlImportDraft(sourceHtml, parseSuitabilityResult)
   const { draftHtml, result, dirty, pending, updateDraft, commitDraft, runApply } = importer
   const seedCards = () => {
     const parsed = parseSuitabilityCards(sourceHtml)
     if (parsed.length) return parsed
-    if (block.cards && block.cards.length) return block.cards.map((c) => ({ ...emptySuitabilityCard(), ...c }))
+    if (block.cards && block.cards.length)
+      return block.cards.map((c) => ({ ...emptySuitabilityCard(), ...c }))
     return [emptySuitabilityCard()]
   }
   const [cards, setCards] = useState(seedCards)
@@ -542,7 +764,10 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -592,13 +817,20 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
     }
     setMode(next)
   }
-  function updateCard(i, patch) { commit(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c))) }
-  function addCard() { commit([...cards, emptySuitabilityCard()]) }
+  function updateCard(i, patch) {
+    commit(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
+  }
+  function addCard() {
+    commit([...cards, emptySuitabilityCard()])
+  }
   async function removeCard(i) {
     const card = cards[i]
     const hasContent = suitabilityCardHasContent(card)
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     const next = cards.filter((_, idx) => idx !== i)
@@ -630,12 +862,22 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
         {/* Chế độ NHẬP CÓ CẤU TRÚC */}
         <TabsContent value="structured" className="flex flex-col gap-3">
           {cards.map((card, i) => (
-            <div key={i} className="flex flex-col gap-2 p-2 border border-border rounded-sm bg-muted/20">
+            <div
+              key={i}
+              className="flex flex-col gap-2 p-2 border border-border rounded-sm bg-muted/20"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">#{i + 1}</span>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                  onClick={() => removeCard(i)} disabled={disabled}
-                  aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => removeCard(i)}
+                  disabled={disabled}
+                  aria-label={t('products.detail.blocks.listRemoveItem')}
+                >
+                  <X size={14} aria-hidden="true" />
+                </Button>
               </div>
               <div className="flex flex-col gap-1">
                 <DeferredRichTextEditor
@@ -648,7 +890,9 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                   maxLength={500}
                 />
                 <div className="flex justify-end">
-                  <HelpTooltip content={t('products.detail.blocks.suitabilityAudienceFormatHint')} />
+                  <HelpTooltip
+                    content={t('products.detail.blocks.suitabilityAudienceFormatHint')}
+                  />
                 </div>
               </div>
               <Input
@@ -661,35 +905,48 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
               />
             </div>
           ))}
-          <Button variant="outline" size="sm" onClick={addCard} disabled={disabled} className="self-start">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addCard}
+            disabled={disabled}
+            className="self-start"
+          >
             + {t('products.detail.blocks.suitabilityAddCard')}
           </Button>
         </TabsContent>
 
         {/* Chế độ DÁN MÃ HTML — chỉnh trực tiếp, cho phép CSS inline. */}
         <TabsContent value="html" className="flex flex-col gap-2">
-        <Textarea
-          className="font-mono text-xs"
-          placeholder={t('products.detail.suitability.htmlPlaceholder')}
-          value={draftHtml}
-          onChange={(e) => updateDraft(e.target.value)}
-          disabled={disabled || pending}
-          rows={8}
-          maxLength={20000}
-        />
-        <div className="flex justify-end"><HelpTooltip content={t('products.detail.suitability.htmlHint')} /></div>
-        <HtmlImportNotice
-          result={result}
-          dirty={dirty}
-          disabled={disabled || pending}
-          onApply={applyParsed}
-          onUseRaw={applyRaw}
-          allowRaw
-        />
-        <AiHtmlBrief
-          promptKey="products.detail.suitability.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('suitability', t('products.detail.suitability.aiBriefPrompt')) : undefined}
-        />
+          <Textarea
+            className="font-mono text-xs"
+            placeholder={t('products.detail.suitability.htmlPlaceholder')}
+            value={draftHtml}
+            onChange={(e) => updateDraft(e.target.value)}
+            disabled={disabled || pending}
+            rows={8}
+            maxLength={20000}
+          />
+          <div className="flex justify-end">
+            <HelpTooltip content={t('products.detail.suitability.htmlHint')} />
+          </div>
+          <HtmlImportNotice
+            result={result}
+            dirty={dirty}
+            disabled={disabled || pending}
+            onApply={applyParsed}
+            onUseRaw={applyRaw}
+            allowRaw
+          />
+          <AiHtmlBrief
+            promptKey="products.detail.suitability.aiBriefPrompt"
+            getPrompt={
+              aiPromptBuilder
+                ? () =>
+                    aiPromptBuilder('suitability', t('products.detail.suitability.aiBriefPrompt'))
+                : undefined
+            }
+          />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
@@ -726,7 +983,13 @@ function isStructuredHtml(html) {
  * chỉnh (không round-trip được) → mở tab HTML để khỏi mất; bảng có cấu trúc → mở tab có cấu trúc.
  * State cục bộ là nguồn sự thật khi đang sửa (reseed khi remount theo block._key ở SortableList).
  */
-export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 'vi', aiPromptBuilder }) {
+export function SizeGuideBlockEditor({
+  block,
+  onChange,
+  disabled,
+  contentLang = 'vi',
+  aiPromptBuilder,
+}) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fTitle = isEn ? 'titleEn' : 'title'
@@ -741,7 +1004,10 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
     await runApply(async ({ draftHtml: nextDraft, result: parsed }) => {
       if (!parsed.acceptedCount) return null
       const confirmed = await showConfirm(
-        t('products.detail.htmlImport.confirmMessage', { count: parsed.acceptedCount, skipped: parsed.skippedCount }),
+        t('products.detail.htmlImport.confirmMessage', {
+          count: parsed.acceptedCount,
+          skipped: parsed.skippedCount,
+        }),
         t('products.detail.htmlImport.confirmTitle'),
         {
           variant: 'default',
@@ -808,9 +1074,14 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
       rows: model.rows.map((r) => ({ ...r, cells: [...r.cells, ''] })),
     })
   const removeColumn = async (ci) => {
-    const hasContent = Boolean(model.columns[ci]?.label?.trim()) || model.rows.some((r) => (r.cells[ci] || '').trim())
+    const hasContent =
+      Boolean(model.columns[ci]?.label?.trim()) ||
+      model.rows.some((r) => (r.cells[ci] || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     commit({
@@ -827,11 +1098,17 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
       ),
     })
   const addRow = () =>
-    commit({ ...model, rows: [...model.rows, { _key: generateId(), cells: model.columns.map(() => '') }] })
+    commit({
+      ...model,
+      rows: [...model.rows, { _key: generateId(), cells: model.columns.map(() => '') }],
+    })
   const removeRow = async (ri) => {
     const hasContent = (model.rows[ri]?.cells || []).some((c) => (c || '').trim())
     if (hasContent) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     commit({ ...model, rows: model.rows.filter((_, idx) => idx !== ri) })
@@ -881,16 +1158,29 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                       disabled={disabled}
                       maxLength={120}
                     />
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                      onClick={() => removeColumn(ci)} disabled={disabled || colCount <= 1}
-                      aria-label={t('products.detail.sizeGuide.removeColumn')}><X size={14} aria-hidden="true" /></Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                      onClick={() => removeColumn(ci)}
+                      disabled={disabled || colCount <= 1}
+                      aria-label={t('products.detail.sizeGuide.removeColumn')}
+                    >
+                      <X size={14} aria-hidden="true" />
+                    </Button>
                   </div>
                 ))}
               </div>
               {/* chừa chỗ thẳng hàng với nút xoá dòng bên dưới */}
               <div className="w-7 shrink-0" aria-hidden="true" />
             </div>
-            <Button variant="outline" size="sm" onClick={addColumn} disabled={disabled} className="self-start">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addColumn}
+              disabled={disabled}
+              className="self-start"
+            >
               + {t('products.detail.sizeGuide.addColumn')}
             </Button>
           </div>
@@ -909,8 +1199,15 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                 <div className="w-7 shrink-0" aria-hidden="true" />
                 <div className="grid flex-1 gap-2" style={gridStyle}>
                   {model.columns.map((col, ci) => (
-                    <span key={col._key} className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {col.label?.trim() || t('products.detail.sizeGuide.columnFallback', { index: ci + 1, defaultValue: 'Cột {{index}}' })}
+                    <span
+                      key={col._key}
+                      className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      {col.label?.trim() ||
+                        t('products.detail.sizeGuide.columnFallback', {
+                          index: ci + 1,
+                          defaultValue: 'Cột {{index}}',
+                        })}
                     </span>
                   ))}
                 </div>
@@ -924,13 +1221,24 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
               disabled={disabled}
               className="flex flex-col gap-2"
               renderItem={(row, sortable, ri) => (
-                <div ref={sortable.setNodeRef} style={sortable.style} className="flex items-center gap-2">
-                  <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+                <div
+                  ref={sortable.setNodeRef}
+                  style={sortable.style}
+                  className="flex items-center gap-2"
+                >
+                  <DragHandle
+                    handleProps={sortable.handleProps}
+                    disabled={disabled}
+                    label={t('products.detail.dragToReorder')}
+                  />
                   <div className="grid flex-1 gap-2" style={gridStyle}>
                     {row.cells.map((cell, ci) => (
                       <Input
                         key={model.columns[ci]?._key || ci}
-                        aria-label={model.columns[ci]?.label?.trim() || t('products.detail.sizeGuide.cellPlaceholder')}
+                        aria-label={
+                          model.columns[ci]?.label?.trim() ||
+                          t('products.detail.sizeGuide.cellPlaceholder')
+                        }
                         placeholder={t('products.detail.sizeGuide.cellPlaceholder')}
                         value={cell || ''}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
@@ -939,13 +1247,26 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                       />
                     ))}
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                    onClick={() => removeRow(ri)} disabled={disabled}
-                    aria-label={t('products.detail.sizeGuide.removeRow')}><X size={14} aria-hidden="true" /></Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                    onClick={() => removeRow(ri)}
+                    disabled={disabled}
+                    aria-label={t('products.detail.sizeGuide.removeRow')}
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </Button>
                 </div>
               )}
               footer={
-                <Button variant="outline" size="sm" onClick={addRow} disabled={disabled} className="self-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addRow}
+                  disabled={disabled}
+                  className="self-start"
+                >
                   + {t('products.detail.sizeGuide.addRow')}
                 </Button>
               }
@@ -971,28 +1292,34 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
 
         {/* Chế độ DÁN MÃ HTML */}
         <TabsContent value="html" className="flex flex-col gap-2">
-        <Textarea
-          className="font-mono text-xs"
-          placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
-          value={draftHtml}
-          onChange={(e) => updateDraft(e.target.value)}
-          disabled={disabled || pending}
-          rows={8}
-          maxLength={20000}
-        />
-        <div className="flex justify-end"><HelpTooltip content={t('products.detail.sizeGuide.htmlHint')} /></div>
-        <HtmlImportNotice
-          result={result}
-          dirty={dirty}
-          disabled={disabled || pending}
-          onApply={applyParsed}
-          onUseRaw={applyRaw}
-          allowRaw
-        />
-        <AiHtmlBrief
-          promptKey="products.detail.sizeGuide.aiBriefPrompt"
-          getPrompt={aiPromptBuilder ? () => aiPromptBuilder('sizeGuide', t('products.detail.sizeGuide.aiBriefPrompt')) : undefined}
-        />
+          <Textarea
+            className="font-mono text-xs"
+            placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
+            value={draftHtml}
+            onChange={(e) => updateDraft(e.target.value)}
+            disabled={disabled || pending}
+            rows={8}
+            maxLength={20000}
+          />
+          <div className="flex justify-end">
+            <HelpTooltip content={t('products.detail.sizeGuide.htmlHint')} />
+          </div>
+          <HtmlImportNotice
+            result={result}
+            dirty={dirty}
+            disabled={disabled || pending}
+            onApply={applyParsed}
+            onUseRaw={applyRaw}
+            allowRaw
+          />
+          <AiHtmlBrief
+            promptKey="products.detail.sizeGuide.aiBriefPrompt"
+            getPrompt={
+              aiPromptBuilder
+                ? () => aiPromptBuilder('sizeGuide', t('products.detail.sizeGuide.aiBriefPrompt'))
+                : undefined
+            }
+          />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}
@@ -1016,16 +1343,35 @@ export function BlockTypeLabel({ type, compactMobile = false }) {
   const { t } = useTranslation()
   const key = `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`
   return (
-    <span className={cn(
-      'text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1',
-      compactMobile && 'max-sm:hidden',
-    )}>
+    <span
+      className={cn(
+        'text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1',
+        compactMobile && 'max-sm:hidden',
+      )}
+    >
       {t(key, { defaultValue: t('common.unknown') })}
     </span>
   )
 }
 
-export function BlockCard({ block, disabled, structDisabled, contentLang, sortable, collapsed, onToggleCollapse, insertMenu, onInsertBelow, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
+export function BlockCard({
+  block,
+  disabled,
+  structDisabled,
+  contentLang,
+  sortable,
+  collapsed,
+  onToggleCollapse,
+  insertMenu,
+  onInsertBelow,
+  onUpdate,
+  onRemove,
+  onDuplicate,
+  onPickImage,
+  onPickVideo,
+  onAltBlur,
+  productMode,
+}) {
   const { t } = useTranslation()
   const dragDisabled = structDisabled ?? disabled
   const collapseLabel = collapsed
@@ -1060,37 +1406,97 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
           aria-label={collapseLabel}
           title={collapseLabel}
         >
-          <ChevronDown size={16} className={cn('transition-transform', collapsed && '-rotate-90')} aria-hidden="true" />
+          <ChevronDown
+            size={16}
+            className={cn('transition-transform', collapsed && '-rotate-90')}
+            aria-hidden="true"
+          />
         </Button>
       )}
       <BlockTypeLabel type={block.type} compactMobile={!productMode} />
-      <div className={cn(
-        'flex-1 min-w-0',
-        !productMode && 'max-sm:order-last max-sm:basis-full',
-      )}>
+      <div className={cn('flex-1 min-w-0', !productMode && 'max-sm:order-last max-sm:basis-full')}>
         {collapsed ? (
           <Button
             variant="unstyled"
             onClick={onToggleCollapse}
             className="block w-full truncate py-1 text-left text-sm text-muted-foreground hover:text-foreground"
           >
-            {collapsedPreview(block) || t('products.detail.blocks.collapsedHint', { defaultValue: '(đã thu gọn — bấm để mở)' })}
+            {collapsedPreview(block) ||
+              t('products.detail.blocks.collapsedHint', {
+                defaultValue: '(đã thu gọn — bấm để mở)',
+              })}
           </Button>
         ) : (
           <>
-            {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-            {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-            {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-            {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} contentLang={contentLang} />}
-            {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} contentLang={contentLang} />}
-            {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-            {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} contentLang={contentLang} />}
-            {block.type === 'divider'   && <DividerBlockEditor />}
+            {block.type === 'heading' && (
+              <HeadingBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'paragraph' && (
+              <ParagraphBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'list' && (
+              <ListBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'image' && (
+              <ImageBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                onPickImage={onPickImage}
+                onAltBlur={onAltBlur}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'video' && (
+              <VideoBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                onPickVideo={onPickVideo}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'callout' && (
+              <CalloutBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'feature' && (
+              <FeatureBlockEditor
+                block={block}
+                onChange={onUpdate}
+                disabled={disabled}
+                onPickImage={onPickImage}
+                onAltBlur={onAltBlur}
+                productMode={productMode}
+                contentLang={contentLang}
+              />
+            )}
+            {block.type === 'divider' && <DividerBlockEditor />}
             {!KNOWN_BLOCK_TYPES.has(block.type) && (
               <div className="rounded-sm border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
                 {t('products.detail.blocks.unsupported', {
                   type: block.type,
-                  defaultValue: 'Khối "{{type}}" không được hỗ trợ trong trình soạn thảo. Nội dung vẫn được giữ nguyên khi lưu.',
+                  defaultValue:
+                    'Khối "{{type}}" không được hỗ trợ trong trình soạn thảo. Nội dung vẫn được giữ nguyên khi lưu.',
                 })}
               </div>
             )}

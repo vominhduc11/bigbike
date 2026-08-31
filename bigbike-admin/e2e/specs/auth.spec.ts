@@ -32,22 +32,28 @@ test.describe('Auth flow', () => {
     await expect(page.locator('.bb-login-shell')).toBeVisible({ timeout: 15_000 })
   })
 
-  testAnon('rejects invalid credentials with a clear error and stays on login', async ({ page }) => {
-    await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('.bb-login-shell')).toBeVisible()
+  testAnon(
+    'rejects invalid credentials with a clear error and stays on login',
+    async ({ page }) => {
+      await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
+      await expect(page.locator('.bb-login-shell')).toBeVisible()
 
-    // Unknown account (avoids touching the real admin lockout counter).
-    await page.fill('input[type="email"]', 'e2e-nobody@bigbike.vn')
-    await page.fill('input[type="password"]', 'definitely-wrong')
-    await page.locator('button[type="submit"]').click()
+      // Unknown account (avoids touching the real admin lockout counter).
+      await page.fill('input[type="email"]', 'e2e-nobody@bigbike.vn')
+      await page.fill('input[type="password"]', 'definitely-wrong')
+      await page.locator('button[type="submit"]').click()
 
-    const alert = page.locator('.bb-login-shell [role="alert"]').first()
-    await expect(alert).toBeVisible({ timeout: 15_000 })
-    await expect(alert).not.toBeEmpty()
-    expect(await isOnLogin(page)).toBe(true)
-  })
+      const alert = page.locator('.bb-login-shell [role="alert"]').first()
+      await expect(alert).toBeVisible({ timeout: 15_000 })
+      await expect(alert).not.toBeEmpty()
+      expect(await isOnLogin(page)).toBe(true)
+    },
+  )
 
-  test('bootstraps an authenticated session from the refresh cookie', async ({ adminPage, collect }) => {
+  test('bootstraps an authenticated session from the refresh cookie', async ({
+    adminPage,
+    collect,
+  }) => {
     // adminPage already loaded the shell from the rotating cookie.
     await expect(adminPage.locator('.bb-app')).toBeVisible()
     await expect(adminPage.locator('.bb-sidebar')).toBeVisible()

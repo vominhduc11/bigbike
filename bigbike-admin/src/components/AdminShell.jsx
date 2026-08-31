@@ -29,10 +29,7 @@ export function useAutoHideSidebar(active) {
 }
 
 function isRouteActive(activePath, candidatePath) {
-  return (
-    activePath === candidatePath ||
-    activePath.startsWith(`${candidatePath}/`)
-  )
+  return activePath === candidatePath || activePath.startsWith(`${candidatePath}/`)
 }
 
 function Breadcrumb({ activePath, navGroups, navigate, homePath, t }) {
@@ -51,19 +48,19 @@ function Breadcrumb({ activePath, navGroups, navigate, homePath, t }) {
 
   const isDetail = activePath !== match.path
   const isCreate = activePath.endsWith('/new') || activePath.includes('/new/')
-  const homeItem = navGroups
-    .flatMap((group) => group.items)
-    .find((item) => item.path === homePath)
+  const homeItem = navGroups.flatMap((group) => group.items).find((item) => item.path === homePath)
   const isHomeRoot = !isDetail && match.path === homePath
-  const homeLabel = homePath === '/admin/dashboard'
-    ? t('app.overview')
-    : homeItem?.label
+  const homeLabel = homePath === '/admin/dashboard' ? t('app.overview') : homeItem?.label
 
   return (
     <nav className="bb-breadcrumb" aria-label="Breadcrumb">
       <ol className="bb-breadcrumb-inner">
         {isHomeRoot ? (
-          <li><span className="current" aria-current="page">{homeLabel || match.label}</span></li>
+          <li>
+            <span className="current" aria-current="page">
+              {homeLabel || match.label}
+            </span>
+          </li>
         ) : (
           <>
             {homePath && homeLabel ? (
@@ -71,27 +68,48 @@ function Breadcrumb({ activePath, navGroups, navigate, homePath, t }) {
                 <li>
                   <a
                     href={homePath}
-                    onClick={(e) => { e.preventDefault(); navigate(homePath) }}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate(homePath)
+                    }}
                   >
                     {homeLabel}
                   </a>
                 </li>
-                <li className="sep" aria-hidden="true">/</li>
+                <li className="sep" aria-hidden="true">
+                  /
+                </li>
               </>
             ) : null}
             {isDetail ? (
               <li>
-                <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
+                <a
+                  href={match.path}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate(match.path)
+                  }}
+                >
                   {match.label}
                 </a>
               </li>
             ) : (
-              <li><span className="current" aria-current="page">{match.label}</span></li>
+              <li>
+                <span className="current" aria-current="page">
+                  {match.label}
+                </span>
+              </li>
             )}
             {isDetail && (
               <>
-                <li className="sep" aria-hidden="true">/</li>
-                <li><span className="current" aria-current="page">{isCreate ? t('app.createNew') : t('app.detail')}</span></li>
+                <li className="sep" aria-hidden="true">
+                  /
+                </li>
+                <li>
+                  <span className="current" aria-current="page">
+                    {isCreate ? t('app.createNew') : t('app.detail')}
+                  </span>
+                </li>
               </>
             )}
           </>
@@ -157,7 +175,10 @@ export function AdminShell({
   useEffect(() => {
     if (!sidebarOpen) return undefined
     const onKey = (e) => {
-      if (e.key === 'Escape') { setSidebarOpen(false); hamburgerRef.current?.focus() }
+      if (e.key === 'Escape') {
+        setSidebarOpen(false)
+        hamburgerRef.current?.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     sidebarRef.current?.querySelector('a.bb-nav-link')?.focus()
@@ -178,9 +199,10 @@ export function AdminShell({
     const currentIndex = links.indexOf(document.activeElement)
     if (currentIndex === -1) return
     e.preventDefault()
-    const nextIndex = e.key === 'ArrowDown'
-      ? Math.min(links.length - 1, currentIndex + 1)
-      : Math.max(0, currentIndex - 1)
+    const nextIndex =
+      e.key === 'ArrowDown'
+        ? Math.min(links.length - 1, currentIndex + 1)
+        : Math.max(0, currentIndex - 1)
     links[nextIndex]?.focus()
   }
 
@@ -199,14 +221,19 @@ export function AdminShell({
   useEffect(() => {
     if (!userMenuOpen) return undefined
     const onKey = (e) => {
-      if (e.key === 'Escape') { setUserMenuOpen(false); userChipRef.current?.focus() }
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false)
+        userChipRef.current?.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [userMenuOpen])
 
   function formatRoles(roles) {
-    return (roles ?? []).map(r => t(`roles.roleLabel_${r}`, { defaultValue: t('common.unknown') })).join(', ')
+    return (roles ?? [])
+      .map((r) => t(`roles.roleLabel_${r}`, { defaultValue: t('common.unknown') }))
+      .join(', ')
   }
 
   const initials = useMemo(() => {
@@ -224,7 +251,9 @@ export function AdminShell({
           'bb-app',
           sidebarOpen ? 'sidebar-open' : '',
           previewActive ? 'preview-active' : '',
-        ].filter(Boolean).join(' ')}
+        ]
+          .filter(Boolean)
+          .join(' ')}
         data-screen-label="BigBike Admin"
       >
         {/* A5: bỏ qua tới nội dung — ẩn ngoài màn hình, hiện khi focus bằng bàn phím */}
@@ -233,7 +262,14 @@ export function AdminShell({
         </a>
 
         {/* Mobile sidebar overlay */}
-        <div className="bb-sidebar-overlay" onClick={() => { setSidebarOpen(false); hamburgerRef.current?.focus() }} aria-hidden="true" />
+        <div
+          className="bb-sidebar-overlay"
+          onClick={() => {
+            setSidebarOpen(false)
+            hamburgerRef.current?.focus()
+          }}
+          aria-hidden="true"
+        />
 
         <aside
           ref={sidebarRef}
@@ -244,53 +280,77 @@ export function AdminShell({
           aria-hidden={drawerHidden || undefined}
         >
           <div className="bb-sidebar-brand">
-            <span className="bb-brand-mark" aria-hidden="true">BB</span>
+            <span className="bb-brand-mark" aria-hidden="true">
+              BB
+            </span>
             <div className="bb-brand-meta">
               <span className="bb-brand-name">BigBike</span>
               <span className="bb-brand-sub">Admin</span>
             </div>
           </div>
 
-          <nav className="bb-sidebar-nav" aria-label={t('nav.mainNav')} onKeyDown={handleSidebarKeyDown}>
+          <nav
+            className="bb-sidebar-nav"
+            aria-label={t('nav.mainNav')}
+            onKeyDown={handleSidebarKeyDown}
+          >
             <TooltipProvider delayDuration={400}>
               {navGroups.map((group) => {
                 const groupLabelId = `bb-nav-group-${group.groupKey}`
                 return (
-                <div key={group.groupKey} className="bb-nav-group" role="group" aria-labelledby={groupLabelId}>
-                  <span id={groupLabelId} className="bb-nav-group-label">{group.label}</span>
-                  {group.items.map((item) => {
-                    const Icon = item.icon
-                    const active = isRouteActive(activePath, item.path)
-                    const badgeCount = navBadges[item.path] || 0
-                    return (
-                      <Tooltip key={item.path}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={item.path}
-                            className={active ? 'bb-nav-link active' : 'bb-nav-link'}
-                            onClick={(e) => handleNavClick(e, item.path)}
-                            onPointerEnter={() => preloadPath?.(item.path)}
-                            aria-current={active ? 'page' : undefined}
-                          >
-                            {Icon && <Icon size={15} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />}
-                            <span className="label">{item.label}</span>
-                            {badgeCount > 0 && (
-                              <span
-                                className={item.path === '/admin/orders' ? 'bb-nav-badge' : 'bb-nav-badge muted'}
-                                aria-label={t('nav.pendingBadge', { count: badgeCount })}
-                              >
-                                {badgeCount > 99 ? '99+' : badgeCount}
-                              </span>
-                            )}
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          {item.label}{badgeCount > 0 ? ` (${badgeCount})` : ''}
-                        </TooltipContent>
-                      </Tooltip>
-                    )
-                  })}
-                </div>
+                  <div
+                    key={group.groupKey}
+                    className="bb-nav-group"
+                    role="group"
+                    aria-labelledby={groupLabelId}
+                  >
+                    <span id={groupLabelId} className="bb-nav-group-label">
+                      {group.label}
+                    </span>
+                    {group.items.map((item) => {
+                      const Icon = item.icon
+                      const active = isRouteActive(activePath, item.path)
+                      const badgeCount = navBadges[item.path] || 0
+                      return (
+                        <Tooltip key={item.path}>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={item.path}
+                              className={active ? 'bb-nav-link active' : 'bb-nav-link'}
+                              onClick={(e) => handleNavClick(e, item.path)}
+                              onPointerEnter={() => preloadPath?.(item.path)}
+                              aria-current={active ? 'page' : undefined}
+                            >
+                              {Icon && (
+                                <Icon
+                                  size={15}
+                                  strokeWidth={active ? 2.25 : 1.75}
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span className="label">{item.label}</span>
+                              {badgeCount > 0 && (
+                                <span
+                                  className={
+                                    item.path === '/admin/orders'
+                                      ? 'bb-nav-badge'
+                                      : 'bb-nav-badge muted'
+                                  }
+                                  aria-label={t('nav.pendingBadge', { count: badgeCount })}
+                                >
+                                  {badgeCount > 99 ? '99+' : badgeCount}
+                                </span>
+                              )}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {item.label}
+                            {badgeCount > 0 ? ` (${badgeCount})` : ''}
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    })}
+                  </div>
                 )
               })}
             </TooltipProvider>
@@ -340,7 +400,9 @@ export function AdminShell({
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
               >
-                <span className="avatar" aria-hidden="true">{initials}</span>
+                <span className="avatar" aria-hidden="true">
+                  {initials}
+                </span>
                 <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                   <span className="name">{user?.fullName}</span>
                   <span className="role">{formatRoles(user?.roles)}</span>
@@ -356,7 +418,9 @@ export function AdminShell({
                   </div>
                   <hr />
                   <div className="bb-user-dropdown-lang">
-                    <span className="bb-user-dropdown-lang-label">{t('nav.contentLangLabel', { defaultValue: 'Ngôn ngữ nội dung' })}</span>
+                    <span className="bb-user-dropdown-lang-label">
+                      {t('nav.contentLangLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
+                    </span>
                     <LanguageSwitcher />
                   </div>
                   <Button
@@ -364,7 +428,10 @@ export function AdminShell({
                     role="menuitem"
                     variant="ghost"
                     className="bb-user-dropdown-item danger"
-                    onClick={() => { setUserMenuOpen(false); logout() }}
+                    onClick={() => {
+                      setUserMenuOpen(false)
+                      logout()
+                    }}
                   >
                     <LogOut size={14} aria-hidden="true" />
                     {t('common.logout')}
@@ -374,9 +441,17 @@ export function AdminShell({
             </div>
           </header>
 
-          <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} homePath={homePath} t={t} />
+          <Breadcrumb
+            activePath={activePath}
+            navGroups={navGroups}
+            navigate={navigate}
+            homePath={homePath}
+            t={t}
+          />
 
-          <main id="bb-main-content" tabIndex={-1} className="bb-page-content">{children}</main>
+          <main id="bb-main-content" tabIndex={-1} className="bb-page-content">
+            {children}
+          </main>
         </div>
       </div>
 

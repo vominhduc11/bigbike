@@ -48,7 +48,9 @@ export function SeoIndexField({
         <label className="flex w-fit cursor-pointer items-center gap-3 rounded-[var(--admin-radius-control)] border border-border p-3 text-sm hover:bg-muted">
           <Checkbox
             checked={visible}
-            onCheckedChange={(checked) => onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)}
+            onCheckedChange={(checked) =>
+              onChange(isEnLang ? 'seoNoIndexEn' : 'seoNoIndex', checked !== true)
+            }
             disabled={disabled}
           />
           <span>
@@ -57,10 +59,12 @@ export function SeoIndexField({
               : t('seoIndex.labelVi', { defaultValue: 'Cho Google hiển thị trang tiếng Việt' })}
           </span>
         </label>
-        <HelpTooltip content={t('seoIndex.hint', {
-          defaultValue:
-            'Tắt thì khách vẫn xem được nếu có sẵn đường dẫn, chỉ không xuất hiện trên kết quả tìm kiếm. Khác với chuyển về Nháp — chuyển Nháp là khách cũng không xem được.',
-        })} />
+        <HelpTooltip
+          content={t('seoIndex.hint', {
+            defaultValue:
+              'Tắt thì khách vẫn xem được nếu có sẵn đường dẫn, chỉ không xuất hiện trên kết quả tìm kiếm. Khác với chuyển về Nháp — chuyển Nháp là khách cũng không xem được.',
+          })}
+        />
       </div>
 
       {!canEditIndex && (
@@ -75,8 +79,8 @@ export function SeoIndexField({
       {blockedByContent && (
         <span className="flex items-center gap-1 text-xs text-warning">
           <EyeOff size={13} aria-hidden="true" />
-          {englishReadyHint
-            || t('seoIndex.englishNotReady', {
+          {englishReadyHint ||
+            t('seoIndex.englishNotReady', {
               defaultValue:
                 'Bản tiếng Anh chưa đủ nội dung nên vẫn chưa hiển thị trên Google dù đã bật. Bổ sung nội dung tiếng Anh để trang được tính là bản dịch thật.',
             })}

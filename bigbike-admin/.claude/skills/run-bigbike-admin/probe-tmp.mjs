@@ -25,7 +25,17 @@ const browser = await chromium.launch({ headless: true })
 const context = await browser.newContext({ baseURL: BASE, viewport: { width: 1440, height: 1000 } })
 const host = new URL(BASE).hostname
 const cookieVal = await loginCookie(context.request)
-await context.addCookies([{ name: REFRESH_COOKIE, value: cookieVal, domain: host, path: '/api/v1/auth', httpOnly: true, secure: false, sameSite: 'Lax' }])
+await context.addCookies([
+  {
+    name: REFRESH_COOKIE,
+    value: cookieVal,
+    domain: host,
+    path: '/api/v1/auth',
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Lax',
+  },
+])
 
 const page = await context.newPage()
 await page.addInitScript(() => {
@@ -38,8 +48,14 @@ await page.addInitScript(() => {
         const results = []
         const seen = new Set()
         function looksLikeForm(v) {
-          return v && typeof v === 'object' && !Array.isArray(v) &&
-            'slug' in v && 'title' in v && 'publishStatus' in v
+          return (
+            v &&
+            typeof v === 'object' &&
+            !Array.isArray(v) &&
+            'slug' in v &&
+            'title' in v &&
+            'publishStatus' in v
+          )
         }
         function walkHooks(fiber) {
           let hook = fiber.memoizedState
@@ -56,7 +72,9 @@ await page.addInitScript(() => {
         function walk(fiber, depth) {
           if (!fiber || seen.has(fiber) || depth > 4000) return
           seen.add(fiber)
-          try { walkHooks(fiber) } catch (e) {}
+          try {
+            walkHooks(fiber)
+          } catch (e) {}
           if (fiber.child) walk(fiber.child, depth + 1)
           if (fiber.sibling) walk(fiber.sibling, depth + 1)
         }
@@ -71,7 +89,10 @@ await page.addInitScript(() => {
 })
 
 await page.goto('/admin/content/article/wp-art-8118', { waitUntil: 'domcontentloaded' })
-await page.locator('.bb-app').waitFor({ state: 'attached', timeout: 20000 }).catch(() => {})
+await page
+  .locator('.bb-app')
+  .waitFor({ state: 'attached', timeout: 20000 })
+  .catch(() => {})
 await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {})
 await page.waitForTimeout(1000)
 

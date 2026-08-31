@@ -50,8 +50,10 @@ export function LoginScreen() {
     const dot = em.lastIndexOf('.')
     const emailWellFormed = at > 0 && dot > at + 1 && dot < em.length - 1 && !/\s/.test(em)
     if (!em) errs.email = t('auth.emailRequired', { defaultValue: 'Vui lòng nhập email.' })
-    else if (!emailWellFormed) errs.email = t('auth.emailInvalid', { defaultValue: 'Email không hợp lệ.' })
-    if (!password) errs.password = t('auth.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
+    else if (!emailWellFormed)
+      errs.email = t('auth.emailInvalid', { defaultValue: 'Email không hợp lệ.' })
+    if (!password)
+      errs.password = t('auth.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
     return errs
   }
 
@@ -72,13 +74,17 @@ export function LoginScreen() {
       await login({ email: email.trim(), password })
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 401) {
-        setError(err.code === 'ACCOUNT_LOCKED' ? t('auth.accountLocked') : t('auth.invalidCredentials'))
+        setError(
+          err.code === 'ACCOUNT_LOCKED' ? t('auth.accountLocked') : t('auth.invalidCredentials'),
+        )
         setCanRetry(false)
         setCredentialError(true)
         document.getElementById(emailId)?.focus()
       } else {
         // Lỗi mạng/máy chủ — cho phép thử lại tường minh, không đánh dấu ô (thông tin có thể vẫn đúng)
-        setError(t('auth.networkError', { defaultValue: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }))
+        setError(
+          t('auth.networkError', { defaultValue: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }),
+        )
         setCanRetry(true)
       }
     } finally {
@@ -100,9 +106,7 @@ export function LoginScreen() {
       {/* Left panel — brand */}
       <div className="bb-login-left">
         <div>
-          <p className="bb-login-brand-kicker">
-            BigBike
-          </p>
+          <p className="bb-login-brand-kicker">BigBike</p>
           <h1>
             <span className="brand-dot" />
             Admin
@@ -143,12 +147,18 @@ export function LoginScreen() {
 
           <form onSubmit={onSubmit} noValidate className="bb-auth-form">
             <p className="bb-required-legend">
-              <span aria-hidden="true" className="bb-required-mark">*</span> {t('common.requiredLegend', 'Bắt buộc')}
+              <span aria-hidden="true" className="bb-required-mark">
+                *
+              </span>{' '}
+              {t('common.requiredLegend', 'Bắt buộc')}
             </p>
             <div className="bb-auth-field">
               <label htmlFor={emailId} className="bb-auth-label">
                 {t('auth.email')}
-                <span aria-hidden="true" className="bb-required-mark"> *</span>
+                <span aria-hidden="true" className="bb-required-mark">
+                  {' '}
+                  *
+                </span>
               </label>
               <Input
                 id={emailId}
@@ -158,13 +168,18 @@ export function LoginScreen() {
                 aria-required="true"
                 placeholder={t('auth.emailPlaceholder')}
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined })) }}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }))
+                }}
                 disabled={submitting}
                 aria-invalid={Boolean(fieldErrors.email) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(emailErrId, Boolean(fieldErrors.email))}
               />
               {fieldErrors.email ? (
-                <span id={emailErrId} role="alert" className="bb-field-error">{fieldErrors.email}</span>
+                <span id={emailErrId} role="alert" className="bb-field-error">
+                  {fieldErrors.email}
+                </span>
               ) : null}
             </div>
 
@@ -172,7 +187,10 @@ export function LoginScreen() {
               <div className="bb-auth-label-row">
                 <label htmlFor={passwordId} className="bb-auth-label">
                   {t('auth.password')}
-                  <span aria-hidden="true" className="bb-required-mark"> *</span>
+                  <span aria-hidden="true" className="bb-required-mark">
+                    {' '}
+                    *
+                  </span>
                 </label>
                 <Button
                   type="button"
@@ -194,21 +212,23 @@ export function LoginScreen() {
                 maxLength={128}
                 placeholder={t('auth.passwordPlaceholder')}
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined })) }}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined }))
+                }}
                 disabled={submitting}
                 aria-invalid={Boolean(fieldErrors.password) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(passwordErrId, Boolean(fieldErrors.password))}
               />
               {fieldErrors.password ? (
-                <span id={passwordErrId} role="alert" className="bb-field-error">{fieldErrors.password}</span>
+                <span id={passwordErrId} role="alert" className="bb-field-error">
+                  {fieldErrors.password}
+                </span>
               ) : null}
             </div>
 
             {showForgot ? (
-              <div
-                id={forgotId}
-                className="bb-alert info bb-alert-readable"
-              >
+              <div id={forgotId} className="bb-alert info bb-alert-readable">
                 {t('auth.forgotPasswordNote')}
               </div>
             ) : null}

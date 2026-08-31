@@ -11,29 +11,45 @@ import { formatDateTimeWithSeconds } from '../../lib/formatters'
 // nhất lại hiển thị như dòng thường.
 export const DANGEROUS_ACTIONS = new Set([
   // Xoá vĩnh viễn — không thể khôi phục
-  'PRODUCT_HARD_DELETED', 'CATEGORY_HARD_DELETED', 'BRAND_HARD_DELETED',
-  'CONTENT_ARTICLE_HARD_DELETED', 'MEDIA_HARD_DELETED',
+  'PRODUCT_HARD_DELETED',
+  'CATEGORY_HARD_DELETED',
+  'BRAND_HARD_DELETED',
+  'CONTENT_ARTICLE_HARD_DELETED',
+  'MEDIA_HARD_DELETED',
   // Chuyển vào Thùng rác / xoá mềm
-  'PRODUCT_SOFT_DELETED', 'CATEGORY_SOFT_DELETED', 'BRAND_SOFT_DELETED',
-  'CONTENT_ARTICLE_DELETED', 'MEDIA_DELETED',
+  'PRODUCT_SOFT_DELETED',
+  'CATEGORY_SOFT_DELETED',
+  'BRAND_SOFT_DELETED',
+  'CONTENT_ARTICLE_DELETED',
+  'MEDIA_DELETED',
   // Xoá bản ghi cấu hình / nội dung
-  'MENU_DELETED', 'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
-  'SLIDER_DELETED', 'HOME_VIDEO_DELETED', 'MEDIA_FOLDER_DELETED',
-  'ATTRIBUTE_DELETED', 'ATTRIBUTE_VALUE_DELETED', 'REVIEW_DELETED',
+  'MENU_DELETED',
+  'MENU_ITEM_DELETED',
+  'ROLE_DELETED',
+  'REDIRECT_DELETED',
+  'SLIDER_DELETED',
+  'HOME_VIDEO_DELETED',
+  'MEDIA_FOLDER_DELETED',
+  'ATTRIBUTE_DELETED',
+  'ATTRIBUTE_VALUE_DELETED',
+  'REVIEW_DELETED',
   'CUSTOMER_AVATAR_REMOVED',
   // Khoá quyền truy cập của người dùng quản trị
-  'ADMIN_USER_DISABLED', 'ADMIN_USER_SUSPENDED',
+  'ADMIN_USER_DISABLED',
+  'ADMIN_USER_SUSPENDED',
   // Sự cố đăng nhập
-  'ADMIN_LOGIN_FAILED', 'ADMIN_ACCOUNT_LOCKED',
+  'ADMIN_LOGIN_FAILED',
+  'ADMIN_ACCOUNT_LOCKED',
   // Mã cũ — giữ lại để bản ghi lịch sử vẫn được đánh dấu đúng
-  'ORDER_CANCELLED', 'PRODUCT_DELETED', 'CUSTOMER_DELETED',
-  'CATEGORY_DELETED', 'BRAND_DELETED',
+  'ORDER_CANCELLED',
+  'PRODUCT_DELETED',
+  'CUSTOMER_DELETED',
+  'CATEGORY_DELETED',
+  'BRAND_DELETED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
-export const DANGEROUS_VALUES = new Set([
-  'CANCELLED', 'FAILED', 'BANNED', 'SUSPENDED',
-])
+export const DANGEROUS_VALUES = new Set(['CANCELLED', 'FAILED', 'BANNED', 'SUSPENDED'])
 
 // ── Date preset helper ─────────────────────────────────────────────────────────
 export function getDatePreset(preset) {
@@ -44,11 +60,13 @@ export function getDatePreset(preset) {
 
   if (preset === 'today') return { from: todayStr, to: todayStr }
   if (preset === '7d') {
-    const from = new Date(today); from.setDate(from.getDate() - 6)
+    const from = new Date(today)
+    from.setDate(from.getDate() - 6)
     return { from: fmt(from), to: todayStr }
   }
   if (preset === '30d') {
-    const from = new Date(today); from.setDate(from.getDate() - 29)
+    const from = new Date(today)
+    from.setDate(from.getDate() - 29)
     return { from: fmt(from), to: todayStr }
   }
   if (preset === 'month') {
@@ -65,10 +83,19 @@ export function toBadgeVariant(tone) {
 // ── Nguồn CHUNG cho tone của từng module — trước đây AuditCard và cells.jsx tự khai
 // báo map riêng (lệch nhau, thiếu key). Gom về đây để 2 nơi import cùng 1 nguồn. ──
 export const MODULE_TONE_MAP = {
-  ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-  INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
-  MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral',
-  ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
+  ORDER: 'info',
+  PRODUCT: 'success',
+  CATEGORY: 'neutral',
+  BRAND: 'neutral',
+  INVENTORY: 'warning',
+  CUSTOMER: 'neutral',
+  SITE_SETTING: 'danger',
+  MEDIA: 'neutral',
+  MENU: 'neutral',
+  CONTENT: 'neutral',
+  ADMIN_ROLE: 'danger',
+  ADMIN_USER: 'neutral',
+  REDIRECT: 'warning',
 }
 
 export function getModuleTone(resourceType) {
@@ -95,14 +122,16 @@ export function getAuditCardData(log, t) {
     actionLabel,
     isDangerous: DANGEROUS_ACTIONS.has(log.action),
     timeLabel: formatDateTimeWithSeconds(log.createdAt),
-    actorLabel: log.actorDisplayName
-      || log.actorEmail
-      || t(`auditLog.actorType.${log.actorType}`, {
+    actorLabel:
+      log.actorDisplayName ||
+      log.actorEmail ||
+      t(`auditLog.actorType.${log.actorType}`, {
         defaultValue: t('auditLog.actorType.ADMIN'),
       }),
-    resourceLabel: log.resourceCode
-      || log.resourceDisplayName
-      || (log.resourceId ? log.resourceId.slice(0, 8) : '—'),
+    resourceLabel:
+      log.resourceCode ||
+      log.resourceDisplayName ||
+      (log.resourceId ? log.resourceId.slice(0, 8) : '—'),
     selectionLabel: t('auditLog.openDetailAria', {
       action: actionLabel,
       defaultValue: `Mở chi tiết: ${actionLabel}`,
@@ -112,15 +141,24 @@ export function getAuditCardData(log, t) {
 
 // ── Diff helpers ───────────────────────────────────────────────────────────────
 export function tryParse(str) {
-  try { return JSON.parse(str) } catch { return null }
+  try {
+    return JSON.parse(str)
+  } catch {
+    return null
+  }
 }
 
 // ── CSV export ─────────────────────────────────────────────────────────────────
 export function buildCsvRow(log, t) {
-  const actor = log.actorDisplayName || log.actorEmail || t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
+  const actor =
+    log.actorDisplayName ||
+    log.actorEmail ||
+    t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
   const actorType = t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('common.unknown') })
   const action = t(`auditLog.action.${log.action}`, { defaultValue: t('common.unknown') })
-  const module = t(`auditLog.module.${log.resourceType}`, { defaultValue: t('auditLog.module.OTHER') })
+  const module = t(`auditLog.module.${log.resourceType}`, {
+    defaultValue: t('auditLog.module.OTHER'),
+  })
   const entity = log.resourceCode || log.resourceDisplayName || log.resourceId || ''
   return [formatDateTimeWithSeconds(log.createdAt), actor, actorType, action, module, entity]
 }
@@ -141,7 +179,9 @@ export function exportToCsv(items, t) {
   ]
   const rows = items.map((log) => buildCsvRow(log, t))
   const csvContent = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${sanitizeSpreadsheetCell(cell).replace(/"/g, '""')}"`).join(','))
+    .map((row) =>
+      row.map((cell) => `"${sanitizeSpreadsheetCell(cell).replace(/"/g, '""')}"`).join(','),
+    )
     .join('\n')
   const bom = '﻿'
   const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -154,20 +194,42 @@ export function exportToCsv(items, t) {
 }
 
 // ── Filter constants ───────────────────────────────────────────────────────────
-export const ACTOR_OPTIONS    = ['ALL', 'ADMIN', 'CUSTOMER', 'SYSTEM']
+export const ACTOR_OPTIONS = ['ALL', 'ADMIN', 'CUSTOMER', 'SYSTEM']
 export const RESOURCE_OPTIONS = [
   'ALL',
-  'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY',
-  'CUSTOMER', 'CONTENT', 'MEDIA', 'MENU', 'MENU_ITEM',
-  'SITE_SETTING', 'ADMIN_ROLE', 'ADMIN_USER', 'REDIRECT',
-  'REVIEW', 'REPORT', 'ADMIN_AUTH', 'SLIDER', 'HOME_VIDEO',
-  'MEDIA_FOLDER', 'ATTRIBUTE', 'HOME_HIGHLIGHT',
+  'ORDER',
+  'PRODUCT',
+  'CATEGORY',
+  'BRAND',
+  'INVENTORY',
+  'CUSTOMER',
+  'CONTENT',
+  'MEDIA',
+  'MENU',
+  'MENU_ITEM',
+  'SITE_SETTING',
+  'ADMIN_ROLE',
+  'ADMIN_USER',
+  'REDIRECT',
+  'REVIEW',
+  'REPORT',
+  'ADMIN_AUTH',
+  'SLIDER',
+  'HOME_VIDEO',
+  'MEDIA_FOLDER',
+  'ATTRIBUTE',
+  'HOME_HIGHLIGHT',
 ]
-export const PRESET_KEYS      = ['today', '7d', '30d', 'month']
+export const PRESET_KEYS = ['today', '7d', '30d', 'month']
 
 export const INITIAL_QUERY = {
-  actorType: 'ALL', resourceType: 'ALL',
-  q: '', from: '', to: '', page: 1, pageSize: 20,
+  actorType: 'ALL',
+  resourceType: 'ALL',
+  q: '',
+  from: '',
+  to: '',
+  page: 1,
+  pageSize: 20,
 }
 
 export function setDetailParam(id) {

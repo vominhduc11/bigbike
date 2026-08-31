@@ -77,48 +77,61 @@ describe('NotificationBell order notifications', () => {
       outOfStockDays: index,
       outOfStockSinceEstimated: index === 0,
     }))
-    const partial = [{
-      productId: 'partial-1',
-      nameVi: 'Áo giáp còn thiếu cỡ',
-      nameEn: 'Armour missing sizes',
-      sku: 'PARTIAL-1',
-      editPath: '/admin/products/partial-1',
-      outOfStockDays: 4,
-      outOfStockSinceEstimated: false,
-      unavailableVariants: [{
-        variantId: 'variant-xl',
-        nameVi: 'Đen - XL',
-        nameEn: 'Black - XL',
-        sku: 'PARTIAL-XL',
+    const partial = [
+      {
+        productId: 'partial-1',
+        nameVi: 'Áo giáp còn thiếu cỡ',
+        nameEn: 'Armour missing sizes',
+        sku: 'PARTIAL-1',
+        editPath: '/admin/products/partial-1',
         outOfStockDays: 4,
         outOfStockSinceEstimated: false,
-      }],
-    }]
+        unavailableVariants: [
+          {
+            variantId: 'variant-xl',
+            nameVi: 'Đen - XL',
+            nameEn: 'Black - XL',
+            sku: 'PARTIAL-XL',
+            outOfStockDays: 4,
+            outOfStockSinceEstimated: false,
+          },
+        ],
+      },
+    ]
     mocks.fetchAdminNotifications.mockResolvedValue({
       unreadCount: 1,
-      items: [{
-        id: 'inventory-digest-1',
-        type: 'INVENTORY_OUT_OF_STOCK_DIGEST',
-        digest: {
-          digestDate: '2026-08-31',
-          counts: {
-            fullyOutOfStockProducts: 80,
-            partiallyOutOfStockProducts: 1,
-            unavailableVariants: 1,
+      items: [
+        {
+          id: 'inventory-digest-1',
+          type: 'INVENTORY_OUT_OF_STOCK_DIGEST',
+          digest: {
+            digestDate: '2026-08-31',
+            counts: {
+              fullyOutOfStockProducts: 80,
+              partiallyOutOfStockProducts: 1,
+              unavailableVariants: 1,
+            },
+            fullyOutOfStock: full,
+            partiallyOutOfStock: partial,
           },
-          fullyOutOfStock: full,
-          partiallyOutOfStock: partial,
+          at: Date.now(),
+          read: false,
         },
-        at: Date.now(),
-        read: false,
-      }],
+      ],
     })
     const user = userEvent.setup()
     render(<NotificationBell navigate={mocks.navigate} />)
 
-    await waitFor(() => expect(mocks.subscribeAdminWs)
-      .toHaveBeenCalledWith('/topic/admin/inventory', expect.any(Function)))
-    expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith('/topic/admin/orders', expect.any(Function))
+    await waitFor(() =>
+      expect(mocks.subscribeAdminWs).toHaveBeenCalledWith(
+        '/topic/admin/inventory',
+        expect.any(Function),
+      ),
+    )
+    expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith(
+      '/topic/admin/orders',
+      expect.any(Function),
+    )
     await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
     await user.click(await screen.findByText('notifications.inventoryDigest'))
 
@@ -136,9 +149,16 @@ describe('NotificationBell order notifications', () => {
     const user = userEvent.setup()
     render(<NotificationBell navigate={mocks.navigate} />)
 
-    await waitFor(() => expect(mocks.subscribeAdminWs)
-      .toHaveBeenCalledWith('/topic/admin/orders', expect.any(Function)))
-    expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith('/topic/admin/chat', expect.any(Function))
+    await waitFor(() =>
+      expect(mocks.subscribeAdminWs).toHaveBeenCalledWith(
+        '/topic/admin/orders',
+        expect.any(Function),
+      ),
+    )
+    expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith(
+      '/topic/admin/chat',
+      expect.any(Function),
+    )
 
     await user.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
     expect(await screen.findByText('notifications.newOrder')).toBeInTheDocument()
@@ -152,15 +172,17 @@ describe('NotificationBell order notifications', () => {
   it('shows one overdue-order digest and opens the operational overdue filter', async () => {
     mocks.fetchAdminNotifications.mockResolvedValue({
       unreadCount: 1,
-      items: [{
-        id: 'overdue-digest-1',
-        type: 'ORDER_OVERDUE_DIGEST',
-        count: 2,
-        thresholdDays: 2,
-        cutoffAt: '2026-08-29T21:20:00Z',
-        at: Date.now(),
-        read: false,
-      }],
+      items: [
+        {
+          id: 'overdue-digest-1',
+          type: 'ORDER_OVERDUE_DIGEST',
+          count: 2,
+          thresholdDays: 2,
+          cutoffAt: '2026-08-29T21:20:00Z',
+          at: Date.now(),
+          read: false,
+        },
+      ],
     })
     const user = userEvent.setup()
     render(<NotificationBell navigate={mocks.navigate} />)
@@ -209,7 +231,9 @@ describe('NotificationBell order notifications', () => {
     expect(mocks.fetchAdminNotifications).toHaveBeenCalledTimes(1)
 
     const onReconnect = mocks.registerAdminWsReconnectListener.mock.calls[0][0]
-    await act(async () => { await onReconnect() })
+    await act(async () => {
+      await onReconnect()
+    })
 
     expect(mocks.fetchAdminNotifications).toHaveBeenCalledTimes(2)
   })

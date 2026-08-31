@@ -22,7 +22,8 @@ function hasMobileHiddenClass(className) {
 function countVisibleActions(node, hiddenByParent = false) {
   return Children.toArray(node).reduce((count, child) => {
     if (!isValidElement(child)) return count
-    const hidden = hiddenByParent || child.props.hidden || hasMobileHiddenClass(child.props.className)
+    const hidden =
+      hiddenByParent || child.props.hidden || hasMobileHiddenClass(child.props.className)
     if (child.type === Fragment || child.type === 'div' || child.type === 'span') {
       return count + countVisibleActions(child.props.children, hidden)
     }
@@ -31,10 +32,22 @@ function countVisibleActions(node, hiddenByParent = false) {
   }, 0)
 }
 
-export function ScreenHeader({ group, eyebrow, title, description, help, helpLabel, actions, badge }) {
+export function ScreenHeader({
+  group,
+  eyebrow,
+  title,
+  description,
+  help,
+  helpLabel,
+  actions,
+  badge,
+}) {
   const { t } = useTranslation()
   const isMobile = useMediaQuery('(max-width: 639px)')
-  const groupLabel = group && SCREEN_GROUPS.includes(group) ? t(`nav.group.${group}`, { defaultValue: t('common.unknown') }) : eyebrow
+  const groupLabel =
+    group && SCREEN_GROUPS.includes(group)
+      ? t(`nav.group.${group}`, { defaultValue: t('common.unknown') })
+      : eyebrow
   const showGroupLabel = groupLabel && normalizedText(groupLabel) !== normalizedText(title)
   const collapseActions = isMobile && countVisibleActions(actions) > 1
 
@@ -71,7 +84,9 @@ export function ScreenHeader({ group, eyebrow, title, description, help, helpLab
                 {actions}
               </PopoverContent>
             </Popover>
-          ) : actions}
+          ) : (
+            actions
+          )}
         </div>
       ) : null}
     </header>

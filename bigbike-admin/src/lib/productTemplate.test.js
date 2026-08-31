@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { parseSizeGuide, parseSizeGuideResult, mergeSizeGuideIntoHtml, serializeSizeGuide } from './sizeChart'
+import {
+  parseSizeGuide,
+  parseSizeGuideResult,
+  mergeSizeGuideIntoHtml,
+  serializeSizeGuide,
+} from './sizeChart'
 import { mergeSpecsIntoHtml, parseSpecsResult, serializeSpecs } from './specSheet'
 import {
   mergeSuitabilityIntoHtml,
@@ -17,7 +22,10 @@ const locales = {
 }
 
 const parseDocument = (html) => new DOMParser().parseFromString(html, 'text/html')
-const stylesFor = (html, selector) => [...parseDocument(html).querySelectorAll(selector)].map((element) => element.getAttribute('style'))
+const stylesFor = (html, selector) =>
+  [...parseDocument(html).querySelectorAll(selector)].map((element) =>
+    element.getAttribute('style'),
+  )
 const normalizedGuide = guide.replace(/\s+/g, ' ')
 
 const sizeFixture = {
@@ -31,10 +39,14 @@ describe('product-template canonical HTML contract', () => {
     expect(Object.keys(sample)).toEqual(['0', '1'])
 
     Object.values(sample).forEach((product) => {
-      expect(product.descriptionBlocks.every((block) => !block.url || block.url.startsWith('/media/'))).toBe(true)
+      expect(
+        product.descriptionBlocks.every((block) => !block.url || block.url.startsWith('/media/')),
+      ).toBe(true)
       expect(JSON.stringify(product)).not.toContain('/wp-content/uploads/')
       expect(JSON.stringify(product)).not.toContain('rgb(')
-      expect(JSON.stringify(product)).not.toMatch(/font-family:\s*(?:Arial|Oswald)|font-size:\s*\d+px/i)
+      expect(JSON.stringify(product)).not.toMatch(
+        /font-family:\s*(?:Arial|Oswald)|font-size:\s*\d+px/i,
+      )
 
       for (const language of ['html', 'htmlEn']) {
         const suitabilityHtml = product.suitabilitySection?.[language]
@@ -42,7 +54,9 @@ describe('product-template canonical HTML contract', () => {
         if (suitabilityHtml) {
           const result = parseSuitabilityResult(suitabilityHtml)
           expect(result.acceptedCount).toBeGreaterThan(0)
-          expect(result.acceptedCount).toBe(product.suitabilitySection[language].match(/<li\b/g).length)
+          expect(result.acceptedCount).toBe(
+            product.suitabilitySection[language].match(/<li\b/g).length,
+          )
         }
         if (sizeHtml) {
           const result = parseSizeGuideResult(sizeHtml)
@@ -61,7 +75,11 @@ describe('product-template canonical HTML contract', () => {
         const document = parseDocument(html)
         const table = document.querySelector('table.shop_attributes')
         expect(table, `${product.sku} ${field} must use shop_attributes`).toBeTruthy()
-        expect([...document.querySelectorAll('table, th, td')].some((element) => element.hasAttribute('style'))).toBe(false)
+        expect(
+          [...document.querySelectorAll('table, th, td')].some((element) =>
+            element.hasAttribute('style'),
+          ),
+        ).toBe(false)
         const result = parseSpecsResult(html)
         expect(result.acceptedCount).toBe(document.querySelectorAll('tbody tr').length)
         expect(result.items.length).toBe(result.acceptedCount)
@@ -92,13 +110,17 @@ describe('product-template canonical HTML contract', () => {
       en: '<table class="shop_attributes"><tbody><tr><th scope="row">Spec name</th><td>Value</td></tr>...</tbody></table>',
     }
     const generatedSpec = serializeSpecs([{ name: 'Tên thông số', value: 'Giá trị' }])
-    expect(generatedSpec).toBe('<table class="shop_attributes"><tbody><tr><th scope="row">Tên thông số</th><td>Giá trị</td></tr></tbody></table>')
+    expect(generatedSpec).toBe(
+      '<table class="shop_attributes"><tbody><tr><th scope="row">Tên thông số</th><td>Giá trị</td></tr></tbody></table>',
+    )
     expect(locales.vi.products.detail.specs.aiBriefPrompt).toContain(specExamples.vi)
     expect(locales.en.products.detail.specs.aiBriefPrompt).toContain(specExamples.en)
     expect(normalizedGuide).toContain(specExamples.vi)
 
     const generatedSize = serializeSizeGuide(sizeFixture)
-    const generatedSuitability = serializeSuitabilityCards([{ audience: 'Tên đối tượng', advice: 'Lời khuyên' }])
+    const generatedSuitability = serializeSuitabilityCards([
+      { audience: 'Tên đối tượng', advice: 'Lời khuyên' },
+    ])
     const generatedSizeStyles = new Set(stylesFor(generatedSize, 'table, th, td, p'))
     const generatedSuitabilityStyles = new Set(stylesFor(generatedSuitability, 'ul, li, strong'))
 
@@ -112,11 +134,13 @@ describe('product-template canonical HTML contract', () => {
       expect(sizePrompt).not.toContain('var(--bb-')
       expect(suitabilityPrompt).not.toContain('var(--bb-')
     }
-    [...generatedSizeStyles]
+    ;[...generatedSizeStyles]
       .filter((style) => !style.includes('font-weight:700'))
       .forEach((style) => expect(normalizedGuide).toContain(`style="${style}"`))
     expect(normalizedGuide).toContain('cột size (cột đầu tiên) thêm font-weight:700')
-    generatedSuitabilityStyles.forEach((style) => expect(normalizedGuide).toContain(`style="${style}"`))
+    generatedSuitabilityStyles.forEach((style) =>
+      expect(normalizedGuide).toContain(`style="${style}"`),
+    )
 
     Object.values(sample).forEach((product) => {
       for (const language of ['html', 'htmlEn']) {
@@ -125,7 +149,9 @@ describe('product-template canonical HTML contract', () => {
         const sampleSizeStyles = new Set(stylesFor(sizeHtml, 'table, th, td, p'))
         const sampleSuitabilityStyles = new Set(stylesFor(suitabilityHtml, 'ul, li, strong'))
         generatedSizeStyles.forEach((style) => expect(sampleSizeStyles).toContain(style))
-        generatedSuitabilityStyles.forEach((style) => expect(sampleSuitabilityStyles).toContain(style))
+        generatedSuitabilityStyles.forEach((style) =>
+          expect(sampleSuitabilityStyles).toContain(style),
+        )
       }
     })
   })
@@ -165,7 +191,9 @@ describe('product-template canonical HTML contract', () => {
     const model = parseSizeGuide(existing)
     model.rows[0].cells[1] = '1350 gram'
     const merged = mergeSizeGuideIntoHtml(model, existing)
-    const cells = [...parseDocument(merged).querySelectorAll('tbody tr td')].map((cell) => cell.textContent)
+    const cells = [...parseDocument(merged).querySelectorAll('tbody tr td')].map(
+      (cell) => cell.textContent,
+    )
     expect(cells).toEqual(['M', '1350 gram', 'gram'])
   })
 })

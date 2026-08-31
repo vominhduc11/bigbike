@@ -101,26 +101,24 @@ describe('ImageUrlInput brand logo URL import', () => {
   it('accepts a large imported logo and keeps the saved URL internal', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(
-      <ImageUrlInput
-        value=""
-        onChange={onChange}
-        alt=""
-        recommend={logoRecommendation}
-      />,
-    )
+    render(<ImageUrlInput value="" onChange={onChange} alt="" recommend={logoRecommendation} />)
 
-    await user.type(screen.getByRole('textbox', { name: 'brands.logo.importUrlLabel' }), 'https://example.com/logo.jpg')
+    await user.type(
+      screen.getByRole('textbox', { name: 'brands.logo.importUrlLabel' }),
+      'https://example.com/logo.jpg',
+    )
     await user.click(screen.getByRole('button', { name: 'brands.logo.importUrl' }))
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledWith(
-      '/media/imported-logo.jpg',
-      expect.objectContaining({
-        id: 'media-from-url',
-        publicUrl: '/media/imported-logo.jpg',
-        fileSize: 3 * 1024 * 1024,
-      }),
-    ))
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith(
+        '/media/imported-logo.jpg',
+        expect.objectContaining({
+          id: 'media-from-url',
+          publicUrl: '/media/imported-logo.jpg',
+          fileSize: 3 * 1024 * 1024,
+        }),
+      ),
+    )
     expect(mocks.importBrandLogoUrl).toHaveBeenCalledWith({
       url: 'https://example.com/logo.jpg',
       altText: null,

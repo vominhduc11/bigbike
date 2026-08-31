@@ -25,7 +25,9 @@ vi.mock('../../components/layout', () => ({
   Modal: ({ open, title, children, onClose, closeLabel }) =>
     open ? (
       <div role="dialog" aria-label={title}>
-        <button type="button" onClick={onClose}>{closeLabel}</button>
+        <button type="button" onClick={onClose}>
+          {closeLabel}
+        </button>
         {children}
       </div>
     ) : null,
@@ -91,7 +93,11 @@ describe('thông tin chung', () => {
 
 describe('địa chỉ truy cập', () => {
   it('hiện khi bản ghi có ghi nhận', () => {
-    renderDrawer({ ipAddress: '203.0.113.9', action: 'ADMIN_LOGIN_FAILED', resourceType: 'ADMIN_AUTH' })
+    renderDrawer({
+      ipAddress: '203.0.113.9',
+      action: 'ADMIN_LOGIN_FAILED',
+      resourceType: 'ADMIN_AUTH',
+    })
     expect(screen.getByText(viLocale.auditLog.drawerIpLabel)).toBeInTheDocument()
     expect(screen.getByText('203.0.113.9')).toBeInTheDocument()
   })
@@ -164,7 +170,11 @@ describe('bảng so sánh trước / sau', () => {
   })
 
   it('chỉ có dữ liệu sau (bản ghi tạo mới) thì không dựng bảng so sánh', () => {
-    renderDrawer({ beforeData: null, afterData: JSON.stringify({ name: 'Mũ mới' }), action: 'PRODUCT_CREATED' })
+    renderDrawer({
+      beforeData: null,
+      afterData: JSON.stringify({ name: 'Mũ mới' }),
+      action: 'PRODUCT_CREATED',
+    })
     expect(screen.getByText(viLocale.auditLog.drawerNoChanges)).toBeInTheDocument()
   })
 })
@@ -174,7 +184,9 @@ describe('dữ liệu kỹ thuật', () => {
     const user = userEvent.setup()
     renderDrawer({ afterData: JSON.stringify({ name: 'Mũ mới' }) })
 
-    const toggle = screen.getByRole('button', { name: (content) => content.startsWith(viLocale.auditLog.drawerTechData) })
+    const toggle = screen.getByRole('button', {
+      name: (content) => content.startsWith(viLocale.auditLog.drawerTechData),
+    })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
 
     await user.click(toggle)
@@ -184,7 +196,11 @@ describe('dữ liệu kỹ thuật', () => {
 
   it('không có dữ liệu thô thì ẩn hẳn phần này', () => {
     renderDrawer({ beforeData: null, afterData: null })
-    expect(screen.queryByRole('button', { name: (content) => content.startsWith(viLocale.auditLog.drawerTechData) })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: (content) => content.startsWith(viLocale.auditLog.drawerTechData),
+      }),
+    ).not.toBeInTheDocument()
   })
 })
 

@@ -33,9 +33,7 @@ export function buildBreadcrumbMap(items) {
     if (!cat) return ''
     if (seen.has(id)) return cat.name || ''
     seen.add(id)
-    const path = cat.parentId
-      ? `${getPath(cat.parentId, seen)} / ${cat.name}`
-      : cat.name
+    const path = cat.parentId ? `${getPath(cat.parentId, seen)} / ${cat.name}` : cat.name
     cache.set(id, path)
     return path
   }

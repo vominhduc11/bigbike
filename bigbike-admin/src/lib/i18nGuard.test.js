@@ -27,8 +27,16 @@ describe('i18n guard', () => {
       code: "const View = () => <span>{t('common.notAdded')}</span>",
     })
 
-    expect(result.errors.some((item) => item.type === 'source-key-missing-in-vi' && item.key === 'common.notAdded')).toBe(true)
-    expect(result.errors.some((item) => item.type === 'source-key-missing-in-en' && item.key === 'common.notAdded')).toBe(true)
+    expect(
+      result.errors.some(
+        (item) => item.type === 'source-key-missing-in-vi' && item.key === 'common.notAdded',
+      ),
+    ).toBe(true)
+    expect(
+      result.errors.some(
+        (item) => item.type === 'source-key-missing-in-en' && item.key === 'common.notAdded',
+      ),
+    ).toBe(true)
   })
 
   it('checks dynamic key patterns against both locales', () => {
@@ -60,9 +68,11 @@ describe('i18n guard', () => {
     const secondArgumentResult = check({
       vi: { common: { unknown: 'Không xác định' }, status: { order: { PAID: 'Đã thanh toán' } } },
       en: { common: { unknown: 'Unknown' }, status: { order: { PAID: 'Paid' } } },
-      code: "const View = ({ status }) => <span>{t(`status.order.${status}`, status)}</span>",
+      code: 'const View = ({ status }) => <span>{t(`status.order.${status}`, status)}</span>',
     })
 
-    expect(secondArgumentResult.errors.some((item) => item.type === 'raw-runtime-fallback')).toBe(true)
+    expect(secondArgumentResult.errors.some((item) => item.type === 'raw-runtime-fallback')).toBe(
+      true,
+    )
   })
 })

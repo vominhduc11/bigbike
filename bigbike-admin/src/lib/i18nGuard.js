@@ -31,7 +31,11 @@ export function compareLocaleKeys(vi, en) {
 
 function unwrap(node) {
   if (!node) return node
-  if (node.type === 'TSAsExpression' || node.type === 'TSTypeAssertion' || node.type === 'TypeCastExpression') {
+  if (
+    node.type === 'TSAsExpression' ||
+    node.type === 'TSTypeAssertion' ||
+    node.type === 'TypeCastExpression'
+  ) {
     return unwrap(node.expression)
   }
   return node
@@ -53,15 +57,11 @@ function objectPropertyName(node) {
 function isTranslationCall(node) {
   const callee = unwrap(node?.callee)
   return Boolean(
-    callee
-    && (
-      (callee.type === 'Identifier' && callee.name === 't')
-      || (
-        (callee.type === 'MemberExpression' || callee.type === 'OptionalMemberExpression')
-        && !callee.computed
-        && propertyName(callee.property) === 't'
-      )
-    ),
+    callee &&
+    ((callee.type === 'Identifier' && callee.name === 't') ||
+      ((callee.type === 'MemberExpression' || callee.type === 'OptionalMemberExpression') &&
+        !callee.computed &&
+        propertyName(callee.property) === 't')),
   )
 }
 
@@ -87,9 +87,19 @@ function walkAst(root, visit) {
     seen.add(node)
     visit(node)
     for (const [key, value] of Object.entries(node)) {
-      if (key === 'loc' || key === 'start' || key === 'end' || key === 'comments' || key === 'tokens') continue
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'comments' ||
+        key === 'tokens'
+      )
+        continue
       if (Array.isArray(value)) {
-        value.slice().reverse().forEach((child) => stack.push(child))
+        value
+          .slice()
+          .reverse()
+          .forEach((child) => stack.push(child))
       } else if (value && typeof value === 'object' && value.type) {
         stack.push(value)
       }
@@ -100,7 +110,15 @@ function walkAst(root, visit) {
 function parseSource(source) {
   return parse(source.code, {
     sourceType: 'module',
-    plugins: ['jsx', 'typescript', 'decorators-legacy', 'classProperties', 'objectRestSpread', 'optionalChaining', 'topLevelAwait'],
+    plugins: [
+      'jsx',
+      'typescript',
+      'decorators-legacy',
+      'classProperties',
+      'objectRestSpread',
+      'optionalChaining',
+      'topLevelAwait',
+    ],
   })
 }
 
@@ -160,7 +178,8 @@ function collectPropertyNodes(node, wantedName, output) {
     value.properties.forEach((property) => {
       const name = objectPropertyName(property)
       if (name && (wantedName === null || name === wantedName)) output.push(property.value)
-      if (property.type === 'ObjectProperty') collectPropertyNodes(property.value, wantedName, output)
+      if (property.type === 'ObjectProperty')
+        collectPropertyNodes(property.value, wantedName, output)
     })
   } else if (value.type === 'ArrayExpression') {
     value.elements.forEach((element) => collectPropertyNodes(element, wantedName, output))
@@ -209,17 +228,23 @@ function buildResolutionIndex(astSources) {
   function resolve(node, seen = new Set()) {
     const value = unwrap(node)
     if (!value) return result([], true)
-    if (seen.has(value) || (value.type === 'Identifier' && seen.has(value.name))) return result([], true)
+    if (seen.has(value) || (value.type === 'Identifier' && seen.has(value.name)))
+      return result([], true)
     const nextSeen = new Set(seen)
     nextSeen.add(value)
     if (value.type === 'Identifier') nextSeen.add(value.name)
 
     if (value.type === 'StringLiteral') return result([value.value])
     if (value.type === 'TemplateLiteral') {
-      return value.expressions.length ? result([templatePattern(value)]) : result([value.quasis[0].value.raw])
+      return value.expressions.length
+        ? result([templatePattern(value)])
+        : result([value.quasis[0].value.raw])
     }
     if (value.type === 'ConditionalExpression') {
-      return combineResults([resolve(value.consequent, nextSeen), resolve(value.alternate, nextSeen)])
+      return combineResults([
+        resolve(value.consequent, nextSeen),
+        resolve(value.alternate, nextSeen),
+      ])
     }
     if (value.type === 'LogicalExpression') {
       return combineResults([resolve(value.left, nextSeen), resolve(value.right, nextSeen)])
@@ -230,14 +255,24 @@ function buildResolutionIndex(astSources) {
     if (value.type === 'Identifier') {
       const candidates = declarations.get(value.name) || []
       if (!candidates.length) return result([], true)
-      const resolved = combineResults(candidates.map((candidate) => {
-        if (candidate.type === 'FunctionDeclaration' || candidate.type === 'ArrowFunctionExpression' || candidate.type === 'FunctionExpression') {
-          return combineResults(collectReturnExpressions(candidate).map((item) => resolve(item, nextSeen)))
-        }
-        return resolve(candidate, nextSeen)
-      }))
+      const resolved = combineResults(
+        candidates.map((candidate) => {
+          if (
+            candidate.type === 'FunctionDeclaration' ||
+            candidate.type === 'ArrowFunctionExpression' ||
+            candidate.type === 'FunctionExpression'
+          ) {
+            return combineResults(
+              collectReturnExpressions(candidate).map((item) => resolve(item, nextSeen)),
+            )
+          }
+          return resolve(candidate, nextSeen)
+        }),
+      )
       return result(
-        resolved.patterns.filter((pattern) => isPotentialTranslationKey(pattern.replaceAll('*', 'x'))),
+        resolved.patterns.filter((pattern) =>
+          isPotentialTranslationKey(pattern.replaceAll('*', 'x')),
+        ),
         resolved.opaque,
       )
     }
@@ -254,21 +289,29 @@ function buildResolutionIndex(astSources) {
       if (staticProperty && propertyNodes.length === 0 && staticProperty !== 'key') {
         propertyNodes.push(...(propertyValues.get(staticProperty) || []))
       }
-      const resolved = propertyNodes
-        .flatMap((item) => {
-          const candidate = resolve(item, nextSeen)
-          return candidate.patterns
-            .filter((pattern) => isPotentialTranslationKey(pattern.replaceAll('*', 'x')))
-            .map((pattern) => result([pattern], candidate.opaque))
-        })
+      const resolved = propertyNodes.flatMap((item) => {
+        const candidate = resolve(item, nextSeen)
+        return candidate.patterns
+          .filter((pattern) => isPotentialTranslationKey(pattern.replaceAll('*', 'x')))
+          .map((pattern) => result([pattern], candidate.opaque))
+      })
       if (resolved.length) return combineResults(resolved)
       return result([], true)
     }
     if (value.type === 'CallExpression' && value.callee.type === 'Identifier') {
       const candidates = declarations.get(value.callee.name) || []
-      const functions = candidates.filter((candidate) => candidate.type === 'FunctionDeclaration' || candidate.type === 'ArrowFunctionExpression' || candidate.type === 'FunctionExpression')
+      const functions = candidates.filter(
+        (candidate) =>
+          candidate.type === 'FunctionDeclaration' ||
+          candidate.type === 'ArrowFunctionExpression' ||
+          candidate.type === 'FunctionExpression',
+      )
       if (functions.length) {
-        return combineResults(functions.flatMap((fn) => collectReturnExpressions(fn).map((item) => resolve(item, nextSeen))))
+        return combineResults(
+          functions.flatMap((fn) =>
+            collectReturnExpressions(fn).map((item) => resolve(item, nextSeen)),
+          ),
+        )
       }
     }
     return result([], true)
@@ -283,14 +326,52 @@ function isRawRuntimeFallback(node) {
   if (value.type === 'StringLiteral' || value.type === 'TemplateLiteral') return false
   if (value.type === 'CallExpression') return !isTranslationCall(value)
   if (value.type === 'Identifier') {
-    return new Set(['action', 'actorType', 'code', 'gap', 'homepageBlock', 'issue', 'key', 'publishStatus', 'reason', 'resourceType', 's', 'segment', 'status', 'stockState', 'type', 'value']).has(value.name)
+    return new Set([
+      'action',
+      'actorType',
+      'code',
+      'gap',
+      'homepageBlock',
+      'issue',
+      'key',
+      'publishStatus',
+      'reason',
+      'resourceType',
+      's',
+      'segment',
+      'status',
+      'stockState',
+      'type',
+      'value',
+    ]).has(value.name)
   }
   if (value.type === 'MemberExpression' || value.type === 'OptionalMemberExpression') {
-    return new Set(['action', 'actionType', 'actorType', 'code', 'gap', 'homepageBlock', 'issue', 'key', 'publishStatus', 'reason', 'resourceType', 's', 'segment', 'status', 'stockState', 'type', 'value']).has(propertyName(value.property))
+    return new Set([
+      'action',
+      'actionType',
+      'actorType',
+      'code',
+      'gap',
+      'homepageBlock',
+      'issue',
+      'key',
+      'publishStatus',
+      'reason',
+      'resourceType',
+      's',
+      'segment',
+      'status',
+      'stockState',
+      'type',
+      'value',
+    ]).has(propertyName(value.property))
   }
-  if (value.type === 'LogicalExpression') return isRawRuntimeFallback(value.left) || isRawRuntimeFallback(value.right)
-  if (value.type === 'ConditionalExpression') return isRawRuntimeFallback(value.consequent) || isRawRuntimeFallback(value.alternate)
-  if (value.type === 'BinaryExpression') return isRawRuntimeFallback(value.left) || isRawRuntimeFallback(value.right)
+  if (value.type === 'LogicalExpression')
+    return isRawRuntimeFallback(value.left) || isRawRuntimeFallback(value.right)
+  if (value.type === 'ConditionalExpression')
+    return isRawRuntimeFallback(value.consequent) || isRawRuntimeFallback(value.alternate)
+  if (value.type === 'BinaryExpression')
+    return isRawRuntimeFallback(value.left) || isRawRuntimeFallback(value.right)
   return false
 }
 
@@ -336,10 +417,13 @@ export function analyzeI18n({ vi, en, sourceFiles = [] }) {
 
   astSources.forEach((source) => {
     walkAst(source.ast, (node) => {
-      if (node.type !== 'CallExpression' || !isTranslationCall(node) || !node.arguments.length) return
+      if (node.type !== 'CallExpression' || !isTranslationCall(node) || !node.arguments.length)
+        return
       callCount += 1
       const keyArgument = unwrap(node.arguments[0])
-      const isStaticArgument = keyArgument.type === 'StringLiteral' || (keyArgument.type === 'TemplateLiteral' && keyArgument.expressions.length === 0)
+      const isStaticArgument =
+        keyArgument.type === 'StringLiteral' ||
+        (keyArgument.type === 'TemplateLiteral' && keyArgument.expressions.length === 0)
       if (isStaticArgument) staticCallCount += 1
       else dynamicCallCount += 1
 
@@ -347,20 +431,28 @@ export function analyzeI18n({ vi, en, sourceFiles = [] }) {
       const patterns = unique(keyResult.patterns)
       const missingInVi = missingPatterns(patterns, localeComparison.viKeys)
       const missingInEn = missingPatterns(patterns, localeComparison.enKeys)
-      missingInVi.forEach((key) => errors.push(error('source-key-missing-in-vi', source, node, { key })))
-      missingInEn.forEach((key) => errors.push(error('source-key-missing-in-en', source, node, { key })))
+      missingInVi.forEach((key) =>
+        errors.push(error('source-key-missing-in-vi', source, node, { key })),
+      )
+      missingInEn.forEach((key) =>
+        errors.push(error('source-key-missing-in-en', source, node, { key })),
+      )
 
       const defaultValue = getDefaultValue(node)
       if (!patterns.length && !defaultValue) {
-        errors.push(error('source-key-unresolved', source, node, {
-          expression: source.code.slice(keyArgument.start, keyArgument.end),
-        }))
+        errors.push(
+          error('source-key-unresolved', source, node, {
+            expression: source.code.slice(keyArgument.start, keyArgument.end),
+          }),
+        )
       }
       if (!isStaticArgument && defaultValue && isRawRuntimeFallback(defaultValue)) {
-        errors.push(error('raw-runtime-fallback', source, node, {
-          expression: source.code.slice(defaultValue.start, defaultValue.end),
-          keyExpression: source.code.slice(keyArgument.start, keyArgument.end),
-        }))
+        errors.push(
+          error('raw-runtime-fallback', source, node, {
+            expression: source.code.slice(defaultValue.start, defaultValue.end),
+            keyExpression: source.code.slice(keyArgument.start, keyArgument.end),
+          }),
+        )
       }
     })
   })

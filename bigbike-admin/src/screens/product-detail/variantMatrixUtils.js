@@ -18,14 +18,17 @@ export function skuToken(value) {
 
 export function buildVariantMatrixVariants(parsed, { skuPrefix = '', sharedPrice = '' } = {}) {
   const combos = parsed.reduce(
-    (acc, attribute) => acc.flatMap((current) => attribute.valueIds.map((attributeValueId, index) => [
-      ...current,
-      {
-        name: attribute.name,
-        value: attribute.values[index],
-        attributeValueId,
-      },
-    ])),
+    (acc, attribute) =>
+      acc.flatMap((current) =>
+        attribute.valueIds.map((attributeValueId, index) => [
+          ...current,
+          {
+            name: attribute.name,
+            value: attribute.values[index],
+            attributeValueId,
+          },
+        ]),
+      ),
     [[]],
   )
   const prefix = skuPrefix.trim()

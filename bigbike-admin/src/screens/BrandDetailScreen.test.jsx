@@ -52,13 +52,17 @@ describe('BrandDetailScreen toPayload', () => {
   })
 
   it('giữ nội dung mô tả ảnh chia sẻ khi có ảnh', () => {
-    expect(toBrandPayload(formWithSeo({
-      seoOgImageUrl: '/media/brands/ls2.jpg',
-      seoOgImageAlt: 'Logo thương hiệu LS2',
-      seoOgImageWidth: 1200,
-      seoOgImageHeight: 630,
-      seoOgImageMimeType: 'image/jpeg',
-    })).seo.ogImage).toEqual({
+    expect(
+      toBrandPayload(
+        formWithSeo({
+          seoOgImageUrl: '/media/brands/ls2.jpg',
+          seoOgImageAlt: 'Logo thương hiệu LS2',
+          seoOgImageWidth: 1200,
+          seoOgImageHeight: 630,
+          seoOgImageMimeType: 'image/jpeg',
+        }),
+      ).seo.ogImage,
+    ).toEqual({
       url: '/media/brands/ls2.jpg',
       alt: 'Logo thương hiệu LS2',
       width: 1200,
@@ -68,10 +72,12 @@ describe('BrandDetailScreen toPayload', () => {
   })
 
   it('không gửi tên hoặc slug tiếng Anh riêng cho thương hiệu', () => {
-    const payload = toBrandPayload(formWithSeo({
-      name: 'Hevik',
-      translations: { en: { description: 'English description' } },
-    }))
+    const payload = toBrandPayload(
+      formWithSeo({
+        name: 'Hevik',
+        translations: { en: { description: 'English description' } },
+      }),
+    )
     expect(payload.translations.en).not.toHaveProperty('name')
     expect(payload.translations.en).not.toHaveProperty('slug')
     expect(payload.translations.en.description).toBe('English description')
@@ -84,15 +90,17 @@ describe('BrandDetailScreen toPayload', () => {
   })
 
   it('gửi kèm nội dung alt của logo và banner để không mất chữ admin vừa nhập', () => {
-    const payload = toBrandPayload(formWithSeo({
-      logoUrl: '/media/brands/ls2-logo.png',
-      logoAlt: 'Logo thương hiệu LS2',
-      logoWidth: 800,
-      logoHeight: 400,
-      logoMimeType: 'image/png',
-      bannerUrl: '/media/brands/ls2-banner.jpg',
-      bannerAlt: 'Ảnh bìa thương hiệu LS2',
-    }))
+    const payload = toBrandPayload(
+      formWithSeo({
+        logoUrl: '/media/brands/ls2-logo.png',
+        logoAlt: 'Logo thương hiệu LS2',
+        logoWidth: 800,
+        logoHeight: 400,
+        logoMimeType: 'image/png',
+        bannerUrl: '/media/brands/ls2-banner.jpg',
+        bannerAlt: 'Ảnh bìa thương hiệu LS2',
+      }),
+    )
     expect(payload.logo).toEqual({
       url: '/media/brands/ls2-logo.png',
       alt: 'Logo thương hiệu LS2',
@@ -100,11 +108,16 @@ describe('BrandDetailScreen toPayload', () => {
       height: 400,
       mimeType: 'image/png',
     })
-    expect(payload.banner).toEqual({ url: '/media/brands/ls2-banner.jpg', alt: 'Ảnh bìa thương hiệu LS2' })
+    expect(payload.banner).toEqual({
+      url: '/media/brands/ls2-banner.jpg',
+      alt: 'Ảnh bìa thương hiệu LS2',
+    })
   })
 
   it('gửi alt rỗng thành null khi admin xoá hết chữ alt', () => {
-    const payload = toBrandPayload(formWithSeo({ logoUrl: '/media/brands/ls2-logo.png', logoAlt: '   ' }))
+    const payload = toBrandPayload(
+      formWithSeo({ logoUrl: '/media/brands/ls2-logo.png', logoAlt: '   ' }),
+    )
     expect(payload.logo).toEqual({
       url: '/media/brands/ls2-logo.png',
       alt: null,
@@ -115,11 +128,13 @@ describe('BrandDetailScreen toPayload', () => {
   })
 
   it('không gửi mã media cũ khi đang sửa thương hiệu legacy', () => {
-    const payload = toBrandPayload(formWithSeo({
-      logoUrl: '/legacy/brand-logo.png',
-      logoMediaId: 'legacy-logo-id',
-      logoQuality: { status: 'LEGACY' },
-    }))
+    const payload = toBrandPayload(
+      formWithSeo({
+        logoUrl: '/legacy/brand-logo.png',
+        logoMediaId: 'legacy-logo-id',
+        logoQuality: { status: 'LEGACY' },
+      }),
+    )
     expect(payload.logo).not.toHaveProperty('mediaId')
   })
 
@@ -148,7 +163,9 @@ describe('createBrandSchema ảnh banner', () => {
   })
 
   it('nhận ảnh banner lấy từ thư viện ảnh nội bộ', () => {
-    const result = createBrandSchema(t).safeParse(formWithSeo({ bannerUrl: '/media/brands/ls2-banner.jpg' }))
+    const result = createBrandSchema(t).safeParse(
+      formWithSeo({ bannerUrl: '/media/brands/ls2-banner.jpg' }),
+    )
     expect(result.success).toBe(true)
   })
 })
@@ -183,7 +200,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 vi.mock('../lib/adminApi', () => ({
@@ -252,7 +270,9 @@ describe('BrandDetailScreen restore/hide action', () => {
     renderScreen({ item: { ...baseBrand, isVisible: true } })
 
     const hideButton = await screen.findByRole('button', { name: 'brands.detail.hideBtn' })
-    expect(screen.queryByRole('button', { name: 'brands.detail.restoreBtn' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'brands.detail.restoreBtn' }),
+    ).not.toBeInTheDocument()
 
     await user.click(hideButton)
     await waitFor(() => expect(mocks.deleteBrand).toHaveBeenCalledWith('brand_ls2'))
@@ -293,7 +313,9 @@ describe('BrandDetailScreen thương hiệu hệ thống "Chưa phân loại"', 
     // Lời nhắc hiện ở cả phần mô tả đầu trang và bảng cảnh báo giữa trang.
     expect((await screen.findAllByText('brands.detail.systemDesc')).length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: 'brands.detail.hideBtn' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'brands.detail.restoreBtn' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'brands.detail.restoreBtn' }),
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /brands.detail.saveBtn/ })).toBeDisabled()
   })
 })

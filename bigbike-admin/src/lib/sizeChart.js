@@ -17,9 +17,11 @@ const SIZE_TABLE_STYLE =
   'width:100%;min-width:520px;border-collapse:collapse;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-primary);margin:0 0 12px 0;'
 const SIZE_TH_STYLE =
   'background:var(--bb-bg-surface-raised);color:var(--bb-text-primary);border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap;'
-const SIZE_TD_STYLE = 'border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;vertical-align:middle;'
+const SIZE_TD_STYLE =
+  'border:1px solid var(--bb-border-subtle);padding:12px 16px;text-align:center;vertical-align:middle;'
 const SIZE_TD_FIRST_STYLE = `${SIZE_TD_STYLE}font-weight:700;`
-const SIZE_NOTE_STYLE = 'font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1.5;color:var(--bb-text-secondary);margin:8px 0 0 0;'
+const SIZE_NOTE_STYLE =
+  'font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1.5;color:var(--bb-text-secondary);margin:8px 0 0 0;'
 
 /** Model rỗng mặc định: 2 cột (Size + số đo), chưa có dòng. */
 export function emptySizeGuide() {
@@ -50,7 +52,9 @@ function parseNote(doc) {
 }
 
 function isLikelySizeLabel(value) {
-  return /^(?:size\s*)?(?:xxxs|xxs|xs|s|m|l|xl|xxl|xxxl|[2-9]xl|small|medium|large|free(?:\s+size)?|\d{1,3})(?:\s*[/,-]\s*[a-z0-9]+)?$/i.test(value.trim())
+  return /^(?:size\s*)?(?:xxxs|xxs|xs|s|m|l|xl|xxl|xxxl|[2-9]xl|small|medium|large|free(?:\s+size)?|\d{1,3})(?:\s*[/,-]\s*[a-z0-9]+)?$/i.test(
+    value.trim(),
+  )
 }
 
 function isLikelySizeMeasurement(value) {
@@ -63,7 +67,13 @@ function headingSizePairs(doc) {
       const value = heading.nextElementSibling
       const size = (heading.textContent || '').trim()
       const measurement = (value?.textContent || '').trim()
-      if (!value || value.tagName !== 'P' || !(isLikelySizeLabel(size) || isLikelySizeMeasurement(measurement)) || !measurement) return null
+      if (
+        !value ||
+        value.tagName !== 'P' ||
+        !(isLikelySizeLabel(size) || isLikelySizeMeasurement(measurement)) ||
+        !measurement
+      )
+        return null
       return { heading, value, size, measurement }
     })
     .filter(Boolean)
@@ -95,13 +105,17 @@ export function parseSizeGuide(html) {
       const allRows = [...table.querySelectorAll('tr')]
       const explicitHeaderRow = table.querySelector('thead tr')
       const firstRow = allRows[0]
-      const headerRow = explicitHeaderRow || (firstRow && [...firstRow.querySelectorAll('th, td')].every((cell) => cell.tagName === 'TH') ? firstRow : null)
+      const headerRow =
+        explicitHeaderRow ||
+        (firstRow && [...firstRow.querySelectorAll('th, td')].every((cell) => cell.tagName === 'TH')
+          ? firstRow
+          : null)
       const headerCells = headerRow ? [...headerRow.querySelectorAll('th, td')] : []
       const explicitBodyRows = [...table.querySelectorAll('tbody tr')]
       const bodyRows = explicitHeaderRow
-        ? (explicitBodyRows.length
+        ? explicitBodyRows.length
           ? explicitBodyRows
-          : allRows.filter((row) => row !== headerRow && !row.closest('thead')))
+          : allRows.filter((row) => row !== headerRow && !row.closest('thead'))
         : allRows.filter((row) => row !== headerRow)
       const bodyCells = bodyRows.map((tr) =>
         [...tr.querySelectorAll('td, th')].map((c) => (c.textContent || '').trim()),
@@ -128,7 +142,10 @@ export function parseSizeGuide(html) {
           { _key: generateId(), label: 'Size' },
           { _key: generateId(), label: SIZE_COL2_DEFAULT },
         ],
-        rows: headingRows.map(({ size, measurement }) => ({ _key: generateId(), cells: [size, measurement] })),
+        rows: headingRows.map(({ size, measurement }) => ({
+          _key: generateId(),
+          cells: [size, measurement],
+        })),
         note: '',
       }
     }
@@ -223,7 +240,9 @@ export function mergeSizeGuideIntoHtml(value, existingHtml) {
     let tbody = table.querySelector('tbody')
     if (!tbody) {
       tbody = doc.createElement('tbody')
-      ;[...table.querySelectorAll('tr')].filter((row) => row !== headRow).forEach((row) => tbody.appendChild(row))
+      ;[...table.querySelectorAll('tr')]
+        .filter((row) => row !== headRow)
+        .forEach((row) => tbody.appendChild(row))
       table.appendChild(tbody)
     }
 
@@ -239,7 +258,9 @@ export function mergeSizeGuideIntoHtml(value, existingHtml) {
     // --- Cột (header) ---
     syncCellCount(doc, headRow, colCount, 'th')
     const headCells = headerCellsOf(headRow)
-    columns.forEach((c, i) => { if (headCells[i]) headCells[i].textContent = (c.label || '').trim() })
+    columns.forEach((c, i) => {
+      if (headCells[i]) headCells[i].textContent = (c.label || '').trim()
+    })
 
     // --- Dòng (body) ---
     syncRowCount(doc, tbody, rows.length, colCount)
@@ -293,7 +314,9 @@ function syncRowCount(doc, tbody, count, colCount) {
     let tr
     if (last) {
       tr = last.cloneNode(true)
-      cellsOf(tr).forEach((c) => { c.textContent = '' })
+      cellsOf(tr).forEach((c) => {
+        c.textContent = ''
+      })
     } else {
       tr = doc.createElement('tr')
       for (let i = 0; i < colCount; i++) tr.appendChild(doc.createElement('td'))

@@ -16,16 +16,20 @@ describe('shared store policy settings', () => {
   it('exposes warranty and returns as one bilingual admin group', () => {
     expect(TAB_ORDER).toContain('STORE_POLICY')
     expect(TAB_META.STORE_POLICY).toBeDefined()
-    expect(isTranslatableSetting({
-      key: 'policy_warranty_body_html',
-      settingGroup: 'STORE_POLICY',
-      valueType: 'HTML',
-    })).toBe(true)
-    expect(isTranslatableSetting({
-      key: 'policy_return_exchange_title',
-      settingGroup: 'STORE_POLICY',
-      valueType: 'STRING',
-    })).toBe(true)
+    expect(
+      isTranslatableSetting({
+        key: 'policy_warranty_body_html',
+        settingGroup: 'STORE_POLICY',
+        valueType: 'HTML',
+      }),
+    ).toBe(true)
+    expect(
+      isTranslatableSetting({
+        key: 'policy_return_exchange_title',
+        settingGroup: 'STORE_POLICY',
+        valueType: 'STRING',
+      }),
+    ).toBe(true)
   })
 
   it('keeps all four policy fields in the same guided section', () => {
@@ -73,8 +77,12 @@ describe('overdue operational order reminder settings', () => {
     expect(validateValue('order_overdue_days', '1.5')).toBe('settings.valPositiveInteger')
     expect(viLocale.settings.group_order_operations).toBe('Vận hành đơn hàng')
     expect(enLocale.settings.group_order_operations).toBe('Order operations')
-    expect(viLocale.settings.keyHint.order_overdue_days).toContain('đơn lịch sử không bao giờ bị nhắc')
-    expect(enLocale.settings.keyHint.order_overdue_days).toContain('historical orders are never reminded')
+    expect(viLocale.settings.keyHint.order_overdue_days).toContain(
+      'đơn lịch sử không bao giờ bị nhắc',
+    )
+    expect(enLocale.settings.keyHint.order_overdue_days).toContain(
+      'historical orders are never reminded',
+    )
   })
 })
 
@@ -86,11 +94,19 @@ describe('review invitation settings', () => {
     expect(KEY_GUIDE.review_invitation_delay_days?.[0]).toBe('review_invitation_delivery')
     expect(KEY_GUIDE.review_invitation_daily_limit?.[0]).toBe('review_invitation_delivery')
     expect(validateValue('review_invitation_delay_days', '7')).toBeNull()
-    expect(validateValue('review_invitation_delay_days', '0')).toBe('settings.valReviewInvitationDelay')
-    expect(validateValue('review_invitation_delay_days', '91')).toBe('settings.valReviewInvitationDelay')
+    expect(validateValue('review_invitation_delay_days', '0')).toBe(
+      'settings.valReviewInvitationDelay',
+    )
+    expect(validateValue('review_invitation_delay_days', '91')).toBe(
+      'settings.valReviewInvitationDelay',
+    )
     expect(validateValue('review_invitation_daily_limit', '20')).toBeNull()
-    expect(validateValue('review_invitation_daily_limit', '0')).toBe('settings.valReviewInvitationLimit')
-    expect(validateValue('review_invitation_daily_limit', '51')).toBe('settings.valReviewInvitationLimit')
+    expect(validateValue('review_invitation_daily_limit', '0')).toBe(
+      'settings.valReviewInvitationLimit',
+    )
+    expect(validateValue('review_invitation_daily_limit', '51')).toBe(
+      'settings.valReviewInvitationLimit',
+    )
     expect(viLocale.settings.group_review_invitation).toBe('Mời khách đánh giá')
     expect(enLocale.settings.group_review_invitation).toBe('Review invitations')
   })

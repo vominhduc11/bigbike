@@ -9,9 +9,11 @@ describe('fetchOrders operational scope', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('defaults the admin order list to operational orders', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-    }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+      }),
+    )
 
     await fetchOrders({ page: 1, pageSize: 20 })
 
@@ -20,9 +22,11 @@ describe('fetchOrders operational scope', () => {
   })
 
   it('sends the selected historical scope', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-    }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+      }),
+    )
 
     await fetchOrders({
       page: 1,
@@ -36,9 +40,11 @@ describe('fetchOrders operational scope', () => {
   })
 
   it('sends the selected operational attention filter', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-    }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({
+        data: { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+      }),
+    )
 
     await fetchOrders({
       page: 1,

@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -38,7 +39,11 @@ vi.mock('@/lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
-globalThis.ResizeObserver ??= class { observe() {}; unobserve() {}; disconnect() {} }
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 function extractAriaLabel(children) {
   let label
@@ -138,7 +143,9 @@ describe('CustomerDetailScreen', () => {
   it('hiện "Không tìm thấy khách hàng" khi API trả về rỗng', async () => {
     mocks.fetchCustomerDetail.mockResolvedValue({ item: null })
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <CustomerDetailScreen customerId="missing-id" navigate={vi.fn()} canUpdate />
       </QueryClientProvider>,
     )
@@ -152,7 +159,9 @@ describe('CustomerDetailScreen', () => {
     mocks.fetchCustomerDetail.mockRejectedValue(notFoundError)
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <CustomerDetailScreen customerId="missing-id" navigate={vi.fn()} canUpdate />
       </QueryClientProvider>,
     )
@@ -187,9 +196,13 @@ describe('CustomerDetailScreen', () => {
     await user.type(reasonInput, 'Khách báo cáo gian lận')
     await user.click(screen.getByRole('button', { name: 'customers.detail.statusConfirmOk' }))
 
-    await waitFor(() => expect(mocks.updateCustomerStatus).toHaveBeenCalledWith(
-      'cust-1', 'BLOCKED', 'Khách báo cáo gian lận',
-    ))
+    await waitFor(() =>
+      expect(mocks.updateCustomerStatus).toHaveBeenCalledWith(
+        'cust-1',
+        'BLOCKED',
+        'Khách báo cáo gian lận',
+      ),
+    )
   })
 
   it('cho phép chuyển sang PENDING sau cảnh báo thu hồi phiên đăng nhập', async () => {
@@ -206,7 +219,9 @@ describe('CustomerDetailScreen', () => {
 
   it('chỉ cho sửa tên hiển thị và số điện thoại; nút Lưu chỉ bật khi có thay đổi', async () => {
     const user = userEvent.setup()
-    mocks.updateCustomer.mockResolvedValue({ item: { ...baseCustomer, displayName: 'Nguyen Van B', fullName: 'Nguyen Van B' } })
+    mocks.updateCustomer.mockResolvedValue({
+      item: { ...baseCustomer, displayName: 'Nguyen Van B', fullName: 'Nguyen Van B' },
+    })
     renderScreen()
     await screen.findByText('Nguyen Van A')
 
@@ -229,9 +244,11 @@ describe('CustomerDetailScreen', () => {
     expect(screen.getByRole('button', { name: 'common.save' })).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'common.save' }))
-    await waitFor(() => expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
-      displayName: 'Nguyen Van B',
-    }))
+    await waitFor(() =>
+      expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
+        displayName: 'Nguyen Van B',
+      }),
+    )
   })
 
   it('gắn lỗi trùng số điện thoại vào đúng ô khi backend trả 409', async () => {
@@ -263,9 +280,11 @@ describe('CustomerDetailScreen', () => {
     await user.clear(screen.getByLabelText('customers.detail.fieldPhone'))
     await user.click(screen.getByRole('button', { name: 'common.save' }))
 
-    await waitFor(() => expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
-      phone: '',
-    }))
+    await waitFor(() =>
+      expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
+        phone: '',
+      }),
+    )
   })
 
   it('chấp nhận số điện thoại có dấu phân cách, so sánh theo dạng chuẩn hoá và chỉ gửi trường đã đổi', async () => {
@@ -287,17 +306,22 @@ describe('CustomerDetailScreen', () => {
     expect(saveButton).toBeEnabled()
     await user.click(saveButton)
 
-    await waitFor(() => expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
-      phone: '0900000002',
-    }))
+    await waitFor(() =>
+      expect(mocks.updateCustomer).toHaveBeenCalledWith('cust-1', {
+        phone: '0900000002',
+      }),
+    )
   })
 
   it('khóa mọi thao tác ghi và chặn Ctrl/Cmd+S gửi lặp trong khi đang lưu hồ sơ', async () => {
     const user = userEvent.setup()
     let resolveUpdate
-    mocks.updateCustomer.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveUpdate = resolve
-    }))
+    mocks.updateCustomer.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve
+        }),
+    )
     renderScreen({ customer: { ...baseCustomer, avatarUrl: '/media/customer-avatar.jpg' } })
     await screen.findByText('Nguyen Van A')
 
@@ -317,7 +341,9 @@ describe('CustomerDetailScreen', () => {
     expect(mocks.removeCustomerAvatar).not.toHaveBeenCalled()
 
     await act(async () => {
-      resolveUpdate({ item: { ...baseCustomer, displayName: 'Nguyen Van B', fullName: 'Nguyen Van B' } })
+      resolveUpdate({
+        item: { ...baseCustomer, displayName: 'Nguyen Van B', fullName: 'Nguyen Van B' },
+      })
     })
     expect(await screen.findByRole('button', { name: 'common.edit' })).toBeEnabled()
   })

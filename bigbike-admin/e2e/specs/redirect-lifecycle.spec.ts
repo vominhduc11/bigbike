@@ -15,13 +15,19 @@ async function captureResponsiveList(page: Page, testInfo: TestInfo) {
     await expectNoHorizontalOverflow(page, `Redirect list ${viewport.name}px`)
     const path = testInfo.outputPath(`redirect-list-after-${viewport.name}.png`)
     await page.screenshot({ path, fullPage: true })
-    await testInfo.attach(`Redirect list after ${viewport.name}px`, { path, contentType: 'image/png' })
+    await testInfo.attach(`Redirect list after ${viewport.name}px`, {
+      path,
+      contentType: 'image/png',
+    })
   }
   await page.setViewportSize({ width: 1440, height: 900 })
 }
 
 test.describe('redirect-lifecycle', () => {
-  test('tạo, sửa, tắt và xóa vĩnh viễn một chuyển hướng thử nghiệm', async ({ adminPage, collect }, testInfo) => {
+  test('tạo, sửa, tắt và xóa vĩnh viễn một chuyển hướng thử nghiệm', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(120_000)
 
     const suffix = `${RUN_ID}${testInfo.retry ? `-r${testInfo.retry}` : ''}`
@@ -40,14 +46,19 @@ test.describe('redirect-lifecycle', () => {
     try {
       await test.step('mở danh sách và tạo quy tắc HTTP 301', async () => {
         await navigateSpa(adminPage, '/admin/redirects')
-        await expect(adminPage.getByRole('heading', { name: 'Chuyển hướng', exact: true }).first()).toBeVisible()
+        await expect(
+          adminPage.getByRole('heading', { name: 'Chuyển hướng', exact: true }).first(),
+        ).toBeVisible()
         await adminPage.getByRole('button', { name: 'Tạo chuyển hướng', exact: true }).click()
         await adminPage.getByPlaceholder('/dia-chi-cu').fill(source)
         await adminPage.getByPlaceholder('/dia-chi-moi').fill(firstTarget)
 
         const [response] = await Promise.all([
-          adminPage.waitForResponse((r) => r.request().method() === 'POST'
-            && new URL(r.url()).pathname.endsWith('/api/v1/admin/redirects')),
+          adminPage.waitForResponse(
+            (r) =>
+              r.request().method() === 'POST' &&
+              new URL(r.url()).pathname.endsWith('/api/v1/admin/redirects'),
+          ),
           adminPage.getByRole('button', { name: 'Lưu', exact: true }).click(),
         ])
         expect(response.status(), 'API tạo chuyển hướng phải trả 2xx').toBeLessThan(300)
@@ -59,15 +70,21 @@ test.describe('redirect-lifecycle', () => {
 
       await test.step('tìm đúng quy tắc và kiểm tra giao diện responsive', async () => {
         const search = adminPage.getByRole('searchbox')
-        const responsePromise = adminPage.waitForResponse((r) => r.request().method() === 'GET'
-          && new URL(r.url()).pathname.endsWith('/api/v1/admin/redirects')
-          && new URL(r.url()).searchParams.get('q') === source)
+        const responsePromise = adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'GET' &&
+            new URL(r.url()).pathname.endsWith('/api/v1/admin/redirects') &&
+            new URL(r.url()).searchParams.get('q') === source,
+        )
         await search.fill(source)
         await responsePromise
         const row = adminPage.locator('tbody tr').filter({ hasText: source })
         await expect(row).toHaveCount(1)
         await expect(row).toContainText(firstTarget)
-        await adminPage.getByText('Đã tạo chuyển hướng.').waitFor({ state: 'hidden', timeout: 7_000 }).catch(() => {})
+        await adminPage
+          .getByText('Đã tạo chuyển hướng.')
+          .waitFor({ state: 'hidden', timeout: 7_000 })
+          .catch(() => {})
         await captureResponsiveList(adminPage, testInfo)
       })
 
@@ -75,8 +92,11 @@ test.describe('redirect-lifecycle', () => {
         await adminPage.getByRole('button', { name: `Sửa chuyển hướng ${source}` }).click()
         await adminPage.getByPlaceholder('/dia-chi-moi').fill(updatedTarget)
         const [updateResponse] = await Promise.all([
-          adminPage.waitForResponse((r) => r.request().method() === 'PATCH'
-            && new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`)),
+          adminPage.waitForResponse(
+            (r) =>
+              r.request().method() === 'PATCH' &&
+              new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`),
+          ),
           adminPage.getByRole('button', { name: 'Lưu', exact: true }).click(),
         ])
         expect(updateResponse.status(), 'API sửa chuyển hướng phải trả 2xx').toBeLessThan(300)
@@ -84,8 +104,11 @@ test.describe('redirect-lifecycle', () => {
         const row = adminPage.locator('tbody tr').filter({ hasText: source })
         await expect(row).toContainText(updatedTarget)
         const [toggleResponse] = await Promise.all([
-          adminPage.waitForResponse((r) => r.request().method() === 'PATCH'
-            && new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`)),
+          adminPage.waitForResponse(
+            (r) =>
+              r.request().method() === 'PATCH' &&
+              new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`),
+          ),
           row.getByRole('button', { name: `Tắt chuyển hướng ${source}` }).click(),
         ])
         expect(toggleResponse.status(), 'API tắt chuyển hướng phải trả 2xx').toBeLessThan(300)
@@ -102,8 +125,11 @@ test.describe('redirect-lifecycle', () => {
 
         await row.getByRole('button', { name: `Xóa chuyển hướng ${source}` }).click()
         const [deleteResponse] = await Promise.all([
-          adminPage.waitForResponse((r) => r.request().method() === 'DELETE'
-            && new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`)),
+          adminPage.waitForResponse(
+            (r) =>
+              r.request().method() === 'DELETE' &&
+              new URL(r.url()).pathname.endsWith(`/api/v1/admin/redirects/${redirectId}`),
+          ),
           adminPage.getByRole('dialog').getByRole('button', { name: 'Xoá', exact: true }).click(),
         ])
         expect(deleteResponse.status(), 'API xóa chuyển hướng phải trả 204').toBe(204)

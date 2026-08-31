@@ -13,11 +13,11 @@ Cách tổ chức được tham khảo có chọn lọc từ [Shopify Save Bar](
 
 ### Ba vai trò màu đỏ
 
-| Vai trò | Light | Dark | Dùng cho |
-|---|---|---|---|
-| Brand | `#FF0C09` | `#FF5A4D` | Logo, vạch menu đang chọn, badge điều hướng, chấm thông báo và nhận diện thương hiệu |
-| Primary | `#E50A07`; hover/active `#CC0906` | `#FF5A4D`; hover `#FF7A6F`; active `#E8402F` | CTA, link, focus, trạng thái selected/active và thao tác chính |
-| Danger | text `#B91C1C`, nền `#FEF2F2` | text `#F85149`, nền `rgba(218, 54, 51, 0.15)` | Xoá vĩnh viễn, lỗi và cảnh báo phá huỷ; không dùng thay Primary hoặc Brand |
+| Vai trò | Light                             | Dark                                          | Dùng cho                                                                             |
+| ------- | --------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Brand   | `#FF0C09`                         | `#FF5A4D`                                     | Logo, vạch menu đang chọn, badge điều hướng, chấm thông báo và nhận diện thương hiệu |
+| Primary | `#E50A07`; hover/active `#CC0906` | `#FF5A4D`; hover `#FF7A6F`; active `#E8402F`  | CTA, link, focus, trạng thái selected/active và thao tác chính                       |
+| Danger  | text `#B91C1C`, nền `#FEF2F2`     | text `#F85149`, nền `rgba(218, 54, 51, 0.15)` | Xoá vĩnh viễn, lỗi và cảnh báo phá huỷ; không dùng thay Primary hoặc Brand           |
 
 Không dùng Brand làm màu chữ/link trên nền sáng. Không dùng Danger cho thao tác chỉ thay đổi trạng thái có thể hoàn tác.
 
@@ -25,29 +25,29 @@ Không dùng Brand làm màu chữ/link trên nền sáng. Không dùng Danger c
 
 Tỷ lệ dưới đây được tính trực tiếp từ token. Nền trong suốt ở dark mode được ghép lên `--admin-color-surface-base` trước khi đo.
 
-| Cặp ngữ nghĩa | Light | Tỷ lệ | Dark | Tỷ lệ |
-|---|---|---:|---|---:|
-| Chữ chính / surface | `#111827` / `#FFFFFF` | 17.74:1 | `#E6EDF3` / `#161B22` | 14.64:1 |
-| Chữ phụ / surface | `#374151` / `#FFFFFF` | 10.31:1 | `#8B949E` / `#161B22` | 5.62:1 |
-| Chữ muted / surface | `#6B7280` / `#FFFFFF` | 4.83:1 | `#848E99` / `#161B22` | 5.20:1 |
-| Placeholder / surface | `#6B7280` / `#FFFFFF` | 4.83:1 | `#848E99` / `#161B22` | 5.20:1 |
-| Nút Primary | `#FFFFFF` / `#E50A07` | 4.80:1 | `#2A0805` / `#FF5A4D` | 6.01:1 |
-| Link Primary / surface | `#E50A07` / `#FFFFFF` | 4.80:1 | `#FF5A4D` / `#161B22` | 5.62:1 |
-| Success | `#15803D` / `#F0FDF4` | 4.79:1 | `#3FB950` / success bg | 5.86:1 |
-| Warning | `#92400E` / `#FFFBEB` | 6.84:1 | `#D29922` / warning bg | 5.65:1 |
-| Danger | `#B91C1C` / `#FEF2F2` | 5.91:1 | `#F85149` / danger bg | 4.59:1 |
-| Info | `#1D4ED8` / `#EFF6FF` | 6.16:1 | `#58A6FF` / info bg | 5.90:1 |
-| Neutral | `#374151` / `#F3F4F6` | 9.37:1 | `#8B949E` / neutral bg | 4.95:1 |
+| Cặp ngữ nghĩa          | Light                 |   Tỷ lệ | Dark                   |   Tỷ lệ |
+| ---------------------- | --------------------- | ------: | ---------------------- | ------: |
+| Chữ chính / surface    | `#111827` / `#FFFFFF` | 17.74:1 | `#E6EDF3` / `#161B22`  | 14.64:1 |
+| Chữ phụ / surface      | `#374151` / `#FFFFFF` | 10.31:1 | `#8B949E` / `#161B22`  |  5.62:1 |
+| Chữ muted / surface    | `#6B7280` / `#FFFFFF` |  4.83:1 | `#848E99` / `#161B22`  |  5.20:1 |
+| Placeholder / surface  | `#6B7280` / `#FFFFFF` |  4.83:1 | `#848E99` / `#161B22`  |  5.20:1 |
+| Nút Primary            | `#FFFFFF` / `#E50A07` |  4.80:1 | `#2A0805` / `#FF5A4D`  |  6.01:1 |
+| Link Primary / surface | `#E50A07` / `#FFFFFF` |  4.80:1 | `#FF5A4D` / `#161B22`  |  5.62:1 |
+| Success                | `#15803D` / `#F0FDF4` |  4.79:1 | `#3FB950` / success bg |  5.86:1 |
+| Warning                | `#92400E` / `#FFFBEB` |  6.84:1 | `#D29922` / warning bg |  5.65:1 |
+| Danger                 | `#B91C1C` / `#FEF2F2` |  5.91:1 | `#F85149` / danger bg  |  4.59:1 |
+| Info                   | `#1D4ED8` / `#EFF6FF` |  6.16:1 | `#58A6FF` / info bg    |  5.90:1 |
+| Neutral                | `#374151` / `#F3F4F6` |  9.37:1 | `#8B949E` / neutral bg |  4.95:1 |
 
 `src/styles/admin-tokens.test.js` kiểm tự động 22 cặp ngữ nghĩa ở cả light và dark; mọi cặp chữ thường phải đạt tối thiểu 4.5:1.
 
 ## 3. Typography
 
-| Utility/token | Font | Dùng cho |
-|---|---|---|
-| `font-body` / `--admin-font-body` | Inter | Nội dung, form, bảng, nút và điều hướng |
-| `font-display` / `--admin-font-display` | Oswald | H1, wordmark và số KPI |
-| `font-mono` / `--admin-font-mono` | JetBrains Mono | SKU, mã đơn, ID, đường dẫn chuyển hướng, mã nhật ký và code block |
+| Utility/token                           | Font           | Dùng cho                                                          |
+| --------------------------------------- | -------------- | ----------------------------------------------------------------- |
+| `font-body` / `--admin-font-body`       | Inter          | Nội dung, form, bảng, nút và điều hướng                           |
+| `font-display` / `--admin-font-display` | Oswald         | H1, wordmark và số KPI                                            |
+| `font-mono` / `--admin-font-mono`       | JetBrains Mono | SKU, mã đơn, ID, đường dẫn chuyển hướng, mã nhật ký và code block |
 
 Không dùng `.mono`, Exo, Bungee hoặc font tự nhập khác. Thang chữ chuẩn nằm ở `--admin-text-xs` đến `--admin-text-3xl`; không tạo kích thước tùy ý khi đã có mức tương đương.
 
@@ -66,12 +66,12 @@ Không dùng `.mono`, Exo, Bungee hoặc font tự nhập khác. Thang chữ chu
 
 ### Bốn linh kiện bắt buộc
 
-| Linh kiện | Quy tắc |
-|---|---|
-| `ScreenHeader` | Header duy nhất của màn ổn định: nhóm menu, H1, mô tả cần thiết, badge và action. Nhóm chỉ nhận một trong 5 nhóm sidebar; tự ẩn khi trùng H1. Login, Nhận lời mời và màn con đang nhúng không tạo header thứ hai. |
-| `DetailSection` | Khối nội dung cấp màn duy nhất. Hỗ trợ mô tả, badge, action, dấu bắt buộc, cấp heading và nội dung không padding. |
-| `ScreenSkeleton` | Loading cấp màn duy nhất với ba variant `table`, `form`, `cards`. Spinner vẫn dùng cho nút đang xử lý. |
-| `StickyActionBar` | Thanh thao tác của form cấp trang. Thứ tự: Huỷ/Bỏ thay đổi → Xem trước nếu có → thao tác phụ → Lưu ở ngoài cùng bên phải. |
+| Linh kiện         | Quy tắc                                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ScreenHeader`    | Header duy nhất của màn ổn định: nhóm menu, H1, mô tả cần thiết, badge và action. Nhóm chỉ nhận một trong 5 nhóm sidebar; tự ẩn khi trùng H1. Login, Nhận lời mời và màn con đang nhúng không tạo header thứ hai. |
+| `DetailSection`   | Khối nội dung cấp màn duy nhất. Hỗ trợ mô tả, badge, action, dấu bắt buộc, cấp heading và nội dung không padding.                                                                                                 |
+| `ScreenSkeleton`  | Loading cấp màn duy nhất với ba variant `table`, `form`, `cards`. Spinner vẫn dùng cho nút đang xử lý.                                                                                                            |
+| `StickyActionBar` | Thanh thao tác của form cấp trang. Thứ tự: Huỷ/Bỏ thay đổi → Xem trước nếu có → thao tác phụ → Lưu ở ngoài cùng bên phải.                                                                                         |
 
 `CollapsibleSection` chỉ dùng cho nhóm con cần thu gọn. Form trong modal dùng footer cố định của modal, không tạo thanh lưu cấp trang.
 

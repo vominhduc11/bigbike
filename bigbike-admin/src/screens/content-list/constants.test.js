@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CONTENT_SORT_OPTIONS,
-  INITIAL_CONTENT_QUERY,
-  isContentActionEligible,
-} from './constants'
+import { CONTENT_SORT_OPTIONS, INITIAL_CONTENT_QUERY, isContentActionEligible } from './constants'
 
 describe('content list constants', () => {
   it('mặc định dùng bộ lọc Tất cả và để backend loại bài trong Thùng rác', () => {
@@ -11,18 +7,20 @@ describe('content list constants', () => {
   })
 
   it('có đủ hai chiều sắp xếp cho năm trường được hỗ trợ', () => {
-    expect(new Set(CONTENT_SORT_OPTIONS.map(([value]) => value))).toEqual(new Set([
-      'title:asc',
-      'title:desc',
-      'publishStatus:asc',
-      'publishStatus:desc',
-      'createdAt:asc',
-      'createdAt:desc',
-      'updatedAt:asc',
-      'updatedAt:desc',
-      'publishedAt:asc',
-      'publishedAt:desc',
-    ]))
+    expect(new Set(CONTENT_SORT_OPTIONS.map(([value]) => value))).toEqual(
+      new Set([
+        'title:asc',
+        'title:desc',
+        'publishStatus:asc',
+        'publishStatus:desc',
+        'createdAt:asc',
+        'createdAt:desc',
+        'updatedAt:asc',
+        'updatedAt:desc',
+        'publishedAt:asc',
+        'publishedAt:desc',
+      ]),
+    )
     expect(CONTENT_SORT_OPTIONS).toHaveLength(10)
   })
 

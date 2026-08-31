@@ -30,7 +30,7 @@ function Toast({ toast, onDismiss, navigate }) {
     <div
       className={cn(
         'bg-surface border border-border rounded-md shadow-sm py-3 px-4 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] border-l-4',
-        isNew ? 'border-l-primary' : 'border-l-info'
+        isNew ? 'border-l-primary' : 'border-l-info',
       )}
     >
       <Button
@@ -50,9 +50,7 @@ function Toast({ toast, onDismiss, navigate }) {
           </span>
         ) : null}
         {meta.length > 0 ? (
-          <span className="mt-1 block text-xs text-muted-foreground">
-            {meta.join(' · ')}
-          </span>
+          <span className="mt-1 block text-xs text-muted-foreground">{meta.join(' · ')}</span>
         ) : null}
       </Button>
       <Button
@@ -82,14 +80,17 @@ export function OrderNotificationToast({ navigate, canViewOrders }) {
     }
   }, [])
 
-  const scheduleTimer = useCallback((id) => {
-    clearTimer(id)
-    const handle = setTimeout(() => {
-      timersRef.current.delete(id)
-      setToasts((prev) => prev.filter((item) => item.id !== id))
-    }, TOAST_DURATION_MS)
-    timersRef.current.set(id, handle)
-  }, [clearTimer])
+  const scheduleTimer = useCallback(
+    (id) => {
+      clearTimer(id)
+      const handle = setTimeout(() => {
+        timersRef.current.delete(id)
+        setToasts((prev) => prev.filter((item) => item.id !== id))
+      }, TOAST_DURATION_MS)
+      timersRef.current.set(id, handle)
+    },
+    [clearTimer],
+  )
 
   useEffect(() => {
     if (!canViewOrders) return undefined

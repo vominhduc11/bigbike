@@ -63,7 +63,13 @@ import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
 // khỏi admin (owner 2026-06-24) — nội dung đóng cứng trong web.
-export function ContentDetailScreen({ contentType, contentId, isCreate = false, navigate, canUpdate }) {
+export function ContentDetailScreen({
+  contentType,
+  contentId,
+  isCreate = false,
+  navigate,
+  canUpdate,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -85,7 +91,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   // Pane nhúng iframe bigbike-web /preview/article; debounce form rồi gọi dry-run
   // (KHÔNG lưu) lấy public Article và đẩy sang iframe. Reuse VITE_STOREFRONT_BASE_URL.
   // Docs: API_CONTRACT "Article preview" + WORKFLOW_OVERVIEW.
-  const storefrontOrigin = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+  const storefrontOrigin = (
+    import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'
+  ).replace(/\/$/, '')
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewLang, setPreviewLang] = useState('vi')
   const [previewDevice, setPreviewDevice] = useState('desktop')
@@ -123,7 +131,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const autosaveKey = getAutosaveKey(normalizedType, contentId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
 
-  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
+  const {
+    data: fetchResult,
+    isLoading,
+    isError,
+    error: fetchError,
+    refetch,
+  } = useQuery({
     queryKey: ['content', normalizedType, contentId],
     queryFn: () => fetchContentDetail(normalizedType, contentId),
     enabled: !isCreate,
@@ -149,7 +163,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     if (!isCreate && fetchResult?.item?.id) {
       recordRecentItem('recent:content', {
         id: fetchResult.item.id,
-        label: fetchResult.item.title || t('content.articleFallbackTitle', { defaultValue: 'Bài viết' }),
+        label:
+          fetchResult.item.title || t('content.articleFallbackTitle', { defaultValue: 'Bài viết' }),
       })
     }
   }, [isCreate, fetchResult?.item?.id, fetchResult?.item?.title, t])
@@ -170,21 +185,18 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const selectedPublishStatus = form.publishStatus || state.item?.publishStatus || 'DRAFT'
   // Publish targets limited to what the backend accepts from the persisted state.
   // On create there is no persisted state, so all standard targets are offered.
-  const publishOptions = useMemo(
-    () => {
-      const options = persistedTrash
-        ? ['TRASH']
-        : allowedPublishOptions(isCreate ? null : state.item?.publishStatus)
+  const publishOptions = useMemo(() => {
+    const options = persistedTrash
+      ? ['TRASH']
+      : allowedPublishOptions(isCreate ? null : state.item?.publishStatus)
 
-      // Radix Select only renders the selected label when its value has a matching
-      // SelectItem. Keep the loaded value available while the form and persisted
-      // record are being synchronized, so a published article never appears blank.
-      return selectedPublishStatus && !options.includes(selectedPublishStatus)
-        ? [selectedPublishStatus, ...options]
-        : options
-    },
-    [isCreate, persistedTrash, selectedPublishStatus, state.item?.publishStatus],
-  )
+    // Radix Select only renders the selected label when its value has a matching
+    // SelectItem. Keep the loaded value available while the form and persisted
+    // record are being synchronized, so a published article never appears blank.
+    return selectedPublishStatus && !options.includes(selectedPublishStatus)
+      ? [selectedPublishStatus, ...options]
+      : options
+  }, [isCreate, persistedTrash, selectedPublishStatus, state.item?.publishStatus])
   const formRef = useRef(null)
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội bộ
@@ -206,9 +218,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   }, [form, isDirty, autosaveKey])
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isCreate
-      ? createContent(normalizedType, payload)
-      : updateContent(normalizedType, contentId, payload),
+    mutationFn: (payload) =>
+      isCreate
+        ? createContent(normalizedType, payload)
+        : updateContent(normalizedType, contentId, payload),
     onSuccess: (response) => {
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(normalizedType, savedItem)
@@ -230,7 +243,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       // navigate để không bị hỏi "rời trang?" nhầm (F6) — form vừa lưu khớp baseline.
       if (isCreate && savedItem?.id) {
         clearNavGuard()
-        navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, { replace: true })
+        navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, {
+          replace: true,
+        })
       }
     },
     onError: (error) => {
@@ -370,9 +385,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         ...candidate.translations,
         en: {
           ...candidate.translations?.en,
-          slug: form.translations?.en?.slug === state.item?.slugEn
-            ? ''
-            : form.translations?.en?.slug,
+          slug:
+            form.translations?.en?.slug === state.item?.slugEn ? '' : form.translations?.en?.slug,
         },
       },
     }
@@ -396,14 +410,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         const restoredItem = response?.item
         const finalCandidate = {
           ...candidate,
-          slug: form.slug === state.item?.slug ? (restoredItem?.slug || form.slug) : form.slug,
+          slug: form.slug === state.item?.slug ? restoredItem?.slug || form.slug : form.slug,
           translations: {
             ...candidate.translations,
             en: {
               ...candidate.translations?.en,
-              slug: form.translations?.en?.slug === state.item?.slugEn
-                ? (restoredItem?.slugEn || '')
-                : form.translations?.en?.slug,
+              slug:
+                form.translations?.en?.slug === state.item?.slugEn
+                  ? restoredItem?.slugEn || ''
+                  : form.translations?.en?.slug,
             },
           },
         }
@@ -425,7 +440,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       setIsRestoreConfirming(false)
     }
   }
-
 
   // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
   const [activeTab, setActiveTab] = useState('content')
@@ -510,7 +524,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => refetch()}
         />
-        <Button variant="ghost"
+        <Button
+          variant="ghost"
           type="button"
           onClick={() => navigate('/admin/content')}
           className="min-h-11"
@@ -535,26 +550,54 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const sectionErrors = computeSectionErrorsFromMap(validationErrors)
   const tabCounts = Object.fromEntries(
-    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
+    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [
+      tab,
+      keys.filter((k) => sectionErrors[k]).length,
+    ]),
   )
 
   const seoTitleVal = langValue('seoTitle')
   const seoDescVal = langValue('seoDescription')
   const seoDescPlain = stripHtml(seoDescVal, '')
   const seoChecks = [
-    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự' }) },
-    { ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165, hint: seoDescPlain.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'Mô tả trên Google dài 140–165 ký tự' }) },
-    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang' }) },
-    { ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt') },
-    { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }) },
+    {
+      ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60,
+      hint: seoTitleVal.length,
+      label: t('content.detail.seoCheckTitle', {
+        defaultValue: 'Tiêu đề trên Google dài 30–60 ký tự',
+      }),
+    },
+    {
+      ok: seoDescPlain.length >= 140 && seoDescPlain.length <= 165,
+      hint: seoDescPlain.length,
+      label: t('content.detail.seoCheckDesc', {
+        defaultValue: 'Mô tả trên Google dài 140–165 ký tự',
+      }),
+    },
+    {
+      ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug),
+      label: t('content.detail.seoCheckSlug', {
+        defaultValue: 'Đường dẫn dùng chữ thường, không dấu, dùng dấu gạch ngang',
+      }),
+    },
+    {
+      ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(),
+      label: t('content.detail.seoCheckImageAlt'),
+    },
+    {
+      ok: !!form.seoOgImageUrl?.trim(),
+      label: t('content.detail.seoCheckOg', { defaultValue: 'Có ảnh để chia sẻ lên mạng xã hội' }),
+    },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
   const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
   const saveDotClass =
-    saveDotState === 'saving' ? 'bg-info animate-pulse'
-    : saveDotState === 'dirty' ? 'bg-warning animate-pulse'
-    :                            'bg-success'
+    saveDotState === 'saving'
+      ? 'bg-info animate-pulse'
+      : saveDotState === 'dirty'
+        ? 'bg-warning animate-pulse'
+        : 'bg-success'
   const saveLabel = isSubmitting
     ? t('content.detail.savingShort', { defaultValue: 'Đang lưu...' })
     : isDirty
@@ -563,7 +606,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const screenTitle = isCreate
     ? t('content.detail.createArticleTitle')
-    : (form.title || t('content.detail.editArticleTitle'))
+    : form.title || t('content.detail.editArticleTitle')
 
   const primaryLabel = persistedTrash
     ? t('content.detail.restoreAndSave')
@@ -609,174 +652,210 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   return (
     <div className="flex w-full min-w-0 items-start gap-6">
-    {/* @container: lưới trong form co theo bề rộng cột này (xem ProductDetailScreen) —
+      {/* @container: lưới trong form co theo bề rộng cột này (xem ProductDetailScreen) —
         kéo khung xem trước rộng ra làm cột hẹp thì lưới tự về 1 cột, không chật. */}
-    <div className="@container min-w-0 flex-1 basis-0">
-      <Screen>
-        <ScreenHeader
-          group="content"
-          title={screenTitle}
-          description={
-            !isCreate && state.item?.updatedAt ? (
-              <span className="text-xs">
-                {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-              </span>
-            ) : null
-          }
-          badge={
-            <span className="inline-flex items-center gap-2">
-              <span className={publishBadgeClass(form.publishStatus)}>
-                {t(`status.publish.${form.publishStatus}`, { defaultValue: t('common.unknown') })}
-              </span>
-              {!canUpdate && (
-                <span className="bb-badge bb-badge-warning">
-                  <Lock size={11} aria-hidden="true" />
-                  {t('content.detail.readOnlyBadge')}
+      <div className="@container min-w-0 flex-1 basis-0">
+        <Screen>
+          <ScreenHeader
+            group="content"
+            title={screenTitle}
+            description={
+              !isCreate && state.item?.updatedAt ? (
+                <span className="text-xs">
+                  {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
                 </span>
-              )}
-            </span>
-          }
-          actions={
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              onClick={handleClose}
-              aria-label={t('content.detail.backToList')}
-              data-screen-close="true"
-            >
-              <X size={18} aria-hidden="true" />
-            </Button>
-          }
-        />
-
-        {/* Banners — read-only */}
-        {!canUpdate ? <ReadOnlyBanner warning={t('content.detail.permissionDesc')} /> : null}
-
-        {state.warning ? <Alert tone="warning">{state.warning}</Alert> : null}
-
-        {persistedTrash ? (
-          <Alert tone="warning">
-            <strong>{t('content.detail.trashWarningTitle')}</strong>{' '}
-            {t('content.detail.trashWarningDesc')}
-          </Alert>
-        ) : null}
-
-        {draftRecovery && (
-          <Alert tone="info" icon={Save}>
-            <div className="flex flex-wrap items-center gap-2">
-            <span className="min-w-0 flex-1 truncate">
-              <strong>{t('content.detail.draftFoundShort')}</strong>
-              {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
-            </span>
-            <Button variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => { setForm(draftRecovery.form); setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug)); setDraftRecovery(null) }}
-            >
-              {t('content.detail.draftRestore')}
-            </Button>
-            <Button variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
-            >
-              {t('content.detail.draftDiscard')}
-            </Button>
-            </div>
-          </Alert>
-        )}
-
-        {/* Assignment banner — always visible */}
-        <ContentAssignmentBanner />
-
-        <Tabs
-          ariaLabel={t('content.detail.tabsAriaLabel', { defaultValue: 'Phần của nội dung' })}
-          value={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
-            { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
-          ]}
-        />
-
-        {/* F2: chú thích dấu * cho ô/thẻ bắt buộc — đặt đầu form, dùng token muted */}
-        <p className="text-xs text-muted-foreground">
-          <span className="text-danger" aria-hidden="true">*</span>
-          {' '}
-          {t('common.requiredLegend', { defaultValue: 'Trường bắt buộc' })}
-        </p>
-
-        <form
-          ref={formRef}
-          className="flex flex-col gap-6 pb-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            handlePrimarySave()
-          }}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
-              e.preventDefault()
-              handlePrimarySave()
+              ) : null
             }
-          }}
-        >
-          {activeTab === 'content' && (
-            <>
-              {/* ── Card: Thông tin chính ── */}
-        <DetailSection
-                title={t('content.detail.sectionCore')}
-                required
+            badge={
+              <span className="inline-flex items-center gap-2">
+                <span className={publishBadgeClass(form.publishStatus)}>
+                  {t(`status.publish.${form.publishStatus}`, { defaultValue: t('common.unknown') })}
+                </span>
+                {!canUpdate && (
+                  <span className="bb-badge bb-badge-warning">
+                    <Lock size={11} aria-hidden="true" />
+                    {t('content.detail.readOnlyBadge')}
+                  </span>
+                )}
+              </span>
+            }
+            actions={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-h-11 min-w-11"
+                onClick={handleClose}
+                aria-label={t('content.detail.backToList')}
+                data-screen-close="true"
               >
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field
-                    full
-                    required
-                    label={t('content.detail.title')}
-                    count={`${langValue('title').length} / 255`}
-                    countWarn={langValue('title').length > 240}
-                    error={isEnLang ? validationErrors['translations.en.title'] : validationErrors.title}
-                  >
-                    <Input
-                      value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
-                      onChange={(e) => isEnLang ? handleEnTitleChange(e.target.value) : handleTitleChange(e.target.value)}
-                      onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.title' : 'title')}
-                      disabled={isReadOnly}
-                      placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
-                      maxLength={255}
-                    />
-                  </Field>
+                <X size={18} aria-hidden="true" />
+              </Button>
+            }
+          />
 
-                  {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh cho BÀI VIẾT (ARTICLE_RULE_003). */}
-                  {isEnLang ? (
+          {/* Banners — read-only */}
+          {!canUpdate ? <ReadOnlyBanner warning={t('content.detail.permissionDesc')} /> : null}
+
+          {state.warning ? <Alert tone="warning">{state.warning}</Alert> : null}
+
+          {persistedTrash ? (
+            <Alert tone="warning">
+              <strong>{t('content.detail.trashWarningTitle')}</strong>{' '}
+              {t('content.detail.trashWarningDesc')}
+            </Alert>
+          ) : null}
+
+          {draftRecovery && (
+            <Alert tone="info" icon={Save}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="min-w-0 flex-1 truncate">
+                  <strong>{t('content.detail.draftFoundShort')}</strong>
+                  {' · '}
+                  {formatDateTime(new Date(draftRecovery.ts).toISOString())}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setForm(draftRecovery.form)
+                    setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
+                    setDraftRecovery(null)
+                  }}
+                >
+                  {t('content.detail.draftRestore')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    clearFormFromStorage(autosaveKey)
+                    setDraftRecovery(null)
+                  }}
+                >
+                  {t('content.detail.draftDiscard')}
+                </Button>
+              </div>
+            </Alert>
+          )}
+
+          {/* Assignment banner — always visible */}
+          <ContentAssignmentBanner />
+
+          <Tabs
+            ariaLabel={t('content.detail.tabsAriaLabel', { defaultValue: 'Phần của nội dung' })}
+            value={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'content',
+                label: t('content.detail.tabContent'),
+                count: tabCounts.content || undefined,
+              },
+              {
+                key: 'seo',
+                label: t('content.detail.tabSeoPublish'),
+                count: tabCounts.seo || undefined,
+              },
+            ]}
+          />
+
+          {/* F2: chú thích dấu * cho ô/thẻ bắt buộc — đặt đầu form, dùng token muted */}
+          <p className="text-xs text-muted-foreground">
+            <span className="text-danger" aria-hidden="true">
+              *
+            </span>{' '}
+            {t('common.requiredLegend', { defaultValue: 'Trường bắt buộc' })}
+          </p>
+
+          <form
+            ref={formRef}
+            className="flex flex-col gap-6 pb-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              handlePrimarySave()
+            }}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
+                e.preventDefault()
+                handlePrimarySave()
+              }
+            }}
+          >
+            {activeTab === 'content' && (
+              <>
+                {/* ── Card: Thông tin chính ── */}
+                <DetailSection title={t('content.detail.sectionCore')} required>
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                     <Field
                       full
-                      label={t('content.detail.slug')}
-                      error={validationErrors['translations.en.slug']}
-                      helper={t('content.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })}
+                      required
+                      label={t('content.detail.title')}
+                      count={`${langValue('title').length} / 255`}
+                      countWarn={langValue('title').length > 240}
+                      error={
+                        isEnLang
+                          ? validationErrors['translations.en.title']
+                          : validationErrors.title
+                      }
                     >
                       <Input
-                        value={form.translations?.en?.slug ?? ''}
-                        onChange={(e) => handleEnSlugChange(e.target.value)}
-                        onBlur={() => validateFieldOnBlur('translations.en.slug')}
+                        value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
+                        onChange={(e) =>
+                          isEnLang
+                            ? handleEnTitleChange(e.target.value)
+                            : handleTitleChange(e.target.value)
+                        }
+                        onBlur={() =>
+                          validateFieldOnBlur(isEnLang ? 'translations.en.title' : 'title')
+                        }
                         disabled={isReadOnly}
-                        placeholder={t('content.detail.slugPlaceholderEn', { defaultValue: 'duong-dan-tieng-anh' })}
-                        className="font-mono"
+                        placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
+                        maxLength={255}
                       />
                     </Field>
-                  ) : (
-                    <Field full required label={t('content.detail.slug')} error={validationErrors.slug}>
-                      <Input
-                        value={form.slug}
-                        onChange={(e) => handleSlugChange(e.target.value)}
-                        onBlur={() => validateFieldOnBlur('slug')}
-                        disabled={isReadOnly}
-                        className="font-mono"
-                      />
-                    </Field>
-                  )}
 
-                  {/* Ô "Danh mục" đã gỡ: sau khi gộp nhóm bài viết còn 1 "Tin tức" (V275),
+                    {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh cho BÀI VIẾT (ARTICLE_RULE_003). */}
+                    {isEnLang ? (
+                      <Field
+                        full
+                        label={t('content.detail.slug')}
+                        error={validationErrors['translations.en.slug']}
+                        helper={t('content.detail.slugHintEn', {
+                          defaultValue:
+                            'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.',
+                        })}
+                      >
+                        <Input
+                          value={form.translations?.en?.slug ?? ''}
+                          onChange={(e) => handleEnSlugChange(e.target.value)}
+                          onBlur={() => validateFieldOnBlur('translations.en.slug')}
+                          disabled={isReadOnly}
+                          placeholder={t('content.detail.slugPlaceholderEn', {
+                            defaultValue: 'duong-dan-tieng-anh',
+                          })}
+                          className="font-mono"
+                        />
+                      </Field>
+                    ) : (
+                      <Field
+                        full
+                        required
+                        label={t('content.detail.slug')}
+                        error={validationErrors.slug}
+                      >
+                        <Input
+                          value={form.slug}
+                          onChange={(e) => handleSlugChange(e.target.value)}
+                          onBlur={() => validateFieldOnBlur('slug')}
+                          disabled={isReadOnly}
+                          className="font-mono"
+                        />
+                      </Field>
+                    )}
+
+                    {/* Ô "Danh mục" đã gỡ: sau khi gộp nhóm bài viết còn 1 "Tin tức" (V275),
                       backend tự gán mọi bài vào nhóm này nên không cần cho admin chọn. */}
 
                     <Field
@@ -784,12 +863,20 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       label={t('content.detail.excerpt')}
                       count={`${langValue('excerpt').length} / 5000`}
                       countWarn={langValue('excerpt').length > 4500}
-                      error={isEnLang ? validationErrors['translations.en.excerpt'] : validationErrors.excerpt}
+                      error={
+                        isEnLang
+                          ? validationErrors['translations.en.excerpt']
+                          : validationErrors.excerpt
+                      }
                       helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                     >
                       <Textarea
                         value={isEnLang ? (form.translations?.en?.excerpt ?? '') : form.excerpt}
-                        onChange={(e) => isEnLang ? updateTranslation('excerpt', e.target.value) : updateField('excerpt', e.target.value)}
+                        onChange={(e) =>
+                          isEnLang
+                            ? updateTranslation('excerpt', e.target.value)
+                            : updateField('excerpt', e.target.value)
+                        }
                         disabled={isReadOnly}
                         maxLength={5000}
                       />
@@ -800,111 +887,155 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       label={t('content.detail.authorName', { defaultValue: 'Tác giả' })}
                       count={`${langValue('authorName').length} / 255`}
                       countWarn={langValue('authorName').length > 240}
-                      error={isEnLang ? validationErrors['translations.en.authorName'] : validationErrors.authorName}
-                      helper={isEnLang
-                        ? t('content.detail.enFieldHint')
-                        : t('content.detail.authorNameHint', { defaultValue: 'Không bắt buộc. Để trống nếu chưa chốt tên tác giả.' })}
+                      error={
+                        isEnLang
+                          ? validationErrors['translations.en.authorName']
+                          : validationErrors.authorName
+                      }
+                      helper={
+                        isEnLang
+                          ? t('content.detail.enFieldHint')
+                          : t('content.detail.authorNameHint', {
+                              defaultValue: 'Không bắt buộc. Để trống nếu chưa chốt tên tác giả.',
+                            })
+                      }
                     >
                       <Input
-                        value={isEnLang ? (form.translations?.en?.authorName ?? '') : form.authorName}
-                        onChange={(e) => isEnLang ? updateTranslation('authorName', e.target.value) : updateField('authorName', e.target.value)}
-                        onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.authorName' : 'authorName')}
+                        value={
+                          isEnLang ? (form.translations?.en?.authorName ?? '') : form.authorName
+                        }
+                        onChange={(e) =>
+                          isEnLang
+                            ? updateTranslation('authorName', e.target.value)
+                            : updateField('authorName', e.target.value)
+                        }
+                        onBlur={() =>
+                          validateFieldOnBlur(
+                            isEnLang ? 'translations.en.authorName' : 'authorName',
+                          )
+                        }
                         disabled={isReadOnly}
                         maxLength={255}
                       />
                     </Field>
-                </div>
-        </DetailSection>
-
-              {/* ── Card: Nội dung chính ── */}
-        <DetailSection title={t('content.detail.sectionBody')} required={!isEnLang}>
-                <Field
-                  full
-                  required={!isEnLang}
-                  label={t('content.detail.body')}
-                  error={isEnLang ? validationErrors['translations.en.body'] : validationErrors.bodyBlocks}
-                  helper={isEnLang ? t('content.detail.enBodyOptionalHint') : undefined}
-                >
-                  <div role="group">
-                    {isEnLang ? (
-                      <DeferredRichTextEditor
-                        key={`body-${contentLang}`}
-                        value={form.translations?.en?.body ?? ''}
-                        onChange={(html) => updateTranslation('body', html)}
-                        placeholder={t('content.detail.bodyPlaceholder')}
-                        disabled={isReadOnly}
-                        enableImagePicker
-                      />
-                    ) : (
-                      <BlockEditor
-                        key={`bodyBlocks-${contentLang}`}
-                        value={form.bodyBlocks}
-                        onChange={(blocks) => updateField('bodyBlocks', blocks)}
-                        disabled={isReadOnly}
-                        hasError={Boolean(validationErrors.bodyBlocks)}
-                        fallbackHtml={form.body}
-                      />
-                    )}
                   </div>
-                </Field>
-        </DetailSection>
+                </DetailSection>
 
-              {/* ── Card: Hình ảnh — article gallery / page hero ── */}
-        <DetailSection title={t('content.detail.sectionMedia')}>
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                {/* ── Card: Nội dung chính ── */}
+                <DetailSection title={t('content.detail.sectionBody')} required={!isEnLang}>
                   <Field
                     full
-                    label={t('content.detail.coverImageUrl')}
-                    helper={t('content.detail.coverImageUrlHint')}
-                    error={validationErrors.coverImageUrl || validationErrors.coverImageAlt}
+                    required={!isEnLang}
+                    label={t('content.detail.body')}
+                    error={
+                      isEnLang
+                        ? validationErrors['translations.en.body']
+                        : validationErrors.bodyBlocks
+                    }
+                    helper={isEnLang ? t('content.detail.enBodyOptionalHint') : undefined}
                   >
-                    <ImageUrlInput
-                      value={form.coverImageUrl}
-                      onChange={(url, media) => updateImageAsset('coverImage', url, media)}
-                      alt={form.coverImageAlt}
-                      onAltChange={(v) => updateField('coverImageAlt', v)}
-                      disabled={isReadOnly}
-                      error={validationErrors.coverImageUrl}
-                      recommend={IMAGE_RECO.cover}
-                    />
+                    <div role="group">
+                      {isEnLang ? (
+                        <DeferredRichTextEditor
+                          key={`body-${contentLang}`}
+                          value={form.translations?.en?.body ?? ''}
+                          onChange={(html) => updateTranslation('body', html)}
+                          placeholder={t('content.detail.bodyPlaceholder')}
+                          disabled={isReadOnly}
+                          enableImagePicker
+                        />
+                      ) : (
+                        <BlockEditor
+                          key={`bodyBlocks-${contentLang}`}
+                          value={form.bodyBlocks}
+                          onChange={(blocks) => updateField('bodyBlocks', blocks)}
+                          disabled={isReadOnly}
+                          hasError={Boolean(validationErrors.bodyBlocks)}
+                          fallbackHtml={form.body}
+                        />
+                      )}
+                    </div>
                   </Field>
-                  {form.homeExperience && (
-                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm minh hoạ' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh sản phẩm hiển thị chồng lên ảnh bìa trong mục Góc trải nghiệm trên trang chủ.' })}>
+                </DetailSection>
+
+                {/* ── Card: Hình ảnh — article gallery / page hero ── */}
+                <DetailSection title={t('content.detail.sectionMedia')}>
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                    <Field
+                      full
+                      label={t('content.detail.coverImageUrl')}
+                      helper={t('content.detail.coverImageUrlHint')}
+                      error={validationErrors.coverImageUrl || validationErrors.coverImageAlt}
+                    >
                       <ImageUrlInput
-                        value={form.productImageUrl}
-                        onChange={(url) => updateField('productImageUrl', url)}
-                        alt={form.productImageAlt}
-                        onAltChange={(v) => updateField('productImageAlt', v)}
+                        value={form.coverImageUrl}
+                        onChange={(url, media) => updateImageAsset('coverImage', url, media)}
+                        alt={form.coverImageAlt}
+                        onAltChange={(v) => updateField('coverImageAlt', v)}
                         disabled={isReadOnly}
-                        error={validationErrors.productImageUrl}
-                        recommend={IMAGE_RECO.squareMedium}
+                        error={validationErrors.coverImageUrl}
+                        recommend={IMAGE_RECO.cover}
                       />
                     </Field>
-                  )}
-                </div>
-        </DetailSection>
+                    {form.homeExperience && (
+                      <Field
+                        full
+                        label={t('content.detail.productImageUrl', {
+                          defaultValue: 'Ảnh sản phẩm minh hoạ',
+                        })}
+                        helper={t('content.detail.productImageUrlHint', {
+                          defaultValue:
+                            'Ảnh sản phẩm hiển thị chồng lên ảnh bìa trong mục Góc trải nghiệm trên trang chủ.',
+                        })}
+                      >
+                        <ImageUrlInput
+                          value={form.productImageUrl}
+                          onChange={(url) => updateField('productImageUrl', url)}
+                          alt={form.productImageAlt}
+                          onAltChange={(v) => updateField('productImageAlt', v)}
+                          disabled={isReadOnly}
+                          error={validationErrors.productImageUrl}
+                          recommend={IMAGE_RECO.squareMedium}
+                        />
+                      </Field>
+                    )}
+                  </div>
+                </DetailSection>
 
-              {/* ── Card: Hiển thị ── */}
-        <DetailSection title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field required label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
-                    <Select
-                      value={selectedPublishStatus}
-                      onValueChange={(val) => updateField('publishStatus', val)}
-                      disabled={isReadOnly || persistedTrash}
+                {/* ── Card: Hiển thị ── */}
+                <DetailSection
+                  title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })}
+                  required
+                >
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                    <Field
+                      required
+                      label={t('content.detail.publishStatus')}
+                      error={validationErrors.publishStatus}
                     >
-                      <SelectTrigger>
-                        {/* Render the loaded label directly. Radix can miss the initial
+                      <Select
+                        value={selectedPublishStatus}
+                        onValueChange={(val) => updateField('publishStatus', val)}
+                        disabled={isReadOnly || persistedTrash}
+                      >
+                        <SelectTrigger>
+                          {/* Render the loaded label directly. Radix can miss the initial
                             item-text lookup even though the matching option is present. */}
-                        <span>{t(`status.publish.${selectedPublishStatus}`, { defaultValue: t('common.unknown') })}</span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {publishOptions.map((status) => (
-                    <SelectItem key={status} value={status}>{t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+                          <span>
+                            {t(`status.publish.${selectedPublishStatus}`, {
+                              defaultValue: t('common.unknown'),
+                            })}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {publishOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
                     <div className="@xl:col-span-2 flex flex-col gap-2">
                       <label className="flex items-center gap-3 p-3 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
@@ -914,245 +1045,318 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         />
                         <span>{t('content.detail.featured')}</span>
                       </label>
-                      <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t('content.detail.featuredHint')}
+                      </span>
                       <div className="flex w-fit items-center gap-1">
                         <label className="flex items-center gap-3 border border-border p-3 text-sm cursor-pointer hover:bg-muted">
                           <Checkbox
                             checked={form.homeExperience}
-                            onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
+                            onCheckedChange={(checked) =>
+                              updateField('homeExperience', checked === true)
+                            }
                             disabled={isReadOnly}
                           />
-                          <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
+                          <span>
+                            {t('content.detail.homeExperience', {
+                              defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ',
+                            })}
+                          </span>
                         </label>
-                        <HelpTooltip content={t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })} />
+                        <HelpTooltip
+                          content={t('content.detail.homeExperienceHint', {
+                            defaultValue:
+                              'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.',
+                          })}
+                        />
                       </div>
                     </div>
-                </div>
-        </DetailSection>
-            </>
-          )}
+                  </div>
+                </DetailSection>
+              </>
+            )}
 
-          {activeTab === 'seo' && (
-            <>
-              {/* ── Card: SEO ── */}
-        <DetailSection title={t('content.detail.sectionSeo')}>
-                {/* Live Google SERP preview */}
-                <div className="mb-4 rte-canvas-frame">
-                  <div className="p-3 border border-border bg-white">
-                    <div className="flex items-center gap-1 text-xs text-google-url mb-1">
-                      <Search size={12} aria-hidden="true" />
-                      <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-                    </div>
-                    <div className="text-xs text-google-url break-all mb-1">
-                      {isEnLang
-                        ? (form.translations?.en?.slug
+            {activeTab === 'seo' && (
+              <>
+                {/* ── Card: SEO ── */}
+                <DetailSection title={t('content.detail.sectionSeo')}>
+                  {/* Live Google SERP preview */}
+                  <div className="mb-4 rte-canvas-frame">
+                    <div className="p-3 border border-border bg-white">
+                      <div className="flex items-center gap-1 text-xs text-google-url mb-1">
+                        <Search size={12} aria-hidden="true" />
+                        <span>
+                          {t('content.detail.serpPreview', {
+                            defaultValue: 'Xem trước trên Google',
+                          })}
+                        </span>
+                      </div>
+                      <div className="text-xs text-google-url break-all mb-1">
+                        {isEnLang
+                          ? form.translations?.en?.slug
                             ? `${storefrontOrigin}/news/${form.translations.en.slug}/`
-                            : t('content.detail.serpNoEnglishUrl', { defaultValue: 'Chưa có trang tiếng Anh' }))
-                        : `${storefrontOrigin}/tin-tuc/${form.slug || 'duong-dan'}/`}
-                    </div>
-                    <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {stripHtml(langValue('seoTitle') || langValue('title'), '').slice(0, 60)
-                        || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })}
-                    </div>
-                    <div className="text-sm leading-relaxed text-google-description break-words">
-                      {normalizeSeoText(langValue('seoDescription') || langValue('excerpt'))
-                        || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                            : t('content.detail.serpNoEnglishUrl', {
+                                defaultValue: 'Chưa có trang tiếng Anh',
+                              })
+                          : `${storefrontOrigin}/tin-tuc/${form.slug || 'duong-dan'}/`}
+                      </div>
+                      <div className="text-lg leading-snug text-google-title break-words mb-1">
+                        {stripHtml(langValue('seoTitle') || langValue('title'), '').slice(0, 60) ||
+                          t('content.detail.serpTitleFallback', {
+                            defaultValue: 'Tiêu đề trên Google',
+                          })}
+                      </div>
+                      <div className="text-sm leading-relaxed text-google-description break-words">
+                        {normalizeSeoText(langValue('seoDescription') || langValue('excerpt')) ||
+                          t('content.detail.serpDescFallback', {
+                            defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.',
+                          })}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field
-                    full
-                    label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
-                    count={`${langValue('seoTitle').length} / 60`}
-                    countWarn={langValue('seoTitle').length > 60}
-                    error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
-                    helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
-                  >
-                    <Input
-                      value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
-                      onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
-                      disabled={isReadOnly}
-                      placeholder={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
-                      maxLength={255}
-                    />
-                  </Field>
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                    <Field
+                      full
+                      label={t('content.detail.seoTitle', {
+                        defaultValue: 'Tiêu đề khi xuất hiện trên Google',
+                      })}
+                      count={`${langValue('seoTitle').length} / 60`}
+                      countWarn={langValue('seoTitle').length > 60}
+                      error={
+                        isEnLang
+                          ? validationErrors['translations.en.seoTitle']
+                          : validationErrors.seoTitle
+                      }
+                      helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                    >
+                      <Input
+                        value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
+                        onChange={(e) =>
+                          isEnLang
+                            ? updateTranslation('seoTitle', e.target.value)
+                            : updateField('seoTitle', e.target.value)
+                        }
+                        disabled={isReadOnly}
+                        placeholder={t('content.detail.seoTitle', {
+                          defaultValue: 'Tiêu đề khi xuất hiện trên Google',
+                        })}
+                        maxLength={255}
+                      />
+                    </Field>
 
-                  <Field
-                    full
-                    label={t('content.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-                    count={`${seoDescPlain.length} / 165`}
-                    countWarn={seoDescPlain.length > 165}
-                    error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
-                    helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
-                  >
-                    <Textarea
-                      value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
-                      onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
-                      disabled={isReadOnly}
-                      rows={3}
-                      maxLength={5000}
-                      placeholder={t('content.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-                    />
-                  </Field>
+                    <Field
+                      full
+                      label={t('content.detail.seoDescription', {
+                        defaultValue: 'Mô tả khi xuất hiện trên Google',
+                      })}
+                      count={`${seoDescPlain.length} / 165`}
+                      countWarn={seoDescPlain.length > 165}
+                      error={
+                        isEnLang
+                          ? validationErrors['translations.en.seoDescription']
+                          : validationErrors.seoDescription
+                      }
+                      helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                    >
+                      <Textarea
+                        value={
+                          isEnLang
+                            ? (form.translations?.en?.seoDescription ?? '')
+                            : form.seoDescription
+                        }
+                        onChange={(e) =>
+                          isEnLang
+                            ? updateTranslation('seoDescription', e.target.value)
+                            : updateField('seoDescription', e.target.value)
+                        }
+                        disabled={isReadOnly}
+                        rows={3}
+                        maxLength={5000}
+                        placeholder={t('content.detail.seoDescription', {
+                          defaultValue: 'Mô tả khi xuất hiện trên Google',
+                        })}
+                      />
+                    </Field>
 
-                  <Field
-                    full
-                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'Ảnh khi chia sẻ trên mạng xã hội' })}
-                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh dùng khi chia sẻ bài viết lên mạng xã hội, kích thước khuyến nghị 1200×630 điểm ảnh.' })}
-                    error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
-                  >
-                    <ImageUrlInput
-                      value={form.seoOgImageUrl}
-                      onChange={(url, media) => updateImageAsset('seoOgImage', url, media)}
-                      alt={form.seoOgImageAlt}
-                      onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                      disabled={isReadOnly}
-                      error={validationErrors.seoOgImageUrl}
-                      recommend={IMAGE_RECO.cover}
-                    />
-                  </Field>
-                </div>
+                    <Field
+                      full
+                      label={t('content.detail.seoOgImageUrl', {
+                        defaultValue: 'Ảnh khi chia sẻ trên mạng xã hội',
+                      })}
+                      helper={t('content.detail.seoOgImageUrlHint', {
+                        defaultValue:
+                          'Ảnh dùng khi chia sẻ bài viết lên mạng xã hội, kích thước khuyến nghị 1200×630 điểm ảnh.',
+                      })}
+                      error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
+                    >
+                      <ImageUrlInput
+                        value={form.seoOgImageUrl}
+                        onChange={(url, media) => updateImageAsset('seoOgImage', url, media)}
+                        alt={form.seoOgImageAlt}
+                        onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                        disabled={isReadOnly}
+                        error={validationErrors.seoOgImageUrl}
+                        recommend={IMAGE_RECO.cover}
+                      />
+                    </Field>
+                  </div>
 
-                {/* Cho Google hiển thị — khôi phục 2026-08-06 sau khi bị gỡ ở 578c2961.
+                  {/* Cho Google hiển thị — khôi phục 2026-08-06 sau khi bị gỡ ở 578c2961.
                     Lần gỡ đó có lý do đúng ("đồng bộ tab SEO tin tức với sản phẩm"), nhưng
                     hệ quả là cờ trở thành trường chết: dữ liệu vẫn đi vòng qua state và
                     payload mà không ai bật/tắt được, nên 185/185 bài viết đều noIndex=false.
                     Nay cả 4 loại (sản phẩm/danh mục/thương hiệu/bài viết) đều có ô này nên
                     tab SEO KHÔNG còn lệch nhau — đúng mục tiêu ban đầu của lần gỡ đó. */}
-                <SeoIndexField
-                  noIndexVi={form.seoNoIndex}
-                  noIndexEn={form.seoNoIndexEn}
-                  isEnLang={isEnLang}
-                  isReadOnly={isReadOnly}
-                  englishReady={Boolean(
-                    form.translations?.en?.title?.trim() && form.translations?.en?.body?.trim(),
-                  )}
-                  onChange={updateField}
-                />
+                  <SeoIndexField
+                    noIndexVi={form.seoNoIndex}
+                    noIndexEn={form.seoNoIndexEn}
+                    isEnLang={isEnLang}
+                    isReadOnly={isReadOnly}
+                    englishReady={Boolean(
+                      form.translations?.en?.title?.trim() && form.translations?.en?.body?.trim(),
+                    )}
+                    onChange={updateField}
+                  />
 
-                {/* SEO checklist */}
-                <div className="mt-4 p-3 border border-border bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-2 text-sm font-semibold">
-                      <Check size={14} aria-hidden="true" />
-                      {t('content.detail.seoChecklist', { defaultValue: 'Kiểm tra thông tin tìm kiếm' })}
-                    </span>
-                    <span className="font-mono text-sm font-bold text-success">
-                      {seoPassed} / {seoChecks.length}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
-                    {seoChecks.map((c, i) => (
-                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
-                        <span className={cn(
-                          'w-4 h-4 flex items-center justify-center',
-                          c.ok
-                            ? 'bg-success-bg text-success'
-                            : 'bg-muted',
-                        )}>
-                          {c.ok ? <Check size={11} aria-hidden="true" /> : null}
-                        </span>
-                        <span>
-                          {c.label}
-                          {c.hint != null && (
-                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
+                  {/* SEO checklist */}
+                  <div className="mt-4 p-3 border border-border bg-muted/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        <Check size={14} aria-hidden="true" />
+                        {t('content.detail.seoChecklist', {
+                          defaultValue: 'Kiểm tra thông tin tìm kiếm',
+                        })}
+                      </span>
+                      <span className="font-mono text-sm font-bold text-success">
+                        {seoPassed} / {seoChecks.length}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
+                      {seoChecks.map((c, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            'flex items-center gap-2 text-xs',
+                            c.ok ? 'text-foreground' : 'text-muted-foreground',
                           )}
-                        </span>
-                      </div>
-                    ))}
+                        >
+                          <span
+                            className={cn(
+                              'w-4 h-4 flex items-center justify-center',
+                              c.ok ? 'bg-success-bg text-success' : 'bg-muted',
+                            )}
+                          >
+                            {c.ok ? <Check size={11} aria-hidden="true" /> : null}
+                          </span>
+                          <span>
+                            {c.label}
+                            {c.hint != null && (
+                              <span className="ml-1 font-mono text-muted-foreground">
+                                ({c.hint})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-        </DetailSection>
-            </>
-          )}
-        </form>
+                </DetailSection>
+              </>
+            )}
+          </form>
 
-        <StickyActionBar
-          ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
-          info={
-            <span className="flex items-center gap-2 text-sm">
-              <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
-              <span className="font-medium">{saveLabel}</span>
-            </span>
-          }
-        >
-          <Button
-            variant="outline"
-            type="button"
-            className="min-h-11"
-            disabled={isSubmitting}
-            onClick={() => navigate('/admin/content')}
+          <StickyActionBar
+            ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
+            info={
+              <span className="flex items-center gap-2 text-sm">
+                <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
+                <span className="font-medium">{saveLabel}</span>
+              </span>
+            }
           >
-            {t('common.cancel')}
-          </Button>
-          {canUpdate && (
             <Button
               variant="outline"
               type="button"
               className="min-h-11"
               disabled={isSubmitting}
-              onClick={() => setPreviewOpen(true)}
-              title={t('content.detail.preview.title', { defaultValue: 'Xem trước bài viết' })}
+              onClick={() => navigate('/admin/content')}
             >
-              <Eye size={14} className="mr-2" aria-hidden="true" />
-              {t('content.detail.preview.open', { defaultValue: 'Xem trước' })}
+              {t('common.cancel')}
             </Button>
-          )}
-          {!isCreate && canUpdate && !persistedTrash && (
+            {canUpdate && (
+              <Button
+                variant="outline"
+                type="button"
+                className="min-h-11"
+                disabled={isSubmitting}
+                onClick={() => setPreviewOpen(true)}
+                title={t('content.detail.preview.title', { defaultValue: 'Xem trước bài viết' })}
+              >
+                <Eye size={14} className="mr-2" aria-hidden="true" />
+                {t('content.detail.preview.open', { defaultValue: 'Xem trước' })}
+              </Button>
+            )}
+            {!isCreate && canUpdate && !persistedTrash && (
+              <Button
+                variant="outline"
+                type="button"
+                className="min-h-11 text-destructive hover:text-destructive"
+                disabled={isSubmitting}
+                onClick={handleArchive}
+              >
+                <Trash2 size={14} className="mr-2" aria-hidden="true" />
+                {t('content.detail.archiveBtn')}
+              </Button>
+            )}
+            {canUpdate && persistedTrash ? (
+              <Button
+                variant="outline"
+                type="button"
+                className="min-h-11 text-destructive hover:text-destructive"
+                disabled={isSubmitting}
+                onClick={handlePermanentDelete}
+              >
+                <Trash2 size={14} className="mr-2" aria-hidden="true" />
+                {t('common.permanentDelete')}
+              </Button>
+            ) : null}
             <Button
-              variant="outline"
               type="button"
-              className="min-h-11 text-destructive hover:text-destructive"
-              disabled={isSubmitting}
-              onClick={handleArchive}
+              className="min-h-11"
+              disabled={
+                !canUpdate ||
+                isSubmitting ||
+                isRestoreConfirming ||
+                (!isCreate && !isDirty && !persistedTrash)
+              }
+              onClick={handlePrimarySave}
             >
-              <Trash2 size={14} className="mr-2" aria-hidden="true" />
-              {t('content.detail.archiveBtn')}
+              {isSubmitting && (
+                <Loader2 size={14} className="animate-spin mr-2" aria-hidden="true" />
+              )}
+              {primaryLabel}
             </Button>
-          )}
-          {canUpdate && persistedTrash ? (
-            <Button
-              variant="outline"
-              type="button"
-              className="min-h-11 text-destructive hover:text-destructive"
-              disabled={isSubmitting}
-              onClick={handlePermanentDelete}
-            >
-              <Trash2 size={14} className="mr-2" aria-hidden="true" />
-              {t('common.permanentDelete')}
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={!canUpdate || isSubmitting || isRestoreConfirming || (!isCreate && !isDirty && !persistedTrash)}
-            onClick={handlePrimarySave}
-          >
-            {isSubmitting && <Loader2 size={14} className="animate-spin mr-2" aria-hidden="true" />}
-            {primaryLabel}
-          </Button>
-        </StickyActionBar>
-      </Screen>
-    </div>
-        {canUpdate && (
-          <LivePreview
-            open={previewOpen}
-            onClose={() => setPreviewOpen(false)}
-            data={previewData}
-            error={previewError}
-            loading={previewLoading}
-            lang={previewLang}
-            onLangChange={setPreviewLang}
-            device={previewDevice}
-            onDeviceChange={setPreviewDevice}
-            webOrigin={storefrontOrigin}
-            previewPath="/preview/article/"
-            i18nPrefix="content.detail.preview"
-            t={t}
-          />
-        )}
+          </StickyActionBar>
+        </Screen>
+      </div>
+      {canUpdate && (
+        <LivePreview
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          data={previewData}
+          error={previewError}
+          loading={previewLoading}
+          lang={previewLang}
+          onLangChange={setPreviewLang}
+          device={previewDevice}
+          onDeviceChange={setPreviewDevice}
+          webOrigin={storefrontOrigin}
+          previewPath="/preview/article/"
+          i18nPrefix="content.detail.preview"
+          t={t}
+        />
+      )}
     </div>
   )
 }

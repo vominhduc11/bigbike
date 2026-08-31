@@ -16,13 +16,15 @@ function readToken() {
 }
 
 function derivePasswordError(password, t) {
-  if (!password) return t('acceptInvite.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
+  if (!password)
+    return t('acceptInvite.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
   if (password.length < 8) return t('acceptInvite.passwordTooShort')
   return ''
 }
 
 function deriveConfirmError(confirm, password, t) {
-  if (!confirm) return t('acceptInvite.confirmRequired', { defaultValue: 'Vui lòng nhập lại mật khẩu.' })
+  if (!confirm)
+    return t('acceptInvite.confirmRequired', { defaultValue: 'Vui lòng nhập lại mật khẩu.' })
   if (confirm !== password) return t('acceptInvite.passwordMismatch')
   return ''
 }
@@ -49,7 +51,12 @@ export function AcceptInviteScreen() {
   // Tracks whether the screen is still mounted so a late-resolving validate/retry call
   // doesn't setState after unmount (e.g. user navigates away before the request settles).
   const mountedRef = useRef(true)
-  useEffect(() => () => { mountedRef.current = false }, [])
+  useEffect(
+    () => () => {
+      mountedRef.current = false
+    },
+    [],
+  )
 
   const runValidate = useCallback(() => {
     setPhase('validating')
@@ -117,16 +124,15 @@ export function AcceptInviteScreen() {
     <div className="bb-login-shell">
       <div className="bb-login-left">
         <div>
-          <p className="bb-login-brand-kicker">
-            BigBike
-          </p>
-          <h1><span className="brand-dot" />Admin</h1>
+          <p className="bb-login-brand-kicker">BigBike</p>
+          <h1>
+            <span className="brand-dot" />
+            Admin
+          </h1>
           <p className="bb-login-tagline">{t('acceptInvite.tagline')}</p>
         </div>
         <div className="bb-login-foot">
-          <p>
-            © {new Date().getFullYear()} BigBike.
-          </p>
+          <p>© {new Date().getFullYear()} BigBike.</p>
         </div>
       </div>
 
@@ -135,12 +141,20 @@ export function AcceptInviteScreen() {
           <h2>{t('acceptInvite.title')}</h2>
 
           {phase === 'validating' && (
-            <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
+            <StatePanel
+              tone="info"
+              title={t('common.loading')}
+              description={t('common.pleaseWait')}
+            />
           )}
 
           {phase === 'invalid' && (
             <div className="bb-login-stack">
-              <StatePanel tone="danger" title={t('acceptInvite.invalidTitle')} description={error} />
+              <StatePanel
+                tone="danger"
+                title={t('acceptInvite.invalidTitle')}
+                description={error}
+              />
               <Button asChild size="lg" className="w-full">
                 <a href="/">{t('acceptInvite.goToLogin')}</a>
               </Button>
@@ -164,7 +178,11 @@ export function AcceptInviteScreen() {
 
           {phase === 'done' && (
             <div className="bb-login-stack">
-              <StatePanel tone="success" title={t('acceptInvite.doneTitle')} description={t('acceptInvite.doneDesc')} />
+              <StatePanel
+                tone="success"
+                title={t('acceptInvite.doneTitle')}
+                description={t('acceptInvite.doneDesc')}
+              />
               <Button asChild size="lg" className="w-full">
                 <a href="/">{t('acceptInvite.goToLogin')}</a>
               </Button>
@@ -175,13 +193,18 @@ export function AcceptInviteScreen() {
             <>
               <p className="subtitle">{t('acceptInvite.subtitle', { email })}</p>
               {error ? (
-                <Alert tone="danger" size="sm" className="mb-4">{error}</Alert>
+                <Alert tone="danger" size="sm" className="mb-4">
+                  {error}
+                </Alert>
               ) : null}
               <form onSubmit={onSubmit} noValidate className="bb-auth-form">
                 <div className="bb-auth-field">
                   <label htmlFor={pwId} className="bb-auth-label">
                     {t('acceptInvite.passwordLabel')}
-                    <span className="bb-required-mark" aria-hidden="true"> *</span>
+                    <span className="bb-required-mark" aria-hidden="true">
+                      {' '}
+                      *
+                    </span>
                   </label>
                   <PasswordInput
                     id={pwId}
@@ -195,7 +218,9 @@ export function AcceptInviteScreen() {
                     onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
                     disabled={submitting}
                     aria-invalid={touched.password && passwordError ? true : undefined}
-                    aria-describedby={touched.password && passwordError ? `${pwId}-error` : undefined}
+                    aria-describedby={
+                      touched.password && passwordError ? `${pwId}-error` : undefined
+                    }
                   />
                   {touched.password && passwordError ? (
                     <span id={`${pwId}-error`} role="alert" className="bb-field-error">
@@ -206,7 +231,10 @@ export function AcceptInviteScreen() {
                 <div className="bb-auth-field">
                   <label htmlFor={confirmId} className="bb-auth-label">
                     {t('acceptInvite.confirmLabel')}
-                    <span className="bb-required-mark" aria-hidden="true"> *</span>
+                    <span className="bb-required-mark" aria-hidden="true">
+                      {' '}
+                      *
+                    </span>
                   </label>
                   <PasswordInput
                     id={confirmId}
@@ -220,7 +248,9 @@ export function AcceptInviteScreen() {
                     onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
                     disabled={submitting}
                     aria-invalid={touched.confirm && confirmError ? true : undefined}
-                    aria-describedby={touched.confirm && confirmError ? `${confirmId}-error` : undefined}
+                    aria-describedby={
+                      touched.confirm && confirmError ? `${confirmId}-error` : undefined
+                    }
                   />
                   {touched.confirm && confirmError ? (
                     <span id={`${confirmId}-error`} role="alert" className="bb-field-error">
@@ -229,9 +259,18 @@ export function AcceptInviteScreen() {
                   ) : null}
                 </div>
                 <p className="bb-required-legend">
-                  <span aria-hidden="true" className="bb-required-mark">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                  <span aria-hidden="true" className="bb-required-mark">
+                    *
+                  </span>{' '}
+                  {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
                 </p>
-                <Button type="submit" size="lg" className="w-full" disabled={submitting} aria-busy={submitting || undefined}>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  disabled={submitting}
+                  aria-busy={submitting || undefined}
+                >
                   {submitting ? (
                     <>
                       <Loader2 className="animate-spin" size={16} aria-hidden="true" />

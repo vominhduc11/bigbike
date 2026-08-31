@@ -88,7 +88,11 @@ export function parseTrustBadgesResult(html) {
     const items = elements
       .map((el) => ({ _key: generateId(), content: badgeText(el) }))
       .filter((b) => b.content)
-    return makeHtmlImportResult({ items, skippedCount: elements.length - items.length + (items.length ? 0 : 1), hasInput: true })
+    return makeHtmlImportResult({
+      items,
+      skippedCount: elements.length - items.length + (items.length ? 0 : 1),
+      hasInput: true,
+    })
   } catch {
     return makeHtmlImportResult({ skippedCount: 1, hasInput: true })
   }
@@ -113,7 +117,9 @@ function setBadgeText(doc, el, content) {
     return
   }
   // Gỡ mọi text node trần trực tiếp trên badge (chữ nằm ngoài span) để không lặp lại khi ghép.
-  ;[...el.childNodes].forEach((n) => { if (n.nodeType === 3) el.removeChild(n) })
+  ;[...el.childNodes].forEach((n) => {
+    if (n.nodeType === 3) el.removeChild(n)
+  })
   const span = doc.createElement('span')
   span.textContent = content
   el.appendChild(span)

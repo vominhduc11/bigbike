@@ -44,8 +44,10 @@ function normalizeLegacyAdminPath(path, type) {
   if (path.startsWith('/categories/')) return `/admin${path}`
   if (path.startsWith('/brands/')) return `/admin${path}`
   if (path === '/home-videos' || path === '/sliders') return `/admin${path}`
-  if ((type === 'CONTENT' || type === 'CONTENT_PRODUCT_IMG' || type === 'CONTENT_SEO_OG')
-      && /^\/content\/[^/?#]+$/.test(path)) {
+  if (
+    (type === 'CONTENT' || type === 'CONTENT_PRODUCT_IMG' || type === 'CONTENT_SEO_OG') &&
+    /^\/content\/[^/?#]+$/.test(path)
+  ) {
     return path.replace('/content/', '/admin/content/ARTICLE/')
   }
   return ''

@@ -42,7 +42,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/brands`
 const SYSTEM_BRAND_SLUG = 'uncategorized-brand'
 
-
 function buildEmptyForm() {
   return {
     slug: '',
@@ -106,7 +105,6 @@ function buildFormFromItem(item) {
   }
 }
 
-
 // ── Autosave utilities (F9) ──────────────────────────────────────────────────
 // Mirrors product-detail/constants.js + content-detail/constants.js — same
 // localStorage draft mechanism, own key namespace for brands.
@@ -119,7 +117,9 @@ function getAutosaveKey(brandId, isCreate) {
 function saveFormToStorage(key, form) {
   try {
     localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
-  } catch { /* quota */ }
+  } catch {
+    /* quota */
+  }
 }
 
 function loadFormFromStorage(key) {
@@ -132,11 +132,17 @@ function loadFormFromStorage(key) {
       return null
     }
     return parsed
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function clearFormFromStorage(key) {
-  try { localStorage.removeItem(key) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpdate }) {
@@ -160,7 +166,13 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const autosaveKey = getAutosaveKey(brandId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
 
-  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
+  const {
+    data: fetchResult,
+    isLoading,
+    isError,
+    error: fetchError,
+    refetch,
+  } = useQuery({
     queryKey: ['brand', brandId],
     queryFn: () => fetchBrandDetail(brandId),
     enabled: !isCreate,
@@ -235,7 +247,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   }, [form, isDirty, autosaveKey])
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isCreate ? createBrand(payload) : updateBrand(brandId, payload),
+    mutationFn: (payload) => (isCreate ? createBrand(payload) : updateBrand(brandId, payload)),
     onSuccess: (response) => {
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(savedItem)
@@ -361,8 +373,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
       // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó.
-      if (clientErrors.description || clientErrors.logoUrl || clientErrors.bannerUrl) setOptionalOpen(true)
-      if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoOgImageUrl) setSeoOpen(true)
+      if (clientErrors.description || clientErrors.logoUrl || clientErrors.bannerUrl)
+        setOptionalOpen(true)
+      if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoOgImageUrl)
+        setSeoOpen(true)
       return
     }
 
@@ -371,7 +385,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
     saveMutation.mutate(toBrandPayload(form))
   }
-
 
   if (state.status === 'loading') {
     return (
@@ -413,85 +426,121 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xoá thông tin SEO".
   const hasSeoData = Boolean(
-    form.seoTitle?.trim() || form.seoDescription?.trim() ||
-    form.seoOgImageUrl?.trim() || form.seoOgImageAlt?.trim() ||
-    form.translations?.en?.seoTitle?.trim() || form.translations?.en?.seoDescription?.trim()
+    form.seoTitle?.trim() ||
+    form.seoDescription?.trim() ||
+    form.seoOgImageUrl?.trim() ||
+    form.seoOgImageAlt?.trim() ||
+    form.translations?.en?.seoTitle?.trim() ||
+    form.translations?.en?.seoDescription?.trim(),
   )
 
   // Xoá toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
   async function handleClearSeo() {
     const ok = await showConfirm(
-      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xoá toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
+      t('brands.detail.clearSeoConfirm', {
+        defaultValue:
+          'Xoá toàn bộ thông tin hiển thị trên Google đã nhập (tiêu đề, mô tả, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.',
+      }),
       t('brands.detail.clearSeoTitle', { defaultValue: 'Xoá thông tin hiển thị trên Google?' }),
-      { variant: 'default', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xoá thông tin hiển thị trên Google' }), cancelLabel: t('common.cancel') },
+      {
+        variant: 'default',
+        confirmLabel: t('brands.detail.clearSeoBtn', {
+          defaultValue: 'Xoá thông tin hiển thị trên Google',
+        }),
+        cancelLabel: t('common.cancel'),
+      },
     )
     if (!ok) return
     setForm((prev) => ({
       ...prev,
       // Cố ý KHÔNG reset seoNoIndex/seoNoIndexEn: xoá phần văn bản/ảnh là một chuyện,
       // bật lại một trang đang cố tình ẩn khỏi Google là chuyện khác (SEO_RULE_001).
-      seoTitle: '', seoDescription: '', seoOgImageUrl: '', seoOgImageAlt: '',
-      translations: { ...prev.translations, en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' } },
+      seoTitle: '',
+      seoDescription: '',
+      seoOgImageUrl: '',
+      seoOgImageAlt: '',
+      translations: {
+        ...prev.translations,
+        en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' },
+      },
     }))
-    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xoá thông tin hiển thị trên Google.' }))
+    toast.success(
+      t('brands.detail.clearSeoDone', { defaultValue: 'Đã xoá thông tin hiển thị trên Google.' }),
+    )
   }
 
   return (
     <Screen>
       <ScreenHeader
         group="products"
-        title={isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle') : t('brands.detail.editTitle')}
+        title={
+          isCreate
+            ? t('brands.detail.createTitle')
+            : isSystemBrand
+              ? t('brands.detail.systemTitle')
+              : t('brands.detail.editTitle')
+        }
         description={!isCreate && isSystemBrand ? t('brands.detail.systemDesc') : undefined}
-        actions={(
+        actions={
           <>
-          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate('/admin/brands')}>
-            <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
-          </Button>
-          {!isCreate && canUpdate && !isSystemBrand && (
-            state.item?.isVisible === false ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-11"
-                disabled={isReadOnly}
-                aria-busy={isSubmitting || undefined}
-                onClick={async () => {
-                  const confirmed = await showConfirm(
-                    t('brands.detail.restoreConfirm', { name: formatText(form.name || state.item?.name) }),
-                    t('brands.detail.restoreConfirmTitle'),
-                    { variant: 'default', confirmLabel: t('brands.detail.restoreBtn') },
-                  )
-                  if (!confirmed) return
-                  setIsSubmitting(true)
-                  restoreMutation.mutate()
-                }}
-              >
-                {t('brands.detail.restoreBtn')}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-11 text-danger"
-                disabled={isReadOnly}
-                aria-busy={isSubmitting || undefined}
-                onClick={async () => {
-                  const confirmed = await showConfirm(
-                    t('brands.detail.hideConfirm', { name: formatText(form.name || state.item?.name) }),
-                    t('common.moveToTrashTitle'),
-                    { variant: 'default', confirmLabel: t('common.moveToTrash') },
-                  )
-                  if (!confirmed) return
-                  setIsSubmitting(true)
-                  deleteMutation.mutate()
-                }}
-              >
-                {t('brands.detail.hideBtn')}
-              </Button>
-            )
-          )}
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-11"
+              onClick={() => navigate('/admin/brands')}
+            >
+              <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
+            </Button>
+            {!isCreate &&
+              canUpdate &&
+              !isSystemBrand &&
+              (state.item?.isVisible === false ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-11"
+                  disabled={isReadOnly}
+                  aria-busy={isSubmitting || undefined}
+                  onClick={async () => {
+                    const confirmed = await showConfirm(
+                      t('brands.detail.restoreConfirm', {
+                        name: formatText(form.name || state.item?.name),
+                      }),
+                      t('brands.detail.restoreConfirmTitle'),
+                      { variant: 'default', confirmLabel: t('brands.detail.restoreBtn') },
+                    )
+                    if (!confirmed) return
+                    setIsSubmitting(true)
+                    restoreMutation.mutate()
+                  }}
+                >
+                  {t('brands.detail.restoreBtn')}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-11 text-danger"
+                  disabled={isReadOnly}
+                  aria-busy={isSubmitting || undefined}
+                  onClick={async () => {
+                    const confirmed = await showConfirm(
+                      t('brands.detail.hideConfirm', {
+                        name: formatText(form.name || state.item?.name),
+                      }),
+                      t('common.moveToTrashTitle'),
+                      { variant: 'default', confirmLabel: t('common.moveToTrash') },
+                    )
+                    if (!confirmed) return
+                    setIsSubmitting(true)
+                    deleteMutation.mutate()
+                  }}
+                >
+                  {t('brands.detail.hideBtn')}
+                </Button>
+              ))}
           </>
-        )}
+        }
       />
 
       {!isCreate ? (
@@ -509,7 +558,13 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <dd className="mt-1">
               <StatusBadge
                 type="trash"
-                status={state.item?.isVisible === true ? false : state.item?.isVisible === false ? true : undefined}
+                status={
+                  state.item?.isVisible === true
+                    ? false
+                    : state.item?.isVisible === false
+                      ? true
+                      : undefined
+                }
               />
             </dd>
           </div>
@@ -542,8 +597,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
           <span className="bb-alert-main truncate">
-            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
-            {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+            <strong>
+              {t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}
+            </strong>
+            {' · '}
+            {formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
           <Button
             variant="unstyled"
@@ -558,20 +616,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <Button
             variant="unstyled"
             className="text-xs underline hover:no-underline"
-            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+            onClick={() => {
+              clearFormFromStorage(autosaveKey)
+              setDraftRecovery(null)
+            }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
           </Button>
         </div>
       )}
 
-      {state.warning ? (
-        <ReadOnlyBanner warning={state.warning} />
-      ) : null}
+      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      {!canUpdate ? (
-        <ReadOnlyBanner warning={t('brands.detail.permissionDesc')} />
-      ) : null}
+      {!canUpdate ? <ReadOnlyBanner warning={t('brands.detail.permissionDesc')} /> : null}
 
       {isSystemBrand ? (
         <StatePanel
@@ -594,53 +651,85 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       >
         {/* Thông tin cơ bản */}
         <DetailSection className="mb-4" title={t('brands.detail.sectionBasic')}>
-            {!isEnLang ? (
-              <p className="text-xs text-muted-foreground mb-3">
-                <span className="text-danger" aria-hidden="true">*</span>{' '}
-                {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
-              </p>
-            ) : null}
-            <div className="bb-grid-2">
-              <FormField
-                label={t('brands.detail.name')}
-                required
-                helper={isEnLang ? t('brands.detail.nameHelperEn', { defaultValue: 'Tên thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
-                error={validationErrors.name}
-              >
-                <Input
-                  value={form.name}
-                  onChange={(e) => handleSharedNameChange(e.target.value)}
-                  onBlur={() => handleFieldBlur('name')}
-                  disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEnRequired', { defaultValue: 'Tên thương hiệu dùng chung' }) : undefined}
-                />
-              </FormField>
-              <FormField
-                label={t('brands.detail.slug')}
-                required
-                  helper={isEnLang ? t('brands.detail.slugHelperEn', { defaultValue: 'Đường dẫn thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
-                error={validationErrors.slug}
-              >
-                <Input
-                  value={form.slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  onBlur={() => handleFieldBlur('slug')}
-                  disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'duong-dan-dung-chung' }) : undefined}
-                  className="font-mono" />
-              </FormField>
-              <label className="col-span-full flex w-fit cursor-pointer items-center gap-2 border border-border p-2 text-sm hover:bg-muted">
-                <Checkbox checked={form.showOnHomepage} onCheckedChange={(checked) => updateField('showOnHomepage', checked)} disabled={isReadOnly} />
-                <span>{t('brands.detail.showOnHomepage')}</span>
-              </label>
-            </div>
+          {!isEnLang ? (
+            <p className="text-xs text-muted-foreground mb-3">
+              <span className="text-danger" aria-hidden="true">
+                *
+              </span>{' '}
+              {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+            </p>
+          ) : null}
+          <div className="bb-grid-2">
+            <FormField
+              label={t('brands.detail.name')}
+              required
+              helper={
+                isEnLang
+                  ? t('brands.detail.nameHelperEn', {
+                      defaultValue: 'Tên thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.',
+                    })
+                  : undefined
+              }
+              error={validationErrors.name}
+            >
+              <Input
+                value={form.name}
+                onChange={(e) => handleSharedNameChange(e.target.value)}
+                onBlur={() => handleFieldBlur('name')}
+                disabled={isReadOnly}
+                placeholder={
+                  isEnLang
+                    ? t('brands.detail.namePlaceholderEnRequired', {
+                        defaultValue: 'Tên thương hiệu dùng chung',
+                      })
+                    : undefined
+                }
+              />
+            </FormField>
+            <FormField
+              label={t('brands.detail.slug')}
+              required
+              helper={
+                isEnLang
+                  ? t('brands.detail.slugHelperEn', {
+                      defaultValue:
+                        'Đường dẫn thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.',
+                    })
+                  : undefined
+              }
+              error={validationErrors.slug}
+            >
+              <Input
+                value={form.slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                onBlur={() => handleFieldBlur('slug')}
+                disabled={isReadOnly}
+                placeholder={
+                  isEnLang
+                    ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'duong-dan-dung-chung' })
+                    : undefined
+                }
+                className="font-mono"
+              />
+            </FormField>
+            <label className="col-span-full flex w-fit cursor-pointer items-center gap-2 border border-border p-2 text-sm hover:bg-muted">
+              <Checkbox
+                checked={form.showOnHomepage}
+                onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
+                disabled={isReadOnly}
+              />
+              <span>{t('brands.detail.showOnHomepage')}</span>
+            </label>
+          </div>
         </DetailSection>
 
         {/* Mô tả & hình ảnh (tùy chọn) — gom vào nhóm thu gọn, đóng sẵn để form gọn (chống ngợp). */}
         <div className="mb-4">
           <CollapsibleSection
             title={t('brands.detail.optionalSection', { defaultValue: 'Mô tả & hình ảnh' })}
-            hint={t('brands.detail.optionalSectionHint', { defaultValue: 'Tùy chọn — mô tả, logo, ảnh banner' })}
+            hint={t('brands.detail.optionalSectionHint', {
+              defaultValue: 'Tùy chọn — mô tả, logo, ảnh banner',
+            })}
             open={optionalOpen}
             onToggle={() => setOptionalOpen((v) => !v)}
             keepMounted
@@ -652,8 +741,14 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <DeferredRichTextEditor
                 key={`description-${contentLang}`}
                 value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
-                onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
-                placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
+                onChange={(html) =>
+                  isEnLang
+                    ? updateTranslation('description', html)
+                    : updateField('description', html)
+                }
+                placeholder={t('brands.detail.descriptionPlaceholder', {
+                  defaultValue: 'Nhập mô tả thương hiệu...',
+                })}
                 disabled={isReadOnly}
                 enableImagePicker
               />
@@ -719,9 +814,17 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         {/* Xoá SEO có xác nhận — tránh mất nhầm nội dung đã nhập; chỉ hiện khi SEO đang mở & có dữ liệu. */}
         {seoOpen && !isReadOnly && hasSeoData && (
           <div className="mb-4 flex justify-end">
-            <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleClearSeo}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={handleClearSeo}
+            >
               <Trash2 size={14} aria-hidden="true" />
-              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xoá thông tin hiển thị trên Google' })}
+              {t('brands.detail.clearSeoBtn', {
+                defaultValue: 'Xoá thông tin hiển thị trên Google',
+              })}
             </Button>
           </div>
         )}
@@ -730,11 +833,14 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       {/* Thanh Lưu dính đáy — luôn thấy khi cuộn form dài (trước đây chỉ có nút Lưu ở đầu trang). */}
       <StickyActionBar
         ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
-        info={(
+        info={
           <span className="text-sm bb-muted">
-            {t('brands.detail.formProgress', { filled: requiredProgress.filled, total: requiredProgress.total })}
+            {t('brands.detail.formProgress', {
+              filled: requiredProgress.filled,
+              total: requiredProgress.total,
+            })}
           </span>
-        )}
+        }
       >
         <Button
           type="button"
@@ -754,7 +860,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
           {isSubmitting
             ? t('common.saving')
-            : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
+            : isCreate
+              ? t('brands.detail.createBtn')
+              : t('brands.detail.saveBtn')}
         </Button>
       </StickyActionBar>
     </Screen>

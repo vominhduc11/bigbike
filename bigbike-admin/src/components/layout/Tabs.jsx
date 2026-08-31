@@ -57,7 +57,9 @@ export function Tabs({ items, value, onChange, ariaLabel }) {
           <Button
             variant="unstyled"
             key={item.key}
-            ref={(el) => { tabRefs.current[index] = el }}
+            ref={(el) => {
+              tabRefs.current[index] = el
+            }}
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}

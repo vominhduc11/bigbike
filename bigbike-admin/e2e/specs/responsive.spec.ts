@@ -1,7 +1,10 @@
 import { test, expect, expectRuntimeClean, resetCollectors } from '../fixtures/admin-test'
 import {
-  navigateSpa, expectNoHorizontalOverflow, expectHeaderNotOverlappingContent,
-  expectSidebarDrawerClosed, openSidebarDrawer,
+  navigateSpa,
+  expectNoHorizontalOverflow,
+  expectHeaderNotOverlappingContent,
+  expectSidebarDrawerClosed,
+  openSidebarDrawer,
 } from '../utils/quality'
 import { VIEWPORTS } from '../utils/viewports'
 import { KEY_ROUTES } from '../utils/routes'
@@ -45,20 +48,36 @@ test('responsive · mobile sidebar drawer opens and navigates', async ({ adminPa
   await openSidebarDrawer(adminPage)
 
   // Tapping a nav item navigates and closes the drawer.
-  await adminPage.locator('.bb-sidebar .bb-nav-link', { hasText: /Sản phẩm|Products/ }).first().click()
-  await expect.poll(async () => {
-    const box = await adminPage.locator('.bb-sidebar').boundingBox()
-    return box ? Math.round(box.x + box.width) : 0
-  }, { message: 'Drawer should close after selecting a nav item' }).toBeLessThanOrEqual(4)
+  await adminPage
+    .locator('.bb-sidebar .bb-nav-link', { hasText: /Sản phẩm|Products/ })
+    .first()
+    .click()
+  await expect
+    .poll(
+      async () => {
+        const box = await adminPage.locator('.bb-sidebar').boundingBox()
+        return box ? Math.round(box.x + box.width) : 0
+      },
+      { message: 'Drawer should close after selecting a nav item' },
+    )
+    .toBeLessThanOrEqual(4)
   await expect(adminPage).toHaveURL(/\/admin\/products/)
   await expectNoHorizontalOverflow(adminPage, 'orders→products mobile drawer nav')
 })
 
-test('responsive · product and order screens share the same 1920px content width', async ({ adminPage }) => {
+test('responsive · product and order screens share the same 1920px content width', async ({
+  adminPage,
+}) => {
   await adminPage.setViewportSize({ width: 1920, height: 1080 })
   await navigateSpa(adminPage, '/admin/products')
-  const productWidth = await adminPage.locator('.screen').first().evaluate((element) => element.getBoundingClientRect().width)
+  const productWidth = await adminPage
+    .locator('.screen')
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().width)
   await navigateSpa(adminPage, '/admin/orders')
-  const orderWidth = await adminPage.locator('.screen').first().evaluate((element) => element.getBoundingClientRect().width)
+  const orderWidth = await adminPage
+    .locator('.screen')
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().width)
   expect(Math.abs(productWidth - orderWidth)).toBeLessThanOrEqual(1)
 })

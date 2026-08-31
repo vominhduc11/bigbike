@@ -96,12 +96,18 @@ export function LivePreview({
     try {
       const saved = Number(localStorage.getItem(RESIZE_STORAGE_KEY))
       if (Number.isFinite(saved) && saved >= MIN_PREVIEW_WIDTH) return clampPreviewWidth(saved)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return defaultPreviewWidth()
   })
 
   const persistWidth = useCallback((w) => {
-    try { localStorage.setItem(RESIZE_STORAGE_KEY, String(Math.round(w))) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(RESIZE_STORAGE_KEY, String(Math.round(w)))
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   useEffect(() => {
@@ -128,45 +134,60 @@ export function LivePreview({
     return () => ro.disconnect()
   }, [open])
 
-  const onHandlePointerDown = useCallback((e) => {
-    if (!isDocked) return
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = asideRef.current?.offsetWidth || MIN_PREVIEW_WIDTH
-    // Keep drag events on this document even if the cursor crosses the iframe.
-    const iframeEl = iframeRef.current
-    if (iframeEl) iframeEl.style.pointerEvents = 'none'
-    // Preview nằm bên phải: kéo chuột sang trái (clientX giảm) → khung rộng ra.
-    const onMove = (ev) => setDesktopWidth(clampPreviewWidth(startWidth + (startX - ev.clientX), containerWidth))
-    const onUp = () => {
-      dragRef.current = null
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      if (iframeEl) iframeEl.style.removeProperty('pointer-events')
-      document.body.style.removeProperty('user-select')
-      document.body.style.removeProperty('cursor')
-      persistWidth(clampPreviewWidth(asideRef.current?.offsetWidth || startWidth, containerWidth))
-    }
-    dragRef.current = onUp
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'col-resize'
-  }, [containerWidth, isDocked, persistWidth])
+  const onHandlePointerDown = useCallback(
+    (e) => {
+      if (!isDocked) return
+      e.preventDefault()
+      const startX = e.clientX
+      const startWidth = asideRef.current?.offsetWidth || MIN_PREVIEW_WIDTH
+      // Keep drag events on this document even if the cursor crosses the iframe.
+      const iframeEl = iframeRef.current
+      if (iframeEl) iframeEl.style.pointerEvents = 'none'
+      // Preview nằm bên phải: kéo chuột sang trái (clientX giảm) → khung rộng ra.
+      const onMove = (ev) =>
+        setDesktopWidth(clampPreviewWidth(startWidth + (startX - ev.clientX), containerWidth))
+      const onUp = () => {
+        dragRef.current = null
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        if (iframeEl) iframeEl.style.removeProperty('pointer-events')
+        document.body.style.removeProperty('user-select')
+        document.body.style.removeProperty('cursor')
+        persistWidth(clampPreviewWidth(asideRef.current?.offsetWidth || startWidth, containerWidth))
+      }
+      dragRef.current = onUp
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+    },
+    [containerWidth, isDocked, persistWidth],
+  )
 
-  const nudgeWidth = useCallback((delta) => {
-    setDesktopWidth((w) => {
-      const next = clampPreviewWidth(w + delta, containerWidth)
-      persistWidth(next)
-      return next
-    })
-  }, [containerWidth, persistWidth])
+  const nudgeWidth = useCallback(
+    (delta) => {
+      setDesktopWidth((w) => {
+        const next = clampPreviewWidth(w + delta, containerWidth)
+        persistWidth(next)
+        return next
+      })
+    },
+    [containerWidth, persistWidth],
+  )
 
-  const onHandleKeyDown = useCallback((e) => {
-    // Preview bên phải: mũi tên trái làm rộng khung, phải làm hẹp.
-    if (e.key === 'ArrowLeft') { e.preventDefault(); nudgeWidth(32) }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); nudgeWidth(-32) }
-  }, [nudgeWidth])
+  const onHandleKeyDown = useCallback(
+    (e) => {
+      // Preview bên phải: mũi tên trái làm rộng khung, phải làm hẹp.
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        nudgeWidth(32)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        nudgeWidth(-32)
+      }
+    },
+    [nudgeWidth],
+  )
 
   const resetWidth = useCallback(() => {
     const next = defaultPreviewWidth(containerWidth)
@@ -175,7 +196,12 @@ export function LivePreview({
   }, [containerWidth, persistWidth])
 
   // Tháo listener kéo còn treo nếu unmount giữa lúc đang kéo.
-  useEffect(() => () => { dragRef.current?.() }, [])
+  useEffect(
+    () => () => {
+      dragRef.current?.()
+    },
+    [],
+  )
 
   // Panel là NON-MODAL: form bên trái vẫn thao tác được khi đang xem preview, nên KHÔNG
   // trap focus (trap khiến bàn phím không Tab quay lại được form/trigger). Chỉ bắt Escape
@@ -255,9 +281,8 @@ export function LivePreview({
   const scale = availWidth > 0 ? Math.min(1, availWidth / targetWidth) : 1
   const previewBounds = getPreviewBounds(containerWidth)
   const effectiveDesktopWidth = clampPreviewWidth(desktopWidth, containerWidth)
-  const dockedWidth = device === 'desktop'
-    ? effectiveDesktopWidth
-    : Math.min(MOBILE_PREVIEW_WIDTH, previewBounds.max)
+  const dockedWidth =
+    device === 'desktop' ? effectiveDesktopWidth : Math.min(MOBILE_PREVIEW_WIDTH, previewBounds.max)
   const panelStyle = isDocked
     ? {
         width: dockedWidth,
@@ -282,14 +307,19 @@ export function LivePreview({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label={t(`${i18nPrefix}.resize`, { defaultValue: 'Kéo để đổi độ rộng khung xem trước (nhấp đúp để về mặc định)' })}
+          aria-label={t(`${i18nPrefix}.resize`, {
+            defaultValue: 'Kéo để đổi độ rộng khung xem trước (nhấp đúp để về mặc định)',
+          })}
           tabIndex={0}
           onPointerDown={onHandlePointerDown}
           onKeyDown={onHandleKeyDown}
           onDoubleClick={resetWidth}
           className="group absolute inset-y-0 left-0 z-20 flex w-2.5 cursor-col-resize touch-none items-center justify-center hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-none"
         >
-          <span className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" aria-hidden="true" />
+          <span
+            className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary"
+            aria-hidden="true"
+          />
         </div>
       )}
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2">
@@ -307,7 +337,9 @@ export function LivePreview({
                 onClick={() => onLangChange(code)}
                 className={cn(
                   'px-2 py-1 text-xs font-medium uppercase transition-colors',
-                  lang === code ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+                  lang === code
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:bg-muted',
                 )}
               >
                 {code}
@@ -323,7 +355,9 @@ export function LivePreview({
               aria-label={t(`${i18nPrefix}.desktop`, { defaultValue: 'Máy tính' })}
               className={cn(
                 'px-2 py-1 transition-colors',
-                device === 'desktop' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+                device === 'desktop'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:bg-muted',
               )}
             >
               <Monitor size={14} />
@@ -334,14 +368,22 @@ export function LivePreview({
               aria-label={t(`${i18nPrefix}.mobile`, { defaultValue: 'Điện thoại' })}
               className={cn(
                 'px-2 py-1 transition-colors',
-                device === 'mobile' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+                device === 'mobile'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:bg-muted',
               )}
             >
               <Smartphone size={14} />
             </Button>
           </div>
 
-          <Button variant="ghost" size="icon" type="button" onClick={onClose} aria-label={t('common.close', { defaultValue: 'Đóng' })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', { defaultValue: 'Đóng' })}
+          >
             <X size={16} />
           </Button>
         </div>
@@ -359,7 +401,8 @@ export function LivePreview({
           <AlertCircle size={14} className="mt-1 shrink-0" />
           <span>
             {t(`${i18nPrefix}.invalid`, {
-              defaultValue: 'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',
+              defaultValue:
+                'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',
             })}
             {/* Chi tiết kỹ thuật của lỗi chỉ hiện ở môi trường dev; người dùng thật chỉ thấy thông báo thân thiện. */}
             {import.meta.env?.DEV && error.message ? ` (${error.message})` : ''}
@@ -369,10 +412,7 @@ export function LivePreview({
 
       {/* Iframe storefront thật — render ở bề rộng desktop/mobile thật rồi scale
           vừa khung để thấy đúng layout theo breakpoint, không bị kẹt ở tablet. */}
-      <div
-        ref={frameHostRef}
-        className="flex flex-1 justify-center overflow-hidden bg-muted p-3"
-      >
+      <div ref={frameHostRef} className="flex flex-1 justify-center overflow-hidden bg-muted p-3">
         <div className="rte-canvas-frame">
           <div
             className="shadow"

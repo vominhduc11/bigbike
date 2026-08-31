@@ -8,7 +8,9 @@
     "build": "npm run check:no-runtime-mock && npm run check:i18n && vite build",
     "analyze": "npm run check:no-runtime-mock && node scripts/analyze-build.mjs",
     "check:i18n": "node scripts/check-i18n.js",
-    "lint": "npm run check:no-runtime-mock && npm run check:i18n && eslint .",
+    "lint": "npm run check:no-runtime-mock && npm run check:i18n && npm run format:check && eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "check:no-runtime-mock": "node scripts/check-no-admin-runtime-mock.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -21,7 +23,8 @@
     "test:e2e:data": "node ../scripts/ops/e2e-data-cleanup.mjs",
     "test:e2e:responsive": "playwright test responsive",
     "test:e2e:effects": "playwright test effects",
-    "test:e2e:admin": "playwright test"
+    "test:e2e:admin": "playwright test",
+    "prepare": "cd .. && husky bigbike-admin/.husky"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -84,9 +87,19 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^8.0.4",
     "vitest": "^4.1.8"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs}": [
+      "prettier --write",
+      "eslint --max-warnings=0 --no-warn-ignored"
+    ],
+    "*.{css,json}": "prettier --write"
   }
 }

@@ -19,7 +19,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, values = {}) => {
       if (values && 'defaultValue' in values && typeof values.defaultValue === 'string') {
-        return values.defaultValue.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
+        return values.defaultValue.replace(/\{\{(\w+)\}\}/g, (_, name) =>
+          String(values[name] ?? name),
+        )
       }
       return key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
     },
@@ -42,8 +44,14 @@ vi.mock('../components/AdminTable', () => ({
   AdminTable: ({ rows, columns, loading, onRowClick, onSortChange, rowClassName }) => (
     <div data-testid="audit-table" data-loading={String(!!loading)}>
       {rows.map((row) => (
-        <div key={row.id} data-testid="audit-row" data-row-class={rowClassName ? rowClassName(row) : ''}>
-          <button type="button" onClick={() => onRowClick(row)}>mo-{row.id}</button>
+        <div
+          key={row.id}
+          data-testid="audit-row"
+          data-row-class={rowClassName ? rowClassName(row) : ''}
+        >
+          <button type="button" onClick={() => onRowClick(row)}>
+            mo-{row.id}
+          </button>
           {columns.map((column) => (
             <span key={column.key} data-col={column.key}>
               {column.render ? column.render(row) : row[column.key]}
@@ -51,7 +59,9 @@ vi.mock('../components/AdminTable', () => ({
           ))}
         </div>
       ))}
-      <button type="button" onClick={() => onSortChange('actor', 'asc')}>sap-xep-nguoi-thuc-hien</button>
+      <button type="button" onClick={() => onSortChange('actor', 'asc')}>
+        sap-xep-nguoi-thuc-hien
+      </button>
     </div>
   ),
 }))
@@ -64,14 +74,20 @@ vi.mock('./audit-log-list/AuditDetailDrawer', () => ({
   AuditDetailDrawer: ({ log, onClose }) => (
     <div role="dialog" aria-label="chi-tiet">
       <span data-testid="drawer-log-id">{log.id}</span>
-      <button type="button" onClick={onClose}>dong-drawer</button>
+      <button type="button" onClick={onClose}>
+        dong-drawer
+      </button>
     </div>
   ),
 }))
 
 vi.mock('./audit-log-list/MobileFilterDrawer', () => ({
   MobileFilterDrawer: ({ onClose }) => (
-    <div data-testid="mobile-filter"><button type="button" onClick={onClose}>dong-loc</button></div>
+    <div data-testid="mobile-filter">
+      <button type="button" onClick={onClose}>
+        dong-loc
+      </button>
+    </div>
   ),
 }))
 
@@ -98,8 +114,10 @@ function makeLog(overrides = {}) {
 // Ô ngày phải đặt giá trị trong một lần — `user.type` gõ từng ký tự sẽ tạo ra
 // hàng loạt giá trị trung gian và kéo theo nhiều lượt gọi máy chủ.
 function setDateRange(from, to) {
-  if (from !== null) fireEvent.change(screen.getByLabelText(/auditLog.filterFrom/), { target: { value: from } })
-  if (to !== null) fireEvent.change(screen.getByLabelText(/auditLog.filterTo/), { target: { value: to } })
+  if (from !== null)
+    fireEvent.change(screen.getByLabelText(/auditLog.filterFrom/), { target: { value: from } })
+  if (to !== null)
+    fireEvent.change(screen.getByLabelText(/auditLog.filterTo/), { target: { value: to } })
 }
 
 function resolveWith(items, pagination) {
@@ -122,7 +140,9 @@ describe('tải danh sách', () => {
     render(<AuditLogListScreen />)
 
     expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'true')
-    await waitFor(() => expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false'))
+    await waitFor(() =>
+      expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false'),
+    )
     // Bảng desktop và danh sách thẻ mobile cùng render một bản ghi.
     expect(screen.getAllByText('Mũ bảo hiểm LS2').length).toBeGreaterThan(0)
   })
@@ -140,12 +160,16 @@ describe('tải danh sách', () => {
     const user = userEvent.setup()
     resolveWith([makeLog()])
     render(<AuditLogListScreen />)
-    await waitFor(() => expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false'))
+    await waitFor(() =>
+      expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false'),
+    )
 
     let finishRefresh
-    mocks.fetchAuditLogs.mockReturnValueOnce(new Promise((resolve) => {
-      finishRefresh = resolve
-    }))
+    mocks.fetchAuditLogs.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishRefresh = resolve
+      }),
+    )
 
     await user.type(screen.getByPlaceholderText('auditLog.filterSearchPlaceholder'), 'LS2')
     await user.click(screen.getByRole('button', { name: 'auditLog.filterQuickSearch' }))
@@ -179,14 +203,23 @@ describe('tải danh sách', () => {
   })
 
   it('không hiển thị undefined/null khi bản ghi thiếu dữ liệu', async () => {
-    resolveWith([makeLog({
-      actorDisplayName: null, actorEmail: null, resourceDisplayName: null, resourceCode: null,
-      resourceId: null, action: '', resourceType: '',
-    })])
+    resolveWith([
+      makeLog({
+        actorDisplayName: null,
+        actorEmail: null,
+        resourceDisplayName: null,
+        resourceCode: null,
+        resourceId: null,
+        action: '',
+        resourceType: '',
+      }),
+    ])
     render(<AuditLogListScreen />)
 
     await waitFor(() => expect(screen.getByTestId('audit-row')).toBeInTheDocument())
-    expect(screen.getByTestId('audit-row').textContent).not.toMatch(/undefined|null|NaN|\[object Object\]/)
+    expect(screen.getByTestId('audit-row').textContent).not.toMatch(
+      /undefined|null|NaN|\[object Object\]/,
+    )
   })
 })
 
@@ -210,16 +243,22 @@ describe('trạng thái rỗng và lỗi', () => {
     await user.click(screen.getByRole('button', { name: 'auditLog.filterQuickSearch' }))
 
     await waitFor(() => expect(screen.getByText('auditLog.emptyFiltered')).toBeInTheDocument())
-    expect(screen.getAllByRole('button', { name: 'auditLog.resetFilters' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'auditLog.resetFilters' }).length).toBeGreaterThan(
+      0,
+    )
   })
 
   it('lỗi tải hiện thông báo của máy chủ và cho thử lại', async () => {
     const user = userEvent.setup()
-    mocks.fetchAuditLogs.mockRejectedValueOnce(new Error('Không thể kết nối máy chủ, vui lòng kiểm tra mạng'))
+    mocks.fetchAuditLogs.mockRejectedValueOnce(
+      new Error('Không thể kết nối máy chủ, vui lòng kiểm tra mạng'),
+    )
     render(<AuditLogListScreen />)
 
     await waitFor(() => expect(screen.getByText('auditLog.errorLoadTitle')).toBeInTheDocument())
-    expect(screen.getByText('Không thể kết nối máy chủ, vui lòng kiểm tra mạng')).toBeInTheDocument()
+    expect(
+      screen.getByText('Không thể kết nối máy chủ, vui lòng kiểm tra mạng'),
+    ).toBeInTheDocument()
 
     resolveWith([makeLog()])
     await user.click(screen.getByRole('button', { name: 'auditLog.errorRetry' }))
@@ -245,12 +284,16 @@ describe('khoảng ngày ngược', () => {
 
     setDateRange('2026-07-25', '2026-07-01')
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(
-      'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-    ))
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+      ),
+    )
     // Khoảng ngày ngược chắc chắn ra 0 kết quả — không tốn thêm lượt gọi nào.
     expect(mocks.fetchAuditLogs.mock.calls.length).toBe(callsBefore + 1)
-    expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ from: '2026-07-25', to: '' }))
+    expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(
+      expect.objectContaining({ from: '2026-07-25', to: '' }),
+    )
   })
 
   it('không hiện panel "không tìm thấy" gây hiểu nhầm khi khoảng ngày sai', async () => {
@@ -274,7 +317,9 @@ describe('khoảng ngày ngược', () => {
 
     setDateRange('2026-07-25', '2026-07-01')
 
-    await waitFor(() => expect(screen.getByLabelText(/auditLog.filterFrom/)).toHaveAttribute('aria-invalid', 'true'))
+    await waitFor(() =>
+      expect(screen.getByLabelText(/auditLog.filterFrom/)).toHaveAttribute('aria-invalid', 'true'),
+    )
     expect(screen.getByLabelText(/auditLog.filterTo/)).toHaveAttribute('aria-invalid', 'true')
   })
 
@@ -317,9 +362,11 @@ describe('xuất tệp', () => {
     resolveWith([makeLog()], { page: 1, pageSize: 20, totalItems: 95, totalPages: 5 })
     render(<AuditLogListScreen />)
 
-    await waitFor(() => expect(screen.getByText(
-      'Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.',
-    )).toBeInTheDocument())
+    await waitFor(() =>
+      expect(
+        screen.getByText('Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.'),
+      ).toBeInTheDocument(),
+    )
   })
 
   it('không hiện ghi chú giới hạn khi kết quả gọn trong một trang', async () => {
@@ -327,9 +374,9 @@ describe('xuất tệp', () => {
     render(<AuditLogListScreen />)
 
     await waitFor(() => expect(screen.getByTestId('audit-row')).toBeInTheDocument())
-    expect(screen.queryByText(
-      'Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.',
-    )).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.'),
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -375,9 +422,9 @@ describe('bảng chi tiết', () => {
     await waitFor(() => expect(screen.getByTestId('audit-row')).toBeInTheDocument())
     expect(screen.queryByRole('dialog', { name: 'chi-tiet' })).not.toBeInTheDocument()
     expect(new URLSearchParams(window.location.search).get('detail')).toBeNull()
-    expect(screen.getByText(
-      'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
-    )).toBeInTheDocument()
+    expect(
+      screen.getByText('Hoạt động được liên kết không nằm trong trang kết quả hiện tại.'),
+    ).toBeInTheDocument()
   })
 })
 
@@ -391,9 +438,11 @@ describe('bộ lọc', () => {
     await user.type(screen.getByPlaceholderText('auditLog.filterSearchPlaceholder'), 'LS2')
     await user.click(screen.getByRole('button', { name: 'auditLog.filterQuickSearch' }))
 
-    await waitFor(() => expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(
-      expect.objectContaining({ q: 'LS2', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ q: 'LS2', page: 1 }),
+      ),
+    )
   })
 
   it('hiện thẻ bộ lọc đang áp dụng và cho gỡ từng cái', async () => {
@@ -421,9 +470,18 @@ describe('bộ lọc', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'auditLog.resetFilters' })[0])
 
-    await waitFor(() => expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(
-      expect.objectContaining({ q: '', from: '', to: '', actorType: 'ALL', resourceType: 'ALL', page: 1 }),
-    ))
+    await waitFor(() =>
+      expect(mocks.fetchAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          q: '',
+          from: '',
+          to: '',
+          actorType: 'ALL',
+          resourceType: 'ALL',
+          page: 1,
+        }),
+      ),
+    )
     expect(screen.getByPlaceholderText('auditLog.filterSearchPlaceholder')).toHaveValue('')
   })
 })

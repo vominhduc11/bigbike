@@ -2,7 +2,21 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, ArrowLeft, Check, Copy, FolderTree, Globe2, Hash, Image as ImageIcon, Link2, Package, Save, Star, X as XIcon } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  Copy,
+  FolderTree,
+  Globe2,
+  Hash,
+  Image as ImageIcon,
+  Link2,
+  Package,
+  Save,
+  Star,
+  X as XIcon,
+} from 'lucide-react'
 
 import {
   createCategory,
@@ -31,7 +45,13 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { IntroContentField } from './category-detail/IntroContentField'
 import { createCategoryAiPromptBuilder } from '../lib/aiContentProfile'
 import { buildCategoryTreeOrder } from './product-detail/constants'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -57,7 +77,16 @@ import { HelpTooltip } from '../components/HelpTooltip'
 import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 
 function CategoryMetricCard({ label, value, icon: Icon, tone = 'info', hint, compact = false }) {
-  return <KpiCard label={label} value={value} icon={Icon ? <Icon size={15} aria-hidden="true" /> : null} tone={tone} detail={hint} compact={compact} />
+  return (
+    <KpiCard
+      label={label}
+      value={value}
+      icon={Icon ? <Icon size={15} aria-hidden="true" /> : null}
+      tone={tone}
+      detail={hint}
+      compact={compact}
+    />
+  )
 }
 
 function SidebarInfoRow({ label, children, icon: Icon }) {
@@ -72,7 +101,13 @@ function SidebarInfoRow({ label, children, icon: Icon }) {
   )
 }
 
-export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate, canReadProducts }) {
+export function CategoryDetailScreen({
+  categoryId,
+  isCreate = false,
+  navigate,
+  canUpdate,
+  canReadProducts,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const isEnLang = contentLang === 'en'
@@ -87,15 +122,24 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [idCopied, setIdCopied] = useState(false)
   const [isHardDeletePreviewing, setIsHardDeletePreviewing] = useState(false)
   const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
-    try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
-    catch { return false }
+    try {
+      return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1'
+    } catch {
+      return false
+    }
   })
 
   // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
   const autosaveKey = getAutosaveKey(categoryId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
 
-  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
+  const {
+    data: fetchResult,
+    isLoading,
+    isError,
+    error: fetchError,
+    refetch,
+  } = useQuery({
     queryKey: ['category', categoryId],
     queryFn: () => fetchCategoryDetail(categoryId),
     enabled: !isCreate,
@@ -119,7 +163,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   // Danh sách dùng cho picker + breadcrumb: đầy đủ từ cây VI, overlay tên EN khi có.
   const categoriesResult = useMemo(() => {
     if (!isEnLang || !categoriesResultVi) return categoriesResultVi
-    return { ...categoriesResultVi, items: overlayEnNames(categoriesResultVi.items, categoriesResultEn?.items) }
+    return {
+      ...categoriesResultVi,
+      items: overlayEnNames(categoriesResultVi.items, categoriesResultEn?.items),
+    }
   }, [categoriesResultVi, categoriesResultEn, isEnLang])
 
   // Top products in this category — surfaced in a sidebar so editors know
@@ -131,7 +178,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     refetch: refetchProductsInCat,
   } = useQuery({
     queryKey: ['products', 'by-category', categoryId, 'top5', 'ALL_INCLUDING_TRASH', contentLang],
-    queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc', publishStatus: 'ALL_INCLUDING_TRASH' }),
+    queryFn: () =>
+      fetchProducts({
+        categoryId,
+        pageSize: 5,
+        page: 1,
+        sort: 'updatedAt:desc',
+        publishStatus: 'ALL_INCLUDING_TRASH',
+      }),
     enabled: canReadProducts && !isCreate && Boolean(categoryId),
     staleTime: 30 * 1000,
   })
@@ -140,16 +194,17 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   const currentItem = fetchResult?.item ?? null
 
-  const getCategoryAiPrompt = () => createCategoryAiPromptBuilder({
-    categoryId,
-    lang: contentLang,
-    form: { ...form, id: categoryId },
-    currentItem,
-    fetchCategoryDetail,
-    fetchCategoryTree,
-    fetchCatalogFacets,
-    basePrompt: () => t('categories.detail.introAiBriefPrompt'),
-  })()
+  const getCategoryAiPrompt = () =>
+    createCategoryAiPromptBuilder({
+      categoryId,
+      lang: contentLang,
+      form: { ...form, id: categoryId },
+      currentItem,
+      fetchCategoryDetail,
+      fetchCategoryTree,
+      fetchCatalogFacets,
+      basePrompt: () => t('categories.detail.introAiBriefPrompt'),
+    })()
 
   const breadcrumbPath = useMemo(() => {
     const items = categoriesResult?.items ?? []
@@ -180,7 +235,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       findDescendants(categoryId)
     }
     // Loại chính nó + toàn bộ cháu con trước khi build cây, tránh chọn cha thành vòng lặp.
-    const eligible = items.filter((c) => c.id !== 'uncategorized' && c.id !== categoryId && !descendants.has(c.id))
+    const eligible = items.filter(
+      (c) => c.id !== 'uncategorized' && c.id !== categoryId && !descendants.has(c.id),
+    )
     return buildCategoryTreeOrder(eligible).map((c) => ({
       id: c.id,
       label: `${'— '.repeat(c.depth)}${c.name}`,
@@ -208,7 +265,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         }
       }
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [autosaveKey, fetchResult])
 
   // F11: Nhân bản danh mục — nạp bản nháp CategoryListScreen ghi vào sessionStorage
@@ -225,16 +284,23 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         const duplicated = {
           ...base,
           slug: '',
-          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+          translations: {
+            ...base.translations,
+            en: { ...(base.translations?.en || {}), slug: '' },
+          },
         }
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(duplicated)
         setSlugManuallyEdited(false)
         setEnSlugManuallyEdited(false)
-        toast.success(t('categories.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
+        toast.success(
+          t('categories.detail.duplicateSuccess', { name: item.name || item.slug || '' }),
+        )
         return
       }
-    } catch { /* ignore parse errors */ }
+    } catch {
+      /* ignore parse errors */
+    }
 
     // F9: chưa có bản sao chép — kiểm tra bản nháp autosave dở dang từ phiên trước.
     const draft = loadFormFromStorage(autosaveKey)
@@ -288,7 +354,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   }, [form, isDirty, autosaveKey])
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isCreate ? createCategory(payload) : updateCategory(categoryId, payload),
+    mutationFn: (payload) =>
+      isCreate ? createCategory(payload) : updateCategory(categoryId, payload),
     onSuccess: (response) => {
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(savedItem)
@@ -299,7 +366,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       if (!isCreate) queryClient.setQueryData(['category', categoryId], response)
-      toast.success(isCreate ? t('categories.detail.successCreate') : t('categories.detail.successUpdate'))
+      toast.success(
+        isCreate ? t('categories.detail.successCreate') : t('categories.detail.successUpdate'),
+      )
       setIsSubmitting(false)
       if (isCreate && savedItem?.id) {
         clearNavGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
@@ -324,9 +393,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       navigate('/admin/categories')
     },
     onError: (error) => {
-      const msg = error?.status === 409
-        ? (error.message || t('categories.detail.hardDeleteConflict'))
-        : (error.message || t('common.error'))
+      const msg =
+        error?.status === 409
+          ? error.message || t('categories.detail.hardDeleteConflict')
+          : error.message || t('common.error')
       toast.error(msg)
     },
   })
@@ -378,7 +448,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const confirmed = await showConfirm(
       t('categories.restoreConfirm', { name }),
       t('categories.restoreConfirmTitle', { defaultValue: 'Khôi phục' }),
-      { confirmLabel: t('products.restore'), variant: 'default' }
+      { confirmLabel: t('products.restore'), variant: 'default' },
     )
     if (!confirmed) return
     restoreMutation.mutate()
@@ -477,7 +547,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const clientErrors = zodErrors(result)
     const imageValidation = getCategoryImageValidationError(form, currentItem, { isCreate })
     if (imageValidation) {
-      clientErrors.imageUrl = t(imageValidation.key, { ...imageValidation.values, defaultValue: t('common.unknown') })
+      clientErrors.imageUrl = t(imageValidation.key, {
+        ...imageValidation.values,
+        defaultValue: t('common.unknown'),
+      })
     }
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
@@ -487,11 +560,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       requestAnimationFrame(() => {
         const firstField = Object.keys(clientErrors)[0]
         if (!firstField || !formRef.current) return
-        const target = formRef.current.querySelector(`[name="${firstField}"], [data-field="${firstField}"]`)
-          || formRef.current.querySelector('.field-error')?.closest('label, .form-field')
+        const target =
+          formRef.current.querySelector(`[name="${firstField}"], [data-field="${firstField}"]`) ||
+          formRef.current.querySelector('.field-error')?.closest('label, .form-field')
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          const focusable = target.querySelector('input, select, textarea, [contenteditable="true"]')
+          const focusable = target.querySelector(
+            'input, select, textarea, [contenteditable="true"]',
+          )
           focusable?.focus({ preventScroll: true })
         }
       })
@@ -504,23 +580,39 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     saveMutation.mutate(toPayload(form, { isCreate }))
   }
 
-
   function handleDismissMenuNotice() {
-    try { localStorage.setItem(MENU_NOTICE_DISMISSED_KEY, '1') } catch { /* storage may be unavailable */ }
+    try {
+      localStorage.setItem(MENU_NOTICE_DISMISSED_KEY, '1')
+    } catch {
+      /* storage may be unavailable */
+    }
     setMenuNoticeDismissed(true)
   }
 
   function handleCopyId() {
     if (!state.item?.id) return
     const id = state.item.id
-    const ok = () => { setIdCopied(true); setTimeout(() => setIdCopied(false), 1500) }
+    const ok = () => {
+      setIdCopied(true)
+      setTimeout(() => setIdCopied(false), 1500)
+    }
     if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(id).then(ok).catch(() => {})
+      navigator.clipboard
+        .writeText(id)
+        .then(ok)
+        .catch(() => {})
     } else {
       // Older browsers / non-secure contexts — fall back to execCommand.
       const ta = document.createElement('textarea')
-      ta.value = id; document.body.appendChild(ta); ta.select()
-      try { document.execCommand('copy'); ok() } catch { /* ignore */ }
+      ta.value = id
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        ok()
+      } catch {
+        /* ignore */
+      }
       ta.remove()
     }
   }
@@ -592,33 +684,32 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   // tiếng Việt, vì bản tiếng Anh không có mục nào bắt buộc.
   const requiredFieldsTotal = 2
   const requiredFieldsFilled = [form.name, form.slug].filter((v) => Boolean(v?.trim())).length
-  const requiredProgressText = t('categories.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })
+  const requiredProgressText = t('categories.detail.formProgress', {
+    filled: requiredFieldsFilled,
+    total: requiredFieldsTotal,
+  })
   const selectedParent = parentOptions.find((c) => c.id === form.parentId)
   const parentSummary = form.parentId
-    ? (selectedParent?.label || t('categories.detail.parentSelected'))
+    ? selectedParent?.label || t('categories.detail.parentSelected')
     : t('categories.detail.rootCategory')
   const isChildCategory = Boolean(form.parentId?.trim())
-  const imageValues = [
-    form.imageUrl,
-    form.bannerImageUrl,
-    form.heroImageUrl,
-  ]
+  const imageValues = [form.imageUrl, form.bannerImageUrl, form.heroImageUrl]
   const imageCount = imageValues.filter((v) => Boolean(v?.trim())).length
-  const currentSlug = isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug
-  const displayName = isEnLang ? (form.translations?.en?.name || form.name) : form.name
+  const currentSlug = isEnLang ? form.translations?.en?.slug || form.slug : form.slug
+  const displayName = isEnLang ? form.translations?.en?.name || form.name : form.name
 
   return (
     <Screen>
       <ScreenHeader
         group="products"
         title={isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}
-        description={(
+        description={
           <span className="flex flex-wrap items-center gap-2">
             <span>{displayName || t('categories.detail.untitledCategory')}</span>
             {currentSlug ? (
               <>
                 <span aria-hidden="true">/</span>
-                  <code className="font-mono">{currentSlug}</code>
+                <code className="font-mono">{currentSlug}</code>
               </>
             ) : null}
             {breadcrumbPath ? (
@@ -628,22 +719,34 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               </>
             ) : null}
           </span>
-        )}
-        badge={!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : null}
-        actions={(
-          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate('/admin/categories')}>
+        }
+        badge={
+          !isCreate && state.item ? (
+            <StatusBadge type="visibility" status={state.item.isVisible} />
+          ) : null
+        }
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            className="min-h-11"
+            onClick={() => navigate('/admin/categories')}
+          >
             <ArrowLeft size={14} aria-hidden="true" />
             {t('categories.detail.backToList')}
           </Button>
-        )}
+        }
       />
 
       {draftRecovery && (
         <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
           <span className="bb-alert-main truncate">
-            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
-            {' - '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+            <strong>
+              {t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}
+            </strong>
+            {' - '}
+            {formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
           <Button
             variant="unstyled"
@@ -665,7 +768,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             variant="unstyled"
             type="button"
             className="text-xs underline hover:no-underline"
-            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+            onClick={() => {
+              clearFormFromStorage(autosaveKey)
+              setDraftRecovery(null)
+            }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
           </Button>
@@ -696,7 +802,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         <StatePanel
           tone="warning"
           title={t('categories.detail.trashedTitle', { defaultValue: 'Danh mục đã ở Thùng rác.' })}
-          description={t('categories.detail.trashedDesc', { defaultValue: 'Khôi phục danh mục để tiếp tục chỉnh sửa.' })}
+          description={t('categories.detail.trashedDesc', {
+            defaultValue: 'Khôi phục danh mục để tiếp tục chỉnh sửa.',
+          })}
         />
       ) : null}
 
@@ -706,7 +814,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
             <p className="mb-2 mt-1">{t('categories.detail.menuNoticeDesc')}</p>
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/admin/menus')}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin/menus')}
+              >
                 {t('categories.detail.menuNoticeAction')}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={handleDismissMenuNotice}>
@@ -732,24 +845,32 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           tone="info"
           label={t('categories.detail.productsMetric')}
           value={isCreate ? '0' : productsTotal.toLocaleString('vi-VN')}
-          hint={isCreate
-            ? t('categories.detail.productsMetricCreateHint')
-            : t('categories.detail.productCount', { count: productsTotal })}
+          hint={
+            isCreate
+              ? t('categories.detail.productsMetricCreateHint')
+              : t('categories.detail.productCount', { count: productsTotal })
+          }
         />
         <CategoryMetricCard
           icon={FolderTree}
           tone="brand"
           label={t('categories.detail.parentMetric')}
-          value={form.parentId
-            ? t('categories.detail.childCategoryShort')
-            : t('categories.detail.rootCategoryShort')}
+          value={
+            form.parentId
+              ? t('categories.detail.childCategoryShort')
+              : t('categories.detail.rootCategoryShort')
+          }
           hint={parentSummary}
         />
         <CategoryMetricCard
           icon={Star}
           tone={form.showOnHomepage ? 'warning' : 'info'}
           label={t('categories.detail.homepageMetric')}
-          value={form.showOnHomepage ? t('common.yes', { defaultValue: 'Có' }) : t('common.no', { defaultValue: 'Không' })}
+          value={
+            form.showOnHomepage
+              ? t('common.yes', { defaultValue: 'Có' })
+              : t('common.no', { defaultValue: 'Không' })
+          }
           hint={t('categories.detail.showOnHomepage')}
         />
         <CategoryMetricCard
@@ -757,9 +878,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           tone={imageCount > 0 ? 'success' : 'info'}
           label={t('categories.detail.imagesMetric')}
           value={`${imageCount}/3`}
-          hint={t(isChildCategory ? 'categories.detail.imagesMetricHintChild' : 'categories.detail.imagesMetricHint', {
-            defaultValue: isChildCategory ? 'Ảnh danh mục, banner và ảnh minh hoạ' : 'Ảnh danh mục dùng cho lưới trang chủ và biểu tượng menu, banner, ảnh minh hoạ',
-          })}
+          hint={t(
+            isChildCategory
+              ? 'categories.detail.imagesMetricHintChild'
+              : 'categories.detail.imagesMetricHint',
+            {
+              defaultValue: isChildCategory
+                ? 'Ảnh danh mục, banner và ảnh minh hoạ'
+                : 'Ảnh danh mục dùng cho lưới trang chủ và biểu tượng menu, banner, ảnh minh hoạ',
+            },
+          )}
         />
       </div>
 
@@ -785,24 +913,43 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <FormField
                     label={t('categories.detail.name')}
                     required
-                    error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
-                    helper={isEnLang
-                      ? t('categories.detail.namePlaceholderEn', { defaultValue: 'Tên danh mục bằng tiếng Anh.' })
-                      : t('categories.detail.nameHelper')}
+                    error={
+                      isEnLang ? validationErrors['translations.en.name'] : validationErrors.name
+                    }
+                    helper={
+                      isEnLang
+                        ? t('categories.detail.namePlaceholderEn', {
+                            defaultValue: 'Tên danh mục bằng tiếng Anh.',
+                          })
+                        : t('categories.detail.nameHelper')
+                    }
                   >
                     <Input
                       name={isEnLang ? 'translations.en.name' : 'name'}
                       value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
-                      onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
+                      onChange={(e) =>
+                        isEnLang
+                          ? handleEnNameChange(e.target.value)
+                          : handleNameChange(e.target.value)
+                      }
                       onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.name' : 'name')}
                       disabled={isReadOnly}
-                      placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
+                      placeholder={
+                        isEnLang
+                          ? t('categories.detail.namePlaceholderEn', {
+                              defaultValue: 'English name',
+                            })
+                          : undefined
+                      }
                     />
                   </FormField>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-1 text-sm font-medium text-foreground" htmlFor="category-parent-select">
+                  <label
+                    className="flex items-center gap-1 text-sm font-medium text-foreground"
+                    htmlFor="category-parent-select"
+                  >
                     {t('categories.detail.parentId')}
                     <HelpTooltip content={t('categories.detail.parentIdHint')} />
                   </label>
@@ -811,37 +958,70 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     onValueChange={handleParentChange}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger id="category-parent-select" aria-invalid={validationErrors.parentId ? true : undefined}>
+                    <SelectTrigger
+                      id="category-parent-select"
+                      aria-invalid={validationErrors.parentId ? true : undefined}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">{t('categories.detail.parentIdNone')}</SelectItem>
-                      {parentOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                      <SelectItem value="__none__">
+                        {t('categories.detail.parentIdNone')}
+                      </SelectItem>
+                      {parentOptions.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {validationErrors.parentId ? (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                      <AlertCircle size={13} aria-hidden="true" />{validationErrors.parentId}
+                    <span
+                      className="flex items-center gap-1 text-xs font-semibold text-danger"
+                      role="alert"
+                    >
+                      <AlertCircle size={13} aria-hidden="true" />
+                      {validationErrors.parentId}
                     </span>
                   ) : null}
                 </div>
 
-                <div className="md:col-span-2" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
+                <div
+                  className="md:col-span-2"
+                  data-field={isEnLang ? 'translations.en.slug' : 'slug'}
+                >
                   <FormField
                     label={t('categories.detail.slug')}
                     required={!isEnLang}
-                    error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
-                    helper={isEnLang
-                      ? t('categories.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' })
-                      : t('categories.detail.slugHint')}
+                    error={
+                      isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug
+                    }
+                    helper={
+                      isEnLang
+                        ? t('categories.detail.slugHintEn', {
+                            defaultValue:
+                              'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.',
+                          })
+                        : t('categories.detail.slugHint')
+                    }
                   >
                     <Input
                       name={isEnLang ? 'translations.en.slug' : 'slug'}
                       value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
-                      onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
+                      onChange={(e) =>
+                        isEnLang
+                          ? handleEnSlugChange(e.target.value)
+                          : handleSlugChange(e.target.value)
+                      }
                       onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.slug' : 'slug')}
                       disabled={isReadOnly}
-                      placeholder={isEnLang ? t('categories.slugPlaceholderEn', { defaultValue: 'duong-dan-tieng-anh' }) : t('categories.slugPlaceholder')}
+                      placeholder={
+                        isEnLang
+                          ? t('categories.slugPlaceholderEn', {
+                              defaultValue: 'duong-dan-tieng-anh',
+                            })
+                          : t('categories.slugPlaceholder')
+                      }
                       className="font-mono"
                     />
                   </FormField>
@@ -849,7 +1029,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
                 <div className="md:col-span-2 flex flex-col gap-3 rounded-sm border border-border bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="m-0 text-sm font-semibold text-foreground">{t('categories.detail.showOnHomepage')}</p>
+                    <p className="m-0 text-sm font-semibold text-foreground">
+                      {t('categories.detail.showOnHomepage')}
+                    </p>
                     <p className="m-0 mt-1 text-xs text-muted-foreground">
                       {t('categories.detail.showOnHomepageHint')}
                     </p>
@@ -874,36 +1056,56 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <IntroContentField
                   key={`introContent-${contentLang}`}
                   value={isEnLang ? (form.translations?.en?.introContent ?? '') : form.introContent}
-                  onChange={(html) => isEnLang ? updateTranslation('introContent', html) : updateField('introContent', html)}
+                  onChange={(html) =>
+                    isEnLang
+                      ? updateTranslation('introContent', html)
+                      : updateField('introContent', html)
+                  }
                   lang={contentLang}
                   getAiPrompt={getCategoryAiPrompt}
                   disabled={isReadOnly}
                 />
               </div>
               {!isEnLang && validationErrors.introContent ? (
-                <span className="flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                  <AlertCircle size={13} aria-hidden="true" />{validationErrors.introContent}
+                <span
+                  className="flex items-center gap-1 text-xs font-semibold text-danger"
+                  role="alert"
+                >
+                  <AlertCircle size={13} aria-hidden="true" />
+                  {validationErrors.introContent}
                 </span>
               ) : null}
             </DetailSection>
 
             <DetailSection
               title={t('categories.detail.imagesSection')}
-              description={t(isChildCategory ? 'categories.detail.imagesSectionDescChild' : 'categories.detail.imagesSectionDesc', {
-                defaultValue: isChildCategory
-                  ? 'Quản lý ảnh thẻ danh mục, banner máy tính và ảnh minh hoạ.'
-                  : 'Quản lý ảnh thẻ danh mục, banner máy tính, ảnh minh hoạ và biểu tượng menu cho danh mục gốc.',
-              })}
+              description={t(
+                isChildCategory
+                  ? 'categories.detail.imagesSectionDescChild'
+                  : 'categories.detail.imagesSectionDesc',
+                {
+                  defaultValue: isChildCategory
+                    ? 'Quản lý ảnh thẻ danh mục, banner máy tính và ảnh minh hoạ.'
+                    : 'Quản lý ảnh thẻ danh mục, banner máy tính, ảnh minh hoạ và biểu tượng menu cho danh mục gốc.',
+                },
+              )}
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="flex flex-col gap-2" data-field="imageUrl">
                   <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
                     {t('categories.detail.imageUrl')}
-                    <HelpTooltip content={t(isChildCategory ? 'categories.detail.imageUrlHintChild' : 'categories.detail.imageUrlHint', {
-                      defaultValue: isChildCategory
-                        ? 'Ảnh vuông dùng ở lưới danh mục trang chủ. Danh mục con không hiển thị biểu tượng trong menu đầu trang; không có yêu cầu kích thước điểm ảnh tối thiểu.'
-                        : 'Ảnh vuông, nét vẽ một màu trên nền trong suốt. Ảnh này dùng ở lưới danh mục trang chủ và làm biểu tượng cạnh tên danh mục cấp 1 trong menu đầu trang. Ảnh chụp hoặc nền đặc sẽ hiện thành khối đen trong menu. Không yêu cầu kích thước tối thiểu.',
-                    })} />
+                    <HelpTooltip
+                      content={t(
+                        isChildCategory
+                          ? 'categories.detail.imageUrlHintChild'
+                          : 'categories.detail.imageUrlHint',
+                        {
+                          defaultValue: isChildCategory
+                            ? 'Ảnh vuông dùng ở lưới danh mục trang chủ. Danh mục con không hiển thị biểu tượng trong menu đầu trang; không có yêu cầu kích thước điểm ảnh tối thiểu.'
+                            : 'Ảnh vuông, nét vẽ một màu trên nền trong suốt. Ảnh này dùng ở lưới danh mục trang chủ và làm biểu tượng cạnh tên danh mục cấp 1 trong menu đầu trang. Ảnh chụp hoặc nền đặc sẽ hiện thành khối đen trong menu. Không yêu cầu kích thước tối thiểu.',
+                        },
+                      )}
+                    />
                   </span>
                   <ImageUrlInput
                     value={form.imageUrl}
@@ -964,8 +1166,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               previewBase={STOREFRONT_BASE}
               previewSlugDefault="duong-dan-danh-muc"
               englishReady={Boolean(
-                form.translations?.en?.name?.trim()
-                && (form.translations?.en?.description?.trim() || form.translations?.en?.introContent?.trim()),
+                form.translations?.en?.name?.trim() &&
+                (form.translations?.en?.description?.trim() ||
+                  form.translations?.en?.introContent?.trim()),
               )}
               collapsible
               open={seoOpen}
@@ -993,7 +1196,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             >
               <dl className="m-0">
                 <SidebarInfoRow label={t('common.visible')} icon={Globe2}>
-                  {!isCreate && state.item ? <StatusBadge type="visibility" status={state.item.isVisible} /> : t('categories.detail.createStatusDraft')}
+                  {!isCreate && state.item ? (
+                    <StatusBadge type="visibility" status={state.item.isVisible} />
+                  ) : (
+                    t('categories.detail.createStatusDraft')
+                  )}
                 </SidebarInfoRow>
                 <SidebarInfoRow label={t('categories.detail.productsMetric')} icon={Package}>
                   {isCreate ? '0' : productsTotal.toLocaleString('vi-VN')}
@@ -1002,7 +1209,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <span className="break-words">{parentSummary}</span>
                 </SidebarInfoRow>
                 <SidebarInfoRow label={t('categories.detail.slug')} icon={Link2}>
-                {currentSlug ? <code className="break-all font-mono">{currentSlug}</code> : t('common.empty')}
+                  {currentSlug ? (
+                    <code className="break-all font-mono">{currentSlug}</code>
+                  ) : (
+                    t('common.empty')
+                  )}
                 </SidebarInfoRow>
                 {!isCreate && state.item?.updatedAt ? (
                   <SidebarInfoRow label={t('common.lastUpdated')} icon={Save}>
@@ -1022,8 +1233,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   title={t('categories.detail.copyId')}
                 >
                   <Hash size={16} aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate text-left font-mono">{state.item.id}</span>
-                  {idCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                  <span className="min-w-0 flex-1 truncate text-left font-mono">
+                    {state.item.id}
+                  </span>
+                  {idCopied ? (
+                    <Check size={14} aria-hidden="true" />
+                  ) : (
+                    <Copy size={14} aria-hidden="true" />
+                  )}
                 </Button>
               ) : null}
             </DetailSection>
@@ -1039,12 +1256,26 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             )}
           </aside>
         </div>
-        <StickyActionBar info={!isEnLang ? requiredProgressText : undefined} ariaLabel={t('common.actions')}>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => navigate('/admin/categories')} disabled={isSubmitting}>
+        <StickyActionBar
+          info={!isEnLang ? requiredProgressText : undefined}
+          ariaLabel={t('common.actions')}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => navigate('/admin/categories')}
+            disabled={isSubmitting}
+          >
             <ArrowLeft size={16} aria-hidden="true" />
             {t('common.cancel')}
           </Button>
-          <Button type="submit" className="min-h-11" disabled={isReadOnly || !isDirty} loading={isSubmitting}>
+          <Button
+            type="submit"
+            className="min-h-11"
+            disabled={isReadOnly || !isDirty}
+            loading={isSubmitting}
+          >
             <Save size={16} aria-hidden="true" />
             {isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
           </Button>
@@ -1052,5 +1283,4 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       </form>
     </Screen>
   )
-
 }

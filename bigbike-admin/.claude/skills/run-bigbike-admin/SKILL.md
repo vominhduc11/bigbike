@@ -39,7 +39,7 @@ You want `bigbike-admin` (→:4000), `bigbike-backend` (→:8080) and
 docker compose up -d bigbike-admin bigbike-backend
 ```
 
-No `apt-get` / npm install is needed to *drive* the app: Playwright and its
+No `apt-get` / npm install is needed to _drive_ the app: Playwright and its
 chromium are already in `bigbike-admin/node_modules` (and the OS Playwright
 cache). The driver resolves `playwright` from there.
 
@@ -73,7 +73,9 @@ The JSON report looks like this (exit 0 = clean, exit 1 = console/page errors):
   "url": "http://localhost:4000/admin/products/wp-prod-41359",
   "title": "bigbike-admin",
   "screenshot": "...\\shots\\admin-products-wp-prod-41359.png",
-  "consoleErrors": [], "pageErrors": [], "apiErrors": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "apiErrors": [],
   "clean": true
 }
 ```
@@ -160,12 +162,12 @@ the driver.
 
 ## Troubleshooting
 
-| Symptom | Cause → Fix |
-|---|---|
-| `net::ERR_FILE_NOT_FOUND at c:/Program Files/Git/...` | Ran in Git Bash; the `/route` arg was path-mangled. Use PowerShell. |
-| `[login] ECONNREFUSED ::1:4000` or curl `-> 000` | Container is down or mid-restart. `docker ps --filter name=bigbike-admin` — if `Up N seconds`, it just bounced; wait and re-run. If absent, ask user to `up -d bigbike-admin bigbike-backend`. |
-| `/api/v1/auth/refresh -> 403` + `shell never attached` | `ADMIN_BASE` points at `127.0.0.1` (or another host) not on the CORS allowlist. Use `http://localhost:4000`. |
-| `[login] 401` | Wrong creds, or backend has no SUPER_ADMIN seed. Default is `admin@bigbike.vn`/`admin123`. |
-| `[login] 429` repeatedly | Hit the 5/min login limit. Wait ~60s; the driver already backs off. |
-| Report `clean:true` but screenshot is the login shell | Cookie rotation race — re-run once (the driver self-heals, but a cold run may need a retry). |
-| `Cannot find package 'playwright'` | Run from inside `bigbike-admin/` so node resolves its `node_modules`. |
+| Symptom                                                | Cause → Fix                                                                                                                                                                                    |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `net::ERR_FILE_NOT_FOUND at c:/Program Files/Git/...`  | Ran in Git Bash; the `/route` arg was path-mangled. Use PowerShell.                                                                                                                            |
+| `[login] ECONNREFUSED ::1:4000` or curl `-> 000`       | Container is down or mid-restart. `docker ps --filter name=bigbike-admin` — if `Up N seconds`, it just bounced; wait and re-run. If absent, ask user to `up -d bigbike-admin bigbike-backend`. |
+| `/api/v1/auth/refresh -> 403` + `shell never attached` | `ADMIN_BASE` points at `127.0.0.1` (or another host) not on the CORS allowlist. Use `http://localhost:4000`.                                                                                   |
+| `[login] 401`                                          | Wrong creds, or backend has no SUPER_ADMIN seed. Default is `admin@bigbike.vn`/`admin123`.                                                                                                     |
+| `[login] 429` repeatedly                               | Hit the 5/min login limit. Wait ~60s; the driver already backs off.                                                                                                                            |
+| Report `clean:true` but screenshot is the login shell  | Cookie rotation race — re-run once (the driver self-heals, but a cold run may need a retry).                                                                                                   |
+| `Cannot find package 'playwright'`                     | Run from inside `bigbike-admin/` so node resolves its `node_modules`.                                                                                                                          |

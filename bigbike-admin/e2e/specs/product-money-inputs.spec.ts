@@ -15,8 +15,10 @@ async function findPublicProductWithVariants(page: Page) {
     if (!response.ok) return null
     const body = await response.json()
     const items = Array.isArray(body) ? body : (body.items ?? body.content ?? [])
-    const item = items.find((candidate: { id?: string; variants?: unknown[] }) =>
-      candidate.id && Array.isArray(candidate.variants) && candidate.variants.length > 0)
+    const item = items.find(
+      (candidate: { id?: string; variants?: unknown[] }) =>
+        candidate.id && Array.isArray(candidate.variants) && candidate.variants.length > 0,
+    )
     return item?.id ?? null
   })
 }
@@ -29,7 +31,10 @@ async function replaceWithoutSaving(input: Locator, value: string, formatted: st
   await expect(input).toHaveValue(formatted)
 }
 
-test('product money inputs stay local and clean at desktop/tablet/mobile viewports', async ({ adminPage, collect }) => {
+test('product money inputs stay local and clean at desktop/tablet/mobile viewports', async ({
+  adminPage,
+  collect,
+}) => {
   // The list response intentionally omits full variants; keep the verified
   // fixture id as a read-only fallback so this test reaches the real detail screen.
   const productId = (await findPublicProductWithVariants(adminPage)) || FALLBACK_VARIANT_PRODUCT_ID
@@ -45,16 +50,21 @@ test('product money inputs stay local and clean at desktop/tablet/mobile viewpor
   // The shared runtime currently serves this unrelated catalogue endpoint as
   // 404, while the product editor only needs an empty list for this audit.
   // Keep the money-input check focused and do not mutate product data.
-  await adminPage.route('**/api/v1/admin/size-scales', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: '[]',
-  }))
+  await adminPage.route('**/api/v1/admin/size-scales', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '[]',
+    }),
+  )
 
   await navigateSpa(adminPage, `/admin/products/${productId}`)
   await waitForScreenReady(adminPage)
 
-  const pricingCard = adminPage.locator('.detail-section').filter({ hasText: 'Giá & trạng thái' }).first()
+  const pricingCard = adminPage
+    .locator('.detail-section')
+    .filter({ hasText: 'Giá & trạng thái' })
+    .first()
   await expect(pricingCard.getByLabel(/Giá niêm yết/).first()).toBeVisible()
 
   for (const viewport of VIEWPORTS) {
@@ -64,7 +74,7 @@ test('product money inputs stay local and clean at desktop/tablet/mobile viewpor
     await replaceWithoutSaving(productRetail, '2000000', '2.000.000')
 
     const productSale = pricingCard.getByLabel(/Giá khuyến mãi/).first()
-    if (await productSale.count() && await productSale.isVisible()) {
+    if ((await productSale.count()) && (await productSale.isVisible())) {
       await replaceWithoutSaving(productSale, '0', '')
     }
 
@@ -80,12 +90,17 @@ test('product money inputs stay local and clean at desktop/tablet/mobile viewpor
   if (await rowCheckbox.count()) {
     await rowCheckbox.scrollIntoViewIfNeeded()
     await rowCheckbox.click()
-    await adminPage.getByRole('button', { name: 'Điền giá cho các dòng đã chọn', exact: true }).click()
+    await adminPage
+      .getByRole('button', { name: 'Điền giá cho các dòng đã chọn', exact: true })
+      .click()
     const dialog = adminPage.getByRole('dialog').last()
     await dialog.locator('input').first().fill('2400000')
     await dialog.getByRole('button', { name: 'Áp dụng giá', exact: true }).click()
   }
 
-  expect(mutationRequests, 'Gõ/chọn giá không được gọi API mutation trước Lưu/Áp dụng nghiệp vụ').toEqual([])
+  expect(
+    mutationRequests,
+    'Gõ/chọn giá không được gọi API mutation trước Lưu/Áp dụng nghiệp vụ',
+  ).toEqual([])
   expectRuntimeClean(collect)
 })

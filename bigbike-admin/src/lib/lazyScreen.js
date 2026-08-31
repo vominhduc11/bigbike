@@ -24,8 +24,10 @@ export function lazyScreen(factory, exportName) {
         // undefined" — vô phương lần ra nguyên nhân trên production. Báo thẳng cái sai.
         if (typeof Screen !== 'function') {
           throw new ScreenExportError(
-            `lazyScreen: module không có export tên "${exportName}". `
-            + 'Màn hình phải dùng `export function ' + exportName + '()`, không phải `export default`.'
+            `lazyScreen: module không có export tên "${exportName}". ` +
+              'Màn hình phải dùng `export function ' +
+              exportName +
+              '()`, không phải `export default`.',
           )
         }
         return { default: Screen }

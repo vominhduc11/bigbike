@@ -6,9 +6,24 @@ import { Button } from '@/components/ui/button'
 // Tone mapping cho toast của màn Phân quyền. `info` TRƯỚC ĐÂY rơi vào nhánh mặc định
 // nên hiển thị NỀN ĐỎ (danger) dù chỉ là thông báo trung tính — nay tách rõ 3 tone.
 const TOAST_TONES = {
-  success: { role: 'status', live: 'polite', cls: 'bg-success-bg text-success border-success-border', Icon: Check },
-  info:    { role: 'status', live: 'polite', cls: 'bg-info-bg text-info border-info-border', Icon: Info },
-  error:   { role: 'alert',  live: 'assertive', cls: 'bg-danger-bg text-danger border-danger-border', Icon: AlertCircle },
+  success: {
+    role: 'status',
+    live: 'polite',
+    cls: 'bg-success-bg text-success border-success-border',
+    Icon: Check,
+  },
+  info: {
+    role: 'status',
+    live: 'polite',
+    cls: 'bg-info-bg text-info border-info-border',
+    Icon: Info,
+  },
+  error: {
+    role: 'alert',
+    live: 'assertive',
+    cls: 'bg-danger-bg text-danger border-danger-border',
+    Icon: AlertCircle,
+  },
 }
 
 export function Toast({ toast, onClose }) {

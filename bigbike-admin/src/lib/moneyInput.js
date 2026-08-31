@@ -21,7 +21,9 @@ export function normalizeMoneyDraft(value) {
 
 export function countDigitsBeforeCaret(value, caret) {
   const safeCaret = Math.max(0, Math.min(Number(caret) || 0, String(value ?? '').length))
-  return String(value ?? '').slice(0, safeCaret).replace(/\D/g, '').length
+  return String(value ?? '')
+    .slice(0, safeCaret)
+    .replace(/\D/g, '').length
 }
 
 export function caretAfterSanitize(value, caret) {

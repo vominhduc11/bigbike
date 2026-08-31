@@ -45,11 +45,7 @@ export function ThemeProvider({ children }) {
 
   const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme])
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

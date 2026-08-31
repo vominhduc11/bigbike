@@ -13,7 +13,9 @@ const t = (key, values = {}) => {
   }
   if (knownTranslations[key]) return knownTranslations[key]
   if (values && typeof values === 'object' && 'defaultValue' in values) {
-    return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
+    return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) =>
+      String(values[name] ?? name),
+    )
   }
   return key
 }
@@ -25,9 +27,19 @@ describe('featuredSaveErrorMessage', () => {
   ]
 
   it('gọi tên sản phẩm bằng tiếng Việt khi sản phẩm không còn đang bán', () => {
-    const message = featuredSaveErrorMessage(t, {
-      details: [{ field: 'featuredGrid[1]', code: 'NOT_PUBLISHED', message: "Product 'prod_b' must be PUBLISHED to appear on the homepage." }],
-    }, items)
+    const message = featuredSaveErrorMessage(
+      t,
+      {
+        details: [
+          {
+            field: 'featuredGrid[1]',
+            code: 'NOT_PUBLISHED',
+            message: "Product 'prod_b' must be PUBLISHED to appear on the homepage.",
+          },
+        ],
+      },
+      items,
+    )
 
     expect(message).toContain('Găng tay Hevik')
     expect(message).not.toContain('prod_b')
@@ -35,35 +47,49 @@ describe('featuredSaveErrorMessage', () => {
   })
 
   it('gộp nhiều sản phẩm cùng lỗi thành một câu, không lặp tên', () => {
-    const message = featuredSaveErrorMessage(t, {
-      details: [
-        { field: 'featuredGrid[0]', code: 'NOT_PUBLISHED' },
-        { field: 'featuredGrid[1]', code: 'NOT_PUBLISHED' },
-        { field: 'featuredGrid[1]', code: 'NOT_PUBLISHED' },
-      ],
-    }, items)
+    const message = featuredSaveErrorMessage(
+      t,
+      {
+        details: [
+          { field: 'featuredGrid[0]', code: 'NOT_PUBLISHED' },
+          { field: 'featuredGrid[1]', code: 'NOT_PUBLISHED' },
+          { field: 'featuredGrid[1]', code: 'NOT_PUBLISHED' },
+        ],
+      },
+      items,
+    )
 
     expect(message).toContain('Mũ LS2 FF390, Găng tay Hevik')
   })
 
   it('phân biệt sản phẩm đã bị xoá với sản phẩm ngừng bán', () => {
-    const message = featuredSaveErrorMessage(t, {
-      details: [{ field: 'featuredGrid[0]', code: 'NOT_FOUND' }],
-    }, items)
+    const message = featuredSaveErrorMessage(
+      t,
+      {
+        details: [{ field: 'featuredGrid[0]', code: 'NOT_FOUND' }],
+      },
+      items,
+    )
 
     expect(message).toContain('không còn tồn tại')
     expect(message).toContain('Mũ LS2 FF390')
   })
 
   it('lùi về thông báo gốc khi lỗi không thuộc 2 nguyên nhân trên', () => {
-    expect(featuredSaveErrorMessage(t, { message: 'Mất kết nối mạng.' }, items)).toBe('Mất kết nối mạng.')
+    expect(featuredSaveErrorMessage(t, { message: 'Mất kết nối mạng.' }, items)).toBe(
+      'Mất kết nối mạng.',
+    )
   })
 
   it('không vỡ khi vị trí lỗi nằm ngoài danh sách hiện tại', () => {
-    const message = featuredSaveErrorMessage(t, {
-      details: [{ field: 'featuredGrid[9]', code: 'NOT_PUBLISHED' }],
-      message: 'Lỗi máy chủ.',
-    }, items)
+    const message = featuredSaveErrorMessage(
+      t,
+      {
+        details: [{ field: 'featuredGrid[9]', code: 'NOT_PUBLISHED' }],
+        message: 'Lỗi máy chủ.',
+      },
+      items,
+    )
 
     expect(message).toBe('Lỗi máy chủ.')
   })
@@ -103,7 +129,11 @@ vi.mock('../lib/useProductPicker', () => ({
 // để kiểm thử tập trung vào dữ liệu gửi lên, không kiểm thử thư viện kéo-thả.
 vi.mock('../components/Sortable', () => ({
   SortableList: ({ items, renderItem }) => (
-    <div data-testid="featured-list">{items.map((item) => <div key={item.id}>{renderItem(item, null)}</div>)}</div>
+    <div data-testid="featured-list">
+      {items.map((item) => (
+        <div key={item.id}>{renderItem(item, null)}</div>
+      ))}
+    </div>
   ),
 }))
 
@@ -185,7 +215,9 @@ describe('FeaturedProductsScreen', () => {
 
     await screen.findByText('Sản phẩm 12')
     expect(screen.getByText('12 / 12')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('featuredProducts.searchPlaceholder')).not.toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('featuredProducts.searchPlaceholder'),
+    ).not.toBeInTheDocument()
   })
 
   it('cảnh báo ngay sản phẩm đã ngừng bán còn nằm trong danh sách nổi bật', async () => {

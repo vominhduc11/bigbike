@@ -13,17 +13,20 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, values = {}) => ({
-      'common.edit': 'Sửa',
-      'common.update': 'Cập nhật',
-      'common.delete': 'Xoá',
-      'common.cancel': 'Hủy',
-      'sliders.formMobileUrl': 'Ảnh mobile',
-      'sliders.formMobileUrlHint': 'Ảnh mobile tùy chọn',
-      'sliders.sectionMobileImage': 'Ảnh mobile',
-      'sliders.deviceDesktop': 'Máy tính',
-      'sliders.deviceMobile': 'Điện thoại',
-    }[key] || values.defaultValue || key),
+    t: (key, values = {}) =>
+      ({
+        'common.edit': 'Sửa',
+        'common.update': 'Cập nhật',
+        'common.delete': 'Xoá',
+        'common.cancel': 'Hủy',
+        'sliders.formMobileUrl': 'Ảnh mobile',
+        'sliders.formMobileUrlHint': 'Ảnh mobile tùy chọn',
+        'sliders.sectionMobileImage': 'Ảnh mobile',
+        'sliders.deviceDesktop': 'Máy tính',
+        'sliders.deviceMobile': 'Điện thoại',
+      })[key] ||
+      values.defaultValue ||
+      key,
   }),
 }))
 
@@ -58,16 +61,18 @@ vi.mock('../components/ReadOnlyBanner', () => ({ ReadOnlyBanner: () => null }))
 vi.mock('../components/StatePanel', () => ({ StatePanel: () => null }))
 vi.mock('../components/Sortable', () => ({
   SortableList: ({ items, renderItem }) => (
-    <>{items.map((item) => (
-      <div key={item.id}>
-        {renderItem(item, {
-          setNodeRef: () => {},
-          style: {},
-          isDragging: false,
-          handleProps: {},
-        })}
-      </div>
-    ))}</>
+    <>
+      {items.map((item) => (
+        <div key={item.id}>
+          {renderItem(item, {
+            setNodeRef: () => {},
+            style: {},
+            isDragging: false,
+            handleProps: {},
+          })}
+        </div>
+      ))}
+    </>
   ),
 }))
 vi.mock('../components/ImageUrlInput', () => ({
@@ -178,18 +183,20 @@ describe('SliderListScreen mobile image', () => {
     await user.click(screen.getByRole('button', { name: 'Chọn mobile' }))
     await user.click(screen.getByRole('button', { name: 'Cập nhật' }))
 
-    await waitFor(() => expect(mocks.updateSlider).toHaveBeenCalledWith(
-      legacySlider.id,
-      expect.objectContaining({
-        mobileImage: {
-          url: '/media/sliders/mobile-new.jpg',
-          alt: 'Alt mobile mới',
-          width: 780,
-          height: 1040,
-          mimeType: 'image/jpeg',
-        },
-      }),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateSlider).toHaveBeenCalledWith(
+        legacySlider.id,
+        expect.objectContaining({
+          mobileImage: {
+            url: '/media/sliders/mobile-new.jpg',
+            alt: 'Alt mobile mới',
+            width: 780,
+            height: 1040,
+            mimeType: 'image/jpeg',
+          },
+        }),
+      ),
+    )
   })
 
   it('giữ nguyên metadata ảnh desktop/mobile khi mở sửa rồi lưu không đổi ảnh', async () => {
@@ -199,13 +206,15 @@ describe('SliderListScreen mobile image', () => {
     await user.click(await screen.findByRole('button', { name: 'Sửa' }))
     await user.click(screen.getByRole('button', { name: 'Cập nhật' }))
 
-    await waitFor(() => expect(mocks.updateSlider).toHaveBeenCalledWith(
-      legacySlider.id,
-      expect.objectContaining({
-        desktopImage: legacySlider.desktopImage,
-        mobileImage: legacySlider.mobileImage,
-      }),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateSlider).toHaveBeenCalledWith(
+        legacySlider.id,
+        expect.objectContaining({
+          desktopImage: legacySlider.desktopImage,
+          mobileImage: legacySlider.mobileImage,
+        }),
+      ),
+    )
   })
 
   it('gửi mobileImage null khi admin xoá ảnh mobile', async () => {
@@ -216,10 +225,12 @@ describe('SliderListScreen mobile image', () => {
     await user.click(screen.getByRole('button', { name: 'Xoá mobile' }))
     await user.click(screen.getByRole('button', { name: 'Cập nhật' }))
 
-    await waitFor(() => expect(mocks.updateSlider).toHaveBeenCalledWith(
-      legacySlider.id,
-      expect.objectContaining({ mobileImage: null }),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateSlider).toHaveBeenCalledWith(
+        legacySlider.id,
+        expect.objectContaining({ mobileImage: null }),
+      ),
+    )
   })
 
   it('không hiển thị link ngoài của banner cũ', async () => {
@@ -252,9 +263,11 @@ describe('SliderListScreen mobile image', () => {
     await user.click(screen.getByRole('button', { name: 'Chọn sản phẩm thử' }))
     await user.click(screen.getByRole('button', { name: 'sliders.saveBtn' }))
 
-    await waitFor(() => expect(mocks.createSlider).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: 'prod_1' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.createSlider).toHaveBeenCalledWith(
+        expect.objectContaining({ productId: 'prod_1' }),
+      ),
+    )
     expect(mocks.createSlider.mock.calls[0][0]).not.toHaveProperty('externalLink')
   })
 })

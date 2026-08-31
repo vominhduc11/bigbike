@@ -17,7 +17,9 @@ describe('TableRowActions', () => {
     render(
       <TableRowActions
         primaryActions={[{ key: 'view', label: 'View', icon: Eye, onSelect: onView }]}
-        menuActions={[{ key: 'delete', label: 'Delete', icon: Trash2, tone: 'danger', onSelect: onDelete }]}
+        menuActions={[
+          { key: 'delete', label: 'Delete', icon: Trash2, tone: 'danger', onSelect: onDelete },
+        ]}
       />,
     )
 

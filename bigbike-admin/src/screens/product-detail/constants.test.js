@@ -21,7 +21,14 @@ import {
 // Stub i18n: return defaultValue when provided, else the raw key — đủ để khẳng định hành vi.
 const t = (key, opts) => opts?.defaultValue ?? key
 
-function variant({ key = 'k', name = '', options = [], gallery = [], imageUrl = '', ...rest } = {}) {
+function variant({
+  key = 'k',
+  name = '',
+  options = [],
+  gallery = [],
+  imageUrl = '',
+  ...rest
+} = {}) {
   return { _key: key, name, options, gallery, imageUrl, ...rest }
 }
 
@@ -58,19 +65,14 @@ describe('category tree helpers — danh mục nhiều cấp', () => {
       'child',
       'sibling',
     ])
-    expect(buildVisibleCategoryTreeRows(tree, new Set(['root', 'child'])).map((item) => item.id)).toEqual([
-      'root',
-      'child',
-      'grandchild',
-      'sibling',
-    ])
-    expect(buildVisibleCategoryTreeRows(tree, new Set(['root', 'child', 'grandchild'])).map((item) => item.id)).toEqual([
-      'root',
-      'child',
-      'grandchild',
-      'great-grandchild',
-      'sibling',
-    ])
+    expect(
+      buildVisibleCategoryTreeRows(tree, new Set(['root', 'child'])).map((item) => item.id),
+    ).toEqual(['root', 'child', 'grandchild', 'sibling'])
+    expect(
+      buildVisibleCategoryTreeRows(tree, new Set(['root', 'child', 'grandchild'])).map(
+        (item) => item.id,
+      ),
+    ).toEqual(['root', 'child', 'grandchild', 'great-grandchild', 'sibling'])
   })
 
   it('đánh dấu mọi danh mục có con ở bất kỳ cấp nào', () => {
@@ -82,7 +84,9 @@ describe('category tree helpers — danh mục nhiều cấp', () => {
     const fullPath = buildCategoryPathMap(categories)
     const parentPath = buildCategoryParentPathMap(categories)
 
-    expect(fullPath.get('great-grandchild')).toBe('Phụ kiện › Phụ kiện đồ lót › Áo lót › Áo lót mùa hè')
+    expect(fullPath.get('great-grandchild')).toBe(
+      'Phụ kiện › Phụ kiện đồ lót › Áo lót › Áo lót mùa hè',
+    )
     expect(parentPath.get('great-grandchild')).toBe('Phụ kiện › Phụ kiện đồ lót › Áo lót')
     expect(parentPath.get('root')).toBe('')
   })
@@ -92,7 +96,11 @@ describe('computeAttrSetWarning — khóa chuẩn thuộc tính màu', () => {
   it('coi "Màu"/"màu sắc"/"Color" là cùng một thuộc tính; giá trị màu khác nhau vẫn hợp lệ', () => {
     const items = [
       variant({ key: 'a', name: 'Đen - S', options: [opt('Màu', 'Đen'), opt('Size', 'S')] }),
-      variant({ key: 'b', name: 'Đen bóng - M', options: [opt('màu sắc', 'Đen bóng'), opt('Size', 'M')] }),
+      variant({
+        key: 'b',
+        name: 'Đen bóng - M',
+        options: [opt('màu sắc', 'Đen bóng'), opt('Size', 'M')],
+      }),
       variant({ key: 'c', name: 'Trắng - L', options: [opt('Color', 'Trắng'), opt('Size', 'L')] }),
     ]
     expect(computeAttrSetWarning(items, t)).toBeNull()
@@ -123,8 +131,16 @@ describe('computeAttrSetWarning — khóa chuẩn thuộc tính màu', () => {
 
   it('coi Kích cỡ/Size và Đời máy/Model là cùng loại thuộc tính', () => {
     const items = [
-      variant({ key: 'a', name: '15 Pro - M', options: [opt('Đời máy', '15 Pro'), opt('Kích cỡ', 'M')] }),
-      variant({ key: 'b', name: '15 Pro Max - L', options: [opt('Model', '15 Pro Max'), opt('Size', 'L')] }),
+      variant({
+        key: 'a',
+        name: '15 Pro - M',
+        options: [opt('Đời máy', '15 Pro'), opt('Kích cỡ', 'M')],
+      }),
+      variant({
+        key: 'b',
+        name: '15 Pro Max - L',
+        options: [opt('Model', '15 Pro Max'), opt('Size', 'L')],
+      }),
     ]
     expect(computeAttrSetWarning(items, t)).toBeNull()
   })
@@ -243,29 +259,33 @@ describe('media metadata round-trip', () => {
         mimeType: 'image/jpeg',
       },
     ],
-    variants: [{
-      id: 'variant-black',
-      sku: 'AGV-K1S-BLACK',
-      name: 'Đen',
-      price: { retailPrice: 5900000, salePrice: 5500000 },
-      isAvailable: true,
-      options: [{ name: 'Màu', value: 'Đen' }],
-      image: {
-        url: '/media/variant-black.png',
-        alt: 'Mũ màu đen',
-        width: 900,
-        height: 900,
-        mimeType: 'image/png',
+    variants: [
+      {
+        id: 'variant-black',
+        sku: 'AGV-K1S-BLACK',
+        name: 'Đen',
+        price: { retailPrice: 5900000, salePrice: 5500000 },
+        isAvailable: true,
+        options: [{ name: 'Màu', value: 'Đen' }],
+        image: {
+          url: '/media/variant-black.png',
+          alt: 'Mũ màu đen',
+          width: 900,
+          height: 900,
+          mimeType: 'image/png',
+        },
+        gallery: [
+          {
+            mediaType: 'image',
+            rawUrl: '/media/variant-gallery.jpg',
+            alt: 'Chi tiết màu đen',
+            width: 1000,
+            height: 800,
+            mimeType: 'image/jpeg',
+          },
+        ],
       },
-      gallery: [{
-        mediaType: 'image',
-        rawUrl: '/media/variant-gallery.jpg',
-        alt: 'Chi tiết màu đen',
-        width: 1000,
-        height: 800,
-        mimeType: 'image/jpeg',
-      }],
-    }],
+    ],
     translations: { en: { name: 'AGV K1S Helmet' } },
   }
 
@@ -286,51 +306,57 @@ describe('media metadata round-trip', () => {
       height: 630,
       mimeType: 'image/png',
     })
-    expect(payload.gallery).toEqual(expect.arrayContaining([
+    expect(payload.gallery).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          mediaType: 'image',
+          url: '/media/gallery-1.webp',
+          alt: 'Mặt trước mũ',
+          width: 1600,
+          height: 1200,
+          mimeType: 'image/webp',
+          sortOrder: 0,
+        }),
+        expect.objectContaining({
+          id: '6b2249a2-39c8-4e22-b73c-08e2bb5938a5',
+          mediaType: 'video',
+          videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+          videoProvider: 'youtube',
+          url: '/media/video-poster.jpg',
+          alt: 'Video giới thiệu mũ',
+          width: 1280,
+          height: 720,
+          mimeType: 'image/jpeg',
+          title: 'Video giới thiệu mũ',
+          titleEn: 'Helmet introduction video',
+          description: 'Video giới thiệu đầy đủ về mũ bảo hiểm.',
+          descriptionEn: 'A full introduction to the helmet.',
+          durationSeconds: 125,
+          uploadedOn: '2026-08-20',
+          sortOrder: 1,
+        }),
+      ]),
+    )
+    expect(payload.variants[0]).toEqual(
       expect.objectContaining({
-        mediaType: 'image',
-        url: '/media/gallery-1.webp',
-        alt: 'Mặt trước mũ',
-        width: 1600,
-        height: 1200,
-        mimeType: 'image/webp',
-        sortOrder: 0,
+        imageUrl: '/media/variant-black.png',
+        imageAlt: 'Mũ màu đen',
+        imageWidth: 900,
+        imageHeight: 900,
+        imageMimeType: 'image/png',
+        gallery: [
+          {
+            mediaType: 'image',
+            url: '/media/variant-gallery.jpg',
+            alt: 'Chi tiết màu đen',
+            width: 1000,
+            height: 800,
+            mimeType: 'image/jpeg',
+            sortOrder: 0,
+          },
+        ],
       }),
-      expect.objectContaining({
-        id: '6b2249a2-39c8-4e22-b73c-08e2bb5938a5',
-        mediaType: 'video',
-        videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
-        videoProvider: 'youtube',
-        url: '/media/video-poster.jpg',
-        alt: 'Video giới thiệu mũ',
-        width: 1280,
-        height: 720,
-        mimeType: 'image/jpeg',
-        title: 'Video giới thiệu mũ',
-        titleEn: 'Helmet introduction video',
-        description: 'Video giới thiệu đầy đủ về mũ bảo hiểm.',
-        descriptionEn: 'A full introduction to the helmet.',
-        durationSeconds: 125,
-        uploadedOn: '2026-08-20',
-        sortOrder: 1,
-      }),
-    ]))
-    expect(payload.variants[0]).toEqual(expect.objectContaining({
-      imageUrl: '/media/variant-black.png',
-      imageAlt: 'Mũ màu đen',
-      imageWidth: 900,
-      imageHeight: 900,
-      imageMimeType: 'image/png',
-      gallery: [{
-        mediaType: 'image',
-        url: '/media/variant-gallery.jpg',
-        alt: 'Chi tiết màu đen',
-        width: 1000,
-        height: 800,
-        mimeType: 'image/jpeg',
-        sortOrder: 0,
-      }],
-    }))
+    )
   })
 
   it('giữ đúng 0, 1 hoặc 2 giới tính qua form và payload', () => {
@@ -344,7 +370,9 @@ describe('media metadata round-trip', () => {
   })
 
   it('đọc được bản ghi cũ dùng một gender và không khôi phục Unisex', () => {
-    expect(buildFormFromItem({ ...item, gender: 'Nam', genders: undefined }).genders).toEqual(['Nam'])
+    expect(buildFormFromItem({ ...item, gender: 'Nam', genders: undefined }).genders).toEqual([
+      'Nam',
+    ])
     expect(buildFormFromItem({ ...item, gender: 'Unisex', genders: undefined }).genders).toEqual([])
   })
 
@@ -363,18 +391,20 @@ describe('media metadata round-trip', () => {
 
   it('giữ nguồn TikTok/Facebook đầy đủ và metadata video khi mở rồi lưu', () => {
     const videoItem = structuredClone(item)
-    videoItem.videos = [{
-      id: '6c2249a2-39c8-4e22-b73c-08e2bb5938a5',
-      url: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
-      provider: 'tiktok',
-      title: 'TikTok BigBike',
-      titleEn: 'BigBike TikTok',
-      description: 'Video TikTok giới thiệu sản phẩm.',
-      descriptionEn: 'TikTok product introduction.',
-      durationSeconds: 61,
-      uploadedOn: '2026-08-20',
-      thumbnail: { url: '/media/tiktok-poster.jpg' },
-    }]
+    videoItem.videos = [
+      {
+        id: '6c2249a2-39c8-4e22-b73c-08e2bb5938a5',
+        url: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
+        provider: 'tiktok',
+        title: 'TikTok BigBike',
+        titleEn: 'BigBike TikTok',
+        description: 'Video TikTok giới thiệu sản phẩm.',
+        descriptionEn: 'TikTok product introduction.',
+        durationSeconds: 61,
+        uploadedOn: '2026-08-20',
+        thumbnail: { url: '/media/tiktok-poster.jpg' },
+      },
+    ]
     videoItem.gallery[1].provider = 'facebook'
     videoItem.gallery[1].videoUrl = 'https://www.facebook.com/bigbike/videos/123456789'
 
@@ -390,7 +420,9 @@ describe('media metadata round-trip', () => {
       uploadedOn: '2026-08-20',
       thumbnailUrl: '/media/tiktok-poster.jpg',
     })
-    expect(payload.gallery.find((entry) => entry.mediaType === 'video')).toMatchObject({ videoProvider: 'facebook' })
+    expect(payload.gallery.find((entry) => entry.mediaType === 'video')).toMatchObject({
+      videoProvider: 'facebook',
+    })
   })
 
   it('đổi thời lượng chuẩn giữa form và số giây, chỉ nhận MM:SS hoặc HH:MM:SS', () => {
@@ -431,21 +463,25 @@ describe('product pricing payload normalization', () => {
       categoryIds: ['helmet'],
       brandId: 'brand-agv',
       retailPrice: '6.000.000',
-      variants: [{
-        _key: 'variant-1',
-        name: 'Đen',
-        sku: 'TEST-VARIANT-PRICE-BLACK',
-        retailPrice: '2,000,000',
-        salePrice: '0',
-        options: [{ name: 'Màu', value: 'Đen' }],
-        gallery: [],
-      }],
+      variants: [
+        {
+          _key: 'variant-1',
+          name: 'Đen',
+          sku: 'TEST-VARIANT-PRICE-BLACK',
+          retailPrice: '2,000,000',
+          salePrice: '0',
+          options: [{ name: 'Màu', value: 'Đen' }],
+          gallery: [],
+        },
+      ],
     }
 
-    expect(toPayload(form).variants[0]).toEqual(expect.objectContaining({
-      retailPrice: 2000000,
-      salePrice: null,
-    }))
+    expect(toPayload(form).variants[0]).toEqual(
+      expect.objectContaining({
+        retailPrice: 2000000,
+        salePrice: null,
+      }),
+    )
   })
 
   it('keeps empty prices null and preserves negative/invalid values for existing validation', () => {
@@ -483,16 +519,20 @@ describe('description block media metadata', () => {
       },
     ])
 
-    expect(blocks[0]).toEqual(expect.objectContaining({
-      alt: 'Chi tiết sản phẩm',
-      altEn: 'Product detail',
-    }))
-    expect(blocks[1]).toEqual(expect.objectContaining({
-      alt: 'Lớp lót',
-      altEn: 'Liner',
-      items: ['Êm'],
-      itemsEn: ['Comfortable'],
-    }))
+    expect(blocks[0]).toEqual(
+      expect.objectContaining({
+        alt: 'Chi tiết sản phẩm',
+        altEn: 'Product detail',
+      }),
+    )
+    expect(blocks[1]).toEqual(
+      expect.objectContaining({
+        alt: 'Lớp lót',
+        altEn: 'Liner',
+        items: ['Êm'],
+        itemsEn: ['Comfortable'],
+      }),
+    )
   })
 })
 
@@ -541,11 +581,18 @@ describe('cho Google hiển thị — cờ theo từng ngôn ngữ', () => {
   it('đường dẫn tiếng Anh KHÔNG nằm trong ngưỡng (PRODUCT_RULE_003)', () => {
     // slugEn chỉ là slug ưu tiên, không phải điều kiện tồn tại trang. Đưa nó vào ngưỡng
     // sẽ loại gần hết sản phẩm khỏi index tiếng Anh.
-    expect(productEnglishReady(withEn({ name: 'Helmet', shortDescription: 'Short', slug: '' }))).toBe(true)
+    expect(
+      productEnglishReady(withEn({ name: 'Helmet', shortDescription: 'Short', slug: '' })),
+    ).toBe(true)
   })
 
   it('payload gửi cả hai cờ, không gộp làm một', () => {
-    const payload = toPayload({ ...buildEmptyForm(), slug: 'mu-bao-hiem', seoNoIndex: true, seoNoIndexEn: false })
+    const payload = toPayload({
+      ...buildEmptyForm(),
+      slug: 'mu-bao-hiem',
+      seoNoIndex: true,
+      seoNoIndexEn: false,
+    })
     expect(payload.seo.noIndex).toBe(true)
     expect(payload.seo.noIndexEn).toBe(false)
   })
@@ -558,7 +605,9 @@ describe('cho Google hiển thị — cờ theo từng ngôn ngữ', () => {
 
   it('đọc lại cờ từ dữ liệu API', () => {
     const form = buildFormFromItem({
-      id: 'p1', slug: 'mu', name: 'Mũ',
+      id: 'p1',
+      slug: 'mu',
+      name: 'Mũ',
       seo: { title: null, description: null, noIndex: true, noIndexEn: true },
     })
     expect(form.seoNoIndex).toBe(true)
@@ -567,7 +616,9 @@ describe('cho Google hiển thị — cờ theo từng ngôn ngữ', () => {
 
   it('checklist đăng bán cảnh báo khi bản tiếng Anh chưa đủ, nhưng KHÔNG chặn đăng', () => {
     const t = (key, opts) => opts?.defaultValue ?? key
-    const row = getPublishReadiness(buildEmptyForm(), t).find((item) => item.id === 'englishContent')
+    const row = getPublishReadiness(buildEmptyForm(), t).find(
+      (item) => item.id === 'englishContent',
+    )
     expect(row).toBeDefined()
     expect(row.ok).toBe(false)
     expect(row.required).toBe(false)
@@ -608,7 +659,10 @@ describe('đường dẫn tiếng Anh — vòng đọc/ghi', () => {
 
   it('sửa slug tiếng Anh không làm đổi slug tiếng Việt', () => {
     const form = buildFormFromItem({ ...item, slugEn: 'scs-s7x-headset' })
-    const edited = { ...form, translations: { en: { ...form.translations.en, slug: 'scs-s7x-intercom' } } }
+    const edited = {
+      ...form,
+      translations: { en: { ...form.translations.en, slug: 'scs-s7x-intercom' } },
+    }
     const payload = toPayload(edited)
     expect(payload.translations.en.slug).toBe('scs-s7x-intercom')
     expect(payload.slug).toBe('tai-nghe-scs-s7x')
@@ -623,13 +677,15 @@ describe('đường dẫn tiếng Anh — vòng đọc/ghi', () => {
 
 describe('englishUrlFromSlugs — địa chỉ trang tiếng Anh (PRODUCT_RULE_003)', () => {
   it('dùng slug tiếng Anh khi có', () => {
-    expect(englishUrlFromSlugs('tai-nghe-scs', 'scs-headset'))
-      .toBe('https://bigbike.vn/en/product/scs-headset/')
+    expect(englishUrlFromSlugs('tai-nghe-scs', 'scs-headset')).toBe(
+      'https://bigbike.vn/en/product/scs-headset/',
+    )
   })
 
   it('slug tiếng Anh trống vẫn có trang EN — rơi về slug tiếng Việt', () => {
-    expect(englishUrlFromSlugs('tai-nghe-scs', ''))
-      .toBe('https://bigbike.vn/en/product/tai-nghe-scs/')
+    expect(englishUrlFromSlugs('tai-nghe-scs', '')).toBe(
+      'https://bigbike.vn/en/product/tai-nghe-scs/',
+    )
   })
 
   it('chưa có slug nào thì trả null', () => {

@@ -13,13 +13,26 @@ import {
 // coi là hợp lệ những URL mà server sẽ chặn (tránh submit rồi nhận lỗi khó hiểu).
 describe('isValidCustomUrl — khớp allowlist scheme của máy chủ', () => {
   it('chấp nhận đường dẫn nội bộ, neo, tel, mailto, http(s)', () => {
-    for (const url of ['/danh-muc/mu', '#khuyen-mai', 'tel:0900', 'mailto:a@b.vn', 'https://bigbike.vn', 'http://x.vn']) {
+    for (const url of [
+      '/danh-muc/mu',
+      '#khuyen-mai',
+      'tel:0900',
+      'mailto:a@b.vn',
+      'https://bigbike.vn',
+      'http://x.vn',
+    ]) {
       expect(isValidCustomUrl(url), url).toBe(true)
     }
   })
 
   it('chặn scheme nguy hiểm mà máy chủ cũng chặn', () => {
-    for (const url of ['javascript:alert(1)', 'JavaScript:alert(1)', 'data:text/html,x', 'vbscript:msgbox', '//evil.com']) {
+    for (const url of [
+      'javascript:alert(1)',
+      'JavaScript:alert(1)',
+      'data:text/html,x',
+      'vbscript:msgbox',
+      '//evil.com',
+    ]) {
       expect(isValidCustomUrl(url), url).toBe(false)
     }
   })
@@ -37,13 +50,13 @@ describe('isValidCustomUrl — khớp allowlist scheme của máy chủ', () => 
 
 describe('URL storefront chuẩn', () => {
   it('tạo link danh mục mới có trailing slash', () => {
-    expect(buildCategoryMenuUrl({ slug: 'non-bao-hiem-moto' }))
-      .toBe('/danh-muc/non-bao-hiem-moto/')
+    expect(buildCategoryMenuUrl({ slug: 'non-bao-hiem-moto' })).toBe('/danh-muc/non-bao-hiem-moto/')
   })
 
   it('chuẩn hoá link cũ trước khi lưu mà vẫn giữ query string', () => {
-    expect(normalizeMenuUrlForSave('/danh-muc-san-pham/non-bao-hiem-moto/?page=2'))
-      .toBe('/danh-muc/non-bao-hiem-moto/?page=2')
+    expect(normalizeMenuUrlForSave('/danh-muc-san-pham/non-bao-hiem-moto/?page=2')).toBe(
+      '/danh-muc/non-bao-hiem-moto/?page=2',
+    )
     expect(normalizeMenuUrlForSave('/san-pham/')).toBe('/sp/')
   })
 })

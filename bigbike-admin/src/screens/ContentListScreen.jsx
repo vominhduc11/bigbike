@@ -109,7 +109,15 @@ export function ContentListScreen({ navigate, canUpdate }) {
     }
   }
 
-  async function runSingle({ item, action, confirmKey, titleKey, confirmLabel, variant, successKey }) {
+  async function runSingle({
+    item,
+    action,
+    confirmKey,
+    titleKey,
+    confirmLabel,
+    variant,
+    successKey,
+  }) {
     const confirmed = await showConfirm(
       t(confirmKey, { title: item.title, defaultValue: t('common.unknown') }),
       t(titleKey, { defaultValue: t('common.unknown') }),
@@ -130,40 +138,47 @@ export function ContentListScreen({ navigate, canUpdate }) {
     }
   }
 
-  const handleSoftDelete = (item) => runSingle({
-    item,
-    action: 'trash',
-    confirmKey: 'content.deleteConfirm',
-    titleKey: 'common.moveToTrashTitle',
-    confirmLabel: 'common.moveToTrash',
-    variant: 'default',
-    successKey: 'content.deleteSuccess',
-  })
+  const handleSoftDelete = (item) =>
+    runSingle({
+      item,
+      action: 'trash',
+      confirmKey: 'content.deleteConfirm',
+      titleKey: 'common.moveToTrashTitle',
+      confirmLabel: 'common.moveToTrash',
+      variant: 'default',
+      successKey: 'content.deleteSuccess',
+    })
 
-  const handleRestore = (item) => runSingle({
-    item,
-    action: 'restore',
-    confirmKey: 'content.restoreConfirm',
-    titleKey: 'content.restoreConfirmTitle',
-    confirmLabel: 'content.restore',
-    variant: 'default',
-    successKey: 'content.restoreSuccess',
-  })
+  const handleRestore = (item) =>
+    runSingle({
+      item,
+      action: 'restore',
+      confirmKey: 'content.restoreConfirm',
+      titleKey: 'content.restoreConfirmTitle',
+      confirmLabel: 'content.restore',
+      variant: 'default',
+      successKey: 'content.restoreSuccess',
+    })
 
-  const handlePermanentDelete = (item) => runSingle({
-    item,
-    action: 'permanent',
-    confirmKey: 'content.permanentDeleteConfirm',
-    titleKey: 'common.permanentDeleteTitle',
-    confirmLabel: 'common.permanentDelete',
-    variant: 'danger',
-    successKey: 'content.permanentDeleteSuccess',
-  })
+  const handlePermanentDelete = (item) =>
+    runSingle({
+      item,
+      action: 'permanent',
+      confirmKey: 'content.permanentDeleteConfirm',
+      titleKey: 'common.permanentDeleteTitle',
+      confirmLabel: 'common.permanentDelete',
+      variant: 'danger',
+      successKey: 'content.permanentDeleteSuccess',
+    })
 
   async function publishFullArticle(item) {
     const detail = await fetchContentDetail(item.type, item.id)
     const form = buildFormFromItem(item.type, detail.item)
-    await updateContent(item.type, item.id, toPayload({ ...form, publishStatus: 'PUBLISHED' }, false))
+    await updateContent(
+      item.type,
+      item.id,
+      toPayload({ ...form, publishStatus: 'PUBLISHED' }, false),
+    )
   }
 
   async function runBulk({ action, confirmKey, titleKey, confirmLabel, variant }) {
@@ -211,11 +226,13 @@ export function ContentListScreen({ navigate, canUpdate }) {
     if (failed === 0 && skipped === 0) {
       toast.success(t('content.bulkSuccess', { count: successfulIds.length }))
     } else {
-      toast.warning(t('content.bulkPartial', {
-        ok: successfulIds.length,
-        fail: failed,
-        skipped,
-      }))
+      toast.warning(
+        t('content.bulkPartial', {
+          ok: successfulIds.length,
+          fail: failed,
+          skipped,
+        }),
+      )
     }
   }
 
@@ -227,55 +244,59 @@ export function ContentListScreen({ navigate, canUpdate }) {
   const anyBusy = bulkBusy || Boolean(rowBusy)
 
   const bulkActions = canUpdate
-    ? (isTrashView
-        ? [
-            {
-              label: t('content.bulkRestore'),
-              disabled: anyBusy,
-              onClick: () => runBulk({
+    ? isTrashView
+      ? [
+          {
+            label: t('content.bulkRestore'),
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'restore',
                 confirmKey: 'content.bulkRestoreConfirm',
                 titleKey: 'content.bulkRestoreTitle',
                 confirmLabel: 'content.restore',
               }),
-            },
-            {
-              label: t('content.bulkHardDelete'),
-              tone: 'danger',
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+          {
+            label: t('content.bulkHardDelete'),
+            tone: 'danger',
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'permanent',
                 confirmKey: 'content.bulkHardDeleteConfirm',
                 titleKey: 'common.permanentDeleteTitle',
                 confirmLabel: 'common.permanentDelete',
                 variant: 'danger',
               }),
-            },
-          ]
-        : [
-            {
-              label: t('content.bulkPublish'),
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+        ]
+      : [
+          {
+            label: t('content.bulkPublish'),
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'publish',
                 confirmKey: 'content.bulkPublishConfirm',
                 titleKey: 'content.bulkPublishTitle',
                 confirmLabel: 'content.bulkPublishCta',
               }),
-            },
-            {
-              label: t('content.bulkTrash'),
-              tone: 'danger',
-              disabled: anyBusy,
-              onClick: () => runBulk({
+          },
+          {
+            label: t('content.bulkTrash'),
+            tone: 'danger',
+            disabled: anyBusy,
+            onClick: () =>
+              runBulk({
                 action: 'trash',
                 confirmKey: 'content.bulkTrashConfirm',
                 titleKey: 'common.moveToTrashTitle',
                 confirmLabel: 'common.moveToTrash',
                 variant: 'default',
               }),
-            },
-          ])
+          },
+        ]
     : []
 
   const filterChips = useMemo(() => {
@@ -290,7 +311,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
-      label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: t('common.unknown') })}`,
+        label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: t('common.unknown') })}`,
         onRemove: () => updateQuery({ publishStatus: 'ALL' }, { resetPage: true }),
       })
     }
@@ -303,42 +324,48 @@ export function ContentListScreen({ navigate, canUpdate }) {
     const detailLabel = canUpdate && !isTrashed ? t('common.edit') : t('common.view')
     return (
       <TableRowActions
-        primaryActions={[{
-          key: 'detail',
-          label: detailLabel,
-          icon: canUpdate && !isTrashed ? Pencil : Eye,
-          disabled: isBusy,
-          onSelect: () => navigate(contentDetailPath(item)),
-        }]}
-        menuActions={!canUpdate
-          ? []
-          : isTrashed
-            ? [
-                {
-                  key: 'restore',
-                  label: t('content.restore'),
-                  icon: Undo2,
-                  disabled: isBusy,
-                  onSelect: () => handleRestore(item),
-                },
-                {
-                  key: 'permanent-delete',
-                  label: t('common.permanentDelete'),
-                  icon: Trash2,
-                  tone: 'danger',
-                  separatorBefore: true,
-                  disabled: isBusy,
-                  onSelect: () => handlePermanentDelete(item),
-                },
-              ]
-            : [{
-                key: 'trash',
-                label: t('content.moveToTrash'),
-                icon: Trash2,
-                tone: 'danger',
-                disabled: isBusy,
-                onSelect: () => handleSoftDelete(item),
-              }]}
+        primaryActions={[
+          {
+            key: 'detail',
+            label: detailLabel,
+            icon: canUpdate && !isTrashed ? Pencil : Eye,
+            disabled: isBusy,
+            onSelect: () => navigate(contentDetailPath(item)),
+          },
+        ]}
+        menuActions={
+          !canUpdate
+            ? []
+            : isTrashed
+              ? [
+                  {
+                    key: 'restore',
+                    label: t('content.restore'),
+                    icon: Undo2,
+                    disabled: isBusy,
+                    onSelect: () => handleRestore(item),
+                  },
+                  {
+                    key: 'permanent-delete',
+                    label: t('common.permanentDelete'),
+                    icon: Trash2,
+                    tone: 'danger',
+                    separatorBefore: true,
+                    disabled: isBusy,
+                    onSelect: () => handlePermanentDelete(item),
+                  },
+                ]
+              : [
+                  {
+                    key: 'trash',
+                    label: t('content.moveToTrash'),
+                    icon: Trash2,
+                    tone: 'danger',
+                    disabled: isBusy,
+                    onSelect: () => handleSoftDelete(item),
+                  },
+                ]
+        }
       />
     )
   }
@@ -367,8 +394,12 @@ export function ContentListScreen({ navigate, canUpdate }) {
             )}
           </span>
           <span className="min-w-0">
-            <span className="block truncate font-semibold text-foreground">{formatText(item.title)}</span>
-            <span className="block truncate text-xs text-muted-foreground">/{formatText(item.slug)}</span>
+            <span className="block truncate font-semibold text-foreground">
+              {formatText(item.title)}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              /{formatText(item.slug)}
+            </span>
           </span>
         </div>
       ),
@@ -383,7 +414,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
       key: 'updatedAt',
       label: t('content.colUpdated'),
       sortable: true,
-      render: (item) => <span className="text-xs text-muted-foreground">{formatDateTime(item.updatedAt)}</span>,
+      render: (item) => (
+        <span className="text-xs text-muted-foreground">{formatDateTime(item.updatedAt)}</span>
+      ),
     },
     {
       key: 'actions',
@@ -394,7 +427,12 @@ export function ContentListScreen({ navigate, canUpdate }) {
       render: renderRowActions,
     },
   ]
-  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:content')
+  const {
+    visibleColumns,
+    hiddenKeys,
+    toggle: toggleColumn,
+    allColumns,
+  } = useColumnVisibility(columns, 'columns:content')
 
   function mobileCard(item) {
     return {
@@ -428,7 +466,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       <ScreenHeader
         group="content"
         title={t('content.title')}
-        actions={(
+        actions={
           <Button
             type="button"
             disabled={!canUpdate}
@@ -438,7 +476,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             <Plus size={16} aria-hidden="true" />
             {canUpdate ? t('content.newArticle') : t('common.noPermission')}
           </Button>
-        )}
+        }
       />
 
       <RecentItemsChips
@@ -485,7 +523,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
           value={query.pageSize}
           onChange={(pageSize) => updateQuery({ pageSize }, { resetPage: true })}
         />
-        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
+        <ColumnVisibilityToggle
+          allColumns={allColumns}
+          hiddenKeys={hiddenKeys}
+          onToggle={toggleColumn}
+        />
         <Button
           type="button"
           variant="secondary"
@@ -542,31 +584,35 @@ export function ContentListScreen({ navigate, canUpdate }) {
           tone="neutral"
           title={emptyState.title}
           description={emptyState.description}
-          actionLabel={isFiltered ? t('common.resetFilters') : (canUpdate ? t('content.newArticle') : undefined)}
-          onAction={isFiltered ? resetFilters : (canUpdate ? () => navigate(createPath) : undefined)}
+          actionLabel={
+            isFiltered ? t('common.resetFilters') : canUpdate ? t('content.newArticle') : undefined
+          }
+          onAction={isFiltered ? resetFilters : canUpdate ? () => navigate(createPath) : undefined}
         />
       ) : null}
 
-      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
+      {state.status === 'loading' || (state.status === 'success' && items.length > 0) ? (
         <DetailSection noPadding>
-            <AdminTable
-              caption={t('content.tableCaption')}
-              columns={visibleColumns}
-              rows={items}
-              loading={state.status === 'loading'}
-              pageSize={query.pageSize}
-              onRowClick={(item) => navigate(contentDetailPath(item))}
-              rowHref={contentDetailPath}
-              mobileCard={mobileCard}
-              rowClassName={(item) => publishRowAccent(item.publishStatus)}
-              sortKey={sortField}
-              sortDir={sortDir}
-              onSortChange={(key, direction) => updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })}
-              selectable={canUpdate}
-              densityKey="content"
-              selectedIds={[...selected]}
-              onSelectionChange={(ids) => setSelected(new Set(ids))}
-            />
+          <AdminTable
+            caption={t('content.tableCaption')}
+            columns={visibleColumns}
+            rows={items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
+            onRowClick={(item) => navigate(contentDetailPath(item))}
+            rowHref={contentDetailPath}
+            mobileCard={mobileCard}
+            rowClassName={(item) => publishRowAccent(item.publishStatus)}
+            sortKey={sortField}
+            sortDir={sortDir}
+            onSortChange={(key, direction) =>
+              updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })
+            }
+            selectable={canUpdate}
+            densityKey="content"
+            selectedIds={[...selected]}
+            onSelectionChange={(ids) => setSelected(new Set(ids))}
+          />
           {state.status === 'success' && pagination ? (
             <PaginationControls
               pagination={pagination}

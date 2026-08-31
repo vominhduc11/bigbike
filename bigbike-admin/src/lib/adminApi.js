@@ -25,9 +25,8 @@ export class ApiClientError extends Error {
     this.status = status
     this.code = code
     this.details = Array.isArray(details) ? details : []
-    this.retryAfterSeconds = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-      ? retryAfterSeconds
-      : null
+    this.retryAfterSeconds =
+      Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds : null
   }
 }
 
@@ -159,7 +158,7 @@ async function requestJson(endpoint, options = {}) {
   if (response.status === 401 && !skipAuth && accessToken) {
     const newAccess = await performTokenRefresh()
     if (newAccess) {
-      ({ response, payload } = await dispatch(method, url, body, newAccess))
+      ;({ response, payload } = await dispatch(method, url, body, newAccess))
     }
     if (response.status === 401) {
       // Refresh failed or replay still 401 — surface to AuthProvider so it can
@@ -208,7 +207,11 @@ async function requestBlob(endpoint, fallbackFilename = 'download') {
   if (!response.ok) {
     if (response.status === 403 && authorizationErrorListener) authorizationErrorListener()
     let payload = null
-    try { payload = await response.json() } catch { payload = null }
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
+    }
     const error = payload?.error || {}
     throw new ApiClientError(
       normalizeApiErrorMessage(error, response.status),
@@ -241,7 +244,11 @@ export async function loginAdmin({ email, password }) {
   })
   const data = payload?.data
   if (!data?.accessToken) {
-    throw new ApiClientError('Phản hồi đăng nhập từ máy chủ thiếu access token.', 500, 'INVALID_LOGIN_RESPONSE')
+    throw new ApiClientError(
+      'Phản hồi đăng nhập từ máy chủ thiếu access token.',
+      500,
+      'INVALID_LOGIN_RESPONSE',
+    )
   }
   // Store both tokens in memory; refresh token is also set as httpOnly cookie by the server.
   writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
@@ -375,9 +382,7 @@ function parseListPayload(payload, normalizeItem, fallbackPageSize = 10) {
         page: pagination?.page || 1,
         pageSize,
         totalItems: pagination?.totalItems ?? items.length,
-        totalPages:
-          pagination?.totalPages ||
-          Math.max(1, Math.ceil(items.length / pageSize)),
+        totalPages: pagination?.totalPages || Math.max(1, Math.ceil(items.length / pageSize)),
         hasNext: pagination?.hasNext,
         hasPrevious: pagination?.hasPrevious,
       },
@@ -437,12 +442,16 @@ function translateValidationMessage(field, detail, translate) {
   if (/^variants\.\d+\.options\.\d+\.attributeValueId$/.test(field)) {
     if (code === 'REQUIRED') {
       return translate
-        ? translate('products.detail.variant.optionValueSelectRequired', { defaultValue: 'Hãy chọn giá trị thuộc tính từ danh sách.' })
+        ? translate('products.detail.variant.optionValueSelectRequired', {
+            defaultValue: 'Hãy chọn giá trị thuộc tính từ danh sách.',
+          })
         : 'Hãy chọn giá trị thuộc tính từ danh sách.'
     }
     if (code === 'NOT_FOUND' || code === 'MISMATCH') {
       return translate
-        ? translate('products.detail.variant.optionValueInvalid', { defaultValue: 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.' })
+        ? translate('products.detail.variant.optionValueInvalid', {
+            defaultValue: 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.',
+          })
         : 'Giá trị thuộc tính không còn hợp lệ. Hãy chọn lại từ danh sách.'
     }
   }
@@ -494,9 +503,7 @@ export async function fetchCurrentAdminUser() {
       fullName: userPayload.fullName || 'Admin user',
       email: userPayload.email || 'unknown@bigbike.local',
       roles: Array.isArray(userPayload.roles) ? userPayload.roles : ['ADMIN'],
-      permissions: Array.isArray(userPayload.permissions)
-        ? userPayload.permissions
-        : [],
+      permissions: Array.isArray(userPayload.permissions) ? userPayload.permissions : [],
     }
 
     return withLiveData({ user })
@@ -518,13 +525,13 @@ function normalizeQuickSearchVariant(input) {
   const source = input && typeof input === 'object' ? input : {}
   const options = Array.isArray(source.options)
     ? source.options.map((option) => {
-      const item = option && typeof option === 'object' ? option : {}
-      return {
-        name: String(item.name || ''),
-        value: String(item.value || ''),
-        attributeValueId: item.attributeValueId ? String(item.attributeValueId) : undefined,
-      }
-    })
+        const item = option && typeof option === 'object' ? option : {}
+        return {
+          name: String(item.name || ''),
+          value: String(item.value || ''),
+          attributeValueId: item.attributeValueId ? String(item.attributeValueId) : undefined,
+        }
+      })
     : []
   return {
     id: String(source.id || ''),
@@ -537,9 +544,23 @@ function normalizeQuickSearchVariant(input) {
 function normalizeQuickSearchItem(input) {
   const source = input && typeof input === 'object' ? input : {}
   const stringFields = [
-    'id', 'orderNumber', 'status', 'customerName', 'shippingRecipientName',
-    'customerEmail', 'customerPhone', 'currency', 'displayName', 'email',
-    'phone', 'name', 'title', 'slug', 'sku', 'role', 'matchedField',
+    'id',
+    'orderNumber',
+    'status',
+    'customerName',
+    'shippingRecipientName',
+    'customerEmail',
+    'customerPhone',
+    'currency',
+    'displayName',
+    'email',
+    'phone',
+    'name',
+    'title',
+    'slug',
+    'sku',
+    'role',
+    'matchedField',
   ]
   const item = { matchedVariants: [] }
   stringFields.forEach((field) => {
@@ -571,9 +592,8 @@ function normalizeQuickSearchGroup(input) {
 export async function fetchAdminQuickSearch(query) {
   try {
     const payload = await requestJson('/admin/quick-search', { query: { q: query } })
-    const source = payload?.data?.groups && typeof payload.data.groups === 'object'
-      ? payload.data.groups
-      : {}
+    const source =
+      payload?.data?.groups && typeof payload.data.groups === 'object' ? payload.data.groups : {}
     const groups = Object.fromEntries(
       Object.entries(source).map(([key, value]) => [key, normalizeQuickSearchGroup(value)]),
     )
@@ -608,7 +628,10 @@ export async function createSizeScale(input) {
 }
 
 export async function updateSizeScale(scaleId, input) {
-  const payload = await requestJson(`/admin/size-scales/${scaleId}`, { method: 'PATCH', body: input })
+  const payload = await requestJson(`/admin/size-scales/${scaleId}`, {
+    method: 'PATCH',
+    body: input,
+  })
   return payload?.data ?? payload
 }
 
@@ -617,12 +640,18 @@ export async function deleteSizeScale(scaleId) {
 }
 
 export async function createSizeScaleValue(scaleId, input) {
-  const payload = await requestJson(`/admin/size-scales/${scaleId}/values`, { method: 'POST', body: input })
+  const payload = await requestJson(`/admin/size-scales/${scaleId}/values`, {
+    method: 'POST',
+    body: input,
+  })
   return payload?.data ?? payload
 }
 
 export async function updateSizeScaleValue(valueId, input) {
-  const payload = await requestJson(`/admin/size-scale-values/${valueId}`, { method: 'PATCH', body: input })
+  const payload = await requestJson(`/admin/size-scale-values/${valueId}`, {
+    method: 'PATCH',
+    body: input,
+  })
   return payload?.data ?? payload
 }
 
@@ -704,7 +733,12 @@ export async function importProductsCommit(file, skipRowKeys) {
 }
 
 export async function exportProductJson(productId) {
-  return fetchCsvBlob(`/admin/products/import/export/${productId}`, {}, `product-${productId}.json`, 'application/json')
+  return fetchCsvBlob(
+    `/admin/products/import/export/${productId}`,
+    {},
+    `product-${productId}.json`,
+    'application/json',
+  )
 }
 
 export async function fetchCategories(query) {
@@ -739,7 +773,9 @@ function flattenCategoryTree(nodes) {
 // mục chưa dịch, nếu không sẽ mất lựa chọn cha hợp lệ khi đang ở chế độ EN).
 export async function fetchCategoryTree(lang) {
   try {
-    const payload = await requestJson('/admin/categories/tree', { query: { lang: lang ?? getContentLang() } })
+    const payload = await requestJson('/admin/categories/tree', {
+      query: { lang: lang ?? getContentLang() },
+    })
     const items = Array.isArray(payload?.data) ? flattenCategoryTree(payload.data) : []
     return withLiveData({ items })
   } catch (error) {
@@ -933,7 +969,9 @@ export async function deleteAttributeValue(valueId) {
 export async function fetchContent(query) {
   try {
     const payload = await requestJson('/admin/content', { query: buildContentQuery(query) })
-    return withLiveData(parseListPayload(payload, normalizeContentItem, Number(query?.pageSize) || 10))
+    return withLiveData(
+      parseListPayload(payload, normalizeContentItem, Number(query?.pageSize) || 10),
+    )
   } catch (error) {
     throw normalizeError(error)
   }
@@ -977,7 +1015,9 @@ export async function deleteContent(contentType, contentId) {
 
 export async function restoreContent(contentType, contentId) {
   const mutationPath = normalizeContentMutationPath(contentType)
-  const payload = await requestJson(`/admin/content/${mutationPath}/${contentId}/restore`, { method: 'POST' })
+  const payload = await requestJson(`/admin/content/${mutationPath}/${contentId}/restore`, {
+    method: 'POST',
+  })
   return parseDetailPayload(payload, normalizeContentItem)
 }
 
@@ -1037,19 +1077,27 @@ export async function fetchLegacyDiscontinuedProducts(query) {
         enabled: query?.enabled,
       },
     })
-    return withLiveData(parseListPayload(payload, normalizeLegacyDiscontinuedProduct, Number(query?.pageSize) || 20))
+    return withLiveData(
+      parseListPayload(payload, normalizeLegacyDiscontinuedProduct, Number(query?.pageSize) || 20),
+    )
   } catch (error) {
     throw normalizeError(error)
   }
 }
 
 export async function createLegacyDiscontinuedProduct(input) {
-  const payload = await requestJson('/admin/legacy-discontinued-products', { method: 'POST', body: input })
+  const payload = await requestJson('/admin/legacy-discontinued-products', {
+    method: 'POST',
+    body: input,
+  })
   return parseDetailPayload(payload, normalizeLegacyDiscontinuedProduct)
 }
 
 export async function updateLegacyDiscontinuedProduct(id, input) {
-  const payload = await requestJson(`/admin/legacy-discontinued-products/${id}`, { method: 'PATCH', body: input })
+  const payload = await requestJson(`/admin/legacy-discontinued-products/${id}`, {
+    method: 'PATCH',
+    body: input,
+  })
   return parseDetailPayload(payload, normalizeLegacyDiscontinuedProduct)
 }
 
@@ -1121,7 +1169,14 @@ export async function fetchCustomers(query) {
     const payload = await requestJson('/admin/customers', {
       // toQueryString() bỏ qua 'ALL' — cùng cơ chế với status, nên synthetic ('ALL'/'true'/'false')
       // chỉ thực sự lên query string khi khác 'ALL'.
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, synthetic: query?.synthetic, emailVerified: query?.emailVerified },
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        q: query?.search,
+        status: query?.status,
+        synthetic: query?.synthetic,
+        emailVerified: query?.emailVerified,
+      },
     })
     return withLiveData(parseListPayload(payload, normalizeCustomer, Number(query?.pageSize) || 10))
   } catch (error) {
@@ -1179,7 +1234,9 @@ export async function fetchMedia(query) {
     q.page = query?.page
     q.size = query?.pageSize
     const payload = await requestJson('/admin/media', { query: q })
-    return withLiveData(parseListPayload(payload, normalizeMediaItem, Number(query?.pageSize) || 20))
+    return withLiveData(
+      parseListPayload(payload, normalizeMediaItem, Number(query?.pageSize) || 20),
+    )
   } catch (error) {
     throw normalizeError(error)
   }
@@ -1191,7 +1248,7 @@ function buildMediaQueryParams(query) {
     mimeType: query?.mimeType && query.mimeType !== 'ALL' ? query.mimeType : undefined,
     mimeTypes: Array.isArray(query?.mimeTypes)
       ? query.mimeTypes.join(',')
-      : (query?.mimeTypes || undefined),
+      : query?.mimeTypes || undefined,
     status: query?.status && query.status !== 'ALL' ? query.status : undefined,
     usageFilter: query?.usageFilter && query.usageFilter !== 'ALL' ? query.usageFilter : undefined,
     uploadedFrom: query?.uploadedFrom || undefined,
@@ -1209,7 +1266,9 @@ function buildMediaQueryParams(query) {
 
 export async function fetchMediaStats(query) {
   const q = buildMediaQueryParams(query)
-  delete q.sort; delete q.dir; delete q.usageFilter
+  delete q.sort
+  delete q.dir
+  delete q.usageFilter
   const payload = await requestJson('/admin/media/stats', { query: q })
   return payload?.data ?? null
 }
@@ -1260,7 +1319,11 @@ export async function deleteMediaFolder(id) {
 export async function downloadMedia(mediaId, fallbackFilename) {
   const { blob, filename } = await requestBlob(`/admin/media/${mediaId}/download`, fallbackFilename)
   if (typeof URL?.createObjectURL !== 'function' || typeof document === 'undefined') {
-    throw new ApiClientError('Không thể tạo file tải xuống trong trình duyệt.', 0, 'DOWNLOAD_UNSUPPORTED')
+    throw new ApiClientError(
+      'Không thể tạo file tải xuống trong trình duyệt.',
+      0,
+      'DOWNLOAD_UNSUPPORTED',
+    )
   }
   const objectUrl = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -1311,8 +1374,13 @@ export async function updateMedia(mediaId, body) {
   return { item: normalizeMediaItem(payload?.data || {}) }
 }
 
-export async function uploadMedia(file, altText = '', onProgress = null, folderId = null, clearFolder = false) {
-
+export async function uploadMedia(
+  file,
+  altText = '',
+  onProgress = null,
+  folderId = null,
+  clearFolder = false,
+) {
   // First attempt with current access token; if 401, refresh once and retry.
   // We must use XHR (not fetch) because XHR exposes upload progress events.
   async function attempt(token) {
@@ -1336,24 +1404,33 @@ export async function uploadMedia(file, altText = '', onProgress = null, folderI
 
       xhr.onload = () => {
         let payload = null
-        try { payload = JSON.parse(xhr.responseText) } catch { /* ignore */ }
+        try {
+          payload = JSON.parse(xhr.responseText)
+        } catch {
+          /* ignore */
+        }
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve({ item: normalizeMediaItem(payload?.data || {}) })
         } else {
           const error = payload?.error || {}
           const detailMessage = Array.isArray(error.details)
-            ? error.details.find((detail) => typeof detail?.message === 'string' && detail.message.trim())?.message
+            ? error.details.find(
+                (detail) => typeof detail?.message === 'string' && detail.message.trim(),
+              )?.message
             : ''
-          reject(new ApiClientError(
-            detailMessage || error.message || `Upload failed with status ${xhr.status}`,
-            xhr.status,
-            error.code || 'UPLOAD_FAILED',
-            error.details || [],
-            parseRetryAfter(xhr.getResponseHeader('Retry-After')),
-          ))
+          reject(
+            new ApiClientError(
+              detailMessage || error.message || `Upload failed with status ${xhr.status}`,
+              xhr.status,
+              error.code || 'UPLOAD_FAILED',
+              error.details || [],
+              parseRetryAfter(xhr.getResponseHeader('Retry-After')),
+            ),
+          )
         }
       }
-      xhr.onerror = () => reject(new ApiClientError('Network error during upload', 0, 'NETWORK_ERROR'))
+      xhr.onerror = () =>
+        reject(new ApiClientError('Network error during upload', 0, 'NETWORK_ERROR'))
       xhr.onabort = () => reject(new ApiClientError('Upload aborted', 0, 'ABORTED'))
       xhr.send(formData)
     })
@@ -1370,7 +1447,8 @@ export async function uploadMedia(file, altText = '', onProgress = null, folderI
           try {
             return await attempt(refreshed)
           } catch (retryError) {
-            if (retryError?.status === 403 && authorizationErrorListener) authorizationErrorListener()
+            if (retryError?.status === 403 && authorizationErrorListener)
+              authorizationErrorListener()
             if (retryError?.status === 401) {
               clearTokens()
               if (authErrorListener) authErrorListener()
@@ -1402,7 +1480,9 @@ export async function fetchPublicSettings() {
 
 export async function fetchSettings(query = {}) {
   try {
-    const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200, ...query } })
+    const payload = await requestJson('/admin/settings', {
+      query: { page: 1, size: 200, ...query },
+    })
     const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
     return withLiveData({ items: list })
   } catch (error) {
@@ -1498,7 +1578,10 @@ export async function deleteMenuItem(menuId, itemId) {
 // admin UI manages only the items inside them.
 
 export async function updateMenuItem(menuId, itemId, input) {
-  const payload = await requestJson(`/admin/menus/${menuId}/items/${itemId}`, { method: 'PATCH', body: input })
+  const payload = await requestJson(`/admin/menus/${menuId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: input,
+  })
   return { item: payload?.data }
 }
 
@@ -1525,7 +1608,9 @@ function normalizeSlider(input) {
     productName: (s.product && typeof s.product === 'object' ? s.product.name : null) || null,
     // Tên tiếng Anh của SP liên kết (admin VI/EN switch). Lấy từ translations.en.name
     // có sẵn trong product domain (admin detail). Rỗng nếu SP chưa có tên tiếng Anh.
-    productNameEn: (s.product && typeof s.product === 'object' ? s.product.translations?.en?.name : null) || null,
+    productNameEn:
+      (s.product && typeof s.product === 'object' ? s.product.translations?.en?.name : null) ||
+      null,
   }
 }
 
@@ -1566,11 +1651,13 @@ export async function deleteSlider(sliderId) {
 
 export async function fetchHomeHighlights() {
   try {
-    const payload = await requestJson('/admin/home/category-highlights', { query: { lang: getContentLang() } })
+    const payload = await requestJson('/admin/home/category-highlights', {
+      query: { lang: getContentLang() },
+    })
     const data = payload?.data
     return withLiveData({
-      items: Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []),
-      version: Array.isArray(data) ? 0 : (Number.isInteger(data?.version) ? data.version : 0),
+      items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
+      version: Array.isArray(data) ? 0 : Number.isInteger(data?.version) ? data.version : 0,
     })
   } catch (error) {
     const e = normalizeError(error)
@@ -1585,8 +1672,12 @@ export async function saveHomeHighlights(slots, expectedVersion) {
   })
   const data = payload?.data
   return {
-    items: Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []),
-    version: Array.isArray(data) ? expectedVersion : (Number.isInteger(data?.version) ? data.version : expectedVersion),
+    items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
+    version: Array.isArray(data)
+      ? expectedVersion
+      : Number.isInteger(data?.version)
+        ? data.version
+        : expectedVersion,
   }
 }
 
@@ -1685,7 +1776,9 @@ export async function createAdminUser(input) {
 }
 
 export async function resendAdminInvite(userId) {
-  const payload = await requestJson(`/admin/admin-users/${userId}/resend-invite`, { method: 'POST' })
+  const payload = await requestJson(`/admin/admin-users/${userId}/resend-invite`, {
+    method: 'POST',
+  })
   const data = payload?.data || {}
   return {
     item: normalizeAdminUser(data),
@@ -1695,19 +1788,28 @@ export async function resendAdminInvite(userId) {
 }
 
 export async function updateAdminUser(userId, input) {
-  const payload = await requestJson(`/admin/admin-users/${userId}`, { method: 'PATCH', body: input })
+  const payload = await requestJson(`/admin/admin-users/${userId}`, {
+    method: 'PATCH',
+    body: input,
+  })
   return { item: normalizeAdminUser(payload?.data || {}) }
 }
 
 // ── Admin invite (public, token-gated — no auth) ─────────────────────────────
 export async function validateAdminInvite(token) {
-  const payload = await requestJson(`/auth/admin/invite?token=${encodeURIComponent(token)}`, { skipAuth: true })
+  const payload = await requestJson(`/auth/admin/invite?token=${encodeURIComponent(token)}`, {
+    skipAuth: true,
+  })
   const data = payload?.data || {}
   return { email: String(data.email || ''), expiresAt: data.expiresAt || '' }
 }
 
 export async function acceptAdminInvite(token, password) {
-  await requestJson('/auth/admin/accept-invite', { method: 'POST', body: { token, password }, skipAuth: true })
+  await requestJson('/auth/admin/accept-invite', {
+    method: 'POST',
+    body: { token, password },
+    skipAuth: true,
+  })
 }
 
 // Reviews
@@ -1719,12 +1821,19 @@ function safeReviewString(value) {
 function safeReviewPhoto(value) {
   if (typeof value !== 'string') return ''
   const candidate = value.trim()
-  if (!candidate.startsWith('/media/reviews/') || candidate.includes('?') || candidate.includes('#') || candidate.includes('\\')) return ''
+  if (
+    !candidate.startsWith('/media/reviews/') ||
+    candidate.includes('?') ||
+    candidate.includes('#') ||
+    candidate.includes('\\')
+  )
+    return ''
   try {
     const decoded = decodeURIComponent(candidate)
     if (decoded.includes('?') || decoded.includes('#') || decoded.includes('\\')) return ''
     const segments = decoded.slice('/media/reviews/'.length).split('/')
-    return segments.length > 0 && segments.every((segment) => segment && segment !== '.' && segment !== '..')
+    return segments.length > 0 &&
+      segments.every((segment) => segment && segment !== '.' && segment !== '..')
       ? candidate
       : ''
   } catch {
@@ -1747,13 +1856,17 @@ function normalizeReview(input) {
   const rating = Number(s.rating)
   return {
     id: typeof s.id === 'string' || Number.isFinite(s.id) ? s.id : '',
-    productId: typeof s.productId === 'string' || Number.isFinite(s.productId) ? String(s.productId) : '',
+    productId:
+      typeof s.productId === 'string' || Number.isFinite(s.productId) ? String(s.productId) : '',
     productName: safeReviewString(s.productName),
     productNameEn: safeReviewString(s.productNameEn),
     productSlug: safeReviewString(s.productSlug),
     authorName: safeReviewString(s.authorName),
     authorEmail: safeReviewString(s.authorEmail),
-    rating: Number.isFinite(rating) && rating >= 1 && rating <= 5 && Number.isInteger(rating * 2) ? rating : null,
+    rating:
+      Number.isFinite(rating) && rating >= 1 && rating <= 5 && Number.isInteger(rating * 2)
+        ? rating
+        : null,
     body: safeReviewString(s.body),
     photos: Array.isArray(s.photos) ? s.photos.map(safeReviewPhoto).filter(Boolean) : [],
     status: safeReviewString(s.status),
@@ -1787,18 +1900,21 @@ export async function fetchReviewSummary() {
     const data = payload?.data || {}
     const approved = data.approved || {}
     const pending = data.pending || {}
-    const ratingBreakdown = approved.ratingBreakdown && typeof approved.ratingBreakdown === 'object'
-      ? approved.ratingBreakdown
-      : {}
+    const ratingBreakdown =
+      approved.ratingBreakdown && typeof approved.ratingBreakdown === 'object'
+        ? approved.ratingBreakdown
+        : {}
     return {
       approved: {
         averageRating: safeReviewAverage(approved.averageRating),
         totalReviews: safeReviewCount(approved.totalReviews),
         // REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5).
-        ratingBreakdown: Object.fromEntries([5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((star) => [
-          String(star),
-          safeReviewCount(ratingBreakdown[String(star)]),
-        ])),
+        ratingBreakdown: Object.fromEntries(
+          [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((star) => [
+            String(star),
+            safeReviewCount(ratingBreakdown[String(star)]),
+          ]),
+        ),
       },
       pending: {
         totalReviews: safeReviewCount(pending.totalReviews),
@@ -1842,9 +1958,10 @@ export async function deleteReview(reviewId, expectedVersion) {
 function normalizeReviewBulkResult(payload) {
   const data = payload?.data || {}
   return {
-    affected: Number.isInteger(Number(data.affected)) && Number(data.affected) >= 0
-      ? Number(data.affected)
-      : 0,
+    affected:
+      Number.isInteger(Number(data.affected)) && Number(data.affected) >= 0
+        ? Number(data.affected)
+        : 0,
     skipped: Array.isArray(data.skipped)
       ? data.skipped.map((item) => ({
           id: item?.id,
@@ -1906,13 +2023,17 @@ function normalizeChatMessage(input) {
     try {
       const parsed = JSON.parse(s.productsJson)
       products = Array.isArray(parsed) ? parsed : []
-    } catch { products = [] }
+    } catch {
+      products = []
+    }
   }
   return {
     id: safeChatString(s.id),
     sequenceNo: safeChatCount(s.sequenceNo),
     role: ['USER', 'CUSTOMER', 'ASSISTANT', 'SYSTEM'].includes(s.role)
-      ? (s.role === 'CUSTOMER' ? 'USER' : s.role)
+      ? s.role === 'CUSTOMER'
+        ? 'USER'
+        : s.role
       : 'ASSISTANT',
     content: safeChatString(s.content),
     source: safeChatString(s.source),
@@ -1922,16 +2043,19 @@ function normalizeChatMessage(input) {
     resultKind: safeChatString(s.resultKind),
     createdAt: safeChatString(s.createdAt),
     images: Array.isArray(s.images)
-      ? s.images.map((image) => ({
-        id: safeChatString(image?.id),
-        contentPath: safeChatString(image?.contentPath),
-        mimeType: safeChatString(image?.mimeType),
-        width: safeChatCount(image?.width),
-        height: safeChatCount(image?.height),
-        sizeBytes: safeChatCount(image?.sizeBytes),
-        status: safeChatString(image?.status),
-        createdAt: safeChatString(image?.createdAt),
-      })).filter((image) => image.id).slice(0, 1)
+      ? s.images
+          .map((image) => ({
+            id: safeChatString(image?.id),
+            contentPath: safeChatString(image?.contentPath),
+            mimeType: safeChatString(image?.mimeType),
+            width: safeChatCount(image?.width),
+            height: safeChatCount(image?.height),
+            sizeBytes: safeChatCount(image?.sizeBytes),
+            status: safeChatString(image?.status),
+            createdAt: safeChatString(image?.createdAt),
+          }))
+          .filter((image) => image.id)
+          .slice(0, 1)
       : [],
   }
 }
@@ -1963,7 +2087,9 @@ export async function fetchChatConversations(query) {
 
 export async function fetchChatConversation(conversationId) {
   try {
-    const payload = await requestJson(`/admin/chat/conversations/${encodeURIComponent(conversationId)}`)
+    const payload = await requestJson(
+      `/admin/chat/conversations/${encodeURIComponent(conversationId)}`,
+    )
     return withLiveData(parseDetailPayload(payload, normalizeChatDetail))
   } catch (error) {
     throw normalizeError(error)
@@ -1972,7 +2098,10 @@ export async function fetchChatConversation(conversationId) {
 
 export async function fetchAdminChatImageBlob(imageId) {
   try {
-    const result = await requestBlob(`/admin/chat/images/${encodeURIComponent(imageId)}/content`, 'chat-image')
+    const result = await requestBlob(
+      `/admin/chat/images/${encodeURIComponent(imageId)}/content`,
+      'chat-image',
+    )
     return result.blob
   } catch (error) {
     throw normalizeError(error)
@@ -1981,7 +2110,7 @@ export async function fetchAdminChatImageBlob(imageId) {
 
 export async function fetchChatStats(input) {
   try {
-    const params = typeof input === 'string' ? { date: input } : (input || {})
+    const params = typeof input === 'string' ? { date: input } : input || {}
     const payload = await requestJson('/admin/chat/stats', {
       query: { date: params.date, from: params.from, to: params.to },
     })
@@ -2035,12 +2164,12 @@ export async function fetchAuditLogs(query) {
       query: {
         page: query?.page,
         size: query?.pageSize,
-        actorType:    query?.actorType    === 'ALL' ? undefined : query?.actorType,
+        actorType: query?.actorType === 'ALL' ? undefined : query?.actorType,
         resourceType: query?.resourceType === 'ALL' ? undefined : query?.resourceType,
-        action:       query?.action       === 'ALL' ? undefined : query?.action,
-        q:    query?.q    || undefined,
+        action: query?.action === 'ALL' ? undefined : query?.action,
+        q: query?.q || undefined,
         from: query?.from || undefined,
-        to:   query?.to   || undefined,
+        to: query?.to || undefined,
       },
     })
     return withLiveData(parseListPayload(payload, normalizeAuditLog, Number(query?.pageSize) || 20))
@@ -2075,23 +2204,29 @@ function normalizeAnalytics(payload) {
       orderCount: Number(summary.orderCount) || 0,
       avgOrderValue: Number(summary.avgOrderValue) || 0,
     },
-    dailyRevenue: Array.isArray(p.dailyRevenue) ? p.dailyRevenue.map((r) => ({
-      date: String(r.date || ''),
-      revenue: Number(r.revenue) || 0,
-      orders: Number(r.orders) || 0,
-    })) : [],
-    topProducts: Array.isArray(p.topProducts) ? p.topProducts.map((r) => ({
-      productKey: String(r.productKey || r.productId || ''),
-      productName: String(r.productName || ''),
-      revenue: Number(r.revenue) || 0,
-      unitsSold: Number(r.unitsSold) || 0,
-    })) : [],
-    topCustomers: Array.isArray(p.topCustomers) ? p.topCustomers.map((r) => ({
-      customerKey: String(r.customerKey || r.email || ''),
-      customerEmail: String(r.customerEmail || r.email || ''),
-      revenue: Number(r.revenue ?? r.totalSpent) || 0,
-      orderCount: Number(r.orderCount) || 0,
-    })) : [],
+    dailyRevenue: Array.isArray(p.dailyRevenue)
+      ? p.dailyRevenue.map((r) => ({
+          date: String(r.date || ''),
+          revenue: Number(r.revenue) || 0,
+          orders: Number(r.orders) || 0,
+        }))
+      : [],
+    topProducts: Array.isArray(p.topProducts)
+      ? p.topProducts.map((r) => ({
+          productKey: String(r.productKey || r.productId || ''),
+          productName: String(r.productName || ''),
+          revenue: Number(r.revenue) || 0,
+          unitsSold: Number(r.unitsSold) || 0,
+        }))
+      : [],
+    topCustomers: Array.isArray(p.topCustomers)
+      ? p.topCustomers.map((r) => ({
+          customerKey: String(r.customerKey || r.email || ''),
+          customerEmail: String(r.customerEmail || r.email || ''),
+          revenue: Number(r.revenue ?? r.totalSpent) || 0,
+          orderCount: Number(r.orderCount) || 0,
+        }))
+      : [],
     scope: {
       orderScope: String(p.scope?.orderScope || 'ALL'),
       includesHistoricalOrders: p.scope?.includesHistoricalOrders !== false,
@@ -2118,7 +2253,11 @@ function filenameFromDisposition(headerValue, fallback) {
   if (!headerValue) return fallback
   const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(headerValue)
   if (utf8Match) {
-    try { return decodeURIComponent(utf8Match[1]) } catch { /* ignore */ }
+    try {
+      return decodeURIComponent(utf8Match[1])
+    } catch {
+      /* ignore */
+    }
   }
   const match = /filename="?([^";]+)"?/i.exec(headerValue)
   return match ? match[1].trim() : fallback
@@ -2163,7 +2302,10 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
     )
   }
   const blob = await response.blob()
-  const filename = filenameFromDisposition(response.headers.get('Content-Disposition'), fallbackName)
+  const filename = filenameFromDisposition(
+    response.headers.get('Content-Disposition'),
+    fallbackName,
+  )
   triggerBlobDownload(blob, filename)
   return {
     filename,
@@ -2173,23 +2315,31 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
 }
 
 export async function exportOrdersCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/orders/export', {
-    q: filters.q,
-    status: filters.status,
-    from: filters.from,
-    to: filters.to,
-    orderScope: filters.orderScope,
-    attention: filters.attention,
-  }, 'orders.csv')
+  return fetchCsvBlob(
+    '/admin/reports/orders/export',
+    {
+      q: filters.q,
+      status: filters.status,
+      from: filters.from,
+      to: filters.to,
+      orderScope: filters.orderScope,
+      attention: filters.attention,
+    },
+    'orders.csv',
+  )
 }
 
 export async function exportCustomersCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/customers/export', {
-    q: filters.q,
-    status: filters.status,
-    synthetic: filters.synthetic,
-    emailVerified: filters.emailVerified,
-  }, 'customers.csv')
+  return fetchCsvBlob(
+    '/admin/reports/customers/export',
+    {
+      q: filters.q,
+      status: filters.status,
+      synthetic: filters.synthetic,
+      emailVerified: filters.emailVerified,
+    },
+    'customers.csv',
+  )
 }
 
 /** CSV catalog export. The single-product JSON round-trip export is a separate flow. */
@@ -2197,21 +2347,28 @@ export async function exportFullProductCatalogCsv(options = {}) {
   const ids = options.ids
   const columns = options.columns
   const columnGroups = options.columnGroups
-  return fetchCsvBlob('/admin/products/export.csv', {
-    scope: options.scope || 'FILTERED',
-    q: options.q,
-    categoryId: options.categoryId,
-    brandId: options.brandId,
-    filter_gender: options.filterGender,
-    publishStatus: options.publishStatus,
-    stockState: options.stockState,
-    includeDraft: options.includeDraft ? 'true' : undefined,
-    includeTrash: options.includeTrash ? 'true' : undefined,
-    ids: Array.isArray(ids) ? ids.join(',') : ids,
-    preset: options.preset || 'PRICING',
-    columns: Array.isArray(columns) && columns.length > 0 ? columns.join(',') : columns,
-    columnGroups: Array.isArray(columnGroups) && columnGroups.length > 0 ? columnGroups.join(',') : columnGroups,
-  }, 'sanpham.csv')
+  return fetchCsvBlob(
+    '/admin/products/export.csv',
+    {
+      scope: options.scope || 'FILTERED',
+      q: options.q,
+      categoryId: options.categoryId,
+      brandId: options.brandId,
+      filter_gender: options.filterGender,
+      publishStatus: options.publishStatus,
+      stockState: options.stockState,
+      includeDraft: options.includeDraft ? 'true' : undefined,
+      includeTrash: options.includeTrash ? 'true' : undefined,
+      ids: Array.isArray(ids) ? ids.join(',') : ids,
+      preset: options.preset || 'PRICING',
+      columns: Array.isArray(columns) && columns.length > 0 ? columns.join(',') : columns,
+      columnGroups:
+        Array.isArray(columnGroups) && columnGroups.length > 0
+          ? columnGroups.join(',')
+          : columnGroups,
+    },
+    'sanpham.csv',
+  )
 }
 
 // Inventory
@@ -2234,7 +2391,11 @@ export async function fetchDashboardSummary(period = '30d') {
   try {
     const payload = await requestJson(`/admin/dashboard?period=${period}`)
     if (!payload?.data) {
-      throw new ApiClientError('Dashboard response missing data.', 500, 'INVALID_DASHBOARD_RESPONSE')
+      throw new ApiClientError(
+        'Dashboard response missing data.',
+        500,
+        'INVALID_DASHBOARD_RESPONSE',
+      )
     }
     return { data: payload.data }
   } catch (error) {
@@ -2297,10 +2458,17 @@ export async function deleteRole(roleId) {
 
 export async function fetchHomepageBlocks() {
   const payload = await requestJson('/admin/products', {
-    query: { homepageBlock: 'FEATURED_GRID', size: 20, sort: 'homepageOrder:asc', lang: getContentLang() },
+    query: {
+      homepageBlock: 'FEATURED_GRID',
+      size: 20,
+      sort: 'homepageOrder:asc',
+      lang: getContentLang(),
+    },
   })
   return {
-    featuredGrid: (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? [])).map(normalizeProduct),
+    featuredGrid: (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? [])).map(
+      normalizeProduct,
+    ),
   }
 }
 
@@ -2319,7 +2487,11 @@ function normalizeAdminNotification(input) {
   const s = input && typeof input === 'object' ? input : {}
   let parsed = {}
   if (typeof s.payload === 'string') {
-    try { parsed = JSON.parse(s.payload) } catch { parsed = {} }
+    try {
+      parsed = JSON.parse(s.payload)
+    } catch {
+      parsed = {}
+    }
   } else if (s.payload && typeof s.payload === 'object') {
     parsed = s.payload
   }

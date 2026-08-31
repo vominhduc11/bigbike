@@ -83,15 +83,17 @@ export function formatRelativeTime(value, t) {
   const hr = Math.round(min / 60)
   const day = Math.round(hr / 24)
 
-  const tt = t || ((k, o) => {
-    const map = {
-      'time.justNow': 'vừa xong',
-      'time.minutesAgo': `${o?.count} phút trước`,
-      'time.hoursAgo': `${o?.count} giờ trước`,
-      'time.daysAgo': `${o?.count} ngày trước`,
-    }
-    return map[k] || k
-  })
+  const tt =
+    t ||
+    ((k, o) => {
+      const map = {
+        'time.justNow': 'vừa xong',
+        'time.minutesAgo': `${o?.count} phút trước`,
+        'time.hoursAgo': `${o?.count} giờ trước`,
+        'time.daysAgo': `${o?.count} ngày trước`,
+      }
+      return map[k] || k
+    })
 
   if (sec < 60) return tt('time.justNow')
   if (min < 60) return tt('time.minutesAgo', { count: min })

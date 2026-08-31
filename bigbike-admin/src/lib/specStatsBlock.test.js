@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { serializeSpecStats, parseSpecStatsFromHtml, parseSpecStatsResult, mergeSpecStatsIntoHtml } from './specStatsBlock'
+import {
+  serializeSpecStats,
+  parseSpecStatsFromHtml,
+  parseSpecStatsResult,
+  mergeSpecStatsIntoHtml,
+} from './specStatsBlock'
 
 const stat = (value, label) => ({ value, label })
 const trim = (s) => ({ value: s.value, label: s.label })
@@ -12,7 +17,10 @@ describe('serializeSpecStats', () => {
   })
 
   it('xuất lưới bb-specstats với value + label (2 dòng)', () => {
-    const html = serializeSpecStats([stat('1.350', 'Trọng lượng'), stat('ECE 22.06', 'Chuẩn an toàn')])
+    const html = serializeSpecStats([
+      stat('1.350', 'Trọng lượng'),
+      stat('ECE 22.06', 'Chuẩn an toàn'),
+    ])
     expect(html).toContain('class="bb-specstats"')
     expect(html).toContain('1.350')
     expect(html).toContain('Trọng lượng')
@@ -48,25 +56,29 @@ describe('parseSpecStatsFromHtml', () => {
     expect(parsed.every((s) => s._key)).toBe(true)
   })
 
-	it('back-compat: HTML legacy 3 span (dòng đơn vị cũ) → chỉ lấy value + label', () => {
+  it('back-compat: HTML legacy 3 span (dòng đơn vị cũ) → chỉ lấy value + label', () => {
     const html =
       '<div class="bb-specstats" style="display:grid"><div style="color:red">' +
       '<span>10</span><span>tháng</span><span>Năm</span></div></div>'
     expect(parseSpecStatsFromHtml(html).map(trim)).toEqual([stat('10', 'Năm')])
-	})
+  })
 
-	it('đọc ô thông thường có số liệu đậm và nhãn', () => {
-		const result = parseSpecStatsResult('<div><strong>1.350 gram</strong><span>Trọng lượng</span></div>')
-		expect(result.items.map(trim)).toEqual([stat('1.350 gram', 'Trọng lượng')])
-	})
+  it('đọc ô thông thường có số liệu đậm và nhãn', () => {
+    const result = parseSpecStatsResult(
+      '<div><strong>1.350 gram</strong><span>Trọng lượng</span></div>',
+    )
+    expect(result.items.map(trim)).toEqual([stat('1.350 gram', 'Trọng lượng')])
+  })
 
-	it('đọc HTML thông thường dạng tiêu đề + đoạn văn', () => {
-		expect(parseSpecStatsResult('<h3>1.350 gram</h3><p>Trọng lượng</p>').items.map(trim)).toEqual([stat('1.350 gram', 'Trọng lượng')])
-	})
+  it('đọc HTML thông thường dạng tiêu đề + đoạn văn', () => {
+    expect(parseSpecStatsResult('<h3>1.350 gram</h3><p>Trọng lượng</p>').items.map(trim)).toEqual([
+      stat('1.350 gram', 'Trọng lượng'),
+    ])
+  })
 
-	it('HTML không có dấu hiệu ô số liệu không được nhận', () => {
-		expect(parseSpecStatsResult('<div>Chỉ có một đoạn văn</div>').acceptedCount).toBe(0)
-	})
+  it('HTML không có dấu hiệu ô số liệu không được nhận', () => {
+    expect(parseSpecStatsResult('<div>Chỉ có một đoạn văn</div>').acceptedCount).toBe(0)
+  })
 })
 
 describe('mergeSpecStatsIntoHtml', () => {

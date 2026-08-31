@@ -5,16 +5,22 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import {
-  DndContext,
-  closestCenter,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  GripVertical,
+  ImageOff,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Undo2,
+} from 'lucide-react'
+import { DndContext, closestCenter } from '@dnd-kit/core'
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDragSensors, SortableRow } from '../components/Sortable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -26,7 +32,16 @@ import { FilterChips } from '../components/FilterChips'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
 import { RecentItemsChips } from '../components/RecentItemsChips'
-import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory, previewCategoryPermanentDelete } from '../lib/adminApi'
+import {
+  fetchCategories,
+  fetchCategoryDetail,
+  fetchCategoryTree,
+  updateCategory,
+  softDeleteCategory,
+  restoreCategory,
+  hardDeleteCategory,
+  previewCategoryPermanentDelete,
+} from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -89,26 +104,31 @@ function highlightMatch(text, term) {
 function SortableTreeRow({ category, depth, renderCategoryRow }) {
   return (
     <SortableRow id={category.id}>
-      {(sortable) => renderCategoryRow(category, depth, {
-        setNodeRef: sortable.setNodeRef,
-        attributes: sortable.attributes,
-        listeners: sortable.listeners,
-        isDragging: sortable.isDragging,
-        style: { ...sortable.style, zIndex: sortable.isDragging ? 2 : undefined },
-      })}
+      {(sortable) =>
+        renderCategoryRow(category, depth, {
+          setNodeRef: sortable.setNodeRef,
+          attributes: sortable.attributes,
+          listeners: sortable.listeners,
+          isDragging: sortable.isDragging,
+          style: { ...sortable.style, zIndex: sortable.isDragging ? 2 : undefined },
+        })
+      }
     </SortableRow>
   )
 }
 
 export function CategoryListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
-  const categoryColumns = useMemo(() => [
-    { key: 'category', label: t('categories.colCategory'), hideable: false },
-    { key: 'visibility', label: t('categories.colVisibility') },
-    { key: 'homepage', label: t('categories.colHomepage') },
-    { key: 'updatedAt', label: t('categories.colUpdated') },
-    { key: 'actions', label: t('categories.colActions'), hideable: false },
-  ], [t])
+  const categoryColumns = useMemo(
+    () => [
+      { key: 'category', label: t('categories.colCategory'), hideable: false },
+      { key: 'visibility', label: t('categories.colVisibility') },
+      { key: 'homepage', label: t('categories.colHomepage') },
+      { key: 'updatedAt', label: t('categories.colUpdated') },
+      { key: 'actions', label: t('categories.colActions'), hideable: false },
+    ],
+    [t],
+  )
   const {
     hiddenKeys: hiddenCategoryColumnKeys,
     toggle: toggleCategoryColumn,
@@ -133,7 +153,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // O9: danh mục vừa mở gần đây (ghi lại từ CategoryDetailScreen khi mount).
   const recentCategoryItems = useRecentItems('recent:categories')
 
-  const paginatedState = useAdminList(['categories', query, contentLang], () => fetchCategories(query))
+  const paginatedState = useAdminList(['categories', query, contentLang], () =>
+    fetchCategories(query),
+  )
 
   // N2: đọc thêm isError/error/refetch riêng của query cây — trước đây lỗi ở
   // đây bị nuốt im lặng, buộc màn hình rơi vĩnh viễn về "Dạng danh sách" mà
@@ -160,18 +182,19 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   const orderedAllItems = useMemo(() => {
     if (!orderOverride) return allItems
-    return allItems.map((c) => orderOverride.has(c.id)
-      ? { ...c, sortOrder: orderOverride.get(c.id) }
-      : c)
+    return allItems.map((c) =>
+      orderOverride.has(c.id) ? { ...c, sortOrder: orderOverride.get(c.id) } : c,
+    )
   }, [allItems, orderOverride])
 
   // Tree mode runs whenever no visibility/sort filter is set — even with
   // search active, because we now keep the tree structure and just dim
   // non-matching rows. Only an explicit visibility/sort filter falls back
   // to flat-paginated mode.
-  const isTreeShape = (!query.visibility || query.visibility === 'ALL')
-    && (query.sort === 'sortOrder:asc' || !query.sort)
-    && !query.deleted
+  const isTreeShape =
+    (!query.visibility || query.visibility === 'ALL') &&
+    (query.sort === 'sortOrder:asc' || !query.sort) &&
+    !query.deleted
 
   const treeRows = useMemo(() => {
     if (!isTreeShape) return []
@@ -188,10 +211,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const ancestors = new Set()
     for (const cat of allItems) {
       if (
-        foldSearchText(cat.name).includes(searchTerm)
-        || foldSearchText(cat.nameEn).includes(searchTerm)
-        || foldSearchText(cat.slug).includes(searchTerm)
-        || foldSearchText(cat.slugEn).includes(searchTerm)
+        foldSearchText(cat.name).includes(searchTerm) ||
+        foldSearchText(cat.nameEn).includes(searchTerm) ||
+        foldSearchText(cat.slug).includes(searchTerm) ||
+        foldSearchText(cat.slugEn).includes(searchTerm)
       ) {
         matched.add(cat.id)
         let cur = cat.parentId ? byId.get(cat.parentId) : null
@@ -227,7 +250,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   }, [query])
 
   useEffect(() => {
-    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
@@ -240,7 +266,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       const previousQueries = queryClient.getQueriesData({ queryKey: ['categories'] })
       queryClient.setQueriesData({ queryKey: ['categories'] }, (old) => {
         if (!old?.items) return old
-        return { ...old, items: old.items.map((c) => (c.id === id ? { ...c, isVisible: visible } : c)) }
+        return {
+          ...old,
+          items: old.items.map((c) => (c.id === id ? { ...c, isVisible: visible } : c)),
+        }
       })
       return { previousQueries }
     },
@@ -258,7 +287,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             onClick: () => {
               if (toggleVisibilityMutation.isPending) return
               setTogglingId(variables.id)
-              toggleVisibilityMutation.mutate({ id: variables.id, visible: !variables.visible, _isUndo: true })
+              toggleVisibilityMutation.mutate({
+                id: variables.id,
+                visible: !variables.visible,
+                _isUndo: true,
+              })
             },
           },
           duration: 6000,
@@ -276,18 +309,24 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   async function handleToggleVisibility(category) {
     // Block individual toggle while a bulk action is in flight too — both
     // hit the same endpoint and we don't have transactional batching.
-    if (!canUpdate || category.id === 'uncategorized' || toggleVisibilityMutation.isPending || bulkProgress) return
+    if (
+      !canUpdate ||
+      category.id === 'uncategorized' ||
+      toggleVisibilityMutation.isPending ||
+      bulkProgress
+    )
+      return
     const willBeVisible = !category.isVisible
     const confirmed = await showConfirm(
       willBeVisible
         ? t('categories.showConfirm', {
-          name: category.name,
-          defaultValue: `Hiện danh mục ${category.name} trên website?`,
-        })
+            name: category.name,
+            defaultValue: `Hiện danh mục ${category.name} trên website?`,
+          })
         : t('categories.hideConfirm', {
-          name: category.name,
-          defaultValue: `Ẩn danh mục ${category.name} khỏi website? Danh mục này không bị chuyển vào Thùng rác.`,
-        }),
+            name: category.name,
+            defaultValue: `Ẩn danh mục ${category.name} khỏi website? Danh mục này không bị chuyển vào Thùng rác.`,
+          }),
       willBeVisible
         ? t('categories.showConfirmTitle', { defaultValue: 'Xác nhận hiện trên website' })
         : t('categories.hideConfirmTitle', { defaultValue: 'Xác nhận ẩn khỏi website' }),
@@ -514,9 +553,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     // only roots. With "expand only roots" the user still has to click
     // through level 2 to see level 3, which contradicts what the label
     // says.
-    const parentIds = new Set(
-      allItems.map((c) => c.parentId).filter((id) => id != null),
-    )
+    const parentIds = new Set(allItems.map((c) => c.parentId).filter((id) => id != null))
     setExpandedIds(parentIds)
   }
   function collapseAll() {
@@ -535,10 +572,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       if (!item) return
       try {
         sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
-      } catch { /* quota */ }
+      } catch {
+        /* quota */
+      }
       navigate('/admin/categories/new')
     } catch {
-      toast.error(t('categories.dupLoadError', { defaultValue: 'Không thể tải dữ liệu danh mục để sao chép.' }))
+      toast.error(
+        t('categories.dupLoadError', {
+          defaultValue: 'Không thể tải dữ liệu danh mục để sao chép.',
+        }),
+      )
     } finally {
       setRowActionBusy(null)
     }
@@ -549,7 +592,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('categories.deleteConfirm', { name: category.name }),
       t('common.moveToTrashTitle'),
-      { confirmLabel: t('common.moveToTrash'), variant: 'default' }
+      { confirmLabel: t('common.moveToTrash'), variant: 'default' },
     )
     if (!confirmed) return
 
@@ -558,7 +601,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       await softDeleteCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
-      toast.success(t('categories.deleteSuccess', { defaultValue: 'Đã chuyển danh mục vào Thùng rác.' }))
+      toast.success(
+        t('categories.deleteSuccess', { defaultValue: 'Đã chuyển danh mục vào Thùng rác.' }),
+      )
     } catch (error) {
       toast.error(error.message || t('common.error'))
     } finally {
@@ -571,7 +616,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('categories.restoreConfirm', { name: category.name }),
       t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
-      { confirmLabel: t('products.restore'), variant: 'default' }
+      { confirmLabel: t('products.restore'), variant: 'default' },
     )
     if (!confirmed) return
 
@@ -580,7 +625,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       await restoreCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
-      toast.success(t('categories.restoreSuccess', { defaultValue: 'Khôi phục danh mục thành công.' }))
+      toast.success(
+        t('categories.restoreSuccess', { defaultValue: 'Khôi phục danh mục thành công.' }),
+      )
     } catch (error) {
       toast.error(error.message || t('common.error'))
     } finally {
@@ -607,7 +654,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         reassignedProductCount: impact.reassignedProductCount,
       }),
       t('common.permanentDeleteTitle'),
-      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' },
     )
     if (!confirmed) {
       setRowActionBusy(null)
@@ -618,7 +665,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       await hardDeleteCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
-      toast.success(t('categories.permanentDeleteSuccess', { defaultValue: 'Xoá vĩnh viễn danh mục thành công.' }))
+      toast.success(
+        t('categories.permanentDeleteSuccess', {
+          defaultValue: 'Xoá vĩnh viễn danh mục thành công.',
+        }),
+      )
     } catch (error) {
       toast.error(error.message || t('common.error'))
     } finally {
@@ -702,12 +753,24 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   ) : null
 
   const categoryTableColumns = [
-    ...(canUpdate ? [{ key: 'selection', label: selectAllCheckbox, headerClassName: 'w-12 text-center' }] : []),
+    ...(canUpdate
+      ? [{ key: 'selection', label: selectAllCheckbox, headerClassName: 'w-12 text-center' }]
+      : []),
     { key: 'category', label: t('categories.colCategory') },
-    ...(isCategoryColumnVisible('visibility') ? [{ key: 'visibility', label: t('categories.colVisibility') }] : []),
-    ...(isCategoryColumnVisible('homepage') ? [{ key: 'homepage', label: t('categories.colHomepage') }] : []),
-    ...(isCategoryColumnVisible('updatedAt') ? [{ key: 'updatedAt', label: t('categories.colUpdated'), align: 'right' }] : []),
-    { key: 'actions', label: <span className="sr-only">{t('common.actions')}</span>, align: 'right' },
+    ...(isCategoryColumnVisible('visibility')
+      ? [{ key: 'visibility', label: t('categories.colVisibility') }]
+      : []),
+    ...(isCategoryColumnVisible('homepage')
+      ? [{ key: 'homepage', label: t('categories.colHomepage') }]
+      : []),
+    ...(isCategoryColumnVisible('updatedAt')
+      ? [{ key: 'updatedAt', label: t('categories.colUpdated'), align: 'right' }]
+      : []),
+    {
+      key: 'actions',
+      label: <span className="sr-only">{t('common.actions')}</span>,
+      align: 'right',
+    },
   ]
 
   // Thao tác dòng danh mục dùng chung cho bảng và thẻ mobile.
@@ -731,14 +794,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             disabled: rowBusy,
             onSelect: () => navigate(detailPath),
           },
-          canUpdate && !isSystemCategory && !query.deleted && {
-            key: 'visibility',
-            label: visibilityLabel,
-            icon: category.isVisible ? EyeOff : Eye,
-            loading: togglingId === category.id,
-            disabled: rowBusy || toggleVisibilityMutation.isPending,
-            onSelect: () => handleToggleVisibility(category),
-          },
+          canUpdate &&
+            !isSystemCategory &&
+            !query.deleted && {
+              key: 'visibility',
+              label: visibilityLabel,
+              icon: category.isVisible ? EyeOff : Eye,
+              loading: togglingId === category.id,
+              disabled: rowBusy || toggleVisibilityMutation.isPending,
+              onSelect: () => handleToggleVisibility(category),
+            },
         ]}
         menuActions={[
           storefrontAvailable && {
@@ -750,38 +815,46 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             target: '_blank',
             rel: 'noopener noreferrer',
           },
-          canUpdate && !isSystemCategory && !query.deleted && {
-            key: 'duplicate',
-            label: t('categories.duplicate'),
-            icon: Copy,
-            disabled: rowBusy,
-            onSelect: () => handleDuplicate(category),
-          },
-          canUpdate && !isSystemCategory && !query.deleted && {
-            key: 'delete',
-            label: t('common.delete'),
-            icon: Trash2,
-            tone: 'danger',
-            separatorBefore: true,
-            disabled: rowBusy,
-            onSelect: () => handleSoftDelete(category),
-          },
-          canUpdate && !isSystemCategory && query.deleted && {
-            key: 'restore',
-            label: t('products.restore'),
-            icon: Undo2,
-            disabled: rowBusy,
-            onSelect: () => handleRestore(category),
-          },
-          canUpdate && !isSystemCategory && query.deleted && {
-            key: 'permanent-delete',
-            label: t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' }),
-            icon: Trash2,
-            tone: 'danger',
-            separatorBefore: true,
-            disabled: rowBusy,
-            onSelect: () => handlePermanentDelete(category),
-          },
+          canUpdate &&
+            !isSystemCategory &&
+            !query.deleted && {
+              key: 'duplicate',
+              label: t('categories.duplicate'),
+              icon: Copy,
+              disabled: rowBusy,
+              onSelect: () => handleDuplicate(category),
+            },
+          canUpdate &&
+            !isSystemCategory &&
+            !query.deleted && {
+              key: 'delete',
+              label: t('common.delete'),
+              icon: Trash2,
+              tone: 'danger',
+              separatorBefore: true,
+              disabled: rowBusy,
+              onSelect: () => handleSoftDelete(category),
+            },
+          canUpdate &&
+            !isSystemCategory &&
+            query.deleted && {
+              key: 'restore',
+              label: t('products.restore'),
+              icon: Undo2,
+              disabled: rowBusy,
+              onSelect: () => handleRestore(category),
+            },
+          canUpdate &&
+            !isSystemCategory &&
+            query.deleted && {
+              key: 'permanent-delete',
+              label: t('common.permanentDelete', { defaultValue: 'Xoá vĩnh viễn' }),
+              icon: Trash2,
+              tone: 'danger',
+              separatorBefore: true,
+              disabled: rowBusy,
+              onSelect: () => handlePermanentDelete(category),
+            },
         ]}
       />
     )
@@ -790,30 +863,32 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // Thẻ mobile cho 1 danh mục — thay bảng cuộn ngang trên điện thoại (P2-2).
   // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
   const mobileCategoryCard = (category) => ({
-        title: formatText(category.name),
-        subtitle: category.slug ? `/${category.slug}` : undefined,
-        status: <StatusBadge type="visibility" status={category.isVisible} />,
-        meta: [
-          {
-            label: t('categories.colHomepage'),
-            value: category.showOnHomepage === true
-              ? t('common.yes')
-              : category.showOnHomepage === false
-                ? t('common.no')
-                : t('common.unknown'),
-          },
-          { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
-        ],
-        onClick: () => navigate(`/admin/categories/${category.id}`),
-        selectionLabel: t('categories.selectRowAria'),
-        selectable: canUpdate && category.id !== 'uncategorized',
-        selected: selectedIds.has(category.id),
-        onSelectChange: () => toggleSelected(category.id),
-        actions: renderCategoryRowActions(category),
-      })
+    title: formatText(category.name),
+    subtitle: category.slug ? `/${category.slug}` : undefined,
+    status: <StatusBadge type="visibility" status={category.isVisible} />,
+    meta: [
+      {
+        label: t('categories.colHomepage'),
+        value:
+          category.showOnHomepage === true
+            ? t('common.yes')
+            : category.showOnHomepage === false
+              ? t('common.no')
+              : t('common.unknown'),
+      },
+      { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
+    ],
+    onClick: () => navigate(`/admin/categories/${category.id}`),
+    selectionLabel: t('categories.selectRowAria'),
+    selectable: canUpdate && category.id !== 'uncategorized',
+    selected: selectedIds.has(category.id),
+    onSelectChange: () => toggleSelected(category.id),
+    actions: renderCategoryRowActions(category),
+  })
 
   const renderCategoryRow = (category, depth = 0, sortableProps = null) => {
-    const hasChildren = useTreeMode && treeRows.some((r) => r.parentId === category.id && r._depth > 0)
+    const hasChildren =
+      useTreeMode && treeRows.some((r) => r.parentId === category.id && r._depth > 0)
     const isExpanded = expandedIds.has(category.id)
     const goToDetail = () => navigate(`/admin/categories/${category.id}`)
     const isMatch = category._isMatch
@@ -833,7 +908,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           sortableProps?.isDragging && 'cat-row--dragging',
           dragSavingId === category.id && 'cat-row--saving',
           visibilityRowAccent(category.isVisible),
-        ].filter(Boolean).join(' ')}>
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {canUpdate && (
           <TableCell className="cat-select-cell">
             <Checkbox
@@ -841,7 +919,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               checked={selectedIds.has(category.id)}
               onCheckedChange={() => toggleSelected(category.id)}
               disabled={category.id === 'uncategorized' || Boolean(bulkProgress)}
-             />
+            />
           </TableCell>
         )}
         {/* Name cell with tree indent */}
@@ -849,7 +927,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <div className="cat-name-cell" style={{ paddingLeft: depth * 20 }}>
             {/* Drag handle (tree mode only, no search active) */}
             {useTreeMode && canUpdate && sortableProps && !searchTerm && (
-              <Button variant="unstyled"
+              <Button
+                variant="unstyled"
                 type="button"
                 className="cat-drag-handle"
                 aria-label={t('categories.dragHandle')}
@@ -861,7 +940,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               </Button>
             )}
             {useTreeMode && hasChildren ? (
-              <Button variant="unstyled"
+              <Button
+                variant="unstyled"
                 type="button"
                 className={`cat-expand-btn${isExpanded ? ' is-open' : ''}`}
                 onClick={() => toggleExpand(category.id)}
@@ -877,7 +957,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               <div className="cat-thumb-hover shrink-0">
                 <span className="bb-product-thumb">
                   {category.image?.url ? (
-                    <img src={category.image.url} alt={category.image.alt || category.name} referrerPolicy="no-referrer" loading="lazy" />
+                    <img
+                      src={category.image.url}
+                      alt={category.image.alt || category.name}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                    />
                   ) : (
                     <span className="thumbnail-placeholder" aria-hidden="true">
                       <ImageOff size={14} />
@@ -902,12 +987,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 }}
               >
                 <strong>
-                  {searchTerm ? highlightMatch(formatText(category.name), searchTerm) : formatText(category.name)}
+                  {searchTerm
+                    ? highlightMatch(formatText(category.name), searchTerm)
+                    : formatText(category.name)}
                 </strong>
                 <span className="bb-cell-sub cat-slug">
-                  {category.slug
-                    ? <>/{searchTerm ? highlightMatch(category.slug, searchTerm) : category.slug}</>
-                    : '—'}
+                  {category.slug ? (
+                    <>/{searchTerm ? highlightMatch(category.slug, searchTerm) : category.slug}</>
+                  ) : (
+                    '—'
+                  )}
                 </span>
               </a>
             </div>
@@ -917,7 +1006,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         {/* Display status */}
         {isCategoryColumnVisible('visibility') && (
           <TableCell>
-            <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
+            <StatusBadge
+              type="visibility"
+              status={category.isVisible}
+              className="cat-status-badge"
+            />
           </TableCell>
         )}
 
@@ -937,25 +1030,26 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         {/* Updated */}
         {isCategoryColumnVisible('updatedAt') && (
           <TableCell className="text-right">
-            <span className="text-xs text-muted-foreground">{formatDateTime(category.updatedAt)}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDateTime(category.updatedAt)}
+            </span>
           </TableCell>
         )}
 
         {/* Actions */}
-        <TableCell className="text-right">
-          {renderCategoryRowActions(category)}
-        </TableCell>
+        <TableCell className="text-right">{renderCategoryRowActions(category)}</TableCell>
       </TableRow>
     )
   }
 
-  const sortLabelKey = query.sort === 'updatedAt:desc'
-    ? 'newestUpdated'
-    : query.sort === 'updatedAt:asc'
-      ? 'oldestUpdated'
-      : query.sort === 'name:asc'
-        ? 'nameAZ'
-        : 'sortOrder'
+  const sortLabelKey =
+    query.sort === 'updatedAt:desc'
+      ? 'newestUpdated'
+      : query.sort === 'updatedAt:asc'
+        ? 'oldestUpdated'
+        : query.sort === 'name:asc'
+          ? 'nameAZ'
+          : 'sortOrder'
 
   const activeFilterChips = []
   if (query.search) {
@@ -986,9 +1080,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     activeFilterChips.push({
       key: 'visibility',
       label: t('categories.filterChipVisibility', {
-        value: query.visibility === 'VISIBLE'
-          ? t('categories.filterVisibilityVisible')
-          : t('categories.filterVisibilityHidden'),
+        value:
+          query.visibility === 'VISIBLE'
+            ? t('categories.filterVisibilityVisible')
+            : t('categories.filterVisibilityHidden'),
       }),
       removeLabel: t('categories.removeFilter', { filter: t('categories.filterVisibility') }),
       onRemove: () => updateQuery({ visibility: 'ALL' }, { resetPage: true }),
@@ -997,7 +1092,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   if (query.sort !== 'sortOrder:asc') {
     activeFilterChips.push({
       key: 'sort',
-      label: t('categories.filterChipSort', { value: t(`sort.${sortLabelKey}`, { defaultValue: t('common.unknown') }) }),
+      label: t('categories.filterChipSort', {
+        value: t(`sort.${sortLabelKey}`, { defaultValue: t('common.unknown') }),
+      }),
       removeLabel: t('categories.removeFilter', { filter: t('categories.filterSort') }),
       onRemove: () => updateQuery({ sort: 'sortOrder:asc' }, { resetPage: true }),
     })
@@ -1008,13 +1105,17 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const resultSummary = useTreeMode
     ? t('categories.resultSummaryTree', { shown: visibleTreeRows.length, total: allItems.length })
     : flatModeStatus === 'success'
-      ? t('categories.resultSummaryFlat', { count: paginatedState.pagination?.totalItems ?? flatItems.length })
+      ? t('categories.resultSummaryFlat', {
+          count: paginatedState.pagination?.totalItems ?? flatItems.length,
+        })
       : ''
 
   const resultAnnounce = useTreeMode
     ? t('categories.resultsAnnounceTree', { shown: visibleTreeRows.length, total: allItems.length })
     : flatModeStatus === 'success'
-      ? t('categories.resultsAnnounce', { count: paginatedState.pagination?.totalItems ?? flatItems.length })
+      ? t('categories.resultsAnnounce', {
+          count: paginatedState.pagination?.totalItems ?? flatItems.length,
+        })
       : ''
 
   return (
@@ -1022,22 +1123,35 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       <ScreenHeader
         group="products"
         title={t('categories.title')}
-        actions={canUpdate ? (
-          <Button type="button" className="min-h-11" onClick={() => navigate('/admin/categories/new')}>
-            <Plus size={16} aria-hidden="true" />
-            {t('categories.create')}
-          </Button>
-        ) : null}
+        actions={
+          canUpdate ? (
+            <Button
+              type="button"
+              className="min-h-11"
+              onClick={() => navigate('/admin/categories/new')}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {t('categories.create')}
+            </Button>
+          ) : null
+        }
       />
 
       {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentCategoryItems} onSelect={(item) => navigate(`/admin/categories/${item.id}`)} />
+      <RecentItemsChips
+        items={recentCategoryItems}
+        onSelect={(item) => navigate(`/admin/categories/${item.id}`)}
+      />
 
-      {!canUpdate
-        ? <ReadOnlyBanner warning={t('categories.readOnlyListHint', { defaultValue: 'Bạn chỉ có quyền xem danh mục; mọi thao tác thay đổi đều bị khóa.' })} />
-        : paginatedState.warning
-          ? <ReadOnlyBanner warning={paginatedState.warning} />
-          : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner
+          warning={t('categories.readOnlyListHint', {
+            defaultValue: 'Bạn chỉ có quyền xem danh mục; mọi thao tác thay đổi đều bị khóa.',
+          })}
+        />
+      ) : paginatedState.warning ? (
+        <ReadOnlyBanner warning={paginatedState.warning} />
+      ) : null}
 
       {/* N2: query cây lỗi trước đây bị nuốt im lặng — rơi vĩnh viễn về "Dạng
           danh sách" không cảnh báo, và bấm lại tab "Dạng cây" không refetch.
@@ -1076,7 +1190,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ariaLabel={t('categories.filterTrash', { defaultValue: 'Trạng thái' })}
           options={[
             { value: 'ACTIVE', label: t('categories.filterActive', { defaultValue: 'Hoạt động' }) },
-            { value: 'TRASH', label: t('categories.filterTrashTab', { defaultValue: 'Thùng rác' }) },
+            {
+              value: 'TRASH',
+              label: t('categories.filterTrashTab', { defaultValue: 'Thùng rác' }),
+            },
           ]}
         />
         <FilterSelect
@@ -1112,11 +1229,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           onToggle={toggleCategoryColumn}
         />
         <div className="flex min-w-full flex-wrap items-center gap-3 border-t border-border pt-3">
-          <div
-            className="bb-seg"
-            role="tablist"
-            aria-label={t('categories.viewModeAria')}
-          >
+          <div className="bb-seg" role="tablist" aria-label={t('categories.viewModeAria')}>
             <Button
               variant="unstyled"
               type="button"
@@ -1125,7 +1238,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               disabled={query.deleted}
               title={query.deleted ? t('categories.viewModeTreeUnavailableTrash') : undefined}
               className={isTreeShape ? 'active' : undefined}
-              onClick={() => updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })}
+              onClick={() =>
+                updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })
+              }
             >
               {t('categories.viewModeTree')}
             </Button>
@@ -1163,7 +1278,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               disabled={isRefreshing}
               onClick={() => (useTreeMode ? refetchTree() : paginatedState.refetch())}
             >
-              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
+              <RefreshCw
+                size={16}
+                className={isRefreshing ? 'animate-spin' : undefined}
+                aria-hidden="true"
+              />
               {t('common.refresh', { defaultValue: 'Làm mới' })}
             </Button>
           </div>
@@ -1191,40 +1310,47 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           trước đây là do truyền chuỗi đã-dịch cho trường hợp thường — nay
           truyền số thô để khớp Order/Product list. */}
       <BulkActionBar
-        selectedCount={canUpdate && selectedIds.size > 0
-          ? (bulkProgress
-            ? t('categories.bulkProcessing', { done: bulkProgress.done, total: bulkProgress.total })
-            : selectedIds.size)
-          : null}
+        selectedCount={
+          canUpdate && selectedIds.size > 0
+            ? bulkProgress
+              ? t('categories.bulkProcessing', {
+                  done: bulkProgress.done,
+                  total: bulkProgress.total,
+                })
+              : selectedIds.size
+            : null
+        }
         onClear={clearSelection}
         closeLabel={t('categories.bulkClear')}
-        actions={query.deleted
-          ? [
-            {
-              label: t('products.restore'),
-              onClick: () => runBulkTrash('restore'),
-              disabled: Boolean(bulkProgress),
-            },
-            {
-              label: t('common.permanentDelete'),
-              tone: 'danger',
-              onClick: () => runBulkTrash('permanentDelete'),
-              disabled: Boolean(bulkProgress),
-            },
-          ]
-          : [
-            {
-              label: t('categories.bulkShow'),
-              onClick: () => runBulkVisibility(true),
-              disabled: Boolean(bulkProgress),
-            },
-            {
-              label: t('categories.bulkHide'),
-              tone: 'danger',
-              onClick: () => runBulkVisibility(false),
-              disabled: Boolean(bulkProgress),
-            },
-          ]}
+        actions={
+          query.deleted
+            ? [
+                {
+                  label: t('products.restore'),
+                  onClick: () => runBulkTrash('restore'),
+                  disabled: Boolean(bulkProgress),
+                },
+                {
+                  label: t('common.permanentDelete'),
+                  tone: 'danger',
+                  onClick: () => runBulkTrash('permanentDelete'),
+                  disabled: Boolean(bulkProgress),
+                },
+              ]
+            : [
+                {
+                  label: t('categories.bulkShow'),
+                  onClick: () => runBulkVisibility(true),
+                  disabled: Boolean(bulkProgress),
+                },
+                {
+                  label: t('categories.bulkHide'),
+                  tone: 'danger',
+                  onClick: () => runBulkVisibility(false),
+                  disabled: Boolean(bulkProgress),
+                },
+              ]
+        }
       />
 
       {/* ── Tree mode ── */}
@@ -1242,28 +1368,37 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             />
           ) : (
             <DetailSection noPadding>
-                  <DndContext
-                    sensors={dndSensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={visibleTreeRows.map((r) => r.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <AdminTable
-                        columns={categoryTableColumns}
-                        rows={visibleTreeRows}
-                        caption={t('categories.tableCaption')}
-                        renderRow={(row) => canUpdate && !searchTerm
-                          ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
-                          : renderCategoryRow(row, row._depth)}
-                        mobileCard={mobileCategoryCard}
-                        mobileListClassName="p-3"
-                        densityKey="categories"
-                      />
-                    </SortableContext>
-                  </DndContext>
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={visibleTreeRows.map((r) => r.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <AdminTable
+                    columns={categoryTableColumns}
+                    rows={visibleTreeRows}
+                    caption={t('categories.tableCaption')}
+                    renderRow={(row) =>
+                      canUpdate && !searchTerm ? (
+                        <SortableTreeRow
+                          key={row.id}
+                          category={row}
+                          depth={row._depth}
+                          renderCategoryRow={renderCategoryRow}
+                        />
+                      ) : (
+                        renderCategoryRow(row, row._depth)
+                      )
+                    }
+                    mobileCard={mobileCategoryCard}
+                    mobileListClassName="p-3"
+                    densityKey="categories"
+                  />
+                </SortableContext>
+              </DndContext>
             </DetailSection>
           )}
         </div>
@@ -1286,14 +1421,24 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {flatModeStatus === 'success' && flatItems.length === 0 ? (
             <StatePanel
               tone="neutral"
-              title={hasActiveFilters
-                ? t('categories.emptyFiltered')
-                : t('categories.empty')}
-              description={hasActiveFilters
-                ? t('categories.emptyFilteredDesc')
-                : t('categories.emptyDesc')}
-              actionLabel={hasActiveFilters ? t('common.resetFilters') : canUpdate ? t('categories.create') : undefined}
-              onAction={hasActiveFilters ? resetFilters : canUpdate ? () => navigate('/admin/categories/new') : undefined}
+              title={hasActiveFilters ? t('categories.emptyFiltered') : t('categories.empty')}
+              description={
+                hasActiveFilters ? t('categories.emptyFilteredDesc') : t('categories.emptyDesc')
+              }
+              actionLabel={
+                hasActiveFilters
+                  ? t('common.resetFilters')
+                  : canUpdate
+                    ? t('categories.create')
+                    : undefined
+              }
+              onAction={
+                hasActiveFilters
+                  ? resetFilters
+                  : canUpdate
+                    ? () => navigate('/admin/categories/new')
+                    : undefined
+              }
               className="mt-4"
             />
           ) : null}
@@ -1304,15 +1449,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
           {flatModeStatus === 'success' && flatItems.length > 0 ? (
             <DetailSection noPadding className="mt-4">
-                <AdminTable
-                  columns={categoryTableColumns}
-                  rows={flatItems}
-                  caption={t('categories.tableCaption')}
-                  renderRow={(category) => renderCategoryRow(category, 0)}
-                  mobileCard={mobileCategoryCard}
-                  mobileListClassName="p-3"
-                  densityKey="categories"
-                />
+              <AdminTable
+                columns={categoryTableColumns}
+                rows={flatItems}
+                caption={t('categories.tableCaption')}
+                renderRow={(category) => renderCategoryRow(category, 0)}
+                mobileCard={mobileCategoryCard}
+                mobileListClassName="p-3"
+                densityKey="categories"
+              />
               {flatModeStatus === 'success' && (
                 <div className="px-4">
                   <PaginationControls

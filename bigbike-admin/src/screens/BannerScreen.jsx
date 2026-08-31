@@ -19,7 +19,10 @@ import { FormField, ScreenHeader, StickyActionBar } from '@/components/layout'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
-const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(
+  /\/$/,
+  '',
+)
 
 // Ảnh fallback cứng baked trong WpCategoryHero (bigbike-web). Chỉ hiển thị khi cả ảnh riêng
 // lẫn ảnh mặc định chung đều trống — khớp đúng những gì khách thấy.
@@ -54,15 +57,24 @@ function previewSrc(url, { themeAsset = false } = {}) {
 // Ráp nền + gear + tiêu đề như WpCategoryHero để admin thấy đúng kết quả thật.
 function BannerPreview({ bg, illustration, title }) {
   return (
-    <div
-      className="bb-banner-preview"
-    >
+    <div className="bb-banner-preview">
       {bg.src ? (
-        <img src={bg.src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+        <img
+          src={bg.src}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent"
+        aria-hidden="true"
+      />
       <div className="absolute inset-y-0 left-0 flex flex-col justify-center gap-1 px-4 sm:px-6">
-        <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">{title}</span>
+        <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">
+          {title}
+        </span>
         <span className="text-xs text-white/80">Bigbike.vn / {title}</span>
       </div>
       {illustration.src ? (
@@ -91,14 +103,25 @@ function SourceBadge({ source, t }) {
 
 // ── Một ô ảnh ───────────────────────────────────────────────────────────────
 function ImageField({
-  label, hint, value, onChange, alt, onAltChange, recommend, disabled, badge, error,
+  label,
+  hint,
+  value,
+  onChange,
+  alt,
+  onAltChange,
+  recommend,
+  disabled,
+  badge,
+  error,
 }) {
   return (
     <FormField
-      label={<span className="flex items-center gap-2">
-        {label}
-        {badge}
-      </span>}
+      label={
+        <span className="flex items-center gap-2">
+          {label}
+          {badge}
+        </span>
+      }
       helper={hint}
     >
       <ImageUrlInput
@@ -133,7 +156,17 @@ function TextField({ fieldKey, label, value, onChange, disabled, contentLang, er
 
 // ── Thẻ một trang ────────────────────────────────────────────────────────────
 function PageBannerCard({
-  page, get, getEn, set, setEn, defaults, canUpdate, contentLang, t, errors, errorsEn,
+  page,
+  get,
+  getEn,
+  set,
+  setEn,
+  defaults,
+  canUpdate,
+  contentLang,
+  t,
+  errors,
+  errorsEn,
 }) {
   const k = (suffix) => `${page.prefix}_${suffix}`
   const ownBg = get(k('image_url'))
@@ -157,57 +190,57 @@ function PageBannerCard({
 
   return (
     <DetailSection title={pageTitle} headingLevel={3} contentClassName="bb-form-grid">
-        <BannerPreview
-          bg={bg}
-          illustration={illustration}
-          title={activeValue(k('title')) || pageTitle}
-        />
+      <BannerPreview
+        bg={bg}
+        illustration={illustration}
+        title={activeValue(k('title')) || pageTitle}
+      />
 
-        <TextField
-          fieldKey={k('title')}
-          label={t('banners.fieldTitle')}
-          value={activeValue(k('title'))}
-          onChange={(v) => activeSet(k('title'), v)}
-          disabled={!canUpdate}
-          contentLang={contentLang}
-          t={t}
-          error={activeErrors[k('title')]}
-        />
+      <TextField
+        fieldKey={k('title')}
+        label={t('banners.fieldTitle')}
+        value={activeValue(k('title'))}
+        onChange={(v) => activeSet(k('title'), v)}
+        disabled={!canUpdate}
+        contentLang={contentLang}
+        t={t}
+        error={activeErrors[k('title')]}
+      />
 
-        <div className="bb-form-grid bb-form-grid-2">
-          <ImageField
-            label={t('banners.fieldBgDesktop')}
-            hint={t('banners.hintBgDesktop')}
-            value={ownBg}
-            onChange={(url) => set(k('image_url'), url)}
-            alt={activeValue(k('image_alt'))}
-            onAltChange={(alt) => activeSet(k('image_alt'), alt)}
-            recommend={IMAGE_RECO.bannerWide}
-            disabled={!canUpdate}
-            badge={<SourceBadge source={bg.source} t={t} />}
-            error={errors[k('image_url')]}
-          />
-          <ImageField
-            label={t('banners.fieldIllustration')}
-            hint={t('banners.hintIllustration')}
-            value={ownIllu}
-            onChange={(url) => set(k('illustration_url'), url)}
-            recommend={IMAGE_RECO.illustration}
-            disabled={!canUpdate}
-            badge={<SourceBadge source={illustration.source} t={t} />}
-            error={errors[k('illustration_url')]}
-          />
-        </div>
-        <TextField
-          fieldKey={k('image_alt')}
-          label={t('banners.fieldAlt')}
-          value={activeValue(k('image_alt'))}
-          onChange={(v) => activeSet(k('image_alt'), v)}
+      <div className="bb-form-grid bb-form-grid-2">
+        <ImageField
+          label={t('banners.fieldBgDesktop')}
+          hint={t('banners.hintBgDesktop')}
+          value={ownBg}
+          onChange={(url) => set(k('image_url'), url)}
+          alt={activeValue(k('image_alt'))}
+          onAltChange={(alt) => activeSet(k('image_alt'), alt)}
+          recommend={IMAGE_RECO.bannerWide}
           disabled={!canUpdate}
-          contentLang={contentLang}
-          t={t}
-          error={activeErrors[k('image_alt')]}
+          badge={<SourceBadge source={bg.source} t={t} />}
+          error={errors[k('image_url')]}
         />
+        <ImageField
+          label={t('banners.fieldIllustration')}
+          hint={t('banners.hintIllustration')}
+          value={ownIllu}
+          onChange={(url) => set(k('illustration_url'), url)}
+          recommend={IMAGE_RECO.illustration}
+          disabled={!canUpdate}
+          badge={<SourceBadge source={illustration.source} t={t} />}
+          error={errors[k('illustration_url')]}
+        />
+      </div>
+      <TextField
+        fieldKey={k('image_alt')}
+        label={t('banners.fieldAlt')}
+        value={activeValue(k('image_alt'))}
+        onChange={(v) => activeSet(k('image_alt'), v)}
+        disabled={!canUpdate}
+        contentLang={contentLang}
+        t={t}
+        error={activeErrors[k('image_alt')]}
+      />
     </DetailSection>
   )
 }
@@ -221,26 +254,26 @@ function DefaultsCard({ get, set, canUpdate, t, errors }) {
       headingLevel={3}
       contentClassName="bb-form-grid"
     >
-        <div className="bb-form-grid bb-form-grid-2">
-          <ImageField
-            label={t('banners.defaultBg')}
-            hint={t('banners.hintBgDesktop')}
-            value={get('hero_default_bg_url')}
-            onChange={(url) => set('hero_default_bg_url', url)}
-            recommend={IMAGE_RECO.bannerWide}
-            disabled={!canUpdate}
-            error={errors['hero_default_bg_url']}
-          />
-          <ImageField
-            label={t('banners.defaultIllustration')}
-            hint={t('banners.hintIllustration')}
-            value={get('hero_default_illustration_url')}
-            onChange={(url) => set('hero_default_illustration_url', url)}
-            recommend={IMAGE_RECO.illustration}
-            disabled={!canUpdate}
-            error={errors['hero_default_illustration_url']}
-          />
-        </div>
+      <div className="bb-form-grid bb-form-grid-2">
+        <ImageField
+          label={t('banners.defaultBg')}
+          hint={t('banners.hintBgDesktop')}
+          value={get('hero_default_bg_url')}
+          onChange={(url) => set('hero_default_bg_url', url)}
+          recommend={IMAGE_RECO.bannerWide}
+          disabled={!canUpdate}
+          error={errors['hero_default_bg_url']}
+        />
+        <ImageField
+          label={t('banners.defaultIllustration')}
+          hint={t('banners.hintIllustration')}
+          value={get('hero_default_illustration_url')}
+          onChange={(url) => set('hero_default_illustration_url', url)}
+          recommend={IMAGE_RECO.illustration}
+          disabled={!canUpdate}
+          error={errors['hero_default_illustration_url']}
+        />
+      </div>
     </DetailSection>
   )
 }
@@ -248,19 +281,28 @@ function DefaultsCard({ get, set, canUpdate, t, errors }) {
 // ── Thẻ liên kết tới banner ở nơi khác ───────────────────────────────────────
 function CrossLinksCard({ navigate, t }) {
   return (
-    <DetailSection title={t('banners.elsewhereTitle')} headingLevel={3} contentClassName="bb-link-card-list">
-        <div className="bb-link-card-item">
-          <div className="bb-link-card-copy">
-            <FolderTree size={18} className="bb-link-card-icon" />
-            <div>
-              <div className="bb-link-card-title">{t('banners.categoryLinkTitle')}</div>
-              <div className="bb-link-card-desc">{t('banners.categoryLinkDesc')}</div>
-            </div>
+    <DetailSection
+      title={t('banners.elsewhereTitle')}
+      headingLevel={3}
+      contentClassName="bb-link-card-list"
+    >
+      <div className="bb-link-card-item">
+        <div className="bb-link-card-copy">
+          <FolderTree size={18} className="bb-link-card-icon" />
+          <div>
+            <div className="bb-link-card-title">{t('banners.categoryLinkTitle')}</div>
+            <div className="bb-link-card-desc">{t('banners.categoryLinkDesc')}</div>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/admin/categories')}>
-            {t('banners.openCategories')}
-          </Button>
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => navigate('/admin/categories')}
+        >
+          {t('banners.openCategories')}
+        </Button>
+      </div>
     </DetailSection>
   )
 }
@@ -268,7 +310,12 @@ function CrossLinksCard({ navigate, t }) {
 // ── Screen ───────────────────────────────────────────────────────────────────
 // `embedded` = render bên trong một tab của màn Cài đặt: bỏ tiêu đề trang riêng
 // (tránh trùng heading), chỉ giữ phần mô tả ngắn để có ngữ cảnh.
-export function BannerScreen({ canUpdate = false, navigate, embedded = false, onEditorStateChange }) {
+export function BannerScreen({
+  canUpdate = false,
+  navigate,
+  embedded = false,
+  onEditorStateChange,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -300,15 +347,22 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
     return m
   }, [state.items])
 
-  const get = useCallback((key) => (drafts[key] !== undefined ? drafts[key] : unquote(byKey.get(key)?.value)), [drafts, byKey])
-  const getEn = useCallback((key) => (draftsEn[key] !== undefined ? draftsEn[key] : unquote(byKey.get(key)?.valueEn)), [draftsEn, byKey])
+  const get = useCallback(
+    (key) => (drafts[key] !== undefined ? drafts[key] : unquote(byKey.get(key)?.value)),
+    [drafts, byKey],
+  )
+  const getEn = useCallback(
+    (key) => (draftsEn[key] !== undefined ? draftsEn[key] : unquote(byKey.get(key)?.valueEn)),
+    [draftsEn, byKey],
+  )
   const set = useCallback((key, value) => setDrafts((p) => ({ ...p, [key]: value })), [])
   const setEn = useCallback((key, value) => setDraftsEn((p) => ({ ...p, [key]: value })), [])
 
   const dirtyKeys = useMemo(() => {
     const keys = new Set()
     for (const [k, v] of Object.entries(drafts)) if (v !== unquote(byKey.get(k)?.value)) keys.add(k)
-    for (const [k, v] of Object.entries(draftsEn)) if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
+    for (const [k, v] of Object.entries(draftsEn))
+      if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
     return [...keys]
   }, [drafts, draftsEn, byKey])
 
@@ -344,7 +398,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
   const handleDiscard = useCallback(async () => {
     if (dirtyKeys.length > 0) {
       const ok = await showConfirm(
-        t('banners.discardConfirm', { defaultValue: 'Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.' }),
+        t('banners.discardConfirm', {
+          defaultValue: 'Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.',
+        }),
         t('banners.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi banner' }),
       )
       if (!ok) return
@@ -399,7 +455,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
   }, [dirtyKeys, drafts, draftsEn, queryClient, t])
 
   if (state.status === 'loading') {
-    return <StatePanel tone="info" title={t('banners.loading')} description={t('common.pleaseWait')} />
+    return (
+      <StatePanel tone="info" title={t('banners.loading')} description={t('common.pleaseWait')} />
+    )
   }
   if (state.status === 'error') {
     return (
@@ -415,9 +473,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
 
   return (
     <div>
-      {!embedded ? (
-        <ScreenHeader group="content" title={t('banners.title')} />
-      ) : null}
+      {!embedded ? <ScreenHeader group="content" title={t('banners.title')} /> : null}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
       {!embedded && !canUpdate && !state.warning && (
@@ -447,30 +503,52 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false, on
 
       {canUpdate && (dirtyKeys.length > 0 || saving || saveSuccess || saveError) && (
         <StickyActionBar
-            ariaLabel={t('common.actionBarLabel')}
-            info={(
-              <span
-                className={saveError ? 'inline-flex items-center gap-2 font-semibold text-danger' : 'inline-flex items-center gap-2 text-muted-foreground'}
-                role={saveError ? 'alert' : 'status'}
-              >
-                {saveError ? (
-                  <><AlertCircle size={14} aria-hidden="true" /> {saveError}</>
-                ) : saveSuccess ? (
-                  <><CheckCircle2 size={15} className="text-success" aria-hidden="true" /> {t('banners.saveSuccess')}</>
-                ) : (
-                  <><AlertCircle size={14} aria-hidden="true" /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
-                )}
-              </span>
-            )}
-          >
-            {dirtyKeys.length > 0 ? (
-              <Button className="min-h-11" variant="secondary" onClick={handleDiscard} disabled={saving}>
-                {t('common.cancel')}
-              </Button>
-            ) : null}
-            <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
-              {t('common.save')}
+          ariaLabel={t('common.actionBarLabel')}
+          info={
+            <span
+              className={
+                saveError
+                  ? 'inline-flex items-center gap-2 font-semibold text-danger'
+                  : 'inline-flex items-center gap-2 text-muted-foreground'
+              }
+              role={saveError ? 'alert' : 'status'}
+            >
+              {saveError ? (
+                <>
+                  <AlertCircle size={14} aria-hidden="true" /> {saveError}
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle2 size={15} className="text-success" aria-hidden="true" />{' '}
+                  {t('banners.saveSuccess')}
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={14} aria-hidden="true" />{' '}
+                  {t('banners.unsavedCount', { count: dirtyKeys.length })}
+                </>
+              )}
+            </span>
+          }
+        >
+          {dirtyKeys.length > 0 ? (
+            <Button
+              className="min-h-11"
+              variant="secondary"
+              onClick={handleDiscard}
+              disabled={saving}
+            >
+              {t('common.cancel')}
             </Button>
+          ) : null}
+          <Button
+            className="min-h-11"
+            onClick={handleSave}
+            loading={saving}
+            disabled={dirtyKeys.length === 0}
+          >
+            {t('common.save')}
+          </Button>
         </StickyActionBar>
       )}
     </div>

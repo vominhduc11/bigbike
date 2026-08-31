@@ -42,9 +42,10 @@ test.describe('Settings UI', () => {
       } else {
         await expect(desktopNavigator).toBeHidden()
         await expect(mobileTabs).toBeVisible()
-        await expect(
-          mobileTabs.getByRole('tab', { name: /Thông tin shop/ }),
-        ).toHaveAttribute('aria-selected', 'true')
+        await expect(mobileTabs.getByRole('tab', { name: /Thông tin shop/ })).toHaveAttribute(
+          'aria-selected',
+          'true',
+        )
       }
 
       await adminPage.screenshot({

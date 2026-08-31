@@ -79,8 +79,18 @@ export function TableRowActions({ primaryActions, menuActions, className }) {
                 <Fragment key={action.key}>
                   {action.separatorBefore && index > 0 ? <DropdownMenuSeparator /> : null}
                   {action.href && !action.disabled ? (
-                    <DropdownMenuItem asChild className={cn(action.tone === 'danger' && 'text-danger focus:text-danger')}>
-                      <a href={action.href} target={action.target} rel={action.rel} aria-label={action.ariaLabel}>{itemContent}</a>
+                    <DropdownMenuItem
+                      asChild
+                      className={cn(action.tone === 'danger' && 'text-danger focus:text-danger')}
+                    >
+                      <a
+                        href={action.href}
+                        target={action.target}
+                        rel={action.rel}
+                        aria-label={action.ariaLabel}
+                      >
+                        {itemContent}
+                      </a>
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem

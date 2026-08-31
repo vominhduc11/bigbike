@@ -5,19 +5,26 @@ import { Alert } from '@/components/ui/alert'
 import { Modal } from '@/components/layout/Modal'
 
 export function SaveSummaryDialog({
-  pending, roleName, assignedUserCount = 0, permLabels, sensitiveKeys,
-  isOwnRole, onConfirm, onCancel, saving,
+  pending,
+  roleName,
+  assignedUserCount = 0,
+  permLabels,
+  sensitiveKeys,
+  isOwnRole,
+  onConfirm,
+  onCancel,
+  saving,
 }) {
   const { t } = useTranslation()
-  const added   = pending?.added   || []
+  const added = pending?.added || []
   const removed = pending?.removed || []
   const userAdded = pending?.userAdded || added
   const autoAdded = pending?.autoAdded || []
   const userCount = Number.isFinite(Number(assignedUserCount))
     ? Math.max(0, Math.trunc(Number(assignedUserCount)))
     : 0
-  const sensitiveAdded   = added.filter(k => sensitiveKeys.has(k))
-  const sensitiveRemoved = removed.filter(k => sensitiveKeys.has(k))
+  const sensitiveAdded = added.filter((k) => sensitiveKeys.has(k))
+  const sensitiveRemoved = removed.filter((k) => sensitiveKeys.has(k))
   const hasSensitive = sensitiveAdded.length > 0 || sensitiveRemoved.length > 0
   return (
     <Modal
@@ -31,8 +38,15 @@ export function SaveSummaryDialog({
       }
       actions={
         <>
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>{t('roles.cancelBtn')}</Button>
-          <Button size="sm" onClick={onConfirm} loading={saving} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
+            {t('roles.cancelBtn')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={onConfirm}
+            loading={saving}
+            className="flex items-center gap-2"
+          >
             {t('roles.confirmSaveBtn')}
           </Button>
         </>
@@ -53,12 +67,16 @@ export function SaveSummaryDialog({
           <div className="text-xs font-bold text-success mb-2 uppercase tracking-wider">
             + {t('roles.saveSummaryAdding')}
           </div>
-          {userAdded.map(k => (
+          {userAdded.map((k) => (
             <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <Check size={12} className="text-success shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               {sensitiveKeys.has(k) && (
-                <AlertTriangle size={12} className="text-warning shrink-0" aria-label={t('roles.sensitivePermNote')} />
+                <AlertTriangle
+                  size={12}
+                  className="text-warning shrink-0"
+                  aria-label={t('roles.sensitivePermNote')}
+                />
               )}
             </div>
           ))}
@@ -70,11 +88,13 @@ export function SaveSummaryDialog({
           <div className="text-xs font-bold text-info mb-2 uppercase tracking-wider">
             + {t('roles.saveSummaryAutoAdded')}
           </div>
-          {autoAdded.map(k => (
+          {autoAdded.map((k) => (
             <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <Check size={12} className="text-info shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
-              <span className="text-xs text-muted-foreground">{t('roles.saveSummaryDependencyReason')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('roles.saveSummaryDependencyReason')}
+              </span>
             </div>
           ))}
         </div>
@@ -85,12 +105,16 @@ export function SaveSummaryDialog({
           <div className="text-xs font-bold text-danger mb-2 uppercase tracking-wider">
             − {t('roles.saveSummaryRemoving')}
           </div>
-          {removed.map(k => (
+          {removed.map((k) => (
             <div key={k} className="flex items-center gap-2 py-1 text-sm">
               <X size={12} className="text-danger shrink-0" aria-hidden />
               <span className="text-foreground">{permLabels[k] || k}</span>
               {sensitiveKeys.has(k) && (
-                <AlertTriangle size={12} className="text-warning shrink-0" aria-label={t('roles.sensitivePermNote')} />
+                <AlertTriangle
+                  size={12}
+                  className="text-warning shrink-0"
+                  aria-label={t('roles.sensitivePermNote')}
+                />
               )}
             </div>
           ))}
@@ -106,7 +130,8 @@ export function SaveSummaryDialog({
       {isOwnRole && removed.length > 0 && (
         <Alert tone="danger" size="sm" className="mt-3 mb-0">
           {t('roles.saveOwnRoleWarning', {
-            defaultValue: 'Bạn đang sửa role của chính mình. Gỡ quyền ở đây sẽ ảnh hưởng trực tiếp tới quyền truy cập của bạn.',
+            defaultValue:
+              'Bạn đang sửa role của chính mình. Gỡ quyền ở đây sẽ ảnh hưởng trực tiếp tới quyền truy cập của bạn.',
           })}
         </Alert>
       )}

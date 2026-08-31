@@ -32,7 +32,9 @@ function imageFilename(retry: number) {
 }
 
 function sectionCard(page: Page, title: string): Locator {
-  return page.locator('.detail-section').filter({ has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }) })
+  return page
+    .locator('.detail-section')
+    .filter({ has: page.locator('.detail-section-header :is(h2,h3,h4)', { hasText: title }) })
 }
 
 async function fillRichText(card: Locator, value: string) {
@@ -58,8 +60,14 @@ async function dragFirstRowBelowSecond(page: Page, card: Locator) {
 
   await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2)
   await page.mouse.down()
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2 + 12, sourceBox.y + sourceBox.height / 2, { steps: 4 })
-  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 16 })
+  await page.mouse.move(
+    sourceBox.x + sourceBox.width / 2 + 12,
+    sourceBox.y + sourceBox.height / 2,
+    { steps: 4 },
+  )
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, {
+    steps: 16,
+  })
   await page.mouse.up()
 }
 
@@ -90,7 +98,10 @@ async function createProduct(page: Page, retry: number) {
 
   await pickFirstOption(page, basicCard.locator('[role="combobox"]').first())
 
-  await fillRichText(basicCard, 'Mô tả ngắn cho sản phẩm kiểm thử khả năng chịu tải của trình soạn thảo.')
+  await fillRichText(
+    basicCard,
+    'Mô tả ngắn cho sản phẩm kiểm thử khả năng chịu tải của trình soạn thảo.',
+  )
   await uploadMainImage(page, imageFilename(retry))
 
   const pricingCard = sectionCard(page, 'Giá & trạng thái')
@@ -108,7 +119,11 @@ async function createProduct(page: Page, retry: number) {
   await languageSwitcher.getByRole('button', { name: 'VI', exact: true }).click()
 
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/api/v1/admin/products')),
+    page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname.endsWith('/api/v1/admin/products'),
+    ),
     page.getByRole('button', { name: 'Lưu nháp', exact: true }).click(),
   ])
   expect(response.status(), 'Tạo sản phẩm test phải trả 2xx').toBeLessThan(300)
@@ -117,15 +132,17 @@ async function createProduct(page: Page, retry: number) {
 }
 
 function heavySpecificationsHtml() {
-  const rows = Array.from({ length: 50 }, (_, index) => (
-    `<tr><th scope="row">Thông số ${index + 1}</th><td>Giá trị ${index + 1}</td></tr>`
-  )).join('')
+  const rows = Array.from(
+    { length: 50 },
+    (_, index) =>
+      `<tr><th scope="row">Thông số ${index + 1}</th><td>Giá trị ${index + 1}</td></tr>`,
+  ).join('')
   return `<table class="shop_attributes"><tbody>${rows}</tbody></table>`
 }
 
 async function seedHeavyContent(page: Page) {
   const contentGroup = page.getByRole('button', { name: /^Nội dung trang/ })
-  if (await contentGroup.getAttribute('aria-expanded') !== 'true') await contentGroup.click()
+  if ((await contentGroup.getAttribute('aria-expanded')) !== 'true') await contentGroup.click()
 
   const specsCard = sectionCard(page, 'Thông số kỹ thuật')
   await specsCard.getByRole('tab', { name: 'HTML', exact: true }).click()
@@ -135,14 +152,20 @@ async function seedHeavyContent(page: Page) {
   await expect(importDialog).toBeVisible()
   await importDialog.getByRole('button', { name: 'Nhận và lưu', exact: true }).click()
 
-  await expect(specsCard.locator('input[aria-label="Tên thông số (bắt buộc)"]')).toHaveCount(50, { timeout: 120_000 })
-  await expect(specsCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(50, { timeout: 120_000 })
+  await expect(specsCard.locator('input[aria-label="Tên thông số (bắt buộc)"]')).toHaveCount(50, {
+    timeout: 120_000,
+  })
+  await expect(specsCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(50, {
+    timeout: 120_000,
+  })
 
   const faqCard = sectionCard(page, 'Câu hỏi thường gặp')
   const addFaq = faqCard.getByRole('button', { name: 'Thêm câu hỏi', exact: false })
   for (let index = 0; index < 6; index += 1) await addFaq.click()
   await expect(faqCard.getByPlaceholder('Câu hỏi *')).toHaveCount(6)
-  await expect(faqCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(6, { timeout: 60_000 })
+  await expect(faqCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(6, {
+    timeout: 60_000,
+  })
 
   const questions = faqCard.getByPlaceholder('Câu hỏi *')
   const answers = faqCard.locator('[contenteditable="true"][role="textbox"]')
@@ -201,7 +224,10 @@ async function exerciseMutableLists(page: Page) {
   }
 }
 
-test('product detail không sập khi có 50 thông số + 6 FAQ trên máy chậm', async ({ adminPage, collect }, testInfo) => {
+test('product detail không sập khi có 50 thông số + 6 FAQ trên máy chậm', async ({
+  adminPage,
+  collect,
+}, testInfo) => {
   test.setTimeout(420_000)
   let productId: string | null = null
   const slowSession = await adminPage.context().newCDPSession(adminPage)
@@ -258,16 +284,33 @@ test('product detail không sập khi có 50 thông số + 6 FAQ trên máy ch�
         }
 
         const pageError = await getPageLevelErrorPanel(adminPage)
-        expect(pageError, `${viewport.name} lần ${attempt + 1}: không được hiện panel lỗi`).toBeNull()
-        await expect(adminPage.getByText('Đã xảy ra lỗi không mong đợi', { exact: false })).toHaveCount(0)
+        expect(
+          pageError,
+          `${viewport.name} lần ${attempt + 1}: không được hiện panel lỗi`,
+        ).toBeNull()
+        await expect(
+          adminPage.getByText('Đã xảy ra lỗi không mong đợi', { exact: false }),
+        ).toHaveCount(0)
 
         const contentGroup = adminPage.getByRole('button', { name: /^Nội dung trang/ })
-        if (await contentGroup.getAttribute('aria-expanded') !== 'true') await contentGroup.click()
+        if ((await contentGroup.getAttribute('aria-expanded')) !== 'true')
+          await contentGroup.click()
         const specsCard = sectionCard(adminPage, 'Thông số kỹ thuật')
-        await expect(specsCard.locator('input[aria-label="Tên thông số (bắt buộc)"]')).toHaveCount(50, { timeout: 120_000 })
-        await expect(specsCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(50, { timeout: 120_000 })
-        await expect(sectionCard(adminPage, 'Câu hỏi thường gặp').getByPlaceholder('Câu hỏi *')).toHaveCount(6, { timeout: 60_000 })
-        await expectNoHorizontalOverflow(adminPage, `Product Detail ${viewport.name} lần ${attempt + 1}`)
+        await expect(specsCard.locator('input[aria-label="Tên thông số (bắt buộc)"]')).toHaveCount(
+          50,
+          { timeout: 120_000 },
+        )
+        await expect(specsCard.locator('[contenteditable="true"][role="textbox"]')).toHaveCount(
+          50,
+          { timeout: 120_000 },
+        )
+        await expect(
+          sectionCard(adminPage, 'Câu hỏi thường gặp').getByPlaceholder('Câu hỏi *'),
+        ).toHaveCount(6, { timeout: 60_000 })
+        await expectNoHorizontalOverflow(
+          adminPage,
+          `Product Detail ${viewport.name} lần ${attempt + 1}`,
+        )
       }
 
       await testInfo.attach(`product-editor-${viewport.name}.png`, {
@@ -280,7 +323,9 @@ test('product detail không sập khi có 50 thông số + 6 FAQ trên máy ch�
     // toàn cục; chỉ bỏ qua đúng endpoint nền này, vẫn chặn mọi lỗi khác của trang.
     const productRuntime = {
       ...collect,
-      apiErrors: collect.apiErrors.filter((entry) => new URL(entry.url).pathname !== '/api/v1/admin/notifications'),
+      apiErrors: collect.apiErrors.filter(
+        (entry) => new URL(entry.url).pathname !== '/api/v1/admin/notifications',
+      ),
     }
     expectRuntimeClean(productRuntime)
   } finally {

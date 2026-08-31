@@ -13,7 +13,7 @@ export function DialogOverlay({ className, ...props }) {
     <DialogPrimitive.Overlay
       className={cn(
         'fixed inset-0 z-[var(--admin-z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-        className
+        className,
       )}
       {...props}
     />
@@ -28,7 +28,7 @@ export function DialogContent({ className, children, showClose = true, ...props 
       <DialogPrimitive.Content
         className={cn(
           'fixed left-1/2 top-1/2 z-[var(--admin-z-modal)] w-[calc(100%-2rem)] max-w-lg max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 bg-card border border-border shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-[var(--admin-radius-card)]',
-          className
+          className,
         )}
         {...props}
       >
@@ -45,12 +45,7 @@ export function DialogContent({ className, children, showClose = true, ...props 
 }
 
 export function DialogHeader({ className, ...props }) {
-  return (
-    <div
-      className={cn('flex flex-col gap-2 p-6 pb-4', className)}
-      {...props}
-    />
-  )
+  return <div className={cn('flex flex-col gap-2 p-6 pb-4', className)} {...props} />
 }
 
 export function DialogFooter({ className, ...props }) {

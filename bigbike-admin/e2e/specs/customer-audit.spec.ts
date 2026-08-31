@@ -1,11 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import type { Locator, Page, Route } from '@playwright/test'
 import { test, expect, expectRuntimeClean } from '../fixtures/admin-test'
-import {
-  expectNoHorizontalOverflow,
-  navigateSpa,
-  waitForScreenReady,
-} from '../utils/quality'
+import { expectNoHorizontalOverflow, navigateSpa, waitForScreenReady } from '../utils/quality'
 import { VIEWPORTS } from '../utils/viewports'
 
 type MockCustomer = {
@@ -48,8 +44,9 @@ type MockCustomerState = {
   statusPatches: Array<{ id: string; body: Record<string, unknown> }>
 }
 
-const CUSTOMER_VIEWPORTS = ['1440x900', '768x1024', '375x812', '390x844']
-  .map((name) => VIEWPORTS.find((viewport) => viewport.name === name)!)
+const CUSTOMER_VIEWPORTS = ['1440x900', '768x1024', '375x812', '390x844'].map((name) =>
+  VIEWPORTS.find((viewport) => viewport.name === name)!,
+)
 
 const BASE_CUSTOMERS: MockCustomer[] = [
   {
@@ -282,7 +279,10 @@ function summaryCard(page: Page, label: string) {
 }
 
 test.describe('Customer admin audit', () => {
-  test('list loads from privacy-safe E2E fixtures without exposing shop customer data', async ({ adminPage, collect }) => {
+  test('list loads from privacy-safe E2E fixtures without exposing shop customer data', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     const desktop = VIEWPORTS.find((viewport) => viewport.name === '1440x900')!
@@ -290,13 +290,29 @@ test.describe('Customer admin audit', () => {
     await navigateSpa(adminPage, '/admin/customers')
 
     await expect(adminPage.getByRole('heading', { name: 'Khách hàng', exact: true })).toBeVisible()
-    await expect(adminPage.locator('.bb-filter-bar').getByRole('combobox', { name: 'Trạng thái', exact: true })).toBeVisible()
-    await expect(adminPage.locator('.bb-filter-bar').getByRole('combobox', { name: 'Nguồn khách hàng', exact: true })).toBeVisible()
-    await expect(adminPage.locator('.bb-filter-bar').getByRole('combobox', { name: 'Xác thực email', exact: true })).toBeVisible()
+    await expect(
+      adminPage
+        .locator('.bb-filter-bar')
+        .getByRole('combobox', { name: 'Trạng thái', exact: true }),
+    ).toBeVisible()
+    await expect(
+      adminPage
+        .locator('.bb-filter-bar')
+        .getByRole('combobox', { name: 'Nguồn khách hàng', exact: true }),
+    ).toBeVisible()
+    await expect(
+      adminPage
+        .locator('.bb-filter-bar')
+        .getByRole('combobox', { name: 'Xác thực email', exact: true }),
+    ).toBeVisible()
     await expect(summaryCard(adminPage, 'Tổng khách hàng').locator('.bb-kpi-value')).toHaveText('3')
     await expect(summaryCard(adminPage, 'Khách VIP').locator('.bb-kpi-value')).toHaveText('0')
-    await expect(summaryCard(adminPage, 'Tài khoản mới (30 ngày)').locator('.bb-kpi-value')).toHaveText('1')
-    await expect(summaryCard(adminPage, 'Tài khoản đang hoạt động').locator('.bb-kpi-value')).toHaveText('1')
+    await expect(
+      summaryCard(adminPage, 'Tài khoản mới (30 ngày)').locator('.bb-kpi-value'),
+    ).toHaveText('1')
+    await expect(
+      summaryCard(adminPage, 'Tài khoản đang hoạt động').locator('.bb-kpi-value'),
+    ).toHaveText('1')
 
     const activeRegisteredCard = adminPage.getByRole('button', {
       name: 'Tài khoản đang hoạt động — lọc danh sách theo trạng thái Hoạt động',
@@ -314,15 +330,18 @@ test.describe('Customer admin audit', () => {
     await expect.poll(() => new URL(adminPage.url()).searchParams.get('synthetic')).toBeNull()
     await expect(adminPage.locator('tbody tr')).toHaveCount(3)
 
-    const tableOrEmpty = adminPage.locator('table').or(
-      adminPage.getByText('Không có khách hàng', { exact: true }),
-    )
+    const tableOrEmpty = adminPage
+      .locator('table')
+      .or(adminPage.getByText('Không có khách hàng', { exact: true }))
     await expect(tableOrEmpty.first()).toBeVisible()
     await expectNoHorizontalOverflow(adminPage, 'customer fixture list @ 1440x900')
     expectRuntimeClean(collect)
   })
 
-  test('status, synthetic and email-verification filters work; every non-ACTIVE change asks for confirmation', async ({ adminPage, collect }) => {
+  test('status, synthetic and email-verification filters work; every non-ACTIVE change asks for confirmation', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     await adminPage.setViewportSize(VIEWPORTS.find((viewport) => viewport.name === '1440x900')!)
@@ -339,11 +358,15 @@ test.describe('Customer admin audit', () => {
     await selectFilter(adminPage, 'Nguồn khách hàng', 'Từ đơn hàng cũ')
     await expect.poll(() => new URL(adminPage.url()).searchParams.get('synthetic')).toBe('true')
     await expect(adminPage.locator('tbody tr')).toHaveCount(1)
-    await expect(adminPage.getByText('E2E_CUSTOMER_SYNTHETIC', { exact: true }).first()).toBeVisible()
+    await expect(
+      adminPage.getByText('E2E_CUSTOMER_SYNTHETIC', { exact: true }).first(),
+    ).toBeVisible()
 
     await selectFilter(adminPage, 'Nguồn khách hàng', 'Nguồn khách hàng')
     await selectFilter(adminPage, 'Xác thực email', 'Chưa xác thực')
-    await expect.poll(() => new URL(adminPage.url()).searchParams.get('emailVerified')).toBe('false')
+    await expect
+      .poll(() => new URL(adminPage.url()).searchParams.get('emailVerified'))
+      .toBe('false')
     await expect(adminPage.locator('tbody tr')).toHaveCount(2)
     await expect(adminPage.getByText('E2E_CUSTOMER_REAL', { exact: true })).toHaveCount(0)
 
@@ -373,20 +396,31 @@ test.describe('Customer admin audit', () => {
       id: 'e2e-customer-real',
       body: { status: 'BLOCKED', reason: 'E2E_CUSTOMER_STATUS_AUDIT' },
     })
-    await expect(realRow.getByRole('combobox', { name: 'Trạng thái', exact: true })).toContainText('Bị cấm')
+    await expect(realRow.getByRole('combobox', { name: 'Trạng thái', exact: true })).toContainText(
+      'Bị cấm',
+    )
 
     await navigateSpa(adminPage, '/admin/customers/e2e-customer-real')
     await expect(adminPage.getByText('Bị cấm', { exact: true }).first()).toBeVisible()
     expectRuntimeClean(collect)
   })
 
-  test('synthetic profile persists display name and phone only while status stays read-only', async ({ adminPage, collect }) => {
+  test('synthetic profile persists display name and phone only while status stays read-only', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     await navigateSpa(adminPage, '/admin/customers/e2e-customer-synthetic')
 
-    await expect(adminPage.getByText('Tài khoản tạo từ đơn hàng cũ không được đổi trạng thái.', { exact: true })).toBeVisible()
-    await expect(adminPage.getByRole('combobox', { name: 'Trạng thái tài khoản', exact: true })).toHaveCount(0)
+    await expect(
+      adminPage.getByText('Tài khoản tạo từ đơn hàng cũ không được đổi trạng thái.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+    await expect(
+      adminPage.getByRole('combobox', { name: 'Trạng thái tài khoản', exact: true }),
+    ).toHaveCount(0)
     await adminPage.getByRole('button', { name: 'Sửa', exact: true }).click()
 
     const displayName = adminPage.getByLabel('Tên hiển thị (tùy chọn)', { exact: true })
@@ -412,15 +446,26 @@ test.describe('Customer admin audit', () => {
     expect(state.statusPatches).toHaveLength(0)
 
     await navigateSpa(adminPage, '/admin/customers')
-    await expect(adminPage.getByText('E2E_CUSTOMER_SYNTHETIC_UPDATED', { exact: true }).first()).toBeVisible()
+    await expect(
+      adminPage.getByText('E2E_CUSTOMER_SYNTHETIC_UPDATED', { exact: true }).first(),
+    ).toBeVisible()
     await navigateSpa(adminPage, '/admin/customers/e2e-customer-synthetic')
-    await expect(adminPage.getByRole('heading', { name: 'E2E_CUSTOMER_SYNTHETIC_UPDATED', exact: true })).toBeVisible()
+    await expect(
+      adminPage.getByRole('heading', { name: 'E2E_CUSTOMER_SYNTHETIC_UPDATED', exact: true }),
+    ).toBeVisible()
     await expect(adminPage.getByText('0909999888', { exact: true }).first()).toBeVisible()
-    await expect(adminPage.getByText('Tài khoản tạo từ đơn hàng cũ không được đổi trạng thái.', { exact: true })).toBeVisible()
+    await expect(
+      adminPage.getByText('Tài khoản tạo từ đơn hàng cũ không được đổi trạng thái.', {
+        exact: true,
+      }),
+    ).toBeVisible()
     expectRuntimeClean(collect)
   })
 
-  test('detail uses valid-order metrics while cancelled orders remain in history', async ({ adminPage, collect }) => {
+  test('detail uses valid-order metrics while cancelled orders remain in history', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     await navigateSpa(adminPage, '/admin/customers/e2e-customer-real')
@@ -445,7 +490,10 @@ test.describe('Customer admin audit', () => {
     expectRuntimeClean(collect)
   })
 
-  test('customers.read without customers.write exposes a clear read-only list and detail', async ({ adminPage, collect }) => {
+  test('customers.read without customers.write exposes a clear read-only list and detail', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     await adminPage.route('**/api/v1/auth/me', async (route) => {
@@ -468,7 +516,9 @@ test.describe('Customer admin audit', () => {
     await expect(listReadOnlyBanner).toContainText(
       'Bạn chỉ có quyền xem danh sách khách hàng. Các thao tác thay đổi trạng thái đã được khóa.',
     )
-    await expect(adminPage.locator('tbody').getByRole('combobox', { name: 'Trạng thái', exact: true })).toHaveCount(0)
+    await expect(
+      adminPage.locator('tbody').getByRole('combobox', { name: 'Trạng thái', exact: true }),
+    ).toHaveCount(0)
 
     await navigateSpa(adminPage, '/admin/customers/e2e-customer-real')
     const detailReadOnlyBanner = adminPage.getByRole('status').filter({
@@ -478,14 +528,22 @@ test.describe('Customer admin audit', () => {
       'Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.',
     )
     await expect(adminPage.getByRole('button', { name: 'Sửa', exact: true })).toBeDisabled()
-    await expect(adminPage.getByRole('button', { name: 'Sửa', exact: true })).toHaveAttribute('aria-disabled', 'true')
-    await expect(adminPage.getByRole('combobox', { name: 'Trạng thái tài khoản', exact: true })).toHaveCount(0)
+    await expect(adminPage.getByRole('button', { name: 'Sửa', exact: true })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    await expect(
+      adminPage.getByRole('combobox', { name: 'Trạng thái tài khoản', exact: true }),
+    ).toHaveCount(0)
     expect(state.profilePatches).toHaveLength(0)
     expect(state.statusPatches).toHaveLength(0)
     expectRuntimeClean(collect)
   })
 
-  test('list and detail do not overflow at 1440, 768, 375 or the board regression width 390', async ({ adminPage, collect }) => {
+  test('list and detail do not overflow at 1440, 768, 375 or the board regression width 390', async ({
+    adminPage,
+    collect,
+  }) => {
     const state = createMockState()
     await installCustomerApi(adminPage, state)
     const screenshotWidths = new Set([1440, 768, 390, 375])
@@ -495,7 +553,9 @@ test.describe('Customer admin audit', () => {
     for (const viewport of CUSTOMER_VIEWPORTS) {
       await adminPage.setViewportSize(viewport)
       await navigateSpa(adminPage, '/admin/customers')
-      await expect(adminPage.getByRole('heading', { name: 'Khách hàng', exact: true })).toBeVisible()
+      await expect(
+        adminPage.getByRole('heading', { name: 'Khách hàng', exact: true }),
+      ).toBeVisible()
 
       if (viewport.width < 640) {
         await expect(adminPage.locator('.mobile-card-list')).toBeVisible()

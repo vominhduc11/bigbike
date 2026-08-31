@@ -5,7 +5,13 @@ import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initialReason = '', onReasonChange }) {
+export function ReasonConfirmModal({
+  onConfirm,
+  onClose,
+  loading = false,
+  initialReason = '',
+  onReasonChange,
+}) {
   const { t } = useTranslation()
   const [reason, setReason] = useState(initialReason)
   const [error, setError] = useState('')
@@ -38,10 +44,15 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initia
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{description}</p>
         <p className="text-xs text-muted-foreground">
-          <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+          <span className="text-danger" aria-hidden="true">
+            *
+          </span>{' '}
+          {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
         </p>
         <div className="flex flex-col gap-2">
-          <label htmlFor="reason-confirm-input" className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
+          <label htmlFor="reason-confirm-input" className="text-sm font-medium">
+            {t('orders.detail.reasonLabel')} *
+          </label>
           <Textarea
             id="reason-confirm-input"
             rows={3}
@@ -51,7 +62,9 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initia
               onReasonChange?.(e.target.value)
               setError('')
             }}
-            onBlur={() => { if (!reason.trim()) setError(t('orders.detail.reasonRequired')) }}
+            onBlur={() => {
+              if (!reason.trim()) setError(t('orders.detail.reasonRequired'))
+            }}
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"
             autoFocus
@@ -60,17 +73,35 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false, initia
             aria-describedby={error ? 'reason-confirm-error' : undefined}
           />
           {error && (
-            <p id="reason-confirm-error" role="alert" className="flex items-center gap-2 text-xs text-danger">
+            <p
+              id="reason-confirm-error"
+              role="alert"
+              className="flex items-center gap-2 text-xs text-danger"
+            >
               <AlertCircle size={13} aria-hidden="true" />
               {error}
             </p>
           )}
         </div>
         <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={onClose} disabled={busy}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            onClick={onClose}
+            disabled={busy}
+          >
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="danger" size="sm" className="min-h-11" disabled={busy} aria-busy={busy}>
+          <Button
+            type="submit"
+            variant="danger"
+            size="sm"
+            className="min-h-11"
+            disabled={busy}
+            aria-busy={busy}
+          >
             {busy ? t('orders.detail.savingShort') : title}
           </Button>
         </div>

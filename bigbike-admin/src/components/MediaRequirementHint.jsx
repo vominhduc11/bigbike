@@ -10,16 +10,17 @@ export function MediaRequirementHint({ recommend, className }) {
   if (!recommend) return null
   return (
     <p className={cn('text-xs text-muted-foreground', className)}>
-      {recommend.brandLogo
-        ? t('brands.logo.requirement')
-        : recommend.exactRatio
-        ? t('mediaReco.categoryImageRequirement')
-        : (
-          <>
-            {t('mediaReco.requirementSize', { w: recommend.minW, h: recommend.minH })}
-            {recommend.ratio && t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
-          </>
-        )}
+      {recommend.brandLogo ? (
+        t('brands.logo.requirement')
+      ) : recommend.exactRatio ? (
+        t('mediaReco.categoryImageRequirement')
+      ) : (
+        <>
+          {t('mediaReco.requirementSize', { w: recommend.minW, h: recommend.minH })}
+          {recommend.ratio &&
+            t('mediaReco.requirementRatio', { rw: recommend.ratio[0], rh: recommend.ratio[1] })}
+        </>
+      )}
     </p>
   )
 }
@@ -31,11 +32,18 @@ export function MediaValidationError({ reasons, kind, width, height, recommend, 
   const isVideo = kind === 'video'
   const messages = reasons.map((_reason) => {
     if (_reason === 'unreadableDimensions') {
-      return t(recommend?.exactRatio ? 'mediaReco.categoryImageUnreadable' : 'mediaReco.unreadableDimensions', { w: width, h: height })
+      return t(
+        recommend?.exactRatio
+          ? 'mediaReco.categoryImageUnreadable'
+          : 'mediaReco.unreadableDimensions',
+        { w: width, h: height },
+      )
     }
     const key = isVideo
       ? 'mediaReco.videoWrongRatio'
-      : recommend?.exactRatio ? 'mediaReco.categoryImageWrongRatio' : 'mediaReco.wrongRatio'
+      : recommend?.exactRatio
+        ? 'mediaReco.categoryImageWrongRatio'
+        : 'mediaReco.wrongRatio'
     return t(key, { w: width, h: height, rw: recommend?.minW, rh: recommend?.minH })
   })
   return (

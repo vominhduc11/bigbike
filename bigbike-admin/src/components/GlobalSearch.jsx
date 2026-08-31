@@ -44,7 +44,8 @@ function foldSearchText(value) {
 
 function detectShortcutLabel() {
   if (typeof navigator === 'undefined') return 'Ctrl K'
-  const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || ''
+  const platform =
+    navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || ''
   return /mac|iphone|ipad|ipod/i.test(platform) ? '⌘K' : 'Ctrl K'
 }
 
@@ -126,9 +127,9 @@ function variantText(variant) {
   if (!variant || typeof variant !== 'object') return ''
   const options = Array.isArray(variant.options)
     ? variant.options
-      .map((option) => [option?.name, option?.value].filter(Boolean).join(': '))
-      .filter(Boolean)
-      .join(', ')
+        .map((option) => [option?.name, option?.value].filter(Boolean).join(': '))
+        .filter(Boolean)
+        .join(', ')
     : ''
   return [variant.sku, variant.name, options].filter(Boolean).join(' · ')
 }
@@ -248,7 +249,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
 
   useEffect(() => {
     if (!open) return
-    listRef.current?.querySelector(`#bb-search-opt-${activeIndex}`)?.scrollIntoView?.({ block: 'nearest' })
+    listRef.current
+      ?.querySelector(`#bb-search-opt-${activeIndex}`)
+      ?.scrollIntoView?.({ block: 'nearest' })
   }, [activeIndex, open])
 
   useEffect(() => {
@@ -263,7 +266,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         setRequestError(false)
         setLoading(false)
       })
-      return () => { cancelled = true }
+      return () => {
+        cancelled = true
+      }
     }
 
     const requestId = ++reqIdRef.current
@@ -286,7 +291,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
           setLoading(false)
         })
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [debounced, open, visibleGroupKey])
 
   const flat = useMemo(() => {
@@ -312,15 +319,18 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     return rows
   }, [results, t, debounced, visibleGroups])
 
-  const go = useCallback((to) => {
-    close()
-    navigate(to)
-  }, [close, navigate])
+  const go = useCallback(
+    (to) => {
+      close()
+      navigate(to)
+    },
+    [close, navigate],
+  )
 
   function onInputKeyDown(event) {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      setActiveIndex((index) => flat.length ? Math.min(index + 1, flat.length - 1) : 0)
+      setActiveIndex((index) => (flat.length ? Math.min(index + 1, flat.length - 1) : 0))
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
       setActiveIndex((index) => Math.max(index - 1, 0))
@@ -346,7 +356,9 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       >
         <Search size={15} className="shrink-0" />
         <span className="flex-1 truncate text-left text-sm">{t('search.placeholder')}</span>
-        <kbd className="rounded border border-border bg-surface px-2 py-1 text-xs font-semibold">{shortcutLabel}</kbd>
+        <kbd className="rounded border border-border bg-surface px-2 py-1 text-xs font-semibold">
+          {shortcutLabel}
+        </kbd>
       </Button>
 
       <Button
@@ -360,139 +372,175 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         <Search size={18} aria-hidden="true" />
       </Button>
 
-      {open && createPortal(
-        <div
-          ref={dialogRef}
-          className="fixed inset-0 flex items-start justify-center px-4 pt-20 sm:pt-24"
-          style={{ zIndex: 'var(--z-modal)' }}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('search.title')}
-        >
+      {open &&
+        createPortal(
           <div
-            className="fixed inset-0"
-            style={{ background: 'var(--admin-color-overlay)' }}
-            onClick={close}
-            aria-hidden="true"
-          />
-          <div
-            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface"
-            style={{ boxShadow: 'var(--admin-shadow-lg)' }}
+            ref={dialogRef}
+            className="fixed inset-0 flex items-start justify-center px-4 pt-20 sm:pt-24"
+            style={{ zIndex: 'var(--z-modal)' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('search.title')}
           >
-            <div className="flex items-center gap-3 border-b border-border px-4">
-              {loading
-                ? <Loader2 size={17} className="shrink-0 animate-spin text-muted-foreground" />
-                : <Search size={17} className="shrink-0 text-muted-foreground" />}
-              <Input
-                ref={inputRef}
-                value={term}
-                onChange={(event) => setTerm(event.target.value)}
-                onKeyDown={onInputKeyDown}
-                placeholder={t('search.placeholder')}
-                className="h-12 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-                role="combobox"
-                aria-expanded={hasQuery && flat.length > 0}
-                aria-controls="bb-search-listbox"
-                aria-activedescendant={hasQuery && flat.length > 0 ? `bb-search-opt-${activeIndex}` : undefined}
-                aria-autocomplete="list"
-                autoComplete="off"
-              />
-              <kbd className="rounded border border-border bg-surface-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Esc</kbd>
-            </div>
+            <div
+              className="fixed inset-0"
+              style={{ background: 'var(--admin-color-overlay)' }}
+              onClick={close}
+              aria-hidden="true"
+            />
+            <div
+              className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface"
+              style={{ boxShadow: 'var(--admin-shadow-lg)' }}
+            >
+              <div className="flex items-center gap-3 border-b border-border px-4">
+                {loading ? (
+                  <Loader2 size={17} className="shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Search size={17} className="shrink-0 text-muted-foreground" />
+                )}
+                <Input
+                  ref={inputRef}
+                  value={term}
+                  onChange={(event) => setTerm(event.target.value)}
+                  onKeyDown={onInputKeyDown}
+                  placeholder={t('search.placeholder')}
+                  className="h-12 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                  role="combobox"
+                  aria-expanded={hasQuery && flat.length > 0}
+                  aria-controls="bb-search-listbox"
+                  aria-activedescendant={
+                    hasQuery && flat.length > 0 ? `bb-search-opt-${activeIndex}` : undefined
+                  }
+                  aria-autocomplete="list"
+                  autoComplete="off"
+                />
+                <kbd className="rounded border border-border bg-surface-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+                  Esc
+                </kbd>
+              </div>
 
-            <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-2">
-              {!hasQuery && (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
-              )}
-              {hasQuery && loading && (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground" role="status">{t('search.loading')}</p>
-              )}
-              {hasQuery && !loading && requestError && (
-                <div className="p-2">
-                  <StatePanel
-                    tone="danger"
-                    title={t('search.errorTitle')}
-                    description={t('search.errorBody')}
-                  />
-                </div>
-              )}
-              {hasQuery && !loading && !requestError && !resultGroups.length && (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.empty')}</p>
-              )}
-              {hasQuery && !loading && !requestError && resultGroups.map((group) => {
-                const result = results[group.key]
-                const groupRows = flat.filter((row) => row.group === group.key)
-                const GroupIcon = group.icon
-                const numericTotal = Number(result.total)
-                const total = result.total !== null && result.total !== undefined
-                  && Number.isFinite(numericTotal)
-                  ? Math.max(0, numericTotal)
-                  : null
-                return (
-                  <div key={group.key} className="mb-2 last:mb-0">
-                    <div className="flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      <span>{t(`search.group.${group.key}`, { defaultValue: t('common.unknown') })}</span>
-                      {result.state === 'READY' && total !== null ? <span>{total}</span> : null}
-                    </div>
-                    {result.state === 'ERROR' ? (
-                      <StatePanel
-                        tone="danger"
-                        title={t('search.groupErrorTitle')}
-                        description={t('search.groupErrorBody')}
-                        className="px-4 py-4"
-                      />
-                    ) : groupRows.length ? (
-                      groupRows.map((row) => {
-                        const flatIndex = flat.findIndex((candidate) => candidate.key === row.key)
-                        const isActive = flatIndex === activeIndex
-                        return (
-                          <Button
-                            variant="unstyled"
-                            key={row.key}
-                            id={`bb-search-opt-${flatIndex}`}
-                            role="option"
-                            aria-selected={isActive}
-                            tabIndex={-1}
-                            onMouseEnter={() => setActiveIndex(flatIndex)}
-                            onClick={() => go(row.to)}
-                            className={cn(
-                              'flex min-h-11 w-full items-center gap-3 rounded-[var(--admin-radius-control)] px-3 py-2 text-left transition-colors',
-                              isActive ? 'bg-surface-selected' : 'hover:bg-surface-muted',
-                            )}
-                          >
-                            <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--admin-radius-control)] bg-surface-muted text-muted-foreground">
-                              <GroupIcon size={15} aria-hidden="true" />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className={`block truncate text-sm ${row.isViewAll ? 'font-semibold text-primary' : 'font-semibold text-foreground'}`}>
-                                {row.isViewAll ? row.primaryText : highlightText(row.primaryText, debounced)}
-                              </span>
-                              {row.secondaryText ? (
-                                <span className="block truncate text-xs text-muted-foreground">
-                                  {highlightText(row.secondaryText, debounced)}
-                                </span>
-                              ) : null}
-                            </span>
-                            {row.trailing ? (
-                              <span className="shrink-0 text-xs font-semibold text-foreground">{row.trailing}</span>
-                            ) : null}
-                          </Button>
-                        )
-                      })
-                    ) : (
-                      <p className="px-3 py-2 text-xs text-muted-foreground">{t('search.groupEmpty')}</p>
-                    )}
+              <div
+                ref={listRef}
+                id="bb-search-listbox"
+                role="listbox"
+                aria-label={t('search.title')}
+                className="max-h-[52vh] overflow-y-auto p-2"
+              >
+                {!hasQuery && (
+                  <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    {t('search.hint')}
+                  </p>
+                )}
+                {hasQuery && loading && (
+                  <p className="px-3 py-6 text-center text-sm text-muted-foreground" role="status">
+                    {t('search.loading')}
+                  </p>
+                )}
+                {hasQuery && !loading && requestError && (
+                  <div className="p-2">
+                    <StatePanel
+                      tone="danger"
+                      title={t('search.errorTitle')}
+                      description={t('search.errorBody')}
+                    />
                   </div>
-                )
-              })}
+                )}
+                {hasQuery && !loading && !requestError && !resultGroups.length && (
+                  <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    {t('search.empty')}
+                  </p>
+                )}
+                {hasQuery &&
+                  !loading &&
+                  !requestError &&
+                  resultGroups.map((group) => {
+                    const result = results[group.key]
+                    const groupRows = flat.filter((row) => row.group === group.key)
+                    const GroupIcon = group.icon
+                    const numericTotal = Number(result.total)
+                    const total =
+                      result.total !== null &&
+                      result.total !== undefined &&
+                      Number.isFinite(numericTotal)
+                        ? Math.max(0, numericTotal)
+                        : null
+                    return (
+                      <div key={group.key} className="mb-2 last:mb-0">
+                        <div className="flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                          <span>
+                            {t(`search.group.${group.key}`, { defaultValue: t('common.unknown') })}
+                          </span>
+                          {result.state === 'READY' && total !== null ? <span>{total}</span> : null}
+                        </div>
+                        {result.state === 'ERROR' ? (
+                          <StatePanel
+                            tone="danger"
+                            title={t('search.groupErrorTitle')}
+                            description={t('search.groupErrorBody')}
+                            className="px-4 py-4"
+                          />
+                        ) : groupRows.length ? (
+                          groupRows.map((row) => {
+                            const flatIndex = flat.findIndex(
+                              (candidate) => candidate.key === row.key,
+                            )
+                            const isActive = flatIndex === activeIndex
+                            return (
+                              <Button
+                                variant="unstyled"
+                                key={row.key}
+                                id={`bb-search-opt-${flatIndex}`}
+                                role="option"
+                                aria-selected={isActive}
+                                tabIndex={-1}
+                                onMouseEnter={() => setActiveIndex(flatIndex)}
+                                onClick={() => go(row.to)}
+                                className={cn(
+                                  'flex min-h-11 w-full items-center gap-3 rounded-[var(--admin-radius-control)] px-3 py-2 text-left transition-colors',
+                                  isActive ? 'bg-surface-selected' : 'hover:bg-surface-muted',
+                                )}
+                              >
+                                <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--admin-radius-control)] bg-surface-muted text-muted-foreground">
+                                  <GroupIcon size={15} aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span
+                                    className={`block truncate text-sm ${row.isViewAll ? 'font-semibold text-primary' : 'font-semibold text-foreground'}`}
+                                  >
+                                    {row.isViewAll
+                                      ? row.primaryText
+                                      : highlightText(row.primaryText, debounced)}
+                                  </span>
+                                  {row.secondaryText ? (
+                                    <span className="block truncate text-xs text-muted-foreground">
+                                      {highlightText(row.secondaryText, debounced)}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                {row.trailing ? (
+                                  <span className="shrink-0 text-xs font-semibold text-foreground">
+                                    {row.trailing}
+                                  </span>
+                                ) : null}
+                              </Button>
+                            )
+                          })
+                        ) : (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">
+                            {t('search.groupEmpty')}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+              <p className="border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
+                {t('search.keyboardHint')}
+              </p>
             </div>
-            <p className="border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
-              {t('search.keyboardHint')}
-            </p>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   )
 }

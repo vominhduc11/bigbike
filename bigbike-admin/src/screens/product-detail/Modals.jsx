@@ -22,8 +22,19 @@ export function PublishChecklistModal({ form, onConfirm, onCancel }) {
         ? t('products.detail.checklist.itemMissing', { defaultValue: 'Chưa đạt (bắt buộc)' })
         : t('products.detail.checklist.itemOptionalMissing', { defaultValue: 'Nên bổ sung' })
     return (
-      <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
-        <span className="checklist-icon" aria-hidden="true">{item.ok ? <Check size={15} /> : item.required ? <X size={15} /> : <AlertTriangle size={15} />}</span>
+      <li
+        key={item.id}
+        className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}
+      >
+        <span className="checklist-icon" aria-hidden="true">
+          {item.ok ? (
+            <Check size={15} />
+          ) : item.required ? (
+            <X size={15} />
+          ) : (
+            <AlertTriangle size={15} />
+          )}
+        </span>
         <span>{item.label}</span>
         <span className="sr-only">{statusText}</span>
       </li>
@@ -37,16 +48,18 @@ export function PublishChecklistModal({ form, onConfirm, onCancel }) {
       onClose={onCancel}
       actions={
         <>
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>{t('products.detail.checklist.backToEdit')}</Button>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            {t('products.detail.checklist.backToEdit')}
+          </Button>
           {blockers.length === 0 && (
-            <Button type="button" size="sm" onClick={onConfirm}>{t('products.detail.checklist.publishNow')}</Button>
+            <Button type="button" size="sm" onClick={onConfirm}>
+              {t('products.detail.checklist.publishNow')}
+            </Button>
           )}
         </>
       }
     >
-      <ul className="publish-checklist">
-        {requiredItems.map(renderItem)}
-      </ul>
+      <ul className="publish-checklist">{requiredItems.map(renderItem)}</ul>
       {blockers.length > 0 && (
         <p className="modal-note modal-note--error">
           {t('products.detail.checklist.blockerMessage', { count: blockers.length })}
@@ -58,9 +71,7 @@ export function PublishChecklistModal({ form, onConfirm, onCancel }) {
           <p className="text-xs font-semibold text-muted-foreground mt-4 mb-1">
             {t('products.detail.checklist.optionalHeading')}
           </p>
-          <ul className="publish-checklist">
-            {optionalItems.map(renderItem)}
-          </ul>
+          <ul className="publish-checklist">{optionalItems.map(renderItem)}</ul>
           {blockers.length === 0 && warnings.length > 0 && (
             <p className="modal-note modal-note--warn">
               {t('products.detail.checklist.warningMessage', { count: warnings.length })}

@@ -4,7 +4,11 @@
 
 import { createContext } from 'react'
 import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
-import { normalizeVariantToken, isColorAttributeName, getVariantAttributeGroup } from '../../lib/schemas'
+import {
+  normalizeVariantToken,
+  isColorAttributeName,
+  getVariantAttributeGroup,
+} from '../../lib/schemas'
 import {
   extractAllowedTikTokId,
   extractWritableYouTubeId,
@@ -77,17 +81,25 @@ export function englishUrlFromSlugs(slug, slugEn) {
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 export function extractYouTubeId(url) {
   if (!url || typeof url !== 'string') return null
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/)
+  const m = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/,
+  )
   return m ? m[1] : null
 }
 
 export function parseVideoDuration(value) {
-  const parts = String(value || '').trim().split(':')
-  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d{1,2}$/.test(part))) return null
+  const parts = String(value || '')
+    .trim()
+    .split(':')
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d{1,2}$/.test(part)))
+    return null
   const numbers = parts.map(Number)
-  const [hours, minutes, seconds] = numbers.length === 3
-    ? numbers
-    : numbers.length === 2 ? [0, numbers[0], numbers[1]] : [0, 0, numbers[0]]
+  const [hours, minutes, seconds] =
+    numbers.length === 3
+      ? numbers
+      : numbers.length === 2
+        ? [0, numbers[0], numbers[1]]
+        : [0, 0, numbers[0]]
   if (minutes > 59 || seconds > 59) return null
   return hours * 3600 + minutes * 60 + seconds
 }
@@ -146,7 +158,9 @@ export function getAutosaveKey(productId, isCreate) {
 export function saveFormToStorage(key, form) {
   try {
     localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
-  } catch { /* quota */ }
+  } catch {
+    /* quota */
+  }
 }
 
 export function loadFormFromStorage(key) {
@@ -159,11 +173,17 @@ export function loadFormFromStorage(key) {
       return null
     }
     return parsed
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function clearFormFromStorage(key) {
-  try { localStorage.removeItem(key) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Publish readiness checklist ────────────────────────────────────────────────
@@ -179,17 +199,33 @@ export function getPublishReadiness(form, t) {
   const realVariants = (form.variants || []).filter((v) => v.name?.trim())
 
   const items = [
-    { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
+    {
+      id: 'name',
+      label: t('products.detail.checklist.name'),
+      ok: Boolean(form.name?.trim()),
+      required: true,
+    },
     // Tên tiếng Anh bắt buộc (TRANSLATION_RULE_002, schema chặn khi thiếu) — tính vào checklist đăng
     // song song với tên tiếng Việt để lỗi "thiếu tên EN" không còn bị ẩn trong tab EN.
-    { id: 'nameEn',    label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }), ok: Boolean(form.translations?.en?.name?.trim()), required: true },
-    { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn website' }), ok: Boolean(form.slug?.trim()),                required: true  },
+    {
+      id: 'nameEn',
+      label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }),
+      ok: Boolean(form.translations?.en?.name?.trim()),
+      required: true,
+    },
+    {
+      id: 'slug',
+      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn website' }),
+      ok: Boolean(form.slug?.trim()),
+      required: true,
+    },
     {
       id: 'category',
       label: t('products.detail.checklist.category'),
-      ok: Array.isArray(form.categoryIds)
-        && form.categoryIds.length > 0
-        && form.categoryIds.every((id) => id !== SYSTEM_CATEGORY_ID),
+      ok:
+        Array.isArray(form.categoryIds) &&
+        form.categoryIds.length > 0 &&
+        form.categoryIds.every((id) => id !== SYSTEM_CATEGORY_ID),
       required: true,
     },
     {
@@ -198,32 +234,140 @@ export function getPublishReadiness(form, t) {
       ok: Boolean(form.brandId) && form.brandId !== SYSTEM_BRAND_ID,
       required: true,
     },
-    { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: true,                                                    required: false },
-    { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
+    {
+      id: 'gender',
+      label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }),
+      ok: true,
+      required: false,
+    },
+    {
+      id: 'image',
+      label: t('products.detail.checklist.image'),
+      ok: Boolean(form.imageUrl?.trim()),
+      required: true,
+    },
     // SKU cấp sản phẩm: luôn luôn bắt buộc.
-    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã sản phẩm' }), ok: Boolean(form.sku?.trim()),          required: true },
-    { id: 'price',     label: t('products.detail.checklist.price'),     ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0), required: true },
+    {
+      id: 'sku',
+      label: t('products.detail.checklist.sku', { defaultValue: 'Mã sản phẩm' }),
+      ok: Boolean(form.sku?.trim()),
+      required: true,
+    },
+    {
+      id: 'price',
+      label: t('products.detail.checklist.price'),
+      ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0),
+      required: true,
+    },
     // Ảnh đại diện màu: chỉ bắt buộc cho biến thể CÓ màu (sửa 2026-07-11); biến thể không màu
     // (vd chỉ có Size) không có ô ảnh trên form nên không tính vào gate đăng bán.
-    { id: 'variantImages', label: t('products.detail.checklist.variantImages', { defaultValue: 'Ảnh đại diện màu (từng biến thể)' }), ok: realVariants.filter((v) => getVariantColorValue(v)).every((v) => Boolean(v.imageUrl?.trim())), required: realVariants.some((v) => getVariantColorValue(v)) },
+    {
+      id: 'variantImages',
+      label: t('products.detail.checklist.variantImages', {
+        defaultValue: 'Ảnh đại diện màu (từng biến thể)',
+      }),
+      ok: realVariants
+        .filter((v) => getVariantColorValue(v))
+        .every((v) => Boolean(v.imageUrl?.trim())),
+      required: realVariants.some((v) => getVariantColorValue(v)),
+    },
     // Nhắc nhở (không chặn đăng): các phần điền vào thì trang sản phẩm đầy đủ & đẹp hơn.
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
-    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
-    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: Boolean((form.specStats || '').trim()),                                                                 required: false },
-    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
-    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: Boolean((form.trustBadges || '').trim()),                                       required: false },
-    { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
-    { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
-    { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
+    {
+      id: 'shortDesc',
+      label: t('products.detail.checklist.shortDesc'),
+      ok: Boolean(form.shortDescription?.trim()),
+      required: false,
+    },
+    {
+      id: 'desc',
+      label: t('products.detail.checklist.desc'),
+      ok: Array.isArray(form.descriptionBlocks)
+        ? form.descriptionBlocks.length > 0
+        : (form.description?.trim().length ?? 0) > 0,
+      required: false,
+    },
+    {
+      id: 'specStats',
+      label: t('products.detail.checklist.specStats'),
+      ok: Boolean((form.specStats || '').trim()),
+      required: false,
+    },
+    {
+      id: 'faqs',
+      label: t('products.detail.checklist.faqs'),
+      ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),
+      required: false,
+    },
+    {
+      id: 'trustBadges',
+      label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }),
+      ok: Boolean((form.trustBadges || '').trim()),
+      required: false,
+    },
+    {
+      id: 'seoTitle',
+      label: t('products.detail.checklist.seoTitle'),
+      ok: Boolean(form.seoTitle?.trim()),
+      required: false,
+    },
+    {
+      id: 'seoDesc',
+      label: t('products.detail.checklist.seoDesc'),
+      ok: Boolean(form.seoDescription?.trim()),
+      required: false,
+    },
+    {
+      id: 'seoCanonical',
+      label: t('products.detail.checklist.seoCanonical'),
+      ok: Boolean(form.slug?.trim()),
+      required: false,
+    },
     // SEO_RULE_002 — bản tiếng Anh chưa đủ nội dung thì trang /en/ không được khai báo
     // với Google dù cờ đang bật. Cảnh báo, KHÔNG chặn đăng bán (required: false).
-    { id: 'englishContent', label: t('products.detail.checklist.englishContent', { defaultValue: 'Bản tiếng Anh đủ để hiện trên Google (tên + mô tả)' }), ok: productEnglishReady(form), required: false },
-    { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
-    { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
-    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: Boolean((form.suitabilitySection?.html || '').trim() || (form.suitabilitySection?.cards || []).some(suitabilityCardHasContent)),    required: false },
-    { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: Boolean((form.specifications || '').trim()),                                                            required: false },
-    { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
+    {
+      id: 'englishContent',
+      label: t('products.detail.checklist.englishContent', {
+        defaultValue: 'Bản tiếng Anh đủ để hiện trên Google (tên + mô tả)',
+      }),
+      ok: productEnglishReady(form),
+      required: false,
+    },
+    {
+      id: 'gallery',
+      label: t('products.detail.checklist.gallery'),
+      ok: (form.gallery || []).some((img) => img.url?.trim()),
+      required: false,
+    },
+    {
+      id: 'prosCons',
+      label: t('products.detail.checklist.prosCons'),
+      ok:
+        (form.positiveNotes || []).some((h) => (h.content || '').trim()) ||
+        (form.negativeNotes || []).some((h) => (h.content || '').trim()),
+      required: false,
+    },
+    {
+      id: 'suitability',
+      label: t('products.detail.checklist.suitability'),
+      ok: Boolean(
+        (form.suitabilitySection?.html || '').trim() ||
+        (form.suitabilitySection?.cards || []).some(suitabilityCardHasContent),
+      ),
+      required: false,
+    },
+    {
+      id: 'specifications',
+      label: t('products.detail.checklist.specifications'),
+      ok: Boolean((form.specifications || '').trim()),
+      required: false,
+    },
+    {
+      id: 'variants',
+      label: t('products.detail.checklist.variants'),
+      ok: (form.variants || []).some((v) => v.name?.trim()),
+      required: false,
+    },
   ]
 
   return items
@@ -232,7 +376,9 @@ export function getPublishReadiness(form, t) {
 // ── Empty form builders ────────────────────────────────────────────────────────
 
 export function getVariantColorValue(variant) {
-  return (variant.options || []).find((option) => isColorAttributeName(option.name))?.value?.trim() || ''
+  return (
+    (variant.options || []).find((option) => isColorAttributeName(option.name))?.value?.trim() || ''
+  )
 }
 
 export function getVariantColorKey(variant) {
@@ -256,7 +402,14 @@ export function hasGalleryImages(gallery = []) {
 //  - Bỏ hẳn thuộc tính màu (nextColorKey rỗng) → media trống (khớp withColorScopedMedia cho biến thể không màu).
 export function resolveColorChangeMedia(current, items, key, nextColorKey) {
   if (!nextColorKey) {
-    return { gallery: [], imageUrl: '', imageAlt: '', imageWidth: null, imageHeight: null, imageMimeType: null }
+    return {
+      gallery: [],
+      imageUrl: '',
+      imageAlt: '',
+      imageWidth: null,
+      imageHeight: null,
+      imageMimeType: null,
+    }
   }
   const siblingGallery = items.find(
     (v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery),
@@ -554,54 +707,57 @@ export function buildVisibleCategoryTreeRows(items, expandedIds) {
 export function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
 
-  const variants = withColorScopedMedia((item.variants || []).map((v) => ({
-    _key: v.id || generateId(),
-    id: v.id || '',
-    sku: v.sku || '',
-    name: v.name || '',
-    retailPrice:
-      Number.isInteger(v.price?.retailPrice) && v.price.retailPrice >= 0
-        ? String(v.price.retailPrice)
-        : '',
-    salePrice:
-      Number.isInteger(v.price?.salePrice) && v.price.salePrice > 0
-        ? String(v.price.salePrice)
-        : '',
-    isAvailable: v.isAvailable !== false,
-    options: (v.options || []).map((o) => ({
-      _key: generateId(),
-      name: o.name || '',
-      value: o.value || '',
-      attributeValueId: o.attributeValueId || null,
+  const variants = withColorScopedMedia(
+    (item.variants || []).map((v) => ({
+      _key: v.id || generateId(),
+      id: v.id || '',
+      sku: v.sku || '',
+      name: v.name || '',
+      retailPrice:
+        Number.isInteger(v.price?.retailPrice) && v.price.retailPrice >= 0
+          ? String(v.price.retailPrice)
+          : '',
+      salePrice:
+        Number.isInteger(v.price?.salePrice) && v.price.salePrice > 0
+          ? String(v.price.salePrice)
+          : '',
+      isAvailable: v.isAvailable !== false,
+      options: (v.options || []).map((o) => ({
+        _key: generateId(),
+        name: o.name || '',
+        value: o.value || '',
+        attributeValueId: o.attributeValueId || null,
+      })),
+      gallery: (v.gallery || []).map((img) => ({
+        _key: generateId(),
+        id: img.id || '',
+        mediaType: img.mediaType || 'image',
+        url: img.rawUrl || img.url || '',
+        alt: img.alt || '',
+        width: img.width ?? null,
+        height: img.height ?? null,
+        mimeType: img.mimeType ?? null,
+        videoUrl: img.videoUrl || '',
+        provider: inferVideoType(img.videoUrl || '', img.provider),
+        title: img.title || '',
+        titleEn: img.titleEn || '',
+        description: img.description || '',
+        descriptionEn: img.descriptionEn || '',
+        duration: formatVideoDuration(img.durationSeconds),
+        uploadedOn: img.uploadedOn || '',
+      })),
+      imageUrl: v.image?.url || '',
+      imageAlt: v.image?.alt || '',
+      imageWidth: v.image?.width || null,
+      imageHeight: v.image?.height || null,
+      imageMimeType: v.image?.mimeType || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({
-      _key: generateId(),
-      id: img.id || '',
-      mediaType: img.mediaType || 'image',
-      url: img.rawUrl || img.url || '',
-      alt: img.alt || '',
-      width: img.width ?? null,
-      height: img.height ?? null,
-      mimeType: img.mimeType ?? null,
-      videoUrl: img.videoUrl || '',
-      provider: inferVideoType(img.videoUrl || '', img.provider),
-      title: img.title || '',
-      titleEn: img.titleEn || '',
-      description: img.description || '',
-      descriptionEn: img.descriptionEn || '',
-      duration: formatVideoDuration(img.durationSeconds),
-      uploadedOn: img.uploadedOn || '',
-    })),
-    imageUrl: v.image?.url || '',
-    imageAlt: v.image?.alt || '',
-    imageWidth: v.image?.width || null,
-    imageHeight: v.image?.height || null,
-    imageMimeType: v.image?.mimeType || null,
-  })))
+  )
 
-  const categoryIds = Array.isArray(item.categories) && item.categories.length > 0
-    ? item.categories.map((category) => category?.id).filter(Boolean)
-    : [item.categoryId || item.category?.id].filter(Boolean)
+  const categoryIds =
+    Array.isArray(item.categories) && item.categories.length > 0
+      ? item.categories.map((category) => category?.id).filter(Boolean)
+      : [item.categoryId || item.category?.id].filter(Boolean)
 
   const form = {
     sku: item.sku || '',
@@ -735,7 +891,9 @@ export function buildFormFromItem(item) {
         imageUrl: p.image?.url || '',
       })),
     // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en.
-    translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
+    translations: {
+      en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' },
+    },
   }
 
   return form
@@ -746,9 +904,7 @@ export function buildFormFromItem(item) {
 export function translationFormFromItem(en) {
   const source = en && typeof en === 'object' ? en : {}
   const empty = buildEmptyTranslation()
-  return Object.fromEntries(
-    Object.keys(empty).map((key) => [key, source[key] || '']),
-  )
+  return Object.fromEntries(Object.keys(empty).map((key) => [key, source[key] || '']))
 }
 
 // Like toIntegerOrUndefined but sends null for empty so the backend can
@@ -809,26 +965,36 @@ export function cleanDescriptionBlocks(blocks) {
   return blocks
     .filter((b) => {
       switch (b.type) {
-        case 'heading':   return (b.text ?? '').trim().length > 0 || (b.textEn ?? '').trim().length > 0
-        case 'paragraph': return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
-        case 'list':      return (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
-          || (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
-        case 'image':     return (b.url ?? '').trim().length > 0
-        case 'video':     return isWritableVideoInput(b.provider, b.url)
-        case 'callout':   return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
+        case 'heading':
+          return (b.text ?? '').trim().length > 0 || (b.textEn ?? '').trim().length > 0
+        case 'paragraph':
+          return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
+        case 'list':
+          return (
+            (b.items ?? []).some((it) => (it ?? '').trim().length > 0) ||
+            (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
+          )
+        case 'image':
+          return (b.url ?? '').trim().length > 0
+        case 'video':
+          return isWritableVideoInput(b.provider, b.url)
+        case 'callout':
+          return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
         case 'feature': {
           const hasImage = (b.url ?? '').trim().length > 0
-          const hasText = (b.subheading ?? '').trim().length > 0
-            || (b.subheadingEn ?? '').trim().length > 0
-            || (b.heading ?? '').trim().length > 0
-            || (b.headingEn ?? '').trim().length > 0
-            || (b.html ?? '').trim().length > 0
-            || (b.htmlEn ?? '').trim().length > 0
-            || (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
-            || (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
+          const hasText =
+            (b.subheading ?? '').trim().length > 0 ||
+            (b.subheadingEn ?? '').trim().length > 0 ||
+            (b.heading ?? '').trim().length > 0 ||
+            (b.headingEn ?? '').trim().length > 0 ||
+            (b.html ?? '').trim().length > 0 ||
+            (b.htmlEn ?? '').trim().length > 0 ||
+            (b.items ?? []).some((it) => (it ?? '').trim().length > 0) ||
+            (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
           return hasImage || hasText
         }
-        default:          return true
+        default:
+          return true
       }
     })
     .map(({ _key, ...rest }) => {
@@ -854,9 +1020,10 @@ export function cleanDescriptionBlocks(blocks) {
 // field). html là nguồn DUY NHẤT được lưu; nếu thiếu html (dữ liệu cũ chỉ có cards) thì sinh từ cards.
 export function cleanSuitabilitySection(section) {
   if (!section) return null
-  const hasContent = (section.html ?? '').trim().length > 0
-    || (section.htmlEn ?? '').trim().length > 0
-    || (section.cards ?? []).some(suitabilityCardHasContent)
+  const hasContent =
+    (section.html ?? '').trim().length > 0 ||
+    (section.htmlEn ?? '').trim().length > 0 ||
+    (section.cards ?? []).some(suitabilityCardHasContent)
   if (!hasContent) return null
   const { _key, cards: _cards, ...rest } = section
   const html = (rest.html ?? '').trim() || serializeSuitabilityCards(section.cards)
@@ -866,7 +1033,8 @@ export function cleanSuitabilitySection(section) {
 // Dọn form.sizeGuideSection trước khi gửi (V327/V328). Rỗng → null.
 export function cleanSizeGuideSection(section) {
   if (!section) return null
-  const hasContent = (section.html ?? '').trim().length > 0 || (section.htmlEn ?? '').trim().length > 0
+  const hasContent =
+    (section.html ?? '').trim().length > 0 || (section.htmlEn ?? '').trim().length > 0
   if (!hasContent) return null
   const { _key, ...rest } = section
   return rest
@@ -912,7 +1080,9 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     trustBadges: form.trustBadges?.trim() || null,
     // V300: Quick Answer — presence-flag, luôn gửi key (null khi rỗng).
     quickAnswerSummary: form.quickAnswerSummary?.trim() || null,
-    description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
+    description: Array.isArray(form.descriptionBlocks)
+      ? undefined
+      : form.description.trim() || undefined,
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
     // Canonical gender shape (DATA_CONTRACT.md): an empty array is valid and
@@ -968,16 +1138,20 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
 
   payload.gallery = form.gallery
     // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).
-    .filter((img) => img.mediaType === 'video'
-      ? isWritableVideoInput(img.provider, img.videoUrl)
-      : (img.url || '').trim())
-    .map((img, i) => (
+    .filter((img) =>
+      img.mediaType === 'video'
+        ? isWritableVideoInput(img.provider, img.videoUrl)
+        : (img.url || '').trim(),
+    )
+    .map((img, i) =>
       img.mediaType === 'video'
         ? {
             id: img.id || undefined,
             mediaType: 'video',
             videoUrl: (img.videoUrl || '').trim(),
-            videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider) ? img.provider : undefined,
+            videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider)
+              ? img.provider
+              : undefined,
             url: (img.url || '').trim() || null,
             alt: (img.alt || '').trim() || null,
             width: img.width ?? null,
@@ -999,8 +1173,8 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
             height: img.height ?? null,
             mimeType: img.mimeType ?? null,
             sortOrder: i,
-          }
-    ))
+          },
+    )
 
   payload.videos = form.videos
     .filter((v) => isWritableVideoInput(v.type, v.url))
@@ -1064,7 +1238,9 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
 
   // Always send accessoryProductIds — empty array explicitly clears the section.
-  payload.accessoryProductIds = Array.isArray(form.accessoryProductIds) ? form.accessoryProductIds : []
+  payload.accessoryProductIds = Array.isArray(form.accessoryProductIds)
+    ? form.accessoryProductIds
+    : []
 
   // descriptionBlocks — send when user is in block-editing mode (non-null).
   // Strip _key (frontend tracking) before sending. Filter out blocks that would
@@ -1084,16 +1260,20 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     const colorKey = getVariantColorKey(v)
     const gallery = (v.gallery ?? [])
       // V248: gallery biến thể cũng chứa cả ảnh lẫn video.
-      .filter((img) => img.mediaType === 'video'
-        ? isWritableVideoInput(img.provider, img.videoUrl)
-        : (img.url || '').trim())
-      .map((img, j) => (
+      .filter((img) =>
         img.mediaType === 'video'
-        ? {
+          ? isWritableVideoInput(img.provider, img.videoUrl)
+          : (img.url || '').trim(),
+      )
+      .map((img, j) =>
+        img.mediaType === 'video'
+          ? {
               id: img.id || undefined,
               mediaType: 'video',
               videoUrl: (img.videoUrl || '').trim(),
-              videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider) ? img.provider : undefined,
+              videoProvider: ['youtube', 'tiktok', 'facebook', 'upload'].includes(img.provider)
+                ? img.provider
+                : undefined,
               url: (img.url || '').trim() || null,
               alt: (img.alt || '').trim() || null,
               width: img.width ?? null,
@@ -1115,10 +1295,12 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
               height: img.height ?? null,
               mimeType: img.mimeType ?? null,
               sortOrder: j,
-            }
-      ))
+            },
+      )
 
-    const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
+    const shouldSendGallery = Boolean(
+      colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey),
+    )
     if (shouldSendGallery) emittedGalleryColors.add(colorKey)
 
     return {
@@ -1154,20 +1336,104 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
 // ── Section / tab layout ─────────────────────────────────────────────────────────
 
 export const SECTION_DEFS = [
-  { id: 'section-basic',          key: 'basic',         icon: 'Info',       labelKey: 'products.detail.sectionBasic',         required: true  },
-  { id: 'section-pricing',        key: 'pricing',       icon: 'Tag',        labelKey: 'products.detail.sectionPricing',       required: true  },
-  { id: 'section-media',          key: 'media',         icon: 'Image',      labelKey: 'products.detail.mainImageTitle',       required: true  },
-  { id: 'section-seo',            key: 'seo',           icon: 'Search',     labelKey: 'products.detail.sectionSeo',           required: false },
-  { id: 'section-gallery',        key: 'gallery',       icon: 'Images',     labelKey: 'products.detail.gallerySectionTitle',  required: false },
-  { id: 'section-videos',         key: 'videos',        icon: 'Video',      labelKey: 'products.detail.videoSectionTitle',    required: false },
-  { id: 'section-specs',          key: 'specs',         icon: 'ListChecks', labelKey: 'products.detail.specsSectionTitle',     required: false },
-  { id: 'section-spec-stats',     key: 'specStats',     icon: 'Gauge',      labelKey: 'products.detail.sectionSpecStats',      required: false },
-  { id: 'section-faqs',           key: 'faqs',          icon: 'HelpCircle', labelKey: 'products.detail.sectionFaqs',           required: false },
-  { id: 'section-commitments',    key: 'commitments',   icon: 'ShieldCheck',labelKey: 'products.detail.sectionCommitments',    required: false },
-  { id: 'section-trust-badges',   key: 'trustBadges',   icon: 'BadgeCheck', labelKey: 'products.detail.sectionTrustBadges',    required: false },
-  { id: 'section-variants',       key: 'variants',      icon: 'Layers',     labelKey: 'products.detail.variantSectionTitle',   required: false },
-  { id: 'section-related',        key: 'related',       icon: 'Link2',      labelKey: 'products.detail.sectionRelated',        required: false },
-  { id: 'section-accessories',    key: 'accessories',   icon: 'PlusCircle', labelKey: 'products.detail.sectionAccessories',    required: false },
+  {
+    id: 'section-basic',
+    key: 'basic',
+    icon: 'Info',
+    labelKey: 'products.detail.sectionBasic',
+    required: true,
+  },
+  {
+    id: 'section-pricing',
+    key: 'pricing',
+    icon: 'Tag',
+    labelKey: 'products.detail.sectionPricing',
+    required: true,
+  },
+  {
+    id: 'section-media',
+    key: 'media',
+    icon: 'Image',
+    labelKey: 'products.detail.mainImageTitle',
+    required: true,
+  },
+  {
+    id: 'section-seo',
+    key: 'seo',
+    icon: 'Search',
+    labelKey: 'products.detail.sectionSeo',
+    required: false,
+  },
+  {
+    id: 'section-gallery',
+    key: 'gallery',
+    icon: 'Images',
+    labelKey: 'products.detail.gallerySectionTitle',
+    required: false,
+  },
+  {
+    id: 'section-videos',
+    key: 'videos',
+    icon: 'Video',
+    labelKey: 'products.detail.videoSectionTitle',
+    required: false,
+  },
+  {
+    id: 'section-specs',
+    key: 'specs',
+    icon: 'ListChecks',
+    labelKey: 'products.detail.specsSectionTitle',
+    required: false,
+  },
+  {
+    id: 'section-spec-stats',
+    key: 'specStats',
+    icon: 'Gauge',
+    labelKey: 'products.detail.sectionSpecStats',
+    required: false,
+  },
+  {
+    id: 'section-faqs',
+    key: 'faqs',
+    icon: 'HelpCircle',
+    labelKey: 'products.detail.sectionFaqs',
+    required: false,
+  },
+  {
+    id: 'section-commitments',
+    key: 'commitments',
+    icon: 'ShieldCheck',
+    labelKey: 'products.detail.sectionCommitments',
+    required: false,
+  },
+  {
+    id: 'section-trust-badges',
+    key: 'trustBadges',
+    icon: 'BadgeCheck',
+    labelKey: 'products.detail.sectionTrustBadges',
+    required: false,
+  },
+  {
+    id: 'section-variants',
+    key: 'variants',
+    icon: 'Layers',
+    labelKey: 'products.detail.variantSectionTitle',
+    required: false,
+  },
+  {
+    id: 'section-related',
+    key: 'related',
+    icon: 'Link2',
+    labelKey: 'products.detail.sectionRelated',
+    required: false,
+  },
+  {
+    id: 'section-accessories',
+    key: 'accessories',
+    icon: 'PlusCircle',
+    labelKey: 'products.detail.sectionAccessories',
+    required: false,
+  },
 ]
 
 // 2 tab. `main` gộp toàn bộ nội dung sản phẩm theo đúng thứ tự khối hiển thị trên bigbike-web PDP
@@ -1183,8 +1449,24 @@ export const SECTION_DEFS = [
 // PDP (không hiển thị dạng block riêng). Keys phải khớp SECTION_DEFS keys; drives the per-tab error
 // badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  main: ['basic', 'media', 'pricing', 'variants', 'gallery', 'trustBadges', 'commitments', 'specStats', 'description', 'highlights', 'related', 'specs', 'faqs', 'videos', 'accessories'],
-  seo:  ['seo'],
+  main: [
+    'basic',
+    'media',
+    'pricing',
+    'variants',
+    'gallery',
+    'trustBadges',
+    'commitments',
+    'specStats',
+    'description',
+    'highlights',
+    'related',
+    'specs',
+    'faqs',
+    'videos',
+    'accessories',
+  ],
+  seo: ['seo'],
 }
 
 // Tab chính ("main") gộp mọi mục nội dung. Form rất dài nên gom thành 3 NHÓM gấp/mở (chống "quá
@@ -1193,9 +1475,25 @@ export const TAB_SECTIONS = {
 // bung nhóm khi lưu lỗi. Field originBrandCountry ("Thương hiệu (nước)") hiển thị ở khối "Mua tại
 // BigBike.vn" cuối PDP nhưng NHẬP LIỆU nằm ở "Thông tin cơ bản" — form KHÔNG mirror 1:1 vị trí hiển thị.
 export const MAIN_SECTION_GROUPS = [
-  { id: 'sales',   sections: ['basic', 'media', 'gallery', 'pricing', 'variants', 'trustBadges', 'commitments'] },
-  { id: 'content', sections: ['specStats', 'quickAnswer', 'description', 'highlights', 'related', 'suitability', 'sizeGuide', 'specs', 'faqs'] },
-  { id: 'extras',  sections: ['videos', 'accessories'] },
+  {
+    id: 'sales',
+    sections: ['basic', 'media', 'gallery', 'pricing', 'variants', 'trustBadges', 'commitments'],
+  },
+  {
+    id: 'content',
+    sections: [
+      'specStats',
+      'quickAnswer',
+      'description',
+      'highlights',
+      'related',
+      'suitability',
+      'sizeGuide',
+      'specs',
+      'faqs',
+    ],
+  },
+  { id: 'extras', sections: ['videos', 'accessories'] },
 ]
 
 // Nhóm mở sẵn khi vào trang (nhóm bán hàng cốt lõi); 2 nhóm còn lại thu gọn để form đỡ dài.
@@ -1203,9 +1501,9 @@ export const MAIN_GROUPS_DEFAULT_OPEN = { sales: true }
 
 // Id các nhóm chứa ít nhất một mục đang lỗi — để tự bung nhóm khi lưu lỗi.
 export function groupsWithErrors(sectionErrors) {
-  return MAIN_SECTION_GROUPS
-    .filter((g) => g.sections.some((s) => sectionErrors[s]))
-    .map((g) => g.id)
+  return MAIN_SECTION_GROUPS.filter((g) => g.sections.some((s) => sectionErrors[s])).map(
+    (g) => g.id,
+  )
 }
 
 // Khóa chuẩn để so bộ thuộc tính giữa các biến thể. Mọi alias màu ("Màu", "Màu sắc",
@@ -1230,16 +1528,17 @@ export function variantAttributeKey(name) {
 export function computeAttrSetWarning(items, t) {
   // key chuẩn → nhãn hiển thị (tên gốc đầu tiên gặp cho khóa đó).
   const labelByKey = new Map()
-  const sets = items.map((v) =>
-    new Set(
-      (v.options ?? [])
-        .filter((o) => (o.name ?? '').trim() && (o.value ?? '').trim())
-        .map((o) => {
-          const key = variantAttributeKey(o.name)
-          if (!labelByKey.has(key)) labelByKey.set(key, o.name.trim())
-          return key
-        }),
-    ),
+  const sets = items.map(
+    (v) =>
+      new Set(
+        (v.options ?? [])
+          .filter((o) => (o.name ?? '').trim() && (o.value ?? '').trim())
+          .map((o) => {
+            const key = variantAttributeKey(o.name)
+            if (!labelByKey.has(key)) labelByKey.set(key, o.name.trim())
+            return key
+          }),
+      ),
   )
   const union = new Set()
   sets.forEach((s) => s.forEach((k) => union.add(k)))
@@ -1255,8 +1554,7 @@ export function computeAttrSetWarning(items, t) {
       offenders.push({
         index: idx + 1,
         name:
-          (v.name ?? '').trim() ||
-          t('products.detail.variant.defaultLabel', { index: idx + 1 }),
+          (v.name ?? '').trim() || t('products.detail.variant.defaultLabel', { index: idx + 1 }),
         missing: missing.map(labelFor).join(', '),
       })
     }
@@ -1268,24 +1566,33 @@ export function computeAttrSetWarning(items, t) {
 // Field-prefix groups by section key — single source of truth used by both the
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 export const SECTION_FIELD_PREFIXES = {
-  basic:         ['name','slug','sku','genders','shortDescription','brandId','categoryIds','publishStatus'],
-  description:   ['description'],
-  pricing:       ['retailPrice','salePrice'],
-  media:         ['imageUrl'],
-  seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
-  gallery:       ['gallery'],
-  videos:        ['videos'],
+  basic: [
+    'name',
+    'slug',
+    'sku',
+    'genders',
+    'shortDescription',
+    'brandId',
+    'categoryIds',
+    'publishStatus',
+  ],
+  description: ['description'],
+  pricing: ['retailPrice', 'salePrice'],
+  media: ['imageUrl'],
+  seo: ['seoTitle', 'seoDescription', 'seoCanonicalUrl', 'seoOgImageUrl', 'seoOgImageAlt'],
+  gallery: ['gallery'],
+  videos: ['videos'],
   // Khoá bên trái = section key (tên tab); mảng bên phải = tên field thực trong form/payload —
   // sau khi bỏ hậu tố "Html", specStats/trustBadges trùng chữ với section key của chính chúng.
-  specs:         ['specifications'],
-  specStats:     ['specStats'],
-  faqs:          ['faqs'],
-  commitments:   ['commitments'],
-  highlights:    ['positiveNotes', 'negativeNotes'],
-  trustBadges:   ['trustBadges'],
-  variants:      ['variants'],
-  related:       ['relatedProductIds'],
-  accessories:   ['accessoryProductIds'],
+  specs: ['specifications'],
+  specStats: ['specStats'],
+  faqs: ['faqs'],
+  commitments: ['commitments'],
+  highlights: ['positiveNotes', 'negativeNotes'],
+  trustBadges: ['trustBadges'],
+  variants: ['variants'],
+  related: ['relatedProductIds'],
+  accessories: ['accessoryProductIds'],
 }
 
 export function computeSectionErrorsFromMap(errors) {
@@ -1308,11 +1615,16 @@ export function findTabForErrors(sectionErrors) {
 // Map publishStatus → matching .badge variant. Used in ScreenHeader.
 export function publishBadgeClass(status) {
   switch (status) {
-    case 'PUBLISHED': return 'bb-badge bb-badge-success'
-    case 'DRAFT':     return 'bb-badge bb-badge-neutral'
-    case 'HIDDEN':    return 'bb-badge bb-badge-warning'
-    case 'TRASH':     return 'bb-badge bb-badge-danger'
-    default:          return 'bb-badge bb-badge-neutral'
+    case 'PUBLISHED':
+      return 'bb-badge bb-badge-success'
+    case 'DRAFT':
+      return 'bb-badge bb-badge-neutral'
+    case 'HIDDEN':
+      return 'bb-badge bb-badge-warning'
+    case 'TRASH':
+      return 'bb-badge bb-badge-danger'
+    default:
+      return 'bb-badge bb-badge-neutral'
   }
 }
 

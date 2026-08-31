@@ -7,7 +7,16 @@ import { ScreenSkeleton } from '../../components/ScreenSkeleton'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '@/components/ui/button'
 
-export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false, isError = false, onRetry, permissionDenied = false }) {
+export function ProductsInCategoryCard({
+  item,
+  productsList,
+  productsTotal,
+  navigate,
+  isLoading = false,
+  isError = false,
+  onRetry,
+  permissionDenied = false,
+}) {
   const { t } = useTranslation()
 
   const openProduct = (p) => navigate(`/admin/products/${p.id}`)
@@ -17,8 +26,15 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
   const productThumb = (p, extraClass) => (
     <span className={`bb-product-thumb${extraClass ? ` ${extraClass}` : ''}`}>
       {p.image?.url ? (
-        <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer" />
-      ) : <Package size={16} />}
+        <img
+          src={p.image.url}
+          alt={p.image.alt || p.name}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <Package size={16} />
+      )}
     </span>
   )
 
@@ -63,7 +79,8 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
       title={t('categories.detail.productsSectionTitle', { count: productsTotal })}
       description={t('categories.detail.productsSectionDesc')}
       noPadding
-      action={productsTotal > 0 ? (
+      action={
+        productsTotal > 0 ? (
           <Button
             type="button"
             variant="ghost"
@@ -72,53 +89,58 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
           >
             {t('categories.detail.productsViewAll', { count: productsTotal })}
           </Button>
-      ) : null}
+        ) : null
+      }
     >
-        {permissionDenied ? (
-          <div className="p-4">
-            <StatePanel
-              tone="neutral"
-              title={t('categories.detail.productsPermissionTitle')}
-              description={t('categories.detail.productsPermissionDesc')}
-            />
-          </div>
-        ) : isLoading ? (
-          <div className="p-4">
-            <ScreenSkeleton variant="table" count={3} showHeader={false} />
-          </div>
-        ) : isError ? (
-          // Trước đây lỗi tải danh sách sản phẩm bị hiểu nhầm thành "Chưa có sản
-          // phẩm". Hiện trạng thái lỗi rõ ràng + nút thử lại để không đọc sai.
-          <div className="p-4">
-            <StatePanel
-              tone="danger"
-              title={t('categories.detail.productsLoadError', { defaultValue: 'Không tải được sản phẩm của danh mục.' })}
-              description={t('categories.detail.productsLoadErrorDesc', { defaultValue: 'Danh sách có thể chưa đầy đủ. Vui lòng thử lại.' })}
-              actionLabel={onRetry ? t('common.retry') : undefined}
-              onAction={onRetry}
-            />
-          </div>
-        ) : productsList.length === 0 ? (
-          <div className="text-center px-4 py-6 text-muted-foreground">
-            <p>{t('categories.detail.productsEmpty')}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mt-2"
-              onClick={() => navigate(`/admin/products?categoryId=${item.id}`)}
-            >
-              {t('categories.detail.productsEmptyAddLink')}
-            </Button>
-          </div>
-        ) : (
-          <AdminTable
-            columns={columns}
-            rows={productsList}
-            onRowClick={openProduct}
-            mobileCard={mobileCard}
+      {permissionDenied ? (
+        <div className="p-4">
+          <StatePanel
+            tone="neutral"
+            title={t('categories.detail.productsPermissionTitle')}
+            description={t('categories.detail.productsPermissionDesc')}
           />
-        )}
+        </div>
+      ) : isLoading ? (
+        <div className="p-4">
+          <ScreenSkeleton variant="table" count={3} showHeader={false} />
+        </div>
+      ) : isError ? (
+        // Trước đây lỗi tải danh sách sản phẩm bị hiểu nhầm thành "Chưa có sản
+        // phẩm". Hiện trạng thái lỗi rõ ràng + nút thử lại để không đọc sai.
+        <div className="p-4">
+          <StatePanel
+            tone="danger"
+            title={t('categories.detail.productsLoadError', {
+              defaultValue: 'Không tải được sản phẩm của danh mục.',
+            })}
+            description={t('categories.detail.productsLoadErrorDesc', {
+              defaultValue: 'Danh sách có thể chưa đầy đủ. Vui lòng thử lại.',
+            })}
+            actionLabel={onRetry ? t('common.retry') : undefined}
+            onAction={onRetry}
+          />
+        </div>
+      ) : productsList.length === 0 ? (
+        <div className="text-center px-4 py-6 text-muted-foreground">
+          <p>{t('categories.detail.productsEmpty')}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-2"
+            onClick={() => navigate(`/admin/products?categoryId=${item.id}`)}
+          >
+            {t('categories.detail.productsEmptyAddLink')}
+          </Button>
+        </div>
+      ) : (
+        <AdminTable
+          columns={columns}
+          rows={productsList}
+          onRowClick={openProduct}
+          mobileCard={mobileCard}
+        />
+      )}
     </DetailSection>
   )
 }

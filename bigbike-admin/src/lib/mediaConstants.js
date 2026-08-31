@@ -1,8 +1,4 @@
-export const IMAGE_MEDIA_MIME_TYPES = Object.freeze([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-])
+export const IMAGE_MEDIA_MIME_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp'])
 
 export const VIDEO_MEDIA_MIME_TYPES = Object.freeze(['video/mp4'])
 
@@ -16,6 +12,8 @@ export const MEDIA_UPLOAD_MIME_TYPES = Object.freeze([
 export const MAX_MEDIA_UPLOAD_BYTES = 200 * 1024 * 1024
 
 export function normalizeMediaMimeType(mimeType) {
-  const normalized = String(mimeType || '').trim().toLowerCase()
+  const normalized = String(mimeType || '')
+    .trim()
+    .toLowerCase()
   return normalized === 'image/jpg' ? 'image/jpeg' : normalized
 }

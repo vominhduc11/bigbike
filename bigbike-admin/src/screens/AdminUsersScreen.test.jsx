@@ -74,13 +74,25 @@ vi.mock('../components/AdminTable', () => ({
 }))
 vi.mock('../components/FilterSearchInput', () => ({
   FilterSearchInput: ({ value, onChange, placeholder }) => (
-    <input aria-label={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
+    <input
+      aria-label={placeholder}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
   ),
 }))
 vi.mock('../components/FilterSelect', () => ({
   FilterSelect: ({ value, onValueChange, ariaLabel, options }) => (
-    <select aria-label={ariaLabel} value={value} onChange={(event) => onValueChange(event.target.value)}>
-      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </select>
   ),
 }))
@@ -102,22 +114,34 @@ vi.mock('../components/StatePanel', () => ({
     <div>
       <span>{title}</span>
       <span>{description}</span>
-      {actionLabel ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
+      {actionLabel ? (
+        <button type="button" onClick={onAction}>
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   ),
 }))
 vi.mock('../components/layout', () => ({
   Screen: ({ children, ...props }) => <main {...props}>{children}</main>,
   ScreenHeader: ({ eyebrow, title, description, actions }) => (
-    <header><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p>{actions}</header>
+    <header>
+      <span>{eyebrow}</span>
+      <h1>{title}</h1>
+      <p>{description}</p>
+      {actions}
+    </header>
   ),
-  Modal: ({ open, title, children, actions }) => open ? (
-    <div role="dialog" aria-label={title}>
-      {children}
-      <div>{actions}</div>
-    </div>
-  ) : null,
-  ResponsiveFilterBar: ({ children, ariaLabel }) => <section aria-label={ariaLabel}>{children}</section>,
+  Modal: ({ open, title, children, actions }) =>
+    open ? (
+      <div role="dialog" aria-label={title}>
+        {children}
+        <div>{actions}</div>
+      </div>
+    ) : null,
+  ResponsiveFilterBar: ({ children, ariaLabel }) => (
+    <section aria-label={ariaLabel}>{children}</section>
+  ),
 }))
 vi.mock('@/components/ui/select', () => ({
   Select: ({ value, onValueChange, disabled, children, ...props }) => (
@@ -133,7 +157,11 @@ vi.mock('@/components/ui/select', () => ({
   SelectTrigger: () => null,
   SelectValue: () => null,
   SelectContent: ({ children }) => <>{children}</>,
-  SelectItem: ({ value, disabled, children }) => <option value={value} disabled={disabled}>{children}</option>,
+  SelectItem: ({ value, disabled, children }) => (
+    <option value={value} disabled={disabled}>
+      {children}
+    </option>
+  ),
 }))
 
 const USERS = [
@@ -172,14 +200,7 @@ const USERS = [
 ]
 
 function renderScreen(props = {}) {
-  return render(
-    <AdminUsersScreen
-      canUpdate
-      currentUserId="self"
-      isSuperAdmin={false}
-      {...props}
-    />,
-  )
+  return render(<AdminUsersScreen canUpdate currentUserId="self" isSuperAdmin={false} {...props} />)
 }
 
 function row(id) {
@@ -192,12 +213,14 @@ beforeEach(() => {
     items: USERS,
     pagination: { page: 1, pageSize: 20, totalItems: USERS.length, totalPages: 1 },
   })
-  mocks.fetchRoles.mockResolvedValue({ items: [
-    { id: 'SUPER_ADMIN', name: 'Super Admin' },
-    { id: 'ADMIN', name: 'Admin' },
-    { id: 'EDITOR', name: 'Editor' },
-    { id: 'WAREHOUSE', name: 'Kho hàng' },
-  ] })
+  mocks.fetchRoles.mockResolvedValue({
+    items: [
+      { id: 'SUPER_ADMIN', name: 'Super Admin' },
+      { id: 'ADMIN', name: 'Admin' },
+      { id: 'EDITOR', name: 'Editor' },
+      { id: 'WAREHOUSE', name: 'Kho hàng' },
+    ],
+  })
   mocks.showConfirm.mockResolvedValue(true)
 })
 
@@ -226,7 +249,9 @@ describe('AdminUsersScreen', () => {
 
     const roleFilter = screen.getByLabelText('adminUsers.filterRole')
     expect(within(roleFilter).getByRole('option', { name: 'Biên tập viên' })).toBeInTheDocument()
-    expect(within(roleFilter).queryByRole('option', { name: 'Quản lý shop' })).not.toBeInTheDocument()
+    expect(
+      within(roleFilter).queryByRole('option', { name: 'Quản lý shop' }),
+    ).not.toBeInTheDocument()
 
     await user.click(within(row('editor')).getByRole('button', { name: 'common.edit' }))
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.editTitle' })
@@ -238,14 +263,22 @@ describe('AdminUsersScreen', () => {
     renderScreen()
     await screen.findByText('Người được mời')
 
-    expect(within(row('invited')).queryByRole('button', { name: 'adminUsers.actionActivate' })).not.toBeInTheDocument()
-    expect(within(row('invited')).getByRole('button', { name: 'adminUsers.resendInvite' })).toBeEnabled()
+    expect(
+      within(row('invited')).queryByRole('button', { name: 'adminUsers.actionActivate' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(row('invited')).getByRole('button', { name: 'adminUsers.resendInvite' }),
+    ).toBeEnabled()
   })
 
   it('prevents duplicate invite resends while the first request is pending', async () => {
     const user = userEvent.setup()
     let finish
-    mocks.resendAdminInvite.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    mocks.resendAdminInvite.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
     renderScreen()
     await screen.findByText('Người được mời')
 
@@ -288,12 +321,14 @@ describe('AdminUsersScreen', () => {
     await user.type(password, 'Secure@123')
     await user.click(within(dialog).getByRole('button', { name: 'adminUsers.saveBtn' }))
 
-    await waitFor(() => expect(mocks.updateAdminUser).toHaveBeenCalledWith('self', {
-      displayName: 'Tài khoản của tôi',
-      status: undefined,
-      role: undefined,
-      newPassword: 'Secure@123',
-    }))
+    await waitFor(() =>
+      expect(mocks.updateAdminUser).toHaveBeenCalledWith('self', {
+        displayName: 'Tài khoản của tôi',
+        status: undefined,
+        role: undefined,
+        newPassword: 'Secure@123',
+      }),
+    )
   })
 
   it('keeps invited status read-only and explains the invite acceptance flow', async () => {
@@ -317,7 +352,9 @@ describe('AdminUsersScreen', () => {
     await user.type(within(dialog).getByLabelText(/^adminUsers\.formPasswordNew/), 'short')
     await user.click(within(dialog).getByRole('button', { name: 'adminUsers.saveBtn' }))
 
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Mật khẩu phải có ít nhất 8 ký tự.')
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Mật khẩu phải có ít nhất 8 ký tự.',
+    )
     expect(mocks.updateAdminUser).not.toHaveBeenCalled()
   })
 
@@ -336,15 +373,22 @@ describe('AdminUsersScreen', () => {
     const dialog = screen.getByRole('dialog', { name: 'adminUsers.createTitle' })
     expect(within(dialog).queryByRole('option', { name: 'Chủ hệ thống' })).not.toBeInTheDocument()
     await user.type(within(dialog).getByLabelText(/^adminUsers\.formEmail/), 'new@bigbike.vn')
-    await user.type(within(dialog).getByLabelText(/^adminUsers\.formDisplayName/), 'Quản trị viên mới')
+    await user.type(
+      within(dialog).getByLabelText(/^adminUsers\.formDisplayName/),
+      'Quản trị viên mới',
+    )
     await user.click(within(dialog).getByRole('button', { name: 'adminUsers.createBtn' }))
 
-    await waitFor(() => expect(mocks.createAdminUser).toHaveBeenCalledWith({
-      email: 'new@bigbike.vn',
-      displayName: 'Quản trị viên mới',
-      role: 'ADMIN',
-    }))
-    expect(await screen.findByText('https://admin.bigbike.vn/accept-invite/token')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(mocks.createAdminUser).toHaveBeenCalledWith({
+        email: 'new@bigbike.vn',
+        displayName: 'Quản trị viên mới',
+        role: 'ADMIN',
+      }),
+    )
+    expect(
+      await screen.findByText('https://admin.bigbike.vn/accept-invite/token'),
+    ).toBeInTheDocument()
   })
 
   it('shows SUPER_ADMIN as an assignable role only to a system owner', async () => {
@@ -367,7 +411,9 @@ describe('AdminUsersScreen', () => {
     await user.click(within(row('editor')).getByRole('button', { name: 'adminUsers.actionLock' }))
 
     expect(mocks.showConfirm).toHaveBeenCalled()
-    await waitFor(() => expect(mocks.updateAdminUser).toHaveBeenCalledWith('editor', { status: 'DISABLED' }))
+    await waitFor(() =>
+      expect(mocks.updateAdminUser).toHaveBeenCalledWith('editor', { status: 'DISABLED' }),
+    )
   })
 
   it('keeps pagination text aligned with card padding', async () => {

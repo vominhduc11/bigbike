@@ -38,7 +38,7 @@ vi.mock('../lib/adminApi', () => ({
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 
 vi.mock('./roles/Toast', () => ({
-  Toast: ({ toast }) => toast ? <div role="status">{toast.msg}</div> : null,
+  Toast: ({ toast }) => (toast ? <div role="status">{toast.msg}</div> : null),
 }))
 vi.mock('./roles/RoleSidebar', () => ({
   RoleSidebar: ({ roles, selectedId, onSelect, canUpdate, onCreateRole }) => (
@@ -53,51 +53,87 @@ vi.mock('./roles/RoleSidebar', () => ({
           role-{role.id}
         </button>
       ))}
-      {canUpdate ? <button type="button" onClick={onCreateRole}>create-role</button> : null}
+      {canUpdate ? (
+        <button type="button" onClick={onCreateRole}>
+          create-role
+        </button>
+      ) : null}
     </div>
   ),
 }))
 vi.mock('./roles/RoleDetail', () => ({
   RoleDetail: ({
-    role, canUpdate, editMode, isDirty, onStartEdit, onToggle, onRequestSave, onDeleteRole,
+    role,
+    canUpdate,
+    editMode,
+    isDirty,
+    onStartEdit,
+    onToggle,
+    onRequestSave,
+    onDeleteRole,
   }) => (
     <div data-testid="role-detail">
       <span>selected-{role.id}</span>
-      <span>role-type-{role.id}-{role.isSystem ? 'system' : 'custom'}</span>
-      {!editMode && canUpdate && role.id !== 'SUPER_ADMIN'
-        ? <button type="button" onClick={onStartEdit}>start-edit</button>
-        : null}
+      <span>
+        role-type-{role.id}-{role.isSystem ? 'system' : 'custom'}
+      </span>
+      {!editMode && canUpdate && role.id !== 'SUPER_ADMIN' ? (
+        <button type="button" onClick={onStartEdit}>
+          start-edit
+        </button>
+      ) : null}
       {editMode ? (
         <>
-          <button type="button" onClick={() => onToggle('roles.write', 'Quản lý vai trò')}>toggle-own-write</button>
-          <button type="button" onClick={() => onToggle('admin-users.write', 'Quản lý tài khoản')}>toggle-sensitive</button>
-          <button type="button" disabled={!isDirty} onClick={onRequestSave}>request-save</button>
+          <button type="button" onClick={() => onToggle('roles.write', 'Quản lý vai trò')}>
+            toggle-own-write
+          </button>
+          <button type="button" onClick={() => onToggle('admin-users.write', 'Quản lý tài khoản')}>
+            toggle-sensitive
+          </button>
+          <button type="button" disabled={!isDirty} onClick={onRequestSave}>
+            request-save
+          </button>
         </>
       ) : null}
-      {!role.isSystem ? <button type="button" onClick={onDeleteRole}>request-delete</button> : null}
+      {!role.isSystem ? (
+        <button type="button" onClick={onDeleteRole}>
+          request-delete
+        </button>
+      ) : null}
     </div>
   ),
 }))
 vi.mock('./roles/ConfirmSensitiveDialog', () => ({
-  ConfirmSensitiveDialog: ({ pending, onConfirm }) => pending
-    ? <button type="button" onClick={onConfirm}>confirm-sensitive</button>
-    : null,
+  ConfirmSensitiveDialog: ({ pending, onConfirm }) =>
+    pending ? (
+      <button type="button" onClick={onConfirm}>
+        confirm-sensitive
+      </button>
+    ) : null,
 }))
 vi.mock('./roles/SaveSummaryDialog', () => ({
-  SaveSummaryDialog: ({ pending, onConfirm }) => pending
-    ? <button type="button" onClick={onConfirm}>confirm-save</button>
-    : null,
+  SaveSummaryDialog: ({ pending, onConfirm }) =>
+    pending ? (
+      <button type="button" onClick={onConfirm}>
+        confirm-save
+      </button>
+    ) : null,
 }))
 vi.mock('./roles/CreateRoleDialog', () => ({
   CreateRoleDialog: ({ onConfirm, sensitiveKeys }) => (
     <div role="dialog" aria-label="create-role">
       <span data-testid="sensitive-count">{sensitiveKeys.size}</span>
-      <button type="button" onClick={() => onConfirm({
-        id: 'WAREHOUSE',
-        name: 'Kho hàng',
-        description: '',
-        permissions: [],
-      })}>
+      <button
+        type="button"
+        onClick={() =>
+          onConfirm({
+            id: 'WAREHOUSE',
+            name: 'Kho hàng',
+            description: '',
+            permissions: [],
+          })
+        }
+      >
         submit-create
       </button>
     </div>
@@ -248,10 +284,12 @@ describe('RolesScreen', () => {
     expect(mocks.updateRolePermissions).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'confirm-save' }))
 
-    await waitFor(() => expect(mocks.updateRolePermissions).toHaveBeenCalledWith(
-      'ADMIN',
-      expect.arrayContaining(['roles.read', 'roles.write', 'admin-users.write']),
-    ))
+    await waitFor(() =>
+      expect(mocks.updateRolePermissions).toHaveBeenCalledWith(
+        'ADMIN',
+        expect.arrayContaining(['roles.read', 'roles.write', 'admin-users.write']),
+      ),
+    )
   })
 
   it('shows a blocked shared confirmation for a custom role that still has assigned staff', async () => {
@@ -277,11 +315,13 @@ describe('RolesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'role-EMPTY_ROLE' }))
     await user.click(screen.getByRole('button', { name: 'request-delete' }))
 
-    await waitFor(() => expect(mocks.showConfirm).toHaveBeenCalledWith(
-      expect.stringContaining('roles.deleteRoleConfirm'),
-      'common.permanentDeleteTitle',
-      expect.objectContaining({ variant: 'danger', confirmLabel: 'common.permanentDelete' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.showConfirm).toHaveBeenCalledWith(
+        expect.stringContaining('roles.deleteRoleConfirm'),
+        'common.permanentDeleteTitle',
+        expect.objectContaining({ variant: 'danger', confirmLabel: 'common.permanentDelete' }),
+      ),
+    )
     await waitFor(() => expect(mocks.deleteRole).toHaveBeenCalledWith('EMPTY_ROLE'))
     expect(screen.queryByRole('button', { name: 'role-EMPTY_ROLE' })).not.toBeInTheDocument()
   })
@@ -297,12 +337,14 @@ describe('RolesScreen', () => {
 
     expect(screen.getByTestId('sensitive-count')).toHaveTextContent('2')
     await user.click(screen.getByRole('button', { name: 'submit-create' }))
-    await waitFor(() => expect(mocks.createRole).toHaveBeenCalledWith({
-      id: 'WAREHOUSE',
-      name: 'Kho hàng',
-      description: '',
-      permissions: [],
-    }))
+    await waitFor(() =>
+      expect(mocks.createRole).toHaveBeenCalledWith({
+        id: 'WAREHOUSE',
+        name: 'Kho hàng',
+        description: '',
+        permissions: [],
+      }),
+    )
     expect(await screen.findByText('selected-WAREHOUSE')).toBeInTheDocument()
   })
 })

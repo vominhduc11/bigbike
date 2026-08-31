@@ -19,7 +19,11 @@ import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
-import { FEATURED_GRID_MAX, featuredSaveErrorMessage, isFeaturedLive } from './featured-products/constants'
+import {
+  FEATURED_GRID_MAX,
+  featuredSaveErrorMessage,
+  isFeaturedLive,
+} from './featured-products/constants'
 
 function ProductPicker({ onAdd, disabledIds, disabled }) {
   const { t } = useTranslation()
@@ -34,19 +38,27 @@ function ProductPicker({ onAdd, disabledIds, disabled }) {
 
   const results = items.filter((p) => !disabledIds.has(p.id))
 
-  const handleSelect = useCallback((product) => {
-    onAdd(product)
-    reset()
-    setOpen(false)
-  }, [onAdd, reset])
+  const handleSelect = useCallback(
+    (product) => {
+      onAdd(product)
+      reset()
+      setOpen(false)
+    },
+    [onAdd, reset],
+  )
 
   return (
     <ProductPickerCombobox
       search={search}
-      onSearchChange={(v) => { setSearch(v); setOpen(true) }}
+      onSearchChange={(v) => {
+        setSearch(v)
+        setOpen(true)
+      }}
       onFocus={() => setOpen(true)}
       open={open && search.trim().length > 0}
-      onOpenChange={(next) => { if (!next) setOpen(false) }}
+      onOpenChange={(next) => {
+        if (!next) setOpen(false)
+      }}
       loading={isFetching}
       items={results}
       onPick={handleSelect}
@@ -83,15 +95,15 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           referrerPolicy="no-referrer"
           loading="lazy"
           // Ảnh hỏng/404 trước đây để lại ô ảnh vỡ giữa dòng — ẩn hẳn để dòng không bị lệch.
-          onError={(event) => { event.currentTarget.hidden = true }}
+          onError={(event) => {
+            event.currentTarget.hidden = true
+          }}
           className="w-12 h-12 object-cover flex-shrink-0"
         />
       )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-tight truncate">{product.name}</p>
-        {product.sku && (
-          <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>
-        )}
+        {product.sku && <p className="text-xs text-muted-foreground mt-1">SKU: {product.sku}</p>}
       </div>
       {/* Sản phẩm bị chuyển về Nháp/Thùng rác vẫn nằm trong danh sách nổi bật nhưng KHÔNG
           hiện trên trang chủ, và chặn luôn thao tác lưu. Gắn nhãn trạng thái để chủ shop
@@ -124,7 +136,13 @@ export function FeaturedProductsScreen({ canUpdate }) {
   // baseline = danh sách id đã lưu trên server, để so sánh phát hiện thay đổi chưa lưu.
   const [baselineIds, setBaselineIds] = useState([])
 
-  const { isLoading, isError, error, data: blocksData, refetch } = useQuery({
+  const {
+    isLoading,
+    isError,
+    error,
+    data: blocksData,
+    refetch,
+  } = useQuery({
     queryKey: ['homepage-blocks', contentLang],
     queryFn: fetchHomepageBlocks,
   })
@@ -132,13 +150,16 @@ export function FeaturedProductsScreen({ canUpdate }) {
   // So sánh thứ tự id hiện tại với baseline để biết có thay đổi chưa lưu (F6).
   const currentIds = items.map((p) => p.id)
   const isDirty =
-    currentIds.length !== baselineIds.length ||
-    currentIds.some((id, i) => id !== baselineIds[i])
+    currentIds.length !== baselineIds.length || currentIds.some((id, i) => id !== baselineIds[i])
 
   // Cảnh báo khi rời trang / reload / đóng tab lúc đang có thay đổi chưa lưu.
-  useUnsavedChanges(isDirty, t('featuredProducts.unsavedConfirm', {
-    defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
-  }))
+  useUnsavedChanges(
+    isDirty,
+    t('featuredProducts.unsavedConfirm', {
+      defaultValue:
+        'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+    }),
+  )
 
   // Đổi ngôn ngữ nội dung → fetch lại theo lang mới, bỏ chốt để lấy lại tên đã dịch.
   // Nếu đang có thay đổi chưa lưu thì hỏi trước khi ghi đè danh sách đã sửa.
@@ -149,7 +170,8 @@ export function FeaturedProductsScreen({ canUpdate }) {
       if (isDirty) {
         const ok = await showConfirm(
           t('featuredProducts.langSwitchConfirm', {
-            defaultValue: 'Bạn có thay đổi chưa lưu. Đổi ngôn ngữ sẽ tải lại danh sách và mất các thay đổi này. Tiếp tục?',
+            defaultValue:
+              'Bạn có thay đổi chưa lưu. Đổi ngôn ngữ sẽ tải lại danh sách và mất các thay đổi này. Tiếp tục?',
           }),
           t('featuredProducts.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
         )
@@ -158,7 +180,9 @@ export function FeaturedProductsScreen({ canUpdate }) {
       setInitialized(false)
     }
     maybeReset()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
     // Chỉ chạy khi contentLang đổi; isDirty/initialized đọc snapshot tại thời điểm đổi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLang])
@@ -269,9 +293,17 @@ export function FeaturedProductsScreen({ canUpdate }) {
 
       <form
         className="flex flex-col gap-4"
-        onSubmit={(e) => { e.preventDefault(); if (canUpdate && !saveMutation.isPending) handleSave() }}
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (canUpdate && !saveMutation.isPending) handleSave()
+        }}
         onKeyDown={(e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canUpdate && !saveMutation.isPending) {
+          if (
+            (e.metaKey || e.ctrlKey) &&
+            e.key === 'Enter' &&
+            canUpdate &&
+            !saveMutation.isPending
+          ) {
             e.preventDefault()
             handleSave()
           }
@@ -279,9 +311,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">
-              {t('featuredProducts.gridTitle')}
-            </p>
+            <p className="text-sm font-medium">{t('featuredProducts.gridTitle')}</p>
             <span className="text-xs text-muted-foreground">
               {items.length} / {FEATURED_GRID_MAX}
             </span>
@@ -292,7 +322,8 @@ export function FeaturedProductsScreen({ canUpdate }) {
               {t('featuredProducts.staleWarning', {
                 count: staleItems.length,
                 names: staleItems.map((p) => p.name).join(', '),
-                defaultValue: 'Có {{count}} sản phẩm trong danh sách hiện không còn đang bán nên không hiện trên trang chủ: {{names}}. Hãy đăng bán lại hoặc bỏ khỏi danh sách — chưa xử lý thì không lưu được thay đổi.',
+                defaultValue:
+                  'Có {{count}} sản phẩm trong danh sách hiện không còn đang bán nên không hiện trên trang chủ: {{names}}. Hãy đăng bán lại hoặc bỏ khỏi danh sách — chưa xử lý thì không lưu được thay đổi.',
               })}
             </Alert>
           )}
@@ -302,7 +333,11 @@ export function FeaturedProductsScreen({ canUpdate }) {
               tone="info"
               title={t('featuredProducts.emptyTitle', { defaultValue: 'Chưa có sản phẩm nổi bật' })}
               description={t('featuredProducts.emptyHint')}
-              actionLabel={canUpdate ? t('featuredProducts.emptyAction', { defaultValue: 'Thêm sản phẩm' }) : undefined}
+              actionLabel={
+                canUpdate
+                  ? t('featuredProducts.emptyAction', { defaultValue: 'Thêm sản phẩm' })
+                  : undefined
+              }
               onAction={canUpdate ? focusPicker : undefined}
             />
           )}
@@ -335,7 +370,12 @@ export function FeaturedProductsScreen({ canUpdate }) {
         </div>
 
         <StickyActionBar ariaLabel={t('common.actions')}>
-          <Button type="button" variant="outline" onClick={handleDiscard} disabled={!isDirty || saveMutation.isPending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDiscard}
+            disabled={!isDirty || saveMutation.isPending}
+          >
             {t('common.cancel')}
           </Button>
           <Button type="submit" loading={saveMutation.isPending} disabled={!canUpdate || !isDirty}>

@@ -8,8 +8,12 @@ vi.mock('react-i18next', () => ({
 vi.mock('./MediaPickerModal', () => ({
   MediaPickerModal: ({ onSelect, onClose }) => (
     <div data-testid="media-picker">
-      <button type="button" onClick={() => onSelect('/media/test.jpg', { altText: 'Ảnh test' })}>select image</button>
-      <button type="button" onClick={onClose}>close picker</button>
+      <button type="button" onClick={() => onSelect('/media/test.jpg', { altText: 'Ảnh test' })}>
+        select image
+      </button>
+      <button type="button" onClick={onClose}>
+        close picker
+      </button>
     </div>
   ),
 }))
@@ -27,14 +31,40 @@ vi.mock('@tiptap/react', () => ({
 
 import { RichTextEditor } from './RichTextEditor'
 
-function makeEditor({ isDestroyed, allActive = false, view = { dom: document.createElement('div') } }) {
+function makeEditor({
+  isDestroyed,
+  allActive = false,
+  view = { dom: document.createElement('div') },
+}) {
   const chain = {}
   for (const method of [
-    'focus', 'undo', 'redo', 'toggleBold', 'toggleItalic', 'toggleUnderline', 'toggleStrike',
-    'toggleHeading', 'toggleBulletList', 'toggleOrderedList', 'toggleBlockquote', 'unsetLink',
-    'setLink', 'setTextAlign', 'toggleCode', 'setHorizontalRule', 'setColor', 'setBackgroundColor',
-    'unsetColor', 'unsetBackgroundColor', 'insertTable', 'addColumnAfter', 'addRowAfter',
-    'deleteColumn', 'deleteRow', 'deleteTable', 'setImage',
+    'focus',
+    'undo',
+    'redo',
+    'toggleBold',
+    'toggleItalic',
+    'toggleUnderline',
+    'toggleStrike',
+    'toggleHeading',
+    'toggleBulletList',
+    'toggleOrderedList',
+    'toggleBlockquote',
+    'unsetLink',
+    'setLink',
+    'setTextAlign',
+    'toggleCode',
+    'setHorizontalRule',
+    'setColor',
+    'setBackgroundColor',
+    'unsetColor',
+    'unsetBackgroundColor',
+    'insertTable',
+    'addColumnAfter',
+    'addRowAfter',
+    'deleteColumn',
+    'deleteRow',
+    'deleteTable',
+    'setImage',
   ]) {
     chain[method] = vi.fn(() => chain)
   }
@@ -45,7 +75,9 @@ function makeEditor({ isDestroyed, allActive = false, view = { dom: document.cre
     isEmpty: false,
     getHTML: vi.fn(() => '<p>cũ</p>'),
     getText: vi.fn(() => 'cũ'),
-    getAttributes: vi.fn((name) => (allActive && name === 'link' ? { href: 'https://example.com' } : {})),
+    getAttributes: vi.fn((name) =>
+      allActive && name === 'link' ? { href: 'https://example.com' } : {},
+    ),
     isActive: vi.fn(() => allActive),
     can: vi.fn(() => ({ undo: () => true, redo: () => true })),
     storage: {},
@@ -90,7 +122,9 @@ describe('RichTextEditor', () => {
     editorRef.current = makeEditor({ isDestroyed: false })
     render(<RichTextEditor value="<p>mới</p>" />)
     expect(editorRef.current.getHTML).toHaveBeenCalled()
-    expect(editorRef.current.commands.setContent).toHaveBeenCalledWith('<p>mới</p>', { emitUpdate: false })
+    expect(editorRef.current.commands.setContent).toHaveBeenCalledWith('<p>mới</p>', {
+      emitUpdate: false,
+    })
   })
 
   it('giữ nguyên lệnh toolbar khi editor còn sống', () => {
@@ -108,30 +142,56 @@ describe('RichTextEditor', () => {
     editorRef.current = makeEditor({ isDestroyed: false, allActive: true })
     render(<RichTextEditor value="<p>a</p>" enableImagePicker />)
     const editor = editorRef.current
-    editor.chain.mockImplementation(() => { throw new Error('Không được gọi chain trên editor đã huỷ') })
+    editor.chain.mockImplementation(() => {
+      throw new Error('Không được gọi chain trên editor đã huỷ')
+    })
     editor.isDestroyed = true
 
     const toolbarButtons = [
-      'richEditor.undo', 'richEditor.redo', 'richEditor.bold', 'richEditor.italic',
-      'richEditor.underline', 'richEditor.strike', 'richEditor.h2', 'richEditor.h3',
-      'richEditor.bulletList', 'richEditor.orderedList', 'richEditor.quote', 'richEditor.link',
-      'richEditor.unlink', 'richEditor.image', 'Căn trái', 'Căn giữa', 'Căn phải',
+      'richEditor.undo',
+      'richEditor.redo',
+      'richEditor.bold',
+      'richEditor.italic',
+      'richEditor.underline',
+      'richEditor.strike',
+      'richEditor.h2',
+      'richEditor.h3',
+      'richEditor.bulletList',
+      'richEditor.orderedList',
+      'richEditor.quote',
+      'richEditor.link',
+      'richEditor.unlink',
+      'richEditor.image',
+      'Căn trái',
+      'Căn giữa',
+      'Căn phải',
     ]
-    expect(() => toolbarButtons.forEach((name) => {
-      fireEvent.mouseDown(screen.getByRole('button', { name }))
-    })).not.toThrow()
+    expect(() =>
+      toolbarButtons.forEach((name) => {
+        fireEvent.mouseDown(screen.getByRole('button', { name }))
+      }),
+    ).not.toThrow()
     expect(screen.queryByTestId('media-picker')).not.toBeInTheDocument()
 
     const more = screen.getByRole('button', { name: 'Thêm' })
     const menuItems = [
-      'richEditor.code', 'richEditor.hr', 'Xoá màu', 'Chèn bảng', 'Thêm cột', 'Thêm dòng',
-      'Xoá cột', 'Xoá dòng', 'Xoá bảng',
+      'richEditor.code',
+      'richEditor.hr',
+      'Xoá màu',
+      'Chèn bảng',
+      'Thêm cột',
+      'Thêm dòng',
+      'Xoá cột',
+      'Xoá dòng',
+      'Xoá bảng',
     ]
-    expect(() => menuItems.forEach((name) => {
-      fireEvent.pointerDown(more)
-      fireEvent.click(more)
-      fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(name) }))
-    })).not.toThrow()
+    expect(() =>
+      menuItems.forEach((name) => {
+        fireEvent.pointerDown(more)
+        fireEvent.click(more)
+        fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(name) }))
+      }),
+    ).not.toThrow()
 
     fireEvent.pointerDown(more)
     fireEvent.click(more)
@@ -149,7 +209,9 @@ describe('RichTextEditor', () => {
     expect(screen.getByTestId('media-picker')).toBeInTheDocument()
     editor.isDestroyed = true
 
-    expect(() => fireEvent.click(screen.getByRole('button', { name: 'select image' }))).not.toThrow()
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'select image' })),
+    ).not.toThrow()
     expect(editor.chain).not.toHaveBeenCalled()
 
     editor.isDestroyed = false
@@ -158,8 +220,12 @@ describe('RichTextEditor', () => {
     expect(screen.getByRole('button', { name: 'richEditor.apply' })).toBeInTheDocument()
     editor.isDestroyed = true
 
-    expect(() => fireEvent.click(screen.getByRole('button', { name: 'richEditor.apply' }))).not.toThrow()
-    expect(() => fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))).not.toThrow()
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'richEditor.apply' })),
+    ).not.toThrow()
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'common.cancel' })),
+    ).not.toThrow()
     expect(editor.chain).not.toHaveBeenCalled()
   })
 

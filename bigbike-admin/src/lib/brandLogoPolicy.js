@@ -12,7 +12,8 @@ function normalizeMimeType(mimeType) {
 export function brandLogoCheckerboardStyle() {
   return {
     backgroundColor: 'var(--admin-color-surface-base)',
-    backgroundImage: 'linear-gradient(45deg, var(--admin-color-surface-muted) 25%, transparent 25%, transparent 75%, var(--admin-color-surface-muted) 75%), linear-gradient(45deg, var(--admin-color-surface-muted) 25%, transparent 25%, transparent 75%, var(--admin-color-surface-muted) 75%)',
+    backgroundImage:
+      'linear-gradient(45deg, var(--admin-color-surface-muted) 25%, transparent 25%, transparent 75%, var(--admin-color-surface-muted) 75%), linear-gradient(45deg, var(--admin-color-surface-muted) 25%, transparent 25%, transparent 75%, var(--admin-color-surface-muted) 75%)',
     backgroundPosition: '0 0, 10px 10px',
     backgroundSize: '20px 20px',
   }
@@ -81,8 +82,10 @@ export function getBrandLogoIssues(details) {
   if (!details || !Number.isFinite(details.width) || !Number.isFinite(details.height)) {
     return ['UNREADABLE']
   }
-  if (!BRAND_LOGO_MIME_TYPES.includes(normalizeMimeType(details.mimeType))) issues.push('UNSUPPORTED_TYPE')
-  if (details.width < BRAND_LOGO_MIN_PIXELS || details.height < BRAND_LOGO_MIN_PIXELS) issues.push('TOO_SMALL')
+  if (!BRAND_LOGO_MIME_TYPES.includes(normalizeMimeType(details.mimeType)))
+    issues.push('UNSUPPORTED_TYPE')
+  if (details.width < BRAND_LOGO_MIN_PIXELS || details.height < BRAND_LOGO_MIN_PIXELS)
+    issues.push('TOO_SMALL')
   if (!isSquareEnough(details.width, details.height)) issues.push('NOT_SQUARE')
   if (details.transparent === false) issues.push('NOT_TRANSPARENT')
   if (details.transparent == null) issues.push('TRANSPARENCY_UNVERIFIED')
@@ -91,7 +94,9 @@ export function getBrandLogoIssues(details) {
 
 export function getBrandLogoSourceDecision(details) {
   const issues = getBrandLogoIssues(details)
-  const blockingBeforeCrop = issues.filter((issue) => issue !== 'NOT_SQUARE' && isBrandLogoBlockingIssue(issue))
+  const blockingBeforeCrop = issues.filter(
+    (issue) => issue !== 'NOT_SQUARE' && isBrandLogoBlockingIssue(issue),
+  )
   if (blockingBeforeCrop.length) return { needsCrop: false, issues }
   if (issues.includes('NOT_SQUARE')) return { needsCrop: true, issues: [] }
   return { needsCrop: false, issues }
@@ -102,15 +107,17 @@ export function isBrandLogoBlockingIssue(issue) {
 }
 
 export function brandLogoIssueTranslationKey(issue) {
-  return {
-    UNSUPPORTED_TYPE: 'brands.logo.errors.unsupportedType',
-    TOO_SMALL: 'brands.logo.errors.tooSmall',
-    NOT_SQUARE: 'brands.logo.errors.notSquare',
-    NOT_TRANSPARENT: 'brands.logo.errors.notTransparent',
-    TRANSPARENCY_UNVERIFIED: 'brands.logo.errors.transparencyUnverified',
-    UNREADABLE: 'brands.logo.errors.unreadable',
-    MEDIA_UNAVAILABLE: 'brands.logo.errors.mediaUnavailable',
-  }[issue] || 'brands.logo.errors.unreadable'
+  return (
+    {
+      UNSUPPORTED_TYPE: 'brands.logo.errors.unsupportedType',
+      TOO_SMALL: 'brands.logo.errors.tooSmall',
+      NOT_SQUARE: 'brands.logo.errors.notSquare',
+      NOT_TRANSPARENT: 'brands.logo.errors.notTransparent',
+      TRANSPARENCY_UNVERIFIED: 'brands.logo.errors.transparencyUnverified',
+      UNREADABLE: 'brands.logo.errors.unreadable',
+      MEDIA_UNAVAILABLE: 'brands.logo.errors.mediaUnavailable',
+    }[issue] || 'brands.logo.errors.unreadable'
+  )
 }
 
 export function isBrandLogoReady(details) {

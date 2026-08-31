@@ -4038,6 +4038,7 @@
     "errorSourceInvalid": "Địa chỉ cũ phải là đường dẫn trong website, không gồm tên miền, query hoặc dấu #.",
     "errorSourceConflict": "Địa chỉ cũ đã tồn tại.",
     "errorTargetRequired": "Địa chỉ mới là bắt buộc.",
+    "errorTargetInvalid": "Địa chỉ mới phải là đường dẫn nội bộ hoặc URL thuộc BigBike.",
     "formSource": "Địa chỉ cũ",
     "formSourceHint": "Đường dẫn nội bộ, ví dụ /san-pham-cu. Không nhập tên miền, query hoặc dấu #.",
     "formTarget": "Địa chỉ mới",

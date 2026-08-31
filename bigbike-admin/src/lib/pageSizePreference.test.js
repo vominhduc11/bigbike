@@ -25,9 +25,15 @@ describe('page size preference', () => {
   it('trở về mặc định khi dữ liệu lưu hỏng hoặc storage bị chặn', () => {
     window.localStorage.setItem('page-size:products', 'not-a-number')
     expect(readPageSizePreference(20)).toBe(20)
-    expect(readPageSizePreference(20, {
-      storage: { getItem: () => { throw new Error('blocked') } },
-    })).toBe(20)
+    expect(
+      readPageSizePreference(20, {
+        storage: {
+          getItem: () => {
+            throw new Error('blocked')
+          },
+        },
+      }),
+    ).toBe(20)
   })
 
   it('ghi đúng khóa từng màn và bỏ qua giá trị ngoài danh sách', () => {

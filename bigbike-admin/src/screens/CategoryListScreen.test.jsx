@@ -25,7 +25,9 @@ vi.mock('react-i18next', () => ({
         return `Chuyển danh mục ${values.name} vào Thùng rác. Các danh mục con cũng sẽ được xoá mềm và có thể khôi phục.`
       }
       if (values && typeof values === 'object' && 'defaultValue' in values) {
-        return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
+        return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) =>
+          String(values[name] ?? name),
+        )
       }
       return key
     },
@@ -48,13 +50,14 @@ vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 // Kéo-thả cần API con trỏ của trình duyệt thật; kiểm thử này chỉ soi vòng đời + quyền.
 vi.mock('../components/Sortable', () => ({
   useDragSensors: () => [],
-  SortableRow: ({ children }) => children({
-    setNodeRef: () => {},
-    attributes: {},
-    listeners: {},
-    isDragging: false,
-    style: {},
-  }),
+  SortableRow: ({ children }) =>
+    children({
+      setNodeRef: () => {},
+      attributes: {},
+      listeners: {},
+      isDragging: false,
+      style: {},
+    }),
 }))
 
 class ResizeObserverStub {
@@ -113,7 +116,10 @@ function renderScreen({ canUpdate = true, items = [helmet, systemCategory] } = {
 // xuất hiện nhiều lần — luôn khoanh vùng về đúng dòng trong bảng.
 async function findRow(name) {
   return waitFor(() => {
-    const row = screen.getAllByText(name).map((node) => node.closest('tr')).find(Boolean)
+    const row = screen
+      .getAllByText(name)
+      .map((node) => node.closest('tr'))
+      .find(Boolean)
     expect(row).toBeTruthy()
     return row
   })
@@ -136,22 +142,36 @@ beforeEach(() => {
 describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
   it('chỉ hiển thị các cột cốt lõi và tách riêng trạng thái trang chủ', async () => {
     renderScreen({
-      items: [{
-        ...helmet,
-        description: 'Mô tả không cần xuất hiện trong bảng',
-      }],
+      items: [
+        {
+          ...helmet,
+          description: 'Mô tả không cần xuất hiện trong bảng',
+        },
+      ],
     })
 
     const row = await findRow('Mũ bảo hiểm')
     const table = row.closest('table')
 
-    expect(within(table).getByRole('columnheader', { name: 'categories.colCategory' })).toBeInTheDocument()
-    expect(within(table).getByRole('columnheader', { name: 'categories.colVisibility' })).toBeInTheDocument()
-    expect(within(table).getByRole('columnheader', { name: 'categories.colHomepage' })).toBeInTheDocument()
-    expect(within(table).getByRole('columnheader', { name: 'categories.colUpdated' })).toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'categories.colCategory' }),
+    ).toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'categories.colVisibility' }),
+    ).toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'categories.colHomepage' }),
+    ).toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'categories.colUpdated' }),
+    ).toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: 'common.actions' })).toBeInTheDocument()
-    expect(within(table).queryByRole('columnheader', { name: 'categories.colDescription' })).not.toBeInTheDocument()
-    expect(within(table).queryByRole('columnheader', { name: 'categories.colSortOrder' })).not.toBeInTheDocument()
+    expect(
+      within(table).queryByRole('columnheader', { name: 'categories.colDescription' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(table).queryByRole('columnheader', { name: 'categories.colSortOrder' }),
+    ).not.toBeInTheDocument()
     expect(within(row).getByText('/mu-bao-hiem')).toBeInTheDocument()
     expect(within(row).queryByText('Mô tả không cần xuất hiện trong bảng')).not.toBeInTheDocument()
     expect(within(row).getByText('common.yes')).toBeInTheDocument()
@@ -162,7 +182,9 @@ describe('CategoryListScreen — vòng đời 2 cờ độc lập', () => {
     renderScreen({ items: [helmet] })
 
     const row = await findRow('Mũ bảo hiểm')
-    expect(within(row).queryByRole('link', { name: 'categories.viewOnSite' })).not.toBeInTheDocument()
+    expect(
+      within(row).queryByRole('link', { name: 'categories.viewOnSite' }),
+    ).not.toBeInTheDocument()
 
     await user.click(within(row).getByRole('button', { name: 'Thao tác' }))
 
@@ -242,8 +264,11 @@ describe('CategoryListScreen — xoá vĩnh viễn có xem trước ảnh hưở
   async function openTrashRowMenu(user) {
     await switchToTrashView(user)
     // Đổi ô lọc phải gửi đúng yêu cầu "chỉ lấy danh mục trong Thùng rác" xuống máy chủ.
-    await waitFor(() => expect(mocks.fetchCategories)
-      .toHaveBeenLastCalledWith(expect.objectContaining({ deleted: true })))
+    await waitFor(() =>
+      expect(mocks.fetchCategories).toHaveBeenLastCalledWith(
+        expect.objectContaining({ deleted: true }),
+      ),
+    )
     const row = await findRow('Mũ bảo hiểm')
     await user.click(within(row).getByRole('button', { name: 'Thao tác' }))
   }
@@ -256,10 +281,13 @@ describe('CategoryListScreen — xoá vĩnh viễn có xem trước ảnh hưở
     await openTrashRowMenu(user)
     await user.click(await screen.findByRole('menuitem', { name: /Xoá vĩnh viễn/ }))
 
-    await waitFor(() => expect(mocks.previewCategoryPermanentDelete).toHaveBeenCalledWith(['cat_helmet']))
+    await waitFor(() =>
+      expect(mocks.previewCategoryPermanentDelete).toHaveBeenCalledWith(['cat_helmet']),
+    )
     // Xem trước phải chạy trước khi hỏi xác nhận.
-    expect(mocks.previewCategoryPermanentDelete.mock.invocationCallOrder[0])
-      .toBeLessThan(mocks.showConfirm.mock.invocationCallOrder[0])
+    expect(mocks.previewCategoryPermanentDelete.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.showConfirm.mock.invocationCallOrder[0],
+    )
     await waitFor(() => expect(mocks.hardDeleteCategory).toHaveBeenCalledWith('cat_helmet'))
   })
 

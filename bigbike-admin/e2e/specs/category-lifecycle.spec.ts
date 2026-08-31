@@ -16,7 +16,9 @@ async function findCategoryRow(page: Page, name: string) {
   const search = page.locator('input[type="search"]')
   await search.fill(name)
   const row = page.locator('tbody tr').filter({ hasText: name })
-  await expect(row, `Không tìm thấy danh mục thử nghiệm ${name}`).toHaveCount(1, { timeout: 10_000 })
+  await expect(row, `Không tìm thấy danh mục thử nghiệm ${name}`).toHaveCount(1, {
+    timeout: 10_000,
+  })
   return row
 }
 
@@ -51,14 +53,20 @@ async function captureCategoryScreens(page: Page, testInfo: TestInfo, label: str
     await expectNoHorizontalOverflow(page, `Category ${label} ${viewport.name}px`)
     const path = testInfo.outputPath(`category-${label}-${viewport.name}.png`)
     await page.screenshot({ path, fullPage: true })
-    await testInfo.attach(`Category ${label} ${viewport.name}px`, { path, contentType: 'image/png' })
+    await testInfo.attach(`Category ${label} ${viewport.name}px`, {
+      path,
+      contentType: 'image/png',
+    })
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 })
 }
 
 test.describe('E2E_CATEGORY_lifecycle', () => {
-  test('tạo song ngữ, ẩn, xóa mềm, khôi phục và xóa vĩnh viễn danh mục thử nghiệm', async ({ adminPage, collect }, testInfo) => {
+  test('tạo song ngữ, ẩn, xóa mềm, khôi phục và xóa vĩnh viễn danh mục thử nghiệm', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(120_000)
 
     const name = categoryName(testInfo.retry)
@@ -74,14 +82,28 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       const homepageToggle = adminPage.locator('#category-form [role="switch"]')
       await expect(homepageToggle).toHaveAttribute('data-state', 'unchecked')
 
-      await adminPage.locator('.lang-switcher').first().getByRole('button', { name: 'EN', exact: true }).click()
-      await adminPage.locator('#category-form input[name="translations.en.name"]').fill(`${name} English`)
-      await adminPage.locator('.lang-switcher').first().getByRole('button', { name: 'VI', exact: true }).click()
+      await adminPage
+        .locator('.lang-switcher')
+        .first()
+        .getByRole('button', { name: 'EN', exact: true })
+        .click()
+      await adminPage
+        .locator('#category-form input[name="translations.en.name"]')
+        .fill(`${name} English`)
+      await adminPage
+        .locator('.lang-switcher')
+        .first()
+        .getByRole('button', { name: 'VI', exact: true })
+        .click()
 
       // Màn chi tiết có 2 nút Lưu cùng submit form (đầu trang + mục "Lưu thay đổi" bên cạnh);
       // bấm nút đầu là đủ.
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/categories')),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'POST' &&
+            new URL(r.url()).pathname.endsWith('/admin/categories'),
+        ),
         adminPage.getByRole('button', { name: 'Tạo danh mục', exact: true }).first().click(),
       ])
       expect(response.status(), 'API tạo danh mục phải trả 2xx').toBeLessThan(300)
@@ -106,7 +128,11 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       await row.getByRole('button', { name: 'Ẩn khỏi website', exact: true }).click()
       await expect(adminPage.getByRole('dialog')).toContainText('không bị chuyển vào Thùng rác')
       const [response] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'PATCH' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'PATCH' &&
+            new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`),
+        ),
         confirmDialog(adminPage, 'Ẩn khỏi website'),
       ])
       expect(response.status(), 'Ẩn danh mục phải trả 2xx').toBeLessThan(300)
@@ -116,7 +142,11 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       let row = await findCategoryRow(adminPage, name)
       await clickRowMenuItem(adminPage, row, 'Xoá')
       const [softDeleteResponse] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`),
+        ),
         confirmDialog(adminPage, 'Xoá'),
       ])
       expect(softDeleteResponse.status(), 'Xóa mềm phải trả 2xx').toBeLessThan(300)
@@ -125,7 +155,11 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       row = await findCategoryRow(adminPage, name)
       await clickRowMenuItem(adminPage, row, 'Khôi phục')
       const [restoreResponse] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}/restore`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'POST' &&
+            new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}/restore`),
+        ),
         confirmDialog(adminPage, 'Khôi phục'),
       ])
       expect(restoreResponse.status(), 'Khôi phục phải trả 2xx').toBeLessThan(300)
@@ -134,7 +168,11 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       row = await findCategoryRow(adminPage, name)
       await clickRowMenuItem(adminPage, row, 'Xoá')
       await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`),
+        ),
         confirmDialog(adminPage, 'Xoá'),
       ])
 
@@ -144,7 +182,11 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       await expect(adminPage.getByRole('dialog')).toContainText('sản phẩm sẽ bị gỡ liên kết')
       await expect(adminPage.getByRole('dialog')).toContainText('sản phẩm không còn danh mục nào')
       const [permanentDeleteResponse] = await Promise.all([
-        adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}/permanent`)),
+        adminPage.waitForResponse(
+          (r) =>
+            r.request().method() === 'DELETE' &&
+            new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}/permanent`),
+        ),
         confirmDialog(adminPage, 'Xóa vĩnh viễn'),
       ])
       expect(permanentDeleteResponse.status(), 'Xóa vĩnh viễn phải trả 2xx').toBeLessThan(300)

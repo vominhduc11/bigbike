@@ -41,7 +41,10 @@ export const BUILTIN_CATALOG = [
       perm('home_videos.read', 'home_videos', 'READ'),
       perm('home_videos.write', 'home_videos', 'WRITE', false, ['home_videos.read']),
       perm('home_highlights.read', 'home_highlights', 'READ'),
-      perm('home_highlights.write', 'home_highlights', 'WRITE', false, ['home_highlights.read', 'products.read']),
+      perm('home_highlights.write', 'home_highlights', 'WRITE', false, [
+        'home_highlights.read',
+        'products.read',
+      ]),
       perm('redirects.read', 'redirects', 'READ'),
       perm('redirects.write', 'redirects', 'WRITE', false, ['redirects.read']),
       // V372 cấp cho ADMIN/EDITOR. Thiếu ở đây thì màn Vai trò gửi lên một key mà backend
@@ -66,42 +69,42 @@ export const BUILTIN_CATALOG = [
 
 // i18n label key map — covers all keys from PermissionCatalog.GROUPS
 export const PERM_LABEL_KEY_MAP = {
-  'orders.read':                'roles.permOrdersRead',
-  'orders.write':               'roles.permOrdersWrite',
-  'customers.read':             'roles.permCustomersRead',
-  'customers.write':            'roles.permCustomersWrite',
-  'reviews.read':               'roles.permReviewsRead',
-  'reviews.write':              'roles.permReviewsWrite',
-  'reports.read':               'roles.permReportsRead',
-  'reports.export':             'roles.permReportsExport',
-  'products.read':              'roles.permProductsRead',
-  'products.update':            'roles.permProductsUpdate',
-  'catalog.read':               'roles.permCatalogRead',
-  'catalog.update':             'roles.permCatalogUpdate',
-  'inventory.read':             'roles.permInventoryRead',
-  'content.read':               'roles.permContentRead',
-  'content.update':             'roles.permContentUpdate',
-  'media.read':                 'roles.permMediaRead',
-  'media.write':                'roles.permMediaWrite',
-  'menus.read':                 'roles.permMenusRead',
-  'menus.write':                'roles.permMenusWrite',
-  'sliders.read':               'roles.permSlidersRead',
-  'sliders.write':              'roles.permSlidersWrite',
-  'home_videos.read':           'roles.permHomeVideosRead',
-  'home_videos.write':          'roles.permHomeVideosWrite',
-  'home_highlights.read':       'roles.permHomeHighlightsRead',
-  'home_highlights.write':      'roles.permHomeHighlightsWrite',
-  'redirects.read':             'roles.permRedirectsRead',
-  'redirects.write':            'roles.permRedirectsWrite',
-  'seo.index':                  'roles.permSeoIndex',
-  'settings.read':              'roles.permSettingsRead',
-  'settings.write':             'roles.permSettingsWrite',
-  'admin-users.read':           'roles.permAdminUsersRead',
-  'admin-users.write':          'roles.permAdminUsersWrite',
-  'roles.read':                 'roles.permRolesRead',
-  'roles.write':                'roles.permRolesWrite',
-  'audit-logs.read':            'roles.permAuditLogsRead',
-  'chat.read':                  'roles.permChatRead',
+  'orders.read': 'roles.permOrdersRead',
+  'orders.write': 'roles.permOrdersWrite',
+  'customers.read': 'roles.permCustomersRead',
+  'customers.write': 'roles.permCustomersWrite',
+  'reviews.read': 'roles.permReviewsRead',
+  'reviews.write': 'roles.permReviewsWrite',
+  'reports.read': 'roles.permReportsRead',
+  'reports.export': 'roles.permReportsExport',
+  'products.read': 'roles.permProductsRead',
+  'products.update': 'roles.permProductsUpdate',
+  'catalog.read': 'roles.permCatalogRead',
+  'catalog.update': 'roles.permCatalogUpdate',
+  'inventory.read': 'roles.permInventoryRead',
+  'content.read': 'roles.permContentRead',
+  'content.update': 'roles.permContentUpdate',
+  'media.read': 'roles.permMediaRead',
+  'media.write': 'roles.permMediaWrite',
+  'menus.read': 'roles.permMenusRead',
+  'menus.write': 'roles.permMenusWrite',
+  'sliders.read': 'roles.permSlidersRead',
+  'sliders.write': 'roles.permSlidersWrite',
+  'home_videos.read': 'roles.permHomeVideosRead',
+  'home_videos.write': 'roles.permHomeVideosWrite',
+  'home_highlights.read': 'roles.permHomeHighlightsRead',
+  'home_highlights.write': 'roles.permHomeHighlightsWrite',
+  'redirects.read': 'roles.permRedirectsRead',
+  'redirects.write': 'roles.permRedirectsWrite',
+  'seo.index': 'roles.permSeoIndex',
+  'settings.read': 'roles.permSettingsRead',
+  'settings.write': 'roles.permSettingsWrite',
+  'admin-users.read': 'roles.permAdminUsersRead',
+  'admin-users.write': 'roles.permAdminUsersWrite',
+  'roles.read': 'roles.permRolesRead',
+  'roles.write': 'roles.permRolesWrite',
+  'audit-logs.read': 'roles.permAuditLogsRead',
+  'chat.read': 'roles.permChatRead',
 }
 
 // Permissions an admin must never be able to strip from their OWN role —
@@ -110,11 +113,11 @@ export const SELF_PROTECTED_PERMS = new Set(['roles.read', 'roles.write'])
 
 // Derived from catalog; rebuilt whenever catalog changes.
 export function buildCatalogHelpers(catalog) {
-  const knownKeys = new Set(catalog.flatMap(g => g.permissions.map(p => p.key)))
+  const knownKeys = new Set(catalog.flatMap((g) => g.permissions.map((p) => p.key)))
   const sensitiveKeys = new Set(
-    catalog.flatMap(g => g.permissions.filter(p => p.sensitive).map(p => p.key))
+    catalog.flatMap((g) => g.permissions.filter((p) => p.sensitive).map((p) => p.key)),
   )
-  const entriesByKey = new Map(catalog.flatMap(g => g.permissions).map(p => [p.key, p]))
+  const entriesByKey = new Map(catalog.flatMap((g) => g.permissions).map((p) => [p.key, p]))
   return { knownKeys, sensitiveKeys, entriesByKey }
 }
 
@@ -171,7 +174,7 @@ export function dependentClosure(permission, activePermissions, catalog) {
     for (const active of activePermissions) {
       if (removed.has(active)) continue
       const requires = entriesByKey.get(active)?.requires || []
-      if (requires.some(required => removed.has(required))) {
+      if (requires.some((required) => removed.has(required))) {
         removed.add(active)
         changed = true
       }
@@ -182,14 +185,14 @@ export function dependentClosure(permission, activePermissions, catalog) {
 
 export function requiredBy(permission, activePermissions, catalog) {
   const { entriesByKey } = buildCatalogHelpers(catalog)
-  return [...activePermissions].filter(active =>
-    (entriesByKey.get(active)?.requires || []).includes(permission)
+  return [...activePermissions].filter((active) =>
+    (entriesByKey.get(active)?.requires || []).includes(permission),
   )
 }
 
 export function groupCatalogByModule(catalog) {
   const modules = new Map()
-  for (const entry of catalog.flatMap(group => group.permissions || [])) {
+  for (const entry of catalog.flatMap((group) => group.permissions || [])) {
     const moduleKey = entry.moduleKey || entry.key.split('.')[0]
     if (!modules.has(moduleKey)) {
       modules.set(moduleKey, {
@@ -214,7 +217,7 @@ function perm(key, moduleKey, kind, sensitive = false, requires = []) {
 
 export function formatRoleName(id) {
   if (!id) return ''
-  return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 export function getRoleDisplayName(role, t) {

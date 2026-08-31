@@ -12,35 +12,36 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => ({
-      'homeVideos.title': 'Home videos',
-      'homeVideos.addButton': 'Add video',
-      'homeVideos.formSource': 'Video source',
-      'homeVideos.sourceYoutube': 'YouTube',
-      'homeVideos.sourceTikTok': 'TikTok',
-      'homeVideos.sourceFacebook': 'Facebook',
-      'homeVideos.sourceUpload': 'Upload / media library',
-      'homeVideos.legacySourceWarning': 'Legacy source must be replaced',
-      'homeVideos.statusVisible': 'Visible',
-      'homeVideos.statusHomepage': 'On homepage',
-      'homeVideos.statusEnabledOutside': 'Enabled, outside the first 10',
-      'homeVideos.hideAction': 'Hide',
-      'homeVideos.channelTitle': 'Automatic YouTube source',
-      'homeVideos.channelDescription': 'Checked nightly',
-      'homeVideos.channelLabel': 'Official YouTube channel',
-      'homeVideos.channelHint': 'Use a channel page',
-      'homeVideos.channelSave': 'Save YouTube channel',
-      'homeVideos.channelValidation': 'Invalid channel address',
-      'homeVideos.channelSaveSuccess': 'Channel saved',
-      'homeVideos.homepageRuleHint': 'The first ten enabled videos appear',
-      'homeVideos.filterHomepage': 'On homepage',
-      'homeVideos.filterEnabledOutside': 'Enabled, outside the first 10',
-      'homeVideos.selectVideo': 'Select video',
-      'homeVideos.previewVideo': 'Preview video',
-      'homeVideos.preview': 'Preview',
-      'common.edit': 'Edit',
-      'common.delete': 'Delete',
-    }[key] || key),
+    t: (key) =>
+      ({
+        'homeVideos.title': 'Home videos',
+        'homeVideos.addButton': 'Add video',
+        'homeVideos.formSource': 'Video source',
+        'homeVideos.sourceYoutube': 'YouTube',
+        'homeVideos.sourceTikTok': 'TikTok',
+        'homeVideos.sourceFacebook': 'Facebook',
+        'homeVideos.sourceUpload': 'Upload / media library',
+        'homeVideos.legacySourceWarning': 'Legacy source must be replaced',
+        'homeVideos.statusVisible': 'Visible',
+        'homeVideos.statusHomepage': 'On homepage',
+        'homeVideos.statusEnabledOutside': 'Enabled, outside the first 10',
+        'homeVideos.hideAction': 'Hide',
+        'homeVideos.channelTitle': 'Automatic YouTube source',
+        'homeVideos.channelDescription': 'Checked nightly',
+        'homeVideos.channelLabel': 'Official YouTube channel',
+        'homeVideos.channelHint': 'Use a channel page',
+        'homeVideos.channelSave': 'Save YouTube channel',
+        'homeVideos.channelValidation': 'Invalid channel address',
+        'homeVideos.channelSaveSuccess': 'Channel saved',
+        'homeVideos.homepageRuleHint': 'The first ten enabled videos appear',
+        'homeVideos.filterHomepage': 'On homepage',
+        'homeVideos.filterEnabledOutside': 'Enabled, outside the first 10',
+        'homeVideos.selectVideo': 'Select video',
+        'homeVideos.previewVideo': 'Preview video',
+        'homeVideos.preview': 'Preview',
+        'common.edit': 'Edit',
+        'common.delete': 'Delete',
+      })[key] || key,
   }),
 }))
 
@@ -60,13 +61,14 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('../components/Sortable', () => ({
   useDragSensors: () => [],
-  SortableRow: ({ children }) => children({
-    setNodeRef: () => {},
-    style: {},
-    isDragging: false,
-    attributes: {},
-    listeners: {},
-  }),
+  SortableRow: ({ children }) =>
+    children({
+      setNodeRef: () => {},
+      style: {},
+      isDragging: false,
+      attributes: {},
+      listeners: {},
+    }),
 }))
 vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
@@ -124,13 +126,15 @@ describe('HomeVideoListScreen video sources', () => {
   })
 
   it('giữ đầy đủ metadata thumbnail do picker trả về', () => {
-    expect(buildHomeVideoThumbnail({
-      thumbnailUrl: '  /media/home/video-thumb.webp  ',
-      thumbnailAlt: '  Ảnh video  ',
-      thumbnailWidth: 500,
-      thumbnailHeight: 900,
-      thumbnailMimeType: 'image/webp',
-    })).toEqual({
+    expect(
+      buildHomeVideoThumbnail({
+        thumbnailUrl: '  /media/home/video-thumb.webp  ',
+        thumbnailAlt: '  Ảnh video  ',
+        thumbnailWidth: 500,
+        thumbnailHeight: 900,
+        thumbnailMimeType: 'image/webp',
+      }),
+    ).toEqual({
       url: '/media/home/video-thumb.webp',
       alt: 'Ảnh video',
       width: 500,
@@ -154,11 +158,13 @@ describe('HomeVideoListScreen video sources', () => {
 
   it('phân biệt 10 video trên trang chủ với video đang bật nhưng nằm ngoài', async () => {
     mocks.fetchHomeVideos.mockResolvedValue({
-      items: Array.from({ length: 11 }, (_, index) => video({
-        id: `video-${index}`,
-        title: `Video ${index}`,
-        sortOrder: index,
-      })),
+      items: Array.from({ length: 11 }, (_, index) =>
+        video({
+          id: `video-${index}`,
+          title: `Video ${index}`,
+          sortOrder: index,
+        }),
+      ),
     })
 
     renderScreen()
@@ -180,14 +186,18 @@ describe('HomeVideoListScreen video sources', () => {
     fireEvent.change(input, { target: { value: 'https://www.youtube.com/@new-channel' } })
     await user.click(screen.getByRole('button', { name: 'Save YouTube channel' }))
 
-    await waitFor(() => expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
-      { key: 'youtube_url', value: 'https://www.youtube.com/@new-channel' },
-    ]))
+    await waitFor(() =>
+      expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
+        { key: 'youtube_url', value: 'https://www.youtube.com/@new-channel' },
+      ]),
+    )
   })
 
   it('chỉ chấp nhận trang kênh, không chấp nhận video hoặc playlist', () => {
     expect(isValidYouTubeChannelUrl('https://youtube.com/@bigbike-shop')).toBe(true)
-    expect(isValidYouTubeChannelUrl('https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv')).toBe(true)
+    expect(
+      isValidYouTubeChannelUrl('https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv'),
+    ).toBe(true)
     expect(isValidYouTubeChannelUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(false)
     expect(isValidYouTubeChannelUrl('https://www.youtube.com/playlist?list=PL123')).toBe(false)
     expect(isValidYouTubeChannelUrl('https://www.youtube.com/@bigbike%2Fshop')).toBe(false)

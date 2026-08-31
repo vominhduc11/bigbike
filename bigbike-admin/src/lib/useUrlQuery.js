@@ -9,13 +9,16 @@ import { readPageSizePreference } from './pageSizePreference'
 export function useUrlQuery(defaults) {
   const [query, setQueryState] = useState(() => readQueryFromUrl(defaults))
 
-  const setQuery = useCallback((update) => {
-    setQueryState((prev) => {
-      const next = typeof update === 'function' ? update(prev) : { ...prev, ...update }
-      syncQueryToUrl(next, defaults)
-      return next
-    })
-  }, [defaults])
+  const setQuery = useCallback(
+    (update) => {
+      setQueryState((prev) => {
+        const next = typeof update === 'function' ? update(prev) : { ...prev, ...update }
+        syncQueryToUrl(next, defaults)
+        return next
+      })
+    },
+    [defaults],
+  )
 
   return [query, setQuery]
 }

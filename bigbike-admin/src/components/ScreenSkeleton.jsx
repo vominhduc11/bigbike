@@ -21,7 +21,10 @@ function TableSkeleton({ count }) {
       <div className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border">
         <div className="h-10 border-b border-border bg-surface-muted/60" />
         {Array.from({ length: count }, (_, index) => (
-          <div key={index} className="flex min-h-12 items-center gap-4 border-b border-border px-4 py-3 last:border-0">
+          <div
+            key={index}
+            className="flex min-h-12 items-center gap-4 border-b border-border px-4 py-3 last:border-0"
+          >
             <div className="h-4 flex-1 rounded-xs bg-surface-muted" />
             <div className="h-4 w-24 rounded-xs bg-surface-muted" />
             <div className="h-4 w-16 rounded-xs bg-surface-muted" />
@@ -36,7 +39,10 @@ function FormSkeleton({ count }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface">
+        <div
+          key={index}
+          className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface"
+        >
           <div className="flex h-14 items-center border-b border-border bg-surface-muted px-5">
             <div className="h-4 w-40 rounded-xs bg-surface-raised" />
           </div>
@@ -56,7 +62,10 @@ function CardsSkeleton({ count }) {
   return (
     <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface">
+        <div
+          key={index}
+          className="overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-surface"
+        >
           <div className="aspect-[4/3] bg-surface-muted" />
           <div className="grid gap-2 p-3">
             <div className="h-3 w-5/6 rounded-xs bg-surface-muted" />
@@ -68,14 +77,23 @@ function CardsSkeleton({ count }) {
   )
 }
 
-export function ScreenSkeleton({ variant = 'table', count, showHeader = true, label, inlineOnly = false }) {
+export function ScreenSkeleton({
+  variant = 'table',
+  count,
+  showHeader = true,
+  label,
+  inlineOnly = false,
+}) {
   const { t } = useTranslation()
 
   if (variant === 'editor') {
     return (
       <div role="status" aria-live="polite" aria-busy="true">
         <span className="sr-only">{label || t('common.loading')}</span>
-        <div className="animate-pulse overflow-hidden rounded-md border-[1.5px] border-border" aria-hidden="true">
+        <div
+          className="animate-pulse overflow-hidden rounded-md border-[1.5px] border-border"
+          aria-hidden="true"
+        >
           <div className="flex h-11 items-center gap-2 border-b border-border bg-surface-muted px-3">
             <div className="h-8 w-8 rounded-xs bg-surface" />
             <div className="h-8 w-8 rounded-xs bg-surface" />

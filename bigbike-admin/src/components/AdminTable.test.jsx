@@ -81,7 +81,9 @@ describe('AdminTable', () => {
   it('applies shared column sizing to both the header and data cells', () => {
     render(
       <AdminTable
-        columns={[{ key: 'name', label: 'Tên', headerClassName: 'min-w-60', cellClassName: 'min-w-60' }]}
+        columns={[
+          { key: 'name', label: 'Tên', headerClassName: 'min-w-60', cellClassName: 'min-w-60' },
+        ]}
         rows={rows}
       />,
     )
@@ -102,10 +104,16 @@ describe('AdminTable', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /common\.tableDensity\.spacious|Thoáng|Spacious/ }))
-    await user.click(screen.getByRole('menuitemradio', { name: /common\.tableDensity\.compact|Gọn|Compact/ }))
+    await user.click(
+      screen.getByRole('button', { name: /common\.tableDensity\.spacious|Thoáng|Spacious/ }),
+    )
+    await user.click(
+      screen.getByRole('menuitemradio', { name: /common\.tableDensity\.compact|Gọn|Compact/ }),
+    )
 
     expect(window.localStorage.getItem('bigbike-admin:table-density:products')).toBe('compact')
-    expect(screen.getByRole('button', { name: /common\.tableDensity\.compact|Gọn|Compact/ })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /common\.tableDensity\.compact|Gọn|Compact/ }),
+    ).toBeInTheDocument()
   })
 })

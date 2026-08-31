@@ -40,19 +40,18 @@ describe('bộ lọc mobile của nhật ký', () => {
     const user = userEvent.setup()
     const props = renderDrawer()
 
-    await user.type(
-      screen.getByPlaceholderText('auditLog.filterSearchPlaceholder'),
-      'đơn 7416',
-    )
+    await user.type(screen.getByPlaceholderText('auditLog.filterSearchPlaceholder'), 'đơn 7416')
     await user.click(screen.getByRole('button', { name: 'Áp dụng bộ lọc' }))
 
     expect(props.onApply).toHaveBeenCalledTimes(1)
-    expect(props.onApply).toHaveBeenCalledWith(expect.objectContaining({
-      q: 'đơn 7416',
-      actorType: 'ALL',
-      resourceType: 'ALL',
-      pageSize: 20,
-    }))
+    expect(props.onApply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        q: 'đơn 7416',
+        actorType: 'ALL',
+        resourceType: 'ALL',
+        pageSize: 20,
+      }),
+    )
     expect(props.onClose).toHaveBeenCalledTimes(1)
   })
 

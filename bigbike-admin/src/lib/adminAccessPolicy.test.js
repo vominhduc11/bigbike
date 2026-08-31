@@ -8,7 +8,7 @@ import {
 
 function checker(permissions) {
   const granted = new Set(permissions)
-  return permission => granted.has('*') || granted.has(permission)
+  return (permission) => granted.has('*') || granted.has(permission)
 }
 
 describe('admin access policy registry', () => {
@@ -31,7 +31,9 @@ describe('admin access policy registry', () => {
 
   it('requires both product permissions for Featured Products', () => {
     expect(canAccessPolicy('featuredProducts', checker(['products.read']))).toBe(false)
-    expect(canAccessPolicy('featuredProducts', checker(['products.read', 'products.update']))).toBe(true)
+    expect(canAccessPolicy('featuredProducts', checker(['products.read', 'products.update']))).toBe(
+      true,
+    )
   })
 
   it('allows wildcard to satisfy allOf policies', () => {

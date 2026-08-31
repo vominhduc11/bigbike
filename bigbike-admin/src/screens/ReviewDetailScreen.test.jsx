@@ -15,10 +15,15 @@ const { fetchReviewDetail, updateReviewStatus, deleteReview, showConfirm } = moc
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
-vi.mock('../lib/adminApi', () => ({ fetchReviewDetail: mocks.fetchReviewDetail, updateReviewStatus: mocks.updateReviewStatus, deleteReview: mocks.deleteReview }))
+vi.mock('../lib/adminApi', () => ({
+  fetchReviewDetail: mocks.fetchReviewDetail,
+  updateReviewStatus: mocks.updateReviewStatus,
+  deleteReview: mocks.deleteReview,
+}))
 vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
@@ -26,26 +31,37 @@ vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 function renderScreen(canUpdate = false, isSuperAdmin = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={client}><ReviewDetailScreen reviewId="12" navigate={vi.fn()} canUpdate={canUpdate} isSuperAdmin={isSuperAdmin} /></QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={client}>
+      <ReviewDetailScreen
+        reviewId="12"
+        navigate={vi.fn()}
+        canUpdate={canUpdate}
+        isSuperAdmin={isSuperAdmin}
+      />
+    </QueryClientProvider>,
+  )
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   showConfirm.mockResolvedValue(false)
-  fetchReviewDetail.mockResolvedValue({ item: {
-    id: 12,
-    productId: 'prod-1',
-    productName: 'Mũ BigBike',
-    authorName: 'Nguyễn Minh',
-    authorEmail: 'minh@example.com',
-    rating: 5,
-    body: 'Rất tốt',
-    photos: [],
-    status: 'APPROVED',
-    version: 3,
-    createdAt: '2026-07-22T00:00:00Z',
-    updatedAt: '2026-07-22T00:00:00Z',
-  } })
+  fetchReviewDetail.mockResolvedValue({
+    item: {
+      id: 12,
+      productId: 'prod-1',
+      productName: 'Mũ BigBike',
+      authorName: 'Nguyễn Minh',
+      authorEmail: 'minh@example.com',
+      rating: 5,
+      body: 'Rất tốt',
+      photos: [],
+      status: 'APPROVED',
+      version: 3,
+      createdAt: '2026-07-22T00:00:00Z',
+      updatedAt: '2026-07-22T00:00:00Z',
+    },
+  })
 })
 
 describe('ReviewDetailScreen', () => {
@@ -59,28 +75,34 @@ describe('ReviewDetailScreen', () => {
     expect(screen.getByText('minh@example.com')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.approve' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.spam' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'reviews.deletePermanent' }),
+    ).not.toBeInTheDocument()
   })
 
   it.each([1, 10])('renders the supported gallery size: %s photo(s)', async (photoCount) => {
-    fetchReviewDetail.mockResolvedValue({ item: {
-      id: 12,
-      productId: 'prod-1',
-      productName: 'Mũ BigBike',
-      authorName: 'Nguyễn Minh',
-      authorEmail: 'minh@example.com',
-      rating: 5,
-      body: 'Rất tốt',
-      photos: Array.from({ length: photoCount }, (_, index) => `/media/reviews/${index + 1}.jpg`),
-      status: 'APPROVED',
-      version: 3,
-      createdAt: '2026-07-22T00:00:00Z',
-      updatedAt: '2026-07-22T00:00:00Z',
-    } })
+    fetchReviewDetail.mockResolvedValue({
+      item: {
+        id: 12,
+        productId: 'prod-1',
+        productName: 'Mũ BigBike',
+        authorName: 'Nguyễn Minh',
+        authorEmail: 'minh@example.com',
+        rating: 5,
+        body: 'Rất tốt',
+        photos: Array.from({ length: photoCount }, (_, index) => `/media/reviews/${index + 1}.jpg`),
+        status: 'APPROVED',
+        version: 3,
+        createdAt: '2026-07-22T00:00:00Z',
+        updatedAt: '2026-07-22T00:00:00Z',
+      },
+    })
 
     renderScreen(true)
 
-    expect((await screen.findAllByRole('button', { name: /reviews\.detail\.openPhoto/ })).length).toBe(photoCount)
+    expect(
+      (await screen.findAllByRole('button', { name: /reviews\.detail\.openPhoto/ })).length,
+    ).toBe(photoCount)
   })
 
   it('renders a dedicated not-found state for a 404 response', async () => {
@@ -88,7 +110,11 @@ describe('ReviewDetailScreen', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const notFound = Object.assign(new Error('Review not found.'), { status: 404 })
     fetchReviewDetail.mockRejectedValue(notFound)
-    render(<QueryClientProvider client={client}><ReviewDetailScreen reviewId="missing" navigate={navigate} canUpdate={false} /></QueryClientProvider>)
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewDetailScreen reviewId="missing" navigate={navigate} canUpdate={false} />
+      </QueryClientProvider>,
+    )
 
     expect(await screen.findByText('reviews.detail.notFound')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'common.back' }))
@@ -107,20 +133,22 @@ describe('ReviewDetailScreen', () => {
 
   it('does not delete when the permanent-delete confirmation is cancelled', async () => {
     const user = userEvent.setup()
-    fetchReviewDetail.mockResolvedValue({ item: {
-      id: 12,
-      productId: 'prod-1',
-      productName: 'Mũ BigBike',
-      authorName: 'Nguyễn Minh',
-      authorEmail: 'minh@example.com',
-      rating: 5,
-      body: 'Rất tốt',
-      photos: [],
-      status: 'TRASH',
-      version: 3,
-      createdAt: '2026-07-22T00:00:00Z',
-      updatedAt: '2026-07-22T00:00:00Z',
-    } })
+    fetchReviewDetail.mockResolvedValue({
+      item: {
+        id: 12,
+        productId: 'prod-1',
+        productName: 'Mũ BigBike',
+        authorName: 'Nguyễn Minh',
+        authorEmail: 'minh@example.com',
+        rating: 5,
+        body: 'Rất tốt',
+        photos: [],
+        status: 'TRASH',
+        version: 3,
+        createdAt: '2026-07-22T00:00:00Z',
+        updatedAt: '2026-07-22T00:00:00Z',
+      },
+    })
     renderScreen(true, true)
     await screen.findByText('reviews.detail.sectionReview')
 
@@ -158,7 +186,9 @@ describe('ReviewDetailScreen', () => {
     await waitFor(() => expect(updateReviewStatus).toHaveBeenCalledWith('12', 'APPROVED', 3))
     expect(await screen.findByText('reviews.staleConflict')).toBeInTheDocument()
     await waitFor(() => expect(fetchReviewDetail).toHaveBeenCalledTimes(2))
-    await waitFor(() => expect(screen.getAllByRole('button', { name: 'reviews.approve' })[0]).toBeEnabled())
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'reviews.approve' })[0]).toBeEnabled(),
+    )
   })
 
   it('sends the displayed version with a confirmed permanent delete', async () => {
@@ -167,21 +197,27 @@ describe('ReviewDetailScreen', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     showConfirm.mockResolvedValue(true)
     deleteReview.mockResolvedValue(undefined)
-    fetchReviewDetail.mockResolvedValue({ item: {
-      id: 12,
-      productId: 'prod-1',
-      productName: 'Mũ BigBike',
-      authorName: 'Nguyễn Minh',
-      authorEmail: 'minh@example.com',
-      rating: 5,
-      body: 'Rất tốt',
-      photos: [],
-      status: 'TRASH',
-      version: 3,
-      createdAt: '2026-07-22T00:00:00Z',
-      updatedAt: '2026-07-22T00:00:00Z',
-    } })
-    render(<QueryClientProvider client={client}><ReviewDetailScreen reviewId="12" navigate={navigate} canUpdate isSuperAdmin /></QueryClientProvider>)
+    fetchReviewDetail.mockResolvedValue({
+      item: {
+        id: 12,
+        productId: 'prod-1',
+        productName: 'Mũ BigBike',
+        authorName: 'Nguyễn Minh',
+        authorEmail: 'minh@example.com',
+        rating: 5,
+        body: 'Rất tốt',
+        photos: [],
+        status: 'TRASH',
+        version: 3,
+        createdAt: '2026-07-22T00:00:00Z',
+        updatedAt: '2026-07-22T00:00:00Z',
+      },
+    })
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewDetailScreen reviewId="12" navigate={navigate} canUpdate isSuperAdmin />
+      </QueryClientProvider>,
+    )
 
     await user.click((await screen.findAllByRole('button', { name: 'reviews.deletePermanent' }))[0])
 
@@ -192,11 +228,15 @@ describe('ReviewDetailScreen', () => {
   it('shows only the owner-approved action for a processed review', async () => {
     renderScreen(true, false)
 
-    expect((await screen.findAllByRole('button', { name: 'reviews.returnPending' })).length).toBeGreaterThan(0)
+    expect(
+      (await screen.findAllByRole('button', { name: 'reviews.returnPending' })).length,
+    ).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: 'reviews.approve' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.spam' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'reviews.moveToTrash' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'reviews.deletePermanent' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'reviews.deletePermanent' }),
+    ).not.toBeInTheDocument()
   })
 
   it('keeps the detail-only author email after a privacy-safe status response', async () => {
@@ -214,20 +254,22 @@ describe('ReviewDetailScreen', () => {
 
   it('requires confirmation before approving a pending review', async () => {
     const user = userEvent.setup()
-    fetchReviewDetail.mockResolvedValue({ item: {
-      id: 12,
-      productId: 'prod-1',
-      productName: 'Mũ BigBike',
-      authorName: 'Nguyễn Minh',
-      authorEmail: 'minh@example.com',
-      rating: 5,
-      body: 'Rất tốt',
-      photos: [],
-      status: 'PENDING',
-      version: 3,
-      createdAt: '2026-07-22T00:00:00Z',
-      updatedAt: '2026-07-22T00:00:00Z',
-    } })
+    fetchReviewDetail.mockResolvedValue({
+      item: {
+        id: 12,
+        productId: 'prod-1',
+        productName: 'Mũ BigBike',
+        authorName: 'Nguyễn Minh',
+        authorEmail: 'minh@example.com',
+        rating: 5,
+        body: 'Rất tốt',
+        photos: [],
+        status: 'PENDING',
+        version: 3,
+        createdAt: '2026-07-22T00:00:00Z',
+        updatedAt: '2026-07-22T00:00:00Z',
+      },
+    })
     renderScreen(true)
 
     await user.click((await screen.findAllByRole('button', { name: 'reviews.approve' }))[0])

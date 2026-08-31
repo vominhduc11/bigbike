@@ -5,7 +5,10 @@ const npmBuild = isWindows
   ? { cmd: 'cmd.exe', args: ['/d', '/s', '/c', 'npm run build'] }
   : { cmd: 'npm', args: ['run', 'build'] }
 const vitePreview = isWindows
-  ? { cmd: 'cmd.exe', args: ['/d', '/s', '/c', 'npx vite preview --config e2e/vite.preview.config.ts'] }
+  ? {
+      cmd: 'cmd.exe',
+      args: ['/d', '/s', '/c', 'npx vite preview --config e2e/vite.preview.config.ts'],
+    }
   : { cmd: 'npx', args: ['vite', 'preview', '--config', 'e2e/vite.preview.config.ts'] }
 
 function run(cmd, args, options = {}) {

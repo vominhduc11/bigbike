@@ -53,7 +53,8 @@ export function serializeSuitabilityCards(cards) {
 /** Dựng nội dung BÊN TRONG một thẻ từ card (giữ phần tử thẻ ngoài + style/class của nó). */
 function cardInnerHtml(c) {
   let inner = ''
-  if (c.audience) inner += `<strong style="${SUITABILITY_AUDIENCE_STYLE}">${sanitizeInlineHtml(c.audience)}</strong>`
+  if (c.audience)
+    inner += `<strong style="${SUITABILITY_AUDIENCE_STYLE}">${sanitizeInlineHtml(c.audience)}</strong>`
   if (c.audience && c.advice) inner += ' → '
   if (c.advice) inner += escapeHtml(c.advice)
   return inner
@@ -93,7 +94,10 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
       .filter(Boolean)
     if (headingPairs.length && headingPairs.length === model.length) {
       if (model.length === 0) {
-        headingPairs.forEach(({ heading, answer }) => { heading.remove(); answer.remove() })
+        headingPairs.forEach(({ heading, answer }) => {
+          heading.remove()
+          answer.remove()
+        })
       } else {
         model.forEach((card, index) => {
           const pair = headingPairs[index]
@@ -104,7 +108,8 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
       return doc.body.innerHTML.trim() ? doc.body.innerHTML : ''
     }
     let items = [...doc.querySelectorAll('li')]
-    if (!items.length) items = [...doc.querySelectorAll('p')].filter((p) => (p.textContent || '').trim())
+    if (!items.length)
+      items = [...doc.querySelectorAll('p')].filter((p) => (p.textContent || '').trim())
     const container = items[0]?.parentElement
     if (!items.length || !container) return fresh
 
@@ -124,7 +129,9 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
       items[items.length - 1].remove()
       items = items.slice(0, -1)
     }
-    model.forEach((c, i) => { if (items[i]) mergeCardIntoElement(items[i], c) })
+    model.forEach((c, i) => {
+      if (items[i]) mergeCardIntoElement(items[i], c)
+    })
     return doc.body.innerHTML
   } catch {
     return fresh
@@ -141,7 +148,9 @@ function parseSuitabilityElement(el) {
   const audience = strongEl?.innerHTML || (!strongEl && parts.length > 1 ? parts[0] : '')
   const advice = strongEl
     ? rawAdvice.replace(/→/g, ' ').replace(/\s+/g, ' ').trim()
-    : (parts.length > 1 ? parts.slice(1).join(' → ').trim() : rawAdvice)
+    : parts.length > 1
+      ? parts.slice(1).join(' → ').trim()
+      : rawAdvice
   return normalizeCard({ audience, advice })
 }
 
@@ -153,7 +162,13 @@ function parseHeadingSuitability(doc) {
     const next = heading.nextElementSibling
     if (!next || !['P', 'UL', 'OL'].includes(next.tagName)) return
     const elements = next.tagName === 'P' ? [next] : [...next.querySelectorAll('li')]
-    if (next.tagName !== 'P' && elements.some((element) => element.querySelector('strong, b') || /→/.test(element.textContent || ''))) return
+    if (
+      next.tagName !== 'P' &&
+      elements.some(
+        (element) => element.querySelector('strong, b') || /→/.test(element.textContent || ''),
+      )
+    )
+      return
     if (!elements.length) {
       skippedCount += 1
       return

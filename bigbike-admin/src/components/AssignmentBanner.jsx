@@ -28,9 +28,7 @@ export function AssignmentBanner({ title, roles, emptyMessage }) {
             <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-1">
               {role.name}
             </div>
-            <div className="text-xs leading-relaxed text-muted-foreground">
-              {role.items}
-            </div>
+            <div className="text-xs leading-relaxed text-muted-foreground">{role.items}</div>
           </div>
         ))}
       </div>

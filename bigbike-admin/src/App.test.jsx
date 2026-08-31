@@ -18,10 +18,13 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => ({
-      'app.noAllowedModules': 'Tài khoản chưa được cấp quyền sử dụng khu vực nào',
-      'app.noAllowedModulesDesc': 'Hãy liên hệ người quản trị để được cấp quyền phù hợp.',
-    }[key] || values.defaultValue || key),
+    t: (key, values = {}) =>
+      ({
+        'app.noAllowedModules': 'Tài khoản chưa được cấp quyền sử dụng khu vực nào',
+        'app.noAllowedModulesDesc': 'Hãy liên hệ người quản trị để được cấp quyền phù hợp.',
+      })[key] ||
+      values.defaultValue ||
+      key,
   }),
 }))
 
@@ -38,9 +41,13 @@ vi.mock('./components/AdminShell', () => ({
   AdminShell: ({ navGroups, children }) => (
     <div data-testid="admin-shell">
       <nav>
-        {navGroups.flatMap((group) => group.items).map((item) => (
-          <a key={item.path} data-testid={`nav-${item.path}`} href={item.path}>{item.label}</a>
-        ))}
+        {navGroups
+          .flatMap((group) => group.items)
+          .map((item) => (
+            <a key={item.path} data-testid={`nav-${item.path}`} href={item.path}>
+              {item.label}
+            </a>
+          ))}
       </nav>
       {children}
     </div>
@@ -54,7 +61,11 @@ vi.mock('./components/StatePanel', () => ({
       <div data-testid="state-panel">
         <div data-testid="state-title">{title}</div>
         <div data-testid="state-description">{description}</div>
-        {actionLabel && <button type="button" onClick={onAction}>{actionLabel}</button>}
+        {actionLabel && (
+          <button type="button" onClick={onAction}>
+            {actionLabel}
+          </button>
+        )}
       </div>
     )
   },
@@ -91,7 +102,9 @@ vi.mock('./lib/adminWebSocket', () => ({
   setWsReconnectCallback: vi.fn(),
   subscribeAdminWs: vi.fn((destination, handler) => {
     if (destination === '/user/queue/admin/access') mocks.accessSubscriptionHandler = handler
-    return () => { if (mocks.accessSubscriptionHandler === handler) mocks.accessSubscriptionHandler = null }
+    return () => {
+      if (mocks.accessSubscriptionHandler === handler) mocks.accessSubscriptionHandler = null
+    }
   }),
 }))
 
@@ -137,7 +150,9 @@ describe('featured-products permission boundary', () => {
 
     expect(screen.queryByTestId('nav-/admin/featured-products')).not.toBeInTheDocument()
     expect(await screen.findByTestId('state-panel')).toBeInTheDocument()
-    expect(screen.getByTestId('state-description')).toHaveTextContent('Tài khoản chưa được cấp quyền cần thiết để xem khu vực này')
+    expect(screen.getByTestId('state-description')).toHaveTextContent(
+      'Tài khoản chưa được cấp quyền cần thiết để xem khu vực này',
+    )
     expect(mocks.featuredScreenRenderCount).toBe(0)
   })
 
@@ -207,7 +222,9 @@ describe('central route and fallback policy', () => {
 
     render(<App />)
 
-    expect(await screen.findByText('Tài khoản chưa được cấp quyền sử dụng khu vực nào')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Tài khoản chưa được cấp quyền sử dụng khu vực nào'),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(window.location.pathname).toBe('/admin')
   })
@@ -221,7 +238,9 @@ describe('central route and fallback policy', () => {
 
     render(<App />)
 
-    expect(await screen.findByTestId('state-description')).toHaveTextContent('Tài khoản chưa được cấp quyền cần thiết để xem khu vực này')
+    expect(await screen.findByTestId('state-description')).toHaveTextContent(
+      'Tài khoản chưa được cấp quyền cần thiết để xem khu vực này',
+    )
     expect(screen.queryByTestId('product-detail-screen')).not.toBeInTheDocument()
   })
 })

@@ -1,16 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  DndContext,
-  closestCenter,
-  DragOverlay,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { DndContext, closestCenter, DragOverlay } from '@dnd-kit/core'
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { AlertCircle, Check, GripVertical, Play, Plus, X } from 'lucide-react'
 import { useDragSensors, SortableRow } from '../components/Sortable'
 import { toast } from '@/lib/toast'
@@ -53,7 +45,13 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useHasPermission } from '@/lib/auth'
 import { buildHomeVideoThumbnail, isValidYouTubeChannelUrl } from './homeVideoPayload'
@@ -75,18 +73,25 @@ const EMPTY_FORM = {
 function VideoPreviewModal({ video, onClose }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
+  const displayTitle = contentLang === 'en' ? video.titleEn || video.title : video.title
   const tiktokId = video.youtubeId ? null : extractAllowedTikTokId(video.videoUrl)
   const embedUrl = video.youtubeId
     ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`
     : tiktokId
       ? tiktokEmbedUrl(tiktokId)
-      : (isAllowedFacebookVideoUrl(video.videoUrl) ? facebookEmbedUrl(video.videoUrl) : null)
+      : isAllowedFacebookVideoUrl(video.videoUrl)
+        ? facebookEmbedUrl(video.videoUrl)
+        : null
 
   // A3: dùng Radix Dialog (ui/dialog) — tự lo focus-trap, Escape, khoá cuộn body và
   // trả focus về phần tử trigger khi đóng, thay cho hộp thoại tự dựng trước đây.
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+    <Dialog
+      open
+      onOpenChange={(o) => {
+        if (!o) onClose()
+      }}
+    >
       <DialogContent
         showClose={false}
         className="w-[90vw] max-w-[800px] overflow-hidden border-0 bg-black p-0"
@@ -125,106 +130,139 @@ function VideoPreviewModal({ video, onClose }) {
         </div>
 
         {displayTitle && (
-          <p className="m-0 px-4 py-3 text-xs font-semibold text-white bg-black">
-            {displayTitle}
-          </p>
+          <p className="m-0 px-4 py-3 text-xs font-semibold text-white bg-black">{displayTitle}</p>
         )}
       </DialogContent>
     </Dialog>
   )
 }
 
-function VideoCard({ video, isOnHomepage, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
+function VideoCard({
+  video,
+  isOnHomepage,
+  canUpdate,
+  onEdit,
+  onDelete,
+  onToggleActive,
+  onPreview,
+  selected,
+  onSelect,
+  selectionMode,
+}) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
-  const thumbSrc = video.thumbnail?.url
-    || (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg` : null)
+  const displayTitle = contentLang === 'en' ? video.titleEn || video.title : video.title
+  const thumbSrc =
+    video.thumbnail?.url ||
+    (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg` : null)
 
   return (
     <SortableRow id={video.id} disabled={!canUpdate || selectionMode}>
       {(sortable) => (
-    <DetailSection
-      ref={sortable.setNodeRef}
-      style={sortable.style}
-      className={cn(
-        'bb-slider-card',
-        video.isActive === false && !selected && 'is-inactive',
-        sortable.isDragging && 'is-dragging',
-        selected && 'is-selected',
-      )}
-      contentClassName="bb-slider-card-body"
-    >
-      {canUpdate && (
-        <div className="flex items-center gap-1 shrink-0">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={(checked) => onSelect(video.id, checked)}
-            aria-label={t('homeVideos.selectVideo', { title: video.title })}
-           />
-          {!selectionMode && (
-            <Button
-              variant="unstyled"
-              {...sortable.handleProps}
-              className="bb-related-grip"
-              aria-label={t('homeVideos.dragToReorder')}
-            >
-              <GripVertical size={16} />
-            </Button>
+        <DetailSection
+          ref={sortable.setNodeRef}
+          style={sortable.style}
+          className={cn(
+            'bb-slider-card',
+            video.isActive === false && !selected && 'is-inactive',
+            sortable.isDragging && 'is-dragging',
+            selected && 'is-selected',
           )}
-        </div>
-      )}
+          contentClassName="bb-slider-card-body"
+        >
+          {canUpdate && (
+            <div className="flex items-center gap-1 shrink-0">
+              <Checkbox
+                checked={selected}
+                onCheckedChange={(checked) => onSelect(video.id, checked)}
+                aria-label={t('homeVideos.selectVideo', { title: video.title })}
+              />
+              {!selectionMode && (
+                <Button
+                  variant="unstyled"
+                  {...sortable.handleProps}
+                  className="bb-related-grip"
+                  aria-label={t('homeVideos.dragToReorder')}
+                >
+                  <GripVertical size={16} />
+                </Button>
+              )}
+            </div>
+          )}
 
-      <Button
-        variant="unstyled"
-        onClick={onPreview}
-        className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-black border-none p-0 cursor-pointer relative"
-        aria-label={t('homeVideos.previewVideo', { title: video.title })}
-      >
-        {thumbSrc
-          ? <img src={thumbSrc} alt={video.title} className="w-full h-full object-cover block" />
-          : video.videoUrl
-            ? <video src={video.videoUrl} preload="metadata" muted className="w-full h-full object-cover block pointer-events-none" />
-            : <div className="w-full h-full bg-black" />
-        }
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-black/55">
-            <Play size={14} fill="white" className="text-white ml-1" aria-hidden="true" />
-          </span>
-        </div>
-      </Button>
+          <Button
+            variant="unstyled"
+            onClick={onPreview}
+            className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-black border-none p-0 cursor-pointer relative"
+            aria-label={t('homeVideos.previewVideo', { title: video.title })}
+          >
+            {thumbSrc ? (
+              <img src={thumbSrc} alt={video.title} className="w-full h-full object-cover block" />
+            ) : video.videoUrl ? (
+              <video
+                src={video.videoUrl}
+                preload="metadata"
+                muted
+                className="w-full h-full object-cover block pointer-events-none"
+              />
+            ) : (
+              <div className="w-full h-full bg-black" />
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-black/55">
+                <Play size={14} fill="white" className="text-white ml-1" aria-hidden="true" />
+              </span>
+            </div>
+          </Button>
 
-      <div className="bb-slider-copy">
-        <div className="bb-slider-title-row">
-          <span className="bb-slider-title">{displayTitle}</span>
-          <span className={cn(
-            'bb-badge',
-            isOnHomepage ? 'bb-badge-success' : video.isActive ? 'bb-badge-warning' : 'bb-badge-neutral',
-          )}>
-            {isOnHomepage
-              ? t('homeVideos.statusHomepage')
-              : video.isActive
-                ? t('homeVideos.statusEnabledOutside')
-                : t('homeVideos.statusHidden')}
-          </span>
-        </div>
-        <div className="bb-slider-meta">{video.videoUrl}</div>
-      </div>
+          <div className="bb-slider-copy">
+            <div className="bb-slider-title-row">
+              <span className="bb-slider-title">{displayTitle}</span>
+              <span
+                className={cn(
+                  'bb-badge',
+                  isOnHomepage
+                    ? 'bb-badge-success'
+                    : video.isActive
+                      ? 'bb-badge-warning'
+                      : 'bb-badge-neutral',
+                )}
+              >
+                {isOnHomepage
+                  ? t('homeVideos.statusHomepage')
+                  : video.isActive
+                    ? t('homeVideos.statusEnabledOutside')
+                    : t('homeVideos.statusHidden')}
+              </span>
+            </div>
+            <div className="bb-slider-meta">{video.videoUrl}</div>
+          </div>
 
-      {canUpdate && (
-        <div className="bb-slider-actions">
-          <Button type="button" variant="secondary" size="sm" onClick={() => onToggleActive(video)}>
-            {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => onEdit(video)}>
-            {t('common.edit')}
-          </Button>
-          <Button type="button" variant="secondary" size="sm" className="text-danger" onClick={() => onDelete(video)}>
-            {t('common.delete')}
-          </Button>
-        </div>
-      )}
-    </DetailSection>
+          {canUpdate && (
+            <div className="bb-slider-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onToggleActive(video)}
+              >
+                {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onEdit(video)}>
+                {t('common.edit')}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="text-danger"
+                onClick={() => onDelete(video)}
+              >
+                {t('common.delete')}
+              </Button>
+            </div>
+          )}
+        </DetailSection>
       )}
     </SortableRow>
   )
@@ -272,10 +310,16 @@ export function HomeVideoListScreen({ canUpdate }) {
     enabled: canReadSettings,
   })
 
-  const items = useMemo(() => localItems ?? (data?.items ?? []), [localItems, data?.items])
+  const items = useMemo(() => localItems ?? data?.items ?? [], [localItems, data?.items])
   const activeItem = activeId ? items.find((video) => video.id === activeId) : null
   const homepageIds = useMemo(
-    () => new Set(items.filter((video) => video.isActive).slice(0, 10).map((video) => video.id)),
+    () =>
+      new Set(
+        items
+          .filter((video) => video.isActive)
+          .slice(0, 10)
+          .map((video) => video.id),
+      ),
     [items],
   )
   const youtubeSetting = channelQuery.data?.items?.find((setting) => setting.key === 'youtube_url')
@@ -362,10 +406,12 @@ export function HomeVideoListScreen({ canUpdate }) {
     onMutate: async (reorderItems) => {
       await queryClient.cancelQueries({ queryKey: ['home-videos'] })
       const previous = queryClient.getQueryData(['home-videos'])
-      const optimisticItems = items.map((video) => {
-        const next = reorderItems.find((entry) => entry.id === video.id)
-        return next ? { ...video, sortOrder: next.sortOrder } : video
-      }).sort((left, right) => left.sortOrder - right.sortOrder)
+      const optimisticItems = items
+        .map((video) => {
+          const next = reorderItems.find((entry) => entry.id === video.id)
+          return next ? { ...video, sortOrder: next.sortOrder } : video
+        })
+        .sort((left, right) => left.sortOrder - right.sortOrder)
       setLocalItems(optimisticItems)
       return { previous }
     },
@@ -388,9 +434,13 @@ export function HomeVideoListScreen({ canUpdate }) {
     return JSON.stringify(form) !== JSON.stringify(baseline)
   }, [showForm, baseline, form])
 
-  useUnsavedChanges(isDirty, t('homeVideos.unsavedConfirm', {
-    defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
-  }))
+  useUnsavedChanges(
+    isDirty,
+    t('homeVideos.unsavedConfirm', {
+      defaultValue:
+        'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+    }),
+  )
 
   // O3: Ctrl/Cmd+S lưu form video khi đang mở.
   useSaveShortcut(showForm && canUpdate, handleSubmit)
@@ -408,7 +458,8 @@ export function HomeVideoListScreen({ canUpdate }) {
     if (isDirty) {
       const ok = await showConfirm(
         t('homeVideos.unsavedConfirm', {
-          defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+          defaultValue:
+            'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
         }),
         t('homeVideos.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
       )
@@ -431,13 +482,16 @@ export function HomeVideoListScreen({ canUpdate }) {
     const next = {
       title: video.title,
       titleEn: video.titleEn || '',
-      videoType: (video.youtubeId || extractAllowedYouTubeId(video.videoUrl))
-        ? 'youtube'
-        : (extractAllowedTikTokId(video.videoUrl)
+      videoType:
+        video.youtubeId || extractAllowedYouTubeId(video.videoUrl)
+          ? 'youtube'
+          : extractAllowedTikTokId(video.videoUrl)
             ? 'tiktok'
-            : (isAllowedFacebookVideoUrl(video.videoUrl)
-                ? 'facebook'
-                : (isAllowedMediaVideoUrl(video.videoUrl) ? 'upload' : ''))),
+            : isAllowedFacebookVideoUrl(video.videoUrl)
+              ? 'facebook'
+              : isAllowedMediaVideoUrl(video.videoUrl)
+                ? 'upload'
+                : '',
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.rawUrl || video.thumbnail?.url || '',
       thumbnailAlt: video.thumbnail?.alt || '',
@@ -492,13 +546,14 @@ export function HomeVideoListScreen({ canUpdate }) {
       errors.videoUrl = t('homeVideos.validationSource')
       return errors
     }
-    const invalidMessage = values.videoType === 'youtube'
-      ? t('homeVideos.validationYoutube')
-      : values.videoType === 'tiktok'
-        ? t('homeVideos.validationTikTok')
-        : values.videoType === 'facebook'
-          ? t('homeVideos.validationFacebook')
-          : t('homeVideos.validationUpload')
+    const invalidMessage =
+      values.videoType === 'youtube'
+        ? t('homeVideos.validationYoutube')
+        : values.videoType === 'tiktok'
+          ? t('homeVideos.validationTikTok')
+          : values.videoType === 'facebook'
+            ? t('homeVideos.validationFacebook')
+            : t('homeVideos.validationUpload')
     if (!videoCheck.valid) {
       errors.videoUrl = invalidMessage
     } else if (values.videoType === 'youtube' && !extractWritableYouTubeId(values.videoUrl)) {
@@ -543,9 +598,8 @@ export function HomeVideoListScreen({ canUpdate }) {
     const title = form.title.trim()
     const videoCheck = validateHomeVideoUrl(form.videoUrl)
     const hasThumbnail = Boolean(form.thumbnailUrl.trim())
-    const newSortOrder = items.length > 0
-      ? Math.max(...items.map((video) => video.sortOrder)) + 1
-      : 0
+    const newSortOrder =
+      items.length > 0 ? Math.max(...items.map((video) => video.sortOrder)) + 1 : 0
     const input = {
       title,
       titleEn: form.titleEn.trim(),
@@ -576,7 +630,10 @@ export function HomeVideoListScreen({ canUpdate }) {
     if (!over || active.id === over.id) return
     const oldIndex = items.findIndex((video) => video.id === active.id)
     const newIndex = items.findIndex((video) => video.id === over.id)
-    const reordered = arrayMove(items, oldIndex, newIndex).map((video, index) => ({ ...video, sortOrder: index }))
+    const reordered = arrayMove(items, oldIndex, newIndex).map((video, index) => ({
+      ...video,
+      sortOrder: index,
+    }))
     setLocalItems(reordered)
     reorderMutation.mutate(reordered.map((video) => ({ id: video.id, sortOrder: video.sortOrder })))
   }
@@ -595,13 +652,13 @@ export function HomeVideoListScreen({ canUpdate }) {
   const isFiltering = searchText.trim() !== '' || normalizedStatusFilter !== 'ALL'
   const filteredItems = items.filter((v) => {
     const q = searchText.trim().toLowerCase()
-    const matchSearch = q === ''
-      || v.title.toLowerCase().includes(q)
-      || (v.titleEn || '').toLowerCase().includes(q)
-    const matchStatus = normalizedStatusFilter === 'ALL'
-      || (normalizedStatusFilter === 'homepage' && homepageIds.has(v.id))
-      || (normalizedStatusFilter === 'enabledOutside' && v.isActive && !homepageIds.has(v.id))
-      || (normalizedStatusFilter === 'hidden' && !v.isActive)
+    const matchSearch =
+      q === '' || v.title.toLowerCase().includes(q) || (v.titleEn || '').toLowerCase().includes(q)
+    const matchStatus =
+      normalizedStatusFilter === 'ALL' ||
+      (normalizedStatusFilter === 'homepage' && homepageIds.has(v.id)) ||
+      (normalizedStatusFilter === 'enabledOutside' && v.isActive && !homepageIds.has(v.id)) ||
+      (normalizedStatusFilter === 'hidden' && !v.isActive)
     return matchSearch && matchStatus
   })
 
@@ -639,14 +696,20 @@ export function HomeVideoListScreen({ canUpdate }) {
     try {
       // allSettled thay cho Promise.all: 1 item lỗi không huỷ cả loạt, và báo đúng
       // số thành công / thất bại thay vì báo "thành công" khi thực tế lưu một phần.
-      const results = await Promise.allSettled([...ids].map((id) => updateHomeVideo(id, { isActive })))
+      const results = await Promise.allSettled(
+        [...ids].map((id) => updateHomeVideo(id, { isActive })),
+      )
       const ok = results.filter((r) => r.status === 'fulfilled').length
       const fail = results.length - ok
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setSelectedIds(new Set())
       if (fail === 0) {
         setLocalItems(null)
-        toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: ok }) : t('homeVideos.bulkHideSuccess', { count: ok }))
+        toast.success(
+          isActive
+            ? t('homeVideos.bulkShowSuccess', { count: ok })
+            : t('homeVideos.bulkHideSuccess', { count: ok }),
+        )
       } else if (ok === 0) {
         setLocalItems(previousLocal)
         toast.error(t('homeVideos.bulkActionError'))
@@ -691,123 +754,190 @@ export function HomeVideoListScreen({ canUpdate }) {
   const youtubePreviewId = extractAllowedYouTubeId(form.videoUrl)
 
   if (isLoading) {
-    return (
-      <ScreenSkeleton variant="cards" count={4} showHeader={false} />
-    )
+    return <ScreenSkeleton variant="cards" count={4} showHeader={false} />
   }
-  if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} actionLabel={t('common.retry')} onAction={() => refetch()} />
+  if (isError)
+    return (
+      <StatePanel
+        tone="danger"
+        title={t('homeVideos.loadError')}
+        description={error?.message}
+        actionLabel={t('common.retry')}
+        onAction={() => refetch()}
+      />
+    )
 
-  const listContent = items.length === 0 ? (
-    <StatePanel
-      tone="neutral"
-      title={t('homeVideos.empty')}
-      description={t('homeVideos.emptyDescription')}
-      actionLabel={canUpdate ? t('homeVideos.addButton') : undefined}
-      onAction={canUpdate ? openCreateForm : undefined}
-    />
-  ) : (
-    <div className="flex flex-col gap-3">
+  const listContent =
+    items.length === 0 ? (
+      <StatePanel
+        tone="neutral"
+        title={t('homeVideos.empty')}
+        description={t('homeVideos.emptyDescription')}
+        actionLabel={canUpdate ? t('homeVideos.addButton') : undefined}
+        onAction={canUpdate ? openCreateForm : undefined}
+      />
+    ) : (
+      <div className="flex flex-col gap-3">
+        <p className="m-0 rounded-sm border border-border bg-surface-muted px-3 py-2 text-sm text-muted-foreground">
+          {t('homeVideos.homepageRuleHint', { count: homepageIds.size })}
+        </p>
 
-      <p className="m-0 rounded-sm border border-border bg-surface-muted px-3 py-2 text-sm text-muted-foreground">
-        {t('homeVideos.homepageRuleHint', { count: homepageIds.size })}
-      </p>
-
-      {/* Filter bar */}
-      <div className="flex gap-2 items-center">
-        <Input
-          type="search"
-          value={searchText}
-          onChange={(e) => { setSearchText(e.target.value); setSelectedIds(new Set()) }}
-          placeholder={t('homeVideos.searchPlaceholder', { defaultValue: 'Tìm theo tên video...' })}
-          className="flex-1"
-        />
-        <Select value={normalizedStatusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
-          <SelectTrigger className="w-auto text-xs h-8"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">{t('homeVideos.filterAll', { defaultValue: 'Tất cả' })} ({items.length})</SelectItem>
-            <SelectItem value="homepage">{t('homeVideos.filterHomepage')} ({homepageIds.size})</SelectItem>
-            <SelectItem value="enabledOutside">{t('homeVideos.filterEnabledOutside')} ({items.filter((v) => v.isActive && !homepageIds.has(v.id)).length})</SelectItem>
-            <SelectItem value="hidden">{t('homeVideos.filterHidden', { defaultValue: 'Đang ẩn' })} ({items.filter((v) => !v.isActive).length})</SelectItem>
-          </SelectContent>
-        </Select>
-        {isFiltering && (
-          <Button type="button" variant="outline" size="sm" className="whitespace-nowrap"
-            onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}>
-            {t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
-          </Button>
-        )}
-      </div>
-
-      {filteredItems.length === 0 ? (
-        <StatePanel
-          tone="neutral"
-          title={t('homeVideos.noMatch', { defaultValue: 'Không tìm thấy video' })}
-          description={t('homeVideos.noMatchDescription', { defaultValue: 'Thử thay đổi từ khoá hoặc bộ lọc trạng thái.' })}
-          actionLabel={t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
-          onAction={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}
-        />
-      ) : (<>
-
-      {canUpdate && (
-        <div className="flex items-center gap-3 px-1 py-2">
-          <Checkbox
-            checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-            onCheckedChange={(checked) => handleSelectAll(checked)}
-            aria-label={t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
-           />
-          <span className="text-sm text-muted-foreground">
-            {selectionMode
-              ? t('homeVideos.selectedOf', { selected: selectedIds.size, total: items.length })
-              : t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
-          </span>
-          {selectionMode && (
-            <Button type="button" variant="outline" size="sm" className="ml-1"
-              onClick={() => setSelectedIds(new Set())}>
-              {t('common.deselect', { defaultValue: 'Bỏ chọn' })}
+        {/* Filter bar */}
+        <div className="flex gap-2 items-center">
+          <Input
+            type="search"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value)
+              setSelectedIds(new Set())
+            }}
+            placeholder={t('homeVideos.searchPlaceholder', {
+              defaultValue: 'Tìm theo tên video...',
+            })}
+            className="flex-1"
+          />
+          <Select
+            value={normalizedStatusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val)
+              setSelectedIds(new Set())
+            }}
+          >
+            <SelectTrigger className="w-auto text-xs h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">
+                {t('homeVideos.filterAll', { defaultValue: 'Tất cả' })} ({items.length})
+              </SelectItem>
+              <SelectItem value="homepage">
+                {t('homeVideos.filterHomepage')} ({homepageIds.size})
+              </SelectItem>
+              <SelectItem value="enabledOutside">
+                {t('homeVideos.filterEnabledOutside')} (
+                {items.filter((v) => v.isActive && !homepageIds.has(v.id)).length})
+              </SelectItem>
+              <SelectItem value="hidden">
+                {t('homeVideos.filterHidden', { defaultValue: 'Đang ẩn' })} (
+                {items.filter((v) => !v.isActive).length})
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {isFiltering && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap"
+              onClick={() => {
+                setSearchText('')
+                setStatusFilter('ALL')
+                setSelectedIds(new Set())
+              }}
+            >
+              {t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
             </Button>
           )}
         </div>
-      )}
 
-      {selectionMode && canUpdate && (
-        <BulkActionBar
-          selectedCount={t('homeVideos.bulkSelectedLabel', { count: selectedIds.size })}
-          onClear={() => setSelectedIds(new Set())}
-          actions={[
-            { label: t('homeVideos.hideAction'), onClick: () => handleBulkSetActive(false), disabled: isBulkBusy },
-            { label: t('homeVideos.showAction'), onClick: () => handleBulkSetActive(true), disabled: isBulkBusy },
-            { label: t('common.delete'), onClick: handleBulkDelete, disabled: isBulkBusy, tone: 'danger' },
-          ]}
-        />
-      )}
+        {filteredItems.length === 0 ? (
+          <StatePanel
+            tone="neutral"
+            title={t('homeVideos.noMatch', { defaultValue: 'Không tìm thấy video' })}
+            description={t('homeVideos.noMatchDescription', {
+              defaultValue: 'Thử thay đổi từ khoá hoặc bộ lọc trạng thái.',
+            })}
+            actionLabel={t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
+            onAction={() => {
+              setSearchText('')
+              setStatusFilter('ALL')
+              setSelectedIds(new Set())
+            }}
+          />
+        ) : (
+          <>
+            {canUpdate && (
+              <div className="flex items-center gap-3 px-1 py-2">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                  onCheckedChange={(checked) => handleSelectAll(checked)}
+                  aria-label={t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectionMode
+                    ? t('homeVideos.selectedOf', {
+                        selected: selectedIds.size,
+                        total: items.length,
+                      })
+                    : t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
+                </span>
+                {selectionMode && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ml-1"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    {t('common.deselect', { defaultValue: 'Bỏ chọn' })}
+                  </Button>
+                )}
+              </div>
+            )}
 
-      {isFiltering && (
-        <p className="text-xs text-muted-foreground m-0 mb-1 ml-1">
-          {t('homeVideos.filterReorderHint', {
-            shown: filteredItems.length,
-            total: items.length,
-          })}
-        </p>
-      )}
+            {selectionMode && canUpdate && (
+              <BulkActionBar
+                selectedCount={t('homeVideos.bulkSelectedLabel', { count: selectedIds.size })}
+                onClear={() => setSelectedIds(new Set())}
+                actions={[
+                  {
+                    label: t('homeVideos.hideAction'),
+                    onClick: () => handleBulkSetActive(false),
+                    disabled: isBulkBusy,
+                  },
+                  {
+                    label: t('homeVideos.showAction'),
+                    onClick: () => handleBulkSetActive(true),
+                    disabled: isBulkBusy,
+                  },
+                  {
+                    label: t('common.delete'),
+                    onClick: handleBulkDelete,
+                    disabled: isBulkBusy,
+                    tone: 'danger',
+                  },
+                ]}
+              />
+            )}
 
-      {filteredItems.map((video) => (
-        <VideoCard
-          key={video.id}
-          video={video}
-          isOnHomepage={homepageIds.has(video.id)}
-          canUpdate={canUpdate && !isFiltering}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-          onToggleActive={handleToggleActive}
-          onPreview={() => setPreviewVideo(video)}
-          selected={selectedIds.has(video.id)}
-          onSelect={handleSelect}
-          selectionMode={selectionMode || isFiltering}
-        />
-      ))}
-      </>)}
-    </div>
-  )
+            {isFiltering && (
+              <p className="text-xs text-muted-foreground m-0 mb-1 ml-1">
+                {t('homeVideos.filterReorderHint', {
+                  shown: filteredItems.length,
+                  total: items.length,
+                })}
+              </p>
+            )}
+
+            {filteredItems.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                isOnHomepage={homepageIds.has(video.id)}
+                canUpdate={canUpdate && !isFiltering}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+                onToggleActive={handleToggleActive}
+                onPreview={() => setPreviewVideo(video)}
+                selected={selectedIds.has(video.id)}
+                onSelect={handleSelect}
+                selectionMode={selectionMode || isFiltering}
+              />
+            ))}
+          </>
+        )}
+      </div>
+    )
 
   return (
     <Screen>
@@ -816,14 +946,14 @@ export function HomeVideoListScreen({ canUpdate }) {
       <ScreenHeader
         group="content"
         title={t('homeVideos.title')}
-        actions={canUpdate && !showForm ? (
-            <Button
-              type="button"
-              onClick={openCreateForm}
-            >
-              <Plus size={14} />{t('homeVideos.addButton')}
+        actions={
+          canUpdate && !showForm ? (
+            <Button type="button" onClick={openCreateForm}>
+              <Plus size={14} />
+              {t('homeVideos.addButton')}
             </Button>
-        ) : null}
+          ) : null
+        }
       />
 
       <DetailSection
@@ -889,187 +1019,221 @@ export function HomeVideoListScreen({ canUpdate }) {
       </DetailSection>
 
       {showForm && (
-        <DetailSection title={editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')} className="mb-4">
+        <DetailSection
+          title={editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}
+          className="mb-4"
+        >
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          {fieldErrors.form ? (
-            <div
-              role="alert"
-              className="flex items-center gap-2 rounded-xs border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger m-0"
-            >
-              <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
-              {fieldErrors.form}
-            </div>
-          ) : null}
-
-          <FormField
-            label={t('homeVideos.formTitle')}
-            required
-            error={fieldErrors.title}
-          >
-            <Input
-              required
-              value={form.title}
-              onChange={(event) => { setForm((prev) => ({ ...prev, title: event.target.value })); clearFieldError('title') }}
-              onBlur={() => validateField('title')}
-              placeholder={t('homeVideos.formTitlePlaceholder')}
-            />
-          </FormField>
-
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            {t('homeVideos.formTitleEn')}
-            <Input
-              value={form.titleEn}
-              onChange={(event) => setForm((prev) => ({ ...prev, titleEn: event.target.value }))}
-              placeholder={t('homeVideos.formTitleEnPlaceholder')}
-            />
-            <span className="text-xs font-normal text-muted-foreground">{t('homeVideos.formTitleEnHint')}</span>
-          </label>
-
-          <div className="flex flex-col gap-2 text-sm font-semibold">
-            {t('homeVideos.formSource')}
-            <RadioGroup
-              value={form.videoType}
-              onValueChange={(value) => { void handleVideoTypeChange(value) }}
-              className="flex flex-wrap gap-5 font-normal"
-            >
-              <label className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value="youtube" />
-                {t('homeVideos.sourceYoutube')}
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value="tiktok" />
-                {t('homeVideos.sourceTikTok')}
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value="facebook" />
-                {t('homeVideos.sourceFacebook')}
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value="upload" />
-                {t('homeVideos.sourceUpload')}
-              </label>
-            </RadioGroup>
-          </div>
-
-          {['youtube', 'tiktok', 'facebook'].includes(form.videoType) ? (
-            <div className="flex flex-col gap-1">
-              <FormField
-                label={form.videoType === 'youtube'
-                  ? t('homeVideos.formYoutubeUrl')
-                  : form.videoType === 'tiktok' ? t('homeVideos.formTikTokUrl') : t('homeVideos.formFacebookUrl')}
-                required
-                error={fieldErrors.videoUrl}
-                helper={form.videoType === 'youtube'
-                  ? t('homeVideos.youtubeHint')
-                  : form.videoType === 'tiktok' ? t('homeVideos.tiktokHint') : t('homeVideos.facebookHint')}
+            {fieldErrors.form ? (
+              <div
+                role="alert"
+                className="flex items-center gap-2 rounded-xs border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger m-0"
               >
-                <Input
-                  required
-                  type="url"
-                  value={form.videoUrl}
-                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
-                  onBlur={() => validateField('videoUrl')}
-                  placeholder={form.videoType === 'youtube'
-                    ? 'https://www.youtube.com/watch?v=...'
-                    : form.videoType === 'tiktok'
-                      ? 'https://www.tiktok.com/@account/video/...'
-                      : 'https://www.facebook.com/account/videos/...'}
-                />
-              </FormField>
-              {youtubePreviewId && (
-                <img
-                  src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
-                  alt={t('homeVideos.youtubePreviewAlt')}
-                  className="mt-2 w-full max-w-xs h-auto rounded-xs border border-border"
-                />
-              )}
+                <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
+                {fieldErrors.form}
+              </div>
+            ) : null}
+
+            <FormField label={t('homeVideos.formTitle')} required error={fieldErrors.title}>
+              <Input
+                required
+                value={form.title}
+                onChange={(event) => {
+                  setForm((prev) => ({ ...prev, title: event.target.value }))
+                  clearFieldError('title')
+                }}
+                onBlur={() => validateField('title')}
+                placeholder={t('homeVideos.formTitlePlaceholder')}
+              />
+            </FormField>
+
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              {t('homeVideos.formTitleEn')}
+              <Input
+                value={form.titleEn}
+                onChange={(event) => setForm((prev) => ({ ...prev, titleEn: event.target.value }))}
+                placeholder={t('homeVideos.formTitleEnPlaceholder')}
+              />
+              <span className="text-xs font-normal text-muted-foreground">
+                {t('homeVideos.formTitleEnHint')}
+              </span>
+            </label>
+
+            <div className="flex flex-col gap-2 text-sm font-semibold">
+              {t('homeVideos.formSource')}
+              <RadioGroup
+                value={form.videoType}
+                onValueChange={(value) => {
+                  void handleVideoTypeChange(value)
+                }}
+                className="flex flex-wrap gap-5 font-normal"
+              >
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="youtube" />
+                  {t('homeVideos.sourceYoutube')}
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="tiktok" />
+                  {t('homeVideos.sourceTikTok')}
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="facebook" />
+                  {t('homeVideos.sourceFacebook')}
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="upload" />
+                  {t('homeVideos.sourceUpload')}
+                </label>
+              </RadioGroup>
             </div>
-          ) : form.videoType === 'upload' ? (
-            <div className="flex flex-col gap-1 text-sm font-semibold">
-              {t('homeVideos.formUpload')}
-              {fieldErrors.videoUrl ? (
-                <span className="flex items-center gap-1 text-xs text-danger font-normal" role="alert">
-                  <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
-                  {fieldErrors.videoUrl}
-                </span>
-              ) : null}
-              <div className="flex gap-2 items-center">
-                <Button variant="secondary" size="sm"
-                  type="button"
-                  onClick={() => setVideoPickerOpen(true)}
-                  disabled={!canUpdate || !canReadMedia}
-                  title={!canReadMedia ? t('media.videoPermissionDeniedDesc') : undefined}
+
+            {['youtube', 'tiktok', 'facebook'].includes(form.videoType) ? (
+              <div className="flex flex-col gap-1">
+                <FormField
+                  label={
+                    form.videoType === 'youtube'
+                      ? t('homeVideos.formYoutubeUrl')
+                      : form.videoType === 'tiktok'
+                        ? t('homeVideos.formTikTokUrl')
+                        : t('homeVideos.formFacebookUrl')
+                  }
+                  required
+                  error={fieldErrors.videoUrl}
+                  helper={
+                    form.videoType === 'youtube'
+                      ? t('homeVideos.youtubeHint')
+                      : form.videoType === 'tiktok'
+                        ? t('homeVideos.tiktokHint')
+                        : t('homeVideos.facebookHint')
+                  }
                 >
-                  {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
-                </Button>
-                {form.videoUrl && (
-                  <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, videoUrl: '' }))}
-                    aria-label={t('homeVideos.removeVideo')}
-                    disabled={!canUpdate}
-                  >
-                    <X size={14} aria-hidden="true" />
-                  </Button>
+                  <Input
+                    required
+                    type="url"
+                    value={form.videoUrl}
+                    onChange={(event) => {
+                      setForm((prev) => ({ ...prev, videoUrl: event.target.value }))
+                      clearFieldError('videoUrl')
+                    }}
+                    onBlur={() => validateField('videoUrl')}
+                    placeholder={
+                      form.videoType === 'youtube'
+                        ? 'https://www.youtube.com/watch?v=...'
+                        : form.videoType === 'tiktok'
+                          ? 'https://www.tiktok.com/@account/video/...'
+                          : 'https://www.facebook.com/account/videos/...'
+                    }
+                  />
+                </FormField>
+                {youtubePreviewId && (
+                  <img
+                    src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
+                    alt={t('homeVideos.youtubePreviewAlt')}
+                    className="mt-2 w-full max-w-xs h-auto rounded-xs border border-border"
+                  />
                 )}
               </div>
-              {!canReadMedia ? (
-                <span className="text-xs font-normal text-muted-foreground">
-                  {t('media.videoPermissionDeniedDesc')}
-                </span>
-              ) : null}
-              <MediaRequirementHint recommend={IMAGE_RECO.video} className="font-normal" />
-              {form.videoUrl ? (
-                <span className="text-xs text-success font-normal">
-                  <Check size={14} aria-hidden="true" /> {form.videoUrl.split('/').pop()}
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground font-normal">
-                  {t('homeVideos.uploadHint')}
-                </span>
-              )}
+            ) : form.videoType === 'upload' ? (
+              <div className="flex flex-col gap-1 text-sm font-semibold">
+                {t('homeVideos.formUpload')}
+                {fieldErrors.videoUrl ? (
+                  <span
+                    className="flex items-center gap-1 text-xs text-danger font-normal"
+                    role="alert"
+                  >
+                    <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                    {fieldErrors.videoUrl}
+                  </span>
+                ) : null}
+                <div className="flex gap-2 items-center">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => setVideoPickerOpen(true)}
+                    disabled={!canUpdate || !canReadMedia}
+                    title={!canReadMedia ? t('media.videoPermissionDeniedDesc') : undefined}
+                  >
+                    {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
+                  </Button>
+                  {form.videoUrl && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-danger hover:bg-danger-bg"
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, videoUrl: '' }))}
+                      aria-label={t('homeVideos.removeVideo')}
+                      disabled={!canUpdate}
+                    >
+                      <X size={14} aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+                {!canReadMedia ? (
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {t('media.videoPermissionDeniedDesc')}
+                  </span>
+                ) : null}
+                <MediaRequirementHint recommend={IMAGE_RECO.video} className="font-normal" />
+                {form.videoUrl ? (
+                  <span className="text-xs text-success font-normal">
+                    <Check size={14} aria-hidden="true" /> {form.videoUrl.split('/').pop()}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground font-normal">
+                    {t('homeVideos.uploadHint')}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div
+                className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning"
+                role="alert"
+              >
+                {t('homeVideos.legacySourceWarning')}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1 text-sm font-semibold">
+              {t('homeVideos.formThumbnail')}
+              <ImageUrlInput
+                value={form.thumbnailUrl}
+                onChange={(url, media) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    thumbnailUrl: url,
+                    thumbnailWidth: media?.width ?? null,
+                    thumbnailHeight: media?.height ?? null,
+                    thumbnailMimeType: media?.mimeType ?? '',
+                  }))
+                }
+                alt={form.thumbnailAlt}
+                onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
+                previewAlt={form.thumbnailAlt || form.title}
+                recommend={IMAGE_RECO.videoThumb}
+              />
+              <span className="text-xs text-muted-foreground font-normal">
+                {t('homeVideos.formThumbnailHint')}
+              </span>
             </div>
-          ) : (
-            <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
-              {t('homeVideos.legacySourceWarning')}
-            </div>
-          )}
 
-          <div className="flex flex-col gap-1 text-sm font-semibold">
-            {t('homeVideos.formThumbnail')}
-            <ImageUrlInput
-              value={form.thumbnailUrl}
-              onChange={(url, media) => setForm((prev) => ({
-                ...prev,
-                thumbnailUrl: url,
-                thumbnailWidth: media?.width ?? null,
-                thumbnailHeight: media?.height ?? null,
-                thumbnailMimeType: media?.mimeType ?? '',
-              }))}
-              alt={form.thumbnailAlt}
-              onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
-              previewAlt={form.thumbnailAlt || form.title}
-              recommend={IMAGE_RECO.videoThumb}
-            />
-            <span className="text-xs text-muted-foreground font-normal">{t('homeVideos.formThumbnailHint')}</span>
-          </div>
+            <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+              <Checkbox
+                checked={form.isActive}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: !!checked }))}
+              />
+              {t('homeVideos.formIsActive')}
+            </label>
 
-          <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-            <Checkbox
-              checked={form.isActive}
-              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: !!checked }))}
-             />
-            {t('homeVideos.formIsActive')}
-          </label>
-
-          <StickyActionBar ariaLabel={t('common.actions')}>
-            <Button type="button" variant="secondary" onClick={handleCancelForm}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" loading={isBusy}>
-              {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
-            </Button>
-          </StickyActionBar>
+            <StickyActionBar ariaLabel={t('common.actions')}>
+              <Button type="button" variant="secondary" onClick={handleCancelForm}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" loading={isBusy}>
+                {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
+              </Button>
+            </StickyActionBar>
           </form>
         </DetailSection>
       )}
@@ -1081,7 +1245,10 @@ export function HomeVideoListScreen({ canUpdate }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={items.map((video) => video.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={items.map((video) => video.id)}
+            strategy={verticalListSortingStrategy}
+          >
             {listContent}
           </SortableContext>
           <DragOverlay>
@@ -1098,7 +1265,9 @@ export function HomeVideoListScreen({ canUpdate }) {
             )}
           </DragOverlay>
         </DndContext>
-      ) : listContent}
+      ) : (
+        listContent
+      )}
 
       {videoPickerOpen && canUpdate && canReadMedia && (
         <VideoPickerModal
@@ -1107,7 +1276,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             setForm((prev) => ({
               ...prev,
               videoUrl: url,
-              title: prev.title.trim() ? prev.title : (media?.title || media?.altText || '')
+              title: prev.title.trim() ? prev.title : media?.title || media?.altText || '',
             }))
             clearFieldError('videoUrl')
             setVideoPickerOpen(false)

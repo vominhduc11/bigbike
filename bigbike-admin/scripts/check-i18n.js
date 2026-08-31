@@ -61,4 +61,6 @@ if (result.errors.length) {
   process.exit(1)
 }
 
-console.log(`✅ i18n guard passed: ${result.viKeys.size} keys in each locale; ${result.stats.callCount} translation calls checked (${result.stats.staticCallCount} static, ${result.stats.dynamicCallCount} dynamic) across ${result.stats.sourceFiles} production source files.`)
+console.log(
+  `✅ i18n guard passed: ${result.viKeys.size} keys in each locale; ${result.stats.callCount} translation calls checked (${result.stats.staticCallCount} static, ${result.stats.dynamicCallCount} dynamic) across ${result.stats.sourceFiles} production source files.`,
+)

@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import {
-  Download,
-  ListFilter,
-  RotateCcw,
-  Search,
-} from 'lucide-react'
+import { Download, ListFilter, RotateCcw, Search } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
 import { DetailSection } from '../components/DetailSection'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
@@ -55,16 +50,18 @@ export function AuditLogListScreen() {
   // trang đang xem, không gửi thêm tham số lên máy chủ.
   const [sort, setSort] = useState({ key: null, dir: 'asc' })
 
-  const isFiltered = query.actorType !== 'ALL'
-    || query.resourceType !== 'ALL'
-    || Boolean(query.q)
-    || Boolean(query.from)
-    || Boolean(query.to)
-  const dateRangeError = query.from && query.to && query.from > query.to
-    ? t('auditLog.dateRangeError', {
-      defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-    })
-    : ''
+  const isFiltered =
+    query.actorType !== 'ALL' ||
+    query.resourceType !== 'ALL' ||
+    Boolean(query.q) ||
+    Boolean(query.from) ||
+    Boolean(query.to)
+  const dateRangeError =
+    query.from && query.to && query.from > query.to
+      ? t('auditLog.dateRangeError', {
+          defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+        })
+      : ''
   const activeFilterCount = [
     query.actorType !== 'ALL',
     query.resourceType !== 'ALL',
@@ -105,49 +102,54 @@ export function AuditLogListScreen() {
       setSelectedLog(match)
     } else {
       setDetailParam(null)
-      setDetailNotice(t('auditLog.deepLinkNotFound', {
-        defaultValue: 'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
-      }))
+      setDetailNotice(
+        t('auditLog.deepLinkNotFound', {
+          defaultValue: 'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
+        }),
+      )
     }
   }, [auditData, t])
 
-  const columns = useMemo(() => [
-    {
-      key: 'createdAt',
-      label: t('auditLog.colTime'),
-      sortable: true,
-      render: (log) => (
-        <time
-          className="whitespace-nowrap text-sm font-medium text-foreground"
-          title={log.createdAt || undefined}
-        >
-          {formatDateTimeWithSeconds(log.createdAt)}
-        </time>
-      ),
-    },
-    {
-      key: 'actor',
-      label: t('auditLog.colActor'),
-      sortable: true,
-      render: (log) => <ActorCell log={log} />,
-    },
-    {
-      key: 'action',
-      label: t('auditLog.colAction'),
-      render: (log) => <ActionLabel action={log.action} />,
-    },
-    {
-      key: 'module',
-      label: t('auditLog.colModule'),
-      sortable: true,
-      render: (log) => <ModuleBadge resourceType={log.resourceType} />,
-    },
-    {
-      key: 'entity',
-      label: t('auditLog.colEntity'),
-      render: (log) => <ResourceCell log={log} />,
-    },
-  ], [t])
+  const columns = useMemo(
+    () => [
+      {
+        key: 'createdAt',
+        label: t('auditLog.colTime'),
+        sortable: true,
+        render: (log) => (
+          <time
+            className="whitespace-nowrap text-sm font-medium text-foreground"
+            title={log.createdAt || undefined}
+          >
+            {formatDateTimeWithSeconds(log.createdAt)}
+          </time>
+        ),
+      },
+      {
+        key: 'actor',
+        label: t('auditLog.colActor'),
+        sortable: true,
+        render: (log) => <ActorCell log={log} />,
+      },
+      {
+        key: 'action',
+        label: t('auditLog.colAction'),
+        render: (log) => <ActionLabel action={log.action} />,
+      },
+      {
+        key: 'module',
+        label: t('auditLog.colModule'),
+        sortable: true,
+        render: (log) => <ModuleBadge resourceType={log.resourceType} />,
+      },
+      {
+        key: 'entity',
+        label: t('auditLog.colEntity'),
+        render: (log) => <ResourceCell log={log} />,
+      },
+    ],
+    [t],
+  )
 
   const {
     visibleColumns,
@@ -266,9 +268,7 @@ export function AuditLogListScreen() {
     })
   }
   if (query.from || query.to) {
-    const range = query.from && query.to
-      ? `${query.from} – ${query.to}`
-      : (query.from || query.to)
+    const range = query.from && query.to ? `${query.from} – ${query.to}` : query.from || query.to
     filterChips.push({
       key: 'dateRange',
       label: t('auditLog.chipDateRange', {
@@ -283,32 +283,35 @@ export function AuditLogListScreen() {
   }
 
   const totalItems = state.pagination?.totalItems
-  const showData = !dateRangeError
-    && (state.status === 'loading' || (state.status === 'success' && state.items.length > 0))
+  const showData =
+    !dateRangeError &&
+    (state.status === 'loading' || (state.status === 'success' && state.items.length > 0))
 
   return (
     <Screen>
       <ScreenHeader
         group="system"
         title={t('auditLog.title')}
-        actions={(
+        actions={
           <Button
             type="button"
             variant="secondary"
             className="min-h-11"
             onClick={handleExport}
             disabled={state.items.length === 0}
-            title={state.items.length > 0
-              ? t('auditLog.exportTooltipPage', {
-                count: state.items.length,
-                defaultValue: 'Xuất {{count}} dòng đang hiển thị (chỉ trang này)',
-              })
-              : t('auditLog.exportTooltipEmpty')}
+            title={
+              state.items.length > 0
+                ? t('auditLog.exportTooltipPage', {
+                    count: state.items.length,
+                    defaultValue: 'Xuất {{count}} dòng đang hiển thị (chỉ trang này)',
+                  })
+                : t('auditLog.exportTooltipEmpty')
+            }
           >
             <Download size={16} aria-hidden="true" />
             {t('auditLog.exportBtn')}
           </Button>
-        )}
+        }
       />
 
       <FilterBar
@@ -337,9 +340,12 @@ export function AuditLogListScreen() {
           className="min-h-11"
           options={RESOURCE_OPTIONS.map((resourceType) => ({
             value: resourceType,
-            label: resourceType === 'ALL'
-              ? t('auditLog.filterModule')
-              : t(`auditLog.module.${resourceType}`, { defaultValue: t('auditLog.module.OTHER') }),
+            label:
+              resourceType === 'ALL'
+                ? t('auditLog.filterModule')
+                : t(`auditLog.module.${resourceType}`, {
+                    defaultValue: t('auditLog.module.OTHER'),
+                  }),
           }))}
         />
 
@@ -350,9 +356,10 @@ export function AuditLogListScreen() {
           className="min-h-11"
           options={ACTOR_OPTIONS.map((actorType) => ({
             value: actorType,
-            label: actorType === 'ALL'
-              ? t('auditLog.filterActorType')
-              : t(`auditLog.actorType.${actorType}`, { defaultValue: t('common.unknown') }),
+            label:
+              actorType === 'ALL'
+                ? t('auditLog.filterActorType')
+                : t(`auditLog.actorType.${actorType}`, { defaultValue: t('common.unknown') }),
           }))}
         />
 
@@ -436,11 +443,7 @@ export function AuditLogListScreen() {
       </FilterBar>
 
       <div className="mb-3 flex flex-wrap items-center gap-2 lg:hidden">
-        <Button
-          variant="outline"
-          className="min-h-11"
-          onClick={() => setShowMobileFilter(true)}
-        >
+        <Button variant="outline" className="min-h-11" onClick={() => setShowMobileFilter(true)}>
           <ListFilter size={16} aria-hidden="true" />
           {t('auditLog.mobileFilterLabel')}
           {activeFilterCount > 0 ? (
@@ -506,7 +509,8 @@ export function AuditLogListScreen() {
           {totalItems > query.pageSize ? (
             <p className="text-xs">
               {t('auditLog.pageScopeNote', {
-                defaultValue: 'Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.',
+                defaultValue:
+                  'Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.',
               })}
             </p>
           ) : null}
@@ -535,39 +539,35 @@ export function AuditLogListScreen() {
 
       {showData ? (
         <DetailSection noPadding>
-            <div className="hide-on-mobile">
-              <AdminTable
-                caption={t('auditLog.tableCaption')}
-                columns={visibleColumns}
-                rows={sortedItems}
-                loading={state.status === 'loading'}
-                pageSize={query.pageSize}
-                onRowClick={handleOpenDetail}
-                sortKey={sort.key}
-                sortDir={sort.dir}
-                onSortChange={(key, dir) => setSort({ key, dir })}
-                rowClassName={(log) => DANGEROUS_ACTIONS.has(log.action)
-                  ? 'bb-row-accent--danger'
-                  : ''}
-                densityKey="audit-log"
-              />
-            </div>
+          <div className="hide-on-mobile">
+            <AdminTable
+              caption={t('auditLog.tableCaption')}
+              columns={visibleColumns}
+              rows={sortedItems}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={handleOpenDetail}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              onSortChange={(key, dir) => setSort({ key, dir })}
+              rowClassName={(log) =>
+                DANGEROUS_ACTIONS.has(log.action) ? 'bb-row-accent--danger' : ''
+              }
+              densityKey="audit-log"
+            />
+          </div>
 
-            {state.status === 'loading' ? (
-              <div className="show-on-mobile p-3">
-                <ScreenSkeleton variant="cards" count={4} showHeader={false} />
-              </div>
-            ) : (
-              <MobileCardList>
-                {sortedItems.map((log) => (
-                  <AuditCard
-                    key={log.id}
-                    log={log}
-                    onClick={() => handleOpenDetail(log)}
-                  />
-                ))}
-              </MobileCardList>
-            )}
+          {state.status === 'loading' ? (
+            <div className="show-on-mobile p-3">
+              <ScreenSkeleton variant="cards" count={4} showHeader={false} />
+            </div>
+          ) : (
+            <MobileCardList>
+              {sortedItems.map((log) => (
+                <AuditCard key={log.id} log={log} onClick={() => handleOpenDetail(log)} />
+              ))}
+            </MobileCardList>
+          )}
           {state.status === 'success' ? (
             <PaginationControls
               pagination={state.pagination}
@@ -578,9 +578,7 @@ export function AuditLogListScreen() {
         </DetailSection>
       ) : null}
 
-      {selectedLog ? (
-        <AuditDetailDrawer log={selectedLog} onClose={handleCloseDetail} />
-      ) : null}
+      {selectedLog ? <AuditDetailDrawer log={selectedLog} onClose={handleCloseDetail} /> : null}
 
       {showMobileFilter ? (
         <MobileFilterDrawer

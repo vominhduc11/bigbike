@@ -34,8 +34,10 @@ describe('brand logo policy', () => {
   }
 
   it('opens the manual square crop for a transparent non-square PNG', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1080 }))
-      .toEqual({ needsCrop: true, issues: [] })
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1080 })).toEqual({
+      needsCrop: true,
+      issues: [],
+    })
   })
 
   it('accepts a transparent 800×800 PNG without cropping', () => {
@@ -44,15 +46,18 @@ describe('brand logo policy', () => {
   })
 
   it('blocks a square logo below the 400×400 minimum', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 300, height: 300 }))
-      .toEqual({ needsCrop: false, issues: ['TOO_SMALL'] })
+    expect(getBrandLogoSourceDecision({ ...validPng, width: 300, height: 300 })).toEqual({
+      needsCrop: false,
+      issues: ['TOO_SMALL'],
+    })
   })
 
   it('accepts JPEG and keeps an opaque-background warning non-blocking', () => {
     const issues = getBrandLogoIssues({ ...validPng, mimeType: 'image/jpeg', transparent: false })
     expect(issues).toContain('NOT_TRANSPARENT')
-    expect(getBrandLogoSourceDecision({ ...validPng, mimeType: 'image/jpeg', transparent: false }))
-      .toEqual({ needsCrop: false, issues: ['NOT_TRANSPARENT'] })
+    expect(
+      getBrandLogoSourceDecision({ ...validPng, mimeType: 'image/jpeg', transparent: false }),
+    ).toEqual({ needsCrop: false, issues: ['NOT_TRANSPARENT'] })
   })
 
   it('accepts all three image formats and rejects other types', () => {
@@ -63,18 +68,34 @@ describe('brand logo policy', () => {
   })
 
   it('allows a large non-square source to reach the crop encoder', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, width: 800, height: 1000, fileSize: 2 * 1024 * 1024 }))
-      .toEqual({ needsCrop: true, issues: [] })
+    expect(
+      getBrandLogoSourceDecision({
+        ...validPng,
+        width: 800,
+        height: 1000,
+        fileSize: 2 * 1024 * 1024,
+      }),
+    ).toEqual({ needsCrop: true, issues: [] })
   })
 
   it('accepts a large square source without a size issue', () => {
-    expect(getBrandLogoSourceDecision({ ...validPng, fileSize: 3 * 1024 * 1024 }))
-      .toEqual({ needsCrop: false, issues: [] })
-    expect(getBrandLogoIssues({ ...validPng, fileSize: 3 * 1024 * 1024 })).not.toContain('TOO_LARGE')
+    expect(getBrandLogoSourceDecision({ ...validPng, fileSize: 3 * 1024 * 1024 })).toEqual({
+      needsCrop: false,
+      issues: [],
+    })
+    expect(getBrandLogoIssues({ ...validPng, fileSize: 3 * 1024 * 1024 })).not.toContain(
+      'TOO_LARGE',
+    )
   })
 
   it('opens crop for a non-square opaque source while keeping transparency soft', () => {
-    const details = { ...validPng, width: 800, height: 1000, transparent: false, fileSize: 2 * 1024 * 1024 }
+    const details = {
+      ...validPng,
+      width: 800,
+      height: 1000,
+      transparent: false,
+      fileSize: 2 * 1024 * 1024,
+    }
     expect(getBrandLogoSourceDecision(details)).toEqual({ needsCrop: true, issues: [] })
     expect(getBrandLogoIssues(details)).toEqual(['NOT_SQUARE', 'NOT_TRANSPARENT'])
   })

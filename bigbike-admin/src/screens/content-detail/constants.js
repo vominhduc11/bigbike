@@ -38,17 +38,32 @@ export function canonicalUrlFromSlug(slug) {
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 export const SECTION_FIELD_PREFIXES = {
-  basic:   ['title', 'slug', 'excerpt', 'authorName', 'translations.en.title', 'translations.en.slug', 'translations.en.excerpt', 'translations.en.authorName'],
-  body:    ['body', 'bodyBlocks', 'translations.en.body'],
-  media:   ['coverImageUrl'],
-  seo:     ['seoTitle', 'seoDescription', 'seoOgImageUrl', 'translations.en.seoTitle', 'translations.en.seoDescription'],
+  basic: [
+    'title',
+    'slug',
+    'excerpt',
+    'authorName',
+    'translations.en.title',
+    'translations.en.slug',
+    'translations.en.excerpt',
+    'translations.en.authorName',
+  ],
+  body: ['body', 'bodyBlocks', 'translations.en.body'],
+  media: ['coverImageUrl'],
+  seo: [
+    'seoTitle',
+    'seoDescription',
+    'seoOgImageUrl',
+    'translations.en.seoTitle',
+    'translations.en.seoDescription',
+  ],
   publish: ['publishStatus'],
 }
 
 // Group the 5 sections into 2 fixed tabs to mirror writer vs publisher workflows.
 export const TAB_SECTIONS = {
   content: ['basic', 'body', 'media', 'publish'],
-  seo:     ['seo'],
+  seo: ['seo'],
 }
 
 export function computeSectionErrorsFromMap(errors) {
@@ -70,11 +85,16 @@ export function findTabForErrors(sectionErrors) {
 // Map publishStatus → matching .bb-badge variant. Used in ScreenHeader.
 export function publishBadgeClass(status) {
   switch (status) {
-    case 'PUBLISHED': return 'bb-badge bb-badge-success'
-    case 'DRAFT':     return 'bb-badge bb-badge-neutral'
-    case 'HIDDEN':    return 'bb-badge bb-badge-warning'
-    case 'TRASH':     return 'bb-badge bb-badge-danger'
-    default:          return 'bb-badge bb-badge-neutral'
+    case 'PUBLISHED':
+      return 'bb-badge bb-badge-success'
+    case 'DRAFT':
+      return 'bb-badge bb-badge-neutral'
+    case 'HIDDEN':
+      return 'bb-badge bb-badge-warning'
+    case 'TRASH':
+      return 'bb-badge bb-badge-danger'
+    default:
+      return 'bb-badge bb-badge-neutral'
   }
 }
 
@@ -110,7 +130,15 @@ export function buildEmptyForm(contentType) {
     seoOgImageMimeType: '',
     type: normalizeContentType(contentType),
     translations: {
-      en: { slug: '', title: '', excerpt: '', body: '', authorName: '', seoTitle: '', seoDescription: '' },
+      en: {
+        slug: '',
+        title: '',
+        excerpt: '',
+        body: '',
+        authorName: '',
+        seoTitle: '',
+        seoDescription: '',
+      },
     },
   }
 }
@@ -172,7 +200,9 @@ export function getAutosaveKey(contentType, contentId, isCreate) {
 export function saveFormToStorage(key, form) {
   try {
     localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
-  } catch { /* quota */ }
+  } catch {
+    /* quota */
+  }
 }
 
 export function loadFormFromStorage(key) {
@@ -185,11 +215,17 @@ export function loadFormFromStorage(key) {
       return null
     }
     return parsed
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function clearFormFromStorage(key) {
-  try { localStorage.removeItem(key) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
 }
 
 // Filters out blocks that would fail Bean Validation on the backend (e.g. heading
@@ -198,13 +234,20 @@ export function clearFormFromStorage(key) {
 export function isBlockValid(block) {
   if (!block || !block.type) return false
   switch (block.type) {
-    case 'heading':  return Boolean(block.text && block.text.trim())
-    case 'paragraph': return block.html != null
-    case 'list':     return Array.isArray(block.items) && block.items.length > 0
-    case 'image':    return Boolean(block.url && block.url.trim())
-    case 'video':    return Boolean(block.url && block.url.trim())
-    case 'callout':  return block.html != null
-    default:         return true
+    case 'heading':
+      return Boolean(block.text && block.text.trim())
+    case 'paragraph':
+      return block.html != null
+    case 'list':
+      return Array.isArray(block.items) && block.items.length > 0
+    case 'image':
+      return Boolean(block.url && block.url.trim())
+    case 'video':
+      return Boolean(block.url && block.url.trim())
+    case 'callout':
+      return block.html != null
+    default:
+      return true
   }
 }
 
@@ -217,18 +260,21 @@ export function toPayload(form, _isCreate) {
     publishStatus: form.publishStatus,
     // bodyBlocks presence-flag: send when non-null so backend overwrites both body_blocks + body columns.
     // When null (new form, no blocks added yet) omit so backend leaves columns unchanged.
-    bodyBlocks: form.bodyBlocks !== null
-      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => {
-          if (rest.type === 'image' || rest.type === 'feature') {
-            const { alt: _alt, ...keep } = rest
-            return keep
-          }
-          if (rest.type === 'video' && !['youtube', 'upload'].includes(rest.provider)) {
-            return { ...rest, provider: undefined }
-          }
-          return rest
-        }).filter(isBlockValid)
-      : undefined,
+    bodyBlocks:
+      form.bodyBlocks !== null
+        ? form.bodyBlocks
+            .map(({ _key: _k, ...rest }) => {
+              if (rest.type === 'image' || rest.type === 'feature') {
+                const { alt: _alt, ...keep } = rest
+                return keep
+              }
+              if (rest.type === 'video' && !['youtube', 'upload'].includes(rest.provider)) {
+                return { ...rest, provider: undefined }
+              }
+              return rest
+            })
+            .filter(isBlockValid)
+        : undefined,
   }
 
   // Legacy content fallback: WordPress-imported articles/pages created before the block

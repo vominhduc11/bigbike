@@ -27,7 +27,9 @@ describe('exportFullProductCatalogCsv', () => {
       ok: true,
       status: 200,
       blob: async () => new Blob(['sku,name_vi\nBB-1,Sản phẩm']),
-      headers: new Headers({ 'Content-Disposition': 'attachment; filename="sanpham_dang-chon.csv"' }),
+      headers: new Headers({
+        'Content-Disposition': 'attachment; filename="sanpham_dang-chon.csv"',
+      }),
     })
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
@@ -46,9 +48,9 @@ describe('exportFullProductCatalogCsv', () => {
     })
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      '/api/v1/admin/products/export.csv'
-      + '?scope=SELECTED&q=m%C5%A9&categoryId=cat-1&brandId=brand-1&publishStatus=ALL&stockState=OUT_OF_STOCK'
-      + '&includeDraft=true&includeTrash=true&ids=p-1%2Cp-2&preset=CONTENT_SEO&columns=name_vi%2Csku',
+      '/api/v1/admin/products/export.csv' +
+        '?scope=SELECTED&q=m%C5%A9&categoryId=cat-1&brandId=brand-1&publishStatus=ALL&stockState=OUT_OF_STOCK' +
+        '&includeDraft=true&includeTrash=true&ids=p-1%2Cp-2&preset=CONTENT_SEO&columns=name_vi%2Csku',
     )
   })
 })
@@ -76,9 +78,9 @@ describe('exportOrdersCsv', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe(
-      '/api/v1/admin/reports/orders/export'
-      + '?q=0909%20123%20456&status=PROCESSING&from=2026-07-20&to=2026-07-24'
-      + '&orderScope=HISTORICAL&attention=OVERDUE',
+      '/api/v1/admin/reports/orders/export' +
+        '?q=0909%20123%20456&status=PROCESSING&from=2026-07-20&to=2026-07-24' +
+        '&orderScope=HISTORICAL&attention=OVERDUE',
     )
   })
 })
@@ -104,8 +106,8 @@ describe('exportCustomersCsv', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe(
-      '/api/v1/admin/reports/customers/export'
-      + '?q=Nguy%E1%BB%85n%20V%C4%83n%20A&status=ACTIVE&synthetic=false&emailVerified=true',
+      '/api/v1/admin/reports/customers/export' +
+        '?q=Nguy%E1%BB%85n%20V%C4%83n%20A&status=ACTIVE&synthetic=false&emailVerified=true',
     )
   })
 })

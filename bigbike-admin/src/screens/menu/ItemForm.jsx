@@ -3,10 +3,21 @@ import { useTranslation } from 'react-i18next'
 import { Alert } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { CollapsibleSection } from '../../components/CollapsibleSection'
 import { FormField } from '../../components/layout'
-import { formatParentOption, formatCategoryOption, buildCategoryMenuUrl, isValidCustomUrl } from './constants'
+import {
+  formatParentOption,
+  formatCategoryOption,
+  buildCategoryMenuUrl,
+  isValidCustomUrl,
+} from './constants'
 
 // Radix Select không nhận giá trị rỗng, nên hai giá trị đặc biệt này đại diện cho
 // cấp gốc của menu và liên kết tự nhập không gắn với danh mục.
@@ -21,11 +32,15 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
         value={value || ROOT_VALUE}
         onValueChange={(nextValue) => onChange(nextValue === ROOT_VALUE ? '' : nextValue)}
       >
-        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
           {options.map((item) => (
-            <SelectItem key={item.id} value={item.id}>{formatParentOption(item)}</SelectItem>
+            <SelectItem key={item.id} value={item.id}>
+              {formatParentOption(item)}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -34,7 +49,8 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
 }
 
 function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
-  const selectedValue = value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
+  const selectedValue =
+    value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
 
   return (
     <div className="col-span-full flex flex-col gap-2">
@@ -56,11 +72,15 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
           })
         }}
       >
-        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
           {options.map((item) => (
-            <SelectItem key={item.id} value={item.id}>{formatCategoryOption(item)}</SelectItem>
+            <SelectItem key={item.id} value={item.id}>
+              {formatCategoryOption(item)}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -68,7 +88,14 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
   )
 }
 
-export function ItemForm({ value, onChange, parentOptions, categoryOptions, categoryError, isNew }) {
+export function ItemForm({
+  value,
+  onChange,
+  parentOptions,
+  categoryOptions,
+  categoryError,
+  isNew,
+}) {
   const { t } = useTranslation()
   const [labelTouched, setLabelTouched] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(() =>
@@ -86,9 +113,11 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         label={t('menus.itemLabel')}
         required={!categoryLinked}
         helper={categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : undefined}
-        error={showLabelError
-          ? t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
-          : undefined}
+        error={
+          showLabelError
+            ? t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+            : undefined
+        }
       >
         <Input
           id="menu-item-label"
@@ -112,7 +141,10 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         />
       ) : categoryError ? (
         <Alert tone="warning" size="sm" className="col-span-full">
-          {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.' })}
+          {t('menus.categoryLoadError', {
+            defaultValue:
+              'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập đường dẫn thủ công bên dưới.',
+          })}
         </Alert>
       ) : null}
 
@@ -121,19 +153,28 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         htmlFor="menu-item-url"
         label={t('menus.itemUrlCustom')}
         required={!categoryLinked}
-        helper={categoryLinked
-          ? t('menus.itemCategoryLinkedHint')
-          : !value.url.trim()
-            ? t('menus.urlHint')
-            : undefined}
-        error={urlInvalid
-          ? t('menus.urlInvalid', { defaultValue: 'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.' })
-          : undefined}
+        helper={
+          categoryLinked
+            ? t('menus.itemCategoryLinkedHint')
+            : !value.url.trim()
+              ? t('menus.urlHint')
+              : undefined
+        }
+        error={
+          urlInvalid
+            ? t('menus.urlInvalid', {
+                defaultValue:
+                  'Đường dẫn chưa đúng. Ví dụ: /danh-muc/xe-may hoặc địa chỉ website đầy đủ.',
+              })
+            : undefined
+        }
       >
         <Input
           id="menu-item-url"
           value={value.url}
-          onChange={(event) => onChange({ url: event.target.value, targetType: 'CUSTOM', targetId: null })}
+          onChange={(event) =>
+            onChange({ url: event.target.value, targetType: 'CUSTOM', targetId: null })
+          }
           placeholder={t('menus.itemUrlPlaceholder')}
           readOnly={categoryLinked}
           disabled={categoryLinked}
@@ -143,7 +184,9 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
       <div className="col-span-full">
         <CollapsibleSection
           title={t('menus.itemAdvancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
-          hint={t('menus.itemAdvancedHint', { defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới' })}
+          hint={t('menus.itemAdvancedHint', {
+            defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới',
+          })}
           open={advancedOpen}
           onToggle={() => setAdvancedOpen((current) => !current)}
           keepMounted
@@ -152,7 +195,9 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
             <FormField
               full
               label={t('menus.itemLabelEn')}
-              helper={categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')}
+              helper={
+                categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')
+              }
             >
               <Input
                 value={value.labelEn}
@@ -174,7 +219,9 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-foreground">{t('menus.itemStatus')}</span>
               <Select value={value.status} onValueChange={(status) => onChange({ status })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
                   <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>

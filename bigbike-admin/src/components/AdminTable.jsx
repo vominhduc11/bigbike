@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import {
-  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from '@/components/ui/table'
 import { MobileCardList, MobileCard } from '@/components/layout/MobileCardList'
 import { TableDensityToggle } from '@/components/TableDensityToggle'
@@ -13,16 +18,20 @@ import { cn } from '@/lib/utils'
 
 const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-left' }
 const DENSITY_CLASS = {
-  compact: '[&_thead_th]:h-10 [&_tbody_tr]:h-10 [&_tbody_td]:py-1 [&_.bb-product-thumb]:h-8 [&_.bb-product-thumb]:w-8',
-  regular: '[&_thead_th]:h-12 [&_tbody_tr]:h-12 [&_tbody_td]:py-2 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
-  spacious: '[&_thead_th]:h-14 [&_tbody_tr]:h-14 [&_tbody_td]:py-3 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
+  compact:
+    '[&_thead_th]:h-10 [&_tbody_tr]:h-10 [&_tbody_td]:py-1 [&_.bb-product-thumb]:h-8 [&_.bb-product-thumb]:w-8',
+  regular:
+    '[&_thead_th]:h-12 [&_tbody_tr]:h-12 [&_tbody_td]:py-2 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
+  spacious:
+    '[&_thead_th]:h-14 [&_tbody_tr]:h-14 [&_tbody_td]:py-3 [&_.bb-product-thumb]:h-10 [&_.bb-product-thumb]:w-10',
 }
 
 // Dòng có role="button" + onClick/onKeyDown để mở chi tiết. Khi thao tác phát ra từ một control
 // tương tác con (checkbox chọn dòng, link cột đầu, nút/select trong cột action), Enter/Space/click
 // KHÔNG được vừa chạy control con vừa mở chi tiết. Guard: bỏ qua nếu control tương tác gần nhất
 // không phải chính dòng (currentTarget).
-const ROW_INTERACTIVE_SELECTOR = 'button,a,input,select,textarea,label,[role="checkbox"],[role="button"],[role="menuitem"]'
+const ROW_INTERACTIVE_SELECTOR =
+  'button,a,input,select,textarea,label,[role="checkbox"],[role="button"],[role="menuitem"]'
 function fromInteractiveChild(e) {
   const el = e.target.closest(ROW_INTERACTIVE_SELECTOR)
   return el && el !== e.currentTarget
@@ -41,23 +50,39 @@ function fromInteractiveChild(e) {
  * mới (hành vi trình duyệt). Click trái thường vẫn gọi onRowClick (cùng tab).
  */
 export function AdminTable({
-  columns, rows, caption,
-  loading = false, pageSize = 8,
-  onSortChange, sortKey, sortDir,
-  selectable = false, selectedIds = [], onSelectionChange,
+  columns,
+  rows,
+  caption,
+  loading = false,
+  pageSize = 8,
+  onSortChange,
+  sortKey,
+  sortDir,
+  selectable = false,
+  selectedIds = [],
+  onSelectionChange,
   isRowSelectable,
-  onRowClick, rowClassName, mobileCard, rowHref, containerClassName,
-  renderRow, mobileListClassName,
-  densityKey, defaultDensity = 'regular',
+  onRowClick,
+  rowClassName,
+  mobileCard,
+  rowHref,
+  containerClassName,
+  renderRow,
+  mobileListClassName,
+  densityKey,
+  defaultDensity = 'regular',
 }) {
   const { t } = useTranslation()
   const [density, setDensity] = useState(() => readTableDensity(densityKey, defaultDensity))
   const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
-  const openTab = (href) => { if (href) window.open(href, '_blank', 'noopener') }
-  const rowCanBeSelected = (row) => selectable
-    && (typeof isRowSelectable !== 'function' || isRowSelectable(row))
+  const openTab = (href) => {
+    if (href) window.open(href, '_blank', 'noopener')
+  }
+  const rowCanBeSelected = (row) =>
+    selectable && (typeof isRowSelectable !== 'function' || isRowSelectable(row))
   const selectableRows = rows.filter(rowCanBeSelected)
-  const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.includes(r.id))
+  const allSelected =
+    selectableRows.length > 0 && selectableRows.every((r) => selectedIds.includes(r.id))
   const someSelected = !allSelected && selectableRows.some((r) => selectedIds.includes(r.id))
 
   function toggleAll() {
@@ -93,139 +118,188 @@ export function AdminTable({
         </div>
       ) : null}
       <Table containerClassName={cn(containerClassName, densityKey && DENSITY_CLASS[density])}>
-      {caption ? <caption className={densityKey ? 'sr-only' : 'mb-2 text-left text-sm text-muted-foreground'}>{caption}</caption> : null}
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          {selectable && (
-            <TableHead className="w-10">
-              <Checkbox
-                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                onCheckedChange={toggleAll}
-                disabled={selectableRows.length === 0}
-                aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
-              />
-            </TableHead>
-          )}
-          {columns.map((column) => {
-            const isSorted = sortKey === column.key
-            const canSort = !!(onSortChange && column.sortable)
-            return (
-              <TableHead
-                key={column.key}
-                className={cn(ALIGN_CLASS[column.align], column.headerClassName, isSorted && 'text-foreground')}
-                aria-sort={isSorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-              >
-                {canSort ? (
-                  // Nút bấm thật bên trong <th scope="col"> — giữ ngữ nghĩa columnheader
-                  // (không đè role="button" lên <th>), vẫn focus/Enter/Space chuẩn của button.
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort(column)}
-                    aria-label={t('common.sortColumn', { defaultValue: 'Sắp xếp cột' })}
-                    className="h-auto cursor-pointer select-none gap-1 p-0 hover:bg-transparent"
-                  >
-                    {column.label}
-                    <span aria-hidden="true" className="opacity-60">
-                      {isSorted
-                        ? sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                        : <ChevronsUpDown size={12} />}
-                    </span>
-                  </Button>
-                ) : (
-                  <span className="inline-flex items-center gap-1">{column.label}</span>
-                )}
+        {caption ? (
+          <caption
+            className={densityKey ? 'sr-only' : 'mb-2 text-left text-sm text-muted-foreground'}
+          >
+            {caption}
+          </caption>
+        ) : null}
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            {selectable && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                  onCheckedChange={toggleAll}
+                  disabled={selectableRows.length === 0}
+                  aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
+                />
               </TableHead>
-            )
-          })}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {loading
-          ? Array.from({ length: pageSize }, (_, i) => (
-              <TableRow key={i} className="h-12 hover:bg-transparent animate-pulse">
-                {selectable && (
-                  <TableCell>
-                    <div className="h-4 w-4 rounded-xs bg-surface-muted" />
-                  </TableCell>
-                )}
-                {columns.map((column) => (
-                  <TableCell key={column.key} className={cn(ALIGN_CLASS[column.align], column.cellClassName)}>
-                    <div
-                      className="h-4 rounded-xs bg-surface-muted"
-                      style={{ width: column.skeletonWidth ?? '70%' }}
-                    />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          : rows.map((row, rowIndex) => {
-              if (typeof renderRow === 'function') return renderRow(row, rowIndex)
-              const extraClass = typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
-              const clickable = typeof onRowClick === 'function'
-              const href = hrefOf(row)
-              const rowClickable = clickable || !!href
+            )}
+            {columns.map((column) => {
+              const isSorted = sortKey === column.key
+              const canSort = !!(onSortChange && column.sortable)
               return (
-                <TableRow
-                  key={row.id}
-                  className={cn('h-12', extraClass, rowClickable && 'cursor-pointer')}
-                  onClick={rowClickable ? (e) => {
-                    if (fromInteractiveChild(e)) return
-                    // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
-                    if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); openTab(href); return }
-                    if (clickable) onRowClick(row)
-                  } : undefined}
-                  onAuxClick={href ? (e) => { if (e.button === 1) { e.preventDefault(); openTab(href) } } : undefined}
-                  tabIndex={rowClickable ? 0 : undefined}
-                  onKeyDown={rowClickable ? (e) => {
-                    if (fromInteractiveChild(e)) return
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (clickable) onRowClick(row) }
-                  } : undefined}
-                  role={rowClickable ? 'button' : undefined}
-                >
-                  {selectable && (
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(row.id)}
-                        onCheckedChange={() => toggleOne(row.id)}
-                        disabled={!rowCanBeSelected(row)}
-                        aria-label={t('common.selectRow', { defaultValue: 'Chọn hàng' })}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </TableCell>
+                <TableHead
+                  key={column.key}
+                  className={cn(
+                    ALIGN_CLASS[column.align],
+                    column.headerClassName,
+                    isSorted && 'text-foreground',
                   )}
-                  {columns.map((column, colIdx) => {
-                    const content = column.render ? column.render(row) : (row[column.key] ?? '—')
-                    // Bọc ô định danh (cột đầu) bằng link thật: chuột-phải "Mở ở tab mới",
-                    // Ctrl/Cmd-click, chuột-giữa đều hoạt động theo trình duyệt.
-                    const cell = href && colIdx === 0 ? (
-                      <a
-                        href={href}
-                        className="bb-row-link"
-                        title={t('common.openInNewTab')}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
-                          e.preventDefault()
-                          if (clickable) onRowClick(row)
-                        }}
-                      >
-                        {content}
-                      </a>
-                    ) : content
-                    return (
-                      <TableCell
-                        key={`${row.id}:${column.key}`}
-                        className={cn(ALIGN_CLASS[column.align], column.cellClassName)}
-                      >
-                        {cell}
-                      </TableCell>
-                    )
-                  })}
-                </TableRow>
+                  aria-sort={
+                    isSorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined
+                  }
+                >
+                  {canSort ? (
+                    // Nút bấm thật bên trong <th scope="col"> — giữ ngữ nghĩa columnheader
+                    // (không đè role="button" lên <th>), vẫn focus/Enter/Space chuẩn của button.
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort(column)}
+                      aria-label={t('common.sortColumn', { defaultValue: 'Sắp xếp cột' })}
+                      className="h-auto cursor-pointer select-none gap-1 p-0 hover:bg-transparent"
+                    >
+                      {column.label}
+                      <span aria-hidden="true" className="opacity-60">
+                        {isSorted ? (
+                          sortDir === 'asc' ? (
+                            <ChevronUp size={12} />
+                          ) : (
+                            <ChevronDown size={12} />
+                          )
+                        ) : (
+                          <ChevronsUpDown size={12} />
+                        )}
+                      </span>
+                    </Button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">{column.label}</span>
+                  )}
+                </TableHead>
               )
             })}
-      </TableBody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading
+            ? Array.from({ length: pageSize }, (_, i) => (
+                <TableRow key={i} className="h-12 hover:bg-transparent animate-pulse">
+                  {selectable && (
+                    <TableCell>
+                      <div className="h-4 w-4 rounded-xs bg-surface-muted" />
+                    </TableCell>
+                  )}
+                  {columns.map((column) => (
+                    <TableCell
+                      key={column.key}
+                      className={cn(ALIGN_CLASS[column.align], column.cellClassName)}
+                    >
+                      <div
+                        className="h-4 rounded-xs bg-surface-muted"
+                        style={{ width: column.skeletonWidth ?? '70%' }}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : rows.map((row, rowIndex) => {
+                if (typeof renderRow === 'function') return renderRow(row, rowIndex)
+                const extraClass =
+                  typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
+                const clickable = typeof onRowClick === 'function'
+                const href = hrefOf(row)
+                const rowClickable = clickable || !!href
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={cn('h-12', extraClass, rowClickable && 'cursor-pointer')}
+                    onClick={
+                      rowClickable
+                        ? (e) => {
+                            if (fromInteractiveChild(e)) return
+                            // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
+                            if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+                              e.preventDefault()
+                              openTab(href)
+                              return
+                            }
+                            if (clickable) onRowClick(row)
+                          }
+                        : undefined
+                    }
+                    onAuxClick={
+                      href
+                        ? (e) => {
+                            if (e.button === 1) {
+                              e.preventDefault()
+                              openTab(href)
+                            }
+                          }
+                        : undefined
+                    }
+                    tabIndex={rowClickable ? 0 : undefined}
+                    onKeyDown={
+                      rowClickable
+                        ? (e) => {
+                            if (fromInteractiveChild(e)) return
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              if (clickable) onRowClick(row)
+                            }
+                          }
+                        : undefined
+                    }
+                    role={rowClickable ? 'button' : undefined}
+                  >
+                    {selectable && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(row.id)}
+                          onCheckedChange={() => toggleOne(row.id)}
+                          disabled={!rowCanBeSelected(row)}
+                          aria-label={t('common.selectRow', { defaultValue: 'Chọn hàng' })}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </TableCell>
+                    )}
+                    {columns.map((column, colIdx) => {
+                      const content = column.render ? column.render(row) : (row[column.key] ?? '—')
+                      // Bọc ô định danh (cột đầu) bằng link thật: chuột-phải "Mở ở tab mới",
+                      // Ctrl/Cmd-click, chuột-giữa đều hoạt động theo trình duyệt.
+                      const cell =
+                        href && colIdx === 0 ? (
+                          <a
+                            href={href}
+                            className="bb-row-link"
+                            title={t('common.openInNewTab')}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                              e.preventDefault()
+                              if (clickable) onRowClick(row)
+                            }}
+                          >
+                            {content}
+                          </a>
+                        ) : (
+                          content
+                        )
+                      return (
+                        <TableCell
+                          key={`${row.id}:${column.key}`}
+                          className={cn(ALIGN_CLASS[column.align], column.cellClassName)}
+                        >
+                          {cell}
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                )
+              })}
+        </TableBody>
       </Table>
     </>
   )
@@ -262,9 +336,12 @@ export function AdminTable({
                   selectable={card.selectable ?? rowCanBeSelected(row)}
                   selected={card.selected ?? selectedIds.includes(row.id)}
                   onSelectChange={card.onSelectChange ?? (() => toggleOne(row.id))}
-                  selectionLabel={card.selectionLabel || t('common.selectNamedRow', {
-                    name: typeof card.title === 'string' ? card.title : row.id,
-                  })}
+                  selectionLabel={
+                    card.selectionLabel ||
+                    t('common.selectNamedRow', {
+                      name: typeof card.title === 'string' ? card.title : row.id,
+                    })
+                  }
                 />
               )
             })}

@@ -8,10 +8,10 @@ const alertVariants = cva(
   {
     variants: {
       tone: {
-        danger:  'bg-danger-bg border-danger-border text-danger',
+        danger: 'bg-danger-bg border-danger-border text-danger',
         warning: 'bg-warning-bg border-warning-border text-warning',
         success: 'bg-success-bg border-success-border text-success',
-        info:    'bg-info-bg border-info-border text-info',
+        info: 'bg-info-bg border-info-border text-info',
       },
       size: {
         sm: 'px-3 py-2 text-xs',
@@ -19,7 +19,7 @@ const alertVariants = cva(
       },
     },
     defaultVariants: { tone: 'danger', size: 'md' },
-  }
+  },
 )
 
 const TONE_ICON = {

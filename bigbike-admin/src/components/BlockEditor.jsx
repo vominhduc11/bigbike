@@ -2,14 +2,22 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
 import { SortableList } from './Sortable'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { cn, generateId } from '@/lib/utils'
-import { CONTENT_MENU, PRODUCT_MENU, createBlock, nextProductFeatureSide } from './block-editor/constants'
+import {
+  CONTENT_MENU,
+  PRODUCT_MENU,
+  createBlock,
+  nextProductFeatureSide,
+} from './block-editor/constants'
 import { BlockCard } from './block-editor/blocks'
 import { showConfirm } from '@/lib/confirm'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
@@ -49,7 +57,16 @@ function blockHasContent(block) {
  *                  thả khối bị khóa, giống FaqEditor). Mặc định 'vi' nên chỗ dùng cho Content không
  *                  cần truyền (không song ngữ).
  */
-export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, showFallbackHtml = true, productMode, contentLang = 'vi' }) {
+export function BlockEditor({
+  value,
+  onChange,
+  disabled,
+  hasError,
+  fallbackHtml,
+  showFallbackHtml = true,
+  productMode,
+  contentLang = 'vi',
+}) {
   const { t } = useTranslation()
   const blocks = value ?? []
   const menu = productMode ? PRODUCT_MENU : CONTENT_MENU
@@ -77,12 +94,15 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
   }
 
   function updateBlock(index, patch) {
-    onChange(blocks.map((b, i) => i === index ? { ...b, ...patch } : b))
+    onChange(blocks.map((b, i) => (i === index ? { ...b, ...patch } : b)))
   }
 
   async function removeBlock(index) {
     if (blockHasContent(blocks[index])) {
-      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      const confirmed = await showConfirm(
+        t('products.detail.blocks.removeConfirmMessage'),
+        t('products.detail.blocks.removeConfirmTitle'),
+      )
       if (!confirmed) return
     }
     onChange(blocks.filter((_, i) => i !== index))
@@ -102,12 +122,17 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     onChange(next)
   }
 
-  const hasFallback = showFallbackHtml && blocks.length === 0 && Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
+  const hasFallback =
+    showFallbackHtml &&
+    blocks.length === 0 &&
+    Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
 
   // Gợi ý so le tự động cho khối cuối (productMode) — chỉ gợi ý UX, giá trị lưu vẫn 'left'/'right'
   // tường minh (xem nextProductFeatureSide trong constants.js).
   const suggestedAppendEntry = productMode
-    ? menu.find((m) => m.preset?.side === nextProductFeatureSide(blocks[blocks.length - 1]?.side)) ?? menu[0]
+    ? (menu.find(
+        (m) => m.preset?.side === nextProductFeatureSide(blocks[blocks.length - 1]?.side),
+      ) ?? menu[0])
     : null
 
   return (
@@ -161,7 +186,10 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
       {productMode ? (
         <Button
-          variant="outline" size="sm" disabled={structDisabled} className="self-start"
+          variant="outline"
+          size="sm"
+          disabled={structDisabled}
+          className="self-start"
           onClick={() => addBlock(suggestedAppendEntry.type, suggestedAppendEntry.preset)}
         >
           + {t(suggestedAppendEntry.labelKey)}
@@ -175,7 +203,10 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {menu.map((entry, i) => (
-              <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => addBlock(entry.type, entry.preset)}>
+              <DropdownMenuItem
+                key={`${entry.type}-${i}`}
+                onClick={() => addBlock(entry.type, entry.preset)}
+              >
                 {t(entry.labelKey)}
               </DropdownMenuItem>
             ))}
@@ -185,7 +216,11 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
       {mediaPickerIndex !== null && (
         <MediaPickerModal
-          recommend={blocks[mediaPickerIndex]?.type === 'feature' ? IMAGE_RECO.featureImage : IMAGE_RECO.general}
+          recommend={
+            blocks[mediaPickerIndex]?.type === 'feature'
+              ? IMAGE_RECO.featureImage
+              : IMAGE_RECO.general
+          }
           kind="image"
           onSelect={(url, media) => {
             const block = blocks[mediaPickerIndex]

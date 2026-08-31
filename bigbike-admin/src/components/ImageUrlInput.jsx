@@ -26,19 +26,30 @@ function ImagePreview({ url, alt, checkerboard = false }) {
   const trimmed = resolveDisplayUrl((url ?? '').trim())
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!trimmed) { setOk(false); return }
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOk(false)
+      return
+    }
     setLoading(true)
     const img = new Image()
     img.loading = 'eager'
-    img.onload = () => { setOk(true); setLoading(false) }
-    img.onerror = () => { setOk(false); setLoading(false) }
+    img.onload = () => {
+      setOk(true)
+      setLoading(false)
+    }
+    img.onerror = () => {
+      setOk(false)
+      setLoading(false)
+    }
     img.src = trimmed
   }, [trimmed])
 
   if (!trimmed) return null
-  if (loading) return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
-  if (!ok) return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
+  if (loading)
+    return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
+  if (!ok)
+    return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
   return (
     <img
       src={trimmed}
@@ -50,7 +61,16 @@ function ImagePreview({ url, alt, checkerboard = false }) {
   )
 }
 
-export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, disabled, error, recommend }) {
+export function ImageUrlInput({
+  value,
+  onChange,
+  alt,
+  onAltChange,
+  previewAlt,
+  disabled,
+  error,
+  recommend,
+}) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [externalUrl, setExternalUrl] = useState('')
@@ -103,7 +123,9 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
 
   async function acceptImportedMedia(media) {
     const { blob, filename } = await fetchMediaBlob(media.id, media.filename || 'brand-logo.png')
-    const file = new File([blob], filename || 'brand-logo.png', { type: media.mimeType || blob.type || '' })
+    const file = new File([blob], filename || 'brand-logo.png', {
+      type: media.mimeType || blob.type || '',
+    })
     const details = await inspectBrandLogoFile(file)
     const decision = getBrandLogoSourceDecision(details)
     const blockingIssues = decision.issues.filter(isBrandLogoBlockingIssue)
@@ -142,7 +164,8 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
     setImportWarning('')
     try {
       const result = await importBrandLogoUrl({ url, altText: alt?.trim() || null })
-      if (!result?.item?.id || !result.item.publicUrl) throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
+      if (!result?.item?.id || !result.item.publicUrl)
+        throw new Error('BRAND_LOGO_MEDIA_UNAVAILABLE')
       await acceptImportedMedia(result.item)
     } catch (importFailure) {
       setImportError(failureMessage(importFailure, t('brands.logo.errors.importFailed')))
@@ -188,9 +211,14 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
   return (
     <div className="image-url-input">
       <div className="image-url-input-row">
-        <Button variant="secondary" size="sm" className="image-url-pick-btn"
+        <Button
+          variant="secondary"
+          size="sm"
+          className="image-url-pick-btn"
           type="button"
-          onClick={() => { if (canReadMedia) setPickerOpen(true) }}
+          onClick={() => {
+            if (canReadMedia) setPickerOpen(true)
+          }}
           disabled={disabled || !canReadMedia}
           title={!canReadMedia ? t('media.permissionDeniedDesc') : undefined}
           aria-invalid={error ? true : undefined}
@@ -200,9 +228,15 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
           {hasImage ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
         </Button>
         {hasImage && (
-          <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-danger hover:bg-danger-bg"
             type="button"
-            onClick={() => { onChange(''); onAltChange?.('') }}
+            onClick={() => {
+              onChange('')
+              onAltChange?.('')
+            }}
             disabled={disabled}
             aria-label={t('imageInput.removeImage')}
           >
@@ -211,16 +245,17 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
         )}
       </div>
       {!canReadMedia ? (
-        <small className="text-xs text-muted-foreground">
-          {t('media.permissionDeniedDesc')}
-        </small>
+        <small className="text-xs text-muted-foreground">{t('media.permissionDeniedDesc')}</small>
       ) : null}
       {isBrandLogo && canReadMedia && canWriteMedia ? (
         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             type="url"
             value={externalUrl}
-            onChange={(event) => { setExternalUrl(event.target.value); setImportError('') }}
+            onChange={(event) => {
+              setExternalUrl(event.target.value)
+              setImportError('')
+            }}
             placeholder={t('brands.logo.importUrlPlaceholder')}
             disabled={disabled || importing}
             aria-label={t('brands.logo.importUrlLabel')}
@@ -237,12 +272,20 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, d
         </div>
       ) : null}
       {isBrandLogo && importError ? (
-        <small className="field-error" role="alert">{importError}</small>
+        <small className="field-error" role="alert">
+          {importError}
+        </small>
       ) : null}
       {isBrandLogo && importWarning ? (
-        <small className="mt-1 block text-warning" role="status">{importWarning}</small>
+        <small className="mt-1 block text-warning" role="status">
+          {importWarning}
+        </small>
       ) : null}
-      {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
+      {error && (
+        <small id={errorId} role="alert" className="field-error">
+          {error}
+        </small>
+      )}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} alt={previewAlt || alt} checkerboard={isBrandLogo} />
 

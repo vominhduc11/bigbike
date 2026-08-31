@@ -11,30 +11,30 @@ export function AuditCard({ log, onClick }) {
 
   return (
     <MobileCard
-      title={(
-      <span className={cn(
-        'flex items-start gap-2 font-semibold leading-snug',
-        card.isDangerous && 'text-danger',
-      )}>
-        {card.isDangerous ? <AlertTriangle size={16} className="mt-1 shrink-0" aria-hidden="true" /> : null}
-        <span>{card.actionLabel}</span>
-      </span>
-      )}
-      subtitle={(
-      <time title={log.createdAt || undefined}>
-        {card.timeLabel}
-      </time>
-      )}
+      title={
+        <span
+          className={cn(
+            'flex items-start gap-2 font-semibold leading-snug',
+            card.isDangerous && 'text-danger',
+          )}
+        >
+          {card.isDangerous ? (
+            <AlertTriangle size={16} className="mt-1 shrink-0" aria-hidden="true" />
+          ) : null}
+          <span>{card.actionLabel}</span>
+        </span>
+      }
+      subtitle={<time title={log.createdAt || undefined}>{card.timeLabel}</time>}
       status={<ModuleBadge resourceType={log.resourceType} />}
       meta={[
         {
-        label: t('auditLog.colActor'),
-        value: card.actorLabel,
-        tone: 'strong',
+          label: t('auditLog.colActor'),
+          value: card.actorLabel,
+          tone: 'strong',
         },
         {
-        label: t('auditLog.colEntity'),
-        value: card.resourceLabel,
+          label: t('auditLog.colEntity'),
+          value: card.resourceLabel,
         },
       ]}
       onClick={onClick}

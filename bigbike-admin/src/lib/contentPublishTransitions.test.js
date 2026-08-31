@@ -38,7 +38,15 @@ describe('allowedPublishOptions', () => {
   })
 
   it('always includes the current status so the Select trigger renders it', () => {
-    for (const from of ['DRAFT', 'PUBLISHED', 'TRASH', 'HIDDEN', 'ARCHIVED', 'PENDING', 'PRIVATE']) {
+    for (const from of [
+      'DRAFT',
+      'PUBLISHED',
+      'TRASH',
+      'HIDDEN',
+      'ARCHIVED',
+      'PENDING',
+      'PRIVATE',
+    ]) {
       expect(allowedPublishOptions(from)).toContain(from)
     }
   })

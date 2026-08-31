@@ -24,7 +24,9 @@ for (const group of GROUPS) {
           await auditScreen(adminPage, route)
           expectRuntimeClean(collect)
         })
-        .catch((e: Error) => issues.push(`✗ ${route.id}: ${e.message.split('\n').slice(0, 4).join(' ⏎ ')}`))
+        .catch((e: Error) =>
+          issues.push(`✗ ${route.id}: ${e.message.split('\n').slice(0, 4).join(' ⏎ ')}`),
+        )
     }
 
     expect(issues, `Screens with problems in "${group}":\n${issues.join('\n')}`).toEqual([])
@@ -40,7 +42,11 @@ test('smoke · create/new forms render', async ({ adminPage, collect }) => {
         await navigateSpa(adminPage, route.path)
         await auditScreen(adminPage, route)
         // A create form should expose at least one input/select control.
-        const fields = await adminPage.locator('.bb-page-content input, .bb-page-content textarea, .bb-page-content [role="combobox"], .bb-page-content select').count()
+        const fields = await adminPage
+          .locator(
+            '.bb-page-content input, .bb-page-content textarea, .bb-page-content [role="combobox"], .bb-page-content select',
+          )
+          .count()
         expect(fields, `${route.id}: no form fields rendered`).toBeGreaterThan(0)
         expectRuntimeClean(collect)
       })
@@ -49,7 +55,9 @@ test('smoke · create/new forms render', async ({ adminPage, collect }) => {
   expect(issues, `Create forms with problems:\n${issues.join('\n')}`).toEqual([])
 })
 
-test('smoke · standard content blocks and sticky form actions stay consistent', async ({ adminPage }) => {
+test('smoke · standard content blocks and sticky form actions stay consistent', async ({
+  adminPage,
+}) => {
   const formRoutes = [
     { path: '/admin/products/new', cancel: /Huỷ|Cancel/i, preview: /Xem trước|Preview/i },
     { path: '/admin/categories/new', cancel: /Huỷ|Cancel/i },

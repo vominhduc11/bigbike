@@ -6,19 +6,19 @@ import { normalizePublishStatus } from './contracts'
 // Nhờ tách khỏi file component, không vi phạm react-refresh/only-export-components.
 
 export const ORDER_STATUS_TONE = {
-  PENDING:    'warning',
+  PENDING: 'warning',
   PROCESSING: 'info',
-  COMPLETED:  'success',
-  CANCELLED:  'neutral',
-  UNKNOWN:    'muted',
+  COMPLETED: 'success',
+  CANCELLED: 'neutral',
+  UNKNOWN: 'muted',
 }
 
 export const CUSTOMER_STATUS_TONE = {
-  ACTIVE:   'success',
-  PENDING:  'warning',
+  ACTIVE: 'success',
+  PENDING: 'warning',
   DISABLED: 'neutral',
-  BLOCKED:  'danger',
-  UNKNOWN:  'muted',
+  BLOCKED: 'danger',
+  UNKNOWN: 'muted',
 }
 
 export const REVIEW_STATUS_TONE = {
@@ -30,19 +30,27 @@ export const REVIEW_STATUS_TONE = {
 
 export function toneFromPublish(status) {
   switch (status) {
-    case 'PUBLISHED': return 'success'
-    case 'DRAFT':     return 'info'
-    case 'HIDDEN':    return 'warning'
-    case 'TRASH':     return 'danger'
-    default:          return 'muted'
+    case 'PUBLISHED':
+      return 'success'
+    case 'DRAFT':
+      return 'info'
+    case 'HIDDEN':
+      return 'warning'
+    case 'TRASH':
+      return 'danger'
+    default:
+      return 'muted'
   }
 }
 
 export function toneFromStock(status) {
   switch (status) {
-    case 'IN_STOCK':     return 'success'
-    case 'OUT_OF_STOCK': return 'danger'
-    default:             return 'muted'
+    case 'IN_STOCK':
+      return 'success'
+    case 'OUT_OF_STOCK':
+      return 'danger'
+    default:
+      return 'muted'
   }
 }
 

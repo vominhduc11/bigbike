@@ -4038,6 +4038,7 @@
     "errorSourceInvalid": "The source must be an internal website path without a domain, query, or # fragment.",
     "errorSourceConflict": "This source path already exists.",
     "errorTargetRequired": "Target URL is required.",
+    "errorTargetInvalid": "The target must be an internal path or a BigBike URL.",
     "formSource": "Source pattern",
     "formSourceHint": "Internal path, for example /old-product. Do not include a domain, query, or # fragment.",
     "formTarget": "Target URL",

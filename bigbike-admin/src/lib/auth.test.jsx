@@ -82,7 +82,9 @@ describe('AuthProvider access reconciliation', () => {
       </AuthProvider>,
     )
 
-    await waitFor(() => expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated'))
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated'),
+    )
     expect(mocks.fetchCurrentAdminUser).toHaveBeenCalledTimes(1)
     expect(mocks.queryClientClear).not.toHaveBeenCalled()
 
@@ -96,13 +98,15 @@ describe('AuthProvider access reconciliation', () => {
   it('keeps the query cache intact during the scheduled 30-second access refresh', async () => {
     let scheduledRefresh
     const realSetInterval = window.setInterval.bind(window)
-    const setIntervalSpy = vi.spyOn(window, 'setInterval').mockImplementation((callback, delay, ...args) => {
-      if (delay === 30_000) {
-        scheduledRefresh = callback
-        return 123
-      }
-      return realSetInterval(callback, delay, ...args)
-    })
+    const setIntervalSpy = vi
+      .spyOn(window, 'setInterval')
+      .mockImplementation((callback, delay, ...args) => {
+        if (delay === 30_000) {
+          scheduledRefresh = callback
+          return 123
+        }
+        return realSetInterval(callback, delay, ...args)
+      })
 
     const view = render(
       <AuthProvider>
@@ -110,7 +114,9 @@ describe('AuthProvider access reconciliation', () => {
       </AuthProvider>,
     )
 
-    await waitFor(() => expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated'))
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated'),
+    )
     await waitFor(() => expect(scheduledRefresh).toBeTypeOf('function'))
 
     await act(async () => {

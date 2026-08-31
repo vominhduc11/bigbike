@@ -90,4 +90,3 @@ describe('MoneyInput', () => {
     expect(commits.at(-1)).toBe('')
   })
 })
-

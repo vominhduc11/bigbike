@@ -40,7 +40,14 @@ export function KpiCard({
         </span>
         {icon ? <span className={`bb-kpi-icon ${tone}`}>{icon}</span> : null}
       </div>
-      <div className={cn(compact ? 'flex min-h-7 items-center text-sm font-semibold text-foreground' : 'bb-kpi-value', money && !compact && 'bb-kpi-value--money')}>
+      <div
+        className={cn(
+          compact
+            ? 'flex min-h-7 items-center text-sm font-semibold text-foreground'
+            : 'bb-kpi-value',
+          money && !compact && 'bb-kpi-value--money',
+        )}
+      >
         {value}
       </div>
       {footer || detail ? (

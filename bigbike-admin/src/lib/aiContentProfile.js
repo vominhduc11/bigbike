@@ -64,7 +64,7 @@ function storefrontOrigin() {
 }
 
 export function categoryUrl({ slug, slugEn }, lang = 'vi') {
-  const selectedSlug = languageOf(lang) === 'en' ? (slugEn || slug) : slug
+  const selectedSlug = languageOf(lang) === 'en' ? slugEn || slug : slug
   if (!String(selectedSlug || '').trim()) return missingValue(lang)
   const prefix = languageOf(lang) === 'en' ? '/en/categories/' : '/danh-muc/'
   return `${storefrontOrigin()}${prefix}${String(selectedSlug).trim()}/`
@@ -79,7 +79,10 @@ function categorySnapshot(form, item, lang) {
   const source = item || {}
   const slug = form?.slug || source.slug || ''
   const slugEn = form?.translations?.en?.slug || source.slugEn || ''
-  const name = languageValue(form, 'name', lang) || (languageOf(lang) === 'en' ? source.translations?.en?.name : source.name) || ''
+  const name =
+    languageValue(form, 'name', lang) ||
+    (languageOf(lang) === 'en' ? source.translations?.en?.name : source.name) ||
+    ''
   return {
     name: valueOrMissing(name, lang),
     slug,
@@ -116,7 +119,10 @@ function categoryChildren(tree, categoryId, lang) {
   const items = Array.isArray(tree?.items) ? tree.items : []
   return items
     .filter((item) => String(item?.parentId || '') === String(categoryId || ''))
-    .map((item) => `${valueOrMissing(languageOf(lang) === 'en' ? item.translations?.en?.name || item.name : item.name, lang)} — ${categoryUrl({ slug: item.slug, slugEn: item.slugEn }, lang)}`)
+    .map(
+      (item) =>
+        `${valueOrMissing(languageOf(lang) === 'en' ? item.translations?.en?.name || item.name : item.name, lang)} — ${categoryUrl({ slug: item.slug, slugEn: item.slugEn }, lang)}`,
+    )
 }
 
 function categoryBaseLines({ snapshot, lang, facets, tree, savedHtml, draftHtml }) {
@@ -155,21 +161,33 @@ export async function buildCategoryProfile({
       type: 'category',
       lang: L,
       data: { resultCount: null, brands: [], priceRange: null, children: [] },
-      lines: categoryBaseLines({ snapshot, lang: L, facets: {}, tree: {}, savedHtml: '', draftHtml: languageValue(form, 'introContent', L) }),
+      lines: categoryBaseLines({
+        snapshot,
+        lang: L,
+        facets: {},
+        tree: {},
+        savedHtml: '',
+        draftHtml: languageValue(form, 'introContent', L),
+      }),
     }
   }
 
   const [detailResult, treeResult, facetResult] = await Promise.allSettled([
     fetchCategoryDetail(categoryId),
     fetchCategoryTree(L),
-    fetchCatalogFacets({ category: L === 'en' ? (snapshot.slugEn || snapshot.slug) : snapshot.slug, lang: L }),
+    fetchCatalogFacets({
+      category: L === 'en' ? snapshot.slugEn || snapshot.slug : snapshot.slug,
+      lang: L,
+    }),
   ])
-  const freshItem = detailResult.status === 'fulfilled' ? detailResult.value?.item || detailResult.value : null
+  const freshItem =
+    detailResult.status === 'fulfilled' ? detailResult.value?.item || detailResult.value : null
   const freshTree = treeResult.status === 'fulfilled' ? treeResult.value || {} : {}
   const facets = facetResult.status === 'fulfilled' ? facetResult.value || {} : {}
   const freshSnapshot = categorySnapshot({}, freshItem || currentItem, L)
   const draftHtml = languageValue(form, 'introContent', L)
-  const savedHtml = L === 'en' ? freshItem?.translations?.en?.introContent || '' : freshItem?.introContent || ''
+  const savedHtml =
+    L === 'en' ? freshItem?.translations?.en?.introContent || '' : freshItem?.introContent || ''
   const mergedSnapshot = {
     ...freshSnapshot,
     id: snapshot.id || freshSnapshot.id,
@@ -180,19 +198,34 @@ export async function buildCategoryProfile({
   return {
     type: 'category',
     lang: L,
-    data: { resultCount: facets.resultCount ?? null, brands: facets.brands || [], priceRange: facets.priceRange || null, children: categoryChildren(freshTree, categoryId, L) },
-    lines: categoryBaseLines({ snapshot: mergedSnapshot, lang: L, facets, tree: freshTree, savedHtml, draftHtml }),
+    data: {
+      resultCount: facets.resultCount ?? null,
+      brands: facets.brands || [],
+      priceRange: facets.priceRange || null,
+      children: categoryChildren(freshTree, categoryId, L),
+    },
+    lines: categoryBaseLines({
+      snapshot: mergedSnapshot,
+      lang: L,
+      facets,
+      tree: freshTree,
+      savedHtml,
+      draftHtml,
+    }),
   }
 }
 
 function activeProductName(data, form, lang) {
-  return languageValue(form, 'name', lang)
-    || (languageOf(lang) === 'en' ? data?.translations?.en?.name : data?.name)
-    || ''
+  return (
+    languageValue(form, 'name', lang) ||
+    (languageOf(lang) === 'en' ? data?.translations?.en?.name : data?.name) ||
+    ''
+  )
 }
 
 function activeProductContent(data, form, field, lang) {
-  if (languageOf(lang) === 'en') return form?.translations?.en?.[field] || data?.translations?.en?.[field] || ''
+  if (languageOf(lang) === 'en')
+    return form?.translations?.en?.[field] || data?.translations?.en?.[field] || ''
   return form?.[field] || data?.[field] || ''
 }
 
@@ -208,16 +241,28 @@ function blockContent(form, data, blockType, lang) {
   if (blockType === 'highlights') {
     const field = L === 'en' ? 'contentEn' : 'content'
     return {
-      positive: (form?.positiveNotes || data?.positiveNotes || []).map((item) => item?.[field] || item?.content || ''),
-      negative: (form?.negativeNotes || data?.negativeNotes || []).map((item) => item?.[field] || item?.content || ''),
+      positive: (form?.positiveNotes || data?.positiveNotes || []).map(
+        (item) => item?.[field] || item?.content || '',
+      ),
+      negative: (form?.negativeNotes || data?.negativeNotes || []).map(
+        (item) => item?.[field] || item?.content || '',
+      ),
     }
   }
   if (blockType === 'faqs') {
     const question = L === 'en' ? 'questionEn' : 'question'
     const answer = L === 'en' ? 'answerEn' : 'answer'
-    return (form?.faqs || data?.faqs || []).map((item) => ({ question: item?.[question] || '', answer: item?.[answer] || '' }))
+    return (form?.faqs || data?.faqs || []).map((item) => ({
+      question: item?.[question] || '',
+      answer: item?.[answer] || '',
+    }))
   }
-  const field = blockType === 'specifications' ? 'specifications' : blockType === 'specStats' ? 'specStats' : 'trustBadges'
+  const field =
+    blockType === 'specifications'
+      ? 'specifications'
+      : blockType === 'specStats'
+        ? 'specStats'
+        : 'trustBadges'
   return activeProductContent(data, form, field, L)
 }
 
@@ -226,14 +271,21 @@ function availableVariants(data, form, lang) {
   return variants
     .filter((variant) => variant?.isAvailable !== false)
     .map((variant) => {
-      const options = (variant.options || []).map((option) => `${option.name || missingValue(lang)}: ${option.value || missingValue(lang)}`).join(', ')
+      const options = (variant.options || [])
+        .map(
+          (option) => `${option.name || missingValue(lang)}: ${option.value || missingValue(lang)}`,
+        )
+        .join(', ')
       return `${variant.sku || variant.name || missingValue(lang)}${options ? ` (${options})` : ''}`
     })
 }
 
 function productCategories(data, form, lang) {
-  const categories = data?.categories?.length ? data.categories : (form?.categoryOptions || [])
-  return categories.map((category) => `${valueOrMissing(languageOf(lang) === 'en' ? category.translations?.en?.name || category.name : category.name, lang)} — ${categoryUrl({ slug: category.slug, slugEn: category.slugEn }, lang)}`)
+  const categories = data?.categories?.length ? data.categories : form?.categoryOptions || []
+  return categories.map(
+    (category) =>
+      `${valueOrMissing(languageOf(lang) === 'en' ? category.translations?.en?.name || category.name : category.name, lang)} — ${categoryUrl({ slug: category.slug, slugEn: category.slugEn }, lang)}`,
+  )
 }
 
 export async function buildProductProfile({
@@ -248,7 +300,11 @@ export async function buildProductProfile({
   const L = languageOf(lang)
   const result = productId ? await fetchProductDetail(productId).catch(() => null) : null
   const fresh = result?.item || result || {}
-  const merged = { ...fresh, ...form, translations: { ...fresh.translations, ...form?.translations } }
+  const merged = {
+    ...fresh,
+    ...form,
+    translations: { ...fresh.translations, ...form?.translations },
+  }
   const price = fresh.price?.retailPrice || fresh.retailPrice || form?.retailPrice
   const salePrice = fresh.price?.salePrice || fresh.salePrice || form?.salePrice
   const block = blockContent(form, merged, blockType, L)
@@ -267,7 +323,9 @@ export async function buildProductProfile({
     `- ${L === 'en' ? 'Content in the block being edited' : 'Nội dung hiện có của khối đang bấm'}: ${serializeContent(block, L)}`,
   ]
   if (['highlights', 'faqs', 'specStats', 'trustBadges'].includes(blockType)) {
-    lines.push(`- ${BLOCK_LABELS[L].specs}: ${serializeContent(activeProductContent(fresh, form, 'specifications', L), L)}`)
+    lines.push(
+      `- ${BLOCK_LABELS[L].specs}: ${serializeContent(activeProductContent(fresh, form, 'specifications', L), L)}`,
+    )
   }
   return {
     type: 'product',
@@ -318,19 +376,53 @@ Ví dụ ngắn trong bản hướng dẫn có một bảng so sánh đứng ri�
   return `${String(basePrompt || '').trim()}\n${sharedRules(L)}${specialCategory}\n--- ${title} ---\n${profileLines(profile || { lines: [] }).join('\n')}\n--- END PROFILE ---`
 }
 
-export function createCategoryAiPromptBuilder({ categoryId, lang, form, currentItem, fetchCategoryDetail, fetchCategoryTree, fetchCatalogFacets, basePrompt }) {
-  return async () => attachProfileToPrompt(
-    typeof basePrompt === 'function' ? basePrompt() : basePrompt,
-    await buildCategoryProfile({ categoryId, lang, form, currentItem, fetchCategoryDetail, fetchCategoryTree, fetchCatalogFacets }),
-    lang,
-    { category: true },
-  )
+export function createCategoryAiPromptBuilder({
+  categoryId,
+  lang,
+  form,
+  currentItem,
+  fetchCategoryDetail,
+  fetchCategoryTree,
+  fetchCatalogFacets,
+  basePrompt,
+}) {
+  return async () =>
+    attachProfileToPrompt(
+      typeof basePrompt === 'function' ? basePrompt() : basePrompt,
+      await buildCategoryProfile({
+        categoryId,
+        lang,
+        form,
+        currentItem,
+        fetchCategoryDetail,
+        fetchCategoryTree,
+        fetchCatalogFacets,
+      }),
+      lang,
+      { category: true },
+    )
 }
 
-export function createProductAiPromptBuilder({ productId, lang, form, categoryOptions, brandName, fetchProductDetail }) {
-  return async (blockType, basePrompt) => attachProfileToPrompt(
-    basePrompt,
-    await buildProductProfile({ productId, lang, blockType, form, categoryOptions, brandName, fetchProductDetail }),
-    lang,
-  )
+export function createProductAiPromptBuilder({
+  productId,
+  lang,
+  form,
+  categoryOptions,
+  brandName,
+  fetchProductDetail,
+}) {
+  return async (blockType, basePrompt) =>
+    attachProfileToPrompt(
+      basePrompt,
+      await buildProductProfile({
+        productId,
+        lang,
+        blockType,
+        form,
+        categoryOptions,
+        brandName,
+        fetchProductDetail,
+      }),
+      lang,
+    )
 }

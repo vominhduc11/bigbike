@@ -6,12 +6,14 @@ const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => ({
-      'products.detail.aiBrief.previewLoading': 'Đang đọc số liệu để cập nhật bản xem trước...',
-      'products.detail.aiBrief.previewFailed': 'Chưa lấy được số liệu mới; đang hiển thị hướng dẫn chung. Bấm Sao chép để thử lại.',
-      'products.detail.aiBrief.copied': 'Đã sao chép',
-      'products.detail.aiBrief.copyFailed': 'Không sao chép được',
-    }[key] || key),
+    t: (key) =>
+      ({
+        'products.detail.aiBrief.previewLoading': 'Đang đọc số liệu để cập nhật bản xem trước...',
+        'products.detail.aiBrief.previewFailed':
+          'Chưa lấy được số liệu mới; đang hiển thị hướng dẫn chung. Bấm Sao chép để thử lại.',
+        'products.detail.aiBrief.copied': 'Đã sao chép',
+        'products.detail.aiBrief.copyFailed': 'Không sao chép được',
+      })[key] || key,
   }),
 }))
 
@@ -57,8 +59,14 @@ describe('AiHtmlBrief preview', () => {
 
   it('shows the base brief while loading and refreshes the preview when copied', async () => {
     let resolveFirst
-    const getPrompt = vi.fn()
-      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
+    const getPrompt = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
       .mockResolvedValueOnce('HỒ SƠ MỚI NHẤT: SKU-123')
     const user = userEvent.setup()
     renderBrief(getPrompt)

@@ -1,6 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
-import { ORDER_STATUS_TONE, CUSTOMER_STATUS_TONE, REVIEW_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
+import {
+  ORDER_STATUS_TONE,
+  CUSTOMER_STATUS_TONE,
+  REVIEW_STATUS_TONE,
+  toneFromPublish,
+  toneFromStock,
+} from '../lib/statusTone'
 import { Badge as UiBadge } from '@/components/ui/badge'
 
 function Badge({ tone = 'muted', className, children }) {
@@ -20,7 +26,11 @@ export function StatusBadge({ status, type = 'order', className }) {
   // Trạng thái rỗng (null/undefined/'') ở các loại enum → nhãn "Không xác định" thay vì render key thô
   // ("status.order.undefined") hay chuỗi rỗng. Loại 'visibility' dùng boolean (false = Ẩn là hợp lệ) nên bỏ qua.
   if (type !== 'visibility' && (status === null || status === undefined || status === '')) {
-    return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+    return (
+      <Badge tone="muted" className={className}>
+        {t('common.unknown')}
+      </Badge>
+    )
   }
 
   if (type === 'order') {
@@ -28,14 +38,22 @@ export function StatusBadge({ status, type = 'order', className }) {
     label = t(`status.order.${status}`, { defaultValue: t('common.unknown') })
   } else if (type === 'visibility') {
     if (status !== true && status !== false) {
-      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+      return (
+        <Badge tone="muted" className={className}>
+          {t('common.unknown')}
+        </Badge>
+      )
     }
     const key = status ? 'VISIBLE' : 'HIDDEN'
     tone = key === 'VISIBLE' ? 'success' : 'neutral'
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
   } else if (type === 'trash') {
     if (status !== true && status !== false) {
-      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+      return (
+        <Badge tone="muted" className={className}>
+          {t('common.unknown')}
+        </Badge>
+      )
     }
     tone = status ? 'danger' : 'success'
     label = status
@@ -43,7 +61,11 @@ export function StatusBadge({ status, type = 'order', className }) {
       : t('categories.activeStatus', { defaultValue: 'Đang hoạt động' })
   } else if (type === 'homepage') {
     if (status !== true && status !== false) {
-      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+      return (
+        <Badge tone="muted" className={className}>
+          {t('common.unknown')}
+        </Badge>
+      )
     }
     tone = status ? 'success' : 'neutral'
     label = status
@@ -56,7 +78,11 @@ export function StatusBadge({ status, type = 'order', className }) {
     // Nguồn tài khoản: true = tạo tự động từ đơn hàng cũ khi migrate (không có đăng nhập
     // thật), false = khách đăng ký/OAuth thật. Xem DATA_CONTRACT.md "Customer isSynthetic Flag".
     if (status !== true && status !== false) {
-      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+      return (
+        <Badge tone="muted" className={className}>
+          {t('common.unknown')}
+        </Badge>
+      )
     }
     tone = status ? 'neutral' : 'success'
     label = status
@@ -64,7 +90,9 @@ export function StatusBadge({ status, type = 'order', className }) {
       : t('customers.sourceReal', { defaultValue: 'Tài khoản thật' })
   } else if (type === 'review') {
     tone = REVIEW_STATUS_TONE[status] ?? 'muted'
-    label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, { defaultValue: t('common.unknown') })
+    label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, {
+      defaultValue: t('common.unknown'),
+    })
   } else if (type === 'reviewInvitation') {
     const invitationMeta = {
       PENDING: { tone: 'warning', labelKey: 'settings.reviewInvitation.status.PENDING' },
@@ -87,17 +115,29 @@ export function StatusBadge({ status, type = 'order', className }) {
     label = adminUserMeta ? t(adminUserMeta.labelKey) : t('common.unknown')
   }
 
-  return <Badge tone={tone} className={className}>{label}</Badge>
+  return (
+    <Badge tone={tone} className={className}>
+      {label}
+    </Badge>
+  )
 }
 
 export function PublishStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizePublishStatus(value)
-  return <Badge tone={toneFromPublish(status)}>{t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}</Badge>
+  return (
+    <Badge tone={toneFromPublish(status)}>
+      {t(`status.publish.${status}`, { defaultValue: t('common.unknown') })}
+    </Badge>
+  )
 }
 
 export function StockStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizeStockState(value)
-  return <Badge tone={toneFromStock(status)}>{t(`status.stock.${status}`, { defaultValue: t('common.unknown') })}</Badge>
+  return (
+    <Badge tone={toneFromStock(status)}>
+      {t(`status.stock.${status}`, { defaultValue: t('common.unknown') })}
+    </Badge>
+  )
 }

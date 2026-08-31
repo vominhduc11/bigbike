@@ -23,25 +23,31 @@ export function BrandLogoQualityNotice({ quality, compact = false }) {
   const { t } = useTranslation()
   if (!quality) return null
 
-  const rawIssues = quality.status === 'LEGACY'
-    ? (quality.issues || []).filter((issue) => issue !== 'LEGACY_LOGO')
-    : (quality.issues || [])
-  const issues = rawIssues.map((issue) => t(ISSUE_KEYS[issue] || 'brands.logo.quality.issueMediaUnavailable', {
-    ratio: ratioLabel(quality.ratio),
-    defaultValue: t('common.unknown'),
-  }))
-  const issueText = issues.join(', ') || t(
+  const rawIssues =
     quality.status === 'LEGACY'
-      ? 'brands.logo.quality.issueLegacy'
-      : 'brands.logo.quality.issueMediaUnavailable',
+      ? (quality.issues || []).filter((issue) => issue !== 'LEGACY_LOGO')
+      : quality.issues || []
+  const issues = rawIssues.map((issue) =>
+    t(ISSUE_KEYS[issue] || 'brands.logo.quality.issueMediaUnavailable', {
+      ratio: ratioLabel(quality.ratio),
+      defaultValue: t('common.unknown'),
+    }),
   )
-  const message = quality.status === 'MISSING'
-    ? t('brands.logo.quality.missing')
-    : quality.status === 'LEGACY'
-      ? t('brands.logo.quality.legacy', { issues: issueText })
-      : quality.status === 'VALID'
-        ? t('brands.logo.quality.warning', { issues: issueText })
-      : t('brands.logo.quality.invalid', { issues: issueText })
+  const issueText =
+    issues.join(', ') ||
+    t(
+      quality.status === 'LEGACY'
+        ? 'brands.logo.quality.issueLegacy'
+        : 'brands.logo.quality.issueMediaUnavailable',
+    )
+  const message =
+    quality.status === 'MISSING'
+      ? t('brands.logo.quality.missing')
+      : quality.status === 'LEGACY'
+        ? t('brands.logo.quality.legacy', { issues: issueText })
+        : quality.status === 'VALID'
+          ? t('brands.logo.quality.warning', { issues: issueText })
+          : t('brands.logo.quality.invalid', { issues: issueText })
 
   if (quality.status === 'VALID' && !issues.length) return null
 
@@ -60,9 +66,7 @@ export function BrandLogoQualityNotice({ quality, compact = false }) {
   return (
     <Alert tone="warning" size="sm" className="mt-3">
       <p>{message}</p>
-      <p className="mt-1 font-normal text-warning">
-        {t('brands.logo.quality.replaceHint')}
-      </p>
+      <p className="mt-1 font-normal text-warning">{t('brands.logo.quality.replaceHint')}</p>
     </Alert>
   )
 }

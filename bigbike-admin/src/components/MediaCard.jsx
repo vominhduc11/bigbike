@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Eye, Pencil, Trash2, RotateCcw, Music, FileText, ImageOff, Copy, Download } from 'lucide-react'
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  Music,
+  FileText,
+  ImageOff,
+  Copy,
+  Download,
+} from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -14,9 +24,17 @@ const isAudio = (m) => m && m.startsWith('audio/')
 
 // Xoá vĩnh viễn cố ý KHÔNG có ở đây — chỉ trong bảng chi tiết ở Thùng rác.
 export function MediaCard({
-  media, selected, focused, deleting,
-  onToggleSelect, onPreview,
-  onEdit, onViewDetail, onDelete, onRestore, onDownload,
+  media,
+  selected,
+  focused,
+  deleting,
+  onToggleSelect,
+  onPreview,
+  onEdit,
+  onViewDetail,
+  onDelete,
+  onRestore,
+  onDownload,
 }) {
   const { t } = useTranslation()
   const [previewFailed, setPreviewFailed] = useState(false)
@@ -36,12 +54,15 @@ export function MediaCard({
     selected ? 'medialib-is-selected' : '',
     focused ? 'medialib-is-focused' : '',
     media.status === 'DELETED' ? 'medialib-card-deleted' : '',
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   function handleCopyUrl(e) {
     e.stopPropagation()
     if (!media.publicUrl) return
-    navigator.clipboard.writeText(toClipboardUrl(media.publicUrl))
+    navigator.clipboard
+      .writeText(toClipboardUrl(media.publicUrl))
       .then(() => toast.success(t('media.urlCopied')))
       .catch(() => toast.error(t('media.copyFailed')))
   }
@@ -64,28 +85,43 @@ export function MediaCard({
         </span>
       )}
       {onToggleSelect && (
-        <Checkbox checked={selected} onCheckedChange={onToggleSelect}
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelect}
           aria-label={t('media.selectNamed', { name: displayName, defaultValue: 'Chọn {{name}}' })}
           onClick={(e) => e.stopPropagation()}
-          className="medialib-card-checkbox"  />
+          className="medialib-card-checkbox"
+        />
       )}
 
       {/* Thumb là container KHÔNG tương tác; vùng "mở xem lớn" và vùng "nút thao
           tác" là hai phần tử ANH EM bên trong, không lồng nút-trong-nút. */}
       <div className="medialib-thumb-wrap">
         {previewFailed ? (
-          <div className="medialib-thumb-placeholder text-danger" role="img" aria-label={t('media.mediaLoadError')}>
+          <div
+            className="medialib-thumb-placeholder text-danger"
+            role="img"
+            aria-label={t('media.mediaLoadError')}
+          >
             <ImageOff size={36} aria-hidden="true" />
           </div>
         ) : isImage(media.mimeType) && thumbUrl ? (
-          <img src={thumbUrl} alt={media.altText || filename} loading="lazy" onError={() => setPreviewFailed(true)} />
+          <img
+            src={thumbUrl}
+            alt={media.altText || filename}
+            loading="lazy"
+            onError={() => setPreviewFailed(true)}
+          />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
-          <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" onError={() => setPreviewFailed(true)} />
+          <video
+            src={`${media.publicUrl}#t=0.001`}
+            muted
+            preload="metadata"
+            onError={() => setPreviewFailed(true)}
+          />
         ) : (
           <div className="medialib-thumb-placeholder">
-            {isAudio(media.mimeType)
-              ? <Music size={36} />
-              : <FileText size={36} />}
+            {isAudio(media.mimeType) ? <Music size={36} /> : <FileText size={36} />}
           </div>
         )}
 
@@ -93,9 +129,15 @@ export function MediaCard({
             chuẩn). Đặt TRƯỚC overlay để overlay (cùng position, đứng sau DOM) xếp
             trên và nhận click cho các nút thao tác. */}
         {media.publicUrl && (
-          <Button variant="unstyled" onClick={onPreview}
-            aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
-            className="absolute inset-0 z-0 cursor-zoom-in border-0 bg-transparent p-0" />
+          <Button
+            variant="unstyled"
+            onClick={onPreview}
+            aria-label={t('media.previewNamed', {
+              name: displayName,
+              defaultValue: 'Xem lớn {{name}}',
+            })}
+            className="absolute inset-0 z-0 cursor-zoom-in border-0 bg-transparent p-0"
+          />
         )}
 
         {/* Copy URL chỉ cần quyền xem — không gộp vào điều kiện quyền sửa, nếu không
@@ -104,44 +146,85 @@ export function MediaCard({
           <div className="medialib-action-overlay z-10">
             <div className="medialib-overlay-actions pointer-events-auto">
               {media.publicUrl && (
-                <Button variant="unstyled" onClick={handleCopyUrl}
+                <Button
+                  variant="unstyled"
+                  onClick={handleCopyUrl}
                   className="medialib-icon-btn"
-                  title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
+                  title={t('media.copyUrl')}
+                  aria-label={t('media.copyUrl')}
+                >
                   <Copy size={14} />
                 </Button>
               )}
               {onDownload && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDownload() }}
+                <Button
+                  variant="unstyled"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDownload()
+                  }}
                   className="medialib-icon-btn"
-                  title={t('media.download')} aria-label={t('media.download')}>
+                  title={t('media.download')}
+                  aria-label={t('media.download')}
+                >
                   <Download size={14} />
                 </Button>
               )}
               {onEdit && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onEdit() }}
+                <Button
+                  variant="unstyled"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit()
+                  }}
                   className="medialib-icon-btn"
-                  title={t('common.edit')} aria-label={t('common.edit')}>
+                  title={t('common.edit')}
+                  aria-label={t('common.edit')}
+                >
                   <Pencil size={14} />
                 </Button>
               )}
               {onViewDetail && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onViewDetail() }}
+                <Button
+                  variant="unstyled"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onViewDetail()
+                  }}
                   className="medialib-icon-btn"
-                  title={t('app.detail')} aria-label={t('app.detail')}>
+                  title={t('app.detail')}
+                  aria-label={t('app.detail')}
+                >
                   <Eye size={14} />
                 </Button>
               )}
               {onRestore && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onRestore() }}
-                  className="medialib-icon-btn" disabled={deleting}
-                  title={t('media.restore')} aria-label={t('media.restore')}>
+                <Button
+                  variant="unstyled"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRestore()
+                  }}
+                  className="medialib-icon-btn"
+                  disabled={deleting}
+                  title={t('media.restore')}
+                  aria-label={t('media.restore')}
+                >
                   <RotateCcw size={14} />
                 </Button>
               )}
               {onDelete && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDelete(media) }}
-                  className="medialib-icon-btn medialib-btn-danger" disabled={deleting}
-                  title={t('common.delete')} aria-label={t('common.delete')}>
+                <Button
+                  variant="unstyled"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete(media)
+                  }}
+                  className="medialib-icon-btn medialib-btn-danger"
+                  disabled={deleting}
+                  title={t('common.delete')}
+                  aria-label={t('common.delete')}
+                >
                   <Trash2 size={14} />
                 </Button>
               )}
@@ -151,7 +234,9 @@ export function MediaCard({
       </div>
 
       <div className="medialib-card-body">
-        <p className="medialib-card-name" title={media.filename ?? ''}>{displayName}</p>
+        <p className="medialib-card-name" title={media.filename ?? ''}>
+          {displayName}
+        </p>
         <p className="medialib-card-meta">{meta || '—'}</p>
         {media.usageCount > 0 ? (
           <span className="medialib-card-usage-badge medialib-is-used">

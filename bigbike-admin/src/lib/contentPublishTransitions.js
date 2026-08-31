@@ -14,16 +14,16 @@
 // Evidence: bigbike-backend AdminMutationValidators.validatePublishTransition;
 // docs/business/STATE_MACHINES.md §4/§12 transition tables.
 export const PUBLISH_TRANSITIONS = {
-  DRAFT:     ['DRAFT', 'PUBLISHED'],
+  DRAFT: ['DRAFT', 'PUBLISHED'],
   PUBLISHED: ['PUBLISHED', 'DRAFT'],
-  TRASH:     ['TRASH', 'DRAFT'],
+  TRASH: ['TRASH', 'DRAFT'],
   // Legacy source states (HIDDEN retired as an active state 2026-07-07; ARCHIVED/PENDING/
   // PRIVATE are WordPress-import artifacts). Kept so any residual pre-migration record can
   // still be edited back to an active state or soft-deleted.
-  HIDDEN:    ['HIDDEN', 'DRAFT', 'TRASH'],
-  ARCHIVED:  ['ARCHIVED', 'DRAFT', 'TRASH'],
-  PENDING:   ['PENDING', 'DRAFT', 'TRASH'],
-  PRIVATE:   ['PRIVATE', 'DRAFT', 'TRASH'],
+  HIDDEN: ['HIDDEN', 'DRAFT', 'TRASH'],
+  ARCHIVED: ['ARCHIVED', 'DRAFT', 'TRASH'],
+  PENDING: ['PENDING', 'DRAFT', 'TRASH'],
+  PRIVATE: ['PRIVATE', 'DRAFT', 'TRASH'],
 }
 
 const DEFAULT_OPTIONS = ['DRAFT', 'PUBLISHED']

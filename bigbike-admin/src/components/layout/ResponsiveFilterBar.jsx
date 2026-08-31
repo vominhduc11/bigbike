@@ -60,10 +60,11 @@ export function ResponsiveFilterBar({
         open={open}
         onClose={() => setOpen(false)}
         title={mobileTitle || ariaLabel || t('common.filters')}
-        description={mobileDescription || (count > 0
-          ? t('common.filtersApplied', { count })
-          : t('common.mobileFilterDescription'))}
-        actions={(
+        description={
+          mobileDescription ||
+          (count > 0 ? t('common.filtersApplied', { count }) : t('common.mobileFilterDescription'))
+        }
+        actions={
           <>
             {count > 0 && onReset ? (
               <Button
@@ -83,7 +84,7 @@ export function ResponsiveFilterBar({
               {t('common.viewResults')}
             </Button>
           </>
-        )}
+        }
       >
         <div className="grid gap-4 [&_button]:w-full [&_input]:w-full [&_[role=combobox]]:w-full">
           {children}

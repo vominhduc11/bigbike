@@ -37,10 +37,16 @@ vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 vi.mock('../components/AdminTable', () => ({
   AdminTable: ({ rows, columns, loading, selectable }) => (
-    <div data-testid="redirect-table" data-loading={String(Boolean(loading))} data-selectable={String(Boolean(selectable))}>
+    <div
+      data-testid="redirect-table"
+      data-loading={String(Boolean(loading))}
+      data-selectable={String(Boolean(selectable))}
+    >
       {rows.map((row) => (
         <div key={row.id}>
-          {columns.map((column) => <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>)}
+          {columns.map((column) => (
+            <div key={column.key}>{column.render ? column.render(row) : row[column.key]}</div>
+          ))}
         </div>
       ))}
     </div>
@@ -103,7 +109,11 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     const user = userEvent.setup()
     mocks.createRedirect.mockRejectedValue(
       new ApiClientError('Validation failed.', 400, 'VALIDATION_ERROR', [
-        { field: 'targetUrl', code: 'SELF_LOOP', message: 'Redirect target must differ from the source pattern.' },
+        {
+          field: 'targetUrl',
+          code: 'SELF_LOOP',
+          message: 'Redirect target must differ from the source pattern.',
+        },
       ]),
     )
     renderScreen()
@@ -124,7 +134,11 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
 
   it('gửi đúng nguồn/đích đã cắt khoảng trắng khi tạo thành công', async () => {
     const user = userEvent.setup()
-    mocks.createRedirect.mockResolvedValue({ id: 'rd_1', sourcePattern: '/old-page', targetUrl: '/new-page' })
+    mocks.createRedirect.mockResolvedValue({
+      id: 'rd_1',
+      sourcePattern: '/old-page',
+      targetUrl: '/new-page',
+    })
     renderScreen()
 
     await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
@@ -132,9 +146,11 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     await user.type(screen.getByPlaceholderText('/dia-chi-moi'), '  /new-page  ')
     await user.click(screen.getByRole('button', { name: 'common.save' }))
 
-    await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalledWith(
-      expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page' }),
-    ))
+    await waitFor(() =>
+      expect(mocks.createRedirect).toHaveBeenCalledWith(
+        expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page' }),
+      ),
+    )
     const [payload] = mocks.createRedirect.mock.calls.at(-1)
     expect(payload.statusCode).toBe(301)
     expect(payload).not.toHaveProperty('redirectType')
@@ -144,7 +160,9 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     renderScreen(false)
     expect(await screen.findByTestId('redirect-table')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tạo chuyển hướng' })).not.toBeInTheDocument()
-    expect(screen.getByText('Bạn chỉ có quyền xem chuyển hướng; mọi thao tác thay đổi đều bị khóa.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Bạn chỉ có quyền xem chuyển hướng; mọi thao tác thay đổi đều bị khóa.'),
+    ).toBeInTheDocument()
     expect(screen.getByTestId('redirect-table')).toHaveAttribute('data-selectable', 'false')
   })
 
@@ -165,16 +183,22 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
 
   it('làm sạch tham số URL sai trước khi tải danh sách', async () => {
     const longSearch = 'a'.repeat(250)
-    window.history.replaceState({}, '', `/admin/redirects?page=-3&pageSize=999&enabled=unknown&search=${longSearch}`)
+    window.history.replaceState(
+      {},
+      '',
+      `/admin/redirects?page=-3&pageSize=999&enabled=unknown&search=${longSearch}`,
+    )
 
     renderScreen()
 
-    await waitFor(() => expect(mocks.fetchRedirects).toHaveBeenCalledWith({
-      search: 'a'.repeat(200),
-      enabled: 'ALL',
-      page: 1,
-      pageSize: 20,
-    }))
+    await waitFor(() =>
+      expect(mocks.fetchRedirects).toHaveBeenCalledWith({
+        search: 'a'.repeat(200),
+        enabled: 'ALL',
+        page: 1,
+        pageSize: 20,
+      }),
+    )
     expect(window.location.search).toBe(`?search=${'a'.repeat(200)}`)
   })
 
@@ -189,10 +213,16 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
   it('chỉ xoá sau khi người dùng xác nhận thao tác không thể hoàn tác', async () => {
     const user = userEvent.setup()
     mocks.fetchRedirects.mockResolvedValue({
-      items: [{
-        id: 'rd_delete', sourcePattern: '/old-delete', targetUrl: '/new-delete',
-        enabled: true, hitCount: 0, updatedAt: '2026-08-07T00:00:00Z',
-      }],
+      items: [
+        {
+          id: 'rd_delete',
+          sourcePattern: '/old-delete',
+          targetUrl: '/new-delete',
+          enabled: true,
+          hitCount: 0,
+          updatedAt: '2026-08-07T00:00:00Z',
+        },
+      ],
       pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
     })
     mocks.showConfirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true)

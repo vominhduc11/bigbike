@@ -17,11 +17,15 @@ export function isValidYouTubeChannelUrl(value) {
   try {
     const url = new URL(trimmed)
     const host = url.hostname.toLowerCase()
-    if (url.protocol !== 'https:'
-      || !['youtube.com', 'www.youtube.com'].includes(host)
-      || url.username || url.password
-      || (url.port && url.port !== '443')
-      || url.hash) return false
+    if (
+      url.protocol !== 'https:' ||
+      !['youtube.com', 'www.youtube.com'].includes(host) ||
+      url.username ||
+      url.password ||
+      (url.port && url.port !== '443') ||
+      url.hash
+    )
+      return false
 
     if (url.search && url.search !== '?sub_confirmation=1') {
       return false

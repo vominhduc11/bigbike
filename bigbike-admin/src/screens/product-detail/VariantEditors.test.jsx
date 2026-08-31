@@ -22,10 +22,13 @@ describe('size scale value parser', () => {
 
 describe('variant matrix money input', () => {
   it('keeps selected dictionary IDs and shared price on every generated variant', () => {
-    const variants = buildVariantMatrixVariants([
-      { name: 'Màu sắc', valueIds: ['value-red', 'value-blue'], values: ['Đỏ', 'Xanh'] },
-      { name: 'Kích cỡ', valueIds: ['value-m'], values: ['M'] },
-    ], { sharedPrice: '2000000' })
+    const variants = buildVariantMatrixVariants(
+      [
+        { name: 'Màu sắc', valueIds: ['value-red', 'value-blue'], values: ['Đỏ', 'Xanh'] },
+        { name: 'Kích cỡ', valueIds: ['value-m'], values: ['M'] },
+      ],
+      { sharedPrice: '2000000' },
+    )
 
     expect(variants).toHaveLength(2)
     expect(variants[0]).toMatchObject({

@@ -38,8 +38,20 @@ vi.mock('../lib/useProductPicker', () => ({
 const loaded = {
   version: 0,
   items: [
-    { slot: 1, productId: 'prod_1', productName: 'Mũ 1', productSlug: 'mu-1', productImageUrl: '/media/p1.jpg' },
-    { slot: 2, productId: 'prod_2', productName: 'Mũ 2', productSlug: 'mu-2', productImageUrl: '/media/p2.jpg' },
+    {
+      slot: 1,
+      productId: 'prod_1',
+      productName: 'Mũ 1',
+      productSlug: 'mu-1',
+      productImageUrl: '/media/p1.jpg',
+    },
+    {
+      slot: 2,
+      productId: 'prod_2',
+      productName: 'Mũ 2',
+      productSlug: 'mu-2',
+      productImageUrl: '/media/p2.jpg',
+    },
   ],
 }
 
@@ -77,10 +89,15 @@ describe('HomeHighlightsScreen', () => {
     await waitFor(() => expect(saveButton).toBeEnabled())
     await user.click(saveButton)
 
-    await waitFor(() => expect(mocks.saveHomeHighlights).toHaveBeenCalledWith([
-      { slot: 1, productId: 'prod_1' },
-      { slot: 2, productId: 'prod_2' },
-    ], 0))
+    await waitFor(() =>
+      expect(mocks.saveHomeHighlights).toHaveBeenCalledWith(
+        [
+          { slot: 1, productId: 'prod_1' },
+          { slot: 2, productId: 'prod_2' },
+        ],
+        0,
+      ),
+    )
   })
 
   it('chỉ có quyền đọc thì hiện dải chỉ-xem và khoá nút Lưu', async () => {
@@ -146,7 +163,12 @@ describe('HomeHighlightsScreen', () => {
   it('does not send a second save while the first request is pending', async () => {
     const user = userEvent.setup()
     let resolveSave
-    mocks.saveHomeHighlights.mockImplementation(() => new Promise((resolve) => { resolveSave = resolve }))
+    mocks.saveHomeHighlights.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve
+        }),
+    )
     renderScreen()
 
     await screen.findByRole('button', { name: 'homeHighlights.saveButton' })

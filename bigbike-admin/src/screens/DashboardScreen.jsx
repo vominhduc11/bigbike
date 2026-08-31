@@ -27,34 +27,40 @@ import { formatVndShort, formatRelativeTime } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import { useRecentItems } from '../lib/useRecentItems'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
-import {
-  fetchDashboardSummary,
-  fetchInventorySummary,
-} from '../lib/adminApi'
+import { fetchDashboardSummary, fetchInventorySummary } from '../lib/adminApi'
 
 const PENDING_WARN_THRESHOLD = 5
 
 const ORDER_STATUS_COLORS = {
-  PENDING:    'var(--admin-color-status-warning-text)',
+  PENDING: 'var(--admin-color-status-warning-text)',
   PROCESSING: 'var(--admin-color-status-info-text)',
-  COMPLETED:  'var(--admin-color-status-success-text)',
-  CANCELLED:  'var(--admin-color-status-danger-text)',
+  COMPLETED: 'var(--admin-color-status-success-text)',
+  CANCELLED: 'var(--admin-color-status-danger-text)',
 }
 
 // Charts pull in recharts (~346KB) — load them lazily so the dashboard shell
 // (KPIs + tables) paints immediately and the charts stream in afterwards.
-const RevenueAreaChart = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.RevenueAreaChart })))
-const OrderStatusPie = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.OrderStatusPie })))
+const RevenueAreaChart = lazy(() =>
+  import('./dashboard/charts').then((m) => ({ default: m.RevenueAreaChart })),
+)
+const OrderStatusPie = lazy(() =>
+  import('./dashboard/charts').then((m) => ({ default: m.OrderStatusPie })),
+)
 
 function TrendPill({ direction, label }) {
   const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
   const icon =
-    direction === 'up' ? <TrendingUp size={10} /> :
-    direction === 'down' ? <TrendingDown size={10} /> :
-    <Minus size={10} />
+    direction === 'up' ? (
+      <TrendingUp size={10} />
+    ) : direction === 'down' ? (
+      <TrendingDown size={10} />
+    ) : (
+      <Minus size={10} />
+    )
   return (
     <span className={`bb-kpi-trend ${cls}`}>
-      {icon}{label}
+      {icon}
+      {label}
     </span>
   )
 }
@@ -93,11 +99,14 @@ function useViewportEntered() {
     if (entered || !target) return undefined
     if (typeof IntersectionObserver === 'undefined') return undefined
 
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting) return
-      setEntered(true)
-      observer.disconnect()
-    }, { threshold: 0.01 })
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+        setEntered(true)
+        observer.disconnect()
+      },
+      { threshold: 0.01 },
+    )
     observer.observe(target)
     return () => observer.disconnect()
   }, [entered, target])
@@ -112,9 +121,12 @@ export function DashboardScreen({ navigate }) {
   const [period, setPeriod] = useState('30d')
   const [revenueChartRef, isRevenueChartVisible] = useViewportEntered()
   const [statusChartRef, isStatusChartVisible] = useViewportEntered()
-  const canReadInventory = user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
-  const canReadProducts = user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
-  const canReadReports = user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
+  const canReadInventory =
+    user?.permissions?.includes('*') || user?.permissions?.includes('inventory.read')
+  const canReadProducts =
+    user?.permissions?.includes('*') || user?.permissions?.includes('products.read')
+  const canReadReports =
+    user?.permissions?.includes('*') || user?.permissions?.includes('reports.read')
   // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
   const numberLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   // O9 — đơn hàng admin vừa xem gần đây, cho phép quay lại nhanh.
@@ -124,12 +136,13 @@ export function DashboardScreen({ navigate }) {
   const hour = now.getHours()
   const greetingKey =
     hour < 12 ? 'greetingMorning' : hour < 18 ? 'greetingAfternoon' : 'greetingEvening'
-  const firstName =
-    (user?.fullName || '').trim().split(/\s+/).filter(Boolean).slice(-1)[0] || ''
-  const todayLabel = now.toLocaleDateString(
-    i18n.language?.startsWith('vi') ? 'vi-VN' : 'en-US',
-    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-  )
+  const firstName = (user?.fullName || '').trim().split(/\s+/).filter(Boolean).slice(-1)[0] || ''
+  const todayLabel = now.toLocaleDateString(i18n.language?.startsWith('vi') ? 'vi-VN' : 'en-US', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // Số liệu vận hành (doanh thu, tồn thấp, đơn chờ) cần tươi mà không cần
   // instant → polling định kỳ 90s + làm mới khi admin quay lại tab. Refetch chạy nền,
@@ -143,7 +156,12 @@ export function DashboardScreen({ navigate }) {
     })
   }, [canReadInventory, queryClient])
 
-  const { data: dashResult, isLoading, isError, refetch } = useQuery({
+  const {
+    data: dashResult,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['dashboard', period],
     queryFn: () => fetchDashboardSummary(period),
     staleTime: 60_000,
@@ -151,7 +169,11 @@ export function DashboardScreen({ navigate }) {
     refetchOnWindowFocus: true,
   })
 
-  const { data: invSummary, isLoading: invIsLoading, isError: invIsError } = useQuery({
+  const {
+    data: invSummary,
+    isLoading: invIsLoading,
+    isError: invIsError,
+  } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
     staleTime: 60_000,
@@ -170,11 +192,12 @@ export function DashboardScreen({ navigate }) {
   const { data } = state
 
   const periodTabs = [
-    { key: '7d',  label: t('dashboard.period7d')  },
+    { key: '7d', label: t('dashboard.period7d') },
     { key: '30d', label: t('dashboard.period30d') },
     { key: '90d', label: t('dashboard.period90d') },
   ]
-  const selectedPeriodLabel = periodTabs.find((tab) => tab.key === period)?.label ?? periodTabs[1].label
+  const selectedPeriodLabel =
+    periodTabs.find((tab) => tab.key === period)?.label ?? periodTabs[1].label
 
   // Dữ liệu có thể về thiếu (partial) — mảng breakdown có thể undefined dù `data` tồn tại.
   const orderStatusBreakdown = Array.isArray(data?.orderStatusBreakdown)
@@ -248,7 +271,9 @@ export function DashboardScreen({ navigate }) {
       label: t('dashboard.topProducts.product'),
       render: (product) => (
         <span className="bb-product-cell">
-          <span className="bb-product-thumb"><Package size={18} /></span>
+          <span className="bb-product-thumb">
+            <Package size={18} />
+          </span>
           <span title={product.name}>{product.name || t('common.unknown')}</span>
         </span>
       ),
@@ -263,7 +288,9 @@ export function DashboardScreen({ navigate }) {
       key: 'revenue',
       label: t('dashboard.topProducts.revenue'),
       align: 'right',
-      render: (product) => <span className="font-bold text-primary">{formatVndShort(product.revenue)}</span>,
+      render: (product) => (
+        <span className="font-bold text-primary">{formatVndShort(product.revenue)}</span>
+      ),
     },
   ]
 
@@ -271,19 +298,27 @@ export function DashboardScreen({ navigate }) {
     const pct = kpi?.todayRevenuePct
     if (pct == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
     const absPct = Math.abs(pct)
-    const formattedValue = absPct > 999
-      ? '>999'
-      : new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 }).format(absPct)
-    if (pct > 0)  return { direction: 'up',   label: t('dashboard.kpi.trendUp',   { value: formattedValue }) }
-    if (pct < 0)  return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
+    const formattedValue =
+      absPct > 999
+        ? '>999'
+        : new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 }).format(absPct)
+    if (pct > 0)
+      return { direction: 'up', label: t('dashboard.kpi.trendUp', { value: formattedValue }) }
+    if (pct < 0)
+      return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
     return { direction: 'neutral', label: t('dashboard.kpi.trendFlat') }
   }
 
   function ordersTrend(kpi) {
     const delta = kpi?.todayOrdersDelta
     if (delta == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
-    if (delta > 0) return { direction: 'up',   label: t('dashboard.kpi.ordersDeltaUp',   { count: delta }) }
-    if (delta < 0) return { direction: 'down', label: t('dashboard.kpi.ordersDeltaDown', { count: Math.abs(delta) }) }
+    if (delta > 0)
+      return { direction: 'up', label: t('dashboard.kpi.ordersDeltaUp', { count: delta }) }
+    if (delta < 0)
+      return {
+        direction: 'down',
+        label: t('dashboard.kpi.ordersDeltaDown', { count: Math.abs(delta) }),
+      }
     return { direction: 'neutral', label: t('dashboard.kpi.ordersDeltaFlat') }
   }
 
@@ -331,18 +366,17 @@ export function DashboardScreen({ navigate }) {
     <Screen>
       <ScreenHeader
         group="sales"
-        title={firstName
-          ? t(`dashboard.${greetingKey}`, { name: firstName })
-          : t(`dashboard.${greetingKey}Fallback`, { defaultValue: t('common.unknown') })}
+        title={
+          firstName
+            ? t(`dashboard.${greetingKey}`, { name: firstName })
+            : t(`dashboard.${greetingKey}Fallback`, { defaultValue: t('common.unknown') })
+        }
         description={t('dashboard.greetingDesc', { date: todayLabel })}
-        actions={(
-          <div
-            className="bb-seg"
-            role="group"
-            aria-label={t('dashboard.periodControlLabel')}
-          >
+        actions={
+          <div className="bb-seg" role="group" aria-label={t('dashboard.periodControlLabel')}>
             {periodTabs.map((tab) => (
-              <Button variant="unstyled"
+              <Button
+                variant="unstyled"
                 key={tab.key}
                 type="button"
                 aria-pressed={period === tab.key}
@@ -353,7 +387,7 @@ export function DashboardScreen({ navigate }) {
               </Button>
             ))}
           </div>
-        )}
+        }
       />
 
       {data ? (
@@ -376,10 +410,10 @@ export function DashboardScreen({ navigate }) {
         <>
           <div className="bb-kpi-grid bb-kpi-grid-4">
             {[...Array(4)].map((_, i) => (
-                <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
+              <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
             ))}
           </div>
-            <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+          <ScreenSkeleton variant="cards" count={1} showHeader={false} />
           <div className="bb-grid-2-1">
             <ScreenSkeleton variant="cards" count={1} showHeader={false} />
             <ScreenSkeleton variant="cards" count={1} showHeader={false} />
@@ -400,9 +434,15 @@ export function DashboardScreen({ navigate }) {
               clickable={canReadReports}
               ariaLabel={t('dashboard.kpi.todayRevenueAria')}
               onClick={canReadReports ? () => navigate('/admin/reports') : undefined}
-              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>}
+              headerExtra={
+                <span className="bb-badge bb-badge-muted ml-2">
+                  {t('dashboard.kpi.todayScope')}
+                </span>
+              }
               footer={<TrendPill {...revenueTrend(data.kpi)} />}
-              detail={t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi?.todayPaidRevenue) })}
+              detail={t('dashboard.kpi.todayPaid', {
+                amount: formatVndShort(data.kpi?.todayPaidRevenue),
+              })}
             />
             <KpiCard
               label={t('dashboard.kpi.todayOrders')}
@@ -412,7 +452,11 @@ export function DashboardScreen({ navigate }) {
               clickable
               ariaLabel={t('dashboard.kpi.todayOrdersAria')}
               onClick={() => navigate('/admin/orders?orderScope=ALL')}
-              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>}
+              headerExtra={
+                <span className="bb-badge bb-badge-muted ml-2">
+                  {t('dashboard.kpi.todayScope')}
+                </span>
+              }
               footer={<TrendPill {...ordersTrend(data.kpi)} />}
               detail={t('dashboard.kpi.todayOrdersHint')}
             />
@@ -424,7 +468,11 @@ export function DashboardScreen({ navigate }) {
               clickable
               ariaLabel={t('dashboard.kpi.pendingOrdersAria')}
               onClick={() => navigate('/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING')}
-              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>}
+              headerExtra={
+                <span className="bb-badge bb-badge-muted ml-2">
+                  {t('dashboard.kpi.currentScope')}
+                </span>
+              }
               detail={t('dashboard.kpi.pendingOrdersHint')}
             />
             <KpiCard
@@ -434,8 +482,16 @@ export function DashboardScreen({ navigate }) {
               tone="success"
               clickable={canReadProducts}
               ariaLabel={t('dashboard.kpi.activeProductsAria')}
-              onClick={canReadProducts ? () => navigate('/admin/products?publishStatus=PUBLISHED') : undefined}
-              headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>}
+              onClick={
+                canReadProducts
+                  ? () => navigate('/admin/products?publishStatus=PUBLISHED')
+                  : undefined
+              }
+              headerExtra={
+                <span className="bb-badge bb-badge-muted ml-2">
+                  {t('dashboard.kpi.currentScope')}
+                </span>
+              }
               detail={t('dashboard.kpi.activeProductsHint')}
             />
           </div>
@@ -451,7 +507,9 @@ export function DashboardScreen({ navigate }) {
                 {revenueData.length > 0 ? (
                   <>
                     {isRevenueChartVisible ? (
-                      <Suspense fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}>
+                      <Suspense
+                        fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}
+                      >
                         <RevenueAreaChart revenueData={revenueData} />
                       </Suspense>
                     ) : (
@@ -477,29 +535,36 @@ export function DashboardScreen({ navigate }) {
                     description={t('dashboard.revenueChart.emptyDesc')}
                   />
                 )}
-                </div>
+              </div>
             </DetailSection>
 
             <DetailSection
               title={t('dashboard.orderStatusChart.title')}
-              description={t('dashboard.orderStatusChart.subtitle', { period: selectedPeriodLabel })}
+              description={t('dashboard.orderStatusChart.subtitle', {
+                period: selectedPeriodLabel,
+              })}
               headingLevel={3}
-              action={pieTotal > 0 ? (
+              action={
+                pieTotal > 0 ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => navigate('/admin/orders?orderScope=OPERATIONAL')}
                   >
-                    {t('dashboard.orderStatusChart.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.orderStatusChart.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
-              ) : null}
+                ) : null
+              }
             >
               <div ref={statusChartRef} data-testid="dashboard-status-chart-slot">
                 {pieTotal > 0 ? (
                   <div>
                     {isStatusChartVisible ? (
-                      <Suspense fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}>
+                      <Suspense
+                        fallback={<ScreenSkeleton variant="cards" count={1} showHeader={false} />}
+                      >
                         <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
                       </Suspense>
                     ) : (
@@ -519,7 +584,13 @@ export function DashboardScreen({ navigate }) {
                                 style={{ backgroundColor: d.color }}
                                 aria-hidden="true"
                               />
-                              <span className={index === 0 ? 'flex-1 font-semibold text-foreground' : 'flex-1 bb-muted'}>
+                              <span
+                                className={
+                                  index === 0
+                                    ? 'flex-1 font-semibold text-foreground'
+                                    : 'flex-1 bb-muted'
+                                }
+                              >
                                 {d.name}
                               </span>
                               {index === 0 && (
@@ -558,7 +629,7 @@ export function DashboardScreen({ navigate }) {
                     description={t('dashboard.orderStatusChart.emptyDesc')}
                   />
                 )}
-                </div>
+              </div>
             </DetailSection>
           </div>
 
@@ -569,55 +640,66 @@ export function DashboardScreen({ navigate }) {
             description={t('dashboard.attention.description')}
             headingLevel={3}
           >
-              {showInventoryWarning && (
-                <StatePanel
-                  tone="warning"
-                  description={t('dashboard.attention.inventoryWarn')}
-                />
-              )}
-              {invIsLoading && !hasInventoryData && (
-                    <ScreenSkeleton variant="cards" count={1} showHeader={false} />
-              )}
-              {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
+            {showInventoryWarning && (
+              <StatePanel tone="warning" description={t('dashboard.attention.inventoryWarn')} />
+            )}
+            {invIsLoading && !hasInventoryData && (
+              <ScreenSkeleton variant="cards" count={1} showHeader={false} />
+            )}
+            {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
                   ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
                   không khẳng định rỗng. */}
-              {attentionItems.length === 0 && !invIsLoading && !showInventoryWarning && (
-                <SectionEmpty
-                  title={t('dashboard.attention.empty')}
-                  description={t('dashboard.attention.emptyDesc')}
-                />
-              )}
-              {attentionItems.length > 0 && (
-                <div>
-                  {attentionItems.map((item) => (
-                    <div
-                      key={item.key}
-                      className="bb-attention-item"
-                      {...(item.onClick ? clickableProps(
-                        item.onClick,
-                        `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
-                      ) : {})}
-                    >
-                      <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />
-                      <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
-                      <div className="bb-attention-body">
-                        <div className="bb-attention-title">{item.label}</div>
-                        <div className="bb-attention-desc">{item.hint}</div>
-                      </div>
-                      <span className="bb-attention-count">{item.count}</span>
-                      {item.onClick ? (
-                        <span className="inline-flex h-7 items-center gap-2 rounded-[var(--admin-radius-xs)] px-3 text-xs font-semibold text-foreground" aria-hidden="true">
-                          {item.cta}<ArrowRight size={14} aria-hidden="true" />
-                        </span>
-                      ) : null}
+            {attentionItems.length === 0 && !invIsLoading && !showInventoryWarning && (
+              <SectionEmpty
+                title={t('dashboard.attention.empty')}
+                description={t('dashboard.attention.emptyDesc')}
+              />
+            )}
+            {attentionItems.length > 0 && (
+              <div>
+                {attentionItems.map((item) => (
+                  <div
+                    key={item.key}
+                    className="bb-attention-item"
+                    {...(item.onClick
+                      ? clickableProps(
+                          item.onClick,
+                          `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
+                        )
+                      : {})}
+                  >
+                    <span
+                      className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`}
+                      aria-hidden="true"
+                    />
+                    <span className="bb-attention-icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <div className="bb-attention-body">
+                      <div className="bb-attention-title">{item.label}</div>
+                      <div className="bb-attention-desc">{item.hint}</div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <span className="bb-attention-count">{item.count}</span>
+                    {item.onClick ? (
+                      <span
+                        className="inline-flex h-7 items-center gap-2 rounded-[var(--admin-radius-xs)] px-3 text-xs font-semibold text-foreground"
+                        aria-hidden="true"
+                      >
+                        {item.cta}
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </DetailSection>
 
           {/* O9 — Vừa xem gần đây */}
-          <RecentItemsChips items={recentOrderItems} onSelect={(item) => navigate(`/admin/orders/${item.id}`)} />
+          <RecentItemsChips
+            items={recentOrderItems}
+            onSelect={(item) => navigate(`/admin/orders/${item.id}`)}
+          />
 
           {/* Recent orders + top products */}
           <div className="bb-grid-2">
@@ -625,87 +707,114 @@ export function DashboardScreen({ navigate }) {
               title={t('dashboard.recentOrders.title')}
               headingLevel={3}
               noPadding
-              action={recentOrders.length > 0 ? (
+              action={
+                recentOrders.length > 0 ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => navigate('/admin/orders')}
                   >
-                    {t('dashboard.recentOrders.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.recentOrders.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
-              ) : null}
+                ) : null
+              }
             >
-                {recentOrders.length > 0 ? (
-                  <AdminTable
-                    columns={recentOrderColumns}
-                    rows={recentOrders}
-                    rowHref={(order) => `/admin/orders/${order.id}`}
-                    onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
-                    mobileCard={(order) => ({
-                      title: order.orderNumber || t('common.unknown'),
-                      subtitle: `${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`,
-                      status: <StatusBadge type="order" status={order.orderStatus} />,
-                      meta: [
-                        { label: t('dashboard.recentOrders.total'), value: formatVndShort(order.total), tone: 'strong' },
-                      ],
-                      onClick: () => navigate(`/admin/orders/${order.id}`),
-                    })}
+              {recentOrders.length > 0 ? (
+                <AdminTable
+                  columns={recentOrderColumns}
+                  rows={recentOrders}
+                  rowHref={(order) => `/admin/orders/${order.id}`}
+                  onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
+                  mobileCard={(order) => ({
+                    title: order.orderNumber || t('common.unknown'),
+                    subtitle: `${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`,
+                    status: <StatusBadge type="order" status={order.orderStatus} />,
+                    meta: [
+                      {
+                        label: t('dashboard.recentOrders.total'),
+                        value: formatVndShort(order.total),
+                        tone: 'strong',
+                      },
+                    ],
+                    onClick: () => navigate(`/admin/orders/${order.id}`),
+                  })}
+                />
+              ) : (
+                <div className="p-4">
+                  <StatePanel
+                    tone="neutral"
+                    title={t('dashboard.recentOrders.empty')}
+                    description={t('dashboard.recentOrders.emptyDesc')}
+                    actionLabel={t('dashboard.recentOrders.emptyCta')}
+                    onAction={() => navigate('/admin/orders')}
                   />
-                ) : (
-                  <div className="p-4">
-                    <StatePanel
-                      tone="neutral"
-                      title={t('dashboard.recentOrders.empty')}
-                      description={t('dashboard.recentOrders.emptyDesc')}
-                      actionLabel={t('dashboard.recentOrders.emptyCta')}
-                      onAction={() => navigate('/admin/orders')}
-                    />
-                  </div>
-                )}
+                </div>
+              )}
             </DetailSection>
 
             <DetailSection
               title={t('dashboard.topProducts.title')}
               headingLevel={3}
               noPadding
-              action={topProducts.length > 0 && canReadProducts ? (
+              action={
+                topProducts.length > 0 && canReadProducts ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => navigate('/admin/products')}
                   >
-                    {t('dashboard.topProducts.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                    {t('dashboard.topProducts.viewAll')}
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Button>
-              ) : null}
+                ) : null
+              }
             >
-                {topProducts.length > 0 ? (
-                  <AdminTable
-                    columns={topProductColumns}
-                    rows={rankedProducts}
-                    rowHref={canReadProducts ? (product) => `/admin/products/${product.productId}` : undefined}
-                    onRowClick={canReadProducts ? (product) => navigate(`/admin/products/${product.productId}`) : undefined}
-                    mobileCard={(product) => ({
-                      title: `${product.rank}. ${product.name || t('common.unknown')}`,
-                      meta: [
-                        { label: t('dashboard.topProducts.units'), value: (product.units ?? 0).toLocaleString(numberLocale) },
-                        { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },
-                      ],
-                      onClick: canReadProducts ? () => navigate(`/admin/products/${product.productId}`) : undefined,
-                    })}
+              {topProducts.length > 0 ? (
+                <AdminTable
+                  columns={topProductColumns}
+                  rows={rankedProducts}
+                  rowHref={
+                    canReadProducts
+                      ? (product) => `/admin/products/${product.productId}`
+                      : undefined
+                  }
+                  onRowClick={
+                    canReadProducts
+                      ? (product) => navigate(`/admin/products/${product.productId}`)
+                      : undefined
+                  }
+                  mobileCard={(product) => ({
+                    title: `${product.rank}. ${product.name || t('common.unknown')}`,
+                    meta: [
+                      {
+                        label: t('dashboard.topProducts.units'),
+                        value: (product.units ?? 0).toLocaleString(numberLocale),
+                      },
+                      {
+                        label: t('dashboard.topProducts.revenue'),
+                        value: formatVndShort(product.revenue),
+                        tone: 'strong',
+                      },
+                    ],
+                    onClick: canReadProducts
+                      ? () => navigate(`/admin/products/${product.productId}`)
+                      : undefined,
+                  })}
+                />
+              ) : (
+                <div className="p-4">
+                  <StatePanel
+                    tone="neutral"
+                    title={t('dashboard.topProducts.empty')}
+                    description={t('dashboard.topProducts.emptyDesc')}
+                    actionLabel={canReadProducts ? t('dashboard.topProducts.emptyCta') : undefined}
+                    onAction={canReadProducts ? () => navigate('/admin/products') : undefined}
                   />
-                ) : (
-                  <div className="p-4">
-                    <StatePanel
-                      tone="neutral"
-                      title={t('dashboard.topProducts.empty')}
-                      description={t('dashboard.topProducts.emptyDesc')}
-                      actionLabel={canReadProducts ? t('dashboard.topProducts.emptyCta') : undefined}
-                      onAction={canReadProducts ? () => navigate('/admin/products') : undefined}
-                    />
-                  </div>
-                )}
+                </div>
+              )}
             </DetailSection>
           </div>
         </>

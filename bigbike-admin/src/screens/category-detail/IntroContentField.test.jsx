@@ -34,7 +34,10 @@ vi.mock('react-i18next', () => ({
         'categories.detail.introCtaLabel': 'Chữ trên nút',
         'categories.detail.introCtaUrl': 'Liên kết nút bấm',
       }
-      return (messages[key] || key).replace(/\{\{(\w+)\}\}/g, (_match, name) => values[name] ?? `{{${name}}}`)
+      return (messages[key] || key).replace(
+        /\{\{(\w+)\}\}/g,
+        (_match, name) => values[name] ?? `{{${name}}}`,
+      )
     },
   }),
 }))
@@ -42,13 +45,19 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../lib/confirm', () => confirm)
 vi.mock('@/components/DeferredRichTextEditor', () => ({
   DeferredRichTextEditor: ({ value, onChange, placeholder, disabled }) => (
-    <textarea aria-label={placeholder} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
+    <textarea
+      aria-label={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+    />
   ),
 }))
 
 import { IntroContentField } from './IntroContentField'
 
-const customHtml = '<div class="custom-intro"><p>Bảng cỡ mũ</p><table><tbody><tr><th>Cỡ</th></tr><tr><td>M</td></tr></tbody></table><div class="unmanaged">Khối riêng</div></div>'
+const customHtml =
+  '<div class="custom-intro"><p>Bảng cỡ mũ</p><table><tbody><tr><th>Cỡ</th></tr><tr><td>M</td></tr></tbody></table><div class="unmanaged">Khối riêng</div></div>'
 
 describe('IntroContentField HTML-first editing', () => {
   beforeEach(() => {
@@ -84,7 +93,10 @@ describe('IntroContentField HTML-first editing', () => {
   })
 
   it('keeps all six FAQ nodes and their position while patching the heading', async () => {
-    const faqs = Array.from({ length: 6 }, (_, index) => `<h3 class="bb-ci-qt">Q${index + 1}</h3><p class="bb-ci-at">A${index + 1}</p>`).join('')
+    const faqs = Array.from(
+      { length: 6 },
+      (_, index) => `<h3 class="bb-ci-qt">Q${index + 1}</h3><p class="bb-ci-at">A${index + 1}</p>`,
+    ).join('')
     const initialHtml = `<div class="bb-cat-intro"><div class="bb-ci-a"><h2 class="bb-ci-h2">Old</h2></div><table><tr><td>Compare</td></tr></table><div class="bb-ci-b">${faqs}</div></div>`
     const onChange = vi.fn()
     const user = userEvent.setup()

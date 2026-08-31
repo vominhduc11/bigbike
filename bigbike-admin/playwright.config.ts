@@ -26,7 +26,12 @@ export default defineConfig({
   timeout: 60_000,
   expect: {
     timeout: 10_000,
-    toHaveScreenshot: { maxDiffPixelRatio: 0.02, animations: 'disabled', caret: 'hide', scale: 'css' },
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css',
+    },
   },
   reporter: [
     ['list'],
@@ -47,7 +52,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: DESKTOP_VIEWPORT.width, height: DESKTOP_VIEWPORT.height } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: DESKTOP_VIEWPORT.width, height: DESKTOP_VIEWPORT.height },
+      },
     },
   ],
   webServer: USE_LOCAL_PREVIEW

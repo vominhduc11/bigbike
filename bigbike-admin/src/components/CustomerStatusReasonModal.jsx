@@ -46,7 +46,9 @@ export function CustomerStatusReasonModal({
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder={t('customers.detail.statusReasonPlaceholder', { defaultValue: 'Ghi chú nội bộ, ví dụ: khách báo cáo gian lận thanh toán…' })}
+            placeholder={t('customers.detail.statusReasonPlaceholder', {
+              defaultValue: 'Ghi chú nội bộ, ví dụ: khách báo cáo gian lận thanh toán…',
+            })}
             className="resize-y"
             maxLength={MAX_REASON_LENGTH}
             aria-describedby="customer-status-reason-help customer-status-reason-count"
@@ -54,9 +56,7 @@ export function CustomerStatusReasonModal({
             disabled={busy}
           />
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span id="customer-status-reason-help">
-              {t('customers.detail.statusReasonHelp')}
-            </span>
+            <span id="customer-status-reason-help">{t('customers.detail.statusReasonHelp')}</span>
             <span id="customer-status-reason-count" aria-live="polite">
               {t('customers.detail.statusReasonCount', {
                 count: reason.length,
@@ -66,7 +66,13 @@ export function CustomerStatusReasonModal({
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" className="min-h-11" onClick={onClose} disabled={busy}>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={onClose}
+            disabled={busy}
+          >
             {t('common.cancel')}
           </Button>
           <Button type="submit" variant={confirmVariant} className="min-h-11" disabled={busy}>

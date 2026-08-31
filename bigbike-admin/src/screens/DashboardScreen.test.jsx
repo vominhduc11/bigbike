@@ -56,7 +56,11 @@ vi.mock('../components/StatePanel', () => ({
     <div>
       {title ? <span>{title}</span> : null}
       {description ? <span>{description}</span> : null}
-      {actionLabel ? <button type="button" onClick={onAction}>{actionLabel}</button> : null}
+      {actionLabel ? (
+        <button type="button" onClick={onAction}>
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   ),
 }))
@@ -77,9 +81,11 @@ const BASE_DASHBOARD = {
   topProducts: [],
 }
 
-function renderScreen(client = new QueryClient({
+function renderScreen(
+  client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  })) {
+  }),
+) {
   const result = render(
     <QueryClientProvider client={client}>
       <DashboardScreen navigate={mocks.navigate} />
@@ -106,8 +112,13 @@ it('does not fetch or subscribe to inventory without inventory.read', async () =
 
   expect(await screen.findByText('dashboard.kpi.todayRevenue')).toBeInTheDocument()
   expect(mocks.fetchInventorySummary).not.toHaveBeenCalled()
-  expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith('/topic/admin/inventory', expect.any(Function))
-  expect(screen.queryByRole('button', { name: 'dashboard.kpi.activeProductsAria' })).not.toBeInTheDocument()
+  expect(mocks.subscribeAdminWs).not.toHaveBeenCalledWith(
+    '/topic/admin/inventory',
+    expect.any(Function),
+  )
+  expect(
+    screen.queryByRole('button', { name: 'dashboard.kpi.activeProductsAria' }),
+  ).not.toBeInTheDocument()
 })
 
 describe('DashboardScreen', () => {
@@ -117,14 +128,17 @@ describe('DashboardScreen', () => {
 
   it('only mounts each chart after its own reserved area enters the viewport', async () => {
     const observers = []
-    vi.stubGlobal('IntersectionObserver', class {
-      constructor(callback) {
-        this.callback = callback
-        this.observe = vi.fn()
-        this.disconnect = vi.fn()
-        observers.push(this)
-      }
-    })
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback) {
+          this.callback = callback
+          this.observe = vi.fn()
+          this.disconnect = vi.fn()
+          observers.push(this)
+        }
+      },
+    )
     mocks.fetchDashboardSummary.mockResolvedValue({
       data: {
         ...BASE_DASHBOARD,
@@ -138,8 +152,12 @@ describe('DashboardScreen', () => {
     await waitFor(() => expect(observers).toHaveLength(2))
     expect(screen.queryByTestId('revenue-chart')).not.toBeInTheDocument()
     expect(screen.queryByTestId('status-chart')).not.toBeInTheDocument()
-    expect(screen.getByTestId('dashboard-revenue-chart-slot').querySelector('[role="status"]')).not.toBeNull()
-    expect(screen.getByTestId('dashboard-status-chart-slot').querySelector('[role="status"]')).not.toBeNull()
+    expect(
+      screen.getByTestId('dashboard-revenue-chart-slot').querySelector('[role="status"]'),
+    ).not.toBeNull()
+    expect(
+      screen.getByTestId('dashboard-status-chart-slot').querySelector('[role="status"]'),
+    ).not.toBeNull()
 
     await act(async () => observers[0].callback([{ isIntersecting: true }]))
     expect(await screen.findByTestId('revenue-chart')).toHaveTextContent('1 points')
@@ -181,7 +199,9 @@ describe('DashboardScreen', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(await screen.findByRole('button', { name: 'dashboard.kpi.activeProductsAria' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'dashboard.kpi.activeProductsAria' }),
+    )
 
     expect(mocks.navigate).toHaveBeenCalledWith('/admin/products?publishStatus=PUBLISHED')
   })

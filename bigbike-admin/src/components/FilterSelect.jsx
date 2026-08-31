@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,16 +25,28 @@ const EMPTY = '__empty__'
 const toRadix = (v) => (v === '' || v == null ? EMPTY : String(v))
 const fromRadix = (v) => (v === EMPTY ? '' : v)
 
-export function FilterSelect({ value, onValueChange, options = [], placeholder, ariaLabel, className, disabled }) {
+export function FilterSelect({
+  value,
+  onValueChange,
+  options = [],
+  placeholder,
+  ariaLabel,
+  className,
+  disabled,
+}) {
   return (
-    <Select value={toRadix(value)} onValueChange={(v) => onValueChange(fromRadix(v))} disabled={disabled}>
+    <Select
+      value={toRadix(value)}
+      onValueChange={(v) => onValueChange(fromRadix(v))}
+      disabled={disabled}
+    >
       <SelectTrigger
         aria-label={ariaLabel || placeholder}
         className={cn(
           'h-9 max-sm:h-11 w-auto gap-2 px-3 text-sm shadow-none',
           'rounded-[var(--admin-radius-control)] border-border bg-background text-foreground',
           'focus:border-primary focus:ring-2 focus:ring-ring focus:ring-offset-0',
-          className
+          className,
         )}
       >
         <SelectValue placeholder={placeholder} />

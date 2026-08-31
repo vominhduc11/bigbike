@@ -6,9 +6,15 @@
  * look like it can read a module.
  */
 export const ADMIN_ACCESS_POLICIES = Object.freeze({
-  dashboard: policy(['orders.read'], { readPermission: 'orders.read', supporting: ['inventory.read'] }),
+  dashboard: policy(['orders.read'], {
+    readPermission: 'orders.read',
+    supporting: ['inventory.read'],
+  }),
 
-  productsRead: policy(['products.read'], { readPermission: 'products.read', writePermission: 'products.update' }),
+  productsRead: policy(['products.read'], {
+    readPermission: 'products.read',
+    writePermission: 'products.update',
+  }),
   productsWrite: policy(['products.read', 'products.update', 'catalog.read'], {
     readPermission: 'products.read',
     writePermission: 'products.update',
@@ -18,31 +24,56 @@ export const ADMIN_ACCESS_POLICIES = Object.freeze({
     readPermission: 'products.read',
     writePermission: 'products.update',
   }),
-  catalogRead: policy(['catalog.read'], { readPermission: 'catalog.read', writePermission: 'catalog.update' }),
+  catalogRead: policy(['catalog.read'], {
+    readPermission: 'catalog.read',
+    writePermission: 'catalog.update',
+  }),
   catalogWrite: policy(['catalog.read', 'catalog.update'], {
     readPermission: 'catalog.read',
     writePermission: 'catalog.update',
   }),
-  contentRead: policy(['content.read'], { readPermission: 'content.read', writePermission: 'content.update' }),
+  contentRead: policy(['content.read'], {
+    readPermission: 'content.read',
+    writePermission: 'content.update',
+  }),
   contentWrite: policy(['content.read', 'content.update'], {
     readPermission: 'content.read',
     writePermission: 'content.update',
     supporting: ['media.read', 'media.write'],
   }),
 
-  ordersRead: policy(['orders.read'], { readPermission: 'orders.read', writePermission: 'orders.write' }),
+  ordersRead: policy(['orders.read'], {
+    readPermission: 'orders.read',
+    writePermission: 'orders.write',
+  }),
   ordersWrite: policy(['orders.read', 'orders.write']),
-  customersRead: policy(['customers.read'], { readPermission: 'customers.read', writePermission: 'customers.write' }),
+  customersRead: policy(['customers.read'], {
+    readPermission: 'customers.read',
+    writePermission: 'customers.write',
+  }),
   customersWrite: policy(['customers.read', 'customers.write']),
-  reviewsRead: policy(['reviews.read'], { readPermission: 'reviews.read', writePermission: 'reviews.write' }),
+  reviewsRead: policy(['reviews.read'], {
+    readPermission: 'reviews.read',
+    writePermission: 'reviews.write',
+  }),
   reviewsWrite: policy(['reviews.read', 'reviews.write']),
   chatRead: policy(['chat.read'], { readPermission: 'chat.read' }),
 
-  mediaRead: policy(['media.read'], { readPermission: 'media.read', writePermission: 'media.write' }),
+  mediaRead: policy(['media.read'], {
+    readPermission: 'media.read',
+    writePermission: 'media.write',
+  }),
   mediaWrite: policy(['media.read', 'media.write']),
-  menusRead: policy(['menus.read'], { readPermission: 'menus.read', writePermission: 'menus.write', supporting: ['catalog.read'] }),
+  menusRead: policy(['menus.read'], {
+    readPermission: 'menus.read',
+    writePermission: 'menus.write',
+    supporting: ['catalog.read'],
+  }),
   menusWrite: policy(['menus.read', 'menus.write']),
-  slidersRead: policy(['sliders.read'], { readPermission: 'sliders.read', writePermission: 'sliders.write' }),
+  slidersRead: policy(['sliders.read'], {
+    readPermission: 'sliders.read',
+    writePermission: 'sliders.write',
+  }),
   slidersWrite: policy(['sliders.read', 'sliders.write']),
   slidersFullEdit: policy(['sliders.read', 'sliders.write', 'products.read', 'media.read'], {
     readPermission: 'sliders.read',
@@ -61,12 +92,21 @@ export const ADMIN_ACCESS_POLICIES = Object.freeze({
     supporting: ['products.read'],
   }),
   homeHighlightsWrite: policy(['home_highlights.read', 'home_highlights.write', 'products.read']),
-  redirectsRead: policy(['redirects.read'], { readPermission: 'redirects.read', writePermission: 'redirects.write' }),
+  redirectsRead: policy(['redirects.read'], {
+    readPermission: 'redirects.read',
+    writePermission: 'redirects.write',
+  }),
   redirectsWrite: policy(['redirects.read', 'redirects.write']),
 
-  reportsRead: policy(['reports.read'], { readPermission: 'reports.read', writePermission: 'reports.export' }),
+  reportsRead: policy(['reports.read'], {
+    readPermission: 'reports.read',
+    writePermission: 'reports.export',
+  }),
   reportsExport: policy(['reports.read', 'reports.export']),
-  settingsRead: policy(['settings.read'], { readPermission: 'settings.read', writePermission: 'settings.write' }),
+  settingsRead: policy(['settings.read'], {
+    readPermission: 'settings.read',
+    writePermission: 'settings.write',
+  }),
   settingsWrite: policy(['settings.read', 'settings.write']),
   adminUsersRead: policy(['admin-users.read'], {
     readPermission: 'admin-users.read',
@@ -75,7 +115,10 @@ export const ADMIN_ACCESS_POLICIES = Object.freeze({
   }),
   adminUsersWrite: policy(['admin-users.read', 'admin-users.write']),
   adminUsersAssignRole: policy(['admin-users.read', 'admin-users.write', 'roles.read']),
-  rolesRead: policy(['roles.read'], { readPermission: 'roles.read', writePermission: 'roles.write' }),
+  rolesRead: policy(['roles.read'], {
+    readPermission: 'roles.read',
+    writePermission: 'roles.write',
+  }),
   rolesWrite: policy(['roles.read', 'roles.write']),
   auditLogsRead: policy(['audit-logs.read'], { readPermission: 'audit-logs.read' }),
 })

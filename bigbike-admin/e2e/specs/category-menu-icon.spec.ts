@@ -16,12 +16,23 @@ async function createCategory(page: Page, name: string, slug: string) {
   await page.locator('#category-form input[name="name"]').fill(name)
   await page.locator('#category-form input[name="slug"]').fill(slug)
 
-  await page.locator('.lang-switcher').first().getByRole('button', { name: 'EN', exact: true }).click()
+  await page
+    .locator('.lang-switcher')
+    .first()
+    .getByRole('button', { name: 'EN', exact: true })
+    .click()
   await page.locator('#category-form input[name="translations.en.name"]').fill(`${name} English`)
-  await page.locator('.lang-switcher').first().getByRole('button', { name: 'VI', exact: true }).click()
+  await page
+    .locator('.lang-switcher')
+    .first()
+    .getByRole('button', { name: 'VI', exact: true })
+    .click()
 
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/categories')),
+    page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/categories'),
+    ),
     page.getByRole('button', { name: 'Tạo danh mục', exact: true }).first().click(),
   ])
   expect(response.status(), 'API tạo danh mục thử nghiệm phải trả 2xx').toBeLessThan(300)
@@ -30,7 +41,10 @@ async function createCategory(page: Page, name: string, slug: string) {
 }
 
 test.describe('E2E_CATEGORY_shared_image', () => {
-  test('không còn ô biểu tượng riêng và không gửi field legacy khi lưu', async ({ adminPage, collect }, testInfo) => {
+  test('không còn ô biểu tượng riêng và không gửi field legacy khi lưu', async ({
+    adminPage,
+    collect,
+  }, testInfo) => {
     test.setTimeout(120_000)
 
     const parentName = categoryName('PARENT', testInfo.retry)
@@ -55,8 +69,11 @@ test.describe('E2E_CATEGORY_shared_image', () => {
 
     await adminPage.locator('#category-form input[name="name"]').fill(`${childName}_EDITED`)
     const [updateResponse] = await Promise.all([
-      adminPage.waitForResponse((r) => r.request().method() === 'PATCH'
-        && new URL(r.url()).pathname.endsWith(`/admin/categories/${childId}`)),
+      adminPage.waitForResponse(
+        (r) =>
+          r.request().method() === 'PATCH' &&
+          new URL(r.url()).pathname.endsWith(`/admin/categories/${childId}`),
+      ),
       adminPage.getByRole('button', { name: 'Lưu thay đổi', exact: true }).first().click(),
     ])
     expect(updateResponse.status(), 'API lưu danh mục con phải trả 2xx').toBeLessThan(300)

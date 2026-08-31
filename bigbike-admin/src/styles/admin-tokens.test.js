@@ -6,8 +6,10 @@ const css = readFileSync(resolve('src/styles/admin-tokens.css'), 'utf8')
 
 function declarations(block) {
   return Object.fromEntries(
-    [...block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)]
-      .map(([, name, value]) => [name, value.replace(/\/\*[\s\S]*?\*\//g, '').trim()]),
+    [...block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [
+      name,
+      value.replace(/\/\*[\s\S]*?\*\//g, '').trim(),
+    ]),
   )
 }
 
@@ -34,9 +36,16 @@ function parseColor(raw) {
       a: 1,
     }
   }
-  const rgba = raw.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/i)
+  const rgba = raw.match(
+    /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/i,
+  )
   if (!rgba) throw new Error(`Unsupported color: ${raw}`)
-  return { r: Number(rgba[1]), g: Number(rgba[2]), b: Number(rgba[3]), a: rgba[4] == null ? 1 : Number(rgba[4]) }
+  return {
+    r: Number(rgba[1]),
+    g: Number(rgba[2]),
+    b: Number(rgba[3]),
+    a: rgba[4] == null ? 1 : Number(rgba[4]),
+  }
 }
 
 function composite(foreground, background) {
@@ -86,7 +95,11 @@ const semanticPairs = [
   ['primary-subtle', '--admin-color-primary-subtle-text', '--admin-color-primary-subtle'],
   ['success-status', '--admin-color-status-success-text', '--admin-color-status-success-bg'],
   ['warning-status', '--admin-color-status-warning-text', '--admin-color-status-warning-bg'],
-  ['warning-orange-status', '--admin-color-status-warning-orange-text', '--admin-color-status-warning-orange-bg'],
+  [
+    'warning-orange-status',
+    '--admin-color-status-warning-orange-text',
+    '--admin-color-status-warning-orange-bg',
+  ],
   ['danger-status', '--admin-color-status-danger-text', '--admin-color-status-danger-bg'],
   ['info-status', '--admin-color-status-info-text', '--admin-color-status-info-bg'],
   ['neutral-status', '--admin-color-status-neutral-text', '--admin-color-status-neutral-bg'],
@@ -99,7 +112,13 @@ describe.each([
   ['dark', darkTokens],
 ])('admin semantic contrast — %s', (_theme, tokens) => {
   it.each(semanticPairs)('%s đạt tối thiểu 4.5:1', (_name, foregroundToken, backgroundToken) => {
-    const ratio = contrast(opaqueColor(foregroundToken, tokens), opaqueColor(backgroundToken, tokens))
-    expect(ratio, `${foregroundToken} / ${backgroundToken}: ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5)
+    const ratio = contrast(
+      opaqueColor(foregroundToken, tokens),
+      opaqueColor(backgroundToken, tokens),
+    )
+    expect(
+      ratio,
+      `${foregroundToken} / ${backgroundToken}: ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(4.5)
   })
 })

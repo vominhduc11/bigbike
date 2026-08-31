@@ -4,20 +4,33 @@ import { MediaPreviewLightbox } from './MediaPreviewLightbox'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, options = {}) => ({ 'brands.logo.loading': 'Đang tải ảnh…' }[key] || options.defaultValue || key),
+    t: (key, options = {}) =>
+      ({ 'brands.logo.loading': 'Đang tải ảnh…' })[key] || options.defaultValue || key,
   }),
 }))
 
 const items = [
-  { publicUrl: '/media/reviews/one.jpg', mimeType: 'image/jpeg', filename: 'one.jpg', altText: 'Ảnh review một' },
-  { publicUrl: '/media/reviews/two.jpg', mimeType: 'image/jpeg', filename: 'two.jpg', altText: 'Ảnh review hai' },
+  {
+    publicUrl: '/media/reviews/one.jpg',
+    mimeType: 'image/jpeg',
+    filename: 'one.jpg',
+    altText: 'Ảnh review một',
+  },
+  {
+    publicUrl: '/media/reviews/two.jpg',
+    mimeType: 'image/jpeg',
+    filename: 'two.jpg',
+    altText: 'Ảnh review hai',
+  },
 ]
 
 describe('MediaPreviewLightbox', () => {
   it('handles loading, image failure, arrows and Escape', () => {
     const onClose = vi.fn()
     const onNavigate = vi.fn()
-    render(<MediaPreviewLightbox items={items} index={0} onClose={onClose} onNavigate={onNavigate} />)
+    render(
+      <MediaPreviewLightbox items={items} index={0} onClose={onClose} onNavigate={onNavigate} />,
+    )
 
     const dialog = screen.getByRole('dialog', { name: 'one.jpg' })
     const image = screen.getByAltText('Ảnh review một')
@@ -48,7 +61,9 @@ describe('MediaPreviewLightbox', () => {
   it('keeps focus inside the dialog when tabbing from the last action', () => {
     const onClose = vi.fn()
     const onNavigate = vi.fn()
-    render(<MediaPreviewLightbox items={items} index={0} onClose={onClose} onNavigate={onNavigate} />)
+    render(
+      <MediaPreviewLightbox items={items} index={0} onClose={onClose} onNavigate={onNavigate} />,
+    )
 
     const dialog = screen.getByRole('dialog')
     const close = screen.getByRole('button', { name: 'common.close' })
@@ -62,8 +77,20 @@ describe('MediaPreviewLightbox', () => {
 
   it('hiện nút tải cho object lưu trong MinIO và gọi callback với item hiện tại', async () => {
     const onDownload = vi.fn()
-    const storedItems = items.map((item) => ({ ...item, storageProvider: 'MINIO', filePath: `uploads/${item.filename}` }))
-    render(<MediaPreviewLightbox items={storedItems} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDownload={onDownload} />)
+    const storedItems = items.map((item) => ({
+      ...item,
+      storageProvider: 'MINIO',
+      filePath: `uploads/${item.filename}`,
+    }))
+    render(
+      <MediaPreviewLightbox
+        items={storedItems}
+        index={0}
+        onClose={vi.fn()}
+        onNavigate={vi.fn()}
+        onDownload={onDownload}
+      />,
+    )
 
     const button = screen.getByRole('button', { name: 'media.download' })
     expect(button).toHaveAttribute('title', 'media.download')

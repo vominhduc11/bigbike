@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { buildEmptyForm, buildFormFromItem, getCategoryImageValidationError, toPayload } from './constants'
+import {
+  buildEmptyForm,
+  buildFormFromItem,
+  getCategoryImageValidationError,
+  toPayload,
+} from './constants'
 
 describe('Category payload contract', () => {
   it('chặn ảnh mới không vuông nhưng cho phép ảnh vuông không có sàn kích thước', () => {
-    expect(getCategoryImageValidationError({ imageUrl: '/media/200.jpg', imageWidth: 200, imageHeight: 200 }, null, { isCreate: true })).toBeNull()
-    expect(getCategoryImageValidationError({ imageUrl: '/media/300.jpg', imageWidth: 300, imageHeight: 200 }, null, { isCreate: true })).toEqual({
+    expect(
+      getCategoryImageValidationError(
+        { imageUrl: '/media/200.jpg', imageWidth: 200, imageHeight: 200 },
+        null,
+        { isCreate: true },
+      ),
+    ).toBeNull()
+    expect(
+      getCategoryImageValidationError(
+        { imageUrl: '/media/300.jpg', imageWidth: 300, imageHeight: 200 },
+        null,
+        { isCreate: true },
+      ),
+    ).toEqual({
       key: 'categories.detail.imageNotSquare',
       values: { w: 300, h: 200 },
     })
@@ -12,7 +29,12 @@ describe('Category payload contract', () => {
 
   it('bỏ qua kiểm tra tỉ lệ khi danh mục cũ giữ nguyên URL ảnh không vuông', () => {
     const currentItem = { image: { rawUrl: '/media/old.jpg', width: 39, height: 60 } }
-    expect(getCategoryImageValidationError({ imageUrl: '/media/old.jpg', imageWidth: null, imageHeight: null }, currentItem)).toBeNull()
+    expect(
+      getCategoryImageValidationError(
+        { imageUrl: '/media/old.jpg', imageWidth: null, imageHeight: null },
+        currentItem,
+      ),
+    ).toBeNull()
   })
 
   it('omits the default homepage placement on create and never sends visibility', () => {
@@ -55,9 +77,12 @@ describe('Category payload contract', () => {
   it('keeps the alt text of each persisted media role separate', () => {
     const payload = toPayload({
       ...buildEmptyForm(),
-      imageUrl: '/media/category-thumb.jpg', imageAlt: 'Ảnh thumbnail',
-      heroImageUrl: '/media/category-hero.jpg', heroImageAlt: 'Ảnh hero',
-      bannerImageUrl: '/media/category-banner.jpg', bannerImageAlt: 'Ảnh banner',
+      imageUrl: '/media/category-thumb.jpg',
+      imageAlt: 'Ảnh thumbnail',
+      heroImageUrl: '/media/category-hero.jpg',
+      heroImageAlt: 'Ảnh hero',
+      bannerImageUrl: '/media/category-banner.jpg',
+      bannerImageAlt: 'Ảnh banner',
     })
 
     expect(payload.image.alt).toBe('Ảnh thumbnail')
@@ -68,20 +93,52 @@ describe('Category payload contract', () => {
 
   it('giữ metadata ảnh thumbnail, ảnh hero và ảnh chia sẻ qua vòng đọc rồi lưu', () => {
     const form = buildFormFromItem({
-      image: { url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp' },
-      icon: { url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png' },
-      seo: { ogImage: { url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg' } },
+      image: {
+        url: '/media/category-thumb.webp',
+        alt: 'Thumbnail',
+        width: 520,
+        height: 520,
+        mimeType: 'image/webp',
+      },
+      icon: {
+        url: '/media/category-hero.png',
+        alt: 'Hero',
+        width: 900,
+        height: 800,
+        mimeType: 'image/png',
+      },
+      seo: {
+        ogImage: {
+          url: '/media/category-og.jpg',
+          alt: 'OG',
+          width: 1200,
+          height: 630,
+          mimeType: 'image/jpeg',
+        },
+      },
     })
     const payload = toPayload(form)
 
     expect(payload.image).toEqual({
-      url: '/media/category-thumb.webp', alt: 'Thumbnail', width: 520, height: 520, mimeType: 'image/webp',
+      url: '/media/category-thumb.webp',
+      alt: 'Thumbnail',
+      width: 520,
+      height: 520,
+      mimeType: 'image/webp',
     })
     expect(payload.icon).toEqual({
-      url: '/media/category-hero.png', alt: 'Hero', width: 900, height: 800, mimeType: 'image/png',
+      url: '/media/category-hero.png',
+      alt: 'Hero',
+      width: 900,
+      height: 800,
+      mimeType: 'image/png',
     })
     expect(payload.seo.ogImage).toEqual({
-      url: '/media/category-og.jpg', alt: 'OG', width: 1200, height: 630, mimeType: 'image/jpeg',
+      url: '/media/category-og.jpg',
+      alt: 'OG',
+      width: 1200,
+      height: 630,
+      mimeType: 'image/jpeg',
     })
   })
 
@@ -92,7 +149,9 @@ describe('Category payload contract', () => {
     })
 
     expect(form).not.toHaveProperty('menuIconUrl')
-    expect(toPayload({ ...form, menuIconUrl: '/media/stale-draft.svg' })).not.toHaveProperty('menuIcon')
+    expect(toPayload({ ...form, menuIconUrl: '/media/stale-draft.svg' })).not.toHaveProperty(
+      'menuIcon',
+    )
   })
 
   it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xoá được nội dung cũ', () => {

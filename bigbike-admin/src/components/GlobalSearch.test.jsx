@@ -34,7 +34,9 @@ vi.mock('react-i18next', () => ({
         'search.groupErrorTitle': 'This group is unavailable',
         'search.groupErrorBody': 'Other groups are still available.',
       }
-      return String(labels[key] || key).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
+      return String(labels[key] || key).replace(/\{\{(\w+)\}\}/g, (_, name) =>
+        String(values[name] ?? name),
+      )
     },
   }),
 }))
@@ -90,19 +92,24 @@ describe('GlobalSearch', () => {
     mocks.fetchAdminQuickSearch.mockResolvedValue({
       groups: {
         orders: ready([order('order-1', 'BB-1001', 'Nguyễn Văn A')], 6),
-        products: ready([{
-          id: 'product-1',
-          name: 'Mũ bảo hiểm',
-          sku: 'PRODUCT-ROOT',
-          matchedVariants: [{ id: 'variant-1', sku: 'LABEL-RED-M', name: 'Đỏ / M', options: [] }],
-        }]),
+        products: ready([
+          {
+            id: 'product-1',
+            name: 'Mũ bảo hiểm',
+            sku: 'PRODUCT-ROOT',
+            matchedVariants: [{ id: 'variant-1', sku: 'LABEL-RED-M', name: 'Đỏ / M', options: [] }],
+          },
+        ]),
         customers: ready([]),
       },
     })
 
-    render(<GlobalSearch navigate={mocks.navigate} visiblePaths={new Set([
-      '/admin/orders', '/admin/products', '/admin/customers',
-    ])} />)
+    render(
+      <GlobalSearch
+        navigate={mocks.navigate}
+        visiblePaths={new Set(['/admin/orders', '/admin/products', '/admin/customers'])}
+      />,
+    )
 
     await user.click(screen.getAllByRole('button', { name: 'Open quick search' })[0])
     await user.type(screen.getByRole('combobox'), 'nguyen')
@@ -127,9 +134,12 @@ describe('GlobalSearch', () => {
       },
     })
 
-    render(<GlobalSearch navigate={mocks.navigate} visiblePaths={new Set([
-      '/admin/orders', '/admin/products',
-    ])} />)
+    render(
+      <GlobalSearch
+        navigate={mocks.navigate}
+        visiblePaths={new Set(['/admin/orders', '/admin/products'])}
+      />,
+    )
     await user.click(screen.getAllByRole('button', { name: 'Open quick search' })[0])
     await user.type(screen.getByRole('combobox'), 'do')
 
@@ -163,6 +173,8 @@ describe('GlobalSearch', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))
 
     expect(await screen.findByRole('dialog', { name: 'Quick search' })).toBeInTheDocument()
-    expect(screen.getByText('Use arrows to choose, Enter to open, Esc to close')).toBeInTheDocument()
+    expect(
+      screen.getByText('Use arrows to choose, Enter to open, Esc to close'),
+    ).toBeInTheDocument()
   })
 })

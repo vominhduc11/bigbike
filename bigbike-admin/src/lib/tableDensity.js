@@ -12,7 +12,10 @@ export function tableDensityStorageKey(screenKey) {
 export function readTableDensity(screenKey, fallback = 'regular') {
   if (!screenKey || typeof window === 'undefined') return normalizeTableDensity(fallback)
   try {
-    return normalizeTableDensity(window.localStorage.getItem(tableDensityStorageKey(screenKey)), fallback)
+    return normalizeTableDensity(
+      window.localStorage.getItem(tableDensityStorageKey(screenKey)),
+      fallback,
+    )
   } catch {
     return normalizeTableDensity(fallback)
   }

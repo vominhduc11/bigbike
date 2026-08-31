@@ -16,7 +16,10 @@ export function HelpTooltip({ content, label, className, side = 'top' }) {
             type="button"
             variant="ghost"
             size="icon"
-            className={cn('h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground', className)}
+            className={cn(
+              'h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground',
+              className,
+            )}
             aria-label={label || t('common.moreInformation')}
           >
             <CircleHelp size={14} aria-hidden="true" />

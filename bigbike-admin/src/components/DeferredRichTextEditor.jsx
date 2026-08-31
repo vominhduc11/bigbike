@@ -1,9 +1,11 @@
 import { lazy, Suspense } from 'react'
 import { ScreenSkeleton } from './ScreenSkeleton'
 
-const RichTextEditor = lazy(() => import('./RichTextEditor').then((module) => ({
-  default: module.RichTextEditor,
-})))
+const RichTextEditor = lazy(() =>
+  import('./RichTextEditor').then((module) => ({
+    default: module.RichTextEditor,
+  })),
+)
 
 // Keep TipTap and ProseMirror out of a screen until an editor actually mounts.
 // The fallback is the shared skeleton, sized to the existing editor footprint.

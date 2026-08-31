@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
  * Focus trap + Escape-to-close + Tab-cycle + khôi phục focus khi đóng, dùng chung
@@ -13,7 +14,9 @@ export function useModalFocusTrap({ modalRef, onClose }) {
   // setup/cleanup chạy lại mỗi render → trap khởi tạo lại và cướp focus khỏi ô
   // tìm kiếm đang gõ. modalRef là ref nên effect chỉ chạy 1 lần.
   const onCloseRef = useRef(onClose)
-  useEffect(() => { onCloseRef.current = onClose }, [onClose])
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
@@ -57,6 +60,8 @@ export function useBodyScrollLock() {
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    return () => {
+      document.body.style.overflow = prev
+    }
   }, [])
 }

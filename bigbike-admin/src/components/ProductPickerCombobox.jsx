@@ -58,7 +58,10 @@ export function ProductPickerCombobox({
       setActiveIndex((i) => (i <= 0 ? items.length - 1 : i - 1))
     } else if (e.key === 'Enter' && activeIndex >= 0) {
       const product = items[activeIndex]
-      if (product && !addedIds.includes(product.id)) { e.preventDefault(); onPick(product) }
+      if (product && !addedIds.includes(product.id)) {
+        e.preventDefault()
+        onPick(product)
+      }
     }
   }
 
@@ -83,9 +86,13 @@ export function ProductPickerCombobox({
       }
     >
       {error ? (
-        <p className="text-sm text-danger px-3 py-2" role="alert">{errorText}</p>
+        <p className="text-sm text-danger px-3 py-2" role="alert">
+          {errorText}
+        </p>
       ) : loading ? (
-        <p className="text-sm text-muted-foreground px-3 py-2" role="status">{loadingText}</p>
+        <p className="text-sm text-muted-foreground px-3 py-2" role="status">
+          {loadingText}
+        </p>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground px-3 py-2">{emptyText}</p>
       ) : (
@@ -100,7 +107,9 @@ export function ProductPickerCombobox({
                 role="option"
                 aria-selected={i === activeIndex}
                 aria-disabled={already || undefined}
-                onClick={() => { if (!already) onPick(product) }}
+                onClick={() => {
+                  if (!already) onPick(product)
+                }}
                 onMouseEnter={() => setActiveIndex(i)}
                 className={cn(
                   'flex items-center gap-3 w-full px-3 py-2 text-left text-sm',

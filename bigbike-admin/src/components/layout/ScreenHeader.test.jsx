@@ -30,18 +30,20 @@ describe('ScreenHeader responsive actions', () => {
     render(
       <ScreenHeader
         title="Sản phẩm"
-        actions={(
+        actions={
           <div className="flex gap-2">
             <input type="file" className="hidden" aria-label="Tệp nhập" />
             <Button>Nhập</Button>
             <Button>Thêm sản phẩm</Button>
           </div>
-        )}
+        }
       />,
     )
 
     expect(screen.queryByRole('button', { name: 'Nhập' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ }))
+    await user.click(
+      screen.getByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ }),
+    )
     expect(screen.getByRole('button', { name: 'Nhập' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Thêm sản phẩm' })).toBeInTheDocument()
   })
@@ -51,7 +53,9 @@ describe('ScreenHeader responsive actions', () => {
     render(<ScreenHeader title="Đơn hàng" actions={<Button>Xuất dữ liệu</Button>} />)
 
     expect(screen.getByRole('button', { name: 'Xuất dữ liệu' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('không đếm thao tác bị ẩn trong lớp bọc lồng nhau', () => {
@@ -59,18 +63,20 @@ describe('ScreenHeader responsive actions', () => {
     render(
       <ScreenHeader
         title="Đơn hàng"
-        actions={(
+        actions={
           <div className="flex gap-2">
             <div className="hidden">
               <Button>Chỉ desktop</Button>
             </div>
             <Button>Xuất dữ liệu</Button>
           </div>
-        )}
+        }
       />,
     )
 
     expect(screen.getByRole('button', { name: 'Xuất dữ liệu' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /common\.moreActions|Thêm thao tác|More actions/ }),
+    ).not.toBeInTheDocument()
   })
 })

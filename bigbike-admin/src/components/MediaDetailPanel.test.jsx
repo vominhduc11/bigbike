@@ -53,26 +53,32 @@ beforeEach(() => {
 
 describe('MediaDetailPanel reference links', () => {
   it('mở sản phẩm bằng route quản trị hợp lệ', () => {
-    mocks.refs = [{
-      type: 'PRODUCT',
-      id: 'prod_123',
-      name: 'Mũ bảo hiểm',
-      adminPath: '/products/prod_123',
-    }]
+    mocks.refs = [
+      {
+        type: 'PRODUCT',
+        id: 'prod_123',
+        name: 'Mũ bảo hiểm',
+        adminPath: '/products/prod_123',
+      },
+    ]
 
     renderPanel()
 
-    expect(screen.getByRole('link', { name: 'Mũ bảo hiểm' }))
-      .toHaveAttribute('href', '/admin/products/prod_123')
+    expect(screen.getByRole('link', { name: 'Mũ bảo hiểm' })).toHaveAttribute(
+      'href',
+      '/admin/products/prod_123',
+    )
   })
 
   it('hiển thị tham chiếu dạng chỉ đọc khi không xác định được route an toàn', () => {
-    mocks.refs = [{
-      type: 'PRODUCT',
-      id: '',
-      name: 'Sản phẩm đã xoá',
-      adminPath: '/products/prod_deleted',
-    }]
+    mocks.refs = [
+      {
+        type: 'PRODUCT',
+        id: '',
+        name: 'Sản phẩm đã xoá',
+        adminPath: '/products/prod_deleted',
+      },
+    ]
 
     renderPanel()
 
@@ -111,7 +117,12 @@ describe('MediaDetailPanel — tải file', () => {
 
 describe('MediaDetailPanel — xoá vĩnh viễn', () => {
   it('chỉ hiện khi ở Thùng rác và có quyền xoá vĩnh viễn', () => {
-    renderPanel({ canUpdate: true, canHardDelete: true, media: { status: 'DELETED' }, onHardDelete: vi.fn() })
+    renderPanel({
+      canUpdate: true,
+      canHardDelete: true,
+      media: { status: 'DELETED' },
+      onHardDelete: vi.fn(),
+    })
     expect(screen.getByRole('button', { name: /media\.hardDelete/ })).toBeInTheDocument()
   })
 
@@ -122,7 +133,12 @@ describe('MediaDetailPanel — xoá vĩnh viễn', () => {
   })
 
   it('không hiện khi ở Thùng rác nhưng không có quyền xoá vĩnh viễn', () => {
-    renderPanel({ canUpdate: true, canHardDelete: false, media: { status: 'DELETED' }, onRestore: vi.fn() })
+    renderPanel({
+      canUpdate: true,
+      canHardDelete: false,
+      media: { status: 'DELETED' },
+      onRestore: vi.fn(),
+    })
     expect(screen.queryByRole('button', { name: /media\.hardDelete/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /media\.restore/ })).toBeInTheDocument()
   })

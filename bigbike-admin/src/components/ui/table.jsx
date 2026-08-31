@@ -20,7 +20,10 @@ export function TableBody({ className, ...props }) {
 export function TableFooter({ className, ...props }) {
   return (
     <tfoot
-      className={cn('border-t border-border bg-surface-muted font-medium [&>tr]:last:border-b-0', className)}
+      className={cn(
+        'border-t border-border bg-surface-muted font-medium [&>tr]:last:border-b-0',
+        className,
+      )}
       {...props}
     />
   )
@@ -32,7 +35,7 @@ export const TableRow = forwardRef(function TableRow({ className, ...props }, re
       ref={ref}
       className={cn(
         'border-b border-border transition-colors hover:bg-surface-hover data-[state=selected]:bg-surface-selected',
-        className
+        className,
       )}
       {...props}
     />
@@ -45,7 +48,7 @@ export function TableHead({ className, scope = 'col', ...props }) {
       scope={scope}
       className={cn(
         'h-11 px-3 text-left align-middle text-xs font-semibold text-muted-foreground sticky top-0 z-10 bg-surface-muted [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-        className
+        className,
       )}
       {...props}
     />
@@ -57,7 +60,7 @@ export function TableCell({ className, ...props }) {
     <td
       className={cn(
         'px-3 py-3 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-        className
+        className,
       )}
       {...props}
     />
@@ -65,7 +68,5 @@ export function TableCell({ className, ...props }) {
 }
 
 export function TableCaption({ className, ...props }) {
-  return (
-    <caption className={cn('mt-4 text-sm text-muted-foreground', className)} {...props} />
-  )
+  return <caption className={cn('mt-4 text-sm text-muted-foreground', className)} {...props} />
 }

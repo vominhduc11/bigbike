@@ -12,27 +12,27 @@ import { ReviewInvitationOperations } from './ReviewInvitationOperations'
 
 vi.mock('react-i18next', async (importOriginal) => {
   const translate = (key, values = {}) => {
-      const messages = {
-        'settings.reviewInvitation.skipRefunded': 'Không gửi — đã hoàn tiền',
-        'settings.reviewInvitation.skipConfirm': `Xác nhận ${values.order ?? ''}`,
-        'settings.reviewInvitation.skipConfirmTitle': 'Xác nhận không gửi',
-        'settings.reviewInvitation.skipSuccess': 'Đã ghi nhận',
-        'settings.reviewInvitation.productProgress': `${values.reviewed ?? 0}/${values.total ?? 0} đã đánh giá`,
-        'settings.reviewInvitation.completedAt': `Hoàn tất: ${values.date ?? ''}`,
-        'settings.reviewInvitation.acceptedAt': `Đã tiếp nhận lúc ${values.date ?? ''}`,
-        'settings.reviewInvitation.status.PENDING': 'Đang chờ',
-        'settings.reviewInvitation.status.ALL': 'Tất cả',
-        'settings.reviewInvitation.status.SENDING': 'Đang gửi',
-        'settings.reviewInvitation.status.SENT': 'Đã gửi',
-        'settings.reviewInvitation.status.FAILED': 'Gửi lỗi',
-        'settings.reviewInvitation.status.UNCERTAIN': 'Chưa rõ kết quả',
-        'settings.reviewInvitation.status.SKIPPED': 'Không gửi',
-        'settings.reviewInvitation.optOutSourceEmail': 'Đường dẫn trong email',
-        'settings.reviewInvitation.dailyUsage': `${values.used ?? 0}/${values.limit ?? 0}`,
-        'pagination.items': `${values.count ?? 0} mục`,
-        'pagination.page': `Trang ${values.page ?? 1}/${values.total ?? 1}`,
-      }
-      return messages[key] ?? values.defaultValue ?? key
+    const messages = {
+      'settings.reviewInvitation.skipRefunded': 'Không gửi — đã hoàn tiền',
+      'settings.reviewInvitation.skipConfirm': `Xác nhận ${values.order ?? ''}`,
+      'settings.reviewInvitation.skipConfirmTitle': 'Xác nhận không gửi',
+      'settings.reviewInvitation.skipSuccess': 'Đã ghi nhận',
+      'settings.reviewInvitation.productProgress': `${values.reviewed ?? 0}/${values.total ?? 0} đã đánh giá`,
+      'settings.reviewInvitation.completedAt': `Hoàn tất: ${values.date ?? ''}`,
+      'settings.reviewInvitation.acceptedAt': `Đã tiếp nhận lúc ${values.date ?? ''}`,
+      'settings.reviewInvitation.status.PENDING': 'Đang chờ',
+      'settings.reviewInvitation.status.ALL': 'Tất cả',
+      'settings.reviewInvitation.status.SENDING': 'Đang gửi',
+      'settings.reviewInvitation.status.SENT': 'Đã gửi',
+      'settings.reviewInvitation.status.FAILED': 'Gửi lỗi',
+      'settings.reviewInvitation.status.UNCERTAIN': 'Chưa rõ kết quả',
+      'settings.reviewInvitation.status.SKIPPED': 'Không gửi',
+      'settings.reviewInvitation.optOutSourceEmail': 'Đường dẫn trong email',
+      'settings.reviewInvitation.dailyUsage': `${values.used ?? 0}/${values.limit ?? 0}`,
+      'pagination.items': `${values.count ?? 0} mục`,
+      'pagination.page': `Trang ${values.page ?? 1}/${values.total ?? 1}`,
+    }
+    return messages[key] ?? values.defaultValue ?? key
   }
   return {
     ...(await importOriginal()),
@@ -73,23 +73,27 @@ beforeEach(() => {
     delayDays: 7,
   })
   vi.mocked(fetchReviewInvitations).mockResolvedValue({
-    items: [{
-      id: 'delivery-1',
-      orderId: 'order-1',
-      orderNumber: 'BB-1001',
-      recipientEmail: 'rider@example.com',
-      locale: 'vi',
-      status: 'PENDING',
-      completedAt: '2026-08-31T02:00:00Z',
-      dueAt: '2026-09-07T02:00:00Z',
-      productCount: 2,
-      reviewedProductCount: 1,
-      createdAt: '2026-08-31T02:00:00Z',
-    }],
+    items: [
+      {
+        id: 'delivery-1',
+        orderId: 'order-1',
+        orderNumber: 'BB-1001',
+        recipientEmail: 'rider@example.com',
+        locale: 'vi',
+        status: 'PENDING',
+        completedAt: '2026-08-31T02:00:00Z',
+        dueAt: '2026-09-07T02:00:00Z',
+        productCount: 2,
+        reviewedProductCount: 1,
+        createdAt: '2026-08-31T02:00:00Z',
+      },
+    ],
     pagination,
   })
   vi.mocked(fetchReviewInvitationOptOuts).mockResolvedValue({
-    items: [{ email: 'stop@example.com', optedOutAt: '2026-09-01T02:00:00Z', source: 'EMAIL_LINK' }],
+    items: [
+      { email: 'stop@example.com', optedOutAt: '2026-09-01T02:00:00Z', source: 'EMAIL_LINK' },
+    ],
     pagination,
   })
   vi.mocked(skipReviewInvitationAsRefunded).mockResolvedValue({ skipped: true })

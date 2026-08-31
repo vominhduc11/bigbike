@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/layout/FormField'
 import { Modal } from '@/components/layout/Modal'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { showConfirm } from '../../lib/confirm'
 import { closePermissionDependencies, getRoleDisplayName } from './constants'
 
@@ -18,18 +24,21 @@ const ROLE_DESCRIPTION_MAX = 1000
 // Bỏ dấu tiếng Việt (á→a, đ→d) trước khi tạo mã ID, tránh ID xấu kiểu "QU_N_L" khi
 // tên là "Quản Lý". Chuẩn hoá NFD rồi loại dấu kết hợp + xử lý riêng đ/Đ.
 function stripDiacritics(v) {
-  return v
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
+  return v.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
 }
 
-export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sensitiveKeys = new Set(), catalog = [] }) {
+export function CreateRoleDialog({
+  onConfirm,
+  onCancel,
+  saving,
+  roles = [],
+  sensitiveKeys = new Set(),
+  catalog = [],
+}) {
   const { t } = useTranslation()
   const cloneableRoles = roles.filter((role) => role.id !== 'SUPER_ADMIN')
   const [name, setName] = useState('')
-  const [id, setId]   = useState('')
+  const [id, setId] = useState('')
   const [desc, setDesc] = useState('')
   const [idManual, setIdManual] = useState(false)
   const [showId, setShowId] = useState(false)
@@ -47,13 +56,23 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
   function handleNameChange(v) {
     setName(v)
     if (!idManual) {
-      setId(stripDiacritics(v).trim().toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, ''))
+      setId(
+        stripDiacritics(v)
+          .trim()
+          .toUpperCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^A-Z0-9_]/g, ''),
+      )
     }
   }
 
   function handleIdChange(v) {
     setIdManual(true)
-    setId(stripDiacritics(v).toUpperCase().replace(/[^A-Z0-9_]/g, ''))
+    setId(
+      stripDiacritics(v)
+        .toUpperCase()
+        .replace(/[^A-Z0-9_]/g, ''),
+    )
   }
 
   // Đóng khi form còn dữ liệu chưa lưu → xác nhận để không mất bản nháp.
@@ -61,7 +80,9 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
     const dirty = name.trim() || desc.trim() || cloneFromId !== CLONE_NONE
     if (dirty) {
       const ok = await showConfirm(
-        t('roles.createDiscardConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('roles.createDiscardConfirm', {
+          defaultValue: 'Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?',
+        }),
         t('roles.createDiscardTitle', { defaultValue: 'Bỏ tạo vai trò?' }),
       )
       if (!ok) return
@@ -78,14 +99,20 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
     }
     const sourceRole = cloneFromId !== CLONE_NONE ? roles.find((r) => r.id === cloneFromId) : null
     const permissions = sourceRole
-      ? [...closePermissionDependencies(sourceRole.permissions.filter(permission => permission !== '*'), catalog).permissions]
+      ? [
+          ...closePermissionDependencies(
+            sourceRole.permissions.filter((permission) => permission !== '*'),
+            catalog,
+          ).permissions,
+        ]
       : []
     const sensitiveCount = permissions.filter((permission) => sensitiveKeys.has(permission)).length
     if (sensitiveCount > 0) {
       const ok = await showConfirm(
         t('roles.createRoleCloneSensitiveConfirm', {
           count: sensitiveCount,
-          defaultValue: 'Vai trò được nhân bản có {{count}} quyền nhạy cảm. Kiểm tra kỹ trước khi tạo.',
+          defaultValue:
+            'Vai trò được nhân bản có {{count}} quyền nhạy cảm. Kiểm tra kỹ trước khi tạo.',
         }),
         t('roles.createRoleCloneSensitiveTitle', { defaultValue: 'Nhân bản quyền nhạy cảm?' }),
         { variant: 'danger' },
@@ -110,7 +137,13 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
           <Button variant="ghost" size="sm" type="button" onClick={attemptCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
-          <Button size="sm" type="submit" form="create-role-form" loading={saving} className="flex items-center gap-2">
+          <Button
+            size="sm"
+            type="submit"
+            form="create-role-form"
+            loading={saving}
+            className="flex items-center gap-2"
+          >
             {t('roles.createRoleBtn')}
           </Button>
         </>
@@ -127,8 +160,8 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
             id="create-role-name"
             type="text"
             value={name}
-            onChange={e => handleNameChange(e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
+            onChange={(e) => handleNameChange(e.target.value)}
+            onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
             placeholder={t('roles.createRoleNamePlaceholder')}
             maxLength={ROLE_NAME_MAX}
             autoFocus
@@ -162,8 +195,8 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
               id="create-role-id"
               type="text"
               value={id}
-              onChange={e => handleIdChange(e.target.value)}
-              onBlur={() => setTouched(prev => ({ ...prev, id: true }))}
+              onChange={(e) => handleIdChange(e.target.value)}
+              onBlur={() => setTouched((prev) => ({ ...prev, id: true }))}
               placeholder={t('roles.createRoleIdPlaceholder')}
               maxLength={50}
               className="font-mono"
@@ -176,7 +209,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
             id="create-role-desc"
             type="text"
             value={desc}
-            onChange={e => setDesc(e.target.value)}
+            onChange={(e) => setDesc(e.target.value)}
             placeholder={t('roles.createRoleDescPlaceholder')}
             maxLength={ROLE_DESCRIPTION_MAX}
           />
@@ -190,11 +223,15 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
             helper={t('roles.createRoleCloneHint')}
           >
             <Select value={cloneFromId} onValueChange={setCloneFromId}>
-              <SelectTrigger id="create-role-clone"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="create-role-clone">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={CLONE_NONE}>{t('roles.createRoleCloneNone')}</SelectItem>
                 {cloneableRoles.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{getRoleDisplayName(r, t)}</SelectItem>
+                  <SelectItem key={r.id} value={r.id}>
+                    {getRoleDisplayName(r, t)}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -202,7 +239,8 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [], sens
         )}
 
         <p className="m-0 text-xs text-muted-foreground">
-          <span className="text-danger">*</span> {t('common.required', { defaultValue: 'Bắt buộc' })}
+          <span className="text-danger">*</span>{' '}
+          {t('common.required', { defaultValue: 'Bắt buộc' })}
         </p>
       </form>
     </Modal>

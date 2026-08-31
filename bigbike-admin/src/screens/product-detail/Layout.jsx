@@ -16,9 +16,11 @@ function useRoleLabel(role, t) {
   const cfg = useContext(AssignmentConfigContext)
   const match = cfg?.roles?.find((r) => r.id === role)
   if (match) return match.name
-  if (role === 'content') return t('products.detail.assign.roleContent', { defaultValue: 'Content' })
+  if (role === 'content')
+    return t('products.detail.assign.roleContent', { defaultValue: 'Content' })
   if (role === 'seo') return t('products.detail.assign.roleSeo', { defaultValue: 'Tìm kiếm' })
-  if (role === 'manager') return t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
+  if (role === 'manager')
+    return t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
   return ''
 }
 
@@ -55,7 +57,9 @@ export function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
           <ImageOff size={16} />
         </div>
       )}
-      <span className="bb-related-title" title={chip.name}>{chip.name}</span>
+      <span className="bb-related-title" title={chip.name}>
+        {chip.name}
+      </span>
       {canEdit && (
         <Button
           variant="unstyled"

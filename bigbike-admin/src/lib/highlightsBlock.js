@@ -25,15 +25,15 @@ function escapeHtml(value) {
 }
 
 function topLevelElements(root, selector) {
-  return [...root.querySelectorAll(selector)].filter((element) => !element.parentElement?.closest(selector))
+  return [...root.querySelectorAll(selector)].filter(
+    (element) => !element.parentElement?.closest(selector),
+  )
 }
 
 /** items[] → một danh sách HTML (rỗng nếu không có mục nào có nội dung). */
 export function serializeHighlightsToHtml(items, isEn = false) {
   const field = fieldFor(isEn)
-  const contents = (items || [])
-    .map((item) => item?.[field] || '')
-    .filter(hasContent)
+  const contents = (items || []).map((item) => item?.[field] || '').filter(hasContent)
 
   if (contents.length === 0) return ''
   return `<ul class="bb-highlights-list">${contents.map((content) => `<li>${content}</li>`).join('')}</ul>`
@@ -42,7 +42,7 @@ export function serializeHighlightsToHtml(items, isEn = false) {
 /** HTML → mảng phần HTML bên trong từng mục; nhận cả list/paragraph thông thường. */
 export function parseHighlightsResult(html) {
   const pair = parseHighlightsPairResult(html)
-  const items = pair.positive?.length ? pair.positive : (pair.negative || [])
+  const items = pair.positive?.length ? pair.positive : pair.negative || []
   return makeHtmlImportResult({
     items,
     skippedCount: pair.skippedCount,
@@ -64,9 +64,9 @@ export function mergeHighlightsHtmlIntoItems(items, html, isEn = false) {
   if (!contents.length) return current
 
   if (isEn) {
-    return current.map((item, index) => (
-      index < contents.length ? { ...item, contentEn: contents[index] } : item
-    ))
+    return current.map((item, index) =>
+      index < contents.length ? { ...item, contentEn: contents[index] } : item,
+    )
   }
 
   return contents.map((content, index) => {
@@ -84,7 +84,12 @@ export function mergeHighlightsHtmlIntoItems(items, html, isEn = false) {
  * positiveNotes[] + negativeNotes[] → MỘT khối HTML duy nhất, bọc 2 vùng riêng để phân biệt
  * ưu/nhược khi soạn hoặc dán ngược lại. Rỗng nếu cả 2 bên đều không có nội dung.
  */
-export function serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn = false, labels = {}) {
+export function serializeHighlightsPairToHtml(
+  positiveNotes,
+  negativeNotes,
+  isEn = false,
+  labels = {},
+) {
   const prosLabel = escapeHtml(labels.prosLabel || 'Ưu điểm')
   const consLabel = escapeHtml(labels.consLabel || 'Nhược điểm')
   const prosList = serializeHighlightsToHtml(positiveNotes, isEn)
@@ -141,7 +146,11 @@ function parseGenericPair(doc) {
     groups.positive = fallback.items
     presentGroups.positive = true
   }
-  return { ...groups, presentGroups, skippedCount: fallback.skippedCount + (fallback.items.length ? 0 : 1) }
+  return {
+    ...groups,
+    presentGroups,
+    skippedCount: fallback.skippedCount + (fallback.items.length ? 0 : 1),
+  }
 }
 
 /** Detailed parser result for the shared non-destructive HTML import flow. */
@@ -218,9 +227,9 @@ export function mergeHighlightsPairHtmlIntoItems(positiveItems, negativeItems, h
     const current = Array.isArray(items) ? items : []
     if (!present) return current
     if (isEn) {
-      return current.map((item, index) => (
-        index < contents.length ? { ...item, contentEn: contents[index] } : item
-      ))
+      return current.map((item, index) =>
+        index < contents.length ? { ...item, contentEn: contents[index] } : item,
+      )
     }
     return contents.map((content, index) => {
       const existing = current[index] || { _key: generateId(), contentEn: '' }

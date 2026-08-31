@@ -20,10 +20,21 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
-import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
+import {
+  exportCustomersCsv,
+  fetchCustomers,
+  fetchCustomerSummary,
+  updateCustomerStatus,
+} from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -89,7 +100,11 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   const state = useAdminList(['customers', query], () => fetchCustomers(query))
 
-  const { data: summary, isError: summaryError, refetch: refetchSummary } = useQuery({
+  const {
+    data: summary,
+    isError: summaryError,
+    refetch: refetchSummary,
+  } = useQuery({
     queryKey: ['customer-summary'],
     queryFn: fetchCustomerSummary,
     staleTime: 60_000,
@@ -107,7 +122,11 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     syncQueryToUrl(query, INITIAL_QUERY)
     // T9: lưu lại query string đang áp dụng để nút "Quay lại danh sách" ở trang
     // chi tiết không làm mất filter/trang.
-    try { sessionStorage.setItem('customers:listQuery', window.location.search) } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem('customers:listQuery', window.location.search)
+    } catch {
+      /* ignore */
+    }
   }, [query])
 
   async function handleStatusChange(customer, value) {
@@ -127,11 +146,14 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     const queryKey = ['customers', query]
     await queryClient.cancelQueries({ queryKey })
     const previous = queryClient.getQueryData(queryKey)
-    queryClient.setQueryData(queryKey, (old) => (
+    queryClient.setQueryData(queryKey, (old) =>
       old?.items
-        ? { ...old, items: old.items.map((c) => (c.id === customer.id ? { ...c, status: value } : c)) }
-        : old
-    ))
+        ? {
+            ...old,
+            items: old.items.map((c) => (c.id === customer.id ? { ...c, status: value } : c)),
+          }
+        : old,
+    )
     try {
       await updateCustomerStatus(customer.id, value, reason)
       queryClient.invalidateQueries({ queryKey: ['customers'] })
@@ -152,7 +174,10 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   }
 
   useEffect(() => {
-    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
@@ -180,17 +205,24 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     setQuery((previous) => ({ ...previous, page: lastPage }))
   }, [pagination, query.page, state.isFetching, state.status])
 
-  const isFiltered = !!query.search
-    || query.status !== 'ALL'
-    || query.synthetic !== 'ALL'
-    || query.emailVerified !== 'ALL'
+  const isFiltered =
+    !!query.search ||
+    query.status !== 'ALL' ||
+    query.synthetic !== 'ALL' ||
+    query.emailVerified !== 'ALL'
 
   const activeFilterChips = []
   if (query.search) {
     activeFilterChips.push({
       key: 'search',
-      label: t('customers.filterChipSearch', { value: query.search, defaultValue: `Tìm: "{{value}}"` }),
-      removeLabel: t('customers.removeFilter', { filter: t('common.search'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      label: t('customers.filterChipSearch', {
+        value: query.search,
+        defaultValue: `Tìm: "{{value}}"`,
+      }),
+      removeLabel: t('customers.removeFilter', {
+        filter: t('common.search'),
+        defaultValue: `Bỏ bộ lọc {{filter}}`,
+      }),
       onRemove: () => {
         setSearchInput('')
         updateQuery({ search: '' }, { resetPage: true })
@@ -204,7 +236,10 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         value: t(`status.customer.${query.status}`, { defaultValue: t('common.unknown') }),
         defaultValue: `Trạng thái: {{value}}`,
       }),
-      removeLabel: t('customers.removeFilter', { filter: t('customers.filterStatus'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      removeLabel: t('customers.removeFilter', {
+        filter: t('customers.filterStatus'),
+        defaultValue: `Bỏ bộ lọc {{filter}}`,
+      }),
       onRemove: () => updateQuery({ status: 'ALL' }, { resetPage: true }),
     })
   }
@@ -212,10 +247,14 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     activeFilterChips.push({
       key: 'synthetic',
       label: t('customers.filterChipSource', {
-        value: query.synthetic === 'true' ? t('customers.sourceSynthetic') : t('customers.sourceReal'),
+        value:
+          query.synthetic === 'true' ? t('customers.sourceSynthetic') : t('customers.sourceReal'),
         defaultValue: `Nguồn: {{value}}`,
       }),
-      removeLabel: t('customers.removeFilter', { filter: t('customers.filterSource'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      removeLabel: t('customers.removeFilter', {
+        filter: t('customers.filterSource'),
+        defaultValue: `Bỏ bộ lọc {{filter}}`,
+      }),
       onRemove: () => updateQuery({ synthetic: 'ALL' }, { resetPage: true }),
     })
   }
@@ -223,9 +262,10 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     activeFilterChips.push({
       key: 'emailVerified',
       label: t('customers.filterChipEmailVerified', {
-        value: query.emailVerified === 'true'
-          ? t('customers.emailVerified')
-          : t('customers.emailNotVerified'),
+        value:
+          query.emailVerified === 'true'
+            ? t('customers.emailVerified')
+            : t('customers.emailNotVerified'),
       }),
       removeLabel: t('customers.removeFilter', {
         filter: t('customers.filterEmailVerified'),
@@ -253,7 +293,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         </SelectTrigger>
         <SelectContent onClick={(e) => e.stopPropagation()}>
           {CUSTOMER_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: t('common.unknown') })}</SelectItem>
+            <SelectItem key={s} value={s}>
+              {t(`status.customer.${s}`, { defaultValue: t('common.unknown') })}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -286,18 +328,44 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       label: t('customers.colStatus'),
       // Trạng thái ngoài nhóm set-được (vd PENDING "chờ kích hoạt") → huy hiệu chỉ-đọc,
       // KHÔNG để Select trống trông như lỗi (audit P0-5).
-      render: (c) => (canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status))
-        ? renderStatusSelect(c)
-        : <CustomerStatusBadge value={c.status} />,
+      render: (c) =>
+        canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status) ? (
+          renderStatusSelect(c)
+        ) : (
+          <CustomerStatusBadge value={c.status} />
+        ),
     },
-    { key: 'orderCount', label: t('customers.colOrders'), align: 'right', render: (c) => c.orderCount },
-    { key: 'totalSpent', label: t('customers.colSpent'), align: 'right', render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span> },
-    { key: 'createdAt', label: t('customers.colRegistered'), render: (c) => <span className="bb-muted text-xs">{formatDateTime(c.createdAt)}</span> },
-    { key: 'source', label: t('customers.colSource'), render: (c) => <StatusBadge type="source" status={c.isSynthetic} /> },
+    {
+      key: 'orderCount',
+      label: t('customers.colOrders'),
+      align: 'right',
+      render: (c) => c.orderCount,
+    },
+    {
+      key: 'totalSpent',
+      label: t('customers.colSpent'),
+      align: 'right',
+      render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span>,
+    },
+    {
+      key: 'createdAt',
+      label: t('customers.colRegistered'),
+      render: (c) => <span className="bb-muted text-xs">{formatDateTime(c.createdAt)}</span>,
+    },
+    {
+      key: 'source',
+      label: t('customers.colSource'),
+      render: (c) => <StatusBadge type="source" status={c.isSynthetic} />,
+    },
   ]
 
   // T7: cho phép ẩn/hiện cột trên bảng khách hàng, lưu lựa chọn theo trình duyệt.
-  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:customers')
+  const {
+    visibleColumns,
+    hiddenKeys,
+    toggle: toggleColumn,
+    allColumns,
+  } = useColumnVisibility(columns, 'columns:customers')
 
   const mobileCard = (c) => ({
     title: formatText(c.fullName, c.email),
@@ -308,32 +376,38 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       { label: t('customers.colOrders'), value: c.orderCount },
       { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
       { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
-      { label: t('customers.colSource'), value: <StatusBadge type="source" status={c.isSynthetic} /> },
+      {
+        label: t('customers.colSource'),
+        value: <StatusBadge type="source" status={c.isSynthetic} />,
+      },
     ],
     // Parity với bảng desktop: cho đổi nhanh trạng thái ngay trên thẻ mobile (đặt ở
     // hàng thao tác, nằm ngoài vùng bấm mở chi tiết để không lồng nút).
-    actions: (canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status)) ? (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">{t('customers.colStatus')}</span>
-        {renderStatusSelect(c)}
-      </div>
-    ) : undefined,
+    actions:
+      canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status) ? (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{t('customers.colStatus')}</span>
+          {renderStatusSelect(c)}
+        </div>
+      ) : undefined,
     onClick: () => navigate(`/admin/customers/${c.id}`),
   })
   const activeRegisteredFilter = query.status === 'ACTIVE' && query.synthetic === 'false'
-  const toggleActiveRegisteredFilter = () => updateQuery(
-    activeRegisteredFilter
-      ? { status: 'ALL', synthetic: 'ALL' }
-      : { status: 'ACTIVE', synthetic: 'false' },
-    { resetPage: true },
-  )
+  const toggleActiveRegisteredFilter = () =>
+    updateQuery(
+      activeRegisteredFilter
+        ? { status: 'ALL', synthetic: 'ALL' }
+        : { status: 'ACTIVE', synthetic: 'false' },
+      { resetPage: true },
+    )
 
   return (
     <Screen>
       <ScreenHeader
         group="sales"
         title={t('customers.title')}
-        actions={canExport ? (
+        actions={
+          canExport ? (
             <ExportButton
               onExport={async () => {
                 try {
@@ -350,11 +424,15 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             >
               {t('common.exportCsv', { defaultValue: 'Xuất dữ liệu' })}
             </ExportButton>
-        ) : null}
+          ) : null
+        }
       />
 
       {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentCustomerItems} onSelect={(item) => navigate(`/admin/customers/${item.id}`)} />
+      <RecentItemsChips
+        items={recentCustomerItems}
+        onSelect={(item) => navigate(`/admin/customers/${item.id}`)}
+      />
 
       <Alert tone="info" size="sm" className="mb-4" role="status">
         {t('customers.historyScopeDisclosure')}
@@ -393,7 +471,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             tone="success"
             clickable
             active={activeRegisteredFilter}
-            ariaLabel={t('customers.kpi.activeFilterAria', { defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động' })}
+            ariaLabel={t('customers.kpi.activeFilterAria', {
+              defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động',
+            })}
             onClick={toggleActiveRegisteredFilter}
             detail={t('customers.kpi.activeHint')}
           />
@@ -403,24 +483,22 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         <StatePanel
           tone="danger"
           title={t('customers.summaryError', { defaultValue: 'Không tải được số liệu tổng quan' })}
-          description={t('customers.summaryErrorDesc', { defaultValue: 'Số liệu khách hàng tạm thời không tải được. Vui lòng thử lại.' })}
+          description={t('customers.summaryErrorDesc', {
+            defaultValue: 'Số liệu khách hàng tạm thời không tải được. Vui lòng thử lại.',
+          })}
           actionLabel={t('common.retry')}
           onAction={() => refetchSummary()}
         />
       ) : (
         <div className="bb-kpi-grid bb-kpi-grid-4">
           {[...Array(4)].map((_, i) => (
-              <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
+            <ScreenSkeleton key={i} variant="cards" count={1} showHeader={false} />
           ))}
         </div>
       )}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
-      {!canUpdate ? (
-        <ReadOnlyBanner
-          warning={t('customers.readOnlyHint')}
-        />
-      ) : null}
+      {!canUpdate ? <ReadOnlyBanner warning={t('customers.readOnlyHint')} /> : null}
 
       <ResponsiveFilterBar
         ariaLabel={t('customers.filtersAria')}
@@ -474,7 +552,11 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
           className="min-h-11"
         />
-        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
+        <ColumnVisibilityToggle
+          allColumns={allColumns}
+          hiddenKeys={hiddenKeys}
+          onToggle={toggleColumn}
+        />
         {state.isFetching && state.status === 'success' ? (
           <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
             {t('customers.refreshing')}
@@ -492,31 +574,46 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       />
 
       {state.status === 'error' && (
-        <StatePanel tone="danger" title={t('customers.loadError')} description={state.error}
-          actionLabel={t('common.retry')} onAction={() => state.refetch()} />
+        <StatePanel
+          tone="danger"
+          title={t('customers.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry')}
+          onAction={() => state.refetch()}
+        />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral"
-          title={isFiltered ? t('customers.emptyFiltered', { defaultValue: t('customers.empty') }) : t('customers.empty')}
-          description={isFiltered ? t('customers.emptyFilteredDesc', { defaultValue: t('customers.emptyDesc') }) : t('customers.emptyDesc')}
+        <StatePanel
+          tone="neutral"
+          title={
+            isFiltered
+              ? t('customers.emptyFiltered', { defaultValue: t('customers.empty') })
+              : t('customers.empty')
+          }
+          description={
+            isFiltered
+              ? t('customers.emptyFilteredDesc', { defaultValue: t('customers.emptyDesc') })
+              : t('customers.emptyDesc')
+          }
           actionLabel={isFiltered ? t('common.resetFilters') : undefined}
-          onAction={isFiltered ? resetFilters : undefined} />
+          onAction={isFiltered ? resetFilters : undefined}
+        />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <DetailSection noPadding>
-            <AdminTable
-              caption={t('customers.tableCaption')}
-              columns={visibleColumns}
-              rows={items}
-              loading={state.status === 'loading'}
-              pageSize={query.pageSize}
-              onRowClick={(c) => navigate(`/admin/customers/${c.id}`)}
-              rowHref={(c) => `/admin/customers/${c.id}`}
-              rowClassName={(customer) => customerRowAccent(customer.status)}
-              mobileCard={mobileCard}
-              densityKey="customers"
-            />
+          <AdminTable
+            caption={t('customers.tableCaption')}
+            columns={visibleColumns}
+            rows={items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
+            onRowClick={(c) => navigate(`/admin/customers/${c.id}`)}
+            rowHref={(c) => `/admin/customers/${c.id}`}
+            rowClassName={(customer) => customerRowAccent(customer.status)}
+            mobileCard={mobileCard}
+            densityKey="customers"
+          />
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}
@@ -529,12 +626,20 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
       {reasonModal && (
         <CustomerStatusReasonModal
-          title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
+          title={t('customers.detail.statusConfirmTitle', {
+            defaultValue: 'Đổi trạng thái tài khoản',
+          })}
           description={t('customers.detail.statusConfirmBody', {
-            status: t(`status.customer.${reasonModal.value}`, { defaultValue: t('common.unknown') }),
+            status: t(`status.customer.${reasonModal.value}`, {
+              defaultValue: t('common.unknown'),
+            }),
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
-          confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}
+          confirmVariant={
+            reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED'
+              ? 'danger'
+              : 'default'
+          }
           loading={!!statusSaving[reasonModal.customer.id]}
           onConfirm={async (reason) => {
             const ok = await applyStatusChange(reasonModal.customer, reasonModal.value, reason)

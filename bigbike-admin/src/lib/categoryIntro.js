@@ -3,7 +3,10 @@ import DOMPurify from 'dompurify'
 
 // `introContent` is HTML-first. These selectors describe only the fields the
 // form knows how to edit; every other node remains opaque and is preserved.
-const FAQ_HEAD = { vi: (n) => `${n} câu hỏi thường gặp nhất`, en: (n) => `${n} most common questions` }
+const FAQ_HEAD = {
+  vi: (n) => `${n} câu hỏi thường gặp nhất`,
+  en: (n) => `${n} most common questions`,
+}
 const CTA_ARIA = { vi: 'Nhắn Zalo tư vấn', en: 'Message Zalo for advice' }
 const INLINE_TAGS = new Set(['A', 'B', 'BR', 'EM', 'I', 'STRONG'])
 const INLINE_ATTRS = new Set(['href', 'rel', 'target', 'title'])
@@ -27,8 +30,10 @@ const SELECTORS = {
   intro: '.bb-ci-body, [data-bb-intro="intro"], [data-intro-field="intro"]',
   brandContainer: '.bb-ci-pills, [data-bb-intro="brands"], [data-intro-field="brands"]',
   brand: '.bb-ci-pill, [data-bb-brand], [data-intro-field="brand"]',
-  faqQuestion: '.bb-ci-qt, .bb-faq-question, [data-bb-faq-question], [data-intro-field="faq-question"], [itemprop="name"]',
-  faqAnswer: '.bb-ci-at, .bb-faq-answer, [data-bb-faq-answer], [data-intro-field="faq-answer"], [itemprop="text"]',
+  faqQuestion:
+    '.bb-ci-qt, .bb-faq-question, [data-bb-faq-question], [data-intro-field="faq-question"], [itemprop="name"]',
+  faqAnswer:
+    '.bb-ci-at, .bb-faq-answer, [data-bb-faq-answer], [data-intro-field="faq-answer"], [itemprop="text"]',
   faqItem: '.bb-ci-faq, .bb-faq-item, [data-bb-faq-item]',
   faqContainer: '.bb-ci-b, .bb-faqs-list, [data-bb-intro="faqs"]',
   faqHead: '.bb-ci-b-head, [data-bb-intro="faq-count"]',
@@ -38,7 +43,10 @@ const SELECTORS = {
 }
 
 function escapeHtml(value) {
-  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 function escapeAttr(value) {
@@ -83,9 +91,13 @@ function findRoot(doc) {
 
   // A few imported rows lost the root class but retained managed markers. Do
   // not treat arbitrary HTML as structured merely because it contains a <p>.
-  return Array.from(doc.body.children).find((candidate) =>
-    candidate.querySelector?.(`${SELECTORS.eyebrow}, ${SELECTORS.heading}, ${SELECTORS.intro}, ${SELECTORS.brand}, ${SELECTORS.faqQuestion}, ${SELECTORS.faqAnswer}, ${SELECTORS.ctaText}, ${SELECTORS.ctaButton}`),
-  ) || null
+  return (
+    Array.from(doc.body.children).find((candidate) =>
+      candidate.querySelector?.(
+        `${SELECTORS.eyebrow}, ${SELECTORS.heading}, ${SELECTORS.intro}, ${SELECTORS.brand}, ${SELECTORS.faqQuestion}, ${SELECTORS.faqAnswer}, ${SELECTORS.ctaText}, ${SELECTORS.ctaButton}`,
+      ),
+    ) || null
+  )
 }
 
 function findManagedSlots(root) {
@@ -109,9 +121,16 @@ function findManagedSlots(root) {
   }
 
   const heading = first(root, SELECTORS.heading) || first(root, 'h1, h2')
-  const intro = first(root, SELECTORS.intro) || Array.from(root.querySelectorAll('p')).find((element) => !element.closest(SELECTORS.faqItem) && !element.closest(SELECTORS.cta)) || null
+  const intro =
+    first(root, SELECTORS.intro) ||
+    Array.from(root.querySelectorAll('p')).find(
+      (element) => !element.closest(SELECTORS.faqItem) && !element.closest(SELECTORS.cta),
+    ) ||
+    null
   const brandContainer = first(root, SELECTORS.brandContainer)
-  const brands = all(brandContainer || root, SELECTORS.brand).filter((element) => !element.closest(SELECTORS.faqItem))
+  const brands = all(brandContainer || root, SELECTORS.brand).filter(
+    (element) => !element.closest(SELECTORS.faqItem),
+  )
   const questions = all(root, SELECTORS.faqQuestion)
   const answers = all(root, SELECTORS.faqAnswer)
   const faqPairs = collectFaqPairs(questions, answers)
@@ -139,8 +158,13 @@ function findManagedSlots(root) {
 
 function hasManagedContent(slots) {
   return Boolean(
-    slots.eyebrow || slots.heading || slots.intro || slots.brands.length ||
-    slots.faqPairs.length || slots.ctaText || slots.ctaButton,
+    slots.eyebrow ||
+    slots.heading ||
+    slots.intro ||
+    slots.brands.length ||
+    slots.faqPairs.length ||
+    slots.ctaText ||
+    slots.ctaButton,
   )
 }
 
@@ -171,7 +195,8 @@ export function isSafeCategoryIntroInlineHtml(value) {
     return [wrapper, ...Array.from(wrapper.querySelectorAll('*'))].every((element) => {
       if (element === wrapper) return true
       if (!INLINE_TAGS.has(element.tagName)) return false
-      if (Array.from(element.attributes).some((attribute) => !INLINE_ATTRS.has(attribute.name))) return false
+      if (Array.from(element.attributes).some((attribute) => !INLINE_ATTRS.has(attribute.name)))
+        return false
       if (element.tagName === 'A') {
         const href = (element.getAttribute('href') || '').trim()
         if (!href || !SAFE_LINK_RE.test(href)) return false
@@ -284,7 +309,8 @@ function patchSimple(slots, root, field, value) {
   const clean = String(value ?? '').trim()
   const inline = field === 'intro'
   const tag = field === 'heading' ? 'h2' : field === 'eyebrow' ? 'span' : 'p'
-  const className = field === 'heading' ? 'bb-ci-h2' : field === 'eyebrow' ? 'bb-ci-eyebrow' : 'bb-ci-body'
+  const className =
+    field === 'heading' ? 'bb-ci-h2' : field === 'eyebrow' ? 'bb-ci-eyebrow' : 'bb-ci-body'
   let target = slots[field]
   if (!target) {
     const section = ensureIntroSection(root, 'bb-ci-a', '.bb-ci-b, .bb-ci-c')
@@ -295,7 +321,9 @@ function patchSimple(slots, root, field, value) {
 }
 
 function patchBrands(slots, root, brands) {
-  const values = (Array.isArray(brands) ? brands : []).map((brand) => String(brand || '').trim()).filter(Boolean)
+  const values = (Array.isArray(brands) ? brands : [])
+    .map((brand) => String(brand || '').trim())
+    .filter(Boolean)
   let container = slots.brandContainer
   if (!container && values.length) {
     const section = ensureIntroSection(root, 'bb-ci-a', '.bb-ci-b, .bb-ci-c')
@@ -305,7 +333,8 @@ function patchBrands(slots, root, brands) {
   const current = all(container, SELECTORS.brand)
   current.slice(values.length).forEach((element) => element.remove())
   values.forEach((value, index) => {
-    const target = current[index] || ensureElement(root.ownerDocument, container, 'span', 'bb-ci-pill')
+    const target =
+      current[index] || ensureElement(root.ownerDocument, container, 'span', 'bb-ci-pill')
     target.textContent = value
   })
   if (!values.length && !container.children.length) container.remove()
@@ -322,10 +351,14 @@ function removeEmptyAncestors(start, stopAt) {
 
 function patchFaqs(slots, root, faqs, lang) {
   const values = (Array.isArray(faqs) ? faqs : [])
-    .map((faq) => ({ question: String(faq?.question || '').trim(), answer: String(faq?.answer || '').trim() }))
+    .map((faq) => ({
+      question: String(faq?.question || '').trim(),
+      answer: String(faq?.answer || '').trim(),
+    }))
     .filter((faq) => faq.question)
   let container = slots.faqContainer
-  if (!container && values.length) container = ensureElement(root.ownerDocument, root, 'div', 'bb-ci-b', '', '.bb-ci-c')
+  if (!container && values.length)
+    container = ensureElement(root.ownerDocument, root, 'div', 'bb-ci-b', '', '.bb-ci-c')
   if (!container) return
 
   const existingPairs = slots.faqPairs
@@ -360,12 +393,14 @@ function patchFaqs(slots, root, faqs, lang) {
   }
 
   let head = first(container, SELECTORS.faqHead)
-  if (!head && values.length) head = ensureElement(root.ownerDocument, container, 'span', 'bb-ci-b-head')
+  if (!head && values.length)
+    head = ensureElement(root.ownerDocument, container, 'span', 'bb-ci-b-head')
   if (head) {
     head.textContent = values.length ? FAQ_HEAD[lang === 'en' ? 'en' : 'vi'](values.length) : ''
     if (!values.length) head.remove()
   }
-  if (!values.length && !container.textContent.trim() && !container.children.length) container.remove()
+  if (!values.length && !container.textContent.trim() && !container.children.length)
+    container.remove()
 }
 
 function patchCta(slots, root, field, value, lang) {
@@ -414,8 +449,10 @@ export function patchIntroHtml(html, change, lang = 'vi') {
 
   if (field === 'brands') patchBrands(slots, root, change.value)
   else if (field === 'faqs') patchFaqs(slots, root, change.value, lang)
-  else if (field === 'ctaText' || field === 'ctaLabel' || field === 'ctaUrl') patchCta(slots, root, field, change.value, lang)
-  else if (field === 'eyebrow' || field === 'heading' || field === 'intro') patchSimple(slots, root, field, change.value)
+  else if (field === 'ctaText' || field === 'ctaLabel' || field === 'ctaUrl')
+    patchCta(slots, root, field, change.value, lang)
+  else if (field === 'eyebrow' || field === 'heading' || field === 'intro')
+    patchSimple(slots, root, field, change.value)
 
   return doc.body.innerHTML
 }
@@ -435,27 +472,45 @@ export function serializeIntro(model, lang) {
   const ctaLabel = (model.ctaLabel || '').trim()
   const ctaUrl = (model.ctaUrl || '').trim()
 
-  if (!eyebrow && !heading && !intro && !brands.length && !faqs.length && !ctaText && !ctaLabel && !ctaUrl) return ''
+  if (
+    !eyebrow &&
+    !heading &&
+    !intro &&
+    !brands.length &&
+    !faqs.length &&
+    !ctaText &&
+    !ctaLabel &&
+    !ctaUrl
+  )
+    return ''
 
   const aParts = []
   if (eyebrow) aParts.push(`    <span class="bb-ci-eyebrow">${escapeHtml(eyebrow)}</span>`)
   if (heading) aParts.push(`    <h2 class="bb-ci-h2">${escapeHtml(heading)}</h2>`)
   if (intro) aParts.push(`    <p class="bb-ci-body">${safeInline(intro)}</p>`)
   if (brands.length) {
-    const pills = brands.map((brand) => `<span class="bb-ci-pill">${escapeHtml(brand)}</span>`).join('')
+    const pills = brands
+      .map((brand) => `<span class="bb-ci-pill">${escapeHtml(brand)}</span>`)
+      .join('')
     aParts.push(`    <div class="bb-ci-pills">\n      ${pills}\n    </div>`)
   }
   const blockA = aParts.length ? `  <div class="bb-ci-a">\n${aParts.join('\n')}\n  </div>` : ''
   const blockB = faqs.length
-    ? `  <div class="bb-ci-b">\n    <span class="bb-ci-b-head">${escapeHtml(FAQ_HEAD[L](faqs.length))}</span>\n${faqs.map((faq) =>
-        `    <div class="bb-ci-faq">\n      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><h3 class="bb-ci-qt">${escapeHtml(faq.question)}</h3></div>\n      <div><p class="bb-ci-at">${safeInline(faq.answer)}</p></div>\n    </div>`).join('\n')}\n  </div>`
+    ? `  <div class="bb-ci-b">\n    <span class="bb-ci-b-head">${escapeHtml(FAQ_HEAD[L](faqs.length))}</span>\n${faqs
+        .map(
+          (faq) =>
+            `    <div class="bb-ci-faq">\n      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><h3 class="bb-ci-qt">${escapeHtml(faq.question)}</h3></div>\n      <div><p class="bb-ci-at">${safeInline(faq.answer)}</p></div>\n    </div>`,
+        )
+        .join('\n')}\n  </div>`
     : ''
-  const button = ctaLabel || ctaUrl
-    ? `    <a class="bb-ci-btn" href="${escapeAttr(ctaUrl)}" target="_blank" rel="noopener" aria-label="${escapeAttr(CTA_ARIA[L])}">${ZALO_SVG}${escapeHtml(ctaLabel)}</a>\n`
-    : ''
-  const blockC = ctaText || ctaLabel || ctaUrl
-    ? `  <div class="bb-ci-c">\n    <span class="bb-ci-ct">${escapeHtml(ctaText)}</span>\n${button}  </div>`
-    : ''
+  const button =
+    ctaLabel || ctaUrl
+      ? `    <a class="bb-ci-btn" href="${escapeAttr(ctaUrl)}" target="_blank" rel="noopener" aria-label="${escapeAttr(CTA_ARIA[L])}">${ZALO_SVG}${escapeHtml(ctaLabel)}</a>\n`
+      : ''
+  const blockC =
+    ctaText || ctaLabel || ctaUrl
+      ? `  <div class="bb-ci-c">\n    <span class="bb-ci-ct">${escapeHtml(ctaText)}</span>\n${button}  </div>`
+      : ''
 
   return `<div class="bb-cat-intro" lang="${L}">\n${[blockA, blockB, blockC].filter(Boolean).join('\n')}\n</div>`
 }

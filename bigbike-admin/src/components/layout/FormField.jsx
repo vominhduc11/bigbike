@@ -14,7 +14,18 @@ import { HelpTooltip } from '@/components/HelpTooltip'
  * `warning` là cảnh báo MỀM: giá trị hợp lệ, vẫn lưu được, chỉ nhắc admin xem lại — khác `error`
  * (chặn lưu, viền đỏ, aria-invalid). Thứ tự ưu tiên hiển thị: error > warning > helper.
  */
-export function FormField({ label, required, helper, error, warning, htmlFor, count, countWarn, full, children }) {
+export function FormField({
+  label,
+  required,
+  helper,
+  error,
+  warning,
+  htmlFor,
+  count,
+  countWarn,
+  full,
+  children,
+}) {
   const autoId = useId()
   // Nếu control con tự đặt id, ưu tiên id đó để htmlFor của Label khớp đúng control
   // (tránh Label trỏ vào autoId trong khi control mang id riêng).
@@ -44,13 +55,22 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
             <div className="flex items-center gap-1">
               <Label htmlFor={fieldId} className="flex items-center gap-1">
                 {label}
-                {required ? <span className="text-danger ml-1" aria-hidden="true">*</span> : null}
+                {required ? (
+                  <span className="text-danger ml-1" aria-hidden="true">
+                    *
+                  </span>
+                ) : null}
               </Label>
               {showLongHelper ? <HelpTooltip content={helper} /> : null}
             </div>
           ) : null}
           {count != null ? (
-            <span className={cn('text-xs tabular-nums text-muted-foreground', countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold')}>
+            <span
+              className={cn(
+                'text-xs tabular-nums text-muted-foreground',
+                countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold',
+              )}
+            >
               {count}
             </span>
           ) : null}
@@ -58,9 +78,15 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
       ) : null}
       {control}
       {helper && !longHelper && !error && !warning ? (
-        <span id={helperId} className="text-xs text-muted-foreground">{helper}</span>
+        <span id={helperId} className="text-xs text-muted-foreground">
+          {helper}
+        </span>
       ) : null}
-      {showLongHelper ? <span id={helperId} className="sr-only">{helper}</span> : null}
+      {showLongHelper ? (
+        <span id={helperId} className="sr-only">
+          {helper}
+        </span>
+      ) : null}
       {warning && !error ? (
         <span
           id={warningId}
@@ -72,7 +98,11 @@ export function FormField({ label, required, helper, error, warning, htmlFor, co
         </span>
       ) : null}
       {error ? (
-        <span id={errorId} className="flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
+        <span
+          id={errorId}
+          className="flex items-center gap-1 text-xs text-danger font-semibold"
+          role="alert"
+        >
           <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
           {error}
         </span>

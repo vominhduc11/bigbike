@@ -1,15 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  DndContext,
-  closestCenter,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { DndContext, closestCenter } from '@dnd-kit/core'
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useDragSensors } from '../components/Sortable'
 import { toast } from '@/lib/toast'
@@ -64,12 +57,15 @@ import { TableRowActions } from '../components/TableRowActions'
 
 export function MenuScreen({ canUpdate, canReadCatalog }) {
   const { t } = useTranslation()
-  const menuColumns = useMemo(() => [
-    { key: 'name', label: t('menus.itemLabel'), hideable: false },
-    { key: 'parent', label: t('menus.itemParent') },
-    { key: 'url', label: t('menus.itemUrl') },
-    { key: 'actions', label: t('common.actions'), hideable: false },
-  ], [t])
+  const menuColumns = useMemo(
+    () => [
+      { key: 'name', label: t('menus.itemLabel'), hideable: false },
+      { key: 'parent', label: t('menus.itemParent') },
+      { key: 'url', label: t('menus.itemUrl') },
+      { key: 'actions', label: t('common.actions'), hideable: false },
+    ],
+    [t],
+  )
   const {
     hiddenKeys: hiddenMenuColumnKeys,
     toggle: toggleMenuColumn,
@@ -79,7 +75,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   // Ngôn ngữ NỘI DUNG (nút VI/EN ở header). Chỉ đổi nhãn hiển thị của mục menu;
   // giao diện admin vẫn cố định tiếng Việt.
   const contentLang = useContentLang()
-  const pickLabel = (item) => (contentLang === 'en' ? (item?.labelEn || item?.label || '') : (item?.label || ''))
+  const pickLabel = (item) =>
+    contentLang === 'en' ? item?.labelEn || item?.label || '' : item?.label || ''
   const queryClient = useQueryClient()
 
   // Tab selection (always primary)
@@ -113,7 +110,12 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   // ── Queries ────────────────────────────────────────────────────────────────
   // Pull the full menu list once so we can map location → menuId without
   // adding a dedicated by-location admin endpoint.
-  const { data: menusData, isLoading, isError, error } = useQuery({
+  const {
+    data: menusData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['menus'],
     queryFn: fetchMenus,
   })
@@ -136,7 +138,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   const { clear: clearAddDraft } = useDraftAutosave(
     addDraftKey,
     { menuId: selectedMenuId, form: newItem },
-    { enabled: showItemModal, dirty: showItemModal && JSON.stringify(newItem) !== JSON.stringify(EMPTY_ITEM) },
+    {
+      enabled: showItemModal,
+      dirty: showItemModal && JSON.stringify(newItem) !== JSON.stringify(EMPTY_ITEM),
+    },
   )
   const { clear: clearEditDraft } = useDraftAutosave(
     editDraftKey,
@@ -172,7 +177,8 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   )
   const menuDetail = detailData?.item ?? null
   const menuItems = useMemo(
-    () => sortMenuItems((menuDetail?.items ?? []).filter((item) => item?.id && item.id !== 'unknown')),
+    () =>
+      sortMenuItems((menuDetail?.items ?? []).filter((item) => item?.id && item.id !== 'unknown')),
     [menuDetail?.items],
   )
   const menuTree = useMemo(() => buildMenuTree(menuItems), [menuItems])
@@ -197,21 +203,29 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
 
   // Bulk selection helpers (O6) — scoped to currently visible/filtered rows
   const visibleItemIds = useMemo(() => filteredFlatItems.map((i) => i.id), [filteredFlatItems])
-  const allVisibleSelected = visibleItemIds.length > 0 && visibleItemIds.every((id) => selectedItemIds.has(id))
-  const someVisibleSelected = !allVisibleSelected && visibleItemIds.some((id) => selectedItemIds.has(id))
+  const allVisibleSelected =
+    visibleItemIds.length > 0 && visibleItemIds.every((id) => selectedItemIds.has(id))
+  const someVisibleSelected =
+    !allVisibleSelected && visibleItemIds.some((id) => selectedItemIds.has(id))
   const menuTableColumns = [
-    ...(canUpdate ? [{
-      key: 'selection',
-      label: (
-        <Checkbox
-          checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
-          onCheckedChange={toggleSelectAllVisible}
-          disabled={bulkDeleting || visibleItemIds.length === 0}
-          aria-label={t('menus.selectAllAria', { defaultValue: 'Chọn tất cả mục đang hiển thị' })}
-        />
-      ),
-      headerClassName: 'w-12 text-center',
-    }] : []),
+    ...(canUpdate
+      ? [
+          {
+            key: 'selection',
+            label: (
+              <Checkbox
+                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+                onCheckedChange={toggleSelectAllVisible}
+                disabled={bulkDeleting || visibleItemIds.length === 0}
+                aria-label={t('menus.selectAllAria', {
+                  defaultValue: 'Chọn tất cả mục đang hiển thị',
+                })}
+              />
+            ),
+            headerClassName: 'w-12 text-center',
+          },
+        ]
+      : []),
     {
       key: 'reorder',
       label: <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>,
@@ -220,11 +234,19 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     { key: 'name', label: t('menus.itemLabel') },
     ...(isMenuColumnVisible('parent') ? [{ key: 'parent', label: t('menus.itemParent') }] : []),
     ...(isMenuColumnVisible('url') ? [{ key: 'url', label: t('menus.itemUrl') }] : []),
-    ...(canUpdate ? [{
-      key: 'actions',
-      label: <span className="sr-only">{t('menus.itemActions', { defaultValue: 'Thao tác' })}</span>,
-      align: 'right',
-    }] : []),
+    ...(canUpdate
+      ? [
+          {
+            key: 'actions',
+            label: (
+              <span className="sr-only">
+                {t('menus.itemActions', { defaultValue: 'Thao tác' })}
+              </span>
+            ),
+            align: 'right',
+          },
+        ]
+      : []),
   ]
 
   // Parent options for "edit item" form — exclude self and all descendants
@@ -268,7 +290,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         labelEn: data.labelEn,
         url: normalizeMenuUrlForSave(data.url),
         targetType: data.targetType || 'CUSTOM',
-        targetId: data.targetType === 'CATEGORY' ? (data.targetId || null) : null,
+        targetId: data.targetType === 'CATEGORY' ? data.targetId || null : null,
         sortOrder: data.sortOrder,
         openInNewTab: data.openInNewTab,
         cssClass: null,
@@ -279,7 +301,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       if (parentChanged) {
         const reorderPayload = menuItems.map((item) => ({
           id: item.id,
-          parentId: item.id === itemId ? (data.parentId || null) : (item.parentId || null),
+          parentId: item.id === itemId ? data.parentId || null : item.parentId || null,
           sortOrder: item.id === itemId ? data.sortOrder : Number(item.sortOrder ?? 0),
         }))
         await reorderMenuItems(selectedMenuId, reorderPayload)
@@ -302,7 +324,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
       toast.success(t('menus.deleteItemSuccess', { defaultValue: 'Đã xoá mục menu.' }))
     },
-    onError: (e) => toast.error(e?.status === 409 ? t('menus.deleteItemConflict') : (e.message || t('common.error'))),
+    onError: (e) =>
+      toast.error(
+        e?.status === 409 ? t('menus.deleteItemConflict') : e.message || t('common.error'),
+      ),
     onSettled: () => setDeletingItemId(null),
   })
 
@@ -310,24 +335,27 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   // nguyên payload PATCH (giống submit form sửa) vì backend không hỗ trợ patch
   // từng phần một cách đáng tin cậy.
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ item, nextStatus }) => updateMenuItem(selectedMenuId, item.id, {
-      label: item.label,
-      labelEn: item.labelEn,
-      url: normalizeMenuUrlForSave(item.url),
-      targetType: item.targetType || 'CUSTOM',
-      targetId: item.targetType === 'CATEGORY' ? (item.targetId || null) : null,
-      sortOrder: item.sortOrder,
-      openInNewTab: item.openInNewTab,
-      cssClass: null,
-      status: nextStatus,
-      parentId: item.parentId || null,
-    }),
+    mutationFn: ({ item, nextStatus }) =>
+      updateMenuItem(selectedMenuId, item.id, {
+        label: item.label,
+        labelEn: item.labelEn,
+        url: normalizeMenuUrlForSave(item.url),
+        targetType: item.targetType || 'CUSTOM',
+        targetId: item.targetType === 'CATEGORY' ? item.targetId || null : null,
+        sortOrder: item.sortOrder,
+        openInNewTab: item.openInNewTab,
+        cssClass: null,
+        status: nextStatus,
+        parentId: item.parentId || null,
+      }),
     onMutate: ({ item }) => setTogglingItemId(item.id),
     onSuccess: (_data, { nextStatus }) => {
       queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
-      toast.success(nextStatus === 'ACTIVE'
-        ? t('menus.statusActivatedToast', { defaultValue: 'Đã bật hiển thị mục menu.' })
-        : t('menus.statusDeactivatedToast', { defaultValue: 'Đã ẩn mục menu.' }))
+      toast.success(
+        nextStatus === 'ACTIVE'
+          ? t('menus.statusActivatedToast', { defaultValue: 'Đã bật hiển thị mục menu.' })
+          : t('menus.statusDeactivatedToast', { defaultValue: 'Đã ẩn mục menu.' }),
+      )
     },
     onError: (e) => toast.error(e.message || t('common.error')),
     onSettled: () => setTogglingItemId(null),
@@ -368,7 +396,9 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     const reorderPayload = menuItems.map((item) => ({
       id: item.id,
       parentId: item.parentId || null,
-      sortOrder: nextSortById.has(item.id) ? nextSortById.get(item.id) : Number(item.sortOrder ?? 0),
+      sortOrder: nextSortById.has(item.id)
+        ? nextSortById.get(item.id)
+        : Number(item.sortOrder ?? 0),
     }))
     reorderMutation.mutate(reorderPayload)
   }
@@ -381,7 +411,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       labelEn: newItem.labelEn.trim(),
       url: normalizeMenuUrlForSave(newItem.url),
       targetType: newItem.targetType || 'CUSTOM',
-      targetId: newItem.targetType === 'CATEGORY' ? (newItem.targetId || null) : null,
+      targetId: newItem.targetType === 'CATEGORY' ? newItem.targetId || null : null,
       parentId: newItem.parentId || null,
       sortOrder: Number(newItem.sortOrder),
       openInNewTab: newItem.openInNewTab,
@@ -443,19 +473,25 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   async function handleBulkDeleteItems() {
     if (selectedItemIds.size === 0) return
     const ids = [...selectedItemIds]
-    const blocked = ids.filter((id) => menuItems.filter((i) => sameParent(i.parentId, id)).length > 0)
+    const blocked = ids.filter(
+      (id) => menuItems.filter((i) => sameParent(i.parentId, id)).length > 0,
+    )
     const deletable = ids.filter((id) => !blocked.includes(id))
     if (blocked.length > 0) {
-      toast.error(t('menus.bulkDeleteBlocked', {
-        count: blocked.length,
-        defaultValue: '{{count}} mục không thể xoá vì còn mục con — hãy xoá hoặc di chuyển mục con ra trước.',
-      }))
+      toast.error(
+        t('menus.bulkDeleteBlocked', {
+          count: blocked.length,
+          defaultValue:
+            '{{count}} mục không thể xoá vì còn mục con — hãy xoá hoặc di chuyển mục con ra trước.',
+        }),
+      )
     }
     if (deletable.length === 0) return
     const confirmed = await showConfirm(
       t('menus.bulkDeleteConfirm', {
         count: deletable.length,
-        defaultValue: 'Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.',
+        defaultValue:
+          'Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.',
       }),
       t('common.permanentDeleteTitle'),
       { variant: 'danger', confirmLabel: t('common.permanentDelete') },
@@ -463,15 +499,19 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     if (!confirmed) return
     setBulkDeleting(true)
     try {
-      const results = await Promise.allSettled(deletable.map((id) => deleteMenuItem(selectedMenuId, id)))
+      const results = await Promise.allSettled(
+        deletable.map((id) => deleteMenuItem(selectedMenuId, id)),
+      )
       const succeeded = results.filter((r) => r.status === 'fulfilled').length
       queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
       setSelectedItemIds(new Set())
       if (succeeded > 0) {
-        toast.success(t('menus.bulkDeleteSuccess', {
-          count: succeeded,
-          defaultValue: 'Đã xoá {{count}} mục menu.',
-        }))
+        toast.success(
+          t('menus.bulkDeleteSuccess', {
+            count: succeeded,
+            defaultValue: 'Đã xoá {{count}} mục menu.',
+          }),
+        )
       }
       if (succeeded < deletable.length) toast.error(t('common.error'))
     } finally {
@@ -493,7 +533,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
         labelEn: editItemForm.labelEn.trim(),
         url: editItemForm.url.trim(),
         targetType: editItemForm.targetType || 'CUSTOM',
-        targetId: editItemForm.targetType === 'CATEGORY' ? (editItemForm.targetId || null) : null,
+        targetId: editItemForm.targetType === 'CATEGORY' ? editItemForm.targetId || null : null,
         parentId: nextParentId,
         sortOrder: Number(editItemForm.sortOrder),
         openInNewTab: editItemForm.openInNewTab,
@@ -517,9 +557,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       targetId: item.targetId || '',
     }
     const saved = readDraft(`draft:menu-edit:${selectedMenuId ?? 'none'}:${item.id}`)
-    const savedForm = saved?.value?.menuId === selectedMenuId && saved?.value?.itemId === item.id
-      ? saved.value.form
-      : null
+    const savedForm =
+      saved?.value?.menuId === selectedMenuId && saved?.value?.itemId === item.id
+        ? saved.value.form
+        : null
     setEditItem(item)
     setEditItemForm(savedForm ? { ...form, ...savedForm } : form)
     setEditItemSnapshot(form)
@@ -543,7 +584,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     const dirty = JSON.stringify(newItem) !== JSON.stringify(EMPTY_ITEM)
     if (dirty) {
       const confirmed = await showConfirm(
-        t('menus.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('menus.discardConfirm', {
+          defaultValue:
+            'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?',
+        }),
         t('menus.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi?' }),
       )
       if (!confirmed) return
@@ -559,7 +603,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     const dirty = JSON.stringify(editItemForm) !== JSON.stringify(editItemSnapshot)
     if (dirty) {
       const confirmed = await showConfirm(
-        t('menus.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('menus.discardConfirm', {
+          defaultValue:
+            'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?',
+        }),
         t('menus.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi?' }),
       )
       if (!confirmed) return
@@ -568,7 +615,6 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
     setEditItemError('')
     clearEditDraft()
   }
-
 
   // O3 — Ctrl/Cmd+S để lưu ngay trong modal Thêm/Sửa mục, không bắt buộc bấm nút.
   useSaveShortcut(showItemModal, () => {
@@ -579,16 +625,24 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
   })
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  if (isLoading) return <Screen><StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} /></Screen>
-  if (isError) return (
-    <Screen><StatePanel
-        tone="danger"
-        title={t('menus.loadError')}
-        description={error?.message}
-        actionLabel={t('common.retry')}
-        onAction={() => queryClient.invalidateQueries({ queryKey: ['menus'] })}
-      /></Screen>
-  )
+  if (isLoading)
+    return (
+      <Screen>
+        <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
+      </Screen>
+    )
+  if (isError)
+    return (
+      <Screen>
+        <StatePanel
+          tone="danger"
+          title={t('menus.loadError')}
+          description={error?.message}
+          actionLabel={t('common.retry')}
+          onAction={() => queryClient.invalidateQueries({ queryKey: ['menus'] })}
+        />
+      </Screen>
+    )
 
   const selectedSlot = SYSTEM_SLOTS[0]
   const slotMissing = !selectedMenuSummary
@@ -599,11 +653,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       <ScreenHeader group="content" title={t('menus.title')} />
 
       {warning && <ReadOnlyBanner warning={warning} />}
-      {!canReadCatalog ? (
-        <Alert tone="warning">
-          {t('menus.catalogPermissionWarning')}
-        </Alert>
-      ) : null}
+      {!canReadCatalog ? <Alert tone="warning">{t('menus.catalogPermissionWarning')}</Alert> : null}
 
       {/* ── Panel: items for the selected slot ── */}
       <main
@@ -620,7 +670,11 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
           </div>
         ) : detailLoading ? (
           <div className="p-6">
-            <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
+            <StatePanel
+              tone="info"
+              title={t('menus.loading')}
+              description={t('common.pleaseWait')}
+            />
           </div>
         ) : detailIsError ? (
           <div className="p-6">
@@ -629,7 +683,9 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
               title={t('menus.loadError')}
               description={detailError?.message}
               actionLabel={t('common.retry')}
-              onAction={() => queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })}
+              onAction={() =>
+                queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
+              }
             />
           </div>
         ) : menuDetail ? (
@@ -637,8 +693,12 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
             {/* Panel header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted px-5 py-4">
               <div className="flex min-w-0 flex-wrap items-center gap-3">
-                <h2 className="m-0 text-base font-bold text-foreground">{formatText(menuDetail.name)}</h2>
-                <Badge variant="muted" className="font-mono">{menuDetail.location}</Badge>
+                <h2 className="m-0 text-base font-bold text-foreground">
+                  {formatText(menuDetail.name)}
+                </h2>
+                <Badge variant="muted" className="font-mono">
+                  {menuDetail.location}
+                </Badge>
               </div>
               {canUpdate && (
                 <Button className="shrink-0" onClick={openAddItem}>
@@ -654,7 +714,9 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                 <FilterSearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc đường dẫn...' })}
+                  placeholder={t('menus.searchPlaceholder', {
+                    defaultValue: 'Tìm theo tên hoặc đường dẫn...',
+                  })}
                   ariaLabel={t('menus.searchAria', { defaultValue: 'Tìm kiếm mục menu' })}
                   wrapperClassName="min-w-48 flex-1"
                 />
@@ -694,7 +756,10 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
             ) : filteredFlatItems.length === 0 ? (
               <StatePanel
                 tone="neutral"
-                title={t('menus.searchNoMatch', { query: search, defaultValue: 'Không tìm thấy mục nào phù hợp với “{{query}}”.' })}
+                title={t('menus.searchNoMatch', {
+                  query: search,
+                  defaultValue: 'Không tìm thấy mục nào phù hợp với “{{query}}”.',
+                })}
               />
             ) : (
               <DndContext
@@ -726,7 +791,7 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                           {
                             label: t('menus.itemParent'),
                             value: item.parentId
-                              ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing'))
+                              ? pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')
                               : t('menus.parentRoot'),
                           },
                         ],
@@ -772,7 +837,11 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
                         key={item.id}
                         item={item}
                         displayLabel={pickLabel(item)}
-                        parentLabel={item.parentId ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')) : ''}
+                        parentLabel={
+                          item.parentId
+                            ? pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')
+                            : ''
+                        }
                         rootLabel={t('menus.parentRoot')}
                         canUpdate={canUpdate}
                         onEdit={openEditItem}
@@ -797,14 +866,21 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
       {showItemModal && (
         <Modal
           title={`${t('menus.addItem')} — ${formatText(menuDetail?.name ?? '')}`}
-          description={t('menus.addItemDialogDesc', { defaultValue: 'Thêm một mục mới vào thanh điều hướng.' })}
+          description={t('menus.addItemDialogDesc', {
+            defaultValue: 'Thêm một mục mới vào thanh điều hướng.',
+          })}
           onClose={closeAddModal}
           footer={
             <>
               <Button variant="outline" onClick={closeAddModal}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" form="add-item-form" loading={addItemMutation.isPending} disabled={!isItemFormValid(newItem)}>
+              <Button
+                type="submit"
+                form="add-item-form"
+                loading={addItemMutation.isPending}
+                disabled={!isItemFormValid(newItem)}
+              >
                 {t('common.add')}
               </Button>
             </>
@@ -813,14 +889,12 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
           <form id="add-item-form" onSubmit={handleAddItem}>
             {SLOT_CONTEXT_NOTE_KEYS[selectedLocation] && (
               <div className="mb-4 rounded-[var(--admin-radius-card)] border border-border bg-surface-muted px-4 py-3 text-sm leading-6 text-muted-foreground">
-                {t(SLOT_CONTEXT_NOTE_KEYS[selectedLocation].key, { defaultValue: SLOT_CONTEXT_NOTE_KEYS[selectedLocation].defaultValue })}
+                {t(SLOT_CONTEXT_NOTE_KEYS[selectedLocation].key, {
+                  defaultValue: SLOT_CONTEXT_NOTE_KEYS[selectedLocation].defaultValue,
+                })}
               </div>
             )}
-            {itemError && (
-              <p className="mb-3 text-sm text-danger">
-                {itemError}
-              </p>
-            )}
+            {itemError && <p className="mb-3 text-sm text-danger">{itemError}</p>}
             <ItemForm
               value={newItem}
               onChange={(patch) => setNewItem((p) => ({ ...p, ...patch }))}
@@ -844,18 +918,19 @@ export function MenuScreen({ canUpdate, canReadCatalog }) {
               <Button variant="outline" onClick={closeEditModal}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" form="edit-item-form" loading={updateItemMutation.isPending} disabled={!isItemFormValid(editItemForm)}>
+              <Button
+                type="submit"
+                form="edit-item-form"
+                loading={updateItemMutation.isPending}
+                disabled={!isItemFormValid(editItemForm)}
+              >
                 {t('menus.saveMenu')}
               </Button>
             </>
           }
         >
           <form id="edit-item-form" onSubmit={handleEditItem}>
-            {editItemError && (
-              <p className="mb-3 text-sm text-danger">
-                {editItemError}
-              </p>
-            )}
+            {editItemError && <p className="mb-3 text-sm text-danger">{editItemError}</p>}
             <ItemForm
               value={editItemForm}
               onChange={(patch) => setEditItemForm((p) => ({ ...p, ...patch }))}

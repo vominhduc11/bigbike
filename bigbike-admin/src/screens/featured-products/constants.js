@@ -23,14 +23,20 @@ export function featuredSaveErrorMessage(t, error, items) {
   }
 
   const collect = (code) => [
-    ...new Set(details.filter((d) => d?.code === code).map((d) => nameAt(d.field)).filter(Boolean)),
+    ...new Set(
+      details
+        .filter((d) => d?.code === code)
+        .map((d) => nameAt(d.field))
+        .filter(Boolean),
+    ),
   ]
 
   const notPublished = collect('NOT_PUBLISHED')
   if (notPublished.length > 0) {
     return t('featuredProducts.errNotPublished', {
       names: notPublished.join(', '),
-      defaultValue: 'Chưa lưu được: {{names}} hiện không còn đang bán. Hãy đăng bán lại hoặc bỏ khỏi danh sách nổi bật.',
+      defaultValue:
+        'Chưa lưu được: {{names}} hiện không còn đang bán. Hãy đăng bán lại hoặc bỏ khỏi danh sách nổi bật.',
     })
   }
 
@@ -38,7 +44,8 @@ export function featuredSaveErrorMessage(t, error, items) {
   if (notFound.length > 0) {
     return t('featuredProducts.errNotFound', {
       names: notFound.join(', '),
-      defaultValue: 'Chưa lưu được: {{names}} không còn tồn tại. Hãy bỏ khỏi danh sách nổi bật rồi lưu lại.',
+      defaultValue:
+        'Chưa lưu được: {{names}} không còn tồn tại. Hãy bỏ khỏi danh sách nổi bật rồi lưu lại.',
     })
   }
 

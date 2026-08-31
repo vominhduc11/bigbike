@@ -1,6 +1,16 @@
-import { test as base, expect, request as apiRequest, type Page, type APIRequestContext } from '@playwright/test'
+import {
+  test as base,
+  expect,
+  request as apiRequest,
+  type Page,
+  type APIRequestContext,
+} from '@playwright/test'
 import { ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL, API_BASE } from '../utils/env'
-import { createCleanupClient, formatInventory, purgeE2EData } from '../../../scripts/ops/e2e-data-cleanup.mjs'
+import {
+  createCleanupClient,
+  formatInventory,
+  purgeE2EData,
+} from '../../../scripts/ops/e2e-data-cleanup.mjs'
 
 /**
  * Auth/session strategy (driven by hard backend constraints):
@@ -15,8 +25,17 @@ import { createCleanupClient, formatInventory, purgeE2EData } from '../../../scr
  * (navigateSpa) so extra navigations cost zero refreshes.
  */
 
-export interface ConsoleEntry { type: string; text: string; location: string }
-export interface NetEntry { url: string; method: string; status?: number; failure?: string }
+export interface ConsoleEntry {
+  type: string
+  text: string
+  location: string
+}
+export interface NetEntry {
+  url: string
+  method: string
+  status?: number
+  failure?: string
+}
 export interface Collectors {
   consoleErrors: ConsoleEntry[]
   consoleWarnings: ConsoleEntry[]
@@ -46,7 +65,14 @@ function isWs(url: string) {
   return url.startsWith('ws://') || url.startsWith('wss://') || url.includes('/ws')
 }
 function emptyCollectors(): Collectors {
-  return { consoleErrors: [], consoleWarnings: [], pageErrors: [], apiErrors: [], wsIssues: [], resourceErrors: [] }
+  return {
+    consoleErrors: [],
+    consoleWarnings: [],
+    pageErrors: [],
+    apiErrors: [],
+    wsIssues: [],
+    resourceErrors: [],
+  }
 }
 export function resetCollectors(c: Collectors) {
   c.consoleErrors.length = c.consoleWarnings.length = c.pageErrors.length = 0
@@ -69,7 +95,9 @@ function attachCollectors(page: Page, c: Collectors) {
       c.consoleWarnings.push({ type: 'warning', text, location: loc })
     }
   })
-  page.on('pageerror', (err) => { c.pageErrors.push(`${err.name}: ${err.message}`) })
+  page.on('pageerror', (err) => {
+    c.pageErrors.push(`${err.name}: ${err.message}`)
+  })
   page.on('requestfailed', (req) => {
     const url = req.url()
     const failure = req.failure()?.errorText || 'failed'
@@ -109,7 +137,8 @@ export async function apiLoginSession(
       await new Promise((r) => setTimeout(r, 13_000 + attempt * 4_000))
       continue
     }
-    if (!res.ok()) throw new Error(`[apiLogin] ${res.status()}: ${(await res.text()).slice(0, 200)}`)
+    if (!res.ok())
+      throw new Error(`[apiLogin] ${res.status()}: ${(await res.text()).slice(0, 200)}`)
     const payload = await res.json()
     const accessToken = payload?.data?.accessToken
     if (!accessToken) throw new Error('[apiLogin] no access token in response')
@@ -128,8 +157,13 @@ export async function apiLoginCookie(
   return (await apiLoginSession(request, creds)).refreshCookie
 }
 
-interface AuthHolder { cookie: string; accessToken: string }
-interface E2EDataGuard { purge: () => Promise<void> }
+interface AuthHolder {
+  cookie: string
+  accessToken: string
+}
+interface E2EDataGuard {
+  purge: () => Promise<void>
+}
 type WorkerFixtures = { authHolder: AuthHolder; e2eDataGuard: E2EDataGuard }
 type TestFixtures = { collect: Collectors; seedAuth: void; adminPage: Page }
 
@@ -138,13 +172,29 @@ export const testAnon = base.extend<TestFixtures>({
     const c = emptyCollectors()
     attachCollectors(page, c)
     await use(c)
-    if (c.consoleErrors.length || c.pageErrors.length || c.apiErrors.length || c.wsIssues.length || c.resourceErrors.length) {
-      await testInfo.attach('diagnostics.json', { body: JSON.stringify(c, null, 2), contentType: 'application/json' })
+    if (
+      c.consoleErrors.length ||
+      c.pageErrors.length ||
+      c.apiErrors.length ||
+      c.wsIssues.length ||
+      c.resourceErrors.length
+    ) {
+      await testInfo.attach('diagnostics.json', {
+        body: JSON.stringify(c, null, 2),
+        contentType: 'application/json',
+      })
     }
   },
   // testAnon has no auth seeding / pre-loaded page.
-  seedAuth: [async ({}, use) => { await use() }, { auto: false }],
-  adminPage: async ({ page }, use) => { await use(page) },
+  seedAuth: [
+    async ({}, use) => {
+      await use()
+    },
+    { auto: false },
+  ],
+  adminPage: async ({ page }, use) => {
+    await use(page)
+  },
 })
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
@@ -179,12 +229,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         const failure = error as { message?: unknown; details?: { residual?: unknown } }
         const residual = failure.details?.residual
         const residualText = residual ? `\n${formatInventory(residual)}` : ''
-        return new Error(`[E2E data cleanup ${phase}] ${String(failure.message || error)}${residualText}`)
+        return new Error(
+          `[E2E data cleanup ${phase}] ${String(failure.message || error)}${residualText}`,
+        )
       }
 
       const purge = async (phase: string) => {
         const run = async () => {
-          const client = createCleanupClient({ baseUrl: BASE_URL, accessToken: authHolder.accessToken })
+          const client = createCleanupClient({
+            baseUrl: BASE_URL,
+            accessToken: authHolder.accessToken,
+          })
           await purgeE2EData(client)
         }
 
@@ -218,15 +273,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   // Inject the current refresh cookie before the test; capture the rotated one after.
   seedAuth: [
     async ({ context, authHolder }, use) => {
-      await context.addCookies([{
-        name: REFRESH_COOKIE,
-        value: authHolder.cookie,
-        domain: COOKIE_HOST,
-        path: '/api/v1/auth',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      }])
+      await context.addCookies([
+        {
+          name: REFRESH_COOKIE,
+          value: authHolder.cookie,
+          domain: COOKIE_HOST,
+          path: '/api/v1/auth',
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+        },
+      ])
       await use()
       // Persist the rotated cookie for the next test (serial → no race).
       const after = (await context.cookies()).find((c) => c.name === REFRESH_COOKIE)
@@ -239,8 +296,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     const c = emptyCollectors()
     attachCollectors(page, c)
     await use(c)
-    if (c.consoleErrors.length || c.pageErrors.length || c.apiErrors.length || c.wsIssues.length || c.resourceErrors.length) {
-      await testInfo.attach('diagnostics.json', { body: JSON.stringify(c, null, 2), contentType: 'application/json' })
+    if (
+      c.consoleErrors.length ||
+      c.pageErrors.length ||
+      c.apiErrors.length ||
+      c.wsIssues.length ||
+      c.resourceErrors.length
+    ) {
+      await testInfo.attach('diagnostics.json', {
+        body: JSON.stringify(c, null, 2),
+        contentType: 'application/json',
+      })
     }
   },
 
@@ -253,14 +319,24 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       const session = await apiLoginSession(context.request)
       authHolder.cookie = session.refreshCookie
       authHolder.accessToken = session.accessToken
-      await context.addCookies([{
-        name: REFRESH_COOKIE, value: authHolder.cookie, domain: COOKIE_HOST,
-        path: '/api/v1/auth', httpOnly: true, secure: false, sameSite: 'Lax',
-      }])
+      await context.addCookies([
+        {
+          name: REFRESH_COOKIE,
+          value: authHolder.cookie,
+          domain: COOKIE_HOST,
+          path: '/api/v1/auth',
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+        },
+      ])
       await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
     }
     await page.locator('.bb-app').waitFor({ state: 'attached', timeout: 20_000 })
-    await page.locator('.bb-page-content').waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+    await page
+      .locator('.bb-page-content')
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .catch(() => {})
     await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
     resetCollectors(collect)
     await use(page)

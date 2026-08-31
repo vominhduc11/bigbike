@@ -11,11 +11,7 @@ const YOUTUBE_HOSTS = new Set([
 
 // TikTok/Facebook chỉ nhận URL video đầy đủ. Các host link rút gọn không nằm trong
 // danh sách này nên không thể đi qua validation/payload ghi mới (MEDIA_RULE_004).
-const TIKTOK_HOSTS = new Set([
-  'tiktok.com',
-  'www.tiktok.com',
-  'm.tiktok.com',
-])
+const TIKTOK_HOSTS = new Set(['tiktok.com', 'www.tiktok.com', 'm.tiktok.com'])
 
 // id video TikTok là chuỗi số (hiện ~19 chữ số) ở path /@user/video/{id}, /video/{id},
 // /v/{id}.html, /embed/v2/{id}, /embed/{id}.
@@ -48,10 +44,10 @@ function parseUrl(value) {
 
 function hasUnsafePrefix(value) {
   return (
-    UNSAFE_SCHEME.test(value)
-    || value.startsWith('//')
-    || value.startsWith('\\\\')
-    || value.includes('\\')
+    UNSAFE_SCHEME.test(value) ||
+    value.startsWith('//') ||
+    value.startsWith('\\\\') ||
+    value.includes('\\')
   )
 }
 
@@ -88,20 +84,27 @@ export function validateSafeMediaImageUrl(value) {
   if (!normalized) return { valid: true, normalized: '' }
   if (hasUnsafePrefix(normalized)) return { valid: false, normalized, reason: 'unsafe' }
   if (
-    normalized.startsWith('/media/')
-    || normalized.startsWith('/media-proxy/')
-    || normalized.startsWith('/wp-content/uploads/')
-    || normalized.startsWith('/wp-content/themes/bigbike/')
-  ) return { valid: true, normalized }
+    normalized.startsWith('/media/') ||
+    normalized.startsWith('/media-proxy/') ||
+    normalized.startsWith('/wp-content/uploads/') ||
+    normalized.startsWith('/wp-content/themes/bigbike/')
+  )
+    return { valid: true, normalized }
 
   const parsed = parseUrl(normalized)
-  if (!parsed || !['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+  if (
+    !parsed ||
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    parsed.username ||
+    parsed.password
+  ) {
     return { valid: false, normalized, reason: 'malformed' }
   }
-  const allowedPath = parsed.pathname.includes('/bigbike-media/')
-    || parsed.pathname.startsWith('/media/')
-    || parsed.pathname.startsWith('/media-proxy/')
-    || parsed.pathname.startsWith('/wp-content/uploads/')
+  const allowedPath =
+    parsed.pathname.includes('/bigbike-media/') ||
+    parsed.pathname.startsWith('/media/') ||
+    parsed.pathname.startsWith('/media-proxy/') ||
+    parsed.pathname.startsWith('/wp-content/uploads/')
   return allowedPath
     ? { valid: true, normalized }
     : { valid: false, normalized, reason: 'unsupported' }
@@ -111,10 +114,10 @@ export function validateRedirectSource(value) {
   const normalized = trimToNull(value)
   if (!normalized) return { valid: false, normalized: '', reason: 'required' }
   if (
-    !normalized.startsWith('/')
-    || normalized.startsWith('//')
-    || normalized.includes('?')
-    || normalized.includes('#')
+    !normalized.startsWith('/') ||
+    normalized.startsWith('//') ||
+    normalized.includes('?') ||
+    normalized.includes('#')
   ) {
     return { valid: false, normalized, reason: 'invalid' }
   }
@@ -131,11 +134,11 @@ export function validateRedirectTarget(value) {
   const parsed = parseUrl(normalized)
   const storefront = parseUrl(APP_BASE_URL)
   if (
-    !parsed
-    || !storefront
-    || !['http:', 'https:'].includes(parsed.protocol)
-    || parsed.username
-    || parsed.password
+    !parsed ||
+    !storefront ||
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    parsed.username ||
+    parsed.password
   ) {
     return { valid: false, normalized, reason: 'malformed' }
   }
@@ -213,11 +216,13 @@ export function isAllowedFacebookVideoUrl(value) {
   }
 
   const path = parsed.pathname.toLowerCase()
-  return path.includes('/videos/')
-    || path.startsWith('/reel/')
-    || path === '/watch'
-    || path === '/watch/'
-    || path.includes('video.php')
+  return (
+    path.includes('/videos/') ||
+    path.startsWith('/reel/') ||
+    path === '/watch' ||
+    path === '/watch/' ||
+    path.includes('video.php')
+  )
 }
 
 /** Khung nhúng iframe chính thức của Facebook cho một link video (giữ nguyên href gốc). */
@@ -236,14 +241,19 @@ export function isAllowedMediaVideoUrl(value) {
   }
 
   const parsed = parseUrl(normalized)
-  if (!parsed || !['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+  if (
+    !parsed ||
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    parsed.username ||
+    parsed.password
+  ) {
     return false
   }
 
   return (
-    parsed.pathname.includes('/bigbike-media/')
-    || parsed.pathname.startsWith('/media/')
-    || parsed.pathname.startsWith('/media-proxy/')
+    parsed.pathname.includes('/bigbike-media/') ||
+    parsed.pathname.startsWith('/media/') ||
+    parsed.pathname.startsWith('/media-proxy/')
   )
 }
 
@@ -264,5 +274,9 @@ export function validateHomeVideoUrl(value) {
   if (isAllowedMediaVideoUrl(normalized)) {
     return { valid: true, normalized, source: 'upload' }
   }
-  return { valid: false, normalized, reason: hasUnsafePrefix(normalized) ? 'unsafe' : 'unsupported' }
+  return {
+    valid: false,
+    normalized,
+    reason: hasUnsafePrefix(normalized) ? 'unsafe' : 'unsupported',
+  }
 }

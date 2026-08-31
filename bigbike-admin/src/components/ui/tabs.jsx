@@ -8,7 +8,7 @@ export function TabsList({ className, ...props }) {
     <TabsPrimitive.List
       className={cn(
         'inline-flex max-w-full items-center gap-0 overflow-x-auto overflow-y-hidden border-b border-border [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
-        className
+        className,
       )}
       {...props}
     />
@@ -20,7 +20,7 @@ export function TabsTrigger({ className, ...props }) {
     <TabsPrimitive.Trigger
       className={cn(
         'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground border-b-2 border-transparent transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground data-[state=active]:border-primary hover:text-foreground -mb-px',
-        className
+        className,
       )}
       {...props}
     />
@@ -30,7 +30,10 @@ export function TabsTrigger({ className, ...props }) {
 export function TabsContent({ className, ...props }) {
   return (
     <TabsPrimitive.Content
-      className={cn('mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
+      className={cn(
+        'mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
       {...props}
     />
   )

@@ -41,5 +41,7 @@ export function useContentLang() {
 // fullItems: cây/danh sách lấy theo 'vi'; enItems: danh sách 'en' (chỉ mục đã dịch).
 export function overlayEnNames(fullItems, enItems) {
   const enNameById = new Map((enItems ?? []).map((c) => [c.id, c.name]))
-  return (fullItems ?? []).map((c) => (enNameById.has(c.id) ? { ...c, name: enNameById.get(c.id) } : c))
+  return (fullItems ?? []).map((c) =>
+    enNameById.has(c.id) ? { ...c, name: enNameById.get(c.id) } : c,
+  )
 }

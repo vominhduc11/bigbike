@@ -4,7 +4,9 @@ import { DeferredRichTextEditor } from './DeferredRichTextEditor'
 
 vi.mock('./RichTextEditor', () => ({
   RichTextEditor: ({ inlineOnly, value }) => (
-    <div data-testid="rich-text-editor" data-inline-only={inlineOnly}>{value}</div>
+    <div data-testid="rich-text-editor" data-inline-only={inlineOnly}>
+      {value}
+    </div>
   ),
 }))
 

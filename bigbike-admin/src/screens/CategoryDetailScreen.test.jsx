@@ -8,7 +8,9 @@ import { createCategorySchema, zodErrors } from '../lib/schemas'
 
 const t = (key, values = {}) => {
   if (values && typeof values === 'object' && 'defaultValue' in values) {
-    return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name))
+    return String(values.defaultValue).replace(/\{\{(\w+)\}\}/g, (_, name) =>
+      String(values[name] ?? name),
+    )
   }
   return key
 }
@@ -118,7 +120,10 @@ const helmet = {
 function renderScreen({ item = helmet, canUpdate = true, treeItems = [item] } = {}) {
   mocks.fetchCategoryDetail.mockResolvedValue({ item })
   mocks.fetchCategoryTree.mockResolvedValue({ items: treeItems })
-  mocks.fetchProducts.mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 5, totalItems: 0, totalPages: 0 } })
+  mocks.fetchProducts.mockResolvedValue({
+    items: [],
+    pagination: { page: 1, pageSize: 5, totalItems: 0, totalPages: 0 },
+  })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const navigate = vi.fn()
   render(

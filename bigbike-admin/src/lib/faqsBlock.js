@@ -21,12 +21,15 @@ function escapeHtml(value) {
 }
 
 function hasContent(item, fields) {
-  return Boolean(String(item?.[fields.question] ?? '').trim() || String(item?.[fields.answer] ?? '').trim())
+  return Boolean(
+    String(item?.[fields.question] ?? '').trim() || String(item?.[fields.answer] ?? '').trim(),
+  )
 }
 
 function topLevelFaqItems(doc) {
-  return [...doc.querySelectorAll('.bb-faq-item')]
-    .filter((element) => !element.parentElement?.closest('.bb-faq-item'))
+  return [...doc.querySelectorAll('.bb-faq-item')].filter(
+    (element) => !element.parentElement?.closest('.bb-faq-item'),
+  )
 }
 
 /** items[] → HTML FAQ. Câu hỏi luôn được escape vì đó là text, còn câu trả lời là rich-text HTML. */
@@ -35,10 +38,11 @@ export function serializeFaqsToHtml(items, isEn = false) {
   const faqs = (items || []).filter((item) => hasContent(item, fields))
   if (faqs.length === 0) return ''
 
-  const entries = faqs.map((faq) => (
-    `<div class="bb-faq-item"><h4 class="bb-faq-question">${escapeHtml(faq?.[fields.question])}</h4>` +
-    `<div class="bb-faq-answer">${faq?.[fields.answer] || ''}</div></div>`
-  ))
+  const entries = faqs.map(
+    (faq) =>
+      `<div class="bb-faq-item"><h4 class="bb-faq-question">${escapeHtml(faq?.[fields.question])}</h4>` +
+      `<div class="bb-faq-answer">${faq?.[fields.answer] || ''}</div></div>`,
+  )
   return `<div class="bb-faqs-list">${entries.join('')}</div>`
 }
 
@@ -48,15 +52,17 @@ function validFaq(question, answer) {
 
 function parseCanonicalFaqs(doc) {
   const skipped = { count: 0 }
-  const items = topLevelFaqItems(doc).map((item) => {
-    const question = textOf(item.querySelector('.bb-faq-question'))
-    const answer = item.querySelector('.bb-faq-answer')?.innerHTML || ''
-    if (!validFaq(question, answer)) {
-      skipped.count += 1
-      return null
-    }
-    return { question, answer }
-  }).filter(Boolean)
+  const items = topLevelFaqItems(doc)
+    .map((item) => {
+      const question = textOf(item.querySelector('.bb-faq-question'))
+      const answer = item.querySelector('.bb-faq-answer')?.innerHTML || ''
+      if (!validFaq(question, answer)) {
+        skipped.count += 1
+        return null
+      }
+      return { question, answer }
+    })
+    .filter(Boolean)
   return { items, skippedCount: skipped.count }
 }
 
@@ -65,7 +71,9 @@ function parseDefinitionFaqs(doc) {
   let skippedCount = 0
   const definitions = [...doc.querySelectorAll('dt')]
   definitions.forEach((questionEl) => {
-    const answerEl = questionEl.nextElementSibling?.matches('dd') ? questionEl.nextElementSibling : null
+    const answerEl = questionEl.nextElementSibling?.matches('dd')
+      ? questionEl.nextElementSibling
+      : null
     const question = textOf(questionEl)
     const answer = answerEl?.innerHTML || ''
     if (validFaq(question, answer)) items.push({ question, answer })
@@ -77,13 +85,14 @@ function parseDefinitionFaqs(doc) {
 function parseListFaqs(doc) {
   const items = []
   let skippedCount = 0
-  const listItems = [...doc.querySelectorAll('li')]
-    .filter((item) => !item.parentElement?.closest('li'))
+  const listItems = [...doc.querySelectorAll('li')].filter(
+    (item) => !item.parentElement?.closest('li'),
+  )
 
   listItems.forEach((item) => {
-    const questionIndex = [...item.children].findIndex((element) => (
-      /^(STRONG|B|H[1-6])$/.test(element.tagName) && textOf(element)
-    ))
+    const questionIndex = [...item.children].findIndex(
+      (element) => /^(STRONG|B|H[1-6])$/.test(element.tagName) && textOf(element),
+    )
     if (questionIndex < 0) {
       skippedCount += 1
       return
@@ -102,8 +111,9 @@ function parseListFaqs(doc) {
 function parseHeadingFaqs(doc) {
   const items = []
   let skippedCount = 0
-  const headings = [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')]
-    .filter((heading) => !heading.closest('.bb-faq-item'))
+  const headings = [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter(
+    (heading) => !heading.closest('.bb-faq-item'),
+  )
 
   headings.forEach((heading) => {
     const question = textOf(heading)
@@ -153,13 +163,22 @@ export function parseFaqsResult(html) {
     if (headings.items.length) {
       return makeHtmlImportResult({
         items: headings.items,
-        skippedCount: canonical.skippedCount + definitions.skippedCount + listFaqs.skippedCount + headings.skippedCount,
+        skippedCount:
+          canonical.skippedCount +
+          definitions.skippedCount +
+          listFaqs.skippedCount +
+          headings.skippedCount,
         hasInput: true,
       })
     }
 
     return makeHtmlImportResult({
-      skippedCount: canonical.skippedCount + definitions.skippedCount + listFaqs.skippedCount + headings.skippedCount + 1,
+      skippedCount:
+        canonical.skippedCount +
+        definitions.skippedCount +
+        listFaqs.skippedCount +
+        headings.skippedCount +
+        1,
       hasInput: true,
     })
   } catch {
@@ -186,9 +205,7 @@ export function mergeFaqsHtmlIntoItems(items, html, isEn = false) {
   if (isEn) {
     return current.map((item, index) => {
       const faq = faqs[index]
-      return faq
-        ? { ...item, [fields.question]: faq.question, [fields.answer]: faq.answer }
-        : item
+      return faq ? { ...item, [fields.question]: faq.question, [fields.answer]: faq.answer } : item
     })
   }
 

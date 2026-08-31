@@ -53,8 +53,8 @@ function writeToUrl(state, defaults, serialize, prefix) {
     const value = state[key]
     const def = defaults[key]
     const fn = serialize[key]
-    const encoded = fn ? fn(value) : (value == null || value === '' ? null : String(value))
-    const defEncoded = fn ? fn(def) : (def == null || def === '' ? null : String(def))
+    const encoded = fn ? fn(value) : value == null || value === '' ? null : String(value)
+    const defEncoded = fn ? fn(def) : def == null || def === '' ? null : String(def)
 
     if (encoded === null || encoded === defEncoded) {
       params.delete(prefix + key)

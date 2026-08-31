@@ -47,34 +47,47 @@ export function useKeyboardNav({ count, gridRef, onActivate, onSelect, onDelete,
       switch (e.key) {
         case 'ArrowRight':
           e.preventDefault()
-          setFocusIndex((i) => Math.min(count - 1, (i < 0 ? 0 : i + 1)))
+          setFocusIndex((i) => Math.min(count - 1, i < 0 ? 0 : i + 1))
           break
         case 'ArrowLeft':
           e.preventDefault()
-          setFocusIndex((i) => Math.max(0, (i < 0 ? 0 : i - 1)))
+          setFocusIndex((i) => Math.max(0, i < 0 ? 0 : i - 1))
           break
         case 'ArrowDown':
           e.preventDefault()
-          setFocusIndex((i) => Math.min(count - 1, (i < 0 ? 0 : i + cols)))
+          setFocusIndex((i) => Math.min(count - 1, i < 0 ? 0 : i + cols))
           break
         case 'ArrowUp':
           e.preventDefault()
-          setFocusIndex((i) => Math.max(0, (i < 0 ? 0 : i - cols)))
+          setFocusIndex((i) => Math.max(0, i < 0 ? 0 : i - cols))
           break
         case 'Home':
-          e.preventDefault(); setFocusIndex(0); break
+          e.preventDefault()
+          setFocusIndex(0)
+          break
         case 'End':
-          e.preventDefault(); setFocusIndex(count - 1); break
+          e.preventDefault()
+          setFocusIndex(count - 1)
+          break
         case ' ':
-          if (focusIndex >= 0 && cb.onSelect) { e.preventDefault(); cb.onSelect(focusIndex) }
+          if (focusIndex >= 0 && cb.onSelect) {
+            e.preventDefault()
+            cb.onSelect(focusIndex)
+          }
           break
         case 'Enter':
-          if (focusIndex >= 0 && cb.onActivate) { e.preventDefault(); cb.onActivate(focusIndex) }
+          if (focusIndex >= 0 && cb.onActivate) {
+            e.preventDefault()
+            cb.onActivate(focusIndex)
+          }
           break
         case 'Delete':
           // Backspace deliberately omitted — too easy to trigger by mistake when
           // a button or thumbnail has focus, leading to data loss.
-          if (focusIndex >= 0 && cb.onDelete) { e.preventDefault(); cb.onDelete(focusIndex) }
+          if (focusIndex >= 0 && cb.onDelete) {
+            e.preventDefault()
+            cb.onDelete(focusIndex)
+          }
           break
       }
     }

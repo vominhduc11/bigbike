@@ -65,11 +65,7 @@ export function readPageSizePreference(
 
 export function persistPageSizePreference(
   value,
-  {
-    pathname = currentPathname(),
-    options,
-    storage = currentStorage(),
-  } = {},
+  { pathname = currentPathname(), options, storage = currentStorage() } = {},
 ) {
   if (!isValidPageSize(value, { pathname, options })) return
   try {

@@ -9,7 +9,6 @@ import { toast as sonnerToast } from 'sonner'
 const toast = (...args) => sonnerToast(...args)
 Object.assign(toast, sonnerToast)
 
-toast.error = (message, options) =>
-  sonnerToast.error(message, { duration: Infinity, ...options })
+toast.error = (message, options) => sonnerToast.error(message, { duration: Infinity, ...options })
 
 export { toast }

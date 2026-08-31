@@ -4,9 +4,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/layout/Modal'
-import {
-  brandLogoCheckerboardStyle,
-} from '@/lib/brandLogoPolicy'
+import { brandLogoCheckerboardStyle } from '@/lib/brandLogoPolicy'
 
 const FRAME_SIZE = 420
 const OUTPUT_SIZE = 800
@@ -43,17 +41,7 @@ async function createCroppedFile(image, crop, filename, sourceMimeType, sourceTr
   const context = canvas.getContext('2d')
   if (!context) throw new Error('BRAND_LOGO_EXPORT_FAILED')
   context.clearRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
-  context.drawImage(
-    image,
-    sourceX,
-    sourceY,
-    targetSide,
-    targetSide,
-    0,
-    0,
-    OUTPUT_SIZE,
-    OUTPUT_SIZE,
-  )
+  context.drawImage(image, sourceX, sourceY, targetSide, targetSide, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
 
   const primaryMimeType = preserveTransparency ? 'image/webp' : 'image/jpeg'
   let outputMimeType = primaryMimeType
@@ -65,7 +53,8 @@ async function createCroppedFile(image, crop, filename, sourceMimeType, sourceTr
 
   if (!blob || blob.type !== outputMimeType) throw new Error('BRAND_LOGO_EXPORT_FAILED')
   const safeName = (filename || 'brand-logo').replace(/\.[^.]+$/, '') || 'brand-logo'
-  const extension = outputMimeType === 'image/jpeg' ? 'jpg' : outputMimeType === 'image/webp' ? 'webp' : 'png'
+  const extension =
+    outputMimeType === 'image/jpeg' ? 'jpg' : outputMimeType === 'image/webp' ? 'webp' : 'png'
   return new File([blob], `${safeName}.${extension}`, { type: outputMimeType })
 }
 
@@ -103,8 +92,12 @@ export function BrandLogoCropDialog({
     setPosition({ x: 0, y: 0 })
     setLocalError('')
     loadImage(sourceUrl)
-      .then((loaded) => { if (alive) setImage(loaded) })
-      .catch(() => { if (alive) setLocalError(t('brands.logo.errors.unreadable')) })
+      .then((loaded) => {
+        if (alive) setImage(loaded)
+      })
+      .catch(() => {
+        if (alive) setLocalError(t('brands.logo.errors.unreadable'))
+      })
     const measure = () => {
       if (frameRef.current) setFrameSize(frameRef.current.clientWidth || FRAME_SIZE)
     }
@@ -135,7 +128,12 @@ export function BrandLogoCropDialog({
   function handlePointerDown(event) {
     if (!image || busy) return
     event.currentTarget.setPointerCapture?.(event.pointerId)
-    pointerRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, position }
+    pointerRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      position,
+    }
   }
 
   function handlePointerMove(event) {
@@ -182,7 +180,7 @@ export function BrandLogoCropDialog({
       onClose={busy ? undefined : onCancel}
       wide
       contentClassName="max-w-2xl"
-      actions={(
+      actions={
         <>
           <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>
             {t('common.cancel')}
@@ -191,14 +189,12 @@ export function BrandLogoCropDialog({
             {busy ? t('brands.logo.processing') : t('brands.logo.cropDone')}
           </Button>
         </>
-      )}
+      }
     >
       <div className="space-y-4">
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <AlertTriangle size={16} className="mt-1 shrink-0 text-warning" aria-hidden="true" />
-          <span>
-            {t('brands.logo.cropInstruction')}
-          </span>
+          <span>{t('brands.logo.cropInstruction')}</span>
         </p>
         <div
           ref={frameRef}
@@ -231,7 +227,10 @@ export function BrandLogoCropDialog({
               {t('brands.logo.loading')}
             </div>
           )}
-          <div className="pointer-events-none absolute inset-0 border-2 border-primary/70" aria-hidden="true" />
+          <div
+            className="pointer-events-none absolute inset-0 border-2 border-primary/70"
+            aria-hidden="true"
+          />
         </div>
         <label className="mx-auto flex w-full max-w-md items-center gap-3 text-sm text-muted-foreground">
           <span className="shrink-0">{t('brands.logo.zoom')}</span>
@@ -261,7 +260,7 @@ export function BrandLogoCropDialog({
             aria-label={t('brands.logo.zoom')}
           />
         </label>
-        {(error || localError) ? (
+        {error || localError ? (
           <p className="flex items-start gap-2 text-sm text-danger" role="alert">
             <AlertTriangle size={16} className="mt-1 shrink-0" aria-hidden="true" />
             {error || localError}

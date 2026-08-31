@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-import {
-  registerAdminWsReconnectListener,
-  sendAdminWs,
-  subscribeAdminWs,
-} from './adminWebSocket'
+import { registerAdminWsReconnectListener, sendAdminWs, subscribeAdminWs } from './adminWebSocket'
 
 function normalizeEntityType(entityType) {
-  const normalized = String(entityType || '').trim().toUpperCase()
+  const normalized = String(entityType || '')
+    .trim()
+    .toUpperCase()
   return normalized === 'ORDER' || normalized === 'PRODUCT' ? normalized : ''
 }
 

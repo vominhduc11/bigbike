@@ -32,13 +32,7 @@ vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 vi.mock('../components/AdminTable', () => ({
-  AdminTable: ({
-    rows,
-    columns,
-    selectedIds = [],
-    onSelectionChange,
-    onSortChange,
-  }) => (
+  AdminTable: ({ rows, columns, selectedIds = [], onSelectionChange, onSortChange }) => (
     <div data-testid="content-table" data-selected={selectedIds.join(',')}>
       <button type="button" onClick={() => onSelectionChange?.(rows.map((row) => row.id))}>
         test.selectAllRows
@@ -122,11 +116,19 @@ describe('ContentListScreen', () => {
     expect(screen.getByRole('button', { name: 'common.edit' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.view' })).toBeInTheDocument()
 
-    await user.click(within(screen.getByTestId('content-row-article-draft')).getByRole('button', { name: 'common.actions' }))
+    await user.click(
+      within(screen.getByTestId('content-row-article-draft')).getByRole('button', {
+        name: 'common.actions',
+      }),
+    )
     expect(await screen.findByRole('menuitem', { name: 'content.moveToTrash' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
 
-    await user.click(within(screen.getByTestId('content-row-article-trash')).getByRole('button', { name: 'common.actions' }))
+    await user.click(
+      within(screen.getByTestId('content-row-article-trash')).getByRole('button', {
+        name: 'common.actions',
+      }),
+    )
     expect(await screen.findByRole('menuitem', { name: 'content.restore' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'common.permanentDelete' })).toBeInTheDocument()
   })
@@ -159,7 +161,9 @@ describe('ContentListScreen', () => {
 
     await user.click(await screen.findByRole('button', { name: 'test.sortTitleAsc' }))
     await waitFor(() => {
-      expect(mocks.fetchContent).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'title:asc' }))
+      expect(mocks.fetchContent).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort: 'title:asc' }),
+      )
     })
   })
 
@@ -171,7 +175,9 @@ describe('ContentListScreen', () => {
     await user.click(await screen.findByRole('button', { name: 'test.selectAllRows' }))
     await user.click(screen.getByRole('button', { name: 'content.bulkPublish' }))
 
-    await waitFor(() => expect(mocks.fetchContentDetail).toHaveBeenCalledWith('ARTICLE', 'article-draft'))
+    await waitFor(() =>
+      expect(mocks.fetchContentDetail).toHaveBeenCalledWith('ARTICLE', 'article-draft'),
+    )
     expect(mocks.updateContent).toHaveBeenCalledWith(
       'ARTICLE',
       'article-draft',

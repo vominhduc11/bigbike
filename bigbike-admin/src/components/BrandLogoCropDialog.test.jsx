@@ -63,10 +63,12 @@ describe('BrandLogoCropDialog export', () => {
         drawImage: vi.fn(),
       }
     })
-    toBlobSpy = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function toBlob(callback, mimeType, quality) {
-      blobCalls.push({ mimeType, quality })
-      callback(new Blob([new Uint8Array(1024 * 1024)], { type: mimeType }))
-    })
+    toBlobSpy = vi
+      .spyOn(HTMLCanvasElement.prototype, 'toBlob')
+      .mockImplementation(function toBlob(callback, mimeType, quality) {
+        blobCalls.push({ mimeType, quality })
+        callback(new Blob([new Uint8Array(1024 * 1024)], { type: mimeType }))
+      })
   })
 
   afterEach(() => {

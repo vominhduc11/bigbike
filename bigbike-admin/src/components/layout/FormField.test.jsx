@@ -5,7 +5,7 @@ import { FormField } from './FormField'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key === 'common.moreInformation' ? 'Xem giải thích' : key,
+    t: (key) => (key === 'common.moreInformation' ? 'Xem giải thích' : key),
   }),
 }))
 
@@ -21,7 +21,8 @@ describe('FormField helper copy', () => {
   })
 
   it('moves a long helper to the shared tooltip and keeps it accessible to the field', () => {
-    const helper = 'Hướng dẫn dài hơn tám mươi ký tự được thu gọn để biểu mẫu dễ quét nhưng vẫn còn đầy đủ cho người cần xem.'
+    const helper =
+      'Hướng dẫn dài hơn tám mươi ký tự được thu gọn để biểu mẫu dễ quét nhưng vẫn còn đầy đủ cho người cần xem.'
     render(
       <FormField label="Mô tả" helper={helper}>
         <Input />

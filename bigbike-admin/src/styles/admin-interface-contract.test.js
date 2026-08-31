@@ -13,9 +13,11 @@ function walkFiles(directory, predicate) {
   })
 }
 
-const productionJsxFiles = () => walkFiles(join(ROOT, 'src'), (path) => (
-  path.endsWith('.jsx') && !path.includes('.test.') && !path.includes('.spec.')
-))
+const productionJsxFiles = () =>
+  walkFiles(
+    join(ROOT, 'src'),
+    (path) => path.endsWith('.jsx') && !path.includes('.test.') && !path.includes('.spec.'),
+  )
 
 const COLUMN_VISIBILITY_SCREENS = [
   'ProductListScreen',
@@ -143,7 +145,8 @@ describe('admin interface composition contract', () => {
   })
 
   test('legacy content UI system is fully removed from nested production components', () => {
-    const forbidden = /\bbb-(?:card(?:-header|-body)?|filter-bar|table(?:-wrap)?|btn(?:-primary|-secondary|-ghost|-sm)?|input|select|icon-btn|foldable)\b/
+    const forbidden =
+      /\bbb-(?:card(?:-header|-body)?|filter-bar|table(?:-wrap)?|btn(?:-primary|-secondary|-ghost|-sm)?|input|select|icon-btn|foldable)\b/
     const offenders = productionJsxFiles()
       .filter((path) => forbidden.test(readFileSync(path, 'utf8')))
       .map((path) => path.replace(`${ROOT}\\`, ''))
@@ -151,7 +154,9 @@ describe('admin interface composition contract', () => {
     expect(offenders).toEqual([])
 
     const legacyCss = readFileSync(join(ROOT, 'src', 'styles', 'admin-prototype.css'), 'utf8')
-    expect(legacyCss).not.toMatch(/\.bb-(?:card|filter-bar|table|btn|input|select|icon-btn|foldable)\b/)
+    expect(legacyCss).not.toMatch(
+      /\.bb-(?:card|filter-bar|table|btn|input|select|icon-btn|foldable)\b/,
+    )
   })
 
   test('all production data tables are composed through AdminTable', () => {
@@ -161,7 +166,12 @@ describe('admin interface composition contract', () => {
       .map((path) => path.replace(`${ROOT}\\`, ''))
 
     expect(rawTables).toEqual([])
-    for (const name of ['CategoryListScreen', 'DashboardScreen', 'MenuScreen', 'OrderDetailScreen']) {
+    for (const name of [
+      'CategoryListScreen',
+      'DashboardScreen',
+      'MenuScreen',
+      'OrderDetailScreen',
+    ]) {
       expect(screen(name)).toContain('<AdminTable')
     }
   })
@@ -179,14 +189,22 @@ describe('admin interface composition contract', () => {
     ]
     const hardcodedSpacing = cssFiles.flatMap((path) => {
       const css = readFileSync(path, 'utf8')
-      const declarations = css.match(/(?:padding|margin|gap|row-gap|column-gap|scroll-margin)(?:-[a-z]+)*\s*:\s*[^;]+;/g) ?? []
-      return declarations.filter((declaration) => /\b\d+px\b/.test(declaration)).map((declaration) => ({ path, declaration }))
+      const declarations =
+        css.match(
+          /(?:padding|margin|gap|row-gap|column-gap|scroll-margin)(?:-[a-z]+)*\s*:\s*[^;]+;/g,
+        ) ?? []
+      return declarations
+        .filter((declaration) => /\b\d+px\b/.test(declaration))
+        .map((declaration) => ({ path, declaration }))
     })
     expect(hardcodedSpacing).toEqual([])
   })
 
   test('Screen delegates width entirely to the 1700px outer shell', () => {
-    const screenComponent = readFileSync(join(ROOT, 'src', 'components', 'layout', 'Screen.jsx'), 'utf8')
+    const screenComponent = readFileSync(
+      join(ROOT, 'src', 'components', 'layout', 'Screen.jsx'),
+      'utf8',
+    )
     const tokens = readFileSync(join(ROOT, 'src', 'styles', 'admin-tokens.css'), 'utf8')
     expect(screenComponent).not.toContain('maxWidth')
     expect(tokens).toMatch(/--bb-content-max:\s*1700px/)
@@ -218,7 +236,10 @@ describe('admin interface composition contract', () => {
       ProductDetailScreen: screen('ProductDetailScreen'),
       CategoryDetailScreen: screen('CategoryDetailScreen'),
       ContentDetailScreen: screen('ContentDetailScreen'),
-      ContentEditors: readFileSync(join(ROOT, 'src', 'screens', 'product-detail', 'ContentEditors.jsx'), 'utf8'),
+      ContentEditors: readFileSync(
+        join(ROOT, 'src', 'screens', 'product-detail', 'ContentEditors.jsx'),
+        'utf8',
+      ),
       blocks: readFileSync(join(ROOT, 'src', 'components', 'block-editor', 'blocks.jsx'), 'utf8'),
     }
     const progressiveHelp = [
@@ -253,26 +274,44 @@ describe('admin interface composition contract', () => {
     ]) {
       expect(screen(name)).toContain('<TableRowActions')
     }
-    const menuRow = readFileSync(join(ROOT, 'src', 'screens', 'menu', 'SortableMenuItem.jsx'), 'utf8')
+    const menuRow = readFileSync(
+      join(ROOT, 'src', 'screens', 'menu', 'SortableMenuItem.jsx'),
+      'utf8',
+    )
     expect(menuRow).toContain('<TableRowActions')
   })
 
-  test.each(RESPONSIVE_FILTER_SCREENS)('%s collapses its filters through the shared mobile drawer', (name) => {
-    expect(screen(name)).toContain('<ResponsiveFilterBar')
-  })
+  test.each(RESPONSIVE_FILTER_SCREENS)(
+    '%s collapses its filters through the shared mobile drawer',
+    (name) => {
+      expect(screen(name)).toContain('<ResponsiveFilterBar')
+    },
+  )
 
   test('the audit log keeps its draft-and-apply drawer on mobile', () => {
     expect(screen('AuditLogListScreen')).toContain('<MobileFilterDrawer')
-    const drawer = readFileSync(join(ROOT, 'src', 'screens', 'audit-log-list', 'MobileFilterDrawer.jsx'), 'utf8')
+    const drawer = readFileSync(
+      join(ROOT, 'src', 'screens', 'audit-log-list', 'MobileFilterDrawer.jsx'),
+      'utf8',
+    )
     expect(drawer).toContain('MobileFilterDrawerShell')
   })
 
   test('every operational list is readable as cards on mobile', () => {
     const listScreens = [
-      'AdminUsersScreen', 'AuditLogListScreen', 'BrandListScreen', 'CategoryListScreen',
-      'ChatConversationListScreen', 'ContentListScreen', 'CustomerListScreen',
-      'LegacyDiscontinuedProductsScreen', 'MenuScreen', 'OrderListScreen',
-      'ProductListScreen', 'RedirectListScreen', 'ReviewListScreen',
+      'AdminUsersScreen',
+      'AuditLogListScreen',
+      'BrandListScreen',
+      'CategoryListScreen',
+      'ChatConversationListScreen',
+      'ContentListScreen',
+      'CustomerListScreen',
+      'LegacyDiscontinuedProductsScreen',
+      'MenuScreen',
+      'OrderListScreen',
+      'ProductListScreen',
+      'RedirectListScreen',
+      'ReviewListScreen',
     ]
     for (const name of listScreens) {
       expect(screen(name), name).toMatch(/mobileCard=|<MobileCardList/)
@@ -307,7 +346,9 @@ describe('admin interface composition contract', () => {
       if (usesSeparateMobileList) {
         expect(source, relativePath).toContain('<MobileCardList')
       } else {
-        expect(source.match(/mobileCard=/g)?.length, relativePath).toBeGreaterThanOrEqual(expectedTables)
+        expect(source.match(/mobileCard=/g)?.length, relativePath).toBeGreaterThanOrEqual(
+          expectedTables,
+        )
       }
     }
   })
@@ -322,7 +363,13 @@ describe('admin interface composition contract', () => {
   })
 
   test('all five long detail sidebars stay visible while the main column scrolls', () => {
-    for (const name of ['CategoryDetailScreen', 'CustomerDetailScreen', 'ReviewDetailScreen', 'ChatConversationDetailScreen', 'OrderDetailScreen']) {
+    for (const name of [
+      'CategoryDetailScreen',
+      'CustomerDetailScreen',
+      'ReviewDetailScreen',
+      'ChatConversationDetailScreen',
+      'OrderDetailScreen',
+    ]) {
       expect(screen(name), name).toContain('lg:sticky lg:top-4')
     }
   })
@@ -334,6 +381,8 @@ describe('admin interface composition contract', () => {
     expect(screen('MediaLibraryScreen')).toContain('<ResponsiveFilterBar')
 
     const css = readFileSync(join(ROOT, 'src', 'index.css'), 'utf8')
-    expect(css).not.toMatch(/\.mediafolder-|\.medialib-(?:layout|main-col|filter-bar|grid|pagination-row)/)
+    expect(css).not.toMatch(
+      /\.mediafolder-|\.medialib-(?:layout|main-col|filter-bar|grid|pagination-row)/,
+    )
   })
 })

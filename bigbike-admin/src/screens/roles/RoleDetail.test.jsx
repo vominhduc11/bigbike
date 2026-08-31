@@ -5,20 +5,25 @@ import { RoleDetail } from './RoleDetail'
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
-    t: (key, values = {}) => ({
-      'common.actionBarLabel': 'Thanh thao tác',
-      'common.dirty': 'Có thay đổi chưa lưu',
-      'roles.cancelBtn': 'Huỷ',
-      'roles.editBtn': 'Chỉnh sửa quyền',
-      'roles.deleteRoleBtn': 'Xoá vai trò',
-      'roles.saveBtn': 'Lưu thay đổi',
-      'roles.summaryPermCount': '{{count}} quyền',
-      'roles.summaryNoSensitive': 'Không có quyền nhạy cảm',
-      'roles.groupGrantedCount': '{{granted}}/{{total}} quyền',
-      'roles.roleDesc_WAREHOUSE': 'Kho hàng',
-      'roles.showPermCodes': 'Hiện mã kỹ thuật',
-      'roles.permCode': 'Mã quyền',
-    }[key] || values.defaultValue || key).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
+    t: (key, values = {}) =>
+      (
+        ({
+          'common.actionBarLabel': 'Thanh thao tác',
+          'common.dirty': 'Có thay đổi chưa lưu',
+          'roles.cancelBtn': 'Huỷ',
+          'roles.editBtn': 'Chỉnh sửa quyền',
+          'roles.deleteRoleBtn': 'Xoá vai trò',
+          'roles.saveBtn': 'Lưu thay đổi',
+          'roles.summaryPermCount': '{{count}} quyền',
+          'roles.summaryNoSensitive': 'Không có quyền nhạy cảm',
+          'roles.groupGrantedCount': '{{granted}}/{{total}} quyền',
+          'roles.roleDesc_WAREHOUSE': 'Kho hàng',
+          'roles.showPermCodes': 'Hiện mã kỹ thuật',
+          'roles.permCode': 'Mã quyền',
+        })[key] ||
+        values.defaultValue ||
+        key
+      ).replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? name)),
   }),
 }))
 
@@ -31,11 +36,13 @@ const role = {
   assignedUserCount: 0,
 }
 
-const catalog = [{
-  groupKey: 'roles.groupSystem',
-  moduleKey: 'roles',
-  permissions: [{ key: 'roles.read', sensitive: false }],
-}]
+const catalog = [
+  {
+    groupKey: 'roles.groupSystem',
+    moduleKey: 'roles',
+    permissions: [{ key: 'roles.read', sensitive: false }],
+  },
+]
 
 function renderDetail(overrides = {}) {
   return render(
@@ -71,7 +78,10 @@ describe('RoleDetail', () => {
 
     expect(screen.getByRole('button', { name: 'Huỷ' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
   })
 
   it('keeps the edit action accessible while viewing a long permission list', () => {

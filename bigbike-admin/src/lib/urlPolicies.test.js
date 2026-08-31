@@ -39,10 +39,14 @@ describe('validateSafePublicLink', () => {
 
 describe('extractAllowedYouTubeId', () => {
   it('lấy id từ watch?v=, youtu.be, /embed/, /shorts/', () => {
-    expect(extractAllowedYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+    expect(extractAllowedYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(
+      'dQw4w9WgXcQ',
+    )
     expect(extractAllowedYouTubeId('https://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
     expect(extractAllowedYouTubeId('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
-    expect(extractAllowedYouTubeId('https://www.youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+    expect(extractAllowedYouTubeId('https://www.youtube.com/shorts/dQw4w9WgXcQ')).toBe(
+      'dQw4w9WgXcQ',
+    )
   })
 
   it('trả null cho host lạ hoặc id sai độ dài', () => {
@@ -54,8 +58,9 @@ describe('extractAllowedYouTubeId', () => {
 
 describe('extractAllowedTikTokId', () => {
   it('lấy id số từ link đầy đủ', () => {
-    expect(extractAllowedTikTokId('https://www.tiktok.com/@bigbike/video/7412345678901234567'))
-      .toBe('7412345678901234567')
+    expect(
+      extractAllowedTikTokId('https://www.tiktok.com/@bigbike/video/7412345678901234567'),
+    ).toBe('7412345678901234567')
   })
 
   it('từ chối link rút gọn vt.tiktok.com / vm.tiktok.com', () => {
@@ -66,7 +71,9 @@ describe('extractAllowedTikTokId', () => {
 
 describe('isAllowedFacebookVideoUrl', () => {
   it('nhận link video/reel/watch/video.php công khai', () => {
-    expect(isAllowedFacebookVideoUrl('https://www.facebook.com/bigbike/videos/123456789')).toBe(true)
+    expect(isAllowedFacebookVideoUrl('https://www.facebook.com/bigbike/videos/123456789')).toBe(
+      true,
+    )
     expect(isAllowedFacebookVideoUrl('https://www.facebook.com/reel/123456789')).toBe(true)
     expect(isAllowedFacebookVideoUrl('https://www.facebook.com/watch')).toBe(true)
   })
@@ -91,10 +98,21 @@ describe('isAllowedMediaVideoUrl', () => {
 
 describe('validateHomeVideoUrl chỉ cho phép nguồn ghi mới', () => {
   it('nhận URL YouTube đầy đủ, TikTok/Facebook và video trong thư viện media', () => {
-    expect(validateHomeVideoUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toMatchObject({ valid: true, source: 'youtube' })
-    expect(validateHomeVideoUrl('https://www.tiktok.com/@a/video/7412345678901234567')).toMatchObject({ valid: true, source: 'tiktok' })
-    expect(validateHomeVideoUrl('https://www.facebook.com/a/videos/1')).toMatchObject({ valid: true, source: 'facebook' })
-    expect(validateHomeVideoUrl('/media/videos/demo.mp4')).toMatchObject({ valid: true, source: 'upload' })
+    expect(validateHomeVideoUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toMatchObject({
+      valid: true,
+      source: 'youtube',
+    })
+    expect(
+      validateHomeVideoUrl('https://www.tiktok.com/@a/video/7412345678901234567'),
+    ).toMatchObject({ valid: true, source: 'tiktok' })
+    expect(validateHomeVideoUrl('https://www.facebook.com/a/videos/1')).toMatchObject({
+      valid: true,
+      source: 'facebook',
+    })
+    expect(validateHomeVideoUrl('/media/videos/demo.mp4')).toMatchObject({
+      valid: true,
+      source: 'upload',
+    })
   })
 
   it('từ chối link rút gọn và nền tảng ngoài danh sách', () => {

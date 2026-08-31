@@ -34,7 +34,12 @@ export function PaginationControls({ pagination, onPageChange, disabled = false 
     // Số trang không hợp lệ (rỗng/không phải số/ngoài khoảng) → báo lỗi rõ, GIỮ lại ô nhập để sửa,
     // không xoá im lặng khiến người dùng tưởng đã nhảy trang.
     if (Number.isNaN(target) || target < 1 || target > totalPages) {
-      setJumpError(t('pagination.jumpRange', { total: totalPages, defaultValue: 'Nhập số trang từ 1 đến {{total}}.' }))
+      setJumpError(
+        t('pagination.jumpRange', {
+          total: totalPages,
+          defaultValue: 'Nhập số trang từ 1 đến {{total}}.',
+        }),
+      )
       return
     }
     setJumpError('')
@@ -43,7 +48,10 @@ export function PaginationControls({ pagination, onPageChange, disabled = false 
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-4 text-sm text-muted-foreground" aria-busy={disabled || undefined}>
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-4 text-sm text-muted-foreground"
+      aria-busy={disabled || undefined}
+    >
       <span>
         {t('pagination.items', { count: totalItems })}
         {' · '}
@@ -61,23 +69,38 @@ export function PaginationControls({ pagination, onPageChange, disabled = false 
               min={1}
               max={totalPages}
               value={jumpInput}
-              onChange={(e) => { setJumpInput(e.target.value); if (jumpError) setJumpError('') }}
+              onChange={(e) => {
+                setJumpInput(e.target.value)
+                if (jumpError) setJumpError('')
+              }}
               className="h-9 w-14 px-1 text-center text-sm"
               aria-label={t('pagination.jumpTo')}
               aria-invalid={jumpError ? true : undefined}
               aria-describedby={jumpError ? jumpErrId : undefined}
               disabled={disabled}
             />
-            <Button type="submit" variant="secondary" size="sm" className="min-h-11" disabled={disabled || !jumpInput} aria-label={t('pagination.jumpTo')}>
+            <Button
+              type="submit"
+              variant="secondary"
+              size="sm"
+              className="min-h-11"
+              disabled={disabled || !jumpInput}
+              aria-label={t('pagination.jumpTo')}
+            >
               <ArrowRight size={14} aria-hidden="true" />
             </Button>
             {jumpError ? (
-              <span id={jumpErrId} role="alert" className="whitespace-nowrap text-sm text-danger">{jumpError}</span>
+              <span id={jumpErrId} role="alert" className="whitespace-nowrap text-sm text-danger">
+                {jumpError}
+              </span>
             ) : null}
           </form>
         )}
 
-        <nav className="flex flex-wrap items-center gap-1" aria-label={t('pagination.page', { page, total: totalPages })}>
+        <nav
+          className="flex flex-wrap items-center gap-1"
+          aria-label={t('pagination.page', { page, total: totalPages })}
+        >
           <Button
             variant="secondary"
             size="sm"
@@ -90,20 +113,26 @@ export function PaginationControls({ pagination, onPageChange, disabled = false 
 
           {buildPageList(page, totalPages).map((p, i) =>
             p === 'ellipsis' ? (
-              <span key={`ellipsis-${i}`} className="info" aria-hidden="true">…</span>
+              <span key={`ellipsis-${i}`} className="info" aria-hidden="true">
+                …
+              </span>
             ) : (
               <Button
                 key={p}
                 variant="secondary"
                 size="sm"
-                className={p === page ? 'min-h-11 border-primary bg-primary text-primary-foreground' : 'min-h-11'}
+                className={
+                  p === page
+                    ? 'min-h-11 border-primary bg-primary text-primary-foreground'
+                    : 'min-h-11'
+                }
                 onClick={() => onPageChange(p)}
                 disabled={disabled}
                 aria-current={p === page ? 'page' : undefined}
               >
                 {p}
               </Button>
-            )
+            ),
           )}
 
           <Button

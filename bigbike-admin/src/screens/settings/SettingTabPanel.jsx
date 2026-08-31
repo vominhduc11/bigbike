@@ -18,8 +18,22 @@ import {
 } from './constants'
 
 export function SettingTabPanel({
-  title, description, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
-  onDraftBlur, onSave, onDiscard, saving, saveSuccess, saveError, isSuperAdmin = false,
+  title,
+  description,
+  items,
+  canUpdate,
+  drafts,
+  draftsEn,
+  errors,
+  onDraftChange,
+  onDraftChangeEn,
+  onDraftBlur,
+  onSave,
+  onDiscard,
+  saving,
+  saveSuccess,
+  saveError,
+  isSuperAdmin = false,
   beforeContent = null,
 }) {
   const { t } = useTranslation()
@@ -29,20 +43,22 @@ export function SettingTabPanel({
 
   const sections = useMemo(() => groupBySection(items), [items])
   const errorSections = useMemo(
-    () => new Set(
-      sections
-        .slice(1)
-        .filter(({ fields }) => fields.some((setting) => errors[setting.key]))
-        .map(({ sec }) => sec),
-    ),
+    () =>
+      new Set(
+        sections
+          .slice(1)
+          .filter(({ fields }) => fields.some((setting) => errors[setting.key]))
+          .map(({ sec }) => sec),
+      ),
     [errors, sections],
   )
   const [openOverride, setOpenOverride] = useState({})
   const isOpen = (sec) => errorSections.has(sec) || (openOverride[sec] ?? false)
-  const toggle = (sec) => setOpenOverride((previous) => ({
-    ...previous,
-    [sec]: !(previous[sec] ?? false),
-  }))
+  const toggle = (sec) =>
+    setOpenOverride((previous) => ({
+      ...previous,
+      [sec]: !(previous[sec] ?? false),
+    }))
 
   const renderFields = (fields) => (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -103,65 +119,82 @@ export function SettingTabPanel({
         className="!overflow-visible !border-0 !bg-transparent !shadow-none"
         headingLevel={3}
         title={title}
-        description={description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
-        badge={dirtyCount > 0 ? (
-          <span className="bb-badge bb-badge-warning">
-            {t('settings.unsavedShort', { count: dirtyCount, defaultValue: '{{count}} chưa lưu' })}
-          </span>
-        ) : null}
-        action={(
+        description={
+          description ||
+          t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })
+        }
+        badge={
+          dirtyCount > 0 ? (
+            <span className="bb-badge bb-badge-warning">
+              {t('settings.unsavedShort', {
+                count: dirtyCount,
+                defaultValue: '{{count}} chưa lưu',
+              })}
+            </span>
+          ) : null
+        }
+        action={
           <span className="bb-badge bb-badge-neutral">
-            {t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
+            {t('settings.panelSummary', {
+              count: items.length,
+              defaultValue: '{{count}} mục cài đặt',
+            })}
           </span>
-        )}
+        }
         headerClassName="!border-0 !bg-transparent !px-0 !pt-0"
         contentClassName="space-y-4 !p-0"
       >
-          {sections.map(({ sec, fields }, idx) => {
-            const meta = SECTION_GUIDE[sec]
-            const secTitle = sectionTitle(sec, t)
-            const secDescription = sectionDescription(sec, t)
-            const dirtyInSec = fields.filter(isDirtyField).length
-            const dirtyBadge = dirtyInSec > 0 ? (
-              <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInSec })}>
+        {sections.map(({ sec, fields }, idx) => {
+          const meta = SECTION_GUIDE[sec]
+          const secTitle = sectionTitle(sec, t)
+          const secDescription = sectionDescription(sec, t)
+          const dirtyInSec = fields.filter(isDirtyField).length
+          const dirtyBadge =
+            dirtyInSec > 0 ? (
+              <span
+                className="bb-badge bb-badge-warning"
+                aria-label={t('settings.tabChangeCount', { count: dirtyInSec })}
+              >
                 {dirtyInSec}
               </span>
             ) : null
 
-            if (idx === 0) {
-              return (
-                <DetailSection
-                  key={sec}
-                  headingLevel={4}
-                  title={secTitle}
-                  description={secDescription}
-                  badge={dirtyBadge}
-                  action={meta?.internal ? (
+          if (idx === 0) {
+            return (
+              <DetailSection
+                key={sec}
+                headingLevel={4}
+                title={secTitle}
+                description={secDescription}
+                badge={dirtyBadge}
+                action={
+                  meta?.internal ? (
                     <span className="bb-badge bb-badge-neutral">
                       <Lock size={12} aria-hidden="true" /> {internalLabel}
                     </span>
-                  ) : null}
-                  className="bg-surface-muted"
-                >
-                  {renderFields(fields)}
-                </DetailSection>
-              )
-            }
-
-            return (
-              <CollapsibleSection
-                key={sec}
-                title={secTitle}
-                hint={secDescription || (meta?.internal ? internalLabel : undefined)}
-                open={isOpen(sec)}
-                onToggle={() => toggle(sec)}
-                keepMounted
-                badge={dirtyBadge}
+                  ) : null
+                }
+                className="bg-surface-muted"
               >
                 {renderFields(fields)}
-              </CollapsibleSection>
+              </DetailSection>
             )
-          })}
+          }
+
+          return (
+            <CollapsibleSection
+              key={sec}
+              title={secTitle}
+              hint={secDescription || (meta?.internal ? internalLabel : undefined)}
+              open={isOpen(sec)}
+              onToggle={() => toggle(sec)}
+              keepMounted
+              badge={dirtyBadge}
+            >
+              {renderFields(fields)}
+            </CollapsibleSection>
+          )
+        })}
       </DetailSection>
 
       {canUpdate && (dirtyCount > 0 || saving || saveSuccess || saveError) ? (
@@ -172,12 +205,7 @@ export function SettingTabPanel({
             </Button>
           ) : null}
           {dirtyCount > 0 ? (
-            <Button
-              className="min-h-11"
-              loading={saving}
-              disabled={hasError}
-              onClick={onSave}
-            >
+            <Button className="min-h-11" loading={saving} disabled={hasError} onClick={onSave}>
               {t('settings.saveCount', { count: dirtyCount })}
             </Button>
           ) : null}

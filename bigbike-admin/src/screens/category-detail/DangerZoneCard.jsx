@@ -9,14 +9,14 @@ export function DangerZoneCard({ onHardDelete, pending, isDeleted, onRestore, re
     <DetailSection
       className="border-danger-border"
       headingLevel={3}
-      title={(
+      title={
         <span className="flex items-center gap-2 text-danger">
-            <AlertTriangle size={14} aria-hidden="true" />
-            {t('categories.detail.dangerZoneTitle')}
+          <AlertTriangle size={14} aria-hidden="true" />
+          {t('categories.detail.dangerZoneTitle')}
         </span>
-      )}
+      }
       description={t('categories.detail.dangerZoneDesc')}
-      action={(
+      action={
         <div className="flex flex-wrap gap-2">
           {isDeleted ? (
             <Button
@@ -31,12 +31,18 @@ export function DangerZoneCard({ onHardDelete, pending, isDeleted, onRestore, re
               {t('products.restore')}
             </Button>
           ) : null}
-          <Button type="button" variant="danger" onClick={onHardDelete} disabled={pending} aria-busy={pending || undefined}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={onHardDelete}
+            disabled={pending}
+            aria-busy={pending || undefined}
+          >
             {pending && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {t('categories.detail.hardDeleteBtn')}
           </Button>
         </div>
-      )}
+      }
     />
   )
 }

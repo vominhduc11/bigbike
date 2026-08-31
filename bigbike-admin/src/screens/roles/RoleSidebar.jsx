@@ -4,11 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from './Badge'
 import { getRoleDisplayName } from './constants'
 
-export function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate, onCreateRole }) {
+export function RoleSidebar({
+  roles,
+  selectedId,
+  onSelect,
+  editMode,
+  isDirty,
+  canUpdate,
+  onCreateRole,
+}) {
   const { t } = useTranslation()
   return (
     <div className="roles-sidebar">
-      {roles.map(role => {
+      {roles.map((role) => {
         const isActive = role.id === selectedId
         const displayName = getRoleDisplayName(role, t)
         const descKey = `roles.roleDesc_${role.id}`
@@ -25,24 +33,22 @@ export function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, ca
           >
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Shield size={13} className="text-muted-foreground shrink-0" aria-hidden />
-              <span className="font-semibold text-sm text-foreground">
-                {displayName}
-              </span>
+              <span className="font-semibold text-sm text-foreground">{displayName}</span>
               <Badge isSystem={role.isSystem} assignedUserCount={role.assignedUserCount} />
             </div>
-            {showDesc && (
-              <div className="text-xs text-muted-foreground pl-5 mt-1">
-                {desc}
-              </div>
-            )}
+            {showDesc && <div className="text-xs text-muted-foreground pl-5 mt-1">{desc}</div>}
           </Button>
         )
       })}
 
       {canUpdate && (
         <div className="px-3 py-3 border-t border-border">
-          <Button variant="ghost" size="sm" onClick={onCreateRole}
-            className="w-full flex items-center gap-2 justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCreateRole}
+            className="w-full flex items-center gap-2 justify-center"
+          >
             <Plus size={14} aria-hidden />
             {t('roles.createRoleBtn')}
           </Button>

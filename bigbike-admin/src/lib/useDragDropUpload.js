@@ -13,7 +13,9 @@ export function useDragDropUpload(targetRef, onFiles) {
   const [isDragging, setIsDragging] = useState(false)
   const onFilesRef = useRef(onFiles)
   // Keep the latest callback in a ref so listeners don't re-bind on each render.
-  useEffect(() => { onFilesRef.current = onFiles }, [onFiles])
+  useEffect(() => {
+    onFilesRef.current = onFiles
+  }, [onFiles])
 
   useEffect(() => {
     const target = targetRef.current
